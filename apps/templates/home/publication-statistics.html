@@ -1,0 +1,485 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+	<!-- Define page content -->
+	<div class="content">
+		<div class="page-inner">
+
+			<!-- Breadcrumb -->
+			<div class="page-header">
+				<h4 class="page-title">Publication Statistics</h4>
+				<ul class="breadcrumbs">
+					<li class="nav-home">
+						<a href="/index.html">
+							<i class="flaticon-home"></i>
+						</a>
+					</li>
+					<li class="separator">
+						<i class="flaticon-right-arrow"></i>
+					</li>
+					<li class="nav-item">
+						<a href="#">Publication Statistics</a>
+					</li>
+				</ul>
+			</div>
+
+			<!-- Collapsible description panel -->
+			<div class="row">
+				<div class="card-body" style="padding-bottom: 0.0rem !important">
+					<div class="flex flex-column faq-section">
+						<div class="row">
+							<div class="col-md-12">
+								<div id="accordion">
+									<div class="card">
+										<div class="card-header" id="heading-description">
+											<h5 class="mb-0" style="color: white">
+												<a role="button" data-toggle="collapse" href="#description"
+												   aria-expanded="false" aria-controls="description"
+												   style="color: white; text-decoration: none">
+													&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+												</a>
+											</h5>
+										</div>
+										<div id="description" class="collapse hide" data-parent="#accordion"
+											 aria-labelledby="heading-description">
+											<div class="card-body">
+												This view offers a summary of the total number and volume of
+												products published
+												in the Data Hubs for each Copernicus Sentinel mission, within the
+												selected time
+												interval: last 24 hours, last 7 days, last 30 days and last 3 months
+												(i.e. 90 days) with respect to the current date / time.
+												The view provides also the details about the published
+												products per product
+												level or sensor type (i.e., for Copernicus Sentinel-3). Charts are
+												interactive: by
+												clicking on a label in the legend it is possible to modify the displayed
+												results.
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Spinner for action pending -->
+			<div class="d-flex justify-content-center" >
+			  <div class="spinner-border" role="status" style="visibility:visible">
+				<span class="sr-only">Loading...</span>
+			  </div>
+			</div>
+
+			<!-- Public Data -->
+			<div class="row">
+
+				<!-- Last update box-->
+				<div class="col-sm-6 col-md-3">
+					<div class="card card-stats card-round">
+						<div class="card-body ">
+							<div class="row align-items-center">
+								<div class="col-icon">
+									<div class="icon-big text-center icon-primary bubble-shadow-small">
+										<i class="flaticon-clock-1"></i>
+									</div>
+								</div>
+								<div class="col col-stats ml-3 ml-sm-0">
+									<div class="numbers">
+										<p class="card-category">Statistics updated at [UTC]:</p>
+										<h4 class="card-title" id="pub-last-updated">---</h4>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Count / Volume dropdown switch -->
+				<div class="col-sm-6 col-md-3">
+					<p class="card-category" style="margin-left: 10px">Select the displayed data:</p>
+					<div class="form-group form-floating-label" style="width: 270px" id="time-period-select-container">
+						<select name="time-period-select" id="publication-statistics-data-type-select"
+								class="form-control input-solid">
+							<option value="count">Number of published products</option>
+							<option value="volume">Volume of published products</option>
+						</select>
+					</div>
+				</div>
+
+				<!-- Open Access Hub availability -->
+				<div class="col-sm-6 col-md-3" hidden>
+					<div class="card card-stats card-round" id="pub-oa-hub-avail">
+						<div class="card-body ">
+							<div class="row align-items-center">
+								<div class="col-icon">
+									<div class="icon-big text-center icon-primary bubble-shadow-small">
+										<i class="flaticon-success"></i>
+									</div>
+								</div>
+								<div class="col col-stats ml-3 ml-sm-0">
+									<div class="numbers">
+										<p class="card-category">Open Access Hub availability</p>
+										<h4 class="card-title">100%</h4>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+
+			<!-- Public data, requested in ppt presentation OMCS Public Dashboard Mockups -->
+
+			<!-- Boxes, published data count per mission -->
+			<div class="row" id="published-data-num-row" hidden>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S1-pub-number">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-1 Number of published products</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card"  id="S2-pub-number">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-2 Number of published products</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S3-pub-number">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-3 Number of published products</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S5-pub-number">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-5p Number of published products</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Pie charts, published data count per mission and product type -->
+			<div class="row" id="published-data-num-product-type-row">
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S1-pub-number-total">
+							<div class="card-title m-0">Sentinel-1 Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s1-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S2-pub-number-total">
+							<div class="card-title m-0">Sentinel-2 Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s2-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S3-pub-number-total">
+							<div class="card-title m-0">Sentinel-3 Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S5-pub-number-total">
+							<div class="card-title m-0">Sentinel-5p Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s5-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Pie charts, published data count per Sentinel3 Sensors -->
+			<div class="row" id="published-data-num-s3-row">
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-OLCI-pub-number-total">
+							<div class="card-title m-0">Sentinel-3 OLCI Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-olci-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-SLSTR-pub-number-total">
+							<div class="card-title m-0">Sentinel-3 SLSTR Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-slstr-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-SRAL-pub-number-total">
+							<div class="card-title m-0">Sentinel-3 SRAL Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-sral-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-SYN-pub-number-total">
+							<div class="card-title m-0">Sentinel-3 SYN Number of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-syn-num-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Boxes, published data volume per mission -->
+			<div class="row" id="published-data-vol-row" hidden>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S1-pub-volume">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-1 Volume of published products</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S2-pub-volume">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-2 Volume of published products</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S3-pub-volume">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-3 Volume of published products</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-sm-6 col-md-3">
+					<div class="card" id="S5-pub-volume">
+						<div class="card-body p-3 text-center">
+							<div class="h1 m-0">
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
+							</div>
+							<div class="text-muted mb-3">Sentinel-5p Volume of published products</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Pie charts, published data volume per mission and product Categories -->
+			<div class="row" id="published-data-vol-product-type-row">
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S1-pub-volume-total">
+							<div class="card-title m-0">Sentinel-1 Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s1-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S2-pub-volume-total">
+							<div class="card-title m-0">Sentinel-2 Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s2-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S3-pub-volume-total">
+							<div class="card-title m-0">Sentinel-3 Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header" id="S5-pub-volume-total">
+							<div class="card-title m-0">Sentinel-5p Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s5-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Pie charts, published data volume per Sentinel3 Sensors -->
+			<div class="row" id="published-data-vol-s3-row">
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-OLCI-pub-volume-total">
+							<div class="card-title m-0">Sentinel-3 OLCI Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-olci-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-SLSTR-pub-volume-total">
+							<div class="card-title m-0">Sentinel-3 SLSTR Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-slstr-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-SRAL-pub-volume-total">
+							<div class="card-title m-0">Sentinel-3 SRAL Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-sral-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3">
+					<div class="card">
+						<div class="card-header" id="S3-SYN-pub-volume-total">
+							<div class="card-title m-0">Sentinel-3 SYN Volume of published products </div>
+						</div>
+						<div class="card-body">
+							<div class="chart-container">
+								<canvas id="s3-syn-vol-pieChart" style="width: 50%; height: 50%"></canvas>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+	<script src="/static/assets/js/statistics/publication-statistics.js"></script>
+	<script defer type="text/javascript">publicdata.init();</script>
+
+{% endblock javascripts %}

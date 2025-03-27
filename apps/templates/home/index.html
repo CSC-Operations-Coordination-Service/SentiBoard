@@ -1,0 +1,131 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+    <!-- Data section-->
+    <div class="content page-inner">
+
+        <!-- Video in background-->
+        <div>
+            <video preload="metadata" loop muted controls="none" id="home-video" class="video-frame">
+                <source src="/static/assets/mv/home-data-access.mp4"></source>
+            </video>
+        </div>
+
+        <!-- Title section -->
+        <div style="position: relative; color: white; top: 20px; left: 20px">
+            <h1 style="font-weight: bold; font-size: 2.225rem">Copernicus Sentinel</h1>
+            <h1 style="font-weight: bold; font-size: 2.225rem">Operations Dashboard</h1>
+        </div>
+
+    </div>
+
+    <!-- Info boxes -->
+    <footer class="container-fluid" style="background-color: #1a2035; position: relative; bottom: 65px">
+
+        <div class="row col-md-12">
+
+            <!-- 24H Label -->
+            <div class="card-round card-body col-sm-6 col-md-2 mx-auto row" style="background: #1a2035">
+                <h2 class="card-title" style="position: absolute; top: 40px">In the last 24 hours:</h2>
+            </div>
+
+            <!-- Box 1 -->
+            <div class="card-round card-body col-sm-6 col-md-2 mx-auto row" style="background: #1a2035">
+                <div class="col-3">
+                    <div class="icon-big text-center" style="position: absolute; top: 15px">
+                        <img src="static/assets/img/earth-globe.png" width="40px" height="40px">
+                    </div>
+                </div>
+                <div class="col-9 col-stats">
+                    <div class="numbers">
+                        <p class="card-category">Minutes of Sentinel observations</p>
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                        <h4 class="card-title" id="sensing-time-minutes">
+                            <div class="spinner">
+                              <div class="bounce1"></div>
+                              <div class="bounce2"></div>
+                              <div class="bounce3"></div>
+                            </div>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 2 -->
+            <div class="card-round card-body col-sm-6 col-md-2 mx-auto row" style="background: #1a2035">
+                <div class="col-3">
+                    <div class="icon-big text-center" style="position: absolute; top: 10px">
+                        <i class="flaticon-database" style="color: white; font-size: 30px"></i>
+                    </div>
+                </div>
+                <div class="col-9 col-stats">
+                    <div class="numbers">
+                        <p class="card-category">Number of published Sentinel products</p>
+                        <h4 class="card-title" id="published-products-count">
+                            <div class="spinner">
+                              <div class="bounce1"></div>
+                              <div class="bounce2"></div>
+                              <div class="bounce3"></div>
+                            </div>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Box 3 -->
+            <div class="card-round card-body col-sm-6 col-md-2 mx-auto row" style="background: #1a2035">
+                <div class="col-3">
+                    <div class="icon-big text-center" style="position: absolute; top: 10px">
+                        <i class="flaticon-inbox" style="color: white; font-size: 30px"></i>
+                    </div>
+                </div>
+                <div class="col-9 col-stats">
+                    <div class="numbers">
+                        <p class="card-category">Volume of published Sentinel data [TB]</p>
+                        <h4 class="card-title" id="published-products-volume">
+                            <div class="spinner">
+                              <div class="bounce1"></div>
+                              <div class="bounce2"></div>
+                              <div class="bounce3"></div>
+                            </div>
+                        </h4>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </footer>
+
+    <!-- Latest anomalies -->
+    <h4 class="card-title col-9" style="position: absolute; top: 13%; left: 77%">Real-time events</h4>
+    <div class="row col-9" style="position: absolute; top: 18%; left: 78%">
+        <ol class="activity-feed" id="real-time-event-list">
+        </ol>
+    </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <!-- Specific page style -->
+    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+    <!-- Specific plugin scripts -->
+	<script src="/static/assets/js/datatakes/datatakes.js"></script>
+	<script src="/static/assets/js/statistics/publication-statistics.js"></script>
+    <script src="/static/assets/js/index/index.js"></script>
+	<script defer type="text/javascript">home.init();</script>
+
+{% endblock javascripts %}

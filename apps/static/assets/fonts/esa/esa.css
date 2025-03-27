@@ -1,0 +1,6 @@
+@font-face {
+    font-display:block;
+    font-family:"Lato";
+    src:url('./notesesareg-webfont.woff') format('woff2'),
+        url('./notesesabol-webfont.woff') format('woff');
+}

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+   <Document>
+      <name>Planned from 2023-06-07T17:40:00 to 2023-06-27T19:40:00</name>
+      <Style id="Station">
+         <IconStyle>
+           <Icon>
+             <href>static/assets/img/antenna.png</href>
+              <color>215, 222, 252, 255</color>
+               <color>ff8c4800</color>
+           </Icon>
+         </IconStyle>
+      </Style>
+      <Folder>
+         <name>Stations</name>
+            <Placemark>
+               <name>Svalbard</name>
+               <styleUrl>IW</styleUrl>
+               <ExtendedData>
+                  <Data name="StationName">
+                     <value>S1A</value>
+                  </Data>
+               </ExtendedData>
+            <Point>
+              <coordinates>15.399, 78.228, 450</coordinates>
+            </Point>
+            </Placemark>
+            </Folder>
+   </Document>
+</kml>

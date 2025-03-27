@@ -1,0 +1,100 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} UI Data Takes {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+	<!-- Define page content -->
+	<div class="content" style="min-height: calc(100% - 130px);">
+		<div class="page-inner">
+
+			<!-- Breadcrumb -->
+			<div class="page-header">
+				<h4 class="page-title">Roles</h4>
+				<ul class="breadcrumbs">
+					<li class="nav-home">
+						<a href="/index.html">
+							<i class="flaticon-home"></i>
+						</a>
+					</li>
+					<li class="separator">
+						<i class="flaticon-right-arrow"></i>
+					</li>
+					<li class="nav-item">
+						<a href="#">Admin</a>
+					</li>
+					<li class="separator">
+						<i class="flaticon-right-arrow"></i>
+					</li>
+					<li class="nav-item">
+						<a href="#">Roles</a>
+					</li>
+				</ul>
+			</div>
+
+			<div class="row">
+
+				<!-- Table container -->
+				<div class="col-md-8">
+					<div class="card">
+						<div class="card-body">
+							<div class="table-responsive">
+								<table id="basic-datatables-roles" class="display table table-striped table-hover" >
+									<thead>
+										<tr>
+											<th>Role name</th>
+											<th>Description</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Add role panel -->
+				<div class="col-4 col-md-4">
+					<div class="card">
+						<div class="card-header">
+							<h4 class="card-title">Add role</h4>
+						</div>
+						<div class="card-body">
+							<div class="add-role" id="add-role">
+								<div class="form-group" id="role-name-div">
+									<label for="role-name">Role name *</label>
+									<input type="text" class="form-control" id="role-name" placeholder="Enter role name" required onkeyup="roles.validateRole()">
+								</div>
+								<div class="form-group" id="role-description-div">
+									<label for="role-description">Description</label>
+									<textarea type="text" class="form-control" rows="5" id="role-description" placeholder="Enter description"></textarea>
+								</div>
+								<div class="form-group">
+									<button id="role-add-btn" class="btn btn-primary pull-right" disabled onclick="roles.addRole()">Add role</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+	<!-- Specific plugins scripts -->
+	<!-- Datatables -->
+	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
+
+	<!-- Page related JS Class -->
+	<script src="/static/assets/js/admin/roles.js"></script>
+	<script defer type="text/javascript">roles.init();</script>
+
+{% endblock javascripts %}

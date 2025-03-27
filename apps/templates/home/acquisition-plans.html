@@ -1,0 +1,199 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+<link rel="stylesheet" href="/static/assets/lib/Cesium/1.106/Widgets/widgets.css">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.min.css"
+      rel="stylesheet"/>
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Define page content -->
+<div class="content">
+
+    <div id="loaderDiv" style="display:none">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+    </div>
+
+    <div class="page-inner">
+
+        <!-- Breadcrumb -->
+        <div class="page-header">
+            <h4 class="page-title">Acquisition Plans</h4>
+            <ul class="breadcrumbs">
+                <li class="nav-home">
+                    <a href="/index.html">
+                        <i class="flaticon-home"></i>
+                    </a>
+                </li>
+                <li class="separator">
+                    <i class="flaticon-right-arrow"></i>
+                </li>
+                <li class="nav-item">
+                    <a href="#">Acquisition Plans</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Datatake details panel -->
+        <div class="modal fade" id="showGlobeDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content" style="background: #202940">
+                    <div class="modal-header no-bd">
+                        <h5 class="modal-title">
+                            <span class="fw-mediumbold">View</span>
+                            <span class="fw-light">Datatake details</span>
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true" style="color: white">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form>
+                            <div id="globe-datatake-details">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer no-bd">
+                        <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+
+            <!-- Collapsible description panel -->
+            <div class="row col-md-8">
+                <div class="card-body" style="padding-bottom: 0.0rem !important">
+                    <div class="flex flex-column faq-section">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div id="accordion">
+                                    <div class="card">
+                                        <div class="card-header" id="heading-description">
+                                            <h5 class="mb-0" style="color: white">
+                                                <a role="button" data-toggle="collapse" href="#description"
+                                                   aria-expanded="false" aria-controls="description"
+                                                   style="color: white; text-decoration: none">
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+                                                </a>
+                                            </h5>
+                                        </div>
+                                        <div id="description" class="collapse hide" data-parent="#accordion"
+                                             aria-labelledby="heading-description">
+                                            <div class="card-body">
+                                                This view shows the scheduled Acquisition Plans, on an interactive 3D globe.
+                                                By default, the view shows the real-time position of the Copernicus
+                                                Sentinels
+                                                satellite; however, by selecting a datatake from the top-right dropdown
+                                                menu,
+                                                the simulation time is shifted to the beginning of the selected acquisition.
+                                                Datatakes can be filtered by selecting the satellite and the acquisition
+                                                date.
+                                                By clicking on the <i class="la flaticon-search-1"></i> icon, it is possible
+                                                to inspect the published products relevant to the selected datatake.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Datatakes filtering -->
+            <div class="row col-md-4 mt-2">
+
+                <div class="row ml-auto mr-3">
+
+                     <!-- Satellite Selection dropdown switch -->
+                    <div class="form ml-3" style="width: 140px">
+                        <label for="acquisition-plans-satellite-select">Satellite:</label>
+                        <select name="acq-satellite-select" id="acquisition-plans-satellite-select"
+                                class="form-control input-solid" class="mb-2">
+                            <option value="-------">-------</option>
+                        </select>
+                    </div>
+
+                    <!-- Day Selection dropdown switch -->
+                    <div class="form ml-3" style="width: 140px">
+                        <label for="acquisition-plans-day-select">Day of acquisition:</label>
+                        <select name="acq-day-select" id="acquisition-plans-day-select"
+                                class="form-control input-solid" class="mb-2">
+                            <option value="-------">-------</option>
+                        </select>
+                    </div>
+
+                    <!-- List of datatakes -->
+                    <div class="form ml-3" style="width: 200px;">
+                        <label>List of Datatakes:</label>
+                        <select class="form-control" style="width: 200px" id="acq-datatakes-select">
+                             <option value="-------">-------</option>
+                        </select>
+                    </div>
+
+                    <!-- Display datatake products details -->
+                    <button type="button" style="color: white"
+                            class="btn-link" data-toggle="modal" data-target="#showGlobeDatatakeDetailsModal"
+                            onclick="acquisitionPlanViewer.showDatatakeDetails()">
+                        <i class="la flaticon-search-1"></i>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Spinner for action pending -->
+        <div class="justify-content-center" id="acquisition-plans-spinner" style="display: true">
+            <div class="spinner-border" role="status" style="visibility:visible">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+        <!-- Spinner for action pending
+            <div class="spinner" id="acquisition-plans-spinner" style="visible: visible">
+                <div class="bounce1"></div>
+                <div class="bounce2"></div>
+                <div class="bounce3"></div>
+             </div>
+         -->
+
+        <!-- Acquisition Plans Selection of Mission/Satellite(s), Day(s) -->
+        <div id="acquisition-plans-container">
+
+            <!-- Cesium World Display DIV -->
+            <div>
+                <div id="container-acq-plans"></div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <!-- Specific plugins scripts -->
+	<!-- Datatables -->
+	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
+
+    <!-- Page related JS Class -->
+    <script src="/static/assets/lib/Cesium/1.106/Cesium.js"></script>
+    <script src="/static/assets/js/acquisition-plans/acquisition-plans.js"></script>
+    <script defer type="text/javascript">acquisitionPlanViewer.init();</script>
+
+{% endblock javascripts %}

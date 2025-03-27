@@ -1,0 +1,107 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} UI Data Takes {% endblock %}
+
+{% block stylesheets %}
+
+    <link rel="stylesheet" href="/static/assets/lib/globe/css/og.css" type="text/css" />
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+    <div id="globus" style="width:100%;height:100%"></div>
+
+{% endblock content %}
+
+{% block javascripts %}
+    <script type="module">
+        'use strict';
+
+        import { Globe } from '/static/assets/lib/globe/src/og/Globe.js';
+        import { GlobusTerrain } from '/static/assets/lib/globe/src/og/terrain/GlobusTerrain.js';
+        import { XYZ } from '/static/assets/lib/globe/src/og/layer/XYZ.js';
+        import { WMS } from '/static/assets/lib/globe/src/og/layer/WMS.js';
+        import { LayerSwitcher } from '/static/assets/lib/globe/src/og/control/LayerSwitcher.js';
+        import { SkyBox } from '/static/assets/lib/globe/src/og/scene/SkyBox.js';
+
+        var s2cloudless = new WMS("Sentinel-2 Cloudless", {
+            visibility: true,
+            isBaseLayer: true,
+            url: 'https://tiles.maps.eox.at',
+            layers: 's2cloudless-2018',
+            version: '1.3.0',
+            format: 'image/jpg',
+            opacity: 1.0,
+            specular: [0.001, 0.00046, 0.0003],
+            shininess: 15,
+            ambient: [0.1, 0.1, 0.2]
+        });
+
+        var osm = new XYZ("OpenStreetMap", {
+            isBaseLayer: true,
+            url: "//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            visibility: false,
+            attribution: 'Data @ OpenStreetMap contributors, ODbL'
+        });
+
+        var sat1 = new XYZ("Mapbox Satellite", {
+            shininess: 20,
+            specular: [0.00048, 0.00037, 0.00035],
+            diffuse: [0.88, 0.85, 0.8],
+            ambient: [0.15, 0.1, 0.23],
+            isBaseLayer: true,
+            url: "https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWdldmxpY2hzY2FuZXgiLCJhIjoiY2pwcGdsaXlnMDQzdDQybXhsOWZlbXBvdSJ9.fR2YE-ehJA4iajaJBAPKvw",
+            visibility: false,
+            attribution: `<a href="https://www.mapbox.com/about/maps/" target="_blank" title="Mapbox">©Mapbox</a> satellite`
+        });
+
+        var sat2 = new XYZ("Mapbox Satellite With Labels", {
+            shininess: 20,
+            specular: [0.00048, 0.00037, 0.00035],
+            diffuse: [0.88, 0.85, 0.8],
+            ambient: [0.15, 0.1, 0.23],
+            isBaseLayer: true,
+            url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWdldmxpY2hzY2FuZXgiLCJhIjoiY2pwcGdsaXlnMDQzdDQybXhsOWZlbXBvdSJ9.fR2YE-ehJA4iajaJBAPKvw",
+            visibility: false,
+            attribution: `<a href="https://www.mapbox.com/about/maps/" target="_blank" title="Mapbox">©Mapbox</a> satellite`
+        });
+
+        var dark = new XYZ("Mapbox Dark", {
+            shininess: 20,
+            specular: [0.00048, 0.00037, 0.00035],
+            diffuse: [0.88, 0.85, 0.8],
+            ambient: [0.15, 0.1, 0.23],
+            isBaseLayer: true,
+            url: "https://api.mapbox.com/styles/v1/mapbox/dark-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWdldmxpY2hzY2FuZXgiLCJhIjoiY2pwcGdsaXlnMDQzdDQybXhsOWZlbXBvdSJ9.fR2YE-ehJA4iajaJBAPKvw",
+            visibility: false,
+            attribution: `<a href="https://www.mapbox.com/about/maps/" target="_blank" title="Mapbox">©Mapbox</a> satellite`
+        });
+
+        var light = new XYZ("Mapbox Light", {
+            shininess: 20,
+            specular: [0.00048, 0.00037, 0.00035],
+            diffuse: [0.88, 0.85, 0.8],
+            ambient: [0.15, 0.1, 0.23],
+            isBaseLayer: true,
+            url: "https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWdldmxpY2hzY2FuZXgiLCJhIjoiY2pwcGdsaXlnMDQzdDQybXhsOWZlbXBvdSJ9.fR2YE-ehJA4iajaJBAPKvw",
+            visibility: false,
+            attribution: `<a href="https://www.mapbox.com/about/maps/" target="_blank" title="Mapbox">©Mapbox</a> satellite`
+        });
+
+        let globus = new Globe({
+            "target": "globus",
+            "name": "Earth",
+            "skybox": SkyBox.createDefault('/static/assets/lib/globe/res/'),
+            "terrain": new GlobusTerrain("OpenGlobus Terrain"),
+            "layers": [s2cloudless, osm, sat1, sat2, light, dark]
+        });
+
+        globus.planet.addControl(new LayerSwitcher());
+        console.log(globus.planet)
+
+        window.planet = globus.planet;
+
+    </script>
+
+{% endblock javascripts %}

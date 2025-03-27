@@ -1,0 +1,91 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+{% block content %}
+
+    <!-- Viewport definition -->
+    <meta charset="utf-8"/>
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Define page content -->
+    <div class="content" style="min-height: calc(100% - 130px);">
+        <div class="page-inner">
+
+            <!-- Breadcrumb -->
+            <div class="page-header">
+                <h4 class="page-title">Events Calendar</h4>
+                <ul class="breadcrumbs">
+                    <li class="nav-home">
+                        <a href="#">
+                            <i class="flaticon-home"></i>
+                        </a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#">Events</a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#">Calendar</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Calendar container -->
+            <div class="row">
+
+				<!-- Main timeline control -->
+                <div class="col-12 col-md-8">
+					<div class="card">
+						<div class="card-header">
+							<h4 class="card-title">Main Events</h4>
+						</div>
+						<div class="card-body">
+                            <div id="myCalendar" class="calendar">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event details container -->
+                <div class="col-4 col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Event Details</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-event-details" id="timeline-event-details">
+                                Click on an event to display the relevant details and the list of impacted datatakes.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <!-- Atlantis DEMO methods, don't include it in your project! -->
+	<script src="/static/assets/js/setting-demo2.js"></script>
+
+    <!-- Calendar plugin style -->
+    <link rel="stylesheet" href="/static/assets/lib/calendar/css/calendarjs.min.css">
+    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+    <!-- Calendar plugin scripts -->
+    <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
+    <script src="/static/assets/lib/moment/src/moment.js"></script>
+    <script defer type="text/javascript">calendar.init();</script>
+
+{% endblock javascripts %}

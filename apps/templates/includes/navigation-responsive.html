@@ -1,0 +1,195 @@
+
+		<div class="main-header">
+
+			<!-- Logo Header -->
+			<!-- This section includes also the navigation menu button -->
+			<div class="logo-header" data-background-color="dark">
+				<a href="/index.html" class="logo">
+					<img src="/static/assets/img/esa_logo.png" width="90" height="33" alt="navbar brand" class="navbar-brand">
+				</a>
+				<a href="https://ec.europa.eu/info/index_en" target="blank_" class="logo d-none d-lg-block">
+					<img src="/static/assets/img/ec_logo_white.png" id="ec-logo-header" width="180" height="45" alt="navbar brand" class="navbar-brand" style="position:absolute; top: 5px; left: 30px; display: none">
+				</a>
+				<button class="navbar-toggler sidenav-toggler ml-auto d-lg-none" type="button" data-toggle="collapse" data-target="collapse" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon">
+						<i class="icon-menu"></i>
+					</span>
+				</button>
+				<button class="topbar-toggler more d-lg-none "><i class="icon-options-vertical"></i></button>
+				<div class="nav-toggle d-lg-none ">
+					<button class="btn btn-toggle toggle-sidebar">
+						<i class="icon-menu"></i>
+					</button>
+				</div>
+			</div>
+			<!-- End Logo Header -->
+
+			<!-- Navbar Header -->
+			<nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">
+
+				<div class="container-fluid">
+					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
+
+						<!-- Navigation menu -->
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+							<a class="nav-link dropdown-toggle" href="/about.html" id="about" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>ABOUT</h5>
+							</a>
+							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+								href="/acquisition-plans.html" id="acquisition-plans" style="margin-top: 7px">
+								<h5>ACQUISITION PLANS</h5>
+							</a>
+							<a class="nav-link dropdown-toggle" href="/events.html" id="events" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>EVENTS</h5>
+							</a>
+							<a class="nav-link dropdown-toggle" href="/data-takes.html" id="data-takes" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>DATA TAKES</h5>
+							</a>
+							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+                                href="/publication-statistics.html" id="public-statistics" role="button"
+                                style="margin-top: 7px">
+                                <h5>STATISTICS</h5>
+                            </a>
+							{% if current_user.is_authenticated %}
+								<div class="d-inline ">
+									<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+									   data-toggle="dropdown" href="#" style="margin-top: 7px">
+										<h5>QUARTERLY REPORTS</h5>
+									</a>
+									<ul class="dropdown-menu dropdown-user animated fadeIn" style="background-color: #202940 !important; text-align: left">
+										<div class="dropdown-user-scroll scrollbar-outer">
+											<li>
+												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+													href="/space-segment.html" style="margin-top: 7px">
+													<h6>SPACE SEGMENT</h6>
+												</a>
+											</li>
+											<li>
+												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+													href="/acquisition-service.html" style="margin-top: 7px">
+													<h6>ACQUISITION SERVICE</h6>
+												</a>
+											</li>
+											<li>
+												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+													href="/data-access.html" style="margin-top: 7px">
+													<h6>DATA ACCESS SERVICE</h6>
+												</a>
+											</li>
+											<li>
+												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+													href="/data-archive.html" style="margin-top: 7px">
+													<h6>DATA ARCHIVE SERVICE</h6>
+												</a>
+											</li>
+											<li>
+												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+													href="/product-timeliness.html" style="margin-top: 7px">
+													<h6>PRODUCT TIMELINESS</h6>
+												</a>
+											</li>
+										</div>
+									</ul>
+								</div>
+								{% if current_user.role == 'admin' %}
+									<div class="d-inline ">
+										<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+										   data-toggle="dropdown" href="#" style="margin-top: 7px">
+											<h5>ADMINISTRATION</h5>
+										</a>
+										<ul class="dropdown-menu dropdown-user animated fadeIn" style="background-color: #202940 !important; text-align: left">
+											<div class="dropdown-user-scroll scrollbar-outer">
+												<li>
+													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+														href="/roles.html" style="margin-top: 7px">
+														<h6>ROLES</h6>
+													</a>
+												</li>
+												<li>
+													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+														href="/users.html" style="margin-top: 7px">
+														<h6>USERS</h6>
+													</a>
+												</li>
+												<li>
+													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+														href="/news.html" style="margin-top: 7px">
+														<h6>NEWS</h6>
+													</a>
+												</li>
+												<li>
+													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
+														href="/anomalies.html" style="margin-top: 7px">
+														<h6>ANOMALIES</h6>
+													</a>
+												</li>
+											</div>
+										</ul>
+									</div>
+								{% endif %}
+							{% else %}
+								<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+								   href="{{ url_for('auth_blueprint.login') }}" id="login" role="button"
+								   style="margin-top: 7px">
+									<h5>LOGIN</h5>
+								</a>
+							{% endif %}
+						</li>
+
+                        <!-- Time range filter -->
+                        <li>
+							<div class="form-group form-floating-label" style="width: 180px" id="time-period-select-container">
+								<select name="time-period-select" id="time-period-select"
+										class="form-control input-solid">
+									<option value="day">Last 24 Hours</option>
+									<option value="week">Last 7 Days</option>
+									<option value="month">Last 30 Days</option>
+									<option selected="selected" value="last-quarter">Last 3 Months</option>
+								</select>
+							</div>
+						</li>
+
+                        <!-- User account menu -->
+						{% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown hidden-caret">
+							<a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false">
+								<i alt="..." class="fa fa-user" style="color: #fff; font-size: 1.3em; vertical-align: middle"></i>
+							</a>
+							<ul class="dropdown-menu dropdown-user animated fadeIn">
+								<div class="dropdown-user-scroll scrollbar-outer">
+									<li>
+										<div class="user-box">
+											<div class="u-text">
+												<h4>
+													{{ current_user.username }}
+												</h4>
+												<p class="text-muted">
+													{{ current_user.email }}
+												</p>
+												<a href="#" class="btn btn-xs btn-secondary btn-sm">View Profile</a>
+											</div>
+										</div>
+									</li>
+									<li>
+										<div class="dropdown-divider"></div>
+										<a class="dropdown-item" href="#">Account Setting</a>
+										<div class="dropdown-divider"></div>
+                                        <a class="dropdown-item"
+                                           href="{{ url_for('auth_blueprint.logout') }}">Logout</a>
+									</li>
+								</div>
+							</ul>
+						</li>
+						{% endif %}
+
+                    </ul>
+				</div>
+
+				<a href="https://www.copernicus.eu/" target="blank_" class="logo d-none d-lg-block">
+					<img src="/static/assets/img/copernicus_logo.png" id="copernicus-logo-header" width="80" height="40" alt="navbar brand" class="navbar-brand" style="display: none">
+				</a>
+
+			</nav>
+			<!-- End Navbar -->
+        </div>
+        

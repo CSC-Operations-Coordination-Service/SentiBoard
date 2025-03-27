@@ -1,0 +1,156 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} UI Data Takes {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+	<!-- Define page content -->
+	<div class="content" style="min-height: calc(100% - 130px);">
+		<div class="page-inner">
+
+			<!-- Breadcrumb -->
+			<div class="page-header">
+				<h4 class="page-title">Users</h4>
+				<ul class="breadcrumbs">
+					<li class="nav-home">
+						<a href="/index.html">
+							<i class="flaticon-home"></i>
+						</a>
+					</li>
+					<li class="separator">
+						<i class="flaticon-right-arrow"></i>
+					</li>
+					<li class="nav-item">
+						<a href="#">Admin</a>
+					</li>
+					<li class="separator">
+						<i class="flaticon-right-arrow"></i>
+					</li>
+					<li class="nav-item">
+						<a href="#">Users</a>
+					</li>
+				</ul>
+			</div>
+
+			<!-- Add User modal panel -->
+			<div class="modal fade" id="addUserModal" tabindex="-1" role="dialog" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content" style="background: #202940">
+						<div class="modal-header no-bd">
+							<h5 class="modal-title">
+								<span class="fw-mediumbold">New</span>
+								<span class="fw-light">User</span>
+							</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true" style="color: white">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<p class="small">Create a new user using this form; please insert all required data</p>
+							<form>
+								<div class="row">
+									<div class="col-sm-12">
+										<div class="form-group form-group-default" id="new-username-div">
+											<label>Username</label>
+											<input id="new-username" type="text" class="form-control" autocomplete="off" placeholder="Enter username" onkeyup="users.validateNewUserDetails()">
+										</div>
+									</div>
+									<div class="col-md-12">
+										<div class="form-group form-group-default" id="new-user-email-div">
+											<label>Email</label>
+											<input id="new-user-email" type="text" class="form-control" autocomplete="off" placeholder="Enter email" onkeyup="users.validateNewUserDetails()">
+										</div>
+									</div>
+									<div class="col-md-12">
+										<div class="form-group form-group-default" id="new-user-role-div">
+											<label>Role</label>
+											<select id="new-user-role" type="text" class="form-control" autocomplete="off" placeholder="Select role" onkeyup="users.validateNewUserDetails()">
+											</select>
+										</div>
+									</div>
+									<div class="col-md-12">
+										<div class="form-group form-group-default" id="new-user-password-div">
+											<label>Password</label>
+											<input id="new-user-password" type="password" class="form-control" autocomplete="new-password" placeholder="Enter password" onkeyup="users.validateNewUserDetails()">
+										</div>
+									</div>
+								</div>
+							</form>
+						</div>
+						<div class="modal-footer no-bd">
+							<button type="button" id="new-user-btn" class="btn btn-primary" onclick="users.addUser()">Add</button>
+							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Add user button -->
+			<div class="row">
+				<div class="form-group pull-left">
+					<button id="add_user_btn" class="btn btn-primary" style="margin-left: 6px" onclick="users.addUser()" data-toggle="modal" data-target="#addUserModal">
+						<span class="btn-label">
+							<i class="la flaticon-add-user"></i>
+						</span>
+						Add User
+					</button>
+				</div>
+			</div>
+
+			<div class="row">
+
+				<!-- Table container -->
+				<div class="col-md-8">
+					<div class="card">
+						<div class="card-body">
+							<div class="table-responsive">
+								<table id="basic-datatables-users" class="display table table-striped table-hover" >
+									<thead>
+										<tr>
+											<th>Username</th>
+											<th>E-mail</th>
+											<th>Role</th>
+											<th>Actions</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- User details panel -->
+				<div class="col-4 col-md-4">
+					<div class="card">
+						<div class="card-header">
+							<h4 class="card-title">User Details</h4>
+						</div>
+						<div class="card-body">
+							<div class="user-details" id="user-details">
+								Click on the "pencil" icon to display and edit the account details.
+							</div>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</div>
+	</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+	<!-- Specific plugins scripts -->
+	<!-- Datatables -->
+	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
+
+	<!-- Page related JS Class -->
+	<script src="/static/assets/js/admin/users.js"></script>
+	<script defer type="text/javascript">users.init();</script>
+
+{% endblock javascripts %}

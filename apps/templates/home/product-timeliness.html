@@ -1,0 +1,337 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Define page content -->
+<div class="content">
+	<div class="page-inner">
+
+		<!-- Breadcrumb -->
+		<div class="page-header">
+			<h4 class="page-title">Product Timeliness</h4>
+			<ul class="breadcrumbs">
+				<li class="nav-home">
+					<a href="/index.html">
+						<i class="flaticon-home"></i>
+					</a>
+				</li>
+				<li class="separator">
+					<i class="flaticon-right-arrow"></i>
+				</li>
+				<li class="nav-item">
+					<a href="#">Quarterly Reports</a>
+				</li>
+				<li class="separator">
+					<i class="flaticon-right-arrow"></i>
+				</li>
+				<li class="nav-item">
+					<a href="#">Product Timeliness</a>
+				</li>
+			</ul>
+		</div>
+
+		<!-- Collapsible description panel -->
+		<div class="row">
+			<div class="card-body" style="padding-bottom: 0.0rem !important">
+				<div class="flex flex-column faq-section">
+					<div class="row">
+						<div class="col-md-12">
+							<div id="accordion">
+								<div class="card">
+									<div class="card-header" id="heading-description">
+										<h5 class="mb-0" style="color: white">
+											<a role="button" data-toggle="collapse" href="#description"
+											   aria-expanded="false" aria-controls="description"
+											   style="color: white; text-decoration: none">
+												&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+											</a>
+										</h5>
+									</div>
+									<div id="description" class="collapse hide" data-parent="#accordion"
+										 aria-labelledby="heading-description">
+										<div class="card-body">
+											This view provides a summary of the publication timeliness of image products, per each
+											Copernicus Sentinel Mission and timeliness type. Percentages indicate the amount of
+											products published within a fixed timeliness threshold, specified in the label legend,
+											and applicable to the given mission / delivery timeliness type. By default, results are
+											referred to the previous completed quarter.
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Restricted Data Timeliness-->
+		<!-- Mission Timeliness by Timeliness Type (Gauge charts) -->
+		<!-- Row with S1 and S2 Charts -->
+		<div class="row">
+
+			<!-- col-12 col-sm-6  -->
+			<div class="col-md-8">
+				<div class="card-header">
+						<div class="card-title">Sentinel-1</div>
+				</div>
+				<div class="row">
+					<div class="col-md-6">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-1 Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s1-ntc-gauge-chart" class="canvasBox"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-1 NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container" >
+									<canvas id="s1-nrt-gauge-chart" class="canvasBox"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			<!--
+			-->
+			</div>
+			<div class="col-md-4">
+				<div class="card-header">
+					<div class="card-title">Sentinel-2</div>
+				</div>
+				<div class="row">
+					<div class="col-md-12">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-2 Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+    									<canvas id="s2-ntc-gauge-chart" class="canvasBox"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S3 NRT Charts-->
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 NRT</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">OLCI NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-nrt-olci-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SLSTR NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-nrt-slstr-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SRAL NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-nrt-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S3 STC Charts-->
+		<div class="row" >
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 STC</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4 col-md-offset-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SRAL STC</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-stc-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4 col-md-offset-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SYN STC</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-stc-syn-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S3 NTC Charts-->
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 Nominal Timeliness</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">OLCI Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-olci-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SLSTR Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-slstr-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SRAL Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SYN Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-syn-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S5 Levels Charts -->
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-5</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-5 L1 Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s5-ntc-l1-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-5 L2 Nominal Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s5-ntc-l2-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-5 L2 NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s5-nrt-l2-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+	<script src="/static/assets/js/quarterly-reports/product-timeliness.js"></script>
+	<script defer type="text/javascript">productTimeliness.init();</script>
+
+{% endblock javascripts %}

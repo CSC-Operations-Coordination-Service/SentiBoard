@@ -1,0 +1,199 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+<!-- Define page content -->
+<div class="content">
+	<div class="page-inner">
+
+		<!-- Breadcrumb -->
+		<div class="page-header">
+			<h4 class="page-title">Timeliness Statistics</h4>
+			<ul class="breadcrumbs">
+				<li class="nav-home">
+					<a href="/index.html">
+						<i class="flaticon-home"></i>
+					</a>
+				</li>
+				<li class="separator">
+					<i class="flaticon-right-arrow"></i>
+				</li>
+				<li class="nav-item">
+					<a href="#">Quarterly Reports</a>
+				</li>
+				<li class="separator">
+					<i class="flaticon-right-arrow"></i>
+				</li>
+				<li class="nav-item">
+					<a href="#">Timeliness Statistics</a>
+				</li>
+			</ul>
+		</div>
+
+		<!-- Collapsible description panel -->
+		<div class="row">
+			<div class="card-body" style="padding-bottom: 0.0rem !important">
+				<div class="flex flex-column faq-section">
+					<div class="row">
+						<div class="col-md-12">
+							<div id="accordion">
+								<div class="card">
+									<div class="card-header" id="heading-description">
+										<h5 class="mb-0" style="color: white">
+											<a role="button" data-toggle="collapse" href="#description"
+											   aria-expanded="false" aria-controls="description"
+											   style="color: white; text-decoration: none">
+												&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+											</a>
+										</h5>
+									</div>
+									<div id="description" class="collapse hide" data-parent="#accordion"
+										 aria-labelledby="heading-description">
+										<div class="card-body">
+											This view shows the statistics properties of the publication timeliness, for
+											each Copernicus Sentinel Mission and
+											timeliness type. Results are displayed in the form of the so-called
+											"box-and-whiskers diagram". In descriptive statistics,
+											this is a method for graphically demonstrating the locality, spread and
+											skewness groups of a distribution of points. The bold line
+											inside the box represents the median element; the box delimits the spread
+											of the 50% of the distribution. The two lines
+											extending from the box and usually called whiskers are indicating the
+											variability outside the upper and lower quantiles.
+											By default, results are referred to the previous completed quarter.
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Restricted Data Timeliness Statistcs-->
+		<!-- Mission Timeliness by Timeliness Type (Box charts) -->
+		<div class="row">
+
+			<!-- Row with S1 and S5p Charts -->
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-1 & Sentinel-5p NRT</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="nrt-boxplot-chart" class="canvasBox"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<!-- Row with S3 NRT Charts -->
+			<!-- <div class="row"> -->
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 NRT</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="nrt-s3-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+
+		</div>
+
+		<!-- Row with S3 STC Charts-->
+		<div class="row">
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3/SRAL STC</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="stc-s3-sral-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3/SYN STC</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="stc-s3-syn-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with NTC (not including S3) Charts -->
+		<div class="row">
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-1, Sentinel-2 & Sentinel-5p NTC</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="ntc-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-5p NTC</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="ntc-s5-l2-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S3 NTC Charts-->
+		<div class="row">
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3/OLCI, SLSTR & SYN NTC</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="ntc-s3-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3/SRAL NTC</div>
+				</div>
+				<div class="card-body">
+					<div class="chart-container">
+						<canvas id="ntc-s3-sral-boxplot-chart" style="width: 50%; height: 50%"></canvas>
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+<script src="/static/assets/js/plugin/chart4.1.js/chart.3.9.1.min.js"></script>
+<script src="/static/assets/js/plugin/chart4.1.js/chartjs-chart-boxplot.3.10.0.min.js"></script>
+<script src="/static/assets/js/quarterly-reports/product-timeliness-statistics.js"></script>
+<script defer type="text/javascript">productTimelinessStatistics.init();</script>
+
+{% endblock javascripts %}

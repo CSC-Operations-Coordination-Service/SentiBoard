@@ -1,0 +1,186 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+{% block content %}
+
+    <!-- Viewport definition -->
+    <meta charset="utf-8"/>
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Define page content -->
+    <div class="content" style="min-height: calc(100% - 130px);">
+        <div class="page-inner">
+
+            <!-- Breadcrumb -->
+            <div class="page-header">
+                <h4 class="page-title">Events Viewer</h4>
+                <ul class="breadcrumbs">
+                    <li class="nav-home">
+                        <a href="/index.html">
+                            <i class="flaticon-home"></i>
+                        </a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#">Events</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Collapsible description panel -->
+            <div class="row">
+                <div class="card-body" style="padding-bottom: 0.0rem !important">
+                    <div class="flex flex-column faq-section">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div id="accordion">
+                                    <div class="card">
+                                        <div class="card-header" id="heading-description">
+                                            <h5 class="mb-0" style="color: white">
+                                                <a role="button" data-toggle="collapse" href="#description"
+                                                   aria-expanded="false" aria-controls="description"
+                                                   style="color: white; text-decoration: none">
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+                                                </a>
+                                            </h5>
+                                        </div>
+                                        <div id="description" class="collapse hide" data-parent="#accordion"
+                                             aria-labelledby="heading-description">
+                                            <div class="card-body">
+                                                This view shows the events occurred on a given date and the possible
+                                                impact on user
+                                                products completeness. Events are categorized according to the following
+                                                issue types:<br>
+                                                - Satellite: issue due to instrument unavailability<br>
+                                                - Calibration: issue occurred during sensor calibration<br>
+                                                - Manoeuvre: issue occurred during the execution of a manoeuvre<br>
+                                                - Acquisition: issue occurring during the reception of the data at the
+                                                ground station<br>
+                                                - Production: issue occurred during data processing<br>
+                                                By clicking on each occurrence, the list of possibly impacted datatakes
+                                                considering their sensing times is
+                                                displayed in the right-side panel, together with further event details.
+                                                Events can be also filtered by entering the satellite name (i.e.
+                                                "Sentinel-1A"), or the category of interest,
+                                                in the top-right search box.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Calendar container -->
+            <div class="row">
+
+				<!-- Main timeline control -->
+                <div class="col-12 col-md-8">
+					<div class="card">
+						<div class="card-body">
+
+                            <!-- Row hosting the general controls -->
+                            <div class="row">
+
+                                <!-- Display mode selector -->
+                                <div class="col-sm-6 col-md-3 mb-2" style="left: 15px">
+                                    <label style="position: relative; right: 14px">Display mode</label>
+                                    <i style="color: white; position: relative; top: -10px; left: -25px" class="btn la flaticon-round" onclick="calendar.showCalendarSwitchOnlineHelp()"></i>
+                                    <select name="event-display-select" id="event-display-select" class="form-control form-control-small"
+                                            style="position: relative; right: 16px">
+                                        <option value="calendar" selected>Calendar</option>
+                                        <option value="timeline">Timeline</option>
+                                    </select>
+                                </div>
+
+                                <!-- Search bar for anomalies -->
+                                <div id="anomalies_filter" class="dataTables_filter" style="position: absolute; right: 18px; top: 27px">
+                                    <label>Search:<input aria-controls="basic-datatables-data-takes"
+                                                         class="form-control form-control-sm"
+                                                         id="anomalies_filter_search" placeholder="" type="text">
+                                    </label>
+                                </div>
+
+                            </div>
+
+                            <!-- The Calendar control -->
+                            <div id="myCalendar" class="calendar">
+                            </div>
+
+                            <!-- The Timeline control -->
+                            <div id="myTimeline" style="display: none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Event details container -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Event Details</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="timeline-event-details" id="timeline-event-details">
+                                Click on an event to display the relevant details and the list of impacted datatakes.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <!-- Calendar plugin style -->
+    <link rel="stylesheet" href="/static/assets/lib/calendar/css/calendarjs.min.css">
+    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+    <!-- Calendar plugin scripts -->
+    <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
+    <script src="/static/assets/js/events/calendar.js"></script>
+    <script defer type="text/javascript">calendar.init();</script>
+
+    <!-- Timeline plugin style -->
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css'>
+    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+    <!-- Timeline plugin scripts -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js'></script>
+    <script src="/static/assets/js/events/timeline.js"></script>
+    <script defer type="text/javascript">timeline.init();</script>
+
+    <script>
+
+        // Display selector
+        $('#event-display-select').change(function() {
+            if ($(this).val() === 'timeline') {
+                document.getElementById('myCalendar').style.display = 'none';
+                document.getElementById('myTimeline').style.display = 'block';
+            }
+            if ($(this).val() === 'calendar') {
+                document.getElementById('myCalendar').style.display = 'block';
+                document.getElementById('myTimeline').style.display = 'none';
+            }
+        })
+
+        // Filter anomalies
+        $('#anomalies_filter_search').on('input', function(event) {
+            calendar.filterEvents($(this).val());
+            timeline.filterEvents($(this).val());
+        });
+
+    </script>
+
+{% endblock javascripts %}

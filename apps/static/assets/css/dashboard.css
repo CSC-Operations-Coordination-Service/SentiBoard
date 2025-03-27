@@ -1,0 +1,248 @@
+/* Home Page - Video frame */
+.video-frame {
+
+    /* To generate border radius sequence, please refer to:
+    https://9elements.github.io/fancy-border-radius/
+    border-radius: 54% 46% 100% 0% / 0% 100% 0% 100%;
+    object-fit: cover;  */
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    object-fit: cover;
+}
+
+
+/* Home Page - Real time events */
+.activity-feed .feed-item .date {
+    top: -35px
+}
+
+.activity-feed .feed-item .text {
+    top: -35px
+}
+
+.activity-feed .feed-item::after {
+    width: 36px;
+    height: 36px;
+    left: -19px
+}
+
+.feed-item-icon {
+    position: relative;
+    left: -42px;
+    z-index: 1;
+    font-size: 1.6em;
+    color: white;
+}
+
+
+/* Collapsible description panels */
+.faq-section .mb-0 > a {
+  display: block;
+  position: relative;
+}
+
+.faq-section .mb-0 > a:after {
+  content: "\002B";
+  font-family: "Font Awesome 5 Free";
+  position: absolute;
+  left: 0;
+  font-weight: 600;
+}
+
+.faq-section .mb-0 > a[aria-expanded="true"]:after {
+  content: "\2212";
+  font-family: "Font Awesome 5 Free";
+  font-weight: 600;
+}
+
+
+/* Events View Page - Timeline customization */
+.vis-labelset .vis-label {
+    color: whitesmoke;
+}
+
+.vis-time-axis .vis-text {
+    color: rgba(169,175,187,.82);
+}
+
+.vis-foreground .vis-group {
+    border-bottom: 1px solid #423e3e;
+}
+
+.vis-item.satellite {
+  color: white;
+  background-color: #48abf7;
+  border-color: grey;
+}
+
+.vis-item.acquisition {
+  color: white;
+  background-color: #31ce36;
+  border-color: grey;
+}
+
+.vis-item.production {
+  color: white;
+  background-color: #6861ce;
+  border-color: grey;
+}
+
+.vis-item.access {
+  color: white;
+  background-color: #6861ce;
+  border-color: grey;
+}
+
+
+/* Events View Page - Feature-Rich Calendar customization */
+div.calendar {
+    border-color: #8f94a2;
+}
+
+div.calendar div.header-date {
+    color: white;
+    background-color: #202940;
+}
+
+div.calendar div.row-cells div.cell {
+    color: white;
+    background: #202940;
+}
+
+div.calendar div.full-day-view div.title-bar {
+    background: #202940;
+}
+
+div.calendar div.full-day-view div.contents div.contents-events div.hour div.hour-text:nth-child(2n+1) {
+    background: #202940;
+}
+
+div.calendar div.row-cells div.cell div.event {
+    font-weight: bold;
+}
+
+div.calendar div.full-day-view div.contents div.event div.description {
+    font-weight: bold;
+}
+
+div.calendar div.row-cells div.cell span.today {
+    background-color: #46b905 !important;
+}
+
+.ib-arrow-expand-left-right-icon {
+    /* border-color: #8f94a2; */
+    display: none;
+}
+
+.ib-arrow-expand-left-right-icon::after {
+    /* border-color: #8f94a2; */
+    display: none;
+}
+
+.calendar-plus-x-events {
+    text-align: center;
+}
+
+.calendar-details {
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+}
+.calendar-details a {
+    color: white;
+}
+
+.status-circle-dt-ok {
+    position: relative;
+    top: 7px;
+    left: 5px;
+    width: 8px;
+    height: 8px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    background: #2b9d38;
+}
+
+.status-circle-dt-partial {
+    position: relative;
+    top: 7px;
+    left: 5px;
+    width: 8px;
+    height: 8px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    background: #bb8747;
+}
+
+.status-circle-dt-failed {
+    position: relative;
+    top: 7px;
+    left: 5px;
+    width: 8px;
+    height: 8px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    background: red;
+}
+
+.status-circle-dt-undef {
+    position: relative;
+    top: 7px;
+    left: 5px;
+    width: 8px;
+    height: 8px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    border-radius: 4px;
+    background: grey;
+}
+
+
+/* Spinner */
+.spinner {
+  text-align: center;
+}
+
+.spinner > div {
+  width: 7px;
+  height: 7px;
+  background-color: #8b92a9;
+
+  border-radius: 100%;
+  display: inline-block;
+  -webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+  animation: sk-bouncedelay 1.4s infinite ease-in-out both;
+}
+
+.spinner .bounce1 {
+  -webkit-animation-delay: -0.32s;
+  animation-delay: -0.32s;
+}
+
+.spinner .bounce2 {
+  -webkit-animation-delay: -0.16s;
+  animation-delay: -0.16s;
+}
+
+@-webkit-keyframes sk-bouncedelay {
+  0%, 80%, 100% { -webkit-transform: scale(0) }
+  40% { -webkit-transform: scale(1.0) }
+}
+
+@keyframes sk-bouncedelay {
+  0%, 80%, 100% {
+    -webkit-transform: scale(0);
+    transform: scale(0);
+  } 40% {
+    -webkit-transform: scale(1.0);
+    transform: scale(1.0);
+  }
+}

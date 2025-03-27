@@ -1,0 +1,114 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+{% block content %}
+
+    <!-- Viewport definition -->
+    <meta charset="utf-8"/>
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Define page content -->
+    <div class="content" style="min-height: calc(100% - 130px);">
+        <div class="page-inner">
+
+            <!-- Breadcrumb -->
+            <div class="page-header">
+                <h4 class="page-title">About</h4>
+                <ul class="breadcrumbs">
+                    <li class="nav-home">
+                        <a href="/index.html">
+                            <i class="flaticon-home"></i>
+                        </a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main container -->
+            <div class="row">
+
+				<!-- Main timeline control -->
+                <div class="col-12 col-md-12">
+					<div class="card">
+						<div class="card-body">
+
+                            <!-- Row hosting the general controls -->
+                            <div class="row">
+                                <h4 style="color: lightgrey"><a style="color:#1269db" href="https://www.copernicus.eu/en">Copernicus</a>
+                                    is the European Union's Earth observation programme, looking at our planet and its environment to
+                                    benefit all European citizens. This initiative is headed by the European Commission (EC) in
+                                    partnership with the European Space Agency (ESA). The Copernicus Space Component (CSC) operations
+                                    managed by ESA encompass all necessary activities to plan the observations performed by the
+                                    Sentinel satellites, acquire the data on ground, process the satellite data stream into user level
+                                    products, ensure the preservation of the essential mission data as well as the availability of an
+                                    open and free access to the user data in line with the Copernicus Data Policy.</br></br>
+                                    The Copernicus Operations Dashboard facilitates research and development activities by providing a
+                                    central point of access for details of events impacting data availability, real-time data collection
+                                    insights, and key stats on products delivered:
+                                    <ul>
+                                        <li>The <a style="color:#1269db" target="_blank" href="index.html">Homepage</a> includes
+                                            a high-level overview of the Copernicus Sentinel missions over the past 24 h, including the
+                                            number of missions, time spent gathering data, data volumes, and the number of products
+                                            delivered.
+                                        </li>
+                                        <li>The <a style="color:#1269db" target="_blank" href="acquisition-plans.html">Acquisition Plans</a> view
+                                            displays the past, current and future Copernicus Sentinels' acquisition on an interactive, 3D
+                                            globe. Through this view, users can either inspect the status of a past acquistion, or learn
+                                            about the planned acquisitions for the mission of interest. By default, the real-time sensing scenario
+                                            is displayed.
+                                        </li>
+                                        <li>
+                                            The <a style="color:#1269db" target="_blank" href="events.html">Events</a> page provides details of the
+                                            events over the past three months that could impede data production, such as planned
+                                            calibration activities, manoeuvres, or anomalies. Information on the extent to which
+                                            these events affect data production and the data products impacted is provided.
+                                        </li>
+                                        <li>
+                                            The <a style="color:#1269db" target="_blank" href="data-takes.html">Data Takes</a> section of the dashboard
+                                            hosts a real-time list of available collections delivered by the missions, enabling users to
+                                            scan through these products to find data that meet their research and development requirements,
+                                            and to assess their quality.
+                                        </li>
+                                        <li>
+                                            The <a style="color:#1269db" target="_blank" href="publication-statistics.html">Publication Statistics</a> tab
+                                            provides detailed information on Copernicus Sentinel data – such as number of products delivered –
+                                            covering anywhere between the past 24h and the past three months. These insights are represented
+                                            visually, with one graphical representation per mission that is subdivided by sensor.
+                                        </li>
+                                    </ul>
+                                    Its development forms part of the ongoing transformation of the Copernicus Ground Segment, which is
+                                    laying the foundations for the planned expansion of the Copernicus Programme and ensuring the rapid
+                                    and flexible delivery of high-quality data for decades to come.
+                                    </br></br>
+                                    For any inquiries on the Copernicus Sentinel Operations Dashboard contact
+                                    <a style="color:#1269db" href="mailto:info_obs.dashboard@omcs.atlassian.net">info_obs.dashboard@omcs.atlassian.net</a>.
+                                </h4>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <script>
+
+        // Hide the time period selector combobox
+        $('#time-period-select-container').hide();
+
+    </script>
+
+{% endblock javascripts %}

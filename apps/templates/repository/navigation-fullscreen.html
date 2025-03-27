@@ -1,0 +1,49 @@
+
+		<div class="main-header">
+
+			<!-- Navbar Header -->
+			<nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">
+				<a href="https://www.esa.int/" class="logo">
+					<img src="/static/assets/img/esa_logo.png" width="90" height="43" alt="navbar brand" class="navbar-brand">
+				</a>
+				<a href="https://ec.europa.eu/info/index_en" target="blank_" class="logo">
+					<img src="/static/assets/img/ec_logo_white.png" width="150" height="50" alt="navbar brand" class="navbar-brand" style="position:absolute; top: 0px; left: 130px">
+				</a>
+				<div class="container-fluid">
+					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
+						<li class="nav-item dropdown hidden-caret">
+							<a class="nav-link dropdown-toggle" href="/events-viewer.html" id="events" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>EVENTS</h5>
+							</a>
+							<a class="nav-link dropdown-toggle" href="/data-takes.html" id="data-takes" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>DATA TAKES</h5>
+							</a>
+							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+                               href="/public-statistics.html" id="public-statistics" role="button"
+                               style="margin-top: 7px">
+                                <h5>STATISTICS</h5>
+                            </a>
+							{% if current_user.is_authenticated %}
+                            <a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+                               href="/unavailability-reporting.html" id="restricted-statistics" role="button"
+                               style="margin-top: 7px">
+                                <h5>QUARTERLY REPORTS</h5>
+                            </a>
+							{% else %}
+							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+                               href="/login.html" id="login" role="button"
+                               style="margin-top: 7px">
+                                <h5>LOGIN</h5>
+                            </a>
+							{% endif %}
+							<a href="https://www.copernicus.eu/" target="blank_" class="logo">
+								<img src="/static/assets/img/copernicus_logo.png" width="80" height="40" alt="navbar brand" class="navbar-brand">
+							</a>
+						</li>
+					</ul>
+				</div>
+			</nav>
+			<!-- End Navbar -->
+
+        </div>
+        

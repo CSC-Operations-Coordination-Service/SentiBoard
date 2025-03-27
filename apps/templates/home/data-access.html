@@ -1,0 +1,288 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Copernicus Sentinel Operations Dashboard {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+<!-- Define page content -->
+<div class="content">
+    <div class="page-inner">
+
+        <!-- Breadcrumb -->
+        <div class="page-header">
+            <h4 class="page-title">Data Access</h4>
+            <ul class="breadcrumbs">
+                <li class="nav-home">
+                    <a href="#">
+                        <i class="flaticon-home"></i>
+                    </a>
+                </li>
+                <li class="separator">
+                    <i class="flaticon-right-arrow"></i>
+                </li>
+                <li class="nav-item">
+                    <a href="#">Quarterly Reports</a>
+                </li>
+                <li class="separator">
+                    <i class="flaticon-right-arrow"></i>
+                </li>
+                <li class="nav-item">
+                    <a href="#">Data Access</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Collapsible description panel -->
+        <div class="row">
+            <div class="card-body" style="padding-bottom: 0.0rem !important">
+                <div class="flex flex-column faq-section">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div id="accordion">
+                                <div class="card">
+                                    <div class="card-header" id="heading-description">
+                                        <h5 class="mb-0" style="color: white">
+                                            <a role="button" data-toggle="collapse" href="#description"
+                                               aria-expanded="false" aria-controls="description"
+                                               style="color: white; text-decoration: none">
+                                                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+                                            </a>
+                                        </h5>
+                                    </div>
+                                    <div id="description" class="collapse hide" data-parent="#accordion"
+                                         aria-labelledby="heading-description">
+                                        <div class="card-body">
+                                            This page displays the time trend of the products published in
+                                            the selected time period, per each mission. For systematic missions
+                                            (Copernicus Sentinel-3 and Copernicus Sentinel-5p), possible fluctuations
+                                            are due to nominal recovery or reprocessing operations; for the other
+                                            missions, fluctuations can be due to tasking activities.</br>
+                                            By clicking on a label in the legend, it is possible to hide/show the time
+                                            series of the selected mission.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spinner for action pending -->
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status" style="visibility:visible">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Trend selector -->
+        <div class="row">
+
+            <!-- Last update box-->
+            <div class="col-sm-6 col-md-4">
+                <div class="card card-stats card-round">
+                    <div class="card-body ">
+                        <div class="row align-items-center">
+                            <div class="col-icon">
+                                <div class="icon-big text-center icon-primary bubble-shadow-small">
+                                    <i class="flaticon-clock-1"></i>
+                                </div>
+                            </div>
+                            <div class="col col-stats ml-3 ml-sm-0">
+                                <div class="numbers">
+                                    <p class="card-category">Statistics updated at [UTC]:</p>
+                                    <h4 class="card-title" id="publication-trend-last-updated">---</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Count / Volume dropdown switch -->
+            <div class="col-sm-6 col-md-3">
+                <p class="card-category" style="margin-left: 10px">Select the displayed data:</p>
+                <div class="form-group form-floating-label" style="width: 270px" id="time-period-select-container">
+                    <select name="time-period-select" id="time-trend-data-type-select"
+                            class="form-control input-solid">
+                        <option value="count">Number of published products</option>
+                        <option value="volume">Volume of published products</option>
+                    </select>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Restricted Area Time Trends-->
+        <!-- Published number of products time trends [DHUS] -->
+        <!--
+        <div class="row" id="published-trend-dhus-num-row">
+            <div class="col-md-12">
+                <div class="card" id="dhus-trendMultilineChart">
+                    <div class="card-header">
+                        <div class="card-title">Number of published products (DHUS)
+                            <!-
+                            <i style="color: white; position: relative; top: -10px; left: -15px" class="btn la flaticon-round" onclick="publicdata.showPublicationTimeSeriesOnlineHelp()"></i>
+                            ->
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="dhus-num-multipleLineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        -->
+        <!-- Published number of products time trends [DAS] -->
+        <div class="row" id="published-trend-das-num-row">
+            <div class="col-md-12">
+                <div class="card" id="das-trendMultilineChart">
+                    <div class="card-header">
+                        <div class="card-title">Number of published products (DAS)
+                            <!--
+                            <i style="color: white; position: relative; top: -10px; left: -15px" class="btn la flaticon-round" onclick="publicdata.showPublicationTimeSeriesOnlineHelp()"></i>
+                            -->
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="das-num-multipleLineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Published products volume time trends [DHUS] -->
+        <!--
+        <div class="row" id="published-trend-dhus-vol-row">
+            <div class="col-md-12">
+                <div class="card" id="dhus-size-trendMultilineChart">
+                    <div class="card-header">
+                        <div class="card-title">Volume of published products (DHUS)
+                            <!-
+                            <i style="color: white; position: relative; top: -10px; left: -15px" class="btn la flaticon-round" onclick="publicdata.showPublicationTimeSeriesOnlineHelp()"></i>
+                            ->
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="dhus-vol-multipleLineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        -->
+
+        <!-- Published products volume time trends [DAS] -->
+        <div class="row" id="published-trend-das-vol-row">
+            <div class="col-md-12">
+                <div class="card" id="das-size-trendMultilineChart">
+                    <div class="card-header">
+                        <div class="card-title">Volume of published products (DAS)
+                            <!--
+                            <i style="color: white; position: relative; top: -10px; left: -15px" class="btn la flaticon-round" onclick="publicdata.showPublicationTimeSeriesOnlineHelp()"></i>
+                            -->
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="das-vol-multipleLineChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Monitoring -->
+        <div class="row">
+
+            <!-- CDSE availability -->
+            <div class="col-md-6">
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex justify-content-between">
+							<div>
+								<h5><b>Copernicus Data Space Ecosystem</b></h5>
+								<p class="text-muted">Data Access availability</p>
+							</div>
+							<div class="calendar-details">
+								<i class="la flaticon-search-1" data-placement="bottom"
+								   data-toggle="tooltip"
+								   onclick="serviceMonitoring.showDASUnavailabilityEvents()"
+								   title="Display the relevant unavailabilities"></i>
+							</div>
+							<h3 class="text-info fw-bold" id="das-avail-perc" style="display:none">100.0%</h3>
+						</div>
+						<div class="progress progress-sm">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
+								 class="progress-bar bg-info" id="das-avail-bar" role="progressbar"
+								 style="width: 100%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0"></p>
+							<p class="text-muted mb-0" id="das-interface-avail-perc">100.0%</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+            <!-- DHUS availability -->
+            <!--
+            <div class="col-md-6">
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex justify-content-between">
+							<div>
+								<h5><b>Open Hub Data Access</b></h5>
+								<p class="text-muted">Data Access availability</p>
+							</div>
+							<div class="calendar-details">
+								<i class="la flaticon-search-1" data-placement="bottom"
+								   data-toggle="tooltip"
+								   onclick="serviceMonitoring.showDHUSUnavailabilityEvents()"
+								   title="Display the relevant unavailabilities"></i>
+							</div>
+							<h3 class="text-info fw-bold" id="dhus-avail-perc" style="display:none">100.0%</h3>
+						</div>
+						<div class="progress progress-sm">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
+								 class="progress-bar bg-warning" id="dhus-avail-bar" role="progressbar"
+								 style="width: 100%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0"></p>
+							<p class="text-muted mb-0" id="dhus-interface-avail-perc">100.0%</p>
+						</div>
+					</div>
+				</div>
+			</div>
+            -->
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+    <script src="/static/assets/js/quarterly-reports/publication-statistics.js"></script>
+    <script src="/static/assets/js/quarterly-reports/service-monitoring.js"></script>
+    <script defer type="text/javascript">publicationStatistics.init();</script>
+    <script defer type="text/javascript">serviceMonitoring.init();</script>
+
+{% endblock javascripts %}

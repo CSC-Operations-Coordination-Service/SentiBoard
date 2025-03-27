@@ -1,0 +1,49 @@
+{
+   "config":{
+      "elastic_config":{
+         "elastic_scheme":"https",
+         "elastic_host":"omcs.copernicus.eu/pump/",
+         "elastic_port":443,
+         "elastic_user":"public",
+         "elastic_password":"cbTFupSnjLzcUk1pFC2E"
+      },
+      "news_config": {
+         "url": "https://sentinel.esa.int/web/sentinel/news?p_p_id=com_liferay_asset_publisher_web_portlet_AssetPublisherPortlet_INSTANCE_xR9e&p_p_lifecycle=0&p_p_state=normal&p_p_mode=view&_com_liferay_asset_publisher_web_portlet_AssetPublisherPortlet_INSTANCE_xR9e_redirect=%2Fweb%2Fsentinel%2Fnews&_com_liferay_asset_publisher_web_portlet_AssetPublisherPortlet_INSTANCE_xR9e_delta=10&p_r_p_resetCur=false&_com_liferay_asset_publisher_web_portlet_AssetPublisherPortlet_INSTANCE_xR9e_cur=0"
+      },
+      "acqplans_config": {
+         "S1": {
+            "url": {
+               "test": "file:///path/to",
+               "latest": "https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-1/observation-scenario/acquisition-segments",
+               "archive": "https://sentinel.copernicus.eu/web/sentinel/missions/sentinel-1/observation-scenario/acquisition-segments/archives"
+            },
+            "acqplan_div": {
+               "S1A": "sentinel-1a",
+               "S1B": "sentinel-1b"
+            }
+         },
+         "S2": {
+            "url": {
+            "latest": "https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-2/acquisition-plans",
+            "archive": "https://sentinels.copernicus.eu/web/sentinel/missions/sentinel-2/acquisition-plans/archive"
+        },
+            "acqplan_div": {
+               "S2A": "sentinel-2a",
+               "S2B": "sentinel-2b"
+            }
+         }
+      },
+      "cams_issues_config": {
+         "jira_user": "coorddesk",
+         "jira_password": "!4C00rdD3sk",
+         "jira_token": "NjIzMzcxMDI5NTI3OoeLV4KgyMkIWsda5xFlqI0aCwVf",
+         "jira_host": "https://cams.esa.int",
+         "jira_note": "Issue Navigator - CAMS-1.8.1",
+         "projects": ["PDGSANOM"]
+      },
+      "filePublicationProductTree": "publicationProductTree.json",
+      "fileMissionTimeliness": "missionTimeliness.json",
+      "application_root": ""
+   }
+}
+
