@@ -39,7 +39,7 @@ def get_latest_tle(satellite):
     # Otherwise retrieve from CACHE!
     norad_id = norad_id_map[satellite]
     try:
-        fetch_tle_from_celestrak(norad_id)
+        return fetch_tle_from_celestrak(norad_id)
     except Exception as ex:
         tle_path = 'test/unit_tests/test_tles'
         # Retrieve Last TLE from file
