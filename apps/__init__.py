@@ -65,7 +65,8 @@ def start_scheduler(app):
 
         def news_updater():
             with app.app_context():
-                news_ingestor.NewsIngestor().ingest_news()
+                pass
+                #news_ingestor.NewsIngestor().ingest_news()
 
         def anomalies_updater():
             with app.app_context():
@@ -73,7 +74,8 @@ def start_scheduler(app):
 
         def news_cache_loader():
             with app.app_context():
-                events.load_news_cache_previous_quarter()
+                pass
+                #events.load_news_cache_previous_quarter()
 
         def anomalies_cache_loader():
             with app.app_context():
@@ -139,13 +141,13 @@ def start_scheduler(app):
         '''
         ################################################################################################################
         # 1. Ingest News and Anomalies
-        schedule.every().hour.at(":00").do(news_updater)
+        #schedule.every().hour.at(":00").do(news_updater)
         schedule.every().hour.at(":00").do(anomalies_updater)
 
         ################################################################################################################
         # 2. Populate cache - load data in the last quarter
         # Load News and Anomalies
-        schedule.every().hour.at(":01").do(news_cache_loader)
+        #schedule.every().hour.at(":01").do(news_cache_loader)
         schedule.every().hour.at(":01").do(anomalies_cache_loader)
 
         # Load Datatakes for all missions
