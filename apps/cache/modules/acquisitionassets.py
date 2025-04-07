@@ -32,9 +32,9 @@ stations_cache_key = '/api/acquisition/stations'
 
 assets_cache_duration = 604800
 
-sat_ids = ['S1A', 'S2A', 'S2B', 'S3A', 'S3B', 'S5P']
-norad_id_map = {'S1A': 39634, 'S1B': 41456,
-                'S2A': 40697, 'S2B': 42063,
+sat_ids = ['S1A', 'S1C', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P']
+norad_id_map = {'S1A': 39634, 'S1B': 41456, 'S1C': 62261,
+                'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
                 'S3A': 41335, 'S3B': 43437,
                 'S5P': 42969}
 
@@ -56,12 +56,14 @@ def load_satellite_orbits():
 
     # Init satellite and color maps
     multiple_sats = []
-    color_map = {'S1A': [72, 171, 247, 255], 'S1B': [72, 171, 247, 255],
-                 'S2A': [49, 206, 54, 255], 'S2B': [49, 206, 54, 255],
+    color_map = {'S1A': [72, 171, 247, 255], 'S1B': [72, 171, 247, 255], 'S1C': [72, 171, 247, 255],
+                 'S2A': [49, 206, 54, 255], 'S2B': [49, 206, 54, 255], 'S2C': [49, 206, 54, 255],
                  'S3A': [255, 173, 70, 255], 'S3B': [255, 173, 70, 255],
                  'S5P': [104, 97, 206, 255]}
     marker_map = {'S1A': 'static/assets/img/sentinel-1.png', 'S1B': 'static/assets/img/sentinel-1.png',
+                  'S1C': 'static/assets/img/sentinel-1.png',
                   'S2A': 'static/assets/img/sentinel-2.png', 'S2B': 'static/assets/img/sentinel-2.png',
+                  'S2C': 'static/assets/img/sentinel-2.png',
                   'S3A': 'static/assets/img/sentinel-3.png', 'S3B': 'static/assets/img/sentinel-3.png',
                   'S5P': 'static/assets/img/sentinel-5p.png'}
 

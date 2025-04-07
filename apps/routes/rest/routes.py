@@ -14,6 +14,7 @@ delivered to him.
 
 import json
 import logging
+from datetime import datetime, timedelta
 
 from flask import request, Response
 from flask_login import login_required
@@ -124,6 +125,17 @@ def get_anomalies_previous_quarter():
     return flask_cache.get(anomalies_api_uri)
 
 
+@blueprint.route('/api/events/anomalies/<date_from>/<date_to>', methods=['GET'])
+def get_anomalies_in_range(date_from, date_to):
+    logger.info("Called API Anomalies in date range")
+    start_date = datetime.strptime(date_from, '%Y-%m-%d')
+    end_date = datetime.strptime(date_to, '%Y-%m-%d')
+    end_date = end_date + timedelta(hours=23) + timedelta(minutes=59) + timedelta(seconds=59)
+    return Response(json.dumps(anomalies_model.get_anomalies(start_date, end_date), cls=db_utils.AlchemyEncoder),
+                    mimetype="application/json",
+                    status=200)
+
+
 @blueprint.route('/api/events/news/update', methods=['GET'])
 def update_news():
     logger.info("Called API Update News")
@@ -229,7 +241,31 @@ def get_cds_product_publication_count_statistics_previous_quarter():
 
 # Restricted functions - login required
 
-@blueprint.route('/api/events/anomalies/update', methods=['POST'])
+@blueprint.route('/api/events/anomalies/add', methods=['POST'])
+@login_required
+def add_anomaly():
+    logger.info("Called API Add Anomaly")
+    try:
+        if not auth_utils.is_user_authorized(['admin']):
+            return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder), mimetype="application/json",
+                            status=401)
+
+        data = json.loads(request.data.decode('utf8'))
+        publication_date = datetime.strptime(data['publicationDate'], '%d/%m/%Y %H:%M:%S')
+        start_date = datetime.strptime(data['publicationDate'], '%d/%m/%Y %H:%M:%S')
+        end_date = start_date + timedelta(hours=24)
+        anomalies_model.save_anomaly(data['title'], data['key'], '', publication_date, data['category'],
+                                     data['impactedItem'], data['impactedSatellite'], start_date, end_date,
+                                     '', '', data['newsLink'], data['newsTitle'])
+
+        events_cache.load_anomalies_cache_previous_quarter()  # Explicitly force cache reloading
+    except Exception as ex:
+        return Response(json.dumps({'error': '500'}), mimetype="application/json", status=500)
+
+    return Response(json.dumps({'OK': '200'}), mimetype="application/json", status=200)
+
+
+@blueprint.route('/api/events/anomalies/update', methods=['PUT'])
 @login_required
 def update_anomaly():
     logger.info("Called API Update Anomaly")
@@ -384,6 +420,12 @@ def get_cds_product_archive_size_last(period_id):
 def get_cds_product_archive_size_previous_quarter():
     logger.debug("Called API Long Term Archive Volume Previous Quarter")
     return archive_cache.get_archive_cached_data('previous', 'quarter')
+
+@blueprint.route('/api/reporting/cds-product-archive-volume/lifetime', methods=['GET'])
+@login_required
+def get_cds_product_archive_size_lifetime():
+    logger.debug("Called API Long Term Archive Volume Lifetime")
+    return archive_cache.get_archive_cached_data('all', 'lifetime')
 
 
 @blueprint.route('/api/reports/cds-timeliness-statistics/last-<period_id>', methods=['GET'])

@@ -61,13 +61,22 @@ class SatelliteAcqPlanLink:
         self.end_date = datetime.strptime(end_date_str, date_fmt)
         self.start_date = datetime.strptime(start_date_str, date_fmt)
 
+    def _normalize_ref_url(self):
+        """
+        Remove protocol, port and host if prsent in ref_url
+        Returns:
+
+        """
+        self.ref_url = self.ref_url.removeprefix(self.base_url)
+
     def __post_init__(self):
         logger.debug("AcqPlan LInk with base: %s, url %s",
                      self.base_url, self.ref_url)
+        self._normalize_ref_url()
         # parse ref_url and compute start/end date
         self._parse_ref_url()
         if self.ref_url.startswith("http"):
-            logger.warning("AcqPlan link URL invalid: starts with http")
+            logger.warning("AcqPlan link URL (%s) invalid: starts with http", self.ref_url)
 
     @property
     def full_url(self):
@@ -189,17 +198,19 @@ class AcqPlanLinksPageParser:
 
     def get_acqplan_link_urls(self):
         for sat, div_class in self._sat_div_cfg.items():
+            logger.debug("Satellite %s, retrieving element with class: %s", sat, div_class)
             sat_acqplan_links_element = self._html_parser.get_element_by_class('div',
                                                                                div_class)
-            # logger.debug("Scraped Element %s", sat_acqplan_links_element)
-            logger.debug("Satellite %s, class: %s", sat, div_class)
-            html_link_list = sat_acqplan_links_element.find_all("a", href=True)
-            ref_links = [link_el['href'] for link_el in html_link_list]
-            logger.debug("Retrieved links from page: %s", ref_links)
-            self._acq_link_objs.add_acq_link_url_list(sat,
-                                                      list(sorted([SatelliteAcqPlanLink(ref_link, self.base_url)
-                                                                   for ref_link in ref_links],
-                                                                  key=lambda x: x.end_date)))
+            if sat_acqplan_links_element:
+                # logger.debug("Scraped Element %s", sat_acqplan_links_element)
+                html_link_list = sat_acqplan_links_element.find_all("a", href=True)
+                ref_links = [link_el['href'] for link_el in html_link_list]
+                logger.debug("Retrieved links from page: %s", ref_links)
+                # Retrieve the list of urls sorted by end date
+                list_of_acq_link_urls = list(sorted([SatelliteAcqPlanLink(ref_link, self.base_url)
+                                                     for ref_link in ref_links],
+                                                    key=lambda x: x.end_date))
+                self._acq_link_objs.add_acq_link_url_list(sat, list_of_acq_link_urls)
 
     @property
     def acqplan_links(self):

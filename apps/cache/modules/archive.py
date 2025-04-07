@@ -39,6 +39,11 @@ def load_archive_cache_previous_quarter():
     archive_cache_loader.load_cache_previous_quarter()
 
 
+def load_archive_cache_lifetime():
+    logger.info("Loading Long Term Archive Cache for lifetime")
+    archive_cache_loader.load_cache_lifetime()
+
+
 def load_all_periods_archive_cache():
     archive_cache_loader.load_all_periods_cache()
 
@@ -51,6 +56,8 @@ def get_archive_cached_data(period_type, period_id):
         logger.debug("Loading Cache from API Long Term Archive Volume Last %s", period_id)
         if period_type == 'last':
             archive_load_cache(period_id)
+        elif period_type == 'all':
+            load_archive_cache_lifetime()
         else:
             load_archive_cache_previous_quarter()
     return flask_cache.get(archive_api_uri)

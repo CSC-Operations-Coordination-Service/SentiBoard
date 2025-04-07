@@ -89,6 +89,7 @@ class AnomaliesIngestor:
 
             for token in title_tokenized:
                 token = str(token)
+                token = token.replace('-','')
                 if self.not_consistent(token):
                     continue
                 impacted_satellite = impacted_satellite_model.get_impacted_satellite_by_synonymous(token)
@@ -99,6 +100,7 @@ class AnomaliesIngestor:
             if anomaly['impactedSatellite'] is None or len(anomaly['impactedSatellite']) == 0:
                 for token in text_tokenized:
                     token = str(token)
+                    token = token.replace('-', '')
                     if self.not_consistent(token):
                         continue
                     impacted_satellite = impacted_satellite_model.get_impacted_satellite_by_synonymous(token)

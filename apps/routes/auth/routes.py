@@ -203,7 +203,22 @@ def get_quarter_authorized():
 
         user = auth_utils.get_user_info()
 
-        return Response(json.dumps({'authorized': user.get('role') in ('admin', 'ecuser')}),
+        return Response(json.dumps({'authorized': user.get('role') in ('admin', 'ecuser', 'esauser')}),
+                        mimetype="application/json", status=200)
+    except Exception as ex:
+        return Response(json.dumps({'error': '500'}), mimetype="application/json", status=500)
+
+
+@blueprint.route('/api/auth/datatakes-details-authorized', methods=['GET'])
+def get_datatakes_details_authorized():
+    try:
+        if not auth_utils.is_user_authorized(['admin', 'esauser']):
+            return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder), mimetype="application/json",
+                            status=401)
+
+        user = auth_utils.get_user_info()
+
+        return Response(json.dumps({'authorized': user.get('role') in ('admin', 'esauser')}),
                         mimetype="application/json", status=200)
     except Exception as ex:
         return Response(json.dumps({'error': '500'}), mimetype="application/json", status=500)

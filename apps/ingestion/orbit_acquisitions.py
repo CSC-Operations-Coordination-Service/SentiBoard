@@ -140,6 +140,8 @@ class AcquisitionPlanOrbitDatatakeBuilder:
             # 1. instantiate an Orbit Acquisitions Builder (it needs a TLE or a list of TLE for the period)
             # Retrieve latest TLE
             sat_tle_data = get_latest_tle(satellite)
+            logger.warning(sat_tle_data)
+
             # Use a Builder that creates acquisitions from Orbit points
             sat_orbit_builder = OrbitAcquisitionsBuilder(satellite, sat_tle_data,
                                                          orbit_step,

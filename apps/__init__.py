@@ -165,8 +165,11 @@ def start_scheduler(app):
         # Load Archive statistics for different Time Periods, for all the missions
         schedule.every().hour.at(":09").do(publication.load_all_periods_publication_trend_cache).tag("Publication")
 
-        # Load Publication statistics for different Time Periods, for all the missions
+        # Load Long Term Archive statistics for different Time Periods, for all the missions
         schedule.every().hour.at(":11").do(archive.load_all_periods_archive_cache).tag("Archive")
+
+        # Load Long Term Archive statistic from start of operations, for all the missions
+        schedule.every().hour.at(":13").do(archive.load_archive_cache_lifetime).tag("Archive")
 
         # Load Acquisition statistics for all ground station, including EDRS
         schedule.every().hour.at(":14").do(acquisitions.load_acquisitions_cache_last_quarter).tag(

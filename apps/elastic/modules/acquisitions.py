@@ -67,7 +67,7 @@ def _get_cds_acquisitions(start_date, end_date):
         end_date = datetime.strptime(end_date, '%d-%m-%Y')
 
         # Auxiliary variable declaration
-        indices = ["cds-acquisition-pass-status"]
+        indices = ["cds-cadip-acquisition-pass-status"]
         elastic = elastic_client.ElasticClient()
 
         # Fetch results from Elastic database

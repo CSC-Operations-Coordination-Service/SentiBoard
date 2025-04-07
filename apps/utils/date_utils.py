@@ -334,6 +334,9 @@ interval_length = {
     PeriodID.QUARTER: relativedelta(months=3)
 }
 
+def get_now_hour_start():
+    now_date = datetime.utcnow()
+    return now_date.replace(minute=0, second=0, microsecond=0)
 
 def get_last_period_interval(period_id):
     """
@@ -352,8 +355,9 @@ def get_last_period_interval(period_id):
     if period_id not in interval_length:
         raise Exception("Invalid period identifier: {}".format(period_id))
     #  Function should have an option to request date only or date+time
-    end_date = datetime.utcnow()
-    end_date = end_date.replace(minute=0, second=0, microsecond=0)
+    # end_date = datetime.utcnow()
+    # end_date = end_date.replace(minute=0, second=0, microsecond=0)
+    end_date = get_now_hour_start()
     start_date = end_date - interval_length.get(period_id)
     return start_date, end_date
 

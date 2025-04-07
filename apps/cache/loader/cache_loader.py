@@ -27,6 +27,9 @@ logger = logging.getLogger(__name__)
 
 # TODO Define ENUM for periods
 PREV_QUARTER = 'previous-quarter'
+LIFETIME = 'all-lifetime'
+SENTINEL_START_TIME = datetime.strptime("2014-01-01 00:00:00",
+                                        "%Y-%m-%d %H:%M:%S")
 
 
 class RestCacheLoader:
@@ -41,7 +44,8 @@ class RestCacheLoader:
         PeriodID.WEEK: 604800,
         PeriodID.MONTH: 604800,
         PeriodID.QUARTER: 604800,
-        PREV_QUARTER: 604800
+        PREV_QUARTER: 604800,
+        LIFETIME: 604800
     }
 
     def __init__(self, stat_id, api_key_format, elastic_function):
@@ -85,6 +89,19 @@ class RestCacheLoader:
         logger.info(
             f"[END] Loading Cache for period previous quarter, start: {start_date}, end: {end_date} - Execution Time : {cache_end_time - cache_start_time:0.6f}")
 
+    def load_cache_lifetime(self):
+        logger.info("[BEG] Loading  %s  Cache  for lifetime",
+                    self._statistics_id)
+        period_id = LIFETIME
+        cache_start_time = perf_counter()
+        # Retrieve data takes in the last 3 months and store results of query in cache
+        start_date = SENTINEL_START_TIME
+        end_date = date_utils.get_now_hour_start()
+        self._load_product_statistics_cache(period_id, start_date, end_date)
+        cache_end_time = perf_counter()
+        logger.info(
+            f"[END] Loading Cache for period previous quarter, start: {start_date}, end: {end_date} - Execution Time : {cache_end_time - cache_start_time:0.6f}")
+
     def load_all_periods_cache(self):
         """
         Load cache for each Time period (excluding previous quarter)
@@ -113,8 +130,10 @@ class RestCacheLoader:
         logger.debug("Loading period %s: from %s to %s",
                      period_id,
                      start_date_str, end_date_str)
-        if period_id == 'previous-quarter':
+        if period_id == PREV_QUARTER:
             rest_api_prefix = self._api_key_format.format('previous', 'quarter')
+        elif period_id == LIFETIME:
+            rest_api_prefix = self._api_key_format.format('all', 'lifetime')
         else:
             rest_api_prefix = self._api_key_format.format('last', period_id)
         period_data = self._retrieve_statistics_data(period_id, start_date, end_date)

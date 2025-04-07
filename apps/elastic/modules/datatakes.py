@@ -40,10 +40,16 @@ level_ids = {
 satellites_mission_map = {
     'S1A': 'S1',
     'S1B': 'S1',
+    'S1C': 'S1',
+    'S1D': 'S1',
     'S2A': 'S2',
     'S2B': 'S2',
+    'S2C': 'S2',
+    'S2D': 'S2',
     'S3A': 'S3',
     'S3B': 'S3',
+    'S3C': 'S3',
+    'S3D': 'S3',
     'S5P': 'S5'
 }
 
@@ -171,13 +177,13 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
     except Exception as ex:
         logger.error(ex)
 
-    # Calculate completeness for every datatakes
+    # Calculate completeness for every datatake
     for dt in results:
         dt_id = dt['_id']
         completeness = {}
-        if 'S1A' in dt_id:
+        if any(s1_sat in dt_id for s1_sat in ['S1A', 'S1B', 'S1C']):
             completeness = _calc_s1_datatake_completeness(dt)
-        elif 'S2' in dt_id:
+        elif any(s2_sat in dt_id for s2_sat in ['S2A', 'S2B', 'S2C']):
             completeness = _calc_s2_datatake_completeness(dt)
         for key in list(dt['_source']):
             if key.endswith('local_percentage'):
@@ -395,10 +401,8 @@ def _calc_s1_datatake_completeness(datatake):
     """
         Calculate the completeness of S1 datatakes.
         """
-
     dt_id = datatake['_id']
     completeness = {'datatakeID': dt_id}
-    keys = datatake['_source'].keys()
     l0_count = 0
     l0_perc = 0
     l1_count = 0
@@ -408,6 +412,7 @@ def _calc_s1_datatake_completeness(datatake):
 
     # TODO: Replace with RE matching
     # TODO: Matching strings for Levels depends on mission
+    keys = datatake['_source'].keys()
     for key in keys:
         if ('_0C_' in key or '_0S_' in key or '_0A_' in key or '_0N_' in key) and ('percentage' in key):
             l0_count += 1
@@ -625,14 +630,14 @@ def _calc_datatake_completeness_status(datatake):
     elif failure_threshold <= completeness_status['ACQ']['percentage'] < completeness_threshold:
         completeness_status['ACQ']['status'] = 'PARTIAL'
     else:
-        completeness_status['ACQ']['status'] = 'LOST'
+        completeness_status['ACQ']['status'] = 'UNAVAILABLE'
 
     if completeness_status['PUB']['percentage'] >= completeness_threshold:
         completeness_status['PUB']['status'] = 'PUBLISHED'
     elif failure_threshold <= completeness_status['PUB']['percentage'] < completeness_threshold:
         completeness_status['PUB']['status'] = 'PARTIAL'
     else:
-        completeness_status['PUB']['status'] = 'LOST'
+        completeness_status['PUB']['status'] = 'UNAVAILABLE'
 
     return completeness_status
 

@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 #  TODO: Move to configuration
 acq_plans_mission_satellites = {
     "S1": ["S1A"],
-    "S2": ["S2A", "S2B"],
+    "S2": ["S2A", "S2B", "S2C"],
     "S3": ["S3A", "S3B"],
     "S5": ["S5P"]
 }
