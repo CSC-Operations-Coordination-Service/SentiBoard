@@ -26,3 +26,4 @@ redis==4.3.4
 czml==0.3.3
 satellite-czml==0.1.2
 satellitetle==0.14.0
+numpy<1.25
