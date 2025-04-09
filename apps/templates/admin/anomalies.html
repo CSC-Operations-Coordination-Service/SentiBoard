@@ -55,10 +55,22 @@
 							</form>
 						</div>
 						<div class="modal-footer no-bd">
-							<button type="button" id="edit-anomaly-btn" class="btn btn-primary" onclick="anomalies.updateAnomaly()">Save</button>
+							<button type="button" id="edit-anomaly-btn" class="btn btn-primary" onclick="anomalies.saveAnomaly()">Save</button>
 							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
 						</div>
 					</div>
+				</div>
+			</div>
+
+			<!-- Add anomaly button -->
+			<div class="row">
+				<div class="form-group pull-left">
+					<button id="add-anomaly-btn" class="btn btn-primary" style="margin-left: 6px" onclick="anomalies.addAnomaly()" data-toggle="modal" data-target="#editAnomalyModal">
+						<span class="btn-label">
+							<i class="la flaticon-plus"></i>
+						</span>
+						Add Anomaly
+					</button>
 				</div>
 			</div>
 

@@ -85,11 +85,27 @@
 									<div id="description" class="collapse hide" data-parent="#accordion"
 										 aria-labelledby="heading-description">
 										<div class="card-body">
-											This view summarizes the global system availability, with details relevant
-											to the main instruments of each satellite.<br>
-											Click on the magnifier lens, to display the anomalies causing the
-											discontinuity in the system availability. By default,
-											results are referred to the previous completed quarter.
+											This view summarizes the global statistics of the space segment, namely the
+											status of satellites and of the relevant acquisitions.
+											The page is divided into two main sections:<br>
+											- Satellite's equipment status;<br>
+											- Planned vs archived image acquisitions.<br>
+											The satellite's equipment status shows the total availability of the main
+											satellite subsystems, during the selected time period.
+											By clicking on the magnifying lens, a pop-up is displayed, listing the
+											spacecraft anomalies having an impact of the equipment
+											availability.<br>
+											The planned vs archived image acquisitions reports, per each satellite, the
+											comparison between the planned and the effectively
+											archived data (generating the L0 products). Differences between planned vs
+											archived data may be due to:<br>
+											- Satellite issues, caused by anomalies affecting any of the satellite
+											equipments;<br>
+											- Acquisition issues, i.e. problems in the downlink phase;<br>
+											- Other issues, like interferences with other satellites or bad weather.<br>
+											Even in this case, by clicking on the magnifying lens, the details about the
+											impacting anomalies is reported.
+											By default, results are referred to the previous completed quarter.
 										</div>
 									</div>
 								</div>
@@ -110,7 +126,7 @@
 						<div class="d-flex justify-content-between">
 							<div>
 								<h5><b>Copernicus Sentinel-1A</b></h5>
-								<p class="text-muted">Platform availability</p>
+								<p class="text-muted">Subsystems availability</p>
 							</div>
 							<div class="calendar-details">
 								<i class="la flaticon-search-1" data-placement="bottom"
@@ -151,6 +167,54 @@
 				</div>
 			</div>
 
+			<!-- Sentinel-1C -->
+			<div class="col-md-4">
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex justify-content-between">
+							<div>
+								<h5><b>Copernicus Sentinel-1C</b></h5>
+								<p class="text-muted">Subsystems availability</p>
+							</div>
+							<div class="calendar-details">
+								<i class="la flaticon-search-1" data-placement="bottom"
+								   data-toggle="tooltip"
+								   onclick="spaceSegment.showUnavailabilityEvents('S1C')"
+								   title="Display the relevant unavailabilities"></i>
+							</div>
+							<h3 class="text-info fw-bold" id="s1c-avail-perc" style="display:none">100.0%</h3>
+						</div>
+						<div class="progress progress-sm">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
+								 class="progress-bar bg-info" id="s1c-sar-avail-bar" role="progressbar"
+								 style="width: 98%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">SAR</p>
+							<p class="text-muted mb-0" id="s1c-sar-avail-perc">100.0%</p>
+						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
+								 class="progress-bar bg-info" id="s1c-pdht-avail-bar" role="progressbar"
+								 style="width: 100%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">PDHT</p>
+							<p class="text-muted mb-0" id="s1c-pdht-avail-perc">100.0%</p>
+						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
+								 class="progress-bar bg-info" id="s1c-ocp-avail-bar" role="progressbar"
+								 style="width: 99%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">OCP</p>
+							<p class="text-muted mb-0" id="s1c-ocp-avail-perc">100.0%</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<!-- Sentinel-2A -->
 			<div class="col-md-4">
 				<div class="card">
@@ -158,7 +222,7 @@
 						<div class="d-flex justify-content-between">
 							<div>
 								<h5><b>Copernicus Sentinel-2A</b></h5>
-								<p class="text-muted">Platform availability</p>
+								<p class="text-muted">Subsystems availability</p>
 							</div>
 							<div class="calendar-details">
 								<i class="la flaticon-search-1" data-placement="bottom"
@@ -195,6 +259,15 @@
 							<p class="text-muted mb-0">OCP</p>
 							<p class="text-muted mb-0" id="s2a-ocp-avail-perc">100.0%</p>
 						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
+								 class="progress-bar bg-success" id="s2a-str-avail-bar" role="progressbar"
+								 style="width: 99%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">STAR TRACKER</p>
+							<p class="text-muted mb-0" id="s2a-str-avail-perc">100.0%</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -206,7 +279,7 @@
 						<div class="d-flex justify-content-between">
 							<div>
 								<h5><b>Copernicus Sentinel-2B</b></h5>
-								<p class="text-muted">Platform availability</p>
+								<p class="text-muted">Subsystems availability</p>
 							</div>
 							<div class="calendar-details">
 								<i class="la flaticon-search-1" data-placement="bottom"
@@ -243,6 +316,72 @@
 							<p class="text-muted mb-0">OCP</p>
 							<p class="text-muted mb-0" id="s2b-ocp-avail-perc">100.0%</p>
 						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
+								 class="progress-bar bg-success" id="s2b-str-avail-bar" role="progressbar"
+								 style="width: 99%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">STAR TRACKER</p>
+							<p class="text-muted mb-0" id="s2b-str-avail-perc">100.0%</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Sentinel-2C -->
+			<div class="col-md-4">
+				<div class="card">
+					<div class="card-body">
+						<div class="d-flex justify-content-between">
+							<div>
+								<h5><b>Copernicus Sentinel-2C</b></h5>
+								<p class="text-muted">Subsystems availability</p>
+							</div>
+							<div class="calendar-details">
+								<i class="la flaticon-search-1" data-placement="bottom"
+								   data-toggle="tooltip"
+								   onclick="spaceSegment.showUnavailabilityEvents('S2C')"
+								   title="Display the relevant unavailabilities"></i>
+							</div>
+							<h3 class="text-success fw-bold" id="s2c-avail-perc" style="display:none">100.0%</h3>
+						</div>
+						<div class="progress progress-sm">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
+								 class="progress-bar bg-success" id="s2c-msi-avail-bar" role="progressbar"
+								 style="width: 100%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">MSI</p>
+							<p class="text-muted mb-0" id="s2c-msi-avail-perc">100.0%</p>
+						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
+								 class="progress-bar bg-success" id="s2c-mmfu-avail-bar" role="progressbar"
+								 style="width: 100%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">MMFU</p>
+							<p class="text-muted mb-0" id="s2c-mmfu-avail-perc">100.0%</p>
+						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
+								 class="progress-bar bg-success" id="s2c-ocp-avail-bar" role="progressbar"
+								 style="width: 99%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">OCP</p>
+							<p class="text-muted mb-0" id="s2c-ocp-avail-perc">100.0%</p>
+						</div>
+						<div class="progress progress-sm mt-2">
+							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
+								 class="progress-bar bg-success" id="s2c-str-avail-bar" role="progressbar"
+								 style="width: 99%"></div>
+						</div>
+						<div class="d-flex justify-content-between">
+							<p class="text-muted mb-0">STAR TRACKER</p>
+							<p class="text-muted mb-0" id="s2c-str-avail-perc">100.0%</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -254,7 +393,7 @@
 						<div class="d-flex justify-content-between">
 							<div>
 								<h5><b>Copernicus Sentinel-3A</b></h5>
-								<p class="text-muted">Platform availability</p>
+								<p class="text-muted">Subsystems availability</p>
 							</div>
 							<div class="calendar-details">
 								<i class="la flaticon-search-1" data-placement="bottom"
@@ -311,7 +450,7 @@
 						<div class="d-flex justify-content-between">
 							<div>
 								<h5><b>Copernicus Sentinel-3B</b></h5>
-								<p class="text-muted">Platform availability</p>
+								<p class="text-muted">Subsystems availability</p>
 							</div>
 							<div class="calendar-details">
 								<i class="la flaticon-search-1" data-placement="bottom"
@@ -368,7 +507,7 @@
 						<div class="d-flex justify-content-between">
 							<div>
 								<h5><b>Copernicus Sentinel-5p</b></h5>
-								<p class="text-muted">Platform availability</p>
+								<p class="text-muted">Subsystems availability</p>
 							</div>
 							<div class="calendar-details">
 								<i class="la flaticon-search-1" data-placement="bottom"
@@ -399,25 +538,267 @@
 			<!-- Sentinel-1A -->
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header row">
-						<div class="card-title ml-3">Copernicus Sentinel-1A sensing statistics</div>
-						<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-								   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S1A')"
-								   title="Display the global sensing statistics"></i>
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-1A planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S1A')"
+									   title="Display the global sensing statistics"></i>
+						</div>
 					</div>
 					<div class="card-body">
 						<div class="row">
 							<div class="chart-container col-md-3">
 								<canvas id="s1a-sensing-statistics-pie-chart"></canvas>
 							</div>
-							<div class="table-responsive col-md-8">
+							<div class="row col-md-8" id="s1a-boxes-container" style="display: none">
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body ">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-success text-success"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Successful sensing [hours]</p>
+															<h4 class="card-title" id="s1a-successful-datatakes-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Satellite issues [hours]</p>
+															<h4 class="card-title" id="s1a-satellite-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Acquisition Service issues [hours]</p>
+															<h4 class="card-title" id="s1a-acquisition-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Other causes (RFI, bad weather, MPS) [hours]</p>
+															<h4 class="card-title" id="s1a-other-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s1a-table-container" style="display: none">
 								<table id="s1a-impacted-datatakes-table" class="display table table-striped table-hover" >
 									<thead>
 										<tr>
 											<th style="max-width: 120px">Data Take ID</th>
 											<th>Date</th>
 											<th style="max-width: 100px">Issue type</th>
-											<th style="max-width: 100px">Completeness</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
+											<th style="max-width: 60px">Actions</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Sentinel-1C -->
+			<div class="col-md-12">
+				<div class="card">
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-1C planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S1C')"
+									   title="Display the global sensing statistics"></i>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="row">
+							<div class="chart-container col-md-3">
+								<canvas id="s1c-sensing-statistics-pie-chart"></canvas>
+							</div>
+							<div class="row col-md-8" id="s1c-boxes-container" style="display: none">
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body ">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-success text-success"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Successful sensing [hours]</p>
+															<h4 class="card-title" id="s1c-successful-datatakes-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Satellite issues [hours]</p>
+															<h4 class="card-title" id="s1c-satellite-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Acquisition Service issues [hours]</p>
+															<h4 class="card-title" id="s1c-acquisition-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Other causes (RFI, bad weather, MPS) [hours]</p>
+															<h4 class="card-title" id="s1c-other-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s1c-table-container" style="display: none">
+								<table id="s1c-impacted-datatakes-table" class="display table table-striped table-hover" >
+									<thead>
+										<tr>
+											<th style="max-width: 120px">Data Take ID</th>
+											<th>Date</th>
+											<th style="max-width: 100px">Issue type</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
 											<th style="max-width: 60px">Actions</th>
 										</tr>
 									</thead>
@@ -431,25 +812,130 @@
 			<!-- Sentinel-2A -->
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header row">
-						<div class="card-title ml-3">Copernicus Sentinel-2A sensing statistics</div>
-						<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-								   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2A')"
-								   title="Display the global sensing statistics"></i>
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-2A planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2A')"
+									   title="Display the global sensing statistics"></i>
+						</div>
 					</div>
 					<div class="card-body">
 						<div class="row">
 							<div class="chart-container col-md-3">
 								<canvas id="s2a-sensing-statistics-pie-chart"></canvas>
 							</div>
-							<div class="table-responsive col-md-8">
+							<div class="row col-md-8" id="s2a-boxes-container" style="display: none">
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body ">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-success text-success"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Successful datatakes</p>
+															<h4 class="card-title" id="s2a-successful-datatakes-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Satellite issues</p>
+															<h4 class="card-title" id="s2a-satellite-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Acquisition Service issues</p>
+															<h4 class="card-title" id="s2a-acquisition-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
+															<h4 class="card-title" id="s2a-other-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s2a-table-container" style="display: none">
 								<table id="s2a-impacted-datatakes-table" class="display table table-striped table-hover" >
 									<thead>
 										<tr>
 											<th style="max-width: 120px">Data Take ID</th>
 											<th>Date</th>
 											<th style="max-width: 100px">Issue type</th>
-											<th style="max-width: 100px">Completeness</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
 											<th style="max-width: 60px">Actions</th>
 										</tr>
 									</thead>
@@ -463,25 +949,267 @@
 			<!-- Sentinel-2B -->
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header row">
-						<div class="card-title ml-3">Copernicus Sentinel-2B sensing statistics</div>
-						<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-								   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2B')"
-								   title="Display the global sensing statistics"></i>
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-2B planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2B')"
+									   title="Display the global sensing statistics"></i>
+						</div>
 					</div>
 					<div class="card-body">
 						<div class="row">
 							<div class="chart-container col-md-3">
 								<canvas id="s2b-sensing-statistics-pie-chart" style="width: 50%; height: 50%"></canvas>
 							</div>
-							<div class="table-responsive col-md-8">
+							<div class="row col-md-8" id="s2b-boxes-container" style="display: none">
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body ">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-success text-success"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Successful datatakes</p>
+															<h4 class="card-title" id="s2b-successful-datatakes-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Satellite issues</p>
+															<h4 class="card-title" id="s2b-satellite-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Acquisition Service issues</p>
+															<h4 class="card-title" id="s2b-acquisition-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
+															<h4 class="card-title" id="s2b-other-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s2b-table-container" style="display: none">
 								<table id="s2b-impacted-datatakes-table" class="display table table-striped table-hover" >
 									<thead>
 										<tr>
 											<th style="max-width: 120px">Data Take ID</th>
 											<th>Date</th>
 											<th style="max-width: 100px">Issue type</th>
-											<th style="max-width: 100px">Completeness</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
+											<th style="max-width: 60px">Actions</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Sentinel-2C -->
+			<div class="col-md-12">
+				<div class="card">
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-2C planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2C')"
+									   title="Display the global sensing statistics"></i>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="row">
+							<div class="chart-container col-md-3">
+								<canvas id="s2c-sensing-statistics-pie-chart" style="width: 50%; height: 50%"></canvas>
+							</div>
+							<div class="row col-md-8" id="s2c-boxes-container" style="display: none">
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body ">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-success text-success"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Successful datatakes</p>
+															<h4 class="card-title" id="s2c-successful-datatakes-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Satellite issues</p>
+															<h4 class="card-title" id="s2c-satellite-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Acquisition Service issues</p>
+															<h4 class="card-title" id="s2c-acquisition-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
+															<h4 class="card-title" id="s2c-other-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s2c-table-container" style="display: none">
+								<table id="s2c-impacted-datatakes-table" class="display table table-striped table-hover" >
+									<thead>
+										<tr>
+											<th style="max-width: 120px">Data Take ID</th>
+											<th>Date</th>
+											<th style="max-width: 100px">Issue type</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
 											<th style="max-width: 60px">Actions</th>
 										</tr>
 									</thead>
@@ -495,25 +1223,130 @@
 			<!-- Sentinel-3A -->
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header row">
-						<div class="card-title ml-3">Copernicus Sentinel-3A sensing statistics</div>
-						<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-								   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S3A')"
-								   title="Display the global sensing statistics"></i>
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-3A planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S3A')"
+									   title="Display the global sensing statistics"></i>
+						</div>
 					</div>
 					<div class="card-body">
 						<div class="row">
 							<div class="chart-container col-md-3">
 								<canvas id="s3a-sensing-statistics-pie-chart"></canvas>
 							</div>
-							<div class="table-responsive col-md-8">
+							<div class="row col-md-8" id="s3a-boxes-container" style="display: none">
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body ">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-success text-success"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Successful datatakes</p>
+														<h4 class="card-title" id="s3a-successful-datatakes-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Satellite issues</p>
+														<h4 class="card-title" id="s3a-satellite-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Acquisition Service issues</p>
+														<h4 class="card-title" id="s3a-acquisition-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
+														<h4 class="card-title" id="s3a-other-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s3a-table-container" style="display: none">
 								<table id="s3a-impacted-datatakes-table" class="display table table-striped table-hover" >
 									<thead>
 										<tr>
 											<th style="max-width: 120px">Data Take ID</th>
 											<th>Date</th>
 											<th style="max-width: 100px">Issue type</th>
-											<th style="max-width: 100px">Completeness</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
 											<th style="max-width: 60px">Actions</th>
 										</tr>
 									</thead>
@@ -527,25 +1360,130 @@
 			<!-- Sentinel-3B -->
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header row">
-						<div class="card-title ml-3">Copernicus Sentinel-3B sensing statistics</div>
-						<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-								   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S3B')"
-								   title="Display the global sensing statistics"></i>
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-3B planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S3B')"
+									   title="Display the global sensing statistics"></i>
+						</div>
 					</div>
 					<div class="card-body">
 						<div class="row">
 							<div class="chart-container col-md-3">
 								<canvas id="s3b-sensing-statistics-pie-chart"></canvas>
 							</div>
-							<div class="table-responsive col-md-8">
+							<div class="row col-md-8" id="s3b-boxes-container" style="display: none">
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body ">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-success text-success"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Successful datatakes</p>
+														<h4 class="card-title" id="s3b-successful-datatakes-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Satellite issues</p>
+														<h4 class="card-title" id="s3b-satellite-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Acquisition Service issues</p>
+														<h4 class="card-title" id="s3b-acquisition-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
+														<h4 class="card-title" id="s3b-other-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s3b-table-container" style="display: none">
 								<table id="s3b-impacted-datatakes-table" class="display table table-striped table-hover" >
 									<thead>
 										<tr>
 											<th style="max-width: 120px">Data Take ID</th>
 											<th>Date</th>
 											<th style="max-width: 100px">Issue type</th>
-											<th style="max-width: 100px">Completeness</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
 											<th style="max-width: 60px">Actions</th>
 										</tr>
 									</thead>
@@ -559,25 +1497,130 @@
 			<!-- Sentinel-5P -->
 			<div class="col-md-12">
 				<div class="card">
-					<div class="card-header row">
-						<div class="card-title ml.3">Copernicus Sentinel-5p sensing statistics</div>
-						<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-								   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S5P')"
-								   title="Display the global sensing statistics"></i>
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-5p planned vs archived L0 data</div>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S5P')"
+									   title="Display the global sensing statistics"></i>
+						</div>
 					</div>
 					<div class="card-body">
 						<div class="row">
 							<div class="chart-container col-md-3">
 								<canvas id="s5p-sensing-statistics-pie-chart" style="width: 50%; height: 50%"></canvas>
 							</div>
-							<div class="table-responsive col-md-8">
-								<table id="s5p-impacted-datatakes-table" class="display table table-striped table-hover" >
+							<div class="row col-md-8" id="s5p-boxes-container" style="display: none">
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body ">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-success text-success"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Successful datatakes</p>
+														<h4 class="card-title" id="s5p-successful-datatakes-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Satellite issues</p>
+														<h4 class="card-title" id="s5p-satellite-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Acquisition Service issues</p>
+														<h4 class="card-title" id="s5p-acquisition-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class="col-md-4">
+									<div class="card card-stats card-round">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-5">
+													<div class="icon-big text-center">
+														<i class="flaticon-error text-danger"></i>
+													</div>
+												</div>
+												<div class="col-7 col-stats">
+													<div class="numbers">
+														<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
+														<h4 class="card-title" id="s5p-other-failures-box">
+															<div class="spinner">
+																<div class="bounce1"></div>
+																<div class="bounce2"></div>
+																<div class="bounce3"></div>
+															</div>
+														</h4>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s5p-table-container" style="display: none">
+								<table id="s5p-impacted-datatakes-table" class="display table table-striped table-hover">
 									<thead>
 										<tr>
 											<th style="max-width: 120px">Data Take ID</th>
 											<th>Date</th>
 											<th style="max-width: 100px">Issue type</th>
-											<th style="max-width: 100px">Completeness</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
 											<th style="max-width: 60px">Actions</th>
 										</tr>
 									</thead>
@@ -589,7 +1632,6 @@
 			</div>
 
 		</div>
-
 	</div>
 </div>
 

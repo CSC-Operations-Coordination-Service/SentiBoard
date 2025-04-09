@@ -99,12 +99,15 @@ class ArchiveMissionStatistics {
     }
 };
 
-class ArchiveStatisticsCharts {
+var PeriodKey = 'period';
+var LifetimeKey = 'lifetime';
 
+class ArchiveStatisticsCharts {
     constructor() {
         this._detailsHorizontal = false;
-        this.gaugeChart = null;
-        this.stackBarChart = new Map();
+        this.stackBarChart = {};
+        this.stackBarChart[PeriodKey] = new Map();
+        this.stackBarChart[LifetimeKey] = new Map();
     }
 
     init() {
@@ -113,7 +116,10 @@ class ArchiveStatisticsCharts {
         data_type_sel.value = 'count';
         var showDataType = 'VOL';
         var hideDataTYpe = 'NUM';
-        ['#LTA-mission-levels-vol-row'].forEach(function (divId) {
+        ['#LTA-period-mission-levels-vol-row'].forEach(function (divId) {
+            $(divId).hide();
+        });
+        ['#LTA-lifetime-mission-levels-vol-row'].forEach(function (divId) {
             $(divId).hide();
         });
         data_type_sel.addEventListener('change', this.on_datatype_change.bind(this));
@@ -127,9 +133,8 @@ class ArchiveStatisticsCharts {
         var time_period_sel = document.getElementById('time-period-select');
         time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this))
 
-        // TODO: Remove: leave to quarterAuthorizeProcess the page loading
-        // Retrieve the archiving statistics
-        this.loadArchiveStatistics('prev-quarter');
+        this.loadArchiveLifetimeStatistics();
+        // Page Loading managed by quarterAuthorizeProcess
     }
 
     // TODO: move to a separate class that only manages authorizazion for last quarter
@@ -137,7 +142,7 @@ class ArchiveStatisticsCharts {
         var time_period_sel = document.getElementById('time-period-select');
         if (response['authorized'] === true) {
             if (time_period_sel.options.length == 4) {
-                time_period_sel.append(new Option('Previous Quarter', 'prev-quarter'));
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
             }
 
             // Programmatically select the previous quarter as the default time range
@@ -145,26 +150,23 @@ class ArchiveStatisticsCharts {
             time_period_sel.value = 'prev-quarter';
         }
         // OR : dispatch time period event generation
-        //time_period_sel.dispatchEvent(new Event('change'));
+        time_period_sel.dispatchEvent(new Event('change'));
     }
 
     errorLoadAuthorized(response) {
-        console.error(response)
-        return;
+        console.error(response);
     }
 
     on_timeperiod_change(ev) {
-        var elId = ev.target.id;
         var elValue = ev.target.value;
         console.info("ARC-Stat: Displayed time period changed to " + elValue);
-        var time_period_sel = document.getElementById(elId);
-        elValue = time_period_sel.value;
         this.loadArchiveStatistics(elValue);
     }
 
-    on_datatype_change() {
-        var data_type_sel = document.getElementById('time-trend-data-type-select');
-        var selectedDataType = data_type_sel.value;
+    on_datatype_change(ev) {
+        // var data_type_sel = document.getElementById('time-trend-data-type-select');
+        // var selectedDataType = data_type_sel.value;
+        var selectedDataType = ev.target.value;
         console.info("ARC-Stat: Displayed data type changed to " + selectedDataType);
         var showDataType = 'NUM';
         var hideDataType = 'VOL';
@@ -172,9 +174,15 @@ class ArchiveStatisticsCharts {
             showDataType = 'VOL';
             hideDataType = 'NUM';
         }
-        var divSId = this.getRowDivId('mission-levels', showDataType);
+        // Hide/show rows for Period Mission Charts
+        var divSId = this.getRowDivId('period-mission-levels', showDataType);
         $('#' + divSId).show();
-        var divHId = this.getRowDivId('mission-levels', hideDataType);
+        var divHId = this.getRowDivId('period-mission-levels', hideDataType);
+        $('#' + divHId).hide();
+        // Hide/show rows for Lifetime Mission Charts
+        divSId = this.getRowDivId('lifetime-mission-levels', showDataType);
+        $('#' + divSId).show();
+        divHId = this.getRowDivId('lifetime-mission-levels', hideDataType);
         $('#' + divHId).hide();
     }
 
@@ -183,41 +191,61 @@ class ArchiveStatisticsCharts {
         $("#trend-last-updated").text(nowDateString);
     }
 
-    // Call API
-    loadArchiveStatistics(period_type) {
-
+    loadArchiveLifetimeStatistics() {
         var archive_api_name = 'reporting/cds-product-archive-volume';
+        var period_type = LifetimeKey;
         console.log("Loading Archive statistics for period " + period_type);
-        // 
-        // Clear previous data, if any
-        // TODO; put Waiting Spinner
-        this.clearCharts();
+        // this.clearCharts(period_type);
+        //
         // Acknowledge the invocation of rest APIs
-        console.info("Starting retrieval of Archive statistics...");
+        console.info("Starting retrieval of Archive lifetime statistics...");
         // Add class Busy to charts
-        // 
-        // /api/cds-product-timeliness/last-<period_id>
+        //
         var urlParamString = getApiTimePeriodId(period_type);
         console.log("Period for API URL: " + urlParamString);
         var that = this;
         var ajaxArchivePromises =
                 asyncAjaxCall('/api/' + archive_api_name + '/' + urlParamString,
                         'GET', {},
-                        that.successLoadArchive.bind(that),
+                        that.successLoadLifetimeArchive.bind(that),
                         that.errorLoadArchive);
-        // Execute asynchrounous AJAX call
+    }
+
+    // Call API
+    loadArchiveStatistics(period_id) {
+
+        var archive_api_name = 'reporting/cds-product-archive-volume';
+        console.log("Loading Archive statistics for period " + period_id);
+        // 
+        // Clear previous data, if any
+        // TODO; put Waiting Spinner
+        this.clearCharts(PeriodKey);
+        // Acknowledge the invocation of rest APIs
+        console.info("Starting retrieval of Archive statistics...");
+        // Add class Busy to charts
+        // 
+        // /api/cds-product-timeliness/last-<period_id>
+        var urlParamString = getApiTimePeriodId(period_id);
+        console.log("Period for API URL: " + urlParamString);
+        var that = this;
+        var ajaxArchivePromises =
+                asyncAjaxCall('/api/' + archive_api_name + '/' + urlParamString,
+                        'GET', {},
+                        that.successLoadPeriodArchive.bind(that),
+                        that.errorLoadArchive);
+        // THis promise resolution should remove Waiting spinner: At present it is not doing it
+        // TODO: REMOVE!
+        // Execute asynchronous AJAX call
         ajaxArchivePromises.then(function () {
             console.log("Received all results!");
             var dialog = document.getElementById('window');
             if (dialog !== null) {
                 dialog.show();
                 document.getElementById('exit').onclick = function () {
-                    console.log("Clikc");
                     dialog.close();
                 };
             }
         });
-        return;
     }
 
     getChartId(chartType, dataType) {
@@ -229,60 +257,91 @@ class ArchiveStatisticsCharts {
         return "LTA-" + chartType.toLowerCase() + "-" + dataType.toLowerCase() + "-row";
     }
 
-    successLoadArchive(response) {
-        // Acknowledge the successful retrieval of downlink operations
-        var json_resp = format_response(response);
-        console.debug("Arc-STATS - Received response:", json_resp);
-        // Update reference time label
-        var endPeriodDate = moment(json_resp[0].interval.to, 'yyyy-MM-DDTHH:mm:ss').toDate();
-        console.debug("Arc-STATS - Setting Last update to ", endPeriodDate);
-        this.setLastUpdatedLabel(endPeriodDate);
-
-        var rows = json_resp[0].data;
-        console.info('Archive Statistics successfully retrieved');
-        console.info("Number of results: " + rows.length);
-        var levels_labels = {
-            'L1_': 'L1',
-            'L2_': 'L2',
-            'L0_': 'L0',
-            'AUX': 'AUX'
-        };
-
-        // this.clearCharts();
+    computeArchiveStatistics(data_rows) {
         var archiveStatistics = new ArchiveMissionStatistics();
-
+        console.debug("Computing statistics from response: ", data_rows);
         // Parse response
         // Each result in response shall specify:
         // mission (just for check) level, size
         // Compute total size for each mission
         // build two structures: one based on all defined levels,
-        // specifiying size for each mission , if level defined for that mission
+        // specifying size for each mission , if level defined for that mission
         // oen with total size for each mission
         // TODO: put together levels with different labels!
-        for (const record of rows) {
+        for (const record of data_rows) {
+
             // Auxiliary variables
             var mission = record.mission;
+            var satellite= record.satellite;
             var level = record.product_level;
             var size = record.content_length_sum;
             var count = record.count;
-            console.debug("Mission " + mission + ", level" + level + ": count=" + count);
-            archiveStatistics.addSizeStatistic(mission, level, size);
-            archiveStatistics.addCountStatistic(mission, level, count);
+            console.debug("Mission: " + mission + ", satellite: ", satellite + ", archive: " + level + ", count=" + count);
+            archiveStatistics.addSizeStatistic(satellite, level, size);
+            archiveStatistics.addCountStatistic(satellite, level, count);
         }
+        return archiveStatistics;
+    }
+
+    // Extend to manage also LIFETIME query, by filling
+    // two separate charts
+    successLoadPeriodArchive(response) {
+        // Read Response
+        //   Load Statistics Object
+        //
+        var periodType = PeriodKey;
+        // Acknowledge the successful retrieval of downlink operations
+        var json_resp = format_response(response);
+        // Update reference time label
+        var endPeriodDate = moment(json_resp[0].interval.to, 'yyyy-MM-DDTHH:mm:ss').toDate();
+        console.debug("Arc-STATS - Setting Last update to ", endPeriodDate);
+        this.setLastUpdatedLabel(endPeriodDate);
+        // TODO: Check endPeriodDate against         this.lifetimeEndPeriodDate
+        // If needed send request for Lifetime data loading/updating
+        if (endPeriodDate > this.lifetimeEndPeriodDate) {
+            console.debug("Loaded Archive Period data for a date after liime data");
+        }
+        this.loadArchive(json_resp, periodType);
+    }
+
+    loadArchive(json_data, periodType) {
+        console.debug("Arc-STATS - "+ periodType + " - Received response:", json_data);
+
+        var rows = json_data[0].data;
+        console.info('Archive Statistics successfully retrieved');
+        console.info("Number of results: " + rows.length);
+        var archiveStatistics = this.computeArchiveStatistics(rows);
 
         var that = this;
         ['VOL', 'NUM'].forEach(function (detailType) {
-            // Draw the Total size of Mission Bar CHart (regardless of site)
-            var missionBarChartId = that.getChartId('mission', detailType);
-            // We are passing the record object, that contains the data to be fed in the Gauge
-            that.drawBarChart(missionBarChartId, archiveStatistics.missionArchiveSizes);
-
             // Draw the detailed bar chart, with details related to sites
-            var levelsBarChartId = that.getChartId('mission-levels', detailType);
+            // TODO: mission-levels ---- period-archive-satellites
+            var levelsBarChartId = that.getChartId(periodType+'-archive-satellites', detailType);
             that.drawDetailedBarChart(levelsBarChartId,
                     archiveStatistics.getDetailStatistics(detailType),
-                    detailType);
+                    detailType, periodType);
         });
+    }
+    // TODO: Unify successLoadArchive functions
+    successLoadLifetimeArchive(response) {
+        // Read Response
+        //   Load Statistics Object
+        //
+        var periodType = LifetimeKey;
+        var json_resp = format_response(response);
+        // Update reference time label
+        /*
+        TODO: Be sure to maintain Lifetime and period statistics synchronized to reference period
+          It could happen that we start in a X reference time hour, and
+            after a while, the period data is switched to next time hour.
+            If that happens (to be checked by a function activated by the Period Statistics Load)
+            load again the Lifetime statistics
+            TO that purpose, we need to save lastUpdate for Lifetime data on a Class variable!!
+        */
+        var endPeriodDate = moment(json_resp[0].interval.to, 'yyyy-MM-DDTHH:mm:ss').toDate();
+        console.debug("Arc-STATS - Setting Last update of lifetime data to ", endPeriodDate);
+        this.lifetimeEndPeriodDate = endPeriodDate;
+        this.loadArchive(json_resp, periodType);
     }
 
     errorLoadArchive(response) {
@@ -293,122 +352,20 @@ class ArchiveStatisticsCharts {
     _getBarMaxValue(dataMaxValue) {
         var barMaxValue = dataMaxValue * 1.05; // Increment by 5 %;
         // Convert max value to volume size and get nearest integer size
-        var [maxVolumeSize, maxUnit] = normalize_size(barMaxValue);
+        // E.g. max value = 234567890 bytes
+        // returns 23.4 MB
+        var [maxVolumeSize, maxUnit] = normalize_size_decimal(barMaxValue);
         // Convert back nearest volume integer size to byte value
         var maxIntVolumeSize = get_nearest_greater_integer_size(maxVolumeSize);
-        return [maxIntVolumeSize, unitsize_to_bytes(maxIntVolumeSize, maxUnit)];
+        // Return Max value in higheest unit, and the corresponding value in bytes
+        // That is, return the absolute value corresponding to a tick
+        return [maxIntVolumeSize, unitsize_to_bytes_decimal(maxIntVolumeSize, maxUnit)];
     }
 
     // Process API Successful Response 
-    // Draw Charts (one function to draw missions occupation on period
-    //    one function to draw stacked bars to show level occupation for 
-    // each mission
-
-    /**
-     * 
-     * @param {string} pieId | the id of the lement containing the canvas div
-     * @param {number} timeThreshold | the number of hours reprsenting the time Threshold for
-     *  the data represented 
-     * @param {Object} data | a two element object containing:
-     *      on_time: the number of products published according to the timliness 
-     *      constraint; 
-     *      total_count: the total number of generated products (published or not)
-     * @returns N/A
-     */
-    drawBarChart(chartId, archiveMissionVolumeData) {
-        console.log("Archive - Drawing  Bars with ID " + chartId);
-        // console.log("Data to be put on chart: ", archiveMissionVolumeData);
-
-        var chartCanvas = document.getElementById(chartId);
-        if (chartCanvas !== null) {
-            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-        } else {
-            console.error("Bars Chart with id " + chartId + " not present on page");
-            return;
-        }
-        // Data represent: 
-        // For each mission: total mission volume on LTA,
-        //      for each mission level: volume on LTA
-        // and number of archived products 
-        // 
-        var barDatasets = Object.values(archiveMissionVolumeData);
-        var missionNames = Object.keys(archiveMissionVolumeData);
-        // TODO Instead of data, make datasets Empty
-        var barData = {
-            datasets: [{
-                    data: barDatasets,
-                    //backgroundColor: get_colors(barDatasets.length),
-                    label: "Mission Volume"}
-            ],
-            labels: missionNames
-        };
-        console.debug("Archive - Drawing Mission Chart with bardata: ", barData);
-        console.debug("Archive - Value: ", barDatasets);
-        var barMaxValue = Math.max(...barDatasets);
-        var [unitMaxValue, newMaxValue] = this._getBarMaxValue(barMaxValue);
-        //console.log("Max Mission archive value: ", barMaxValue, "Normalized: ", newMaxValue);
-        this.gaugeChart = new Chart(chartCanvas.getContext('2d'), {
-            type: 'horizontalBar',
-            data: barData,
-            options: {
-                responsive: true,
-                scales: {
-
-                    xAxes: [{
-                            ticks: {
-                                beginAtZero: true,
-                                //min: 1000, // Edit the value according to what you need
-                                max: newMaxValue,
-                                maxTicksLimit: unitMaxValue,
-                                stepWidth: 1,
-                                callback: function (value, index, ticks) {
-                                    // Convert to Day/Hour if > 25H
-                                    var tickLabel = format_size(value).toUpperCase();
-                                    return tickLabel;
-                                },
-
-                            }
-                        }],
-                    yAxes: [{
-                            stacked: true
-                        }]
-                },
-                showTooltips: true,
-                tooltips: {
-                    //mode: 'label',
-                    callbacks: {
-                        label: function (tooltipItem, data) {
-                            var idx = tooltipItem.index;
-                            var datasetIdx = tooltipItem.datasetIndex;
-                            var datasetLabel = data.datasets[datasetIdx].label;
-                            var shownValue = data.datasets[datasetIdx].data[idx];
-                            // Print the volume value formatting with proper size label
-                            if (shownValue === 0.0) {
-                                return null;
-                            } else {
-                                shownValue = format_size(shownValue);
-                                return  datasetLabel + ': ' + shownValue;
-                            }
-                        }
-                    }
-                    //labelTextColor: function (tooltipItem, chart) {
-                    //    return chart.data.datasets[0].backgroundColor[tooltipItem.index];
-                    //}
-                },
-                layout: {
-                    padding: {
-                        left: 20,
-                        right: 20,
-                        top: 20,
-                        bottom: 20
-                    }
-                },
-                legend: {
-                    display: false
-                }
-            }
-        });
-    }
+    // Draw Charts
+    //  show one stacked bar for each Archive Site
+    //     Each bar shows value for each satellite data stored at the corresponding archive
 
     _extractAllSubObjectsKeys(subObjectList) {
         // Extract the list of all keys present in the objects
@@ -443,7 +400,7 @@ class ArchiveStatisticsCharts {
     _buildHomogeneousDetailedDatasets(archiveDetailKeys,
                                       archiveDetailedData) {
         var _datasets = [];
-        var _colors = get_mission_colors();//get_colors(archiveDetailedData.length);
+        var _colors = get_satellite_colors();//get_colors(archiveDetailedData.length);
         console.debug("Building datasets for ", archiveDetailedData);
         for (const  [archiveItem, detailData] of  Object.entries(archiveDetailedData)) {
             console.debug("Detail Single item (" + archiveItem + "): ", detailData);
@@ -465,8 +422,8 @@ class ArchiveStatisticsCharts {
         return _datasets;
     }
 
-    drawDetailedBarChart(chartId, archiveLevelDetailData, dataType) {
-        console.log("Drawing Stacked Bars with ID " + chartId);
+    drawDetailedBarChart(chartId, archiveLevelDetailData, dataType, periodType) {
+        console.log("Drawing Stacked Bars with ID " + chartId + ", for period type "+periodType);
         console.debug("Data to be put on Detail chart: ", archiveLevelDetailData);
 
         var chartCanvas = document.getElementById(chartId);
@@ -476,6 +433,7 @@ class ArchiveStatisticsCharts {
             console.error("Stacked Bars Chart with id " + chartId + " not present on page");
             return;
         }
+        // Get the labels to associate with legends (labels for each portion of a stack
         var stackLabels = this._extractAllSubObjectsKeys(Object.values(archiveLevelDetailData)).sort();
         console.debug("Extracted all Level Keys", stackLabels);
         var barDetailDatasets = this._buildHomogeneousDetailedDatasets(stackLabels, archiveLevelDetailData);
@@ -504,9 +462,11 @@ class ArchiveStatisticsCharts {
                 // Convert to propert GB/TB label, with value scaled down
                 var tickLabel = value;
                 if (dataType === 'VOL') {
-                    tickLabel = format_size(value);
+                    tickLabel = format_size_decimal(value);
+                } else {
+                    // for NUM, format count values (thousand separator)
+                    tickLabel = format_count(value);
                 }
-                // for NUM, format count values (thousand separator)
 
                 return tickLabel;
             }};
@@ -522,7 +482,12 @@ class ArchiveStatisticsCharts {
         }
         axesTicksConfig[barStackAxis] = barStackAxisTicks;
         axesTicksConfig[barAxis] = barAxisTicks;
-        this.stackBarChart.set(dataType, new Chart(chartCanvas.getContext('2d'), {
+        // TODO: Compute for each archive dataset the max value, and the corresponding string length
+        // for VOL/NUM dataTYpes
+        var labelMaxWidths = [10, 8, 9, 12, 12];
+        // TODO for each dataset, compute a labelMaxWidth, based on the dataset dataTYpe
+        console.debug("Saving Chart object for periodType ", periodType, ", dataType ", dataType);
+        this.stackBarChart[periodType].set(dataType, new Chart(chartCanvas.getContext('2d'), {
             type: barType,
             data: barData,
             options: {
@@ -538,6 +503,7 @@ class ArchiveStatisticsCharts {
                         fontSize: 14
                     },
                     onClick: function (e, legendItem) {
+                        // hide/show dataset corresponding to legend item
                         var dsIndex = legendItem.datasetIndex;
                         var ci = this.chart;
                         var meta = ci.getDatasetMeta(dsIndex);
@@ -566,23 +532,19 @@ class ArchiveStatisticsCharts {
                 tooltips: {
                     mode: 'label',
                     callbacks: {
-                        // Display Size in TB, number of products 
+                        // Display for each dataset Size in TB, or number of products, depending on selected type onp ge
+                        // TODO: Add a funciton to modify Tooltip titel, by adding total of
+                        //   corresponding dataset
+                        title: (tooltipItems, data) =>  {
+                                return ArchiveStatisticsCharts.buildTooltipTitle(dataType,
+                                                            tooltipItems, data);
+                            },
                         // TODO: move to a separate function outside Chart creation
                         // TODO: make value formatting a function, passed by caller (dependend on displayed type)
-                        label: function (tooltipItem, data) {
-                            var idx = tooltipItem.index;
-                            var datasetIdx = tooltipItem.datasetIndex;
-                            var datasetLabel = data.datasets[datasetIdx].label;
-                            var shownValue = data.datasets[datasetIdx].data[idx];
-                            if (shownValue === 'null' || shownValue === null || shownValue === 0) {
-                                return "N/A";
-                                // throw '';
-                            }
-                            // Print the volume value formatting with proper size label
-                            if (dataType === 'VOL') {
-                                shownValue = format_size(shownValue);
-                            }
-                            return  datasetLabel + ': ' + shownValue;
+                        label: (tooltipItems, data) =>  {
+                                return ArchiveStatisticsCharts.buildTooltipLabel(dataType,
+                                                            labelMaxWidths,
+                                                            tooltipItems, data);
                         }
                     }
                     //labelTextColor: function (tooltipItem, chart) {
@@ -602,21 +564,52 @@ class ArchiveStatisticsCharts {
         }));
     }
 
-    // Clear Charts
-    clearCharts() {
-        console.log("Arc-STATS: Clearing previous charts");
-        // var missionBarChartId = this.getChartId('mission'); 
-        if (!this.gaugeChart !== 'undefined' && this.gaugeChart !== null) {
-            console.debug("Destroying Mission Chart");
-            this.gaugeChart.destroy();
-            this.gaugeChart = null;
+    static buildTooltipTitle(dataType, tooltipItems, data) {
+        //Return value for title
+        var idx = tooltipItems.index;
+        // console.log("Title for items ", tooltipItems);
+        var archiveTotal = tooltipItems.reduce((accumulator, barStack) => {
+            // console.log("Summing mission dataset: ", barStack.yLabel);
+            return accumulator + (barStack.yLabel || 0);
+        }, 0);
+        if (dataType === 'VOL') {
+            archiveTotal = format_size_decimal(archiveTotal);
+        } else {
+            archiveTotal = format_count(archiveTotal);
         }
-        // TODO: manage CHARTS saved by data type
-        console.debug("Stack Detail bar chart: ", this.stackBarChart.values());
+
+        return tooltipItems[0].xLabel + ': ' + archiveTotal;
+    }
+
+    static buildTooltipLabel (dataType, maxWidths, tooltipItem, data) {
+        var idx = tooltipItem.index;
+        var datasetIdx = tooltipItem.datasetIndex;
+        // THis is the mission value for this archive
+        var datasetLabel = data.datasets[datasetIdx].label;
+        var shownValue = data.datasets[datasetIdx].data[idx];
+        if (shownValue === 'null' || shownValue === null || shownValue === 0) {
+            return "N/A";
+            // throw '';
+        }
+        // Print the volume value formatting with proper size label
+        if (dataType === 'VOL') {
+            shownValue = format_size_decimal(shownValue);
+        } else {
+            shownValue = format_count(shownValue);
+        }
+        //Note that Intl has format that performs the padding
+        // return  datasetLabel + ': ' + shownValue;
+        return  datasetLabel + ': ' + shownValue.padStart(maxWidths[idx]);
+    }
+
+    // Clear Charts
+    clearCharts(periodType) {
+        console.log("Arc-STATS: Clearing previous charts of period type ", periodType);
+        var idPeriodType = periodType.toLowerCase();
         //for (const [dataType, pChart] of this.stackBarChart) {
-        this.stackBarChart.forEach((pChart, dataType, chartTable) => {
+        this.stackBarChart[idPeriodType].forEach((pChart, dataType, chartTable) => {
             console.log(dataType, pChart);
-            console.debug("Arc-STATS: Destroying chart ", pChart, ", type: ", dataType);
+            console.debug("Arc-STATS: Destroying ", periodType, " chart ", pChart, ", Data Type: ", dataType);
             if (pChart !== 'undefined' && pChart !== null) {
                 pChart.destroy();
             }

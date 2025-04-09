@@ -10,7 +10,7 @@ disclose in whole or in part, information contained herein except for or on
 behalf of TPZ to fulfill the purpose for which the document was
 delivered to him.
 */
-//import {BoxPlotChart} from '@sgratzl/chartjs-chart-boxplot';
+
 class ProductTimelinessStatistics {
     /**
      * For each mission, list the timeliness types (as specified
@@ -113,7 +113,7 @@ class ProductTimelinessStatistics {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel.options.length === 4) {
-                time_period_sel.append(new Option('Previous Quarter', 'prev-quarter'));
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
             }
 
             // Programmatically select the previous quarter as the default time range

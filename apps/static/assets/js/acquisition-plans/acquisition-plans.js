@@ -28,8 +28,8 @@ missionDatatakeId = {
     'S5': "datatake_id"
 }
 
-satelliteNoradId = {'S1A': 39634, 'S1B': 41456,
-                    'S2A': 40697, 'S2B': 42063,
+satelliteNoradId = {'S1A': 39634, 'S1B': 41456, 'S1C': 62261,
+                    'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
                     'S3A': 41335, 'S3B': 43437,
                     'S5P': 42969};
 
@@ -54,8 +54,10 @@ class MissionAcquisitionDates extends EventTarget {
         this.acqplansDates = {
                     'S1A': {label: 'Sentinel-1A', mission: 'S1', dates: null},
                     'S1B': {label: 'Sentinel-1B', mission: 'S1', dates: null},
+                    'S1C': {label: 'Sentinel-1C', mission: 'S1', dates: null},
                     'S2A': {label: 'Sentinel-2A', mission: 'S2', dates: null},
                     'S2B': {label: 'Sentinel-2B', mission: 'S2', dates: null},
+                    'S2C': {label: 'Sentinel-2C', mission: 'S2', dates: null},
                     'S3A': {label: 'Sentinel-3A', mission: 'S3', dates: null},
                     'S3B': {label: 'Sentinel-3B', mission: 'S3', dates: null},
                     'S5P': {label: 'Sentinel-5P', mission: 'S5', dates: null},

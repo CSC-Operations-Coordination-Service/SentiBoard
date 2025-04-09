@@ -36,8 +36,8 @@
 								<h5>ABOUT</h5>
 							</a>
 							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
-								href="/acquisition-plans.html" id="acquisition-plans" style="margin-top: 7px">
-								<h5>ACQUISITION PLANS</h5>
+								href="/acquisitions-status.html" id="acquisitions-status" style="margin-top: 7px">
+								<h5>ACQUISITIONS STATUS</h5>
 							</a>
 							<a class="nav-link dropdown-toggle" href="/events.html" id="events" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>EVENTS</h5>
@@ -50,6 +50,9 @@
                                 style="margin-top: 7px">
                                 <h5>STATISTICS</h5>
                             </a>
+							<a class="nav-link dropdown-toggle" href="/processors-viewer.html" id="processors" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>PROCESSORS</h5>
+							</a>
 							{% if current_user.is_authenticated %}
 								<div class="d-inline ">
 									<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
@@ -128,7 +131,7 @@
 									</div>
 								{% endif %}
 							{% else %}
-								<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
+								<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle" hidden
 								   href="{{ url_for('auth_blueprint.login') }}" id="login" role="button"
 								   style="margin-top: 7px">
 									<h5>LOGIN</h5>

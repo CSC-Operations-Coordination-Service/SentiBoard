@@ -123,15 +123,15 @@
         </div>
 
         <!-- LTA usage [Number] -->
-        <div class="row" id="LTA-mission-levels-num-row">
+        <div class="row" id="LTA-period-mission-levels-num-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">LTA Count Usage / Details</div>
+                        <div class="card-title">LTA Archived L0 Count in Period</div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <canvas id="LTA-mission-levels-num-barChart"></canvas>
+                            <canvas id="LTA-period-archive-satellites-num-barChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -139,34 +139,47 @@
         </div>
 
         <!-- LTA usage [Volume] -->
-        <div class="row" id="LTA-mission-levels-vol-row">
+        <div class="row" id="LTA-period-mission-levels-vol-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">LTA Volume Usage / Details</div>
+                        <div class="card-title">LTA Archived L0 Volume in Period</div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
-                            <canvas id="LTA-mission-levels-vol-barChart"></canvas>
+                            <canvas id="LTA-period-archive-satellites-vol-barChart"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Mission archive occupation -->
-        <div class="row" hidden="">
+                <!-- LTA lifetime usage [Number] -->
+        <div class="row" id="LTA-lifetime-mission-levels-num-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
-                        <div class="card-title">
-                            <div>
-                                <h5><b>LTA Usage / Missions</b></h5>
-                                <p class="text-muted">Missions</p>
-                            </div>
-                        </div>
+                        <div class="card-title">LTA Archived L0 Count since Beginning of Missions</div>
+                    </div>
+                    <div class="card-body">
                         <div class="chart-container">
-                            <canvas id="LTA-mission-vol-barChart"></canvas>
+                            <canvas id="LTA-lifetime-archive-satellites-num-barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LTA lifetime usage [Volume] -->
+        <div class="row" id="LTA-lifetime-mission-levels-vol-row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">LTA Archived L0 Volume since Beginning of Missions</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="LTA-lifetime-archive-satellites-vol-barChart"></canvas>
                         </div>
                     </div>
                 </div>

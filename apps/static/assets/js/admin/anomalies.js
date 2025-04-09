@@ -64,10 +64,17 @@ class Anomalies {
         // Array containing serialized impacted satellites
         this.impactedSatellites = [
             'Copernicus Sentinel-1A',
+            'Copernicus Sentinel-1B',
+            'Copernicus Sentinel-1C',
+            'Copernicus Sentinel-1D',
             'Copernicus Sentinel-2A',
             'Copernicus Sentinel-2B',
+            'Copernicus Sentinel-2C',
+            'Copernicus Sentinel-2D',
             'Copernicus Sentinel-3A',
             'Copernicus Sentinel-3B',
+            'Copernicus Sentinel-3C',
+            'Copernicus Sentinel-3D',
             'Copernicus Sentinel-5p'];
 
         // Map containing serialized impacted items given the category
@@ -75,7 +82,7 @@ class Anomalies {
             'Acquisition': ['Svalbard', 'Matera', 'Maspalomas', 'Inuvik', 'Neustrelitz', 'EDRS'],
             'Platform': ['OCP', 'PDHT', 'SAR', 'OLCI', 'SLSTR', 'SRAL', 'MWR', 'TROPOMI', 'MMFU', 'MSI', 'DORIS'],
             'Production': ['S1 Production Service', 'S2 Production Service', 'S3 Production Service', 'S5 Production Service'],
-            'Data access': ['Open Access Hub', 'Scientific Hub'],
+            'Data access': ['CDSE', 'Open Access Hub', 'Scientific Hub'],
             'Archive': ['LTA-1', 'LTA-2', 'LTA-3', 'LTA-4'],
             'Manoeuvre': ['Platform'],
             'Calibration': ['Platform']}
@@ -129,6 +136,10 @@ class Anomalies {
         return;
     }
 
+    addAnomaly() {
+        anomalies.buildAnomalyDetailsPanel(null);
+    }
+
     editAnomalyDetails(key) {
         let anomaly = anomalies.anomalies[key];
         anomalies.buildAnomalyDetailsPanel(anomaly);
@@ -137,26 +148,36 @@ class Anomalies {
     buildAnomalyDetailsPanel(anomaly) {
 
         // Build widgets
-        // Key
         $('#anomaly-details').html('');
+
+        // ID
+        $('#anomaly-details').append(
+            '<div class="form-group" id="anomaly-id-div">' +
+                '<input type="text" disabled style="color: #6c757d" class="form-control" id="anomaly-id" hidden>' +
+            '</div>');
+
+        // Key
         $('#anomaly-details').append(
             '<div class="form-group" id="anomaly-key-div">' +
                 '<label for="anomaly-key">Anomaly key</label>' +
-                '<input type="text" disabled style="color: #6c757d" class="form-control" id="anomaly-key" placeholder="anomaly key">' +
+                '<input type="text" class="form-control" id="anomaly-key" style="width: 200px">' +
             '</div>');
-        $('#anomaly-key').val(anomaly['key']);
+
+        // Title
+        $('#anomaly-details').append(
+            '<div class="form-group" id="anomaly-title-div">' +
+                '<label for="anomaly-key">Anomaly title</label>' +
+                '<input type="text" class="form-control" id="anomaly-title" style="width: 200px">' +
+            '</div>');
 
         // Category select
         $('#anomaly-details').append(
-            '<div class="form-group">' +
+            '<div class="form-group" style="padding-left: 30px">' +
                 '<label for="anomaly-category-select">Category</label>' +
-                '<select class="form-control" id="anomaly-category-select" placeholder="category"></select>' +
+                '<select class="form-control" id="anomaly-category-select" placeholder="category" style="width: 200px"></select>' +
             '</div>');
-        let selectedCategory = null
         anomalies.categories.forEach(function(category) {
-            if (anomaly['category'] === category) selectedCategory = category;
-            let selected = anomaly['category'] === category ? ' selected ' : '';
-            $('#anomaly-category-select').append('<option value="' + category + '"' + selected + '>' + category + '</option>');
+            $('#anomaly-category-select').append('<option value="' + category + '">' + category + '</option>');
         });
         $('#anomaly-category-select').on('change', function (e) {
             var category = this.value;
@@ -167,61 +188,92 @@ class Anomalies {
         $('#anomaly-details').append(
             '<div class="form-group">' +
                 '<label for="anomaly-impacted-item-select">Impacted Item</label>' +
-                '<select class="form-control" id="anomaly-impacted-item-select" placeholder="impacted item"></select>' +
+                '<select class="form-control" id="anomaly-impacted-item-select" placeholder="impacted item" style="width: 200px"></select>' +
             '</div>');
-        anomalies.impactedItems[selectedCategory].forEach(function(item) {
-            let selected = anomaly['impactedItem'] === item ? ' selected ' : '';
-            $('#anomaly-impacted-item-select').append('<option value="' + item + '"' + selected + '>' + item + '</option>');
-        });
+        var category = $('#anomaly-category-select').val();
+        anomalies.updateAnomalyDetailsPanelSelectedItems(category, anomaly);
 
         // Impacted satellite select
         $('#anomaly-details').append(
-            '<div class="form-group">' +
+            '<div class="form-group" style="padding-left: 30px">' +
                 '<label for="anomaly-impacted-satellite-select">Impacted Satellite</label>' +
-                '<select class="form-control" id="anomaly-impacted-satellite-select" placeholder="impacted satellite"></select>' +
+                '<select class="form-control" id="anomaly-impacted-satellite-select" placeholder="impacted satellite" style="width: 200px"></select>' +
             '</div>');
         anomalies.impactedSatellites.forEach(function(satellite) {
-            let selected = anomaly['impactedSatellite'] === satellite ? ' selected ' : '';
-            $('#anomaly-impacted-satellite-select').append('<option value="' + satellite + '"' + selected + '>' + satellite + '</option>');
+            $('#anomaly-impacted-satellite-select').append('<option value="' + satellite + '">' + satellite + '</option>');
         });
+
+        // Occurrence date
+        $('#anomaly-details').append(
+            '<div class="form-group">' +
+                '<label for="anomaly-occurrence-date">Occurrence date</label>' +
+                '<input class="form-control" type="text" id="anomaly-occurrence-date" style="width: 200px"></input>' +
+            '</div>');
 
         // Data takes
         $('#anomaly-details').append(
-            '<div class="form-group" id="anomaly-environment-div" style="width: 430px">' +
+            '<div class="form-group" id="anomaly-environment-div" style="padding-left: 30px; width: 470px">' +
                 '<label for="anomaly-environment">Datatakes</label>' +
                 '<input type="text" class="form-control" id="anomaly-environment" placeholder="datatakes">' +
             '</div>');
-        $('#anomaly-environment').val(anomaly['environment']);
 
         // News title
         $('#anomaly-details').append(
-            '<div class="form-group" id="anomaly-news-title-div" style="width: 430px">' +
+            '<div class="form-group" id="anomaly-news-title-div" style="padding-left: 30px; width: 470px">' +
                 '<label for="anomaly-news-title">News title</label>' +
                 '<input type="text" class="form-control" id="anomaly-news-title" placeholder="related news title">' +
             '</div>');
-        $('#anomaly-news-title').val(anomaly['newsTitle']);
 
         // News link
         $('#anomaly-details').append(
-            '<div class="form-group" id="anomaly-news-link-div" style="width: 430px">' +
+            '<div class="form-group" id="anomaly-news-link-div" style="padding-left: 30px; width: 470px">' +
                 '<label for="anomaly-news-link">News link</label>' +
                 '<input type="text" class="form-control" id="anomaly-news-link" placeholder="related news link">' +
             '</div>');
-        $('#anomaly-news-link').val(anomaly['newsLink']);
+
+        // If an anomaly is defined, populate editing fields
+        if (anomaly) {
+            $('#anomaly-id').val(anomaly['id']);
+            $('#anomaly-key').val(anomaly['key']);
+            $('#anomaly-key').attr('disabled', 'disabled');
+            $('#anomaly-key').css('color', '#383838');
+            $('#anomaly-title').val(anomaly['title']);
+            $('#anomaly-title').attr('disabled', 'disabled');
+            $('#anomaly-title').css('color', '#383838');
+            $('#anomaly-category-select').val(anomaly['category']);
+            $('#anomaly-impacted-item-select').empty();
+            anomalies.impactedItems[anomaly['category']].forEach(function(item) {
+                $('#anomaly-impacted-item-select').append('<option value="' + item + '">' + item + '</option>');
+            });
+            $('#anomaly-impacted-item-select').val(anomaly['impactedItem']);
+            $('#anomaly-impacted-satellite-select').val(anomaly['impactedSatellite']);
+            $('#anomaly-occurrence-date').val(anomaly['publicationDate']);
+            $('#anomaly-occurrence-date').attr('disabled', 'disabled');
+            $('#anomaly-occurrence-date').css('color', '#383838');
+            $('#anomaly-environment').val(anomaly['environment']);
+            $('#anomaly-news-title').val(anomaly['newsTitle']);
+            $('#anomaly-news-link').val(anomaly['newsLink']);
+        }
     }
 
     updateAnomalyDetailsPanelSelectedItems(selectedCategory, anomaly) {
         $('#anomaly-impacted-item-select').children().remove();
         anomalies.impactedItems[selectedCategory].forEach(function(item) {
-            let selected = anomaly['impactedItem'] === item ? ' selected ' : '';
-            $('#anomaly-impacted-item-select').append('<option value="' + item + '"' + selected + '>' + item + '</option>');
+            $('#anomaly-impacted-item-select').append('<option value="' + item + '">' + item + '</option>');
         });
+
+        // if an anomaly is defined, set the proper impacted item
+        if (anomaly) {
+            $('#anomaly-impacted-item-select').val(anomaly['impactedItem']);
+        }
     }
 
-    updateAnomaly() {
+    saveAnomaly() {
 
         // Retrieve modified anomaly's details
         let key = $('#anomaly-key').val();
+        let title = $('#anomaly-title').val();
+        let occurrenceDate = $('#anomaly-occurrence-date').val();
         let category =  $('#anomaly-category-select').val();
         let impactedItem = $('#anomaly-impacted-item-select').val();
         let impactedSatellite = $('#anomaly-impacted-satellite-select').val();
@@ -229,24 +281,39 @@ class Anomalies {
         let newsTitle = $('#anomaly-news-title').val();
         let newsLink = $('#anomaly-news-link').val();
 
-        // Invoke user's details update
+        // Invoke user's details save or update
+        let newAnomaly = false;
         let anomaly = anomalies.anomalies[key];
+        if (anomaly == null) {
+            newAnomaly = true;
+            anomaly = {};
+            anomaly['key'] = key;
+            anomaly['title'] = title;
+            anomaly['publicationDate'] = occurrenceDate;
+        }
         anomaly['category'] = category;
         anomaly['impactedItem'] = impactedItem;
         anomaly['impactedSatellite'] = impactedSatellite;
         anomaly['environment'] = environment;
         anomaly['newsTitle'] = newsTitle;
         anomaly['newsLink'] = newsLink;
-        ajaxCall('/api/events/anomalies/update', 'POST', anomaly, this.successUpdateAnomaly.bind(this),
-            this.errorUpdateAnomaly.bind(this));
+
+        if (newAnomaly) {
+            ajaxCall('/api/events/anomalies/add', 'POST', anomaly, this.successSaveAnomaly.bind(this),
+                this.errorSaveAnomaly.bind(this));
+        } else {
+            ajaxCall('/api/events/anomalies/update', 'PUT', anomaly, this.successSaveAnomaly.bind(this),
+                this.errorSaveAnomaly.bind(this));
+        }
     }
 
-    successUpdateAnomaly() {
+    successSaveAnomaly() {
 
         // Close edit anomaly modal window
         $('#editAnomalyModal').modal('hide');
 
         // Clean anomaly details panel
+        $('#anomaly-id').val('');
         $('#anomaly-key').val('');
         $('#anomaly-category-select').val('');
         $('#anomaly-impacted-item-select').val('');
@@ -260,10 +327,11 @@ class Anomalies {
             anomalies.errorLoadAnomalies);
     }
 
-    errorUpdateAnomaly() {
+    errorSaveAnomaly() {
         console.error(response)
         return;
     }
+
 }
 
 let anomalies = new Anomalies();

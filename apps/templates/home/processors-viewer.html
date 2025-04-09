@@ -1,0 +1,133 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Processors Releases {% endblock %}
+
+{% block content %}
+
+    <!-- Viewport definition -->
+    <meta charset="utf-8"/>
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Define page content -->
+    <div class="content" style="min-height: calc(100% - 130px);">
+        <div class="page-inner">
+
+            <!-- Breadcrumb -->
+            <div class="page-header">
+                <h4 class="page-title">Processors Releases</h4>
+                <ul class="breadcrumbs">
+                    <li class="nav-home">
+                        <a href="/index.html">
+                            <i class="flaticon-home"></i>
+                        </a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#">Processors</a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Collapsible description panel -->
+            <div class="row">
+                <div class="card-body" style="padding-bottom: 0.0rem !important">
+                    <div class="flex flex-column faq-section">
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div id="accordion">
+                                    <div class="card">
+                                        <div class="card-header" id="heading-description">
+                                            <h5 class="mb-0" style="color: white">
+                                                <a role="button" data-toggle="collapse" href="#description"
+                                                   aria-expanded="false" aria-controls="description"
+                                                   style="color: white; text-decoration: none">
+                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+                                                </a>
+                                            </h5>
+                                        </div>
+                                        <div id="description" class="collapse hide" data-parent="#accordion"
+                                             aria-labelledby="heading-description">
+                                            <div class="card-body">
+                                                This view shows the complete list of the releases of the Copernicus Sentinels processors, on
+                                                an interactive timeline. The timeline can be zoomed in / out using the mouse wheel, and dragged
+                                                to the left / right by moving the mouse while keeping left-hand button pressed.<br/>
+                                                By clicking on a colored box, the details relevant to the selected processor release is
+                                                displayed in the lower part of the screen.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Main Processors View -->
+                    <div class="card">
+
+                        <!-- Card header -->
+                        <div class="card-header">
+                            <div class="d-flex align-items-center">
+                                <h4 class="card-title"> Processors Releases</h4>
+                            </div>
+                        </div>
+
+                        <!-- Card body-->
+                        <div class="card-body">
+
+                            <!-- Processors search bar -->
+                            <div class="row col-md-12">
+                                <div class="form-group float-left mr-auto ml-0">
+                                    <select class="form-control ml-0" id="processors-viewer-missions" style="width: 300px"></select>
+                                </div>
+                                <div class="flot-right ml-auto mr-0 mb-3">
+                                    <label>Search:
+                                        <input aria-controls="basic-datatables-data-takes"
+                                             class="form-control form-control-sm"
+                                             id="processors-text-filter" placeholder="" type="text">
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- The Processors Timeline control -->
+                            <div id="processors-timeline"></div>
+
+                            <!-- The Processors release details panel -->
+                            <div id="processor-release-details" class="mt-2 col-md-12"></div>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+    </div>
+</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <!-- Specific plugins scripts -->
+
+    <!-- Specific page style -->
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css'>
+    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+    <link rel="stylesheet" href="/static/assets/css/processors.css">
+
+	<!-- Page related JS Class -->
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js'></script>
+    <script src="/static/assets/js/processors-releases/processors-viewer.js"></script>
+    <script defer type="text/javascript">procViewer.init();</script>
+    <script>
+
+        // Filter processors releases
+        $('#processors-text-filter').on('input', function(event) {
+            procViewer.filterReleases($(this).val());
+        });
+    </script>
+
+{% endblock javascripts %}

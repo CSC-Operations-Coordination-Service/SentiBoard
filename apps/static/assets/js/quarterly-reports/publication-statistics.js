@@ -222,7 +222,7 @@ class PublicationStatistics {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel.options.length == 4) {
-                time_period_sel.append(new Option('Previous Quarter', 'prev-quarter'));
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
             }
 
             // Programmatically select the previous quarter as the default time range

@@ -11,44 +11,68 @@ behalf of TPZ to fulfill the purpose for which the document was
 delivered to him.
 */
 
-class AcquisitionService {
+class AcquisitionServiceMod {
 
-    constructor(){
+    constructor() {
+
+        // Set of impacted datatakes, grouped by satellite
+        this.impactedDatatakesBySatellite = {
+            's1a': [],
+            's1c': [],
+            's2a': [],
+            's2b': [],
+            's2c': [],
+            's3a': [],
+            's3b': [],
+            's3d': [],
+            's5p': []
+        };
+
+        // Set of categorized events
+        this.categorizedAnomalies = {};
 
         // Set of downlink passes, grouped by Station and Satellite
         this.downlinkPasses = {
-            'svalbard': {'s1a': [], 's2a': [], 's2b': [], 's3a': [], 's3b': []},
-            'inuvik': {'s1a': [], 's2a': [], 's2b': []},
-            'maspalomas': {'s1a': [], 's2a': [], 's2b': []},
-            'matera': {'s1a': [], 's2a': [], 's2b': []},
-            'neustrelitz': {'s1a': []},
+            'svalbard': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': []},
+            'inuvik': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
+            'maspalomas': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
+            'matera': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
+            'neustrelitz': {'s1a': [], 's1c': []},
             'dlr': {'s5p': []}
         };
 
         // Set of anomalies, grouped by Station, and divided by "Ground Segment" and "Space Segment"
         this.downlinkAnomalies = {
-            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []},
+            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                         's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []},
                          's3a': {'acq': [], 'sat': [], 'other': []}, 's3b': {'acq': [], 'sat': [], 'other': []}},
-            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
-            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
-            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
-            'neustrelitz': {'acq': [], 'sat': [], 'other': []},
-            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}},
+            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
+            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                           's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
+            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
+            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
+            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
             'dlr': {'s5p': {'acq': [], 'sat': [], 'other': []}}
         };
 
         // Set of EDRS passes, grouped by Satellite
         this.EDRSPasses = {
             's1a': [],
+            's1c': [],
             's2a': [],
-            's2b': []
+            's2b': [],
+            's2c': []
         };
 
         // Set of EDRS operations, grouped by Satellite
         this.EDRSAnomalies = {
             's1a': {'acq': [], 'sat': [], 'other': []},
+            's1c': {'acq': [], 'sat': [], 'other': []},
             's2a': {'acq': [], 'sat': [], 'other': []},
             's2b': {'acq': [], 'sat': [], 'other': []},
+            's2c': {'acq': [], 'sat': [], 'other': []},
         };
 
         // Set of colors used in the pie charts
@@ -71,11 +95,8 @@ class AcquisitionService {
         var time_period_sel = document.getElementById('time-period-select');
         time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this))
 
-        // Retrieve the downlink operations and related anomalies
-        this.loadAcquisitionsInPeriod('prev-quarter');
-
-        // Retrieve the EDRS operations and related anomalies
-        this.loadEDRSAcquisitionsInPeriod('prev-quarter');
+        // Retrieve the Datatakes and related anomalies in period
+        this.loadDatatakesInPeriod('prev-quarter');
 
         return;
     }
@@ -99,32 +120,118 @@ class AcquisitionService {
     }
 
     on_timeperiod_change() {
-        var time_period_sel = document.getElementById('time-period-select')
-        var selected_time_period = time_period_sel.value
-        console.log("Time period changed to "+ selected_time_period)
-        this.loadAcquisitionsInPeriod(selected_time_period);
-        this.loadEDRSAcquisitionsInPeriod(selected_time_period);
+        var time_period_sel = document.getElementById('time-period-select');
+        var selected_time_period = time_period_sel.value;
+        console.log("Time period changed to "+ selected_time_period);
+        this.loadDatatakesInPeriod(selected_time_period);
+    }
+
+    loadDatatakesInPeriod(selected_time_period) {
+
+        // Clear previous data, if any - impacted datatakes
+        this.impactedDatatakesBySatellite = {
+            's1a': [],
+            's1c': [],
+            's2a': [],
+            's2b': [],
+            's2c': [],
+            's3a': [],
+            's3b': [],
+            's5p': []
+        };
+
+        // Clear previous data, if any - categorized events
+        this.categorizedAnomalies = {};
+
+        // Acknowledge the invocation of rest APIs
+        console.info("Invoking Datatakes retrieval...");
+
+        // Execute asynchronous AJAX call
+        if (selected_time_period === 'day') {
+            ajaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'week') {
+            ajaxCall('/api/worker/cds-datatakes/last-7d', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'month') {
+            ajaxCall('/api/worker/cds-datatakes/last-30d', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'prev-quarter') {
+            ajaxCall('/api/worker/cds-datatakes/previous-quarter', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else {
+            ajaxCall('/api/worker/cds-datatakes/last-quarter', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        }
+
+        return;
+    }
+
+    successLoadDatatakes(response) {
+
+        // Acknowledge the successful retrieval of S1/S2 data takes
+        var rows = format_response(response);
+        console.info('Datatakes successfully retrieved');
+        console.info("Number of records: " + rows.length);
+
+        // Parse response
+        for (var i = 0 ; i < rows.length ; ++i){
+
+            // Auxiliary variables
+            var element = rows[i]['_source'];
+
+            // Satellite unit
+            var sat_unit = element['satellite_unit'].toLowerCase();
+
+            // Sensing start and stop time
+            element['observation_time_start'] = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+            element['observation_time_stop'] = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+
+            // Check the presence of any related ticket: in case of anomalies,
+            // store the datatake in a dedicated structure
+            if (element['last_attached_ticket']) {
+                this.impactedDatatakesBySatellite[sat_unit].push(element);
+            }
+        }
+
+        // Retrieve the downlink / EDRS operations and related anomalies only after datatakes retrieval
+        var time_period_sel = document.getElementById('time-period-select');
+        this.loadAcquisitionsInPeriod(time_period_sel.value);
+        this.loadEDRSAcquisitionsInPeriod(time_period_sel.value);
+
+        return;
+    }
+
+    errorLoadDatatake(response) {
+        console.error(response)
+        return;
     }
 
     loadAcquisitionsInPeriod(selected_time_period) {
 
         // Clear previous data, if any
         this.downlinkPasses = {
-            'svalbard': {'s1a': [], 's2a': [], 's2b': [], 's3a': [], 's3b': []},
-            'inuvik': {'s1a': [], 's2a': [], 's2b': []},
-            'maspalomas': {'s1a': [], 's2a': [], 's2b': []},
-            'matera': {'s1a': [], 's2a': [], 's2b': []},
-            'neustrelitz': {'s1a': []},
+            'svalbard': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': []},
+            'inuvik': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
+            'maspalomas': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
+            'matera': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
+            'neustrelitz': {'s1a': [], 's1c': []},
+            'dlr': {'s5p': []}
         };
 
         this.downlinkAnomalies = {
-            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []},
+            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                         's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []},
                          's3a': {'acq': [], 'sat': [], 'other': []}, 's3b': {'acq': [], 'sat': [], 'other': []}},
-            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
-            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
-            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
-            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}},
-            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}},
+            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
+            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                           's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
+            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
+                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
+            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
+            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
+            'dlr': {'s5p': {'acq': [], 'sat': [], 'other': []}}
         };
 
         // Clear pie charts and boxes
@@ -155,7 +262,29 @@ class AcquisitionService {
         return;
     }
 
-    successLoadAcquisitions(response){
+    clearGlobalBoxes() {
+        ['planned-acquisitions', 'successful-acquisitions', 'satellite-failures', 'acquisition-failures',
+                'other-failures'].forEach(function(item) {
+            var boxId = item.toLowerCase() + '-global-box';
+            $('#' + boxId + '-mod').html(
+                '<div class="spinner">' +
+                    '<div class="bounce1"></div>' +
+                    '<div class="bounce2"></div>' +
+                    '<div class="bounce3"></div>' +
+                '</div>');
+        })
+    }
+
+    clearPieChartsAndBoxes() {
+        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
+            var pieId = station.toLowerCase() + '-station-pie-chart-mod';
+            var boxId = station.toLowerCase() + '-station-box-mod';
+            acquisitionServiceMod.clearPieChart(pieId);
+            acquisitionServiceMod.clearBox(boxId);
+        })
+    }
+
+    successLoadAcquisitions(response) {
 
         // Acknowledge the successful retrieval of downlink operations
         var rows = format_response(response);
@@ -190,10 +319,12 @@ class AcquisitionService {
                 downlink['origin'] = element['cams_origin'];
                 downlink['description'] = element['cams_description'];
                 downlink['notes'] = element['notes'];
+                downlink['last_attached_ticket'] = element['last_attached_ticket']
             } catch (exception) {
                 downlink['origin'] = '';
                 downlink['description'] = '';
                 downlink['notes'] = '';
+                downlink['last_attached_ticket'] = '';
             }
 
             // Store the downlink operation in the member class state vector
@@ -203,12 +334,11 @@ class AcquisitionService {
                 let sat = downlink['satellite_id'];
                 let stat = element['ground_station'];
                 console.warn('Skipping pass of ' + sat + ' on ' + stat);
-                continue ;
             }
 
             // Store the reference to the anomaly (if present) in the member class state vector
-            if (downlink['fer_data'] > 1e-6 && downlink['origin'] && downlink['origin'].trim() != ''
-                    && !downlink['description'].includes('No impact on completeness')) {
+            if (downlink['origin'] && downlink['origin'].trim() != null &&
+                    acquisitionServiceMod.hasImpactOnDatatakes(downlink['last_attached_ticket'], downlink['satellite_id'].toLowerCase())) {
                 if (downlink['origin'].includes('Acquis')) {
                     this.downlinkAnomalies[downlink['station'].toLowerCase()][downlink['satellite_id'].toLowerCase()]['acq'].push(downlink['notes']);
                 } else if (downlink['origin'].includes('Sat') || downlink['origin'].includes('CAM')) {
@@ -219,14 +349,15 @@ class AcquisitionService {
             }
         }
 
-        // Invoke refresh of related widgets
+        // Refresh acquisition service boxes and pie charts
         this.refreshGlobalBoxes();
         this.refreshPieChartsAndBoxes();
 
         return;
     }
 
-    errorLoadDownlink(response){
+    errorLoadAcquisitions(response) {
+        acquisitionServiceMod.calcAcquisitionStatistics();
         console.error(response)
         return;
     }
@@ -250,118 +381,27 @@ class AcquisitionService {
         }
         return name;
     }
-
-    clearGlobalBoxes() {
-        ['planned-acquisitions', 'successful-acquisitions', 'satellite-failures', 'acquisition-failures',
-                'other-failures'].forEach(function(item) {
-            var boxId = item.toLowerCase() + '-global-box';
-            $('#' + boxId).html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
-        })
-    }
-
-    clearPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
-            var pieId = station.toLowerCase() + '-station-pie-chart';
-            var boxId = station.toLowerCase() + '-station-box';
-            acquisitionService.clearPieChart(pieId);
-            acquisitionService.clearBox(boxId);
-        })
-    }
-
-    refreshGlobalBoxes() {
-        var data = acquisitionService.calcGlobalDownlinkStatistics();
-        var ok = 0, sat = 0, acq = 0, other = 0, tot = 0;
-        for (const [label, num] of Object.entries(data)) {
-            tot += num;
-            if (label.toUpperCase().includes('SUCCESS')) {
-                ok += num;
-            }
-            if (label.toUpperCase().includes('SATELLITE')) {
-                sat += num;
-            }
-            if (label.toUpperCase().includes('ACQUISITION')) {
-                acq += num;
-            }
-            if (label.toUpperCase().includes('OTHER')) {
-                other += num;
-            }
-        }
-        $('#planned-acquisitions-global-box').text(tot);
-        var okPerc = ok * 100.0 / tot;
-        $('#successful-acquisitions-global-box').text(ok + ' (' + okPerc.toFixed(2) + '%)');
-        var satPerc = sat * 100.0 / tot;
-        $('#satellite-failures-global-box').text(sat + ' (' + satPerc.toFixed(2) + '%)');
-        var acqPerc = acq * 100.0 / tot;
-        $('#acquisition-failures-global-box').text(acq + ' (' + acqPerc.toFixed(2) + '%)');
-        var othPerc = other * 100.0 / tot;
-        $('#other-failures-global-box').text(other + ' (' + othPerc.toFixed(2) + '%)');
-    }
-
-    refreshPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
-            var pieId = station.toLowerCase() + '-station-pie-chart';
-            var boxId = station.toLowerCase() + '-station-box';
-            var data = acquisitionService.calcDownlinkStatistics(station);
-            acquisitionService.refreshPieChart(pieId, data);
-            acquisitionService.refreshBox(boxId, data);
-        })
-    }
-
-    calcGlobalDownlinkStatistics() {
-        var data = {};
-        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const station of Object.keys(acquisitionService.downlinkPasses)) {
-            if (station.toUpperCase().includes('DLR')) continue ;
-            for (const [satellite, passes] of Object.entries(acquisitionService.downlinkPasses[station])) {
-                totPasses += acquisitionService.downlinkPasses[station][satellite].length;
-                failedPassesAcq += acquisitionService.downlinkAnomalies[station][satellite]['acq'].length;
-                failedPassesSat += acquisitionService.downlinkAnomalies[station][satellite]['sat'].length;
-                failedPassesOther += acquisitionService.downlinkAnomalies[station][satellite]['other'].length;
-            }
-        }
-        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
-        data['Successful passes'] = successfulPasses;
-        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
-        data['Impaired passes (Satellite issues)'] = failedPassesSat;
-        data['Impaired passes (Other issues)'] = failedPassesOther;
-        return data;
-    }
-
-    calcDownlinkStatistics(station) {
-        var data = {};
-        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const [satellite, passes] of Object.entries(acquisitionService.downlinkPasses[station])) {
-            totPasses += acquisitionService.downlinkPasses[station][satellite].length;
-            failedPassesAcq += acquisitionService.downlinkAnomalies[station][satellite]['acq'].length;
-            failedPassesSat += acquisitionService.downlinkAnomalies[station][satellite]['sat'].length;
-            failedPassesOther += acquisitionService.downlinkAnomalies[station][satellite]['other'].length;
-        }
-        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
-        data['Successful passes'] = successfulPasses;
-        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
-        data['Impaired passes (Satellite issues)'] = failedPassesSat;
-        data['Impaired passes (Other issues)'] = failedPassesOther;
-        return data;
-    }
-
+    
     loadEDRSAcquisitionsInPeriod(selected_time_period) {
+
+        // Wait until the impacted datatakes have been loaded
+        while (this.datatakesNotLoaded) sleep(500);
 
         // Clear previous data, if any
         this.EDRSPasses = {
             's1a': [],
+            's1c': [],
             's2a': [],
-            's2b': []
+            's2b': [],
+            's2c': []
         };
 
         this.EDRSAnomalies = {
             's1a': {'acq': [], 'sat': [], 'other': []},
+            's1c': {'acq': [], 'sat': [], 'other': []},
             's2a': {'acq': [], 'sat': [], 'other': []},
             's2b': {'acq': [], 'sat': [], 'other': []},
+            's2c': {'acq': [], 'sat': [], 'other': []},
         };
 
         // Clear pie charts and boxes
@@ -391,7 +431,14 @@ class AcquisitionService {
         return;
     }
 
-    successLoadEDRS(response){
+    clearEDRSPieChartsAndBoxes() {
+        var pieId = 'edrs-pie-chart';
+        var boxId = 'edrs-box';
+        acquisitionServiceMod.clearPieChart(pieId);
+        acquisitionServiceMod.clearBox(boxId);
+    }
+
+    successLoadEDRS(response) {
 
         // Acknowledge the successful retrieval of downlink operations
         var rows = format_response(response);
@@ -421,15 +468,19 @@ class AcquisitionService {
             try {
                 edrs['origin'] = element['cams_origin'];
                 edrs['description'] = element['cams_description'];
+                edrs['last_attached_ticket'] = element['last_attached_ticket'];
             } catch (exception) {
                 edrs['origin'] = '';
+                edrs['description'] = '';
+                edrs['last_attached_ticket'] = '';
             }
 
             // Store the downlink operation in the member class state vector
             this.EDRSPasses[edrs['satellite'].toLowerCase()].push(edrs);
 
             // Store the reference to the anomaly (if present) in the member class state vector
-            if (edrs['origin'] && edrs['origin'].trim() != '') {
+            if (edrs['origin'] && edrs['origin'].trim() != ''
+                    && acquisitionServiceMod.hasImpactOnDatatakes(edrs['last_attached_ticket'], edrs['satellite'].toLowerCase())) {
                 if (edrs['origin'].includes('Acquis')) {
                     this.EDRSAnomalies[edrs['satellite'].toLowerCase()]['acq'].push(edrs['description']);
                 } else if (edrs['origin'].includes('Sat')) {
@@ -446,19 +497,104 @@ class AcquisitionService {
         return;
     }
 
-    errorLoadEDRS(response){
+    errorLoadEDRS(response) {
         console.error(response)
         return;
+    }
+    
+    refreshGlobalBoxes() {
+        var data = acquisitionServiceMod.calcGlobalDownlinkStatistics();
+        var ok = 0, sat = 0, acq = 0, other = 0, tot = 0;
+        for (const [label, num] of Object.entries(data)) {
+            tot += num;
+            if (label.toUpperCase().includes('SUCCESS')) {
+                ok += num;
+            }
+            if (label.toUpperCase().includes('SATELLITE')) {
+                sat += num;
+            }
+            if (label.toUpperCase().includes('ACQUISITION')) {
+                acq += num;
+            }
+            if (label.toUpperCase().includes('OTHER')) {
+                other += num;
+            }
+        }
+        $('#planned-acquisitions-global-box-mod').text(tot);
+        var okPerc = ok * 100.0 / tot;
+        $('#successful-acquisitions-global-box-mod').text(ok + ' (' + okPerc.toFixed(2) + '%)');
+        var satPerc = sat * 100.0 / tot;
+        $('#satellite-failures-global-box-mod').text(sat + ' (' + satPerc.toFixed(2) + '%)');
+        var acqPerc = acq * 100.0 / tot;
+        $('#acquisition-failures-global-box-mod').text(acq + ' (' + acqPerc.toFixed(2) + '%)');
+        var othPerc = other * 100.0 / tot;
+        $('#other-failures-global-box-mod').text(other + ' (' + othPerc.toFixed(2) + '%)');
+    }
+    
+    calcGlobalDownlinkStatistics() {
+        var data = {};
+        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
+        for (const station of Object.keys(acquisitionServiceMod.downlinkPasses)) {
+            if (station.toUpperCase().includes('DLR')) continue ;
+            for (const [satellite, passes] of Object.entries(acquisitionServiceMod.downlinkPasses[station])) {
+                totPasses += acquisitionServiceMod.downlinkPasses[station][satellite].length;
+                failedPassesAcq += acquisitionServiceMod.downlinkAnomalies[station][satellite]['acq'].length;
+                failedPassesSat += acquisitionServiceMod.downlinkAnomalies[station][satellite]['sat'].length;
+                failedPassesOther += acquisitionServiceMod.downlinkAnomalies[station][satellite]['other'].length;
+            }
+        }
+        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
+        data['Successful passes'] = successfulPasses;
+        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
+        data['Impaired passes (Satellite issues)'] = failedPassesSat;
+        data['Impaired passes (Other issues)'] = failedPassesOther;
+        return data;
+    }
+
+    refreshPieChartsAndBoxes() {
+        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
+            var pieId = station.toLowerCase() + '-station-pie-chart-mod';
+            var boxId = station.toLowerCase() + '-station-box';
+            var data = acquisitionServiceMod.calcDownlinkStatistics(station);
+            acquisitionServiceMod.refreshPieChart(pieId, data);
+            acquisitionServiceMod.refreshBox(boxId, data);
+        })
+    }
+    
+    calcDownlinkStatistics(station) {
+        var data = {};
+        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
+        for (const [satellite, passes] of Object.entries(acquisitionServiceMod.downlinkPasses[station])) {
+            totPasses += acquisitionServiceMod.downlinkPasses[station][satellite].length;
+            failedPassesAcq += acquisitionServiceMod.downlinkAnomalies[station][satellite]['acq'].length;
+            failedPassesSat += acquisitionServiceMod.downlinkAnomalies[station][satellite]['sat'].length;
+            failedPassesOther += acquisitionServiceMod.downlinkAnomalies[station][satellite]['other'].length;
+        }
+        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
+        data['Successful passes'] = successfulPasses;
+        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
+        data['Impaired passes (Satellite issues)'] = failedPassesSat;
+        data['Impaired passes (Other issues)'] = failedPassesOther;
+        return data;
+    }
+
+    refreshEDRSPieChartsAndBoxes() {
+        var pieId = 'edrs-pie-chart-mod';
+        var boxId = 'edrs-box';
+        var data = acquisitionServiceMod.calcEDRSStatistics();
+        var labels = ['Successful', 'Acquisition Service issues', 'Satellite issues', 'Other issues'];
+        acquisitionServiceMod.refreshPieChart(pieId, data, labels);
+        acquisitionServiceMod.refreshBox(boxId, data, labels);
     }
 
     calcEDRSStatistics() {
         var data = {};
         var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const [satellite, passes] of Object.entries(acquisitionService.EDRSPasses)) {
-            totPasses += acquisitionService.EDRSPasses[satellite.toLowerCase()].length;
-            failedPassesAcq += acquisitionService.EDRSAnomalies[satellite.toLowerCase()]['acq'].length;
-            failedPassesSat += acquisitionService.EDRSAnomalies[satellite.toLowerCase()]['sat'].length;
-            failedPassesOther += acquisitionService.EDRSAnomalies[satellite.toLowerCase()]['other'].length;
+        for (const [satellite, passes] of Object.entries(acquisitionServiceMod.EDRSPasses)) {
+            totPasses += acquisitionServiceMod.EDRSPasses[satellite.toLowerCase()].length;
+            failedPassesAcq += acquisitionServiceMod.EDRSAnomalies[satellite.toLowerCase()]['acq'].length;
+            failedPassesSat += acquisitionServiceMod.EDRSAnomalies[satellite.toLowerCase()]['sat'].length;
+            failedPassesOther += acquisitionServiceMod.EDRSAnomalies[satellite.toLowerCase()]['other'].length;
         }
         let successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
         data['Successful passes'] = successfulPasses;
@@ -468,42 +604,13 @@ class AcquisitionService {
         return data;
     }
 
-    clearEDRSPieChartsAndBoxes() {
-        var pieId = 'edrs-pie-chart';
-        var boxId = 'edrs-box';
-        acquisitionService.clearPieChart(pieId);
-        acquisitionService.clearBox(boxId);
-    }
-
-    refreshEDRSPieChartsAndBoxes() {
-        var pieId = 'edrs-pie-chart';
-        var boxId = 'edrs-box';
-        var data = acquisitionService.calcEDRSStatistics();
-        var labels = ['Successful', 'Acquisition Service issues', 'Satellite issues', 'Other issues'];
-        acquisitionService.refreshPieChart(pieId, data, labels);
-        acquisitionService.refreshBox(boxId, data, labels);
-    }
-
-    clearPieChart(pieId) {
-        var chartCanvas = document.getElementById(pieId);
-        if (chartCanvas !== null) {
-            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+    hasImpactOnDatatakes(anomalyId, sat_unit) {
+        for (const datatake of acquisitionServiceMod.impactedDatatakesBySatellite[sat_unit]) {
+            if (datatake['last_attached_ticket'].includes(anomalyId)) {
+                return true;
+            }
         }
-    }
-
-    clearBox(boxId) {
-        $('#' + boxId).html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
-        $('#' + boxId + '-perc').html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
+        return false;
     }
 
     refreshPieChart(pieId, data) {
@@ -516,7 +623,7 @@ class AcquisitionService {
 			data: {
 				datasets: [{
 					data: Object.values(data),
-					backgroundColor : acquisitionService.colorsPool,
+					backgroundColor : acquisitionServiceMod.colorsPool,
 					borderWidth: 0
 				}],
 				labels: Object.keys(data)
@@ -560,10 +667,32 @@ class AcquisitionService {
             }
         }
         var okPerc = ok * 100.0 / tot;
-        $('#' + boxId).text(ok + ' / ' + tot);
-        $('#' + boxId + '-perc').text(okPerc.toFixed(2) + '%');
+        $('#' + boxId + '-mod').text(ok + ' / ' + tot);
+        $('#' + boxId + '-perc-mod').text(okPerc.toFixed(2) + '%');
     }
 
+    clearPieChart(pieId) {
+        var chartCanvas = document.getElementById(pieId);
+        if (chartCanvas !== null) {
+            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        }
+    }
+
+    clearBox(boxId) {
+        $('#' + boxId + '-mod').html(
+                '<div class="spinner">' +
+                    '<div class="bounce1"></div>' +
+                    '<div class="bounce2"></div>' +
+                    '<div class="bounce3"></div>' +
+                '</div>');
+        $('#' + boxId + '-perc-mod').html(
+                '<div class="spinner">' +
+                    '<div class="bounce1"></div>' +
+                    '<div class="bounce2"></div>' +
+                    '<div class="bounce3"></div>' +
+                '</div>');
+    }
+    
     showAcquisitionStatistics(station) {
 
         // Auxiliary Variable Declaration
@@ -576,13 +705,13 @@ class AcquisitionService {
         if (station === 'edrs') {
             target = 'EDRS';
             content.title = 'Details on EDRS acquisitions';
-            passes = acquisitionService.EDRSPasses;
-            anomalies = acquisitionService.EDRSAnomalies;
+            passes = acquisitionServiceMod.EDRSPasses;
+            anomalies = acquisitionServiceMod.EDRSAnomalies;
         } else {
             target = station.charAt(0).toUpperCase();
             content.title = 'Details on ' + station.charAt(0).toUpperCase() + station.slice(1) + ' acquisitions';
-            passes = acquisitionService.downlinkPasses[station];
-            anomalies = acquisitionService.downlinkAnomalies[station];
+            passes = acquisitionServiceMod.downlinkPasses[station];
+            anomalies = acquisitionServiceMod.downlinkAnomalies[station];
         }
 
         // Append global statistics
@@ -657,8 +786,7 @@ class AcquisitionService {
         });
     }
 
-
-    showAcquisitionServiceOnlineHelp() {
+    showAcquisitionServiceModOnlineHelp() {
 
         // Acknowledge the visualization of the online help
         console.info('Showing acquisitions online help message...');
@@ -681,6 +809,7 @@ class AcquisitionService {
 
         return ;
     }
+    
 }
 
-let acquisitionService = new AcquisitionService();
+let acquisitionServiceMod = new AcquisitionServiceMod();

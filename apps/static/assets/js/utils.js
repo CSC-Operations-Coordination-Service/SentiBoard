@@ -83,64 +83,118 @@ function asyncAjaxCallParams(url, method, dictData, successParams,
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-
-function normalize_size(size) {
+// TODO: Create a class to manage Size computations/conversions
+volume_units_suffixes = {
+1000: 'iB',
+1024: 'B'
+}
+function normalize_size(size, factor) {
     // Compute size in biggest volume unit possible
     // Return normalized size and its unit
-    var volume_unit = 'GB';
+    var volume_unit = 'G';
+    var disp_size = 0;
     var int_size = parseInt(size);
     if (int_size > 0) {
-        var disp_size = int_size / (1024 * 1024 * 1024);
-        if (disp_size > 1024) {
-            disp_size = disp_size / 1024;
-            volume_unit = 'TB';
+        var disp_size = int_size / (factor * factor * factor);
+        if (disp_size > factor) {
+            disp_size = disp_size / factor;
+            volume_unit = 'T';
         }
-        if (disp_size > 1024) {
-            disp_size = disp_size / 1024;
-            volume_unit = 'PB';
+        if (disp_size > factor) {
+            disp_size = disp_size / factor;
+            volume_unit = 'P';
         }
     } else {
         disp_size = 0;
     }
+    // TODO: add check
+    volume_unit = volume_unit + volume_units_suffixes[factor];
     return [disp_size, volume_unit];    
 }
 
-function format_size(size) {
-
-    // Compute size in GB
-    var volume_unit = 'GB';
-    var disp_size = 0;
-    var int_size = parseInt(size)
-    if (int_size > 0) {
-        var disp_size = int_size / (1024 * 1024 * 1024)
-        if (disp_size > 1024) {
-            disp_size = disp_size / 1024
-            volume_unit = 'TB'
-        }
-        if (disp_size > 1024) {
-            disp_size = disp_size / 1024
-            volume_unit = 'PB'
-        }
-    } 
-    // [disp_size, volume_unit] = normalize_size(size);
-    return new Intl.NumberFormat().format(disp_size.toFixed(2)) + volume_unit
+function normalize_size_decimal(size) {
+    return normalize_size(size, 1000);
+}
+function format_count(count) {
+// Format integer with thousand separator
+// according to current locale
+   return  new Intl.NumberFormat().format(count);
 }
 
-function unitsize_to_bytes(volume_size, unit) {
+function getMaxNormalizedSize(sizeList) {
+    // retrieve from the list of sizes in bytes
+    // the longest one after formatting
+    // using the nearest Disk Size unit (MB GB TB PB)
+    // Get the max value from normalized values
+    //
+}
+
+function getFormattedStringLength(number, hasThousandSeparator=True, decimalPlaces=0, unitLength=0) {
+    num_base_len = len(str(number));
+    if (hasThousandSeparator === True) {
+        // Add one char each 3 digits
+        num_base_len += num_base_len / 3;
+    }
+    if (decimalPlaces > 0) {
+        // Add comma and decimal digits
+        num_base_len += 1 + decimalPlaces;
+    }
+    if (unitLength > 0){
+        // Add a space separator and the unit specification length
+        num_base_len += 1 + unitLength;
+    }
+    return num_base_len;
+}
+
+function _base_format_size(size, factor) {
+// TODO: make a check on factor to accept only 1024 or 1000?
+    // Compute size in GB
+//    var volume_unit = 'GB';
+//    var disp_size = 0;
+//    var int_size = parseInt(size);
+//    if (int_size > 0) {
+//        var disp_size = int_size / (factor * factor * factor);
+//        if (disp_size > factor) {
+//            disp_size = disp_size / factor;
+//            volume_unit = 'TB';
+//        }
+//        if (disp_size > factor) {
+//            disp_size = disp_size / factor;
+//            volume_unit = 'PB';
+//        }
+//    }
+    [disp_size, volume_unit] = normalize_size(size, factor);
+    return new Intl.NumberFormat().format(disp_size.toFixed(2)) + ' ' + volume_unit;
+}
+function format_size(size) {
+    return _base_format_size(size, 1024);
+}
+
+function format_size_decimal(size) {
+    return _base_format_size(size, 1000);
+}
+
+function unitsize_to_bytes(volume_size, unit, factor) {
+    // TODO: check if factor is a valid value and suffix exists7
+    var suffix = volume_units_suffixes[factor];
+    var byte_unit = unit.substring(0, unit.length - suffix.length );
     // convert a size in bytes to a size in the specified volume unit
-    var unit_size = volume_size * 1024 * 1024 * 1024;
+    var unit_size = volume_size * factor * factor * factor;
     // Otherwise define a table with increasing values for multiplier, with keys the unit values
-    if (unit !== 'GB') {
-        unit_size = unit_size * 1024;
-        if (unit !== 'TB') {
-            unit_size = unit_size * 1024;
-            if (unit !== 'PB') {
-                unit_size = unit_size * 1024;
+    if (byte_unit !== 'G') {
+        unit_size = unit_size * factor;
+        if (byte_unit !== 'T') {
+            unit_size = unit_size * factor;
+            if (byte_unit !== 'P') {
+                unit_size = unit_size * factor;
             }
         }
     }
     console.log("Size in Unit ", unit, ": ", volume_size, "; in bytes: ", unit_size);
     return unit_size;
+}
+function unitsize_to_bytes_decimal(volume_size, unit) {
+    return unitsize_to_bytes(volume_size, unit, factor);
 }
 
 function get_nearest_greater_integer_size(size_raw_value) {
@@ -315,6 +369,19 @@ function get_mission_colors() {
         'S5': "#8f00ff"
     }
 }
+function get_satellite_colors() {
+  return {
+        'S1A': "#1d7af3",
+        'S1B': "#3399ff",
+        'S1C': "#41aade",
+        'S2A': "#59d05d",
+        'S2B': "#3fae3e",
+        'S2C': "#1cae5a",
+        'S3A': "#f3545d",
+        'S3B': "#fdaf4b",
+        'S5P': "#8f00ff"
+    };
+}
 function get_colors(num_colors) {
     var all_colors = ["#1d7af3","#59d05d","#f3545d","#8f00ff","#fdaf4b", 
                     "#0a00ff", "#00ff00",
@@ -412,6 +479,34 @@ function getQuarterInterval(year, quarter_id) {
     console.log("Quarter n."+quarter_id + "interval: from "+start_date+" to "+ end_date);
     return [start_date, end_date];
 }
+// Assumes that 4 quarters are defined,
+// starting from 1. No check on getPreviousQuarter return
+// validity is made
+function getPreviousQuarterRange() {
+    var quarter_months = [
+    'Jan - Mar',
+    'Apr - Jun',
+    'Jul - Sep',
+    'Oct - Dec'
+    ]
+
+    var previous_quarter = getPreviousQuarter(new Date());
+    var year_str = previous_quarter['year'];
+    var period_str = quarter_months[previous_quarter['quarter'] - 1];
+    /*
+    if (previous_quarter['quarter'] == 1) {
+        period_str = 'Jan - Mar';
+    } else if (previous_quarter['quarter'] == 2) {
+        period_str = 'Apr - Jun';
+    } else if (previous_quarter['quarter'] == 2) {
+        period_str = 'Jul - Sep';
+    } else {
+        period_str = 'Oct - Dec';
+    }
+    */
+    return period_str + ' ' + year_str;
+}
+
 /**
     Class used to manipulate time range
 */
@@ -473,7 +568,8 @@ var apiTimePeriodId = {
     week: 'last-7d',
     month: 'last-30d',
     'last-quarter': 'last-quarter',
-    'prev-quarter': 'previous-quarter'
+    'prev-quarter': 'previous-quarter',
+    'lifetime': 'lifetime'
 };
 
 function getApiTimePeriodId(period_type) {

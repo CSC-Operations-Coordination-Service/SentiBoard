@@ -34,8 +34,10 @@ class SpaceSegment {
         // Set of colors associated to satellite
         this.satUnavailabilitiesColorMap = {
             'S1A': 'info',
+            'S1C': 'info',
             'S2A': 'success',
             'S2B': 'success',
+            'S2C': 'success',
             'S3A': 'warning',
             'S3B': 'warning',
             'S5P': 'secondary'
@@ -50,8 +52,10 @@ class SpaceSegment {
         // Set of datatakes by satellite
         this.datatakesBySatellite = {
             'S1A': [],
+            'S1C': [],
             'S2A': [],
             'S2B': [],
+            'S2C': [],
             'S3A': [],
             'S3B': [],
             'S5P': []
@@ -60,8 +64,10 @@ class SpaceSegment {
         // Set of datatakes by satellite
         this.impactedDatatakesBySatellite = {
             'S1A': [],
+            'S1C': [],
             'S2A': [],
             'S2B': [],
+            'S2C': [],
             'S3A': [],
             'S3B': [],
             'S5P': []
@@ -70,8 +76,10 @@ class SpaceSegment {
         // Set the bootstrap tables for each datatake
         this.impactedDatatakesTablesBySatellite = {
             'S1A': null,
+            'S1C': null,
             'S2A': null,
             'S2B': null,
+            'S2C': null,
             'S3A': null,
             'S3B': null,
             'S5P': null
@@ -79,12 +87,14 @@ class SpaceSegment {
 
         // Set of impacted instruments by satellite
         this.impactedInstrumentBySatellite = {
-            'S1A': ['SAR', 'PDHT', 'OCP'],
-            'S2A': ['MSI', 'MMFU', 'OCP'],
-            'S2B': ['MSI', 'MMFU', 'OCP'],
-            'S3A': ['OLCI', 'SLSTR', 'SRAL', 'MWR'],
-            'S3B': ['OLCI', 'SLSTR', 'SRAL', 'MWR'],
-            'S5P': ['TROPOMI']
+            'S1A': ['SAR', 'PDHT', 'OCP', 'EDDS'],
+            'S1C': ['SAR', 'PDHT', 'OCP', 'EDDS'],
+            'S2A': ['MSI', 'MMFU', 'OCP', 'EDDS', 'STR'],
+            'S2B': ['MSI', 'MMFU', 'OCP', 'EDDS', 'STR'],
+            'S2C': ['MSI', 'MMFU', 'OCP', 'EDDS', 'STR'],
+            'S3A': ['OLCI', 'SLSTR', 'SRAL', 'MWR', 'EDDS'],
+            'S3B': ['OLCI', 'SLSTR', 'SRAL', 'MWR', 'EDDS'],
+            'S5P': ['TROPOMI', 'EDDS']
         };
 
         // Set the categorized anomalies map
@@ -96,9 +106,13 @@ class SpaceSegment {
 
     init() {
 
-        // Retrieve the user profile. In case of "ecuser" role, allow
+        // Retrieve the user profile. In case of "ecuser" or "esauser" role, allow
         // the visualization of events up to the beginning of the previous quarter
-        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
+        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.quarterAuthorizedError);
+
+        // Retrieve the user profile. In case of "esauser" role, allow the visualization
+        // of datatakes details
+        ajaxCall('/api/auth/datatakes-details-authorized', 'GET', {}, this.datatakesDetailsAuthorizedProcess, this.datatakesDetailsAuthorizedError);
 
         // Register event callback for Time period select
         var time_period_sel = document.getElementById('time-period-select');
@@ -118,7 +132,7 @@ class SpaceSegment {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel.options.length == 4) {
-                time_period_sel.append(new Option('Previous Quarter', 'prev-quarter'));
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
             }
 
             // Programmatically select the previous quarter as the default time range
@@ -127,9 +141,25 @@ class SpaceSegment {
         }
     }
 
-    errorLoadAuthorized(response) {
+    quarterAuthorizedError(response) {
         console.error(response)
         return;
+    }
+
+    datatakesDetailsAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function(sat) {
+                $('#' + sat + '-table-container').show();
+                $('#' + sat + '-boxes-container').hide();
+            });
+        }
+    }
+
+    datatakesDetailsAuthorizedError(response) {
+        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function(sat) {
+            $('#' + sat + '-table-container').hide();
+            $('#' + sat + '-boxes-container').show();
+        });
     }
 
     on_timeperiod_change() {
@@ -236,12 +266,14 @@ class SpaceSegment {
     refreshAvailabilityStatus() {
         var periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
         var availabilityStatus = {
-            'S1A': {'SAR': 100, 'PDHT': 100, 'OCP': 100},
-            'S2A': {'MSI': 100, 'MMFU': 100, 'OCP': 100},
-            'S2B': {'MSI': 100, 'MMFU': 100, 'OCP': 100},
-            'S3A': {'OLCI': 100, 'SLSTR': 100, 'SRAL': 100, 'MWR': 100},
-            'S3B': {'OLCI': 100, 'SLSTR': 100, 'SRAL': 100, 'MWR': 100},
-            'S5P': {'TROPOMI': 100}
+            'S1A': {'SAR': 100, 'EDDS': 100, 'PDHT': 100, 'OCP': 100},
+            'S1C': {'SAR': 100, 'EDDS': 100, 'PDHT': 100, 'OCP': 100},
+            'S2A': {'MSI': 100, 'MMFU': 100, 'OCP': 100, 'EDDS': 100, 'STR': 100},
+            'S2B': {'MSI': 100, 'MMFU': 100, 'OCP': 100, 'EDDS': 100, 'STR': 100},
+            'S2C': {'MSI': 100, 'MMFU': 100, 'OCP': 100, 'EDDS': 100, 'STR': 100},
+            'S3A': {'OLCI': 100, 'SLSTR': 100, 'SRAL': 100, 'MWR': 100, 'EDDS': 100},
+            'S3B': {'OLCI': 100, 'SLSTR': 100, 'SRAL': 100, 'MWR': 100, 'EDDS': 100},
+            'S5P': {'TROPOMI': 100, 'EDDS': 100}
         };
 
         Object.keys(this.satUnavailabilities).forEach(function(ref, key) {
@@ -252,15 +284,22 @@ class SpaceSegment {
                         (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
             } else {
 
+                // Introduce a dedicate management of Star Trackers unavailabilities: issues affecting any
+                // of the star trackers are mapped vs the same status bar
+                if (impactedItem.toUpperCase() === 'STR-1' || impactedItem.toUpperCase() === 'STR-2') {
+                    availabilityStatus[satellite]['STR'] -=
+                        (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
+                }
+
                 // Introduce a dedicated management of S5p mission unavailabilities.
                 if (satellite.toUpperCase() === 'S5P') {
                     availabilityStatus[satellite]['TROPOMI'] -=
                             (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
                 }
 
-                // Introduce a dedicated management of S3 mission unavailabilities. Since a single unavailability may affect
-                // more than one instrument, a further check is needed, to assess the impact on a specific instrument by looking
-                // at the unavailability comment.
+                // Introduce a dedicated management of S3 mission unavailabilities. Since a single unavailability may
+                // affect more than one instrument, a further check is needed, to assess the impact on a specific
+                // instrument by looking t the unavailability comment.
                 if (satellite.toUpperCase() === 'S3A' || satellite.toUpperCase() === 'S3B') {
                     var s3items = ['OLCI', 'SLSTR', 'SRAL', 'MWR'];
                     for (var index = 0; index < s3items.length; ++index) {
@@ -341,8 +380,10 @@ class SpaceSegment {
         // Clear previous data, if any - datatakes
         this.datatakesBySatellite = {
             'S1A': [],
+            'S1C': [],
             'S2A': [],
             'S2B': [],
+            'S2C': [],
             'S3A': [],
             'S3B': [],
             'S5P': []
@@ -351,8 +392,10 @@ class SpaceSegment {
         // Clear previous data, if any - impacted datatakes
         this.impactedDatatakesBySatellite = {
             'S1A': [],
+            'S1C': [],
             'S2A': [],
             'S2B': [],
+            'S2C': [],
             'S3A': [],
             'S3B': [],
             'S5P': []
@@ -364,7 +407,7 @@ class SpaceSegment {
         // Acknowledge the invocation of rest APIs
         console.info("Invoking Datatakes retrieval...");
 
-        // Execute asynchrounous AJAX call
+        // Execute asynchronous AJAX call
         if (selected_time_period === 'day') {
             asyncAjaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
                 this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
@@ -415,17 +458,17 @@ class SpaceSegment {
             }
         }
 
-        // Refresh the datatakes statistics
-        this.refreshPieCharts();
+        // Refresh the datatakes statistics displayed in the pie charts and boxes
+        this.refreshPieChartsAndBoxes();
 
-        // Refresh the datatakes tables
+        // Refresh the datatakes tables and boxes
         this.refreshDatatakesTables();
 
         return;
     }
 
-    refreshPieCharts() {
-        ['s1a', 's2a', 's2b', 's3a', 's3b', 's5p'].forEach(function(satellite) {
+    refreshPieChartsAndBoxes() {
+        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function(satellite) {
 
             // Remove existing data from the pie charts
             var pieId = satellite.toLowerCase() + '-sensing-statistics-pie-chart';
@@ -436,6 +479,7 @@ class SpaceSegment {
 
             // Update the corresponding pie chart
             spaceSegment.refreshPieChart(pieId, data);
+            spaceSegment.refreshBoxes(satellite, data);
         })
     }
 
@@ -555,6 +599,38 @@ class SpaceSegment {
 		})
     }
 
+    refreshBoxes(satellite, data) {
+
+        // Extract information
+        var totSuccessSensing, totSuccessSensingPerc, failedSensingSat, failedSensingSatPerc, failedSensingAcq,
+                failedSensingAcqPerc, failedSensingOth, failedSensingOthPerc;
+        for (const [key, value] of Object.entries(data)) {
+            if (key.toUpperCase().includes('SUCCESS')) {
+                totSuccessSensing = value;
+                totSuccessSensingPerc = key.substring(key.indexOf(':') + 1, key.lastIndexOf('%')).trim();
+            } else if (key.toUpperCase().includes('SATELLITE')) {
+                failedSensingSat = value;
+                failedSensingSatPerc = key.substring(key.indexOf(':') + 1, key.lastIndexOf('%')).trim();
+            } else if (key.toUpperCase().includes('ACQUISITION')) {
+                failedSensingAcq = value;
+                failedSensingAcqPerc = key.substring(key.indexOf(':') + 1, key.lastIndexOf('%')).trim();
+            } else {
+                failedSensingOth = value;
+                failedSensingOthPerc = key.substring(key.indexOf(':') + 1, key.lastIndexOf('%')).trim();
+            }
+        }
+
+        // Update boxes
+        $('#' + satellite + '-successful-datatakes-box').text(totSuccessSensing +
+                ' (' + totSuccessSensingPerc + '%)');
+        $('#' + satellite + '-satellite-failures-box').text(failedSensingSat +
+                ' (' + failedSensingSatPerc + '%)');
+        $('#' + satellite + '-acquisition-failures-box').text(failedSensingAcq +
+                ' (' + failedSensingAcqPerc + '%)');
+        $('#' + satellite + '-other-failures-box').text(failedSensingOth +
+                ' (' + failedSensingOthPerc + '%)');
+    }
+
     showSensingStatistics(satellite) {
 
         // Auxiliary Variable Declaration
@@ -652,7 +728,7 @@ class SpaceSegment {
     }
 
     refreshDatatakesTables() {
-        ['s1a', 's2a', 's2b', 's3a', 's3b', 's5p'].forEach(function(satellite) {
+        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function(satellite) {
 
             // Initialize the existing tables
             var tableId = satellite.toLowerCase() + '-impacted-datatakes-table';
@@ -724,8 +800,12 @@ class SpaceSegment {
             } else if (element['cams_origin'].includes('CAM') || element['cams_origin'].includes('Sat')) {
                 issueType = 'Satellite';
             } else {
-                issueType = 'Other';
+                issueType = 'Other (' + element['cams_origin'] + ')';
             }
+
+            // Issue link
+            var ticket = 'https://cams.esa.int/browse/' + element['last_attached_ticket'];
+            var issueLink = '<a href="' + ticket + '">' + element['last_attached_ticket'] + '</a>';
 
             // Recalculate the original ACQ completeness
             var acquisitionCompleteness = spaceSegment.recalcDatatakeAcqCompleteness(element);
@@ -734,7 +814,7 @@ class SpaceSegment {
             // Every row is a datatable row, related to a single datatake
             // Datatake status record:
             // element key, sat unit, sensing start, sensing stop, acq status, levels status
-            data.push([key, issueDate, issueType, acquisitionCompleteness.toFixed(2)]);
+            data.push([key, issueDate, issueType, issueLink, acquisitionCompleteness.toFixed(2)]);
         }
 
         // Return the table rows

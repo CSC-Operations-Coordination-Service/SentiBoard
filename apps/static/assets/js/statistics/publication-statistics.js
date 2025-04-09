@@ -29,6 +29,11 @@ var mission_product_families = {
                     "S3_SLC__1S": 'L1 SLC', "S4_SLC__1S": 'L1 SLC',
                     "S5_SLC__1S": 'L1 SLC', "S6_SLC__1S": 'L1 SLC',
                     "WV_SLC__1S": 'L1 SLC',
+         // ETAD products
+         'EW_ETA__AX': 'L1 ETAD', 'IW_ETA__AX': 'L1 ETAD',
+                    'S1_ETA__AX': 'L1 ETAD', 'S2_ETA__AX': 'L1 ETAD',
+                    'S3_ETA__AX': 'L1 ETAD', 'S4_ETA__AX': 'L1 ETAD',
+                    'S5_ETA__AX': 'L1 ETAD', 'S6_ETA__AX': 'L1 ETAD',
         //'L1 GRDM': [],
         "EW_OCN__2S": 'L2 OCN', "IW_OCN__2S": 'L2 OCN',
                     "S1_OCN__2S": 'L2 OCN', "S2_OCN__2S": 'L2 OCN',
@@ -242,7 +247,7 @@ class PublicData {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel.options.length === 4) {
-                time_period_sel.append(new Option('Previous Quarter', 'prev-quarter'));
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
             }
         }
     }

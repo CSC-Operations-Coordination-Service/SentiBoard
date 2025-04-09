@@ -1,0 +1,38 @@
+/* Timeline customization */
+/*
+.vis-labelset .vis-label {
+    color: whitesmoke;
+}
+
+.vis-time-axis .vis-text {
+    color: rgba(169,175,187,.82);
+}
+
+.vis-foreground .vis-group {
+    border-bottom: 1px solid #423e3e;
+}
+*/
+
+.vis-item.s1 {
+  color: white;
+  background-color: #48abf7;
+  border-color: grey;
+}
+
+.vis-item.s2 {
+  color: white;
+  background-color: #90ee90;
+  border-color: grey;
+}
+
+.vis-item.s3 {
+  color: white;
+  background-color: #ff0000;
+  border-color: grey;
+}
+
+.vis-item.s5p {
+  color: white;
+  background-color: #ee82ee;
+  border-color: grey;
+}

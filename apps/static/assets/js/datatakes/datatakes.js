@@ -54,7 +54,7 @@ class Datatakes {
             'ACQUIRED': '#0aa41b',
             'PUBLISHED' : '#0aa41b',
             'PARTIAL': 'yellow',
-            'LOST': 'red',
+            'UNAVAILABLE': 'red',
             '' : 'yellow'
         }
 
@@ -97,7 +97,7 @@ class Datatakes {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel.options.length == 4) {
-                time_period_sel.append(new Option('Previous Quarter', 'prev-quarter'));
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
             }
         }
     }
@@ -369,7 +369,7 @@ class Datatakes {
                 '<li>PROCESSING: after the contact with the ground station, and the processing of raw data is ongoing</li>' +
                 '<li>ACQUIRED: if the datatake was successfully acquired</li>' +
                 '<li>PARTIAL: if the datatake was acquired only in part (e.g., in case of ground station or satellite issues)</li>' +
-                '<li>LOST: if the datatake was lost during downlink (e.g., in case of a major issue concerning the ground station or the satellite)</li>' +
+                '<li>UNAVAILABLE: if the datatake was lost during downlink (e.g., in case of a major issue concerning the ground station or the satellite)</li>' +
             '<ul>';
         content.icon = 'flaticon-round';
 
@@ -398,7 +398,7 @@ class Datatakes {
                 '<li>DELAYED: if the datatake processing is taking more than the nominal time</li>' +
                 '<li>PUBLISHED: if all expected products were successfully published and the average completess exceeds 90%</li>' +
                 '<li>PARTIAL: if not all expected products were successfully published, and/or the average completeness is below 90%</li>' +
-                '<li>LOST: if no products could be published (e.g., in case of a datatake lost during downlink)</li>' +
+                '<li>UNAVAILABLE: if no products could be published (e.g., in case of a datatake lost during downlink)</li>' +
             '<ul>';
         content.icon = 'flaticon-round';
 
