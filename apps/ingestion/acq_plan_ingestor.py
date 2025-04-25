@@ -19,6 +19,7 @@ from apps.ingestion.acquisition_plans.acq_link_page import AcqPlanKmlLinkIngesto
 from apps.ingestion.acquisition_plans.acq_plan_fragments import AcqPlanFragments
 from apps.ingestion.acquisition_plans.acq_plan_kml_loader import S1MissionAcqPlanLoader, S2MissionAcqPlanLoader
 from apps.ingestion.orbit_acquisitions import AcquisitionPlanOrbitDatatakeBuilder
+from apps.cache.cache import ConfigCache
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +35,9 @@ logger = logging.getLogger(__name__)
 #    Archive ingestor
 #    Latest Ingestor
 #    PreviousYears Ingestor
+        
+acq_plans_mission_satellites = ConfigCache.load_object('acq_plans_mission_satellites')
 
-
-#  TODO: Move to configuration
-acq_plans_mission_satellites = {
-    "S1": ["S1A"],
-    "S2": ["S2A", "S2B", "S2C"],
-    "S3": ["S3A", "S3B"],
-    "S5": ["S5P"]
-}
 # Missions whose KML Acq Plan is retrieved from ESA
 kml_acq_plans_missions = ["S1", "S2"]
 # Missions whose KML Acq Plan is build based on Orbit TLE and datatakes
