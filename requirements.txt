@@ -27,3 +27,4 @@ czml==0.3.3
 satellite-czml==0.1.2
 satellitetle==0.14.0
 numpy<1.25
+pygeoif==0.7

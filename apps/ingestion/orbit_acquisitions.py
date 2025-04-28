@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 import os
@@ -17,21 +17,31 @@ from satellite_tle import fetch_tle_from_celestrak
 
 import logging
 
-#from apps.elastic.modules.datatakes import OBSERVATION_START_KEY, OBSERVATION_END_KEY
-#from apps.elastic.modules.datatakes import DATATAKE_ID_KEY
+# from apps.elastic.modules.datatakes import OBSERVATION_START_KEY, OBSERVATION_END_KEY
+# from apps.elastic.modules.datatakes import DATATAKE_ID_KEY
 from apps.cache.modules.acquisitionassets import norad_id_map
-from apps.ingestion.acquisition_plans.fragment_completeness import MissionDatatakeIdHandler
-from apps.ingestion.acquisition_plans.orbit_acquisitions_kml import OrbitAcquisitionKmlFragmentBuilder, \
-    _build_datatake_placemark, build_acquisition_line_placemark, build_acquisition_polygon_placemark
-from apps.ingestion.acquisition_plans.orbit_datatake_acquisitions import OrbitAcquisitionsBuilder, \
-    AcquisitionLineProfileFromOrbit, DatatakeAcquisition, AcquisitionPolygonProfileFromOrbit
+from apps.ingestion.acquisition_plans.fragment_completeness import (
+    MissionDatatakeIdHandler,
+)
+from apps.ingestion.acquisition_plans.orbit_acquisitions_kml import (
+    OrbitAcquisitionKmlFragmentBuilder,
+    _build_datatake_placemark,
+    build_acquisition_line_placemark,
+    build_acquisition_polygon_placemark,
+)
+from apps.ingestion.acquisition_plans.orbit_datatake_acquisitions import (
+    OrbitAcquisitionsBuilder,
+    AcquisitionLineProfileFromOrbit,
+    DatatakeAcquisition,
+    AcquisitionPolygonProfileFromOrbit,
+)
 
 logger = logging.getLogger(__name__)
 
 local_tle_files = {
     "S3A": "S3A_20231012.tle",
     "S3B": "S3B_20231017.tle",
-    "S5P": "S5P_20231017.tle"
+    "S5P": "S5P_20231017.tle",
 }
 
 
@@ -41,12 +51,12 @@ def get_latest_tle(satellite):
     try:
         return fetch_tle_from_celestrak(norad_id)
     except Exception as ex:
-        tle_path = 'test/unit_tests/test_tles'
+        tle_path = "test/unit_tests/test_tles"
         # Retrieve Last TLE from file
         tle_file = local_tle_files.get(satellite, None)
         if tle_file is not None:
             tle_full = os.path.join(tle_path, tle_file)
-            with open(tle_full, 'r') as tle_in:
+            with open(tle_full, "r") as tle_in:
                 lines = tle_in.readlines()
                 for line in lines:
                     line.strip()
@@ -54,7 +64,7 @@ def get_latest_tle(satellite):
         raise ex
 
 
-#ORBIT_PROPAGATION_STEP = 60
+# ORBIT_PROPAGATION_STEP = 60
 ORBIT_PROPAGATION_STEP = 90
 
 
@@ -87,18 +97,22 @@ class OrbitBuilderFactory:
 
 
 orbit_builder_factory = OrbitBuilderFactory()
-orbit_builder_factory.register_acquisition_image_builder("Line", AcquisitionLineProfileFromOrbit)
-orbit_builder_factory.register_acquisition_image_builder("Polygon", AcquisitionPolygonProfileFromOrbit)
+orbit_builder_factory.register_acquisition_image_builder(
+    "Line", AcquisitionLineProfileFromOrbit
+)
+orbit_builder_factory.register_acquisition_image_builder(
+    "Polygon", AcquisitionPolygonProfileFromOrbit
+)
 orbit_builder_factory.register_kml_builder("Line", build_acquisition_line_placemark)
-orbit_builder_factory.register_kml_builder("Polygon", build_acquisition_polygon_placemark)
+orbit_builder_factory.register_kml_builder(
+    "Polygon", build_acquisition_polygon_placemark
+)
 
 
 class AcquisitionPlanOrbitDatatakeBuilder:
-    """
+    """ """
 
-    """
-    def __init__(self, mission, mission_fragments, daily_datatakes,
-                 profile="Polygon"):
+    def __init__(self, mission, mission_fragments, daily_datatakes, profile="Polygon"):
         """
 
         Args:
@@ -112,8 +126,12 @@ class AcquisitionPlanOrbitDatatakeBuilder:
         # Acquisition Type (Line/Polygon)
         placemark_profile = profile
 
-        self._acquisition_image_builder_class = orbit_builder_factory.get_acquisition_image_builder(placemark_profile)
-        self._placemark_geometry_builder_fun = orbit_builder_factory.get_kml_builder(placemark_profile)
+        self._acquisition_image_builder_class = (
+            orbit_builder_factory.get_acquisition_image_builder(placemark_profile)
+        )
+        self._placemark_geometry_builder_fun = orbit_builder_factory.get_kml_builder(
+            placemark_profile
+        )
         # TODO: For Test purposes, mock this function to get test datatakes
         self._daily_datatakes = daily_datatakes
         if self._daily_datatakes is None:
@@ -128,8 +146,11 @@ class AcquisitionPlanOrbitDatatakeBuilder:
         Returns:
 
         """
-        logger.info("[BEG] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
-                    self._mission, from_date)
+        logger.info(
+            "[BEG] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
+            self._mission,
+            from_date,
+        )
         orbit_step = ORBIT_PROPAGATION_STEP  # Propagation at 10 seconds
 
         # For each satellite for mission
@@ -143,13 +164,19 @@ class AcquisitionPlanOrbitDatatakeBuilder:
             logger.warning(sat_tle_data)
 
             # Use a Builder that creates acquisitions from Orbit points
-            sat_orbit_builder = OrbitAcquisitionsBuilder(satellite, sat_tle_data,
-                                                         orbit_step,
-                                                         self._acquisition_image_builder_class)
+            sat_orbit_builder = OrbitAcquisitionsBuilder(
+                satellite,
+                sat_tle_data,
+                orbit_step,
+                self._acquisition_image_builder_class,
+            )
             #  Instantiate the KML Fragments Builder
             self._build_satellite_fragments(fragment_days, sat_orbit_builder, satellite)
-        logger.info("[END] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
-                    self._mission, from_date)
+        logger.info(
+            "[END] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
+            self._mission,
+            from_date,
+        )
 
     # TODO: Either use constants for Dictionary keys,
     #   or define a dataclass to be imported from datatakes
@@ -158,11 +185,14 @@ class AcquisitionPlanOrbitDatatakeBuilder:
     def _acquisition_from_datatake(datatake, sat_orbit_builder):
         acq = DatatakeAcquisition(datatake)
         # NOTE: DT Has no Start/End Time
-        acq.acquisition_points = sat_orbit_builder.compute_acquisition_points(acq.start_time,
-                                                                              acq.end_time)
-        logger.debug("Datatake %s: Computed %d points for acquisition profile",
-                     acq.datatake_id,
-                     len(acq.acquisition_points))
+        acq.acquisition_points = sat_orbit_builder.compute_acquisition_points(
+            acq.start_time, acq.end_time
+        )
+        logger.debug(
+            "Datatake %s: Computed %d points for acquisition profile",
+            acq.datatake_id,
+            len(acq.acquisition_points),
+        )
         return acq
 
     def _build_satellite_fragments(self, fragment_days, sat_orbit_builder, satellite):
@@ -177,8 +207,11 @@ class AcquisitionPlanOrbitDatatakeBuilder:
 
         """
         for acq_day in fragment_days:
-            logger.debug("Building Fragments from Orbit/datatakes - satellite: %s, day: %s",
-                         satellite, acq_day)
+            logger.debug(
+                "Building Fragments from Orbit/datatakes - satellite: %s, day: %s",
+                satellite,
+                acq_day,
+            )
             # Instantiate a KML Builder for each Day
             # Each builder creates a KML Fragment
             #      Let the KML Fragments Builder create a Fragment for current day
@@ -197,18 +230,18 @@ class AcquisitionPlanOrbitDatatakeBuilder:
                         acq = self._acquisition_from_datatake(dt, sat_orbit_builder)
                         acq_placemark = _build_datatake_placemark(acq, self._id_key)
                         acq_placemark.append(self._placemark_geometry_builder_fun(acq))
-                        sat_kml_builder.add_to_daily_folder(acq_day, satellite,
-                                                            acq_placemark)
+                        sat_kml_builder.add_to_daily_folder(
+                            acq_day, satellite, acq_placemark
+                        )
 
                 # Add the P Mist to current Fragment
                 # Save the KML Fragments on the Mission Acqplan Fragments Area.
-                self._mission_acqplan_fragments[satellite].process_kml_folder(sat_kml_builder.fragment)
+                self._mission_acqplan_fragments[satellite].process_kml_folder(
+                    sat_kml_builder.fragment
+                )
 
 
-acq_orbit_mission_satellites = {
-    "S3": ["S3A", "S3B"],
-    "S5": ["S5P"]
-}
+acq_orbit_mission_satellites = {"S3": ["S3A", "S3B"], "S5": ["S5P"]}
 
 
 # class OrbitDatatakeAcquisitionIngestor:

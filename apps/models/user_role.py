@@ -16,14 +16,14 @@ from apps import db
 
 
 class UserRole(db.Model):
-    __tablename__ = 'userRole'
+    __tablename__ = "userRole"
 
     name = db.Column(db.String(64), primary_key=True)
     description = db.Column(db.String(9999))
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
-            if hasattr(value, '__iter__') and not isinstance(value, str):
+            if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
 
             setattr(self, property, value)
@@ -36,7 +36,7 @@ def get_roles():
         return []
 
 
-def save_role(name, description=''):
+def save_role(name, description=""):
     try:
         role = UserRole(name=name, description=description)
         db.session.add(role)
@@ -49,7 +49,7 @@ def save_role(name, description=''):
 
 def delete_role(name):
     try:
-        role = UserRole.query.filter_by(name=name).delete();
+        role = UserRole.query.filter_by(name=name).delete()
         db.session.commit()
     except Exception as ex:
         db.session.rollback()

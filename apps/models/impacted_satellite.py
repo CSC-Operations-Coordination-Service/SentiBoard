@@ -16,14 +16,14 @@ from apps import db
 
 
 class ImpactedSatellite(db.Model):
-    __tablename__ = 'impactedSatellite'
+    __tablename__ = "impactedSatellite"
 
     name = db.Column(db.String(64), primary_key=True)
     synonymous = db.Column(db.String(9999))
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
-            if hasattr(value, '__iter__') and not isinstance(value, str):
+            if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
 
             setattr(self, property, value)
@@ -38,7 +38,9 @@ def get_impacted_satellite(name):
 
 def get_impacted_satellite_all():
     try:
-        return ImpactedSatellite.query.all().order_by(ImpactedSatellite.name.asc()).all()
+        return (
+            ImpactedSatellite.query.all().order_by(ImpactedSatellite.name.asc()).all()
+        )
     except Exception as ex:
         return None
 
@@ -46,6 +48,10 @@ def get_impacted_satellite_all():
 def get_impacted_satellite_by_synonymous(synonymous):
     try:
         search = "%{}%".format(synonymous)
-        return db.session.query(ImpactedSatellite).filter(ImpactedSatellite.synonymous.like(search)).first()
+        return (
+            db.session.query(ImpactedSatellite)
+            .filter(ImpactedSatellite.synonymous.like(search))
+            .first()
+        )
     except Exception as ex:
         return None

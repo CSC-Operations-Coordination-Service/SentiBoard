@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class Anomalies(db.Model):
-    __tablename__ = 'anomalies'
+    __tablename__ = "anomalies"
 
     id = db.Column(db.String(64), primary_key=True)
     key = db.Column(db.String(9999))
@@ -42,20 +42,46 @@ class Anomalies(db.Model):
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
-            if hasattr(value, '__iter__') and not isinstance(value, str):
+            if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
 
             setattr(self, property, value)
 
 
-def save_anomaly(title, key, text, publication_date, category, impacted_satellite, impacted_item, start, end,
-                 environment, datatakes_completeness, newsLink=None, newsTitle=None, modify_date=datetime.now()):
+def save_anomaly(
+    title,
+    key,
+    text,
+    publication_date,
+    category,
+    impacted_satellite,
+    impacted_item,
+    start,
+    end,
+    environment,
+    datatakes_completeness,
+    newsLink=None,
+    newsTitle=None,
+    modify_date=datetime.now(),
+):
     try:
-        anomalies = Anomalies(id=str(generate_uuid()), key=key, title=title, text=text,
-                              publicationDate=publication_date, category=category, impactedSatellite=impacted_satellite,
-                              impactedItem=impacted_item, start=start, end=end, environment=environment,
-                              datatakes_completeness=str(datatakes_completeness), newsLink=newsLink,
-                              newsTitle=newsTitle, modifyDate=modify_date)
+        anomalies = Anomalies(
+            id=str(generate_uuid()),
+            key=key,
+            title=title,
+            text=text,
+            publicationDate=publication_date,
+            category=category,
+            impactedSatellite=impacted_satellite,
+            impactedItem=impacted_item,
+            start=start,
+            end=end,
+            environment=environment,
+            datatakes_completeness=str(datatakes_completeness),
+            newsLink=newsLink,
+            newsTitle=newsTitle,
+            modifyDate=modify_date,
+        )
         db.session.add(anomalies)
         db.session.commit()
         return anomalies
@@ -64,8 +90,21 @@ def save_anomaly(title, key, text, publication_date, category, impacted_satellit
     return None
 
 
-def update_anomaly(title, key, text, publication_date, category, impacted_satellite, impacted_item, start, end,
-                   environment, newsLink=None, newsTitle=None, modify_date=datetime.now()):
+def update_anomaly(
+    title,
+    key,
+    text,
+    publication_date,
+    category,
+    impacted_satellite,
+    impacted_item,
+    start,
+    end,
+    environment,
+    newsLink=None,
+    newsTitle=None,
+    modify_date=datetime.now(),
+):
     try:
         anomaly = db.session.query(Anomalies).filter(Anomalies.key == key).first()
         if anomaly is not None:
@@ -79,17 +118,29 @@ def update_anomaly(title, key, text, publication_date, category, impacted_satell
         else:
             datatakes_completeness = []
             if environment is not None and len(environment) > 0:
-                datatake_ids = environment.split(';')
+                datatake_ids = environment.split(";")
                 for datatake_id in datatake_ids:
                     if datatake_id is None or len(datatake_id) == 0:
                         continue
-                    entry = {'datatakeID': datatake_id, 'L0_': 0, 'L1_': 0, 'L2_': 0}
+                    entry = {"datatakeID": datatake_id, "L0_": 0, "L1_": 0, "L2_": 0}
                     datatakes_completeness.append(entry)
-            anomaly = Anomalies(id=str(generate_uuid()), key=key, title=title, text=text,
-                                publicationDate=publication_date, category=category,
-                                impactedSatellite=impacted_satellite, impactedItem=impacted_item, start=start, end=end,
-                                environment=environment, datatakes_completeness=str(datatakes_completeness),
-                                newsLink=newsLink, newsTitle=newsTitle, modifyDate=modify_date)
+            anomaly = Anomalies(
+                id=str(generate_uuid()),
+                key=key,
+                title=title,
+                text=text,
+                publicationDate=publication_date,
+                category=category,
+                impactedSatellite=impacted_satellite,
+                impactedItem=impacted_item,
+                start=start,
+                end=end,
+                environment=environment,
+                datatakes_completeness=str(datatakes_completeness),
+                newsLink=newsLink,
+                newsTitle=newsTitle,
+                modifyDate=modify_date,
+            )
             db.session.add(anomaly)
         db.session.commit()
         return anomaly
@@ -98,8 +149,15 @@ def update_anomaly(title, key, text, publication_date, category, impacted_satell
     return None
 
 
-def update_anomaly_categorization(key, category, impacted_item, impacted_satellite, environment, newsLink=None,
-                                  newsTitle=None):
+def update_anomaly_categorization(
+    key,
+    category,
+    impacted_item,
+    impacted_satellite,
+    environment,
+    newsLink=None,
+    newsTitle=None,
+):
     try:
         anomaly = db.session.query(Anomalies).filter(Anomalies.key == key).first()
         if anomaly is not None:
@@ -137,10 +195,14 @@ def get_anomalies(start_date=None, end_date=None):
         if start_date is None or end_date is None:
             return Anomalies.query.order_by(Anomalies.publicationDate.asc()).all()
         else:
-            return Anomalies.query.filter(
-                Anomalies.start is not None).filter(Anomalies.end is not None). \
-                filter(Anomalies.start >= start_date).filter(Anomalies.start <= end_date).order_by(
-                Anomalies.publicationDate.asc()).all()
+            return (
+                Anomalies.query.filter(Anomalies.start is not None)
+                .filter(Anomalies.end is not None)
+                .filter(Anomalies.start >= start_date)
+                .filter(Anomalies.start <= end_date)
+                .order_by(Anomalies.publicationDate.asc())
+                .all()
+            )
     except Exception as ex:
         logger.error("Retrieving Anomalies, received error: %s", ex, exc_info=True)
         return None
@@ -148,8 +210,15 @@ def get_anomalies(start_date=None, end_date=None):
 
 def get_anomalies_by_information(category, impacted_item, publication_date):
     try:
-        return Anomalies.query.filter_by(category=category, impactedItem=impacted_item,
-                                         publicationDate=publication_date).order_by(Anomalies.modifyDate.asc()).all()
+        return (
+            Anomalies.query.filter_by(
+                category=category,
+                impactedItem=impacted_item,
+                publicationDate=publication_date,
+            )
+            .order_by(Anomalies.modifyDate.asc())
+            .all()
+        )
     except Exception as ex:
         return None
 
@@ -157,17 +226,19 @@ def get_anomalies_by_information(category, impacted_item, publication_date):
 def get_anomalies_by_environment(environment):
     try:
         search = "%{}%".format(environment)
-        return db.session.query(Anomalies).filter(Anomalies.environment.like(search)).order_by(
-            Anomalies.modifyDate.asc()).all()
+        return (
+            db.session.query(Anomalies)
+            .filter(Anomalies.environment.like(search))
+            .order_by(Anomalies.modifyDate.asc())
+            .all()
+        )
     except Exception as ex:
         return None
 
 
 def delete_anomalies_by_id(uuid):
     try:
-        db.session.query(
-            Anomalies
-        ).filter(
+        db.session.query(Anomalies).filter(
             Anomalies.id == uuid,
         ).delete()
 

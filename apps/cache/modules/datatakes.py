@@ -24,9 +24,9 @@ from apps import flask_cache
 
 logger = logging.getLogger(__name__)
 
-datatakes_cache_key = '/api/worker/cds-datatakes/{}-{}'
+datatakes_cache_key = "/api/worker/cds-datatakes/{}-{}"
 
-datatakes_by_day_cache_key = '/datatake/day'
+datatakes_by_day_cache_key = "/datatake/day"
 
 datatakes_cache_duration = 604800
 
@@ -51,17 +51,19 @@ def load_datatakes_cache_last_quarter():
     dt_last_7d = []
     dt_last_30d = []
     for dt in dt_last_quarter:
-        sensing_stop = datetime.strptime(dt['_source']['observation_time_stop'], '%Y-%m-%dT%H:%M:%S.%fZ')
+        sensing_stop = datetime.strptime(
+            dt["_source"]["observation_time_stop"], "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
         if now - timedelta(hours=24) <= sensing_stop:
             dt_last_24h.append(dt)
         if now - timedelta(days=7) <= sensing_stop:
             dt_last_7d.append(dt)
         if now - timedelta(days=30) <= sensing_stop:
             dt_last_30d.append(dt)
-    _set_datatakes_cache('24h', dt_last_24h)
-    _set_datatakes_cache('7d', dt_last_7d)
-    _set_datatakes_cache('30d', dt_last_30d)
-    _set_datatakes_cache('quarter', dt_last_quarter)
+    _set_datatakes_cache("24h", dt_last_24h)
+    _set_datatakes_cache("7d", dt_last_7d)
+    _set_datatakes_cache("30d", dt_last_30d)
+    _set_datatakes_cache("quarter", dt_last_quarter)
 
     # Note: future datatakes are missing
     logger.info("Building the day-based index of Datatakes in the last 30 days")
@@ -73,15 +75,16 @@ def load_datatakes_cache_last_quarter():
     # Log an acknowledgement message
     cache_end_time = perf_counter()
     logger.info(
-        f"[END] Loading Datatakes Cache in the last quarter - Execution Time : {cache_end_time - cache_start_time:0.6f}")
+        f"[END] Loading Datatakes Cache in the last quarter - Execution Time : {cache_end_time - cache_start_time:0.6f}"
+    )
 
 
 def load_datatakes_cache_previous_quarter():
     """
-        Fetch the datatakes in the last 3 months from Elastic DB using the exposed REST APIs, and store results
-        in cache for future reuse. The start time is set at 00:00 of the first day of the temporal interval; the
-        stop time is set at 23:59
-        """
+    Fetch the datatakes in the last 3 months from Elastic DB using the exposed REST APIs, and store results
+    in cache for future reuse. The start time is set at 00:00 of the first day of the temporal interval; the
+    stop time is set at 23:59
+    """
 
     # Log an acknowledgement message
     logger.info("[BEG] Loading Datatakes Cache in the previous quarter...")
@@ -91,12 +94,13 @@ def load_datatakes_cache_previous_quarter():
     dt_prev_quarter = elastic_datatakes.fetch_anomalies_datatakes_prev_quarter()
 
     # Populate cache: results for sub-periods can be deduced from results in the last quarter
-    _set_datatakes_cache('previous-quarter', dt_prev_quarter)
+    _set_datatakes_cache("previous-quarter", dt_prev_quarter)
 
     # Log an acknowledgement message
     cache_end_time = perf_counter()
     logger.info(
-        f"[END] Loading Datatakes Cache in the previous quarter - Execution Time : {cache_end_time - cache_start_time:0.6f}")
+        f"[END] Loading Datatakes Cache in the previous quarter - Execution Time : {cache_end_time - cache_start_time:0.6f}"
+    )
 
 
 def load_datatake_details(datatake_id):
@@ -105,19 +109,22 @@ def load_datatake_details(datatake_id):
 
 def _set_datatakes_cache(period_id, period_data):
     """
-        Store in cache the provided results, and set the validity time of cache according to the data period.
-        """
+    Store in cache the provided results, and set the validity time of cache according to the data period.
+    """
 
     # Log an acknowledgement message
     logger.debug("Caching datatakes in period: %s", period_id)
 
     seconds_validity = datatakes_cache_duration
-    if period_id == 'previous-quarter':
-        api_prefix = datatakes_cache_key.format('previous', 'quarter')
+    if period_id == "previous-quarter":
+        api_prefix = datatakes_cache_key.format("previous", "quarter")
     else:
-        api_prefix = datatakes_cache_key.format('last', period_id)
-    flask_cache.set(api_prefix, Response(json.dumps(period_data), mimetype="application/json", status=200),
-                    seconds_validity)
+        api_prefix = datatakes_cache_key.format("last", period_id)
+    flask_cache.set(
+        api_prefix,
+        Response(json.dumps(period_data), mimetype="application/json", status=200),
+        seconds_validity,
+    )
 
 
 def _build_datatakes_daily_index(dt_list, by_end_date=False):
@@ -136,9 +143,9 @@ def _build_datatakes_daily_index(dt_list, by_end_date=False):
     """
     dt_day_table = {}
     for dt in dt_list:
-        dt_data = dt['_source']
-        start_date = dt_data['observation_time_start']
-        dt_id = dt_data['datatake_id']
+        dt_data = dt["_source"]
+        start_date = dt_data["observation_time_start"]
+        dt_id = dt_data["datatake_id"]
         key_day = start_date[:10]
         dt_sat = dt_id[:3]
         # logger.debug("Adding Datatake with ID %s, Satellite %s to Table for day %s",
@@ -147,7 +154,7 @@ def _build_datatakes_daily_index(dt_list, by_end_date=False):
         dt_sat_table = dt_day_table.setdefault(key_day, {})
         dt_sat_table.setdefault(dt_sat, {}).update({dt_id: dt_data})
         if by_end_date:
-            end_date = dt_data['observation_time_stop']
+            end_date = dt_data["observation_time_stop"]
             key_end_day = end_date[:10]
             if key_end_day != key_day:
                 # Add item for this datatake with key the datatake id
@@ -158,7 +165,7 @@ def _build_datatakes_daily_index(dt_list, by_end_date=False):
 
 
 def get_daily_datatakes():
-    datatakes_api_uri = datatakes_cache_key.format('last', "quarter")
+    datatakes_api_uri = datatakes_cache_key.format("last", "quarter")
     if not flask_cache.has(datatakes_api_uri):
         logger.debug("Datatakes Cache (needed by acquisition plan) not yet loaded")
         load_datatakes_cache_last_quarter()
@@ -171,7 +178,10 @@ def get_satellite_day_datatakes(satellite, day):
     # Extract Datatake for specified Day, Satellite
     # Sort the datatakes by ID
     satellite_day_datatakes = daily_datatakes.get(day).get(satellite)
-    logger.debug("Datatakes for Satellite %s, day %s: %s",
-                 satellite, day,
-                 list(satellite_day_datatakes.values()))
+    logger.debug(
+        "Datatakes for Satellite %s, day %s: %s",
+        satellite,
+        day,
+        list(satellite_day_datatakes.values()),
+    )
     return list(satellite_day_datatakes.values())

@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class News(db.Model):
-    __tablename__ = 'news'
+    __tablename__ = "news"
 
     id = db.Column(db.String(64), primary_key=True)
     title = db.Column(db.String(9999))
@@ -38,18 +38,38 @@ class News(db.Model):
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
-            if hasattr(value, '__iter__') and not isinstance(value, str):
+            if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
 
             setattr(self, property, value)
 
 
-def save_news(title, text, link, publication_date, occurrence_date, category, impacted_satellite, environment,
-              datatakes_completeness, modify_date=datetime.now()):
+def save_news(
+    title,
+    text,
+    link,
+    publication_date,
+    occurrence_date,
+    category,
+    impacted_satellite,
+    environment,
+    datatakes_completeness,
+    modify_date=datetime.now(),
+):
     try:
-        news = News(id=str(generate_uuid()), title=title, text=text, link=link, publicationDate=publication_date,
-                    occurrenceDate=occurrence_date, category=category, impactedSatellite=impacted_satellite,
-                    environment=environment, datatakes_completeness=str(datatakes_completeness), modifyDate=modify_date)
+        news = News(
+            id=str(generate_uuid()),
+            title=title,
+            text=text,
+            link=link,
+            publicationDate=publication_date,
+            occurrenceDate=occurrence_date,
+            category=category,
+            impactedSatellite=impacted_satellite,
+            environment=environment,
+            datatakes_completeness=str(datatakes_completeness),
+            modifyDate=modify_date,
+        )
         db.session.add(news)
         db.session.commit()
         return news
@@ -58,8 +78,17 @@ def save_news(title, text, link, publication_date, occurrence_date, category, im
     return None
 
 
-def update_news(title, text, link, publication_date, occurrence_date, category, impacted_satellite, environment,
-              modify_date=datetime.now()):
+def update_news(
+    title,
+    text,
+    link,
+    publication_date,
+    occurrence_date,
+    category,
+    impacted_satellite,
+    environment,
+    modify_date=datetime.now(),
+):
     try:
         news = db.session.query(News).filter(News.link == link).first()
         if news is not None:
@@ -70,16 +99,25 @@ def update_news(title, text, link, publication_date, occurrence_date, category, 
         else:
             datatakes_completeness = []
             if environment is not None and len(environment) > 0:
-                datatake_ids = environment.split(';')
+                datatake_ids = environment.split(";")
                 for datatake_id in datatake_ids:
                     if datatake_id is None or len(datatake_id) == 0:
                         continue
-                    entry = {'datatakeID': datatake_id, 'L0_': 0, 'L1_': 0, 'L2_': 0}
+                    entry = {"datatakeID": datatake_id, "L0_": 0, "L1_": 0, "L2_": 0}
                     datatakes_completeness.append(entry)
-            news = News(id=str(generate_uuid()), title=title, text=text, link=link, publicationDate=publication_date,
-                        occurrenceDate=occurrence_date, category=category, impactedSatellite=impacted_satellite,
-                        environment=environment, datatakes_completeness=str(datatakes_completeness),
-                        modifyDate=modify_date)
+            news = News(
+                id=str(generate_uuid()),
+                title=title,
+                text=text,
+                link=link,
+                publicationDate=publication_date,
+                occurrenceDate=occurrence_date,
+                category=category,
+                impactedSatellite=impacted_satellite,
+                environment=environment,
+                datatakes_completeness=str(datatakes_completeness),
+                modifyDate=modify_date,
+            )
             db.session.add(news)
         db.session.commit()
         return news
@@ -88,14 +126,16 @@ def update_news(title, text, link, publication_date, occurrence_date, category, 
     return None
 
 
-def update_news_categorization(link, category, impacted_satellite, environment, occurrenceDate):
+def update_news_categorization(
+    link, category, impacted_satellite, environment, occurrenceDate
+):
     try:
         news = db.session.query(News).filter(News.link == link).first()
         if news is not None:
             news.category = category
             news.impactedSatellite = impacted_satellite
             news.environment = environment
-            news.occurrenceDate = datetime.strptime(occurrenceDate, '%d/%m/%Y %H:%M:%S')
+            news.occurrenceDate = datetime.strptime(occurrenceDate, "%d/%m/%Y %H:%M:%S")
             db.session.commit()
             return news
     except Exception as ex:
@@ -124,9 +164,13 @@ def get_news(start_date=None, end_date=None):
         if start_date is None or end_date is None:
             return News.query.order_by(News.occurrenceDate.asc()).all()
         else:
-            return News.query.filter(News.publicationDate is not None). \
-                filter(News.publicationDate >= start_date).filter(News.publicationDate <= end_date).order_by(
-                News.occurrenceDate.asc()).all()
+            return (
+                News.query.filter(News.publicationDate is not None)
+                .filter(News.publicationDate >= start_date)
+                .filter(News.publicationDate <= end_date)
+                .order_by(News.occurrenceDate.asc())
+                .all()
+            )
     except Exception as ex:
         logger.error("Retrieving News, received error: %s", ex, exc_info=True)
         return None
@@ -134,8 +178,15 @@ def get_news(start_date=None, end_date=None):
 
 def get_news_by_information(category, impacted_satellite, occurrence_date):
     try:
-        return News.query.filter_by(category=category, impactedSatellite=impacted_satellite,
-                                    occurrenceDate=occurrence_date).order_by(News.modifyDate.asc()).all()
+        return (
+            News.query.filter_by(
+                category=category,
+                impactedSatellite=impacted_satellite,
+                occurrenceDate=occurrence_date,
+            )
+            .order_by(News.modifyDate.asc())
+            .all()
+        )
     except Exception as ex:
         return None
 
@@ -143,17 +194,19 @@ def get_news_by_information(category, impacted_satellite, occurrence_date):
 def get_news_by_environment(environment):
     try:
         search = "%{}%".format(environment)
-        return db.session.query(News).filter(News.environment.like(search)).order_by(
-            News.modifyDate.asc()).all()
+        return (
+            db.session.query(News)
+            .filter(News.environment.like(search))
+            .order_by(News.modifyDate.asc())
+            .all()
+        )
     except Exception as ex:
         return None
 
 
 def delete_news_by_id(uuid):
     try:
-        db.session.query(
-            News
-        ).filter(
+        db.session.query(News).filter(
             News.id == uuid,
         ).delete()
 

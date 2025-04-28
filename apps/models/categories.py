@@ -16,14 +16,14 @@ from apps import db
 
 
 class Categories(db.Model):
-    __tablename__ = 'categories'
+    __tablename__ = "categories"
 
     name = db.Column(db.String(64), primary_key=True)
     synonymous = db.Column(db.String(9999))
 
     def __init__(self, **kwargs):
         for property, value in kwargs.items():
-            if hasattr(value, '__iter__') and not isinstance(value, str):
+            if hasattr(value, "__iter__") and not isinstance(value, str):
                 value = value[0]
 
             setattr(self, property, value)
@@ -39,6 +39,10 @@ def get_category_by_name(name):
 def get_category_by_synonymous(synonymous):
     try:
         search = "%{}%".format(synonymous)
-        return db.session.query(Categories).filter(Categories.synonymous.ilike(search)).first()
+        return (
+            db.session.query(Categories)
+            .filter(Categories.synonymous.ilike(search))
+            .first()
+        )
     except Exception as ex:
         return None

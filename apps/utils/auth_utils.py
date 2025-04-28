@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_user_info():
-    user_map = {'is_authenticated': False, 'role': None}
+    user_map = {"is_authenticated": False, "role": None}
     user = flask_login.current_user
 
     if not user.is_anonymous:
-        user_map['is_authenticated'] = user.is_authenticated
-        user_map['role'] = user.role
-        user_map['username'] = user.username
+        user_map["is_authenticated"] = user.is_authenticated
+        user_map["role"] = user.role
+        user_map["username"] = user.username
 
     return user_map
 
@@ -36,9 +36,8 @@ def get_user_info():
 def hash_pass(password):
     """Hash a password for storing."""
 
-    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode('ascii')
-    pwdhash = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'),
-                                  salt, 100000)
+    salt = hashlib.sha256(os.urandom(60)).hexdigest().encode("ascii")
+    pwdhash = hashlib.pbkdf2_hmac("sha512", password.encode("utf-8"), salt, 100000)
     pwdhash = binascii.hexlify(pwdhash)
     return salt + pwdhash  # return bytes
 
@@ -49,7 +48,10 @@ def is_user_authorized(authorized_roles=None):
 
     user = get_user_info()
     for authorized_role in authorized_roles:
-        if user.get('role') is not None and user.get('role').upper() == authorized_role.upper():
+        if (
+            user.get("role") is not None
+            and user.get("role").upper() == authorized_role.upper()
+        ):
             return True
 
     return False
@@ -58,12 +60,11 @@ def is_user_authorized(authorized_roles=None):
 def verify_pass(provided_password, stored_password):
     """Verify a stored password against one provided by user"""
 
-    stored_password = stored_password.decode('ascii')
+    stored_password = stored_password.decode("ascii")
     salt = stored_password[:64]
     stored_password = stored_password[64:]
-    pwdhash = hashlib.pbkdf2_hmac('sha512',
-                                  provided_password.encode('utf-8'),
-                                  salt.encode('ascii'),
-                                  100000)
-    pwdhash = binascii.hexlify(pwdhash).decode('ascii')
+    pwdhash = hashlib.pbkdf2_hmac(
+        "sha512", provided_password.encode("utf-8"), salt.encode("ascii"), 100000
+    )
+    pwdhash = binascii.hexlify(pwdhash).decode("ascii")
     return pwdhash == stored_password

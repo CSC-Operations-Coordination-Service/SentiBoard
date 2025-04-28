@@ -20,48 +20,70 @@ from dateutil.relativedelta import relativedelta
 
 from apps.cache.cache import MissionTimelinessCache
 from apps.elastic.client import ElasticClient
-from apps.elastic.modules.timeliness_query import TimelinessElasticQuery, TimelinessConfigurationKeys
+from apps.elastic.modules.timeliness_query import (
+    TimelinessElasticQuery,
+    TimelinessConfigurationKeys,
+)
 
 logger = logging.getLogger(__name__)
 
-TIMELINESS_STATS_AGG = 'timeliness_statistics'
-TIMELINESS_OUTLIERS_AGG = 'timeliness_outliers'
+TIMELINESS_STATS_AGG = "timeliness_statistics"
+TIMELINESS_OUTLIERS_AGG = "timeliness_outliers"
+
 
 def timeliness_convert_to_hour(timeliness_result):
-    logger.debug("Convertinv time values to hours in Query Result: %s", timeliness_result)
+    logger.debug(
+        "Convertinv time values to hours in Query Result: %s", timeliness_result
+    )
     # TODO: Timeliness Reults Keys are defined in a caller function:
     # Put in constant!!
     timeliness_stats = timeliness_result[TIMELINESS_STATS_AGG]
-    timeliness_pcentiles = timeliness_result[TIMELINESS_OUTLIERS_AGG]['values']
+    timeliness_pcentiles = timeliness_result[TIMELINESS_OUTLIERS_AGG]["values"]
 
     for key in timeliness_stats:
-        if key != 'count' and type(timeliness_stats[key]) is not dict:
+        if key != "count" and type(timeliness_stats[key]) is not dict:
             # logger.debug("Converting to hour item with key %s, value: %s",
             #             key, timeliness_stats[key])
-            timeliness_stats[key] = 0 if timeliness_stats[key] is None else timeliness_stats[key] / 1000000 / 3600
-        elif key != 'count':
+            timeliness_stats[key] = (
+                0
+                if timeliness_stats[key] is None
+                else timeliness_stats[key] / 1000000 / 3600
+            )
+        elif key != "count":
             subdict = timeliness_stats[key]
             for subkey in subdict:
                 # logger.debug("Converting to hour item in %s with key %s",
                 #             key, subkey)
-                subdict[subkey] = 0 if subdict[subkey] is None else subdict[subkey] / 3600 / 1000000
+                subdict[subkey] = (
+                    0 if subdict[subkey] is None else subdict[subkey] / 3600 / 1000000
+                )
 
     for key in timeliness_pcentiles:
-        #logger.debug("Converting to hour percentile item with key %s, value: %s",
+        # logger.debug("Converting to hour percentile item with key %s, value: %s",
         #             key, timeliness_pcentiles[key])
-        timeliness_pcentiles[key] = 0 if timeliness_pcentiles[key] is None else timeliness_pcentiles[key] / 3600 / 1000000
+        timeliness_pcentiles[key] = (
+            0
+            if timeliness_pcentiles[key] is None
+            else timeliness_pcentiles[key] / 3600 / 1000000
+        )
 
 
-def get_cds_timeliness_statistics(start_date: datetime, end_date: datetime,
-                                  mission: str, timeliness: str):
+def get_cds_timeliness_statistics(
+    start_date: datetime, end_date: datetime, mission: str, timeliness: str
+):
     # Use multiple month-based indices if interval is long than 1 month and half
     date_delta = relativedelta(end_date, start_date)
     interval_day_len = date_delta.months * 30 + date_delta.days
     logger.debug("Interval is %d days long", interval_day_len)
 
     # By default, no subintervals shall be used to reduce number of searched records
-    logger.debug("Retrieving Timeliness Statistics for mission %s, timeliness %s, start date: %s, end date: %s",
-                 mission, timeliness, start_date, end_date)
+    logger.debug(
+        "Retrieving Timeliness Statistics for mission %s, timeliness %s, start date: %s, end date: %s",
+        mission,
+        timeliness,
+        start_date,
+        end_date,
+    )
 
     # Extract configuration for Mission Timeliness query parameters
     mission_timeliness_cfg = MissionTimelinessCache.load_object(mission)
@@ -77,8 +99,9 @@ def get_cds_timeliness_statistics(start_date: datetime, end_date: datetime,
 
     timeliness_cfg = mission_timeliness_cfg.get(timeliness, None)
     if timeliness_cfg is None:
-        logging.error("Requested unknown %s timeliness type for mission %s",
-                      timeliness, mission)
+        logging.error(
+            "Requested unknown %s timeliness type for mission %s", timeliness, mission
+        )
         return []
 
     query_builder = TimelinessElasticQuery(mission, timeliness_cfg, True)
@@ -122,86 +145,113 @@ def get_cds_timeliness_statistics(start_date: datetime, end_date: datetime,
     stat_sigma = 2
     stats_aggs = {
         perc_agg_name: {
-            "percentiles": {"field": publication_timeliness_field,
-                            "percents": [25.0, 50.0, 75.0]
-                            }
+            "percentiles": {
+                "field": publication_timeliness_field,
+                "percents": [25.0, 50.0, 75.0],
+            }
         },
         stat_agg_name: {
-            "extended_stats": {"field": publication_timeliness_field,
-                               "missing": 0, "sigma": stat_sigma}},
+            "extended_stats": {
+                "field": publication_timeliness_field,
+                "missing": 0,
+                "sigma": stat_sigma,
+            }
+        },
     }
 
-    return _retrieve_elastic_timeliness(mission, query_builder,  sensors_cfg,
-                                        stats_aggs, thresholds_list, timeliness)
+    return _retrieve_elastic_timeliness(
+        mission, query_builder, sensors_cfg, stats_aggs, thresholds_list, timeliness
+    )
 
 
-def _retrieve_elastic_timeliness(mission, query_builder,
-                                 sensors_cfg,
-                                 stats_aggs, thresholds_list, timeliness):
-    index_name = 'cds-publication'
+def _retrieve_elastic_timeliness(
+    mission, query_builder, sensors_cfg, stats_aggs, thresholds_list, timeliness
+):
+    index_name = "cds-publication"
     elastic = ElasticClient()
     # Query section: includes must clauses,
     stat_query = query_builder.create_query("statistics")
     results = []
-    logger.debug("Executing Timeliness Queries for mission %s, with Aggregation: %s",
-                 mission,
-                 stats_aggs)
+    logger.debug(
+        "Executing Timeliness Queries for mission %s, with Aggregation: %s",
+        mission,
+        stats_aggs,
+    )
     # logger.debug("List of configurations: %s", thresholds_list)
     # For each query criteria, extract: threshold e, timeliness keywork
     #   and either sensor or level if present
     # Build query and execute
     for threshold_cfg in thresholds_list:
         logger.debug("Executing request for Timeliness parameters: %s", threshold_cfg)
-        timeliness_value = threshold_cfg.get('threshold')
-        level = threshold_cfg.get(TimelinessConfigurationKeys.LevelKey, '')
-        sensor = threshold_cfg.get('sensor', '')
+        timeliness_value = threshold_cfg.get("threshold")
+        level = threshold_cfg.get(TimelinessConfigurationKeys.LevelKey, "")
+        sensor = threshold_cfg.get("sensor", "")
         sensor_cfg = {}
         if sensors_cfg is not None and sensor and sensor in sensors_cfg:
             # check if sensor is requested;
             # if yes, check the sensor configuration
             # add product type list to must
             sensor_cfg = sensors_cfg.get(sensor)
-        threshold_stat_query = query_builder._get_timeliness_statistics_query(stat_query,
-                                                                              threshold_cfg, sensor_cfg)
+        threshold_stat_query = query_builder._get_timeliness_statistics_query(
+            stat_query, threshold_cfg, sensor_cfg
+        )
 
         total_value = 0
         try:
             # logger.debug("Counting with query %s", count_query_body)
             logger.debug("Querying the index %s", index_name)
             elastic_query_start_time = perf_counter()
-            logger.debug(" Timeliness statistics on index %s, with body: %s",
-                         index_name, threshold_stat_query)
-            stat_agg_result = elastic.search(index=index_name, query=threshold_stat_query,
-                                             aggs=stats_aggs, size=0)['aggregations']
+            logger.debug(
+                " Timeliness statistics on index %s, with body: %s",
+                index_name,
+                threshold_stat_query,
+            )
+            stat_agg_result = elastic.search(
+                index=index_name, query=threshold_stat_query, aggs=stats_aggs, size=0
+            )["aggregations"]
             try:
                 timeliness_convert_to_hour(stat_agg_result)
             except Exception as ex:
-                logger.warning("Error whli converting Timeliness results time values to hour: %s", ex)
+                logger.warning(
+                    "Error whli converting Timeliness results time values to hour: %s",
+                    ex,
+                )
             lapse2_query_end_time = perf_counter()
             logger.debug(
                 f"Total Timeliness Query Execution Time on mission {mission}, timeliness {timeliness}, level {level}, "
-                f"sensor {sensor} : {lapse2_query_end_time - elastic_query_start_time:0.6f}")
+                f"sensor {sensor} : {lapse2_query_end_time - elastic_query_start_time:0.6f}"
+            )
 
-            json_result = {'mission': mission, 'timeliness': timeliness,
-                           'threshold': timeliness_value,
-                           'statistics': stat_agg_result}
+            json_result = {
+                "mission": mission,
+                "timeliness": timeliness,
+                "threshold": timeliness_value,
+                "statistics": stat_agg_result,
+            }
             if level is not None and len(level):
                 # remove any trailing _ from level
-                level = level.strip('_')
-                json_result.update({'level': level})
+                level = level.strip("_")
+                json_result.update({"level": level})
             if sensor is not None and len(sensor):
-                json_result.update({'product_group': sensor})
+                json_result.update({"product_group": sensor})
             results.append(json_result)
 
         except Exception as ex:
             results = []
-            logger.error("Failure of Elastic queries for mission %s, timeliness type %s, level: %s, sensor: %s",
-                         mission, timeliness, level, sensor)
+            logger.error(
+                "Failure of Elastic queries for mission %s, timeliness type %s, level: %s, sensor: %s",
+                mission,
+                timeliness,
+                level,
+                sensor,
+            )
             logger.error(ex)
     return results
 
 
-def get_cds_mission_timeliness_statistics(start_date: datetime, end_date: datetime, mission: str):
+def get_cds_mission_timeliness_statistics(
+    start_date: datetime, end_date: datetime, mission: str
+):
     """
 
     Args:
@@ -215,17 +265,21 @@ def get_cds_mission_timeliness_statistics(start_date: datetime, end_date: dateti
     results = []
     # Extract list of timeliness types for this mission
     mission_timeliness_cfg = MissionTimelinessCache.load_object(mission)
-    timeliness_types = MissionTimelinessCache.load_object('timeliness_types')
-    mission_timeliness_types = [typ
-                                for typ in timeliness_types
-                                if typ in mission_timeliness_cfg
-                                ]
+    timeliness_types = MissionTimelinessCache.load_object("timeliness_types")
+    mission_timeliness_types = [
+        typ for typ in timeliness_types if typ in mission_timeliness_cfg
+    ]
     # TODO: Make resustl a Dictionary, and add Start/end date
-    logger.debug("Querying timeliness for mission %s from %s to %s excluded",
-                mission, start_date, end_date)
+    logger.debug(
+        "Querying timeliness for mission %s from %s to %s excluded",
+        mission,
+        start_date,
+        end_date,
+    )
     # If interval length >= 20 days and mission = S2,
     # split interval in periods of 10 days each, and accumulate results
     for tim_type in mission_timeliness_types:
-        results.extend(get_cds_timeliness_statistics(start_date, end_date,
-                                                     mission, tim_type))
+        results.extend(
+            get_cds_timeliness_statistics(start_date, end_date, mission, tim_type)
+        )
     return results

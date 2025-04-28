@@ -8,7 +8,5 @@ from flask import Blueprint
 from apps.cache.cache import ConfigCache
 
 blueprint = Blueprint(
-    'auth_blueprint',
-    __name__,
-    url_prefix=ConfigCache.load_object('application_root')
+    "auth_blueprint", __name__, url_prefix=ConfigCache.load_object("application_root")
 )

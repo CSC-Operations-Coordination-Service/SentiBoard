@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 from pykml import parser as KMLparser
@@ -35,9 +35,7 @@ class S1MissionAcqPlanLoader:
         subfolder = folder.Folder[0]
         for pm in subfolder.Placemark:
             pm_ring = pm.LinearRing
-            pm_polygon = KML.Polygon(
-                KML.outerBoundaryIs(pm_ring)
-            )
+            pm_polygon = KML.Polygon(KML.outerBoundaryIs(pm_ring))
             pm.append(pm_polygon)
             # pm.remove(pm_ring)
 
@@ -61,17 +59,15 @@ class S2MissionAcqPlanLoader:
 
     @staticmethod
     def _create_daily_folder(day_str, sat_name):
-        day_fold = KML.Folder(
-            KML.name(day_str)
-        )
-        sat_folder = KML.Folder(
-            KML.name(sat_name)
-        )
+        day_fold = KML.Folder(KML.name(day_str))
+        sat_folder = KML.Folder(KML.name(sat_name))
         day_fold.append(sat_folder)
         return day_fold
 
     def _add_to_daily_folder(self, day_str, sat_name, kml_placemark):
-        day_folder = self._day_folders.setdefault(day_str, self._create_daily_folder(day_str, sat_name))
+        day_folder = self._day_folders.setdefault(
+            day_str, self._create_daily_folder(day_str, sat_name)
+        )
         sub_folder = day_folder.Folder
         sub_folder.append(kml_placemark)
 
@@ -92,8 +88,8 @@ class S2MissionAcqPlanLoader:
             # Read Interval
 
             # Take interval Day(s)
-            start_day_str = str(pm.TimeSpan[0]['begin']).split("T")[0]
-            end_day_str = str(pm.TimeSpan[0]['end']).split("T")[0]
+            start_day_str = str(pm.TimeSpan[0]["begin"]).split("T")[0]
+            end_day_str = str(pm.TimeSpan[0]["end"]).split("T")[0]
             # According to configuration: if only one ad folder, add to start day folder
             # otherwise, add to both days folders
             # Add to Daily Folder
@@ -112,8 +108,11 @@ class S2MissionAcqPlanLoader:
             logger.debug("Parsing S2 KML folder with nme %s", sat_name)
             for mode_folder in folder.Folder:
                 mode_name = str(mode_folder.name)
-                logger.debug("Extracting Placemarks from folder for mode %s, satellite %s",
-                             mode_name, sat_name)
+                logger.debug(
+                    "Extracting Placemarks from folder for mode %s, satellite %s",
+                    mode_name,
+                    sat_name,
+                )
                 self._extract_mode_datatakes(mode_folder, sat_name)
 
         for day_str, day_folder in self._day_folders.items():

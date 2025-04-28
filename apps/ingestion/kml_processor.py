@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -25,7 +25,7 @@ status_colors = {
     DatatakeCompleteness.DELAYED_STATUS: "00ffff",
     DatatakeCompleteness.PARTIAL_STATUS: "00ffff",
     DatatakeCompleteness.LOST_STATUS: "0000ff",
-    DatatakeCompleteness.UNDEFINED_STATUS: "00ffff"
+    DatatakeCompleteness.UNDEFINED_STATUS: "00ffff",
 }
 
 
@@ -40,31 +40,21 @@ class AcqPlanKmlBuilder:
     """
 
     def __init__(self, title, mission):
-        self._kmldoc = KML.kml(KML.Document(
-            KML.name(title)
-        )
-        )
-        polygon_fill = 0 if mission in ['S3', 'S5'] else 1
+        self._kmldoc = KML.kml(KML.Document(KML.name(title)))
+        polygon_fill = 0 if mission in ["S3", "S5"] else 1
         # Add Styles
         for status, color in status_colors.items():
             # TODO: keep KML Styles in Class variables
-            line_style = KML.LineStyle(
-                KML.color(f"FF{color}"),
-                KML.width(2)
-            )
-            style_substyles = [line_style,
-                               KML.PolyStyle(
-                                   KML.color(f"40{color}"),
-                                   KML.fill(polygon_fill)
-                               )]
+            line_style = KML.LineStyle(KML.color(f"FF{color}"), KML.width(2))
+            style_substyles = [
+                line_style,
+                KML.PolyStyle(KML.color(f"40{color}"), KML.fill(polygon_fill)),
+            ]
 
             # define a polyline style, add it to the list
             # The style is composed of a list of sub styles
             # and has an id!
-            self._kmldoc.Document.append(KML.Style(
-                *style_substyles,
-                id=status
-            ))
+            self._kmldoc.Document.append(KML.Style(*style_substyles, id=status))
 
     def add_folder(self, kml_fragment):
         # retrieve all folders in kml file
