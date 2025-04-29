@@ -4,52 +4,8 @@
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
+
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
-    <style>
-        /* Stili comuni ai banner sticky */
-        .banner-sticky {
-            position: sticky;
-            top: 0;
-            width: 100%;
-            height: 5vh;
-            overflow: hidden;
-            z-index: 1000;
-        }
-
-        /* Banner con immagine */
-        .banner-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        /* Banner con testo a scorrimento */
-        .banner-marquee {
-            background-color: #ffffff;
-            color: red;
-        }
-        .banner-marquee p {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            transform: translateX(100%);
-            animation: scroll-left 15s linear infinite;
-            padding-left: 10px;
-    	    font-size: 2.2vh;
-            font-weight: bold;
-            font-family: sans-serif;	    
-        }
-
-        @keyframes scroll-left {
-            0% { transform: translateX(100%); }
-            100% { transform: translateX(-100%); }
-        }
-    </style>
 
 {% endblock stylesheets %}
 
@@ -59,10 +15,6 @@
     <!-- Data section-->
     <div class="content page-inner">
 
-   	<div class="banner-sticky banner-marquee">
-		<p>SentiBoard has been migrated to the new Coordination Service provider starting from Tuesday 25/03/2025 at 09:00 UTC. Existing functionalities and content will remain unchanged.</p>
-		<!-- <p>🛈 Benvenuto sul Copernicus Sentinel Operations Dashboard – Informazioni e statistiche in tempo reale!</p> -->
-    	</div>
 
         <!-- Video in background-->
         <div>
