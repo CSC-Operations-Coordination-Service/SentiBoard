@@ -15,7 +15,7 @@ delivered to him.
 from bs4 import BeautifulSoup
 
 
-class ScarperHtml:
+class ScraperHtml:
 
     def __init__(self, html_text):
         self.__soup = BeautifulSoup(html_text, 'html.parser')

@@ -20,17 +20,13 @@ from time import perf_counter
 from dateutil.relativedelta import relativedelta
 from flask import Response
 
-import apps.ingestion.news_ingestor as news_ingestor
 import apps.models.anomalies as anomalies_model
-import apps.models.news as news_model
 from apps import flask_cache
 from apps.utils import db_utils, date_utils
 
 logger = logging.getLogger(__name__)
 
 anomalies_cache_key = '/api/events/cds-anomalies/{}-{}'
-
-news_cache_key = '/api/events/cds-news/{}-{}'
 
 events_cache_duration = 604800
 
@@ -144,111 +140,3 @@ def _set_anomalies_cache(period_id, period_data):
                              status=200),
                     seconds_validity)
 
-
-def load_news_cache_last_quarter():
-    """
-    Fetch the news in the last 3 months from Elastic DB using the exposed REST APIs, and store results
-    in cache for future reuse. The start time is set at 00:00 of the first day of the temporal interval; the
-    stop time is set at 23:59
-    """
-
-    # Log an acknowledgement message
-    logger.info("[BEG] Loading News Cache in the last quarter...")
-    cache_start_time = perf_counter()
-
-    # Retrieve anomalies in the last quarter from local MYSQL DB
-    start_date = datetime.today() - relativedelta(months=3)
-    end_date = datetime.today()
-    end_date = end_date.replace(hour=23, minute=59, second=59)
-    news_last_quarter = news_model.get_news(start_date, end_date)
-
-    # Populate cache: results for sub-periods can be deduced from results in the last quarter
-    now = datetime.now()
-    news_last_24h = []
-    news_last_7d = []
-    news_last_30d = []
-    for news in news_last_quarter:
-
-        # Populate cache
-        if now - timedelta(hours=24) <= news.occurrenceDate:
-            news_last_24h.append(news)
-        if now - timedelta(days=7) <= news.occurrenceDate:
-            news_last_7d.append(news)
-        if now - timedelta(days=30) <= news.occurrenceDate:
-            news_last_30d.append(news)
-
-    _set_news_cache('24h', news_last_24h)
-    _set_news_cache('7d', news_last_7d)
-    _set_news_cache('30d', news_last_30d)
-    _set_news_cache('quarter', news_last_quarter)
-
-    # Log an acknowledgement message
-    cache_end_time = perf_counter()
-    logger.info(
-        f"[END] Loading News Cache in the last quarter - Execution Time : {cache_end_time - cache_start_time:0.6f}")
-
-
-def load_news_cache_previous_quarter():
-    """
-        Fetch the news in the last 3 months from Elastic DB using the exposed REST APIs, and store results
-        in cache for future reuse. The start time is set at 00:00 of the first day of the temporal interval; the
-        stop time is set at 23:59 of today
-        """
-
-    # Log an acknowledgement message
-    logger.info("[BEG] Loading News Cache in the previous quarter...")
-    cache_start_time = perf_counter()
-
-    # Define data time range
-    start_date, end_date = date_utils.prev_quarter_interval_from_date(datetime.today())
-    end_date = datetime.today()
-    end_date = end_date.replace(hour=23, minute=59, second=59)
-
-    # Retrieve anomalies up to the previous completed quarter from CAMS
-    news_prev_quarter = news_model.get_news(start_date, end_date)
-
-    # Populate cache: results for sub-periods can be deduced from results in the last quarter
-    now = datetime.now()
-    news_last_24h = []
-    news_last_7d = []
-    news_last_30d = []
-    news_last_quarter = []
-    for news in news_prev_quarter:
-
-        # Populate cache
-        if now - timedelta(hours=24) <= news.occurrenceDate:
-            news_last_24h.append(news)
-        if now - timedelta(days=7) <= news.occurrenceDate:
-            news_last_7d.append(news)
-        if now - timedelta(days=30) <= news.occurrenceDate:
-            news_last_30d.append(news)
-        if now - relativedelta(months=3) <= news.occurrenceDate:
-            news_last_quarter.append(news)
-    _set_news_cache('24h', news_last_24h)
-    _set_news_cache('7d', news_last_7d)
-    _set_news_cache('30d', news_last_30d)
-    _set_news_cache('quarter', news_last_quarter)
-    _set_news_cache('previous-quarter', news_prev_quarter)
-
-    # Log an acknowledgement message
-    cache_end_time = perf_counter()
-    logger.info(
-        f"[END] Loading News Cache in the previous quarter - Execution Time : {cache_end_time - cache_start_time:0.6f}")
-
-
-def _set_news_cache(period_id, period_data):
-    """
-        Store in cache the provided results, and set the validity time of cache according to the data period.
-        """
-
-    # Log an acknowledgement message
-    logger.debug("Caching news in period: %s", period_id)
-
-    seconds_validity = events_cache_duration
-    if period_id == 'previous-quarter':
-        api_prefix = news_cache_key.format('previous', 'quarter')
-    else:
-        api_prefix = news_cache_key.format('last', period_id)
-    flask_cache.set(api_prefix, Response(json.dumps(period_data, cls=db_utils.AlchemyEncoder), mimetype="application/json",
-                             status=200),
-                    seconds_validity)

@@ -21,7 +21,7 @@ from typing import List
 from urllib.parse import urlparse
 
 from apps.cache.cache import ConfigCache
-from apps.ingestion import news_scraper as scraper
+from apps.ingestion.acquisition_plans import link_scraper as scraper
 from apps.utils import html_utils as html_utils
 
 logger = logging.getLogger(__name__)
@@ -234,10 +234,9 @@ class AcqPlanKmlRetriever:
                     self._mission, link_type)
         cfg = ConfigCache.load_object('acqplans_config')
         mission_cfg = cfg.get(self._mission)
-        # TODO  Replace with a LinkPage Retriever
         url = mission_cfg['url'][link_type]
         page_contents = html_utils.get_html_page(url)
-        html_page = scraper.ScarperHtml(page_contents)
+        html_page = scraper.ScraperHtml(page_contents)
         # For each platform in platform list
         acqplan_div = mission_cfg['acqplan_div']
         logger.debug("Scraping from page div: %s", acqplan_div)

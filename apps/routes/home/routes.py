@@ -35,7 +35,7 @@ def route_template(template):
 
         # Serve the file (if exists) from app/templates/home/FILE.html
         # or from app/templates/admin/FILE.html, depending on the requested page
-        admin_pages = ['users.html', 'roles.html', 'news.html', 'anomalies.html']
+        admin_pages = ['users.html', 'roles.html', 'anomalies.html']
         if template in admin_pages:
 
             # Serve the file (if exists) from app/templates/admin/FILE.html

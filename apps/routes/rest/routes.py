@@ -30,9 +30,7 @@ import apps.cache.modules.publication as publication_cache
 import apps.cache.modules.timeliness as timeliness_cache
 import apps.cache.modules.unavailability as unavailability_cache
 import apps.ingestion.anomalies_ingestor as anomalies_ingestor
-import apps.ingestion.news_ingestor as news_ingestor
 import apps.models.anomalies as anomalies_model
-import apps.models.news as news_model
 from apps import flask_cache
 from . import blueprint
 from ...utils import auth_utils, db_utils
@@ -134,35 +132,6 @@ def get_anomalies_in_range(date_from, date_to):
     return Response(json.dumps(anomalies_model.get_anomalies(start_date, end_date), cls=db_utils.AlchemyEncoder),
                     mimetype="application/json",
                     status=200)
-
-
-@blueprint.route('/api/events/news/update', methods=['GET'])
-def update_news():
-    logger.info("Called API Update News")
-    news_ingestor.NewsIngestor().ingest_news()
-    return Response(json.dumps({'OK': '200'}), mimetype="application/json", status=200)
-
-
-@blueprint.route('/api/events/news/last-<period_id>', methods=['GET'])
-def get_news_last(period_id):
-    logger.info("Called API News last %s", period_id)
-    news_api_uri = events_cache.news_cache_key.format('last', period_id)
-    logger.debug("URI cache key: %s", news_api_uri)
-    # if not flask_cache.has(news_api_uri):
-    #    logger.info("Loading News Cache from API News last %s", period_id)
-    #    events_cache.load_news_cache_last_quarter()
-    return flask_cache.get(news_api_uri)
-
-
-@blueprint.route('/api/events/news/previous-quarter', methods=['GET'])
-def get_news_previous_quarter():
-    logger.info("Called API News previous quarter")
-    news_api_uri = events_cache.news_cache_key.format('previous', 'quarter')
-    logger.debug("URI cache key: %s", news_api_uri)
-    # if not flask_cache.has(news_api_uri):
-    #    logger.info("Loading News Cache from API News previous quarter")
-    #    events_cache.load_news_cache_previous_quarter()
-    return flask_cache.get(news_api_uri)
 
 
 @blueprint.route('/api/worker/cds-datatake/<datatake_id>', methods=['GET'])
@@ -285,26 +254,6 @@ def update_anomaly():
 
     return Response(json.dumps({'OK': '200'}), mimetype="application/json", status=200)
 
-
-@blueprint.route('/api/events/news/update', methods=['POST'])
-@login_required
-def update_news_item():
-    logger.info("Called API Update News")
-    try:
-        if not auth_utils.is_user_authorized(['admin']):
-            return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder), mimetype="application/json",
-                            status=401)
-
-        data = json.loads(request.data.decode('utf8'))
-        news_model.update_news_categorization(data['link'], data['category'], data['impactedSatellite'],
-                                              data['environment'],
-                                              data['occurrenceDate'])
-
-        events_cache.load_news_cache_previous_quarter()  # Explicitly force cache reloading
-    except Exception as ex:
-        return Response(json.dumps({'error': '500'}), mimetype="application/json", status=500)
-
-    return Response(json.dumps({'OK': '200'}), mimetype="application/json", status=200)
 
 
 @blueprint.route('/api/reporting/cds-acquisitions/last-<period_id>', methods=['GET'])

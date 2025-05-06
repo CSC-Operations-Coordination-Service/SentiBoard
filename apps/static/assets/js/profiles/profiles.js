@@ -123,11 +123,6 @@ class Profiles {
                                 '<span class="sub-item">Users</span>' +
                             '</a>' +
                         '</li>' +
-                        '<li class="' + activeNews + '">' +
-                            '<a href="/news.html">' +
-                                '<span class="sub-item">News</span>' +
-                            '</a>' +
-                        '</li>' +
                         '<li class="' + activeAnomalies + '">' +
                             '<a href="/anomalies.html">' +
                                 '<span class="sub-item">Anomalies</span>' +
