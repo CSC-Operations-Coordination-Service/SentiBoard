@@ -4,142 +4,148 @@
 
 {% block content %}
 
-    <!-- Viewport definition -->
+  <!-- Viewport definition -->
     <meta charset="utf-8"/>
-    <meta name="referrer" content="no-referrer-when-downgrade" />
+  <meta name="referrer" content="no-referrer-when-downgrade" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Define page content -->
-    <div class="content" style="min-height: calc(100% - 130px);">
-        <div class="page-inner">
+  <!-- Define page content -->
+  <div class="content" style="min-height: calc(100% - 130px);">
+    <div class="page-inner">
 
-            <!-- Breadcrumb -->
-            <div class="page-header">
-                <h4 class="page-title">Events Viewer</h4>
-                <ul class="breadcrumbs">
-                    <li class="nav-home">
+      <!-- Breadcrumb -->
+      <div class="page-header">
+        <h4 class="page-title">Events Viewer</h4>
+        <ul class="breadcrumbs">
+          <li class="nav-home">
                         <a href="/index.html">
                             <i class="flaticon-home"></i>
                         </a>
-                    </li>
-                    <li class="separator">
-                        <i class="flaticon-right-arrow"></i>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#">Events</a>
-                    </li>
-                </ul>
-            </div>
+          </li>
+          <li class="separator">
+            <i class="flaticon-right-arrow"></i>
+          </li>
+          <li class="nav-item">
+            <a href="#">Events</a>
+          </li>
+        </ul>
+      </div>
 
-            <!-- Collapsible description panel -->
+      <!-- Collapsible description panel -->
+      <div class="row">
+        <div class="card-body" style="padding-bottom: 0.0rem !important">
+          <div class="flex flex-column faq-section">
             <div class="row">
-                <div class="card-body" style="padding-bottom: 0.0rem !important">
-                    <div class="flex flex-column faq-section">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div id="accordion">
-                                    <div class="card">
-                                        <div class="card-header" id="heading-description">
-                                            <h5 class="mb-0" style="color: white">
-                                                <a role="button" data-toggle="collapse" href="#description"
-                                                   aria-expanded="false" aria-controls="description"
-                                                   style="color: white; text-decoration: none">
-                                                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
-                                                </a>
-                                            </h5>
-                                        </div>
+              <div class="col-md-12">
+                <div id="accordion">
+                  <div class="card">
+                    <div class="card-header" id="heading-description">
+                      <h5 class="mb-0" style="color: white"><a role="button" data-toggle="collapse" href="#description" aria-expanded="false" aria-controls="description" style="color: white; text-decoration: none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description</a></h5>
+                    </div>
                                         <div id="description" class="collapse hide" data-parent="#accordion"
                                              aria-labelledby="heading-description">
-                                            <div class="card-body">
+                      <div class="card-body">
                                                 This view shows the events occurred on a given date and the possible
-                                                impact on user
-                                                products completeness. Events are categorized according to the following
-                                                issue types:<br>
-                                                - Satellite: issue due to instrument unavailability<br>
-                                                - Calibration: issue occurred during sensor calibration<br>
-                                                - Manoeuvre: issue occurred during the execution of a manoeuvre<br>
+                                                impact on user products completeness. Events are categorized according 
+                                                to the following issue types:<br>
                                                 - Acquisition: issue occurring during the reception of the data at the
                                                 ground station<br>
+                                                - Calibration: issue occurred during sensor calibration<br>
+                                                - Manoeuvre: issue occurred during the execution of a manoeuvre<br>
                                                 - Production: issue occurred during data processing<br>
-                                                By clicking on each occurrence, the list of possibly impacted datatakes
-                                                considering their sensing times is
-                                                displayed in the right-side panel, together with further event details.
-                                                The impact on datatake completeness is represented by the right-side
-                                                coloured circle. The "green" colour indicates that the total completeness
-                                                is spared; "orange" is used in case of medium impact; the "red"
-                                                colour is used when the datatake is lost.<br>
-                                                Events can be filtered by entering the satellite name (i.e.
-                                                "Sentinel-1A"), or the category of interest,
-                                                in the top-right search box.
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                                                - Satellite: issue due to instrument unavailability<br>
+                                                When an occurrence is clicked, the bottom panel shows a list of potentially 
+                                                impacted datatakes, determined by their sensing times, along with further 
+                                                details about the event.
+                                                The impact on datatake completeness is represented by the right-side coloured 
+                                                circle. The "green" colour indicates that the total completeness is spared; 
+                                                "orange" is used in case of medium impact; the "red" colour is used when the 
+                                                datatake is lost.<br>
+                                                Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), 
+                                                or by entering a category of interest in the search box.
+                      </div>
                     </div>
+                  </div>
                 </div>
+              </div>
             </div>
-
-            <!-- Calendar container -->
-            <div class="row">
-
-				<!-- Main timeline control -->
-                <div class="col-12 col-md-8">
-					<div class="card">
-						<div class="card-body">
-
-                            <!-- Row hosting the general controls -->
-                            <div class="row">
-
-                                <!-- Display mode selector -->
-                                <div class="col-sm-6 col-md-3 mb-2" style="left: 15px">
-                                    <label style="position: relative; right: 14px">Display mode</label>
-                                    <i style="color: white; position: relative; top: -10px; left: -25px" class="btn la flaticon-round" onclick="calendar.showCalendarSwitchOnlineHelp()"></i>
-                                    <select name="event-display-select" id="event-display-select" class="form-control form-control-small"
-                                            style="position: relative; right: 16px">
-                                        <option value="calendar" selected>Calendar</option>
-                                        <option value="timeline">Timeline</option>
-                                    </select>
-                                </div>
-
-                                <!-- Search bar for anomalies -->
-                                <div id="anomalies_filter" class="dataTables_filter" style="position: absolute; right: 18px; top: 27px">
-                                    <label>Search:<input aria-controls="basic-datatables-data-takes"
-                                                         class="form-control form-control-sm"
-                                                         id="anomalies_filter_search" placeholder="" type="text">
-                                    </label>
-                                </div>
-
-                            </div>
-
-                            <!-- The Calendar control -->
-                            <div id="myCalendar" class="calendar">
-                            </div>
-
-                            <!-- The Timeline control -->
-                            <div id="myTimeline" style="display: none">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Event details container -->
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="card-title">Event Details</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="timeline-event-details" id="timeline-event-details">
-                                Click on an event to display the relevant details and the list of impacted datatakes.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Calendar container -->
+      <div class="row">
+
+        <!-- Main timeline control -->
+        <div class="col-12">
+          <div class="card" style="background-color: rgb(0, 107, 124) !important;">
+            <div class="card-body">
+              <!-- The Calendar control -->
+              <!-- <div id="myCalendar" class="calendar"></div> -->
+                <div class="row  align-items-start">
+                    <!-- Left Panel -->
+                    <div class="col-12 col-md-3 left-panel mb-4 mb-md-0">
+                        <div class="filter-panel p-3">
+                            <h4 class="mb-0">Events</h4>
+                            <hr>
+                            <div id="filtersContainer" class="filters-row">
+                                <select id="missionSelect" class="form-control d-inline-block ml-2">
+                                    <option value="all" selected="true">All Missions</option>
+                                    <option value="s1">Sentinel 1</option>
+                                    <option value="s2">Sentinel 2</option>
+                                    <option value="s3">Sentinel 3</option>
+                                    <option value="s5">Sentinel 5P</option>
+                                </select>
+                                <select id="eventTypeSelect" class="mt-2 form-control d-inline-block ml-2">
+                                    <option value="all" selected>All Events</option>
+                                    <option value="acquisition">Acquisition</option>
+                                    <option value="calibration">Calibration</option>
+                                    <option value="manoeuvre">Manoeuvre</option>
+                                    <option value="production">Production</option>
+                                    <option value="satellite">Satellite</option>
+                                </select>
+                                <input type="text" class="mt-1 form-control ml-2" id="eventSearchInput"
+                                    placeholder="Search ..." />
+                            </div>
+                            <div class="mt-2 ml-2">
+                              <button id="resetFilters" class="reset-button w-100">Reset</button>
+                            </div>
+                            <div class="event-legend">
+                                <h4>Event Types</h4>
+                                <div class="legend-item">
+                                  <span class="event-color event-acquisition"></span> Acquisition
+                              </div>
+                                <div class="legend-item">
+                                    <span class="event-color event-calibration"></span> Calibration
+                                </div>
+                                <div class="legend-item">
+                                  <span class="event-color event-manoeuvre"></span> Manoeuvre
+                                </div>                                
+                                <div class="legend-item">
+                                  <span class="event-color event-production"></span> Production
+                              </div>
+                              <div class="legend-item">
+                                <span class="event-color event-platform"></span> Satellite
+                            </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Calendar Section -->
+                    <div class="col-12 col-md-9">
+                        <div class="calendar-container">
+                            <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+                                <button id="prevMonth" class="btn">&lt;</button>
+                                <h1 id="monthYear" class="mb-0"></h1>
+                                <button id="nextMonth" class="btn">&gt;</button>
+                            </div>
+                            <div class="calendar-grid" id="calendarGrid"></div>
+                        </div>
+                        <div id="eventDetails" class="event-details"></div>
+                    </div>
+                </div>
+            </div>
+          </div>
+      </div>
     </div>
 
 {% endblock content %}
@@ -147,44 +153,48 @@
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
 
-    <!-- Calendar plugin style -->
+  <!-- Calendar plugin style -->
     <link rel="stylesheet" href="/static/assets/lib/calendar/css/calendarjs.min.css">
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
 
-    <!-- Calendar plugin scripts -->
-    <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
-    <script src="/static/assets/js/events/calendar.js"></script>
-    <script defer type="text/javascript">calendar.init();</script>
+  <!-- Calendar plugin scripts -->
+  <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
+  <script src="/static/assets/js/events/calendar.js"></script>
+  <!-- <script defer type="text/javascript">
+    calendar.init()
+  </script>-->
 
-    <!-- Timeline plugin style -->
-    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css'>
-    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+  <!-- Timeline plugin style -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css" />
+  <link rel="stylesheet" href="/static/assets/css/dashboard.css" />
 
-    <!-- Timeline plugin scripts -->
-    <script src='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js'></script>
-    <script src="/static/assets/js/events/timeline.js"></script>
-    <script defer type="text/javascript">timeline.init();</script>
+  <!-- Timeline plugin scripts 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js"></script>
+  <script src="/static/assets/js/events/timeline.js"></script>
+  <script defer type="text/javascript">
+    timeline.init()
+  </script>-->
 
-    <script>
+  <script>
 
-        // Display selector
+    // Display selector
         $('#event-display-select').change(function() {
-            if ($(this).val() === 'timeline') {
+      if ($(this).val() === 'timeline') {
                 document.getElementById('myCalendar').style.display = 'none';
                 document.getElementById('myTimeline').style.display = 'block';
-            }
-            if ($(this).val() === 'calendar') {
+      }
+      if ($(this).val() === 'calendar') {
                 document.getElementById('myCalendar').style.display = 'block';
                 document.getElementById('myTimeline').style.display = 'none';
-            }
-        })
-
-        // Filter anomalies
+      }
+    })
+    
+    // Filter anomalies
         $('#anomalies_filter_search').on('input', function(event) {
             calendar.filterEvents($(this).val());
             timeline.filterEvents($(this).val());
         });
 
-    </script>
+  </script>
 
 {% endblock javascripts %}

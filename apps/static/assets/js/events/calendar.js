@@ -1,165 +1,214 @@
-/*
-Copernicus Operations Dashboard
-
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
-All rights reserved.
-
-This document discloses subject matter in which TPZ has
-proprietary rights. Recipient of the document shall not duplicate, use or
-disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
-delivered to him.
-*/
-
-class Calendar {
-
+class CalendarWidget {
     constructor() {
+        // DOM Elements
+        this.calendarBody = document.getElementById("calendarBody");
+        this.monthButton = document.getElementById("monthButton");
+        this.yearButton = document.getElementById("yearButton");
+        this.monthOptions = document.getElementById("monthOptions");
+        this.yearOptions = document.getElementById("yearOptions");
+        this.prevMonthButton = document.getElementById("prevMonth");
+        this.nextMonthButton = document.getElementById("nextMonth");
 
-        // Acknowledge the instantiation of calendar widget
-        console.info('Instantiating calendar widget...');
+        this.calendarGrid = document.getElementById("calendarGrid");
+        this.monthYear = document.getElementById("monthYear");
+        this.eventSearchInput = document.getElementById("eventSearchInput");
+        this.missionSelect = document.getElementById("missionSelect");
+        this.eventTypeSelect = document.getElementById("eventTypeSelect");
 
-        // Init class members
+        this.today = new Date();
+        this.currentMonth = this.today.getMonth();
+        this.currentYear = this.today.getFullYear();
+        this.lastSelectedDate = null;
+        this.debounceTimer = null;
+
         this.events = [];
-        this.filteredEvents = [];
         this.anomalies = {};
         this.details = {};
-        this.startEventsDate = new Date();
-        this.startEventsDate.setUTCHours(0, 0, 0, 0);
 
-        // Init popup flags
-        this.noEventsBeforeDateMsgDisplayed = false;
+        this.monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+
+        this.missionEvents = {
+            sentinel1: {
+                "2025-03-11": [{ text: "Maintenance", type: "event-manoeuvre", tooltip: "Satellite S1A <br> Scheduled maintenance event <br> S1A-474954", typeCategory: "maintenance" }],
+                "2025-04-14": [{ text: "Software Update", type: "event-acquisition", tooltip: "Satellite S1B <br> System firmware update <br> S1B-474958", typeCategory: "update" }],
+                "2025-03-22": [{ text: "Calibration", type: "event-calibration", tooltip: "Satellite S1A <br> Calibration event for equipment <br> S1A-475920", typeCategory: "calibration" }],
+                "2025-03-26": [{ text: "Communication Loss", type: "event-production", tooltip: "Satellite S1A <br> Signal interruption detected <br> S1A-475977", typeCategory: "loss" }],
+                "2025-04-30": [{ text: "Orbital Correction", type: "event-production", tooltip: "Satellite S1A <br> Course adjustment maneuver <br> S1A-476001", typeCategory: "unavailability" }]
+            },
+            sentinel2: {
+                "2025-04-05": [{ text: "Maintenance", type: "event-manoeuvre", tooltip: "Satellite S2A <br> Routine maintenance check <br> S2A-478120", typeCategory: "maintenance" }],
+                "2025-04-14": [{ text: "Battery Replacement", type: "event-acquisition", tooltip: "Satellite S2B <br> Power unit replacement <br> S2B-478134", typeCategory: "update" }],
+                "2025-04-17": [
+                    { text: "Data take unavailability", type: "event-production", tooltip: "Satellite S2A <br> Data unavailable due to signal failure <br> S2A-478145", typeCategory: "unavailability" },
+                    { text: "Image Processing Delay", type: "event-calibration", tooltip: "Satellite S2B <br> Data processing backlog detected <br> S2B-478999", typeCategory: "loss" }
+                ],
+                "2025-04-30": [{ text: "Calibration", type: "event-calibration", tooltip: "Satellite S2C <br> Sensor recalibration event <br> S2C-477754", typeCategory: "calibration" }]
+            },
+            sentinel3: {
+                "2025-05-02": [{ text: "Routine Check", type: "event-manoeuvre", tooltip: "Satellite S3A <br> Performance evaluation <br> S3A-489800", typeCategory: "maintenance" }],
+                "2025-05-10": [{ text: "Calibration", type: "event-calibration", tooltip: "Satellite S3B <br> Calibration event for thermal sensors <br> S3B-489955", typeCategory: "calibration" }],
+                "2025-05-15": [{ text: "Orbital Adjustment", type: "event-production", tooltip: "Satellite S3C <br> Adjusting course after anomaly <br> S3C-489977", typeCategory: "loss" }],
+                "2025-05-19": [{ text: "Signal Interference", type: "event-production", tooltip: "Satellite S3A <br> Unexpected frequency disturbance <br> S3A-490004", typeCategory: "unavailability" }],
+                "2025-05-26": [{ text: "Battery System Rebalance", type: "event-acquisition", tooltip: "Satellite S3B <br> Battery unit optimization <br> S3B-490105", typeCategory: "update" }]
+            },
+            sentinel5P: {
+                "2025-06-03": [{ text: "Disaster Recovery", type: "event-data-access", tooltip: "Satellite S5P <br> Emergency response coordination <br> S5P-490001", typeCategory: "unavailability" }],
+                "2025-06-10": [{ text: "Critical Imaging Analysis", type: "event-production", tooltip: "Satellite S5P <br> Processing high-priority environmental data <br> S5P-490006", typeCategory: "loss" }],
+                "2025-06-16": [{ text: "Maintenance", type: "event-manoeuvre", tooltip: "Satellite S5P <br> Routine system inspection <br> S5P-490034", typeCategory: "maintenance" }],
+                "2025-06-20": [{ text: "Sensor Malfunction", type: "event-production", tooltip: "Satellite S5P <br> Instrument instability detected <br> S5P-490044", typeCategory: "calibration" }],
+                "2025-06-27": [{ text: "Software Upgrade", type: "event-acquisition", tooltip: "Satellite S5P <br> Deploying new optimization firmware <br> S5P-490099", typeCategory: "maintenance" }]
+            }
+        };
+
+        this.init();
     }
 
     init() {
 
-        // Hide the drop-down menu to select the time range
-        $('#time-period-select-container').hide();
+        this.selectedMission = 'all';
+        this.selectedEventType = 'all';
+        this.searchTerm = '';
 
-        // Retrieve the user profile. In case of "ecuser" role, allow
-        // the visualization of events up to the beginning of the previous quarter
-        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
+        ajaxCall('/api/auth/quarter-authorized', 'GET', {},
+            this.quarterAuthorizedProcess.bind(this),
+            this.errorLoadAuthorized.bind(this)
+        );
 
-        return;
+        this.addEventListeners();
     }
 
     quarterAuthorizedProcess(response) {
         if (response['authorized'] === true) {
-            calendar.loadEventsECUser();
+            this.loadEventsECUser();
         } else {
-            calendar.loadEventsGuestUser();
+            this.loadEventsGuestUser();
         }
     }
 
     errorLoadAuthorized(response) {
-        return;
+        console.error('Authorization error', response);
     }
 
     loadEventsECUser() {
-
-        // EC Users are allowed to access events (anomalies) up to the
-        // beginning of the previous quarter
         console.info('Loading events up to the previous quarter...');
-        var quarter = getPreviousQuarter(calendar.startEventsDate);
-        calendar.startEventsDate.setYear(quarter['year']);
-        calendar.startEventsDate.setMonth((quarter['quarter'] * 3 - 3), 1);
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
-            calendar.succesLoadAnomalies, calendar.errorLoadAnomalies);
+            this.succesLoadAnomalies.bind(this),
+            this.errorLoadAnomalies.bind(this)
+        );
     }
 
     loadEventsGuestUser() {
-
-        // Guest Users are allowed to access events (anomalies) up to 3
-        // months before the current date
         console.info('Loading events in the last quarter...');
-        calendar.startEventsDate.setMonth(calendar.startEventsDate.getMonth() - 3);
         asyncAjaxCall('/api/events/anomalies/last-quarter', 'GET', {},
-            calendar.succesLoadAnomalies, calendar.errorLoadAnomalies);
+            this.succesLoadAnomalies.bind(this),
+            this.errorLoadAnomalies.bind(this)
+        );
     }
 
     succesLoadAnomalies(response) {
-
-        // Format the response from the query
         var rows = format_response(response);
         console.info('Events loaded. Num of events: ' + rows.length);
 
-        // Array of impacted datatakes
-        var datatakeList = new Array();
+        var datatakeList = [];
 
-        // Loop over the returned anomalies and build the events array
-        // and the details dictionary
-        for (var i = 0 ; i < rows.length ; ++i) {
-
-            // Auxiliary variable
-            var anomaly = rows[i];
-
-            // Check if an anomaly with the same impacted datatake is already displayed. If so,
-            // skip the new anomaly
-            if (datatakeList.indexOf(anomaly['environment']) > -1) {
-                continue ;
+        for (let i = 0; i < rows.length; ++i) {
+            let anomaly = rows[i];
+            if (datatakeList.includes(anomaly['environment'])) {
+                continue;
             } else {
                 datatakeList.push(anomaly['environment']);
             }
-
             // Append the calendar event instance only if the event has an impact on datatakes (not fully recovered)
-            var instance = calendar.buildEventInstanceFromAnomaly(anomaly);
+            let instance = this.buildEventInstanceFromAnomaly(anomaly);
             if (!instance.fullRecover) {
 
                 // Store the anomalies in the class member
-                calendar.anomalies[anomaly['key']] = anomaly;
+                this.anomalies[anomaly['key']] = anomaly;
 
                 // Append the event instance
-                calendar.events.push(instance);
+                this.events.push(instance);
 
                 // Append event details in the details panel
-                calendar.details['day-' + anomaly['key']] = calendar.buildDetailsPanelContentFromAnomaly(anomaly);
+                //this.details['day-' + anomaly['key']] = this.buildDetailsPanelContentFromAnomaly(anomaly);
             }
         }
 
-        // Instantiate calendar widget
-        calendar.calendarInstance = new calendarJs( "myCalendar", {
-            autoRefreshTimerDelay: 0,
-            maximumEventsPerDayDisplay: 1,
-            dragAndDropForEventsEnabled: false,
-            exportEventsEnabled: false,
-            manualEditingEnabled: false,
-            fullScreenModeEnabled: false,
-            eventNotificationsEnabled: false,
-            useOnlyDotEventsForMainDisplay: false,
-            showExtraToolbarButtons: false,
-            showHolidays: false,
-            tooltipsEnabled: false
-        });
-
-        // Initialize the filteredEvents list, considering all
-        // records from DB
-        Array.prototype.push.apply(calendar.filteredEvents, calendar.events);
-
-        // Set the events
-        calendar.calendarInstance.addEvents(calendar.filteredEvents);
-
-        // Override the original behaviour of calendar
-        calendar.overrideCalendarBehaviour();
-
-        // Override the original behaviour of calendar also when users
-        // changes the month / year
-        $('.ib-arrow-left-full').on('click', function(event) {
-            calendar.overrideCalendarBehaviour();
-            calendar.checkNoEventsBeforeDateMsgDisplay();
-        });
-        $('.ib-arrow-right-full').on('click', function(event) {
-            calendar.overrideCalendarBehaviour();
-            calendar.checkNoEventsBeforeDateMsgDisplay();
-        });
-
-        // Check the presence of the showDayEvents flag. In case,
-        // display automatically the details of the last event
-        calendar.showDayEventsOnPageLoad();
-        return;
+        // Now generate the calendar AFTER loading events
+        this.generateCalendar(this.currentMonth, this.currentYear);
 
     }
 
-    errorLoadAnomalies(response){
-        return;
+    errorLoadAnomalies(response) {
+        console.error('Anomalies loading error', response);
+    }
+
+    formatDate(date) {
+        const y = date.getFullYear();
+        const m = (date.getMonth() + 1).toString().padStart(2, '0');
+        const d = date.getDate().toString().padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    addEventListeners() {
+        document.getElementById('missionSelect').addEventListener('change', () => {
+            this.selectedMission = document.getElementById('missionSelect').value;
+            this.generateCalendar(this.currentMonth, this.currentYear);
+            if (this.lastSelectedDate) this.showEventDetails(this.lastSelectedDate);
+        });
+
+        document.getElementById('eventTypeSelect').addEventListener('change', () => {
+            this.selectedEventType = document.getElementById('eventTypeSelect').value;
+            this.generateCalendar(this.currentMonth, this.currentYear);
+            if (this.lastSelectedDate) this.showEventDetails(this.lastSelectedDate);
+        });
+
+        document.getElementById('eventSearchInput').addEventListener('input', () => {
+            this.searchTerm = document.getElementById('eventSearchInput').value.toLowerCase();
+            this.generateCalendar(this.currentMonth, this.currentYear);
+            if (this.lastSelectedDate) this.showEventDetails(this.lastSelectedDate);
+        });
+
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            this.currentMonth--;
+            if (this.currentMonth < 0) {
+                this.currentMonth = 11;
+                this.currentYear--;
+            }
+            this.generateCalendar(this.currentMonth, this.currentYear);
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            this.currentMonth++;
+            if (this.currentMonth > 11) {
+                this.currentMonth = 0;
+                this.currentYear++;
+            }
+            this.generateCalendar(this.currentMonth, this.currentYear);
+        });
+
+        document.getElementById('resetFilters').addEventListener('click', () => {
+            this.selectedMission = 'all';
+            this.selectedEventType = 'all';
+            this.searchTerm = '';
+            this.lastSelectedDate = null;
+
+            document.getElementById('missionSelect').value = 'all';
+            document.getElementById('eventTypeSelect').value = 'all';
+            document.getElementById('eventSearchInput').value = '';
+            document.getElementById('eventDetails').innerHTML = '';
+
+            this.generateCalendar(this.currentMonth, this.currentYear);
+        });
+
+        window.addEventListener('resize', () => this.adjustCalendarHeight());
+    }
+
+    adjustCalendarHeight() {
+        const container = document.querySelector('.calendar-container');
+        container.style.height = window.innerWidth < 768 ? '500px' : '700px';
     }
 
     buildEventInstanceFromAnomaly(anomaly) {
@@ -179,7 +228,7 @@ class Calendar {
         // Append impacted item
         item += anomaly["impactedSatellite"];
         description += anomaly["category"] === "Data access" ?
-                "Impacted Satellite: All Sentinels " : "Impacted Satellite: " + item + '. ';
+            "Impacted Satellite: All Sentinels " : "Impacted Satellite: " + item + '. ';
 
         // Choose an appropriate description
         if (anomaly["category"] === "Platform") {
@@ -200,7 +249,7 @@ class Calendar {
         } else if (anomaly["category"] === "Manoeuvre") {
             // title = "Manoeuvre"
             description += 'Issue type: Manoeuvre ';
-        } else ;
+        } else;
 
         // Override the end date in the Calendar view only
         end_time.setTime(start_time.getTime() + 1);
@@ -214,9 +263,9 @@ class Calendar {
         var allRecovered = true;
         for (var index = 0; index < datatakes_completeness.length; ++index) {
             try {
-                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'','\"')))) {
+                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
                     var objValues = Object.values(value);
-                    completeness = calendar.calcDatatakeCompleteness(objValues);
+                    completeness = this.calcDatatakeCompleteness(objValues);
                     if (completeness < threshold) {
                         allRecovered = false;
                     }
@@ -230,7 +279,7 @@ class Calendar {
         if (allRecovered) {
             color = "#31ce36";
             recovered = true;
-            console.info('Recovered anomaly: ' + anomaly['key']);
+            /*console.info('Recovered anomaly: ' + anomaly['key']);*/
         }
 
         // Return the event instance
@@ -248,118 +297,48 @@ class Calendar {
         };
     }
 
-    buildDetailsPanelContentFromAnomaly(anomaly) {
-
-        // Build content to be displayed in the details panel
-        var title = "";
-
-        // Override "platform" category with "satellite"
-        var category = anomaly["category"] === "Platform" ? "Satellite" : anomaly["category"];
-
-        // Override the "impactedSatellite" property
-        var item = "";
-        if (anomaly["category"] === "Data access") {
-            item = "All Sentinels";
-        } else {
-            if (anomaly["environment"].includes('S1A')) {
-                item += "S1A, "
-            }
-            if (anomaly["environment"].includes('S2A')) {
-                item += "S2A, "
-            }
-            if (anomaly["environment"].includes('S2B')) {
-                item += "S2B, "
-            }
-            if (anomaly["environment"].includes('S2C')) {
-                item += "S2C, "
-            }
-            if (anomaly["environment"].includes('S3A')) {
-                item += "S3A, "
-            }
-            if (anomaly["environment"].includes('S3B')) {
-                item += "S3B, "
-            }
-            if (anomaly["environment"].includes('S5P')) {
-                item += "S5P, "
-            }
-            item = item.substring(0, item.length - 2);
+    calcDatatakeCompleteness(dtCompleteness) {
+        var completeness = 0;
+        var count = 0;
+        for (var i = 1; i < dtCompleteness.length; ++i) {
+            count++;
+            completeness += dtCompleteness[i];
         }
-
-        // Until a full parsing of anomaly text is implemented, the start time is based
-        // on the publication date, and the end time is set as 1 hour later
-        var start_time = moment(anomaly['publicationDate'], 'DD/MM/YYYY HH:mm:ss').toDate();
-
-        // Every impacted datatake shall be linked to the Datatake table
-        var detailsContent =
-            '<div>' +
-                '<p style="color: white; font-size: 14px">Occurrence date:  ' +
-                    '<span style="font-weight: bold">' + start_time + '</span></p>' +
-                '<p></p>' +
-                '<p style="color: white; font-size: 14px">Impacted satellite(s):  ' +
-                    '<span style="font-weight: bold">' + item + '</span></p>' +
-                '<p></p>' +
-                '<p style="color: white; font-size: 14px">Issue type:  ' +
-                    '<span style="font-weight: bold">' + category + '</span></p>' +
-                '<p></p>';
-
-        // Append the list of impacted data takes
-        if (anomaly["environment"]) {
-            detailsContent += '<p style="color: white; font-size: 14px">List of impacted datatakes:  </br>';
-            var dts = anomaly["environment"].split(";");
-            detailsContent += calendar.arrangeDatatakesList(anomaly, dts);
-        } else {
-            detailsContent += '</div>';
-        }
-
-        // Append the link to the related news on Sentinel Online
-        if (anomaly['newsLink']) {
-            detailsContent += '<div><p style="color: white">Read more details on Sentinel Online:<br /><a href="' +
-                anomaly["newsLink"] + '" target="_blank">' + anomaly["newsTitle"] + '</a></p></div>';
-        }
-
-        // Return the HTML displayed in the details panel
-        return detailsContent;
+        return (completeness / count);
     }
 
     arrangeDatatakesList(anomaly, dtList) {
         var content = '<div class="row col-md-12" style="list-style-type: none;">';
-        dtList.forEach(function(value, index, array) {
+        dtList.forEach(function (value, index, array) {
             if (value) {
-                var dtStatus = calendar.calcDatatakeStatus(anomaly, value);
+                var dtStatus = this.calcDatatakeStatus(anomaly, value);
                 let hexaVal = value;
                 if (value.includes('S1')) {
-                    hexaVal = calendar.overrideS1DatatakesId(value)
+                    hexaVal = this.overrideS1DatatakesId(value)
                 }
                 content +=
                     '<li class="ml-5">' +
-                        '<div style="display: flex">' +
-                            '<a href="/data-takes.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
-                            '<div class="status-circle-dt-' + dtStatus + '"></div>' +
-                        '</di>' +
+                    '<div style="display: flex">' +
+                    '<a href="/data-takes.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
+                    '<div class="status-circle-dt-' + dtStatus + '"></div>' +
+                    '</div>' +
                     '</li>';
             }
-        });
+        }.bind(this));
         content += '</ul></div></p><p></p></div>';
         return content;
     }
-
-    overrideS1DatatakesId(datatake_id) {
-        let num = datatake_id.trim().substring(4);
-        let hexaNum = parseInt(num).toString(16);
-        return (datatake_id + ' (' + hexaNum + ')');
-    }
-
     calcDatatakeStatus(anomaly, datatake_id) {
 
         // Return one possible value in range: "ok", "partial", "failed", "undef"
-        let datatakes_completeness = format_response(anomaly["datatakes_completeness"]);
+        let datatakes_completeness = format_response(anomaly.datatakes_completeness);
         var completeness = 0;
         for (var index = 0; index < datatakes_completeness.length; ++index) {
             try {
-                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'','\"')))) {
+                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
                     var objValues = Object.values(value);
                     if (objValues[0] == datatake_id) {
-                        completeness = calendar.calcDatatakeCompleteness(objValues);
+                        completeness = this.calcDatatakeCompleteness(objValues);
                         if (completeness >= 90) {
                             return 'ok';
                         } else if (completeness >= 10 && completeness < 90) {
@@ -379,209 +358,325 @@ class Calendar {
         // If the datatake cannot be found, assume that the status is "undef"
         return 'undef';
     }
-
-    calcDatatakeCompleteness(dtCompleteness) {
-        var completeness = 0;
-        var count = 0;
-        for (var i = 1; i < dtCompleteness.length; ++i) {
-            count++;
-            completeness += dtCompleteness[i];
-        }
-        return (completeness / count);
+    overrideS1DatatakesId(datatake_id) {
+        let num = datatake_id.trim().substring(4);
+        let hexaNum = parseInt(num).toString(16);
+        return (datatake_id + ' (' + hexaNum + ')');
     }
 
-    overrideCalendarBehaviour() {
 
-        // Programmatically hide objects with class "plus-x-events", to disable their
-        // original behavior; instead, display an icon permitting to show the events
-        // of the day
-        $('.calendar-details').remove();
-        $('.calendar-plus-x-events').remove();
-        $('.plus-x-events').each(function() {
-            var dayID = $(this).parent().attr("id");
-            var numEvents = $(this).attr('events');
-            $(this).replaceWith('');
-        });
 
-        // Hide the default expand-day button
-        $('.ib-arrow-expand-left-right-icon').each(function() {
-            $(this).replaceWith('');
-        });
+    generateCalendar(month = this.currentMonth, year = this.currentYear) {
+        const calendarGrid = document.getElementById('calendarGrid');
+        const selectedMission = document.getElementById('missionSelect').value;
+        const selectedEventType = document.getElementById('eventTypeSelect').value;
+        const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
 
-        // On click, display the event details in the relevant panel
-        $('body').on('click', '.event', function(event) {
-            console.info('Clicked event: ' + event.target.id);
-            calendar.showDayEvents($(this).parent().attr("id"));
-        });
-    }
 
-    showDayEvents(dayID) {
+        const monthYear = document.getElementById('monthYear');
+        calendarGrid.innerHTML = "";
+        monthYear.textContent = `${this.monthNames[month]} ${year}`;
 
-        // Retrieve the first anomaly of the selected day, picking the 2nd or the 3rd
-        // child. By default, the child of interest is the 2nd one; however, in the
-        // last day of month, when the month label is present, the correct child element
-        // is the 3rd one.
-        var id = $('#' + dayID).children().eq(2).attr('id');
-        if (typeof id !== 'undefined' && id !== false) {
-            id = id.replace("day-","");
-        } else {
-            id = $('#' + dayID).children().eq(3).attr('id').replace("day-","");
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        // Blank cells for previous month
+        for (let i = 0; i < firstDay; i++) {
+            const emptyCell = document.createElement('div');
+            calendarGrid.appendChild(emptyCell);
         }
 
-        // Manage anomalies
-        let event = calendar.anomalies[id];
-        let eventDate = event['publicationDate'];
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.classList.add('calendar-day');
 
-        // Retrieve the selected day
-        var sel_day = moment(eventDate, 'DD/MM/YYYY HH:mm:ss').toDate();
-        console.info('Expand selected day: ' + moment(sel_day).format('DD/MM/YYYY'));
+            const fullDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
-        // Loop over the anomalies, and display details of all the anomalies falling in the selected day
-        $('.timeline-event-details').html('');
-        for (const [key, anomaly] of Object.entries(calendar.anomalies)) {
-            var start = moment(anomaly['publicationDate'], 'DD/MM/YYYY HH:mm:ss').toDate();
-            if (sel_day.getFullYear() === start.getFullYear() && sel_day.getMonth() === start.getMonth() &&
-                    sel_day.getDate() === start.getDate()) {
-                console.info('Appending anomaly details: ' + key);
-                $('.timeline-event-details').append(calendar.details['day-' + key] +
-                    '</br><hr class="solid" style="background-color: grey">');
-            }
-        }
-    }
-
-    filterEvents(filter) {
-
-        // If the filter is not empty, loop over the anomalies, and display the
-        // anomalies matching the filter
-        if (filter) {
-
-            // Clear the array hosting the filtered anomalies
-            calendar.filteredEvents.length = 0;
-
-            // Iterate over the anomalies, and add only those matching the pattern
-            for (var i = 0; i < calendar.events.length; ++i) {
-                var anomaly = calendar.events[i];
-                if (anomaly['description'].toUpperCase().includes(filter.toUpperCase())) {
-                    calendar.filteredEvents.push(anomaly);
-                }
+            if (fullDate === formatDate(this.today)) {
+                dayDiv.classList.add('today');
             }
 
-        } else {
+            dayDiv.addEventListener('click', () => {
+                document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+                dayDiv.classList.add('selected');
+                this.lastSelectedDate = fullDate;
+                this.showEventDetails(fullDate);
+            });
 
-            // If the filter is empty, restore the whole set of anomalies
-            Array.prototype.push.apply(calendar.filteredEvents, calendar.events);
-        }
+            //  1. Collect events for this specific day
+            const allEventsForDay = Object.values(this.anomalies).filter(anomaly => {
+                const anomalyDate = anomaly.start?.split(' ')[0];
+                if (!anomalyDate) return false;
 
-        // Set the events
-        calendar.calendarInstance.setEvents(calendar.filteredEvents);
+                const normalizedDate = anomalyDate.replace(/\//g, '-').split('-').reverse().join('-'); // DD/MM/YYYY → YYYY-MM-DD
+                return normalizedDate === fullDate;
+            });
 
-        // Override the original behaviour of calendar
-        calendar.overrideCalendarBehaviour();
+            // Check if filters are active
+            const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || (searchText && searchText.trim() !== '');
 
-    }
+            // Apply filters only if needed
+            const filteredEvents = isFiltering
+                ? allEventsForDay.filter(anomaly => {
+                    // Mission filter
+                    if (selectedMission !== 'all') {
+                        var item = "";
+                        if (anomaly.environment.includes('S1A')) {
+                            item = "S1A, "
+                        }
+                        if (anomaly.environment.includes('S2A')) {
+                            item = "S2A, "
+                        }
+                        if (anomaly.environment.includes('S2B')) {
+                            item = "S2B, "
+                        }
+                        if (anomaly.environment.includes('S2C')) {
+                            item = "S2C, "
+                        }
+                        if (anomaly.environment.includes('S3A')) {
+                            item = "S3A, "
+                        }
+                        if (anomaly.environment.includes('S3B')) {
+                            item = "S3B, "
+                        }
+                        if (anomaly.environment.includes('S5P')) {
+                            item = "S5P, "
+                        }
+                        item = item.substring(0, item.length - 2);
+                        console.log("item", item);
+                        console.log("selected mission", selectedMission);
+                        if (!item.toLowerCase().includes(selectedMission.toLowerCase())) return false;
+                    }
 
-    showDayEventsOnPageLoad() {
-        var queryString = window.location.search;
-        var urlParams = new URLSearchParams(queryString);
-        var showDayEvents = urlParams.get('showDayEvents');
-        if (showDayEvents) {
-            console.info('Showing day events on: ' + showDayEvents);
-            $('.timeline-event-details').html('');
-            for (const [key, anomaly] of Object.entries(calendar.anomalies)) {
-                const publicationDate = anomaly['publicationDate'];
-                if (publicationDate.includes(showDayEvents)) {
+                    // Event type filter
+                    if (selectedEventType !== 'all') {
+                        const eventTypeMap = {
+                            'acquisition': 'Acquisition',
+                            'calibration': 'Calibration',
+                            'manoeuvre': 'Manoeuvre',
+                            'production': 'Production',
+                            'satellite': 'Satellite'
+                        };
+                        console.log("selectedEventType", selectedEventType);
+                        var category = anomaly.category === "Platform" ? "Satellite" : anomaly.category;
+                        console.log("category", category);
+                        if (category.toLowerCase() !== selectedEventType.toLowerCase()) return false;
+                    }
 
-                    // Retrieve year and month
-                    var parts = showDayEvents.split('/');
-                    var currDate = new Date(parts[2], parts[1] - 1, parts[0]);
-                    calendar.calendarInstance.setCurrentDisplayDate(currDate);
+                    // Text search filter
+                    if (searchText && searchText.trim() !== '') {
+                        const lowerSearch = searchText.toLowerCase();
+                        const matchesText =
+                            anomaly.text?.toLowerCase().includes(lowerSearch) ||
+                            anomaly.category?.toLowerCase().includes(lowerSearch) ||
+                            anomaly.impactedItem?.toLowerCase().includes(lowerSearch) ||
+                            anomaly.impactedSatellite?.toLowerCase().includes(lowerSearch);
 
-                    // Set the content of the panel details
-                    $('.timeline-event-details').append(calendar.details['day-' + anomaly['key']] +
-                    '</br><hr class="solid" style="background-color: grey">');
-                }
-            }
-        }
+                        if (!matchesText) return false;
+                    }
 
-        // Override the original behaviour of calendar
-        calendar.overrideCalendarBehaviour();
-    }
+                    return true;
+                })
+                : allEventsForDay;
 
-    checkNoEventsBeforeDateMsgDisplay() {
-        if (!calendar.noEventsBeforeDateMsgDisplayed) {
-            var date = calendar.calendarInstance.getCurrentDisplayDate().setDate(1);
-            if (date < calendar.startEventsDate) {
-                var content = {};
-                content.title = 'Dashobard Events Viewer';
-                content.message = 'This view is intended to show only the most recent events. ' +
-                    'No events are displayed, before ' + calendar.startEventsDate;
-                content.icon = 'fa fa-calendar';
-                var state = 'info';
-                var placementFrom = 'top';
-                var placementAlign = 'center';
-                $.notify(content,{
-                    type: state,
-                    placement: {
-                        from: placementFrom,
-                        align: placementAlign
-                    },
-                    time: 1000,
-                    delay: 0,
+            // Step 4: Render events
+            const eventTextContainer = document.createElement('div');
+            eventTextContainer.classList.add('event-container');
+
+            console.log("Events shown on this day:", filteredEvents.length);
+            const eventTypeMap = {
+                'Acquisition': 'acquisition',
+                'calibration': 'calibration',
+                'Data access': 'data-access',
+                'Manoeuvre': 'manoeuvre',
+                'Production': 'production',
+                'Platform': 'satellite'
+            };
+
+            if (filteredEvents.length > 0) {
+                const addedTypes = new Set();
+                filteredEvents.forEach(event => {
+                    // Map event.type to the readable name, fallback to event.type if no mapping found
+                    const mappedType = eventTypeMap[event.category] || event.category;
+                    const typeClass = 'event-' + eventTypeMap[event.category];
+                    console.log("mapped type", mappedType);
+                    if (!addedTypes.has(typeClass)) {
+                        const eventLabel = document.createElement('div');
+                        eventLabel.classList.add('event-label', 'event-' + mappedType.toLowerCase());
+                        console.log('event-' + mappedType.toLowerCase());
+                        //eventText.textContent = event.text;
+                        eventTextContainer.appendChild(eventLabel);
+                        addedTypes.add(typeClass);
+                    }
                 });
-                calendar.noEventsBeforeDateMsgDisplayed = true;
+            }
+
+            // Step 5: Add day and events to calendar
+            const daySpan = document.createElement('span');
+            daySpan.textContent = day;
+            dayDiv.appendChild(daySpan);
+            calendarGrid.appendChild(dayDiv);
+
+            if (eventTextContainer.hasChildNodes()) {
+                dayDiv.appendChild(eventTextContainer);
             }
         }
     }
 
-    showEventsOnlineHelp() {
-
-        // Acknowledge the visualization of the online help
-        console.info('Showing events online help message...');
-
-        // Auxiliary variable declaration
-        var from = 'top';
-        var align = 'center';
-        var state = 'info';
-        var content = {};
-        content.title = 'Events view';
-        content.message = 'This view shows the events occurred on a given date and the possible impact on user products completeness. ' +
-            'Events are categorized according to the following issue types:<br>' +
-            ' - Satellite: issue due to instrument unavailability<br>' +
-            ' - Calibration: issue occurred during sensor calibration<br>' +
-            ' - Manoeuvre: issue occurred during the execution of a manoeuvre<br>' +
-            ' - Acquisition: issue occurring during the reception of the data at the ground station<br>' +
-            ' - Production: issue occurred during data processing<br>' +
-            'By clicking on each occurrence, the list of possibly impacted datatakes considering their sensing times is ' +
-            'displayed in the right-side panel, together with further event details.';
-        content.icon = 'flaticon-round';
-
-        // Display notification message
-        msgNotification(from, align, state, content);
-
-        return ;
+    getFilteredEvents(dateKey) {
+        return this.events.filter(event => {
+            const matchesDate = event.date === dateKey;
+            const matchesMission = this.selectedMission === 'all' || event.mission === this.selectedMission;
+            const matchesType = this.selectedEventType === 'all' || event.eventType === this.selectedEventType;
+            const matchesSearch = this.searchTerm === '' || (event.description && event.description.toLowerCase().includes(this.searchTerm));
+            return matchesDate && matchesMission && matchesType && matchesSearch;
+        });
     }
 
-    showCalendarSwitchOnlineHelp() {
+    showEventDetails(date) {
+        console.log("date", date);
+        const eventDetailsDiv = document.getElementById('eventDetails');
+        eventDetailsDiv.innerHTML = '';
 
-        // Acknowledge the visualization of the online help
-        console.info('Showing calendar switch online help message...');
+        const selectedMission = document.getElementById('missionSelect').value;
+        const selectedEventType = document.getElementById('eventTypeSelect').value;
+        const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
 
-        // Auxiliary variable declaration
-        var from = 'top';
-        var align = 'center';
-        var state = 'info';
-        var content = {};
-        content.title = 'Calendar switch';
-        content.message = 'Select the "Calendar" view, to display events arranged on a monthly calendar. By selecting the "Timeline" view, ' +
-            'events will be displayed on a dynamic Gantt chart.';
-        content.icon = 'flaticon-round';
+        // Normalize input date to DD/MM/YYYY for comparison
+        const normalizeDate = str => {
+            if (!str) return null;
 
-        // Display notification message
-        msgNotification(from, align, state, content);
+            // Try to parse European format: DD/MM/YYYY HH:mm:ss
+            const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
+            if (match) {
+                const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
+                const iso = `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+                const date = new Date(iso);
+                return isNaN(date) ? null : date.toISOString().slice(0, 10);
+            }
 
-        return ;
+            // Fallback to native parsing for ISO and known good formats
+            const d = new Date(str);
+            return isNaN(d) ? null : d.toISOString().slice(0, 10);
+        };
+        const targetDate = normalizeDate(date);
+        if (!targetDate) return;
+
+
+        let events = Object.values(this.anomalies).filter(event => {
+            console.log("event start", event.start);
+            const eventDate = normalizeDate(event.start || '');
+
+            if (eventDate !== targetDate) return false;
+
+            var item = "";
+            if (event.environment.includes('S1A')) {
+                item = "S1A, "
+            }
+            if (event.environment.includes('S2A')) {
+                item = "S2A, "
+            }
+            if (event.environment.includes('S2B')) {
+                item = "S2B, "
+            }
+            if (event.environment.includes('S2C')) {
+                item = "S2C, "
+            }
+            if (event.environment.includes('S3A')) {
+                item = "S3A, "
+            }
+            if (event.environment.includes('S3B')) {
+                item = "S3B, "
+            }
+            if (event.environment.includes('S5P')) {
+                item = "S5P, "
+            }
+            item = item.substring(0, item.length - 2);
+            console.log("item", item);
+            console.log("selected mission", selectedMission);
+            if (selectedMission !== 'all' && !item.toLowerCase().includes(selectedMission.toLowerCase())) return false;
+
+            var category = event.category === "Platform" ? "Satellite" : event.category;
+            if (selectedEventType !== 'all' && category.toLowerCase() !== selectedEventType) return false;
+
+            const text = event.text?.toLowerCase() || '';
+            if (searchText && !text.includes(searchText)) return false;
+
+            return true;
+        });
+
+        if (events.length === 0) {
+            eventDetailsDiv.innerHTML = `<p>No events for ${date}.</p>`;
+            return;
+        }
+
+        const title = document.createElement('h3');
+        title.textContent = `Events on ${date}`;
+        eventDetailsDiv.appendChild(title);
+
+        const list = document.createElement('ul');
+        list.style.listStyle = 'none';
+        list.style.padding = '0';
+
+        events.forEach(event => {
+            const listItem = document.createElement('li');
+            listItem.style.marginBottom = '1em';
+            listItem.style.padding = '10px';
+            listItem.style.border = '1px solid #ccc';
+            listItem.style.borderRadius = '5px';
+            // Override "platform" category with "satellite"
+            var category = event.category === "Platform" ? "Satellite" : event.category;
+            var item = "";
+            if (event.category === "Data access") {
+                item = "All Sentinels";
+            } else {
+                if (event.environment.includes('S1A')) {
+                    item += "S1A, "
+                }
+                if (event.environment.includes('S2A')) {
+                    item += "S2A, "
+                }
+                if (event.environment.includes('S2B')) {
+                    item += "S2B, "
+                }
+                if (event.environment.includes('S2C')) {
+                    item += "S2C, "
+                }
+                if (event.environment.includes('S3A')) {
+                    item += "S3A, "
+                }
+                if (event.environment.includes('S3B')) {
+                    item += "S3B, "
+                }
+                if (event.environment.includes('S5P')) {
+                    item += "S5P, "
+                }
+                item = item.substring(0, item.length - 2);
+            }
+
+            let dtsHtml = '';
+            if (event.environment) {
+                const dts = event.environment.split(";");
+                dtsHtml = `
+                    <p style="color: white; font-size: 14px">
+                    List of impacted datatakes:<br>
+                    ${this.arrangeDatatakesList(event, dts)}
+                    </p>`;
+            }
+            listItem.innerHTML = `
+            <small>${event.title || 'No description available'}</small><br>
+            <small>Occurrence date: ${event.start}</small><br>
+            <small>Impacted satellite(s): ${item}</small><br>
+            <small>Issue type: ${category}</small><br>
+            <small>${event.text || event.key}</small><br>
+            ${dtsHtml}
+        `;
+            list.appendChild(listItem);
+        });
+
+        eventDetailsDiv.appendChild(list);
     }
-
 }
-
-let calendar = new Calendar();
+document.addEventListener("DOMContentLoaded", function () {
+    const calendar = new CalendarWidget();
+});

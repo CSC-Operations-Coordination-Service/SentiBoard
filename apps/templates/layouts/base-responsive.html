@@ -67,17 +67,20 @@
 	<link rel="stylesheet" href="/static/assets/css/atlantis.min.css">
 
     <!-- Specific Page CSS goes HERE  -->
-    {% block stylesheets %}{% endblock stylesheets %}
+    {% block stylesheets %}
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+	{% endblock stylesheets %}
 
 </head>
-<body data-background-color="dark">
+<!--AD previous version <body data-background-color="dark"> -->
+	<body style="background-color:#343a40 !important">
 	<div class="wrapper">
 
         {% include 'includes/navigation-responsive.html' %}
 
         {% include 'includes/sidebar-responsive.html' %}
 
-		<div class="main-panel" style="width: 100% !important">
+		<div class="main-panel" style="width: 100% !important; background-color:#343a40 !important">
 			
 			{% block content %}{% endblock content %}
 

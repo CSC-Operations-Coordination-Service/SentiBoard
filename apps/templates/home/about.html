@@ -41,7 +41,7 @@
 
                             <!-- Row hosting the general controls -->
                             <div class="row">
-                                <h4 style="color: lightgrey"><a style="color:#1269db" href="https://sentiwiki.copernicus.eu/web/copernicus-programme">Copernicus</a>
+                                <h4 style="color: lightgrey"><a style="color:#66B2FF" href="https://sentiwiki.copernicus.eu/web/copernicus-programme">Copernicus</a>
                                     is the European Union's Earth observation programme, looking at our planet and its environment to
                                     benefit all European citizens. This initiative is headed by the European Commission (EC) in
                                     partnership with the European Space Agency (ESA). The Copernicus Space Component (CSC) operations
@@ -53,34 +53,35 @@
                                     central point of access for details of events impacting data availability, real-time data collection
                                     insights, and key stats on products delivered:
                                     <ul>
-                                        <li>The <a style="color:#1269db" target="_blank" href="index.html">Homepage</a> includes
+                                        <li>The <a style="color:#66B2FF" target="_blank" href="index.html">Homepage</a> includes
                                             a high-level overview of the Copernicus Sentinel missions over the past 24 h, including the
                                             number of missions, time spent gathering data, data volumes, and the number of products
                                             delivered.
                                         </li>
-                                        <li>The <a style="color:#1269db" target="_blank" href="acquisition-plans.html">Acquisition Plans</a> view
+                                        <li>The <a style="color:#66B2FF" target="_blank" href="acquisition-plans.html">Acquisition Plans</a> view
                                             displays the past, current and future Copernicus Sentinels' acquisition on an interactive, 3D
                                             globe. Through this view, users can either inspect the status of a past acquistion, or learn
                                             about the planned acquisitions for the mission of interest. By default, the real-time sensing scenario
                                             is displayed.
                                         </li>
                                         <li>
-                                            The <a style="color:#1269db" target="_blank" href="events.html">Events</a> page provides details of the
+                                            The <a style="color:#66B2FF" target="_blank" href="events.html">Events</a> page provides details of the
                                             events over the past three months that could impede data production, such as planned
                                             calibration activities, manoeuvres, or anomalies. Information on the extent to which
                                             these events affect data production and the data products impacted is provided.
                                         </li>
                                         <li>
-                                            The <a style="color:#1269db" target="_blank" href="data-takes.html">Data Takes</a> section of the dashboard
+                                            The <a style="color:#66B2FF" target="_blank" href="data-takes.html">Data Availability</a> section of the dashboard
                                             hosts a real-time list of available collections delivered by the missions, enabling users to
                                             scan through these products to find data that meet their research and development requirements,
                                             and to assess their quality.
                                         </li>
                                         <li>
-                                            The <a style="color:#1269db" target="_blank" href="publication-statistics.html">Publication Statistics</a> tab
-                                            provides detailed information on Copernicus Sentinel data – such as number of products delivered –
-                                            covering anywhere between the past 24h and the past three months. These insights are represented
-                                            visually, with one graphical representation per mission that is subdivided by sensor.
+                                            The <a style="color:#66B2FF" target="_blank" href="processors-viewer.html">Processors</a> tab
+                                            shows the complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. 
+                                            The timeline can be zoomed in / out using the mouse wheel, and dragged to the left / right by moving the mouse while 
+                                            keeping left-hand button pressed. By clicking on a colored box, the details relevant to the selected processor release
+                                             is displayed in the lower part of the screen.
                                         </li>
                                     </ul>
                                     Its development forms part of the ongoing transformation of the Copernicus Ground Segment, which is
@@ -88,11 +89,83 @@
                                     and flexible delivery of high-quality data for decades to come.
                                     </br></br>
                                     For any inquiries on the Copernicus Sentinel Operations Dashboard contact
-                                    <a style="color:#1269db" href="mailto:coordination_service@serco.com">coordination_service@serco.com</a>.
+                                    <a style="color:#66B2FF" href="mailto:sentiboard@coordination-service.eu">sentiboard@coordination-service.eu</a>.
                                 </h4>
                             </div>
 
                         </div>
+                        <!-- FAQ Section -->
+                         <div class="container">
+                            <div class="row justify-content-center">
+                                <div id="faq" class="col-md-12">
+                                    <h2 class="section-title">FAQs</h2>
+                                    <h4 class="section-subtitle">Find answers to the most common questions</h4>
+                                    <div id="faqAccordion">
+                                        <!-- FAQ 1 -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingOne">
+                                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                                                    <button class="btn btn-link btn-block text-left" data-toggle="collapse"
+                                                        data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                                        What is this platform about?
+                                                        <i class="fas fa-chevron-down float-right"></i>
+                                                    </button>
+                                                </h5>
+                                            </div>
+        
+                                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
+                                                data-parent="#faqAccordion">
+                                                <div class="card-body">
+                                                    This platform provides information about satellite data acquisitions, events, and available
+                                                    datasets.
+                                                </div>
+                                            </div>
+                                        </div>
+        
+                                        <!-- FAQ 2 -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingTwo">
+                                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                                                    <button class="btn btn-link collapsed btn-block text-left" data-toggle="collapse"
+                                                        data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                                        How do I check the data acquisition status?
+                                                        <i class="fas fa-chevron-down float-right"></i>
+                                                    </button>
+                                                </h5>
+                                            </div>
+        
+                                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#faqAccordion">
+                                                <div class="card-body">
+                                                    You can view the data acquisition status from the dedicated section on the homepage where
+                                                    the platform's latest updates are displayed.
+                                                </div>
+                                            </div>
+                                        </div>
+        
+                                        <!-- FAQ 3 -->
+                                        <div class="card">
+                                            <div class="card-header" id="headingThree">
+                                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
+                                                    <button class="btn btn-link collapsed btn-block text-left" data-toggle="collapse"
+                                                        data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                                        How can I access satellite data?
+                                                        <i class="fas fa-chevron-down float-right"></i>
+                                                    </button>
+                                                </h5>
+                                            </div>
+        
+                                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#faqAccordion">
+                                                <div class="card-body">
+                                                    Satellite data can be accessed through the provided links under the "Data Set Availability"
+                                                    section, or
+                                                    by contacting the platform administrators.
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -108,7 +181,16 @@
 
         // Hide the time period selector combobox
         $('#time-period-select-container').hide();
-
+        // ============================
+        // FAQ Accordion Toggle Icons
+        // ============================
+        $(document).ready(function () {
+            $('#faqAccordion .collapse').on('show.bs.collapse', function () {
+                $(this).prev().find('i').toggleClass('fa-chevron-down fa-chevron-up');
+            }).on('hide.bs.collapse', function () {
+                $(this).prev().find('i').toggleClass('fa-chevron-up fa-chevron-down');
+            });
+        });
     </script>
 
 {% endblock javascripts %}

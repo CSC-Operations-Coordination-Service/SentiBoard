@@ -3,7 +3,8 @@
 
 			<!-- Logo Header -->
 			<!-- This section includes also the navigation menu button -->
-			<div class="logo-header" data-background-color="dark">
+			<!--AD previous version <div class="logo-header" data-background-color="dark">-->
+				<div class="logo-header" style="background-color:#343a40 !important">
 				<a href="/index.html" class="logo">
 					<img src="/static/assets/img/esa_logo.png" width="90" height="33" alt="navbar brand" class="navbar-brand">
 				</a>
@@ -25,7 +26,8 @@
 			<!-- End Logo Header -->
 
 			<!-- Navbar Header -->
-			<nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">
+			<!--AD previous version<nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">-->
+			<nav class="navbar navbar-header navbar-expand-lg" style="background-color:#343a40 !important" >
 
 				<div class="container-fluid">
 					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
@@ -35,24 +37,32 @@
 							<a class="nav-link dropdown-toggle" href="/about.html" id="about" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>ABOUT</h5>
 							</a>
+						</li>
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
 								href="/acquisitions-status.html" id="acquisitions-status" style="margin-top: 7px">
 								<h5>ACQUISITIONS STATUS</h5>
 							</a>
+						</li>
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<a class="nav-link dropdown-toggle" href="/events.html" id="events" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>EVENTS</h5>
 							</a>
-							<a class="nav-link dropdown-toggle" href="/data-takes.html" id="data-takes" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
-								<h5>DATA TAKES</h5>
+						</li>
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+							<a class="nav-link dropdown-toggle" href="#" id="data-takes" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
+								<h5>DATA AVAILABILITY</h5>
 							</a>
-							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
-                                href="/publication-statistics.html" id="public-statistics" role="button"
-                                style="margin-top: 7px">
-                                <h5>STATISTICS</h5>
-                            </a>
+							<div class="dropdown-menu" aria-labelledby="data-takes">
+								<a class="dropdown-item" href="/data-takes.html">Global Data Availability</a>
+								<a class="dropdown-item" href="/data-takes.html">Detail Data Availability</a>
+							</div>
+						</li>
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<a class="nav-link dropdown-toggle" href="/processors-viewer.html" id="processors" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>PROCESSORS</h5>
 							</a>
+						</li>
 							{% if current_user.is_authenticated %}
 								<div class="d-inline ">
 									<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
@@ -131,16 +141,18 @@
 									</div>
 								{% endif %}
 							{% else %}
+							<li class="nav-item dropdown hidden-caret d-none d-lg-block">
 								<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle" hidden
 								   href="{{ url_for('auth_blueprint.login') }}" id="login" role="button"
 								   style="margin-top: 7px">
 									<h5>LOGIN</h5>
 								</a>
+							</li>
 							{% endif %}
-						</li>
+						
 
                         <!-- Time range filter -->
-                        <li>
+                        <li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<div class="form-group form-floating-label" style="width: 180px" id="time-period-select-container">
 								<select name="time-period-select" id="time-period-select"
 										class="form-control input-solid">

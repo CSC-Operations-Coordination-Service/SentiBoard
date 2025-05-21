@@ -58,6 +58,8 @@ class Home {
         $('#home-video').get(0).play();
     }
 
+    this.initSlider();
+
     return;
   }
 
@@ -218,6 +220,47 @@ class Home {
         $('#published-products-volume').html(new Intl.NumberFormat().format(vol.toFixed(2)));
     })();
   }
+//AD vertical slider
+  initSlider() {
+    const sliderContainer = document.querySelector(".slider-container");
+    const slideRight = document.querySelector(".right-slide");
+    const slideLeft = document.querySelector(".left-slide");
+    const upButton = document.querySelector(".up-button");
+    const downButton = document.querySelector(".down-button");
+  
+    if (!sliderContainer || !slideRight || !slideLeft || !upButton || !downButton) {
+      console.warn("Slider elements not found. Skipping slider initialization.");
+      return;
+    }
+  
+    const slidesLength = slideRight.querySelectorAll("div").length;
+    let activeSlideIndex = 0;
+  
+    slideLeft.style.top = `-${(slidesLength - 1) * 80}vh`;
+  
+    const changeSlide = (direction) => {
+      if (direction === "up") {
+        activeSlideIndex++;
+        if (activeSlideIndex > slidesLength - 1) {
+          activeSlideIndex = 0;
+        }
+      } else if (direction === "down") {
+        activeSlideIndex--;
+        if (activeSlideIndex < 0) {
+          activeSlideIndex = slidesLength - 1;
+        }
+      }
+  
+      const height = sliderContainer.clientHeight;
+  
+      slideRight.style.transform = `translateY(-${activeSlideIndex * height}px)`;
+      slideLeft.style.transform = `translateY(${activeSlideIndex * height}px)`;
+    };
+  
+    upButton.addEventListener("click", () => changeSlide("up"));
+    downButton.addEventListener("click", () => changeSlide("down"));
+  }
+  
 }
 
 let home = new Home();
