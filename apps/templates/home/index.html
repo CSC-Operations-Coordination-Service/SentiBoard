@@ -8,13 +8,15 @@
 {% endblock stylesheets %}
 
 {% block content %}
-
+<a href="#vertical-slider" class="chevron-down animate__animated animate__fadeInUp animate__delay-1s">
+    <i class="fas fa-chevron-down"></i>
+</a>
 
     <!-- Data section-->
     <div class="content page-inner">
-
+        
         <!-- Video in background-->
-        <div>
+        <div id="tutorial">
             <video preload="metadata" loop muted controls="none" id="home-video" class="video-frame">
                 <source src="/static/assets/mv/home-access.mp4"></source>
             </video>
@@ -82,7 +84,10 @@
             </div>
         </div>
     </div>
-
+<!-- Chevron Up (placed just before the footer) -->
+<a href="#tutorial" class="chevron-up animate__animated animate__fadeInUp animate__delay-2s">
+    <i class="fas fa-chevron-up"></i>
+</a>
     <!-- Info boxes  -->
     <footer class="container-fluid" style="background-color: #343a40;">
 
