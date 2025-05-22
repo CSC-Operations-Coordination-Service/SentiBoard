@@ -43,6 +43,17 @@ class CalendarWidget {
             "July", "August", "September", "October", "November", "December"
         ];
 
+        this.today = new Date();
+        this.today.setHours(0, 0, 0, 0); // Normalize time for comparison
+
+        this.currentMonth = this.today.getMonth();
+        this.currentYear = this.today.getFullYear();
+
+        this.startEventsDate = new Date(this.today); // Start of events = today
+        this.startEventsDate.setHours(0, 0, 0, 0);
+
+        this.noEventsBeforeDateMsgDisplayed = false;
+
         this.init();
     }
 
@@ -74,6 +85,13 @@ class CalendarWidget {
 
     loadEventsECUser() {
         console.info('Loading events up to the previous quarter...');
+
+        // Set startEventsDate to the beginning of the previous quarter
+        const quarter = getPreviousQuarter(this.startEventsDate);
+        this.startEventsDate.setFullYear(quarter.year); // Use setFullYear instead of deprecated setYear
+        this.startEventsDate.setMonth((quarter.quarter - 1) * 3, 1); // Month is zero-indexed
+
+
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
             this.succesLoadAnomalies.bind(this),
             this.errorLoadAnomalies.bind(this)
@@ -82,6 +100,8 @@ class CalendarWidget {
 
     loadEventsGuestUser() {
         console.info('Loading events in the last quarter...');
+        this.startEventsDate.setMonth(this.startEventsDate.getMonth() - 3);
+        this.startEventsDate.setHours(0, 0, 0, 0);
         asyncAjaxCall('/api/events/anomalies/last-quarter', 'GET', {},
             this.succesLoadAnomalies.bind(this),
             this.errorLoadAnomalies.bind(this)
@@ -170,6 +190,7 @@ class CalendarWidget {
                 this.currentYear--;
             }
             this.generateCalendar(this.currentMonth, this.currentYear);
+            this.checkNoEventsBeforeDateMsgDisplay();
         });
 
         document.getElementById('nextMonth').addEventListener('click', () => {
@@ -356,6 +377,52 @@ class CalendarWidget {
         return (datatake_id + ' (' + hexaNum + ')');
     }
 
+    checkNoEventsBeforeDateMsgDisplay() {
+        if (!this.noEventsBeforeDateMsgDisplayed) {
+            const displayedDate = new Date(this.currentYear, this.currentMonth, 1);
+            displayedDate.setHours(0, 0, 0, 0); // Normalize
+
+            const startDate = new Date(this.startEventsDate); // Use the predefined startEventsDate
+            startDate.setHours(0, 0, 0, 0); // Normalize to be safe
+
+            // Show message only if displayed month is more than 3 months ago
+            if (displayedDate < startDate) {
+                const content = {
+                    title: 'Dashboard Events Viewer',
+                    message: 'This view is intended to show only the most recent events. ' +
+                        'No events are displayed before <b>' + startDate.toLocaleDateString() + '</b>',
+                    icon: 'fa fa-calendar'
+                };
+
+                $.notify(content, {
+                    type: 'info',
+                    placement: {
+                        from: 'top',
+                        align: 'center'
+                    },
+                    offset: {
+                        y: 150 // distance from top
+                    },
+                    template: `
+            <div data-notify="container" class="col-xs-11 col-sm-4 alert alert-{0}" role="alert" 
+                style="border: 2px solid #31708f; border-radius: 10px; background-color: #d9edf7; color: #31708f; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 20px; font-size: 16px;">
+                
+                <span data-notify="icon" class="{3}" style="margin-right: 10px; font-size: 22px;"></span>
+                <span data-notify="title" style="font-size: 18px; font-weight: bold;">{1}</span><br>
+                <span data-notify="message" style="font-size: 16px;">{2}</span>
+            </div>
+        `,
+                    time: 1000,
+                    delay: 0
+                });
+
+                this.noEventsBeforeDateMsgDisplayed = true;
+            }
+
+        }
+    }
+
+
     generateCalendar(month = this.currentMonth, year = this.currentYear) {
         const calendarGrid = document.getElementById('calendarGrid');
         const selectedMission = document.getElementById('missionSelect').value;
@@ -411,19 +478,19 @@ class CalendarWidget {
                     // Mission filter
                     if (selectedMission !== 'all') {
                         const missionMap = {
-                          's1': ['S1A', 'S1C'],
-                          's2': ['S2A', 'S2B', 'S2C'],
-                          's3': ['S3A', 'S3B'],
-                          's5': ['S5P']
+                            's1': ['S1A', 'S1C'],
+                            's2': ['S2A', 'S2B', 'S2C'],
+                            's3': ['S3A', 'S3B'],
+                            's5': ['S5P']
                         };
-                      
+
                         const selectedMissionKey = selectedMission.toLowerCase();
                         const matchingSatellites = missionMap[selectedMissionKey] || [];
-                      
+
                         const anomalyEnv = anomaly.environment.toUpperCase();
                         const matches = matchingSatellites.some(sat => anomalyEnv.includes(sat));
                         if (!matches) return false;
-                      }
+                    }
 
                     // Event type filter
                     if (selectedEventType !== 'all') {
@@ -448,9 +515,9 @@ class CalendarWidget {
                     return true;
                 })
                 : allEventsForDay;
-                /*if (fullDate === '2025-03-27') {
-                    console.log("Filtered Events for May 27:", filteredEvents);
-                }*/
+            /*if (fullDate === '2025-03-27') {
+                console.log("Filtered Events for May 27:", filteredEvents);
+            }*/
             // Step 4: Render events
             const eventTextContainer = document.createElement('div');
             eventTextContainer.classList.add('event-container');
@@ -565,19 +632,19 @@ class CalendarWidget {
             console.log("mission selected", mission);
             if (selectedMission !== 'all') {
                 const missionMap = {
-                  's1': ['S1A', 'S1C'],
-                  's2': ['S2A', 'S2B', 'S2C'],
-                  's3': ['S3A', 'S3B'],
-                  's5': ['S5P']
+                    's1': ['S1A', 'S1C'],
+                    's2': ['S2A', 'S2B', 'S2C'],
+                    's3': ['S3A', 'S3B'],
+                    's5': ['S5P']
                 };
-              
+
                 const selectedMissionKey = selectedMission.toLowerCase();
                 const matchingSatellites = missionMap[selectedMissionKey] || [];
-              
+
                 const anomalyEnv = event.environment.toUpperCase();
                 const matches = matchingSatellites.some(sat => anomalyEnv.includes(sat));
                 if (!matches) return false;
-              }
+            }
 
             const category = event.category === "Platform" ? "Satellite" : event.category;
             if (selectedEventType !== 'all' && category.toLowerCase() !== selectedEventType) return false;
