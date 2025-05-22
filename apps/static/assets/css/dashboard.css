@@ -414,18 +414,19 @@ div.calendar div.row-cells div.cell span.today {
 
 /*AD calendar new*/
 
-/*.row {
-  margin-top: 60px;
-  margin-bottom: 60px;
-  /* Add spacing between rows */
-
+.calendar-window {
+  padding-right: 21px;
+  padding-left: 21px;
+}
 
 .container {
   max-width: 1200px;
   /* Increase the width of the container for larger screens */
 }
 
-
+.calendar-card {
+  background-color: rgb(0, 107, 124) !important;
+}
 
 .filter-panel {
   position: sticky;
