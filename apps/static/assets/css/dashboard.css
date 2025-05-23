@@ -187,6 +187,19 @@ a {
   background: #006B7C !important;
 }
 
+.custom-dropdown-menu {
+  background-color: #3C5A74;
+}
+
+.custom-dropdown-menu .dropdown-item {
+  color: #fff !important;
+}
+.custom-dropdown-menu .dropdown-item:hover {
+  background-color: #12b1bf !important;
+  color: #fff !important;
+
+}
+
 /**/
 /* Home Page - Real time events */
 .activity-feed .feed-item .date {
