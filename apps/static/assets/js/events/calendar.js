@@ -553,6 +553,11 @@ class CalendarWidget {
                     dayDiv.classList.add('selected');
                     this.lastSelectedDate = fullDate;
                     this.showEventDetails(fullDate);
+                    // Scroll to event detail section
+                    const detailsSection = document.getElementById('eventDetails');
+                    if (detailsSection) {
+                        detailsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
                 });
 
                 //  1. Collect events for this specific day

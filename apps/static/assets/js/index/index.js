@@ -38,11 +38,11 @@ class Home {
 
         // Load data takes and calculate the hours of sensing
         console.info('Retrieving the hours of sensing...');
-        this.displaySensingTimeMinutes();
+        /*this.displaySensingTimeMinutes();*/
 
         // Retrieve the number and size of the published products
         console.info('Retrieving the volume and number of published products...');
-        this.displayPublishedProductsVolumeCount();
+        /*this.displayPublishedProductsVolumeCount();*/
 
         // Remove Home video controls
         $('#home-video').hover(function toggleControls() {
@@ -195,7 +195,7 @@ class Home {
         return !allRecovered;
     }
 
-    displaySensingTimeMinutes() {
+    /*displaySensingTimeMinutes() {
         datatakes.calcSensingTime24H();
         (async () => {
             while (datatakes.sensingTime24H == 0)
@@ -203,9 +203,9 @@ class Home {
             console.info('Minutes of sensing: ' + datatakes.sensingTime24H * 60);
             $('#sensing-time-minutes').html(Math.round(datatakes.sensingTime24H * 60));
         })();
-    }
+    }*/
 
-    displayPublishedProductsVolumeCount() {
+   /* displayPublishedProductsVolumeCount() {
         publicdata.get_published_count_size_last_24h();
         (async () => {
             while (!publicdata.published_last24h['NUM'])
@@ -220,7 +220,7 @@ class Home {
             console.info('Volume of published products: ' + vol);
             $('#published-products-volume').html(new Intl.NumberFormat().format(vol.toFixed(2)));
         })();
-    }
+    }*/
     //AD vertical slider
     initSlider() {
         const sliderContainer = document.querySelector(".slider-container");

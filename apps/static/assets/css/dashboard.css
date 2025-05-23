@@ -42,11 +42,13 @@
 /* Chevron down positioning */
 .chevron-down {
   bottom: 80px;
+  color:#004f5f !important;
 }
 
 /* Chevron up positioning */
 .chevron-up {
   bottom: 160px;
+  color:#004f5f !important;
 }
 
 /* Hover effect */
@@ -269,41 +271,6 @@ a {
   border-color: grey;
 }
 
-
-/* Events View Page - Feature-Rich Calendar customization */
-div.calendar {
-  border-color: #8f94a2;
-}
-
-div.calendar div.header-date {
-  color: white;
-  background-color: #202940;
-}
-
-div.calendar div.row-cells div.cell {
-  color: white;
-  background: #202940;
-}
-
-div.calendar div.full-day-view div.title-bar {
-  background: #202940;
-}
-
-div.calendar div.full-day-view div.contents div.contents-events div.hour div.hour-text:nth-child(2n+1) {
-  background: #202940;
-}
-
-div.calendar div.row-cells div.cell div.event {
-  font-weight: bold;
-}
-
-div.calendar div.full-day-view div.contents div.event div.description {
-  font-weight: bold;
-}
-
-div.calendar div.row-cells div.cell span.today {
-  background-color: #46b905 !important;
-}
 
 .ib-arrow-expand-left-right-icon {
   /* border-color: #8f94a2; */
@@ -619,6 +586,34 @@ div.calendar div.row-cells div.cell span.today {
   width: 100%;
 }
 
+.card-green {
+  background-color: #354f32;
+}
+
+.card-beige {
+  background-color: #b99f8a;
+}
+
+.card-bluegray {
+  background-color: #45787E;
+}
+
+.card-orange {
+  background-color: #EE8216
+  ;
+}
+
+.btn-learn-more {
+  display: inline-block;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #ffc107;
+  color: #212529 !important;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 1.25rem;
+  text-decoration: none;
+}
 
 button {
   background-color: #fff;
