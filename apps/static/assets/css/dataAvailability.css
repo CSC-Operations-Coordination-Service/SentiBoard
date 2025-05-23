@@ -1,0 +1,666 @@
+  .info-icon {
+    font-size: 0.9rem;
+    color: #0a4393;
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(-50%, 50%);
+  }
+  
+  .title-container {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .chart-label {
+    font-size: 12px;
+    color: #333;
+  }
+  
+  .chart-container {
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+    text-align: center;
+    margin-bottom: 40px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .chart-container canvas {
+    width: 100%;
+    height: auto;
+    max-height: 400px;
+  }
+  
+  .d-flex {
+    gap: 20px;
+  }
+  
+  .row {
+    display: flex;
+    align-items: stretch;
+  }
+  /* Make the row flex with full height */
+  .row.full-height {
+    display: flex;
+    align-items: stretch; /* stretch children vertically */
+  }
+  
+  #timeRangeFilter {
+    background-color: #1a2035;
+    color: #e6e6ff;
+    border: 1px solid #55558a;
+    border-radius: 8px;
+    padding: 5px 15px;
+    font-size: 14px;
+  }
+  
+  iframe {
+    overflow-x: hidden;
+    max-width: 100%;
+    height: 1200px;
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .responsive-iframe-container {
+    width: 100%;
+    height: 1000px;
+  }
+  
+  .responsive-iframe-container iframe {
+    width: 100%;
+    height: 1200px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+  }
+  
+  .collapsible-button {
+    font-size: 1.5rem;
+    color: #e6e6ff;
+    border: none;
+    background: none;
+    margin-top: 35px;
+  }
+  
+  .collapsible-button i {
+    font-size: 1.2rem;
+    color: #00ffff;
+  }
+  
+  .collapsible-button:hover i {
+    color: #0056b3;
+    cursor: pointer;
+  }
+  
+  .description-text {
+    margin-left: 10px;
+    font-size: 1.2rem;
+    color: #e6e6ff;
+  }
+  
+  .bi.bi-chevron-right {
+    margin-left: 10px;
+    font-size: 1.2rem;
+    color: #e6e6ff;
+  }
+  
+  .card.card-body {
+    margin-left: 10px;
+    font-size: 1.2rem;
+    color: #e6e6ff;
+    background-color: #006B7C;
+  }
+  
+  #sentinel1BarChart1 {
+    width: 85% !important;
+    height: 400px !important;
+  }
+  
+  .bar-chart-container {
+    width: 90%;
+    max-width: none;
+    height: 500px;
+    margin: 0 auto;
+  }
+  
+  .bar-chart-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  #timelineTable {
+    font-size: 0.8rem;
+  }
+  
+  #sentinel5pPieChart {
+    width: 75% !important;
+    height: 70% !important;
+  }
+  
+  .left-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .filter-panel {
+    overflow: auto;
+    max-height: 700px;
+    height: auto;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    text-align: center;
+    margin-bottom: 40px;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #55558a;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .filter-panel h4,
+  .filter-panel h5 {
+    color: #ffffff;
+    font-size: 1.2rem;
+  }
+  
+  
+  
+  /* Content area */
+  .content {
+    padding: 20px;
+  }
+  
+  .content h4 {
+    margin: 0 0 10px 0;
+  }
+  
+  
+  #searchInput {
+    color: #000000;
+    border: 1px solid #55558a;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+    margin-bottom: 15px;
+  }
+  
+  .filter-link {
+    display: inline-block;
+    padding: 5px 10px;
+    margin: 5px 0;
+    color: #e6e6ff;
+    background-color: transparent;
+    border-radius: 4px;
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .filter-link:hover {
+    background-color: #00d4ff;
+    color: #1a1a40;
+  }
+  
+  
+  .filter-link.active {
+    background-color: #FFAD00 !important;
+    color: darkslategray;
+    font-weight: bold;
+  }
+  
+  #dataList {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    overflow-y: auto;
+  }
+  
+  
+  ul#dataList {
+    text-align: left;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+  
+  /* Table Styling */
+  .table {
+    background-color: #12B1BF;
+    color: white;
+    border: 1px solid #55558a;
+  }
+  
+  .table thead th {
+    background-color: #12B1BF;
+    color: #e6e6ff;
+    font-size: 14px;
+    text-transform: uppercase;
+    border: 1px solid #55558a;
+  }
+  
+  .table tbody td {
+    background-color: #12B1BF;
+    color: white;
+    border: 1px solid #55558a;
+    padding: 10px;
+    vertical-align: middle;
+  }
+  
+  /* Hover Effect for Table Rows */
+  .table tbody tr:hover {
+    background-color: #55558a;
+    /* Highlight row on hover */
+    color: #ffffff;
+  }
+  
+  /*customized table*/
+  .custom-box-table-container {
+    max-width: 900px;
+    /* Make it wider */
+    /*margin: 30px auto; /* Center horizontally with some vertical spacing */
+    /*padding: 0 20px;*/
+  }
+  
+  .custom-box-table {
+    border: none;
+    border-radius: 12px;
+    background-color: #f8f9fa;
+    /* light gray background */
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    color: #000;
+  }
+  
+  .custom-box-table th,
+  .custom-box-table td {
+    border: none !important;
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+  
+  .custom-box-table thead {
+    background-color: transparent;
+    color: #333;
+    font-weight: bold;
+  }
+  
+  .custom-box-table tr:not(:last-child) {
+    border-bottom: 1px solid #ddd;
+  }
+  
+  /*end of customized*/
+  
+  .btn-outline-primary:hover {
+    color: #fff;
+    background-color: #12B1BF !important;
+    border-color: #12B1BF !important;
+  }
+  
+  #searchInput::placeholder {
+    color: #8888aa;
+  }
+  
+  /* Mobile Responsiveness */
+  @media (max-width: 768px) {
+    .container-fluid {
+      padding: 10px;
+    }
+  
+    .responsive-iframe-container iframe {
+      height: 250px;
+      /* Reduce height for smaller screens */
+    }
+  
+    .chart-container canvas {
+      max-height: 300px;
+      /* Reduce chart height on smaller screens */
+    }
+  
+    #timeRangeFilter {
+      font-size: 12px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    h3 {
+      font-size: 1.5rem;
+    }
+  
+    .description-text {
+      font-size: 1rem;
+    }
+  
+    .container-fluid {
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+  
+    .responsive-iframe-container iframe {
+      height: 200px;
+      /* Further reduce iframe height */
+    }
+  
+    .chart-container canvas {
+      max-height: 250px;
+      /* Adjust chart for extra small screens */
+    }
+  }
+  
+  /* Modal Content */
+  .modal-content {
+    background-color: #2c2c54;
+    /* Dark background for modal */
+    color: #e6e6ff;
+    /* Light text for readability */
+    border-radius: 8px;
+    /* Rounded corners */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    /* Subtle shadow */
+  }
+  
+  /* Modal Header */
+  .modal-header {
+    background-color: #312454;
+    /* Slightly lighter dark for header */
+    color: #e6e6ff;
+    border-bottom: 1px solid #55558a;
+    /* Subtle border */
+    padding: 10px 15px;
+    /* Adjust spacing */
+  }
+  
+  .modal-title {
+    font-size: 1.4rem;
+    /* Adjust font size for title */
+  }
+  
+  /* Modal Body */
+  .modal-body {
+    font-size: 1rem;
+    line-height: 1.6;
+    /* Improve readability */
+    padding: 15px;
+    background-color: #2c2c54;
+    /* Consistent dark background */
+    border-radius: 4px;
+    /* Subtle corner rounding */
+  }
+  
+  .modal-body ul li strong {
+    color: #00d4ff;
+    /* Accent color for emphasized text */
+  }
+  
+  /* Close Button */
+  button.close {
+    color: #e6e6ff;
+    opacity: 0.8;
+  }
+  
+  button.close:hover {
+    opacity: 1;
+  }
+  
+  /* Modal Footer */
+  .modal-footer {
+    background-color: #2c2c54;
+    /* Dark background for footer */
+    border-top: 1px solid #55558a;
+    /* Subtle border */
+  }
+  
+  .btn.btn-secondary {
+    background-color: #a600bb;
+    /* Blue button */
+    color: #fff;
+    /* White text */
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+  }
+  
+  .btn.btn-outline-secondary {
+    background-color: rgb(238, 238, 238);
+    /* Blue button */
+    color: #000;
+    /* White text */
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-size: 0.9rem;
+  }
+  
+  .btn.btn-secondary:hover {
+    background-color: #0056b3;
+    /* Darker blue hover effect */
+  }
+  
+  .btn.btn-link {
+    color: #00d4ff;
+    /* Set to a visible color (cyan in this case) */
+    text-decoration: none;
+    /* Remove underline */
+  }
+  
+  .btn.btn-link:hover {
+    color: #ff9f43;
+    /* Orange color on hover */
+  }
+  
+  .bi-info-circle {
+    font-size: 1.2rem;
+    /* Adjust icon size for better visibility */
+    vertical-align: middle;
+    /* Align icon with text */
+  }
+  
+  .highlight {
+    background-color: grey;
+    font-weight: bold;
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+  
+  #dataList li {
+    transition: opacity 0.3s ease;
+  }
+  
+  #dataList li[style*="display: none"] {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+  }
+  
+  #pagination {
+    margin-top: 20px;
+    text-align: center;
+  }
+  
+  .pagination-button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    background-color: #007bff;
+    border-radius: 5px;
+  }
+  
+  .pagination-button:hover {
+    background-color: #f0f0f0;
+  }
+  
+  .pagination-button.active {
+    background-color: #007bff;
+    color: white;
+    cursor: default;
+    border-radius: 5px;
+  }
+  
+  #pagination button:disabled {
+    background-color: #92b6e0;
+    cursor: not-allowed;
+    color: #fff;
+  }
+  
+  #paginationControls {
+    margin-top: 10px;
+    text-align: center;
+  }
+  
+  .pagination-btn {
+    margin: 2px;
+    padding: 5px 10px;
+    border: 1px solid #12B1BF;
+    background-color: white;
+    color: #12B1BF;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .pagination-btn:hover {
+    background-color: #12B1BF;
+    color: white;
+  }
+  
+  .pagination-btn.active {
+    background-color: #12B1BF;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .logo-header {
+    background-color: #1b2136;
+    padding: 0.5rem 1rem;
+  }
+  
+  .navbar {
+    background-color: #1b2136;
+  }
+  
+  .navbar-toggler-icon {
+    color: white;
+  }
+  
+  .select#time-period-select {
+    color: black;
+    border: 1px solid #12B1BF;
+  }
+  
+  .main-header {
+    padding: 0.5rem 0;
+  }
+  
+  .logo-header {
+    padding: 0.5rem 1rem;
+  }
+  
+  .navbar-nav h5 {
+    margin: 0;
+    font-size: 1rem;
+  }
+  
+  .navbar-nav .nav-link {
+    padding: 0.5rem;
+  }
+  
+  
+  .nav-item select {
+    background-color: white;
+    color: black;
+  }
+  
+  .container {
+    padding-top: 1rem;
+    max-width: 1440px;
+  }
+  
+  .responsive-iframe-container iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #000;
+    position: relative;
+    top: -5px;
+    float: right;
+    cursor: pointer;
+    padding: 0 5px;
+  }
+  
+  .custom-tooltip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  
+  .tooltip-text {
+    visibility: hidden;
+    width: 350px;
+    background-color: #343a40;
+    color: #fff;
+    text-align: left;
+    border-radius: 6px;
+    padding: 12px 16px;
+    position: absolute;
+    z-index: 10;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    white-space: normal;
+  }
+  
+  .tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 6px;
+    border-style: solid;
+    border-color: #343a40 transparent transparent transparent;
+  }
+  
+  .custom-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .tooltip-icon {
+    color: #12b1bf;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  
+  /* Move only the Publication tooltip more to the left */
+  th:nth-of-type(6) .tooltip-text {
+    left: 25%;
+    transform: translateX(-15%);
+    width: 370px;
+  }
+  
+  /* Move the tooltip arrow for the Publication tooltip */
+  th:nth-of-type(6) .tooltip-text::after {
+    left: 25%;
+    transform: translateX(-25%);
+  }

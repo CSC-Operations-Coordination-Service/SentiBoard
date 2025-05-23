@@ -40,7 +40,7 @@
                 <div id="accordion">
                   <div class="card">
                     <div class="card-header" id="heading-description">
-                      <h5 class="mb-0" style="color: white"><a role="button" data-toggle="collapse" href="#description" aria-expanded="false" aria-controls="description" style="color: white; text-decoration: none">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description</a></h5>
+                      <h5 class="mb-0"><a role="button" data-toggle="collapse" href="#description" aria-expanded="false" aria-controls="description">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description</a></h5>
                     </div>
                                         <div id="description" class="collapse hide" data-parent="#accordion"
                                              aria-labelledby="heading-description">
@@ -75,7 +75,7 @@
 
       <!-- Calendar container -->
       <div class="row">
-
+        <div id="calendarLoadingSpinner" style="display:none;">Loading...</div>
         <!-- Main timeline control -->
         <div class="col-12 calendar-window">
           <div class="card calendar-card" >
@@ -102,7 +102,7 @@
                                     <option value="calibration">Calibration</option>
                                     <option value="manoeuvre">Manoeuvre</option>
                                     <option value="production">Production</option>
-                                    <option value="satellite">Satellite</option>
+                                    <option value="platform">Satellite</option>
                                 </select>
                                 <input type="text" class="mt-1 form-control ml-2" id="eventSearchInput"
                                     placeholder="Search ..." />
@@ -111,22 +111,22 @@
                               <button id="resetFilters" class="reset-button w-100">Reset</button>
                             </div>
                             <div class="event-legend">
-                                <h4>Event Types</h4>
-                                <div class="legend-item">
-                                  <span class="event-color event-acquisition"></span> Acquisition
-                              </div>
-                                <div class="legend-item">
-                                    <span class="event-color event-calibration"></span> Calibration
-                                </div>
-                                <div class="legend-item">
-                                  <span class="event-color event-manoeuvre"></span> Manoeuvre
-                                </div>                                
-                                <div class="legend-item">
-                                  <span class="event-color event-production"></span> Production
+                              <h4>Event Types</h4>
+                              <div class="legend-item">
+                                <i class="fas fa-database legend-icon event-acquisition"></i> Acquisition
                               </div>
                               <div class="legend-item">
-                                <span class="event-color event-platform"></span> Satellite
-                            </div>
+                                <i class="fas fa-compass legend-icon event-calibration"></i> Calibration
+                              </div>
+                              <div class="legend-item">
+                                <i class="fas fa-wrench legend-icon event-manoeuvre"></i> Manoeuvre
+                              </div>                                
+                              <div class="legend-item">
+                                <i class="fas fa-cogs legend-icon event-production"></i> Production
+                              </div>
+                              <div class="legend-item">
+                                <i class="fas fa-rss legend-icon event-satellite"></i> Satellite
+                              </div>
                             </div>
                         </div>
                     </div>
@@ -156,13 +156,14 @@
   <!-- Calendar plugin style -->
     <link rel="stylesheet" href="/static/assets/lib/calendar/css/calendarjs.min.css">
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+    <link rel="stylesheet" href="/static/assets/css/events.css">
 
   <!-- Calendar plugin scripts -->
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
-  <!-- <script defer type="text/javascript">
+  <script defer type="text/javascript">
     calendar.init()
-  </script>-->
+  </script>
 
   <!-- Timeline plugin style -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css" />

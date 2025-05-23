@@ -33,23 +33,23 @@
 					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
 
 						<!-- Navigation menu -->
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'about' in segment %} active {% endif %}">
 							<a class="nav-link dropdown-toggle" href="/about.html" id="about" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>ABOUT</h5>
 							</a>
 						</li>
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'acquisition' in segment %} active {% endif %}">
 							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
 								href="/acquisitions-status.html" id="acquisitions-status" style="margin-top: 7px">
 								<h5>ACQUISITIONS STATUS</h5>
 							</a>
 						</li>
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'events' in segment %} active {% endif %}">
 							<a class="nav-link dropdown-toggle" href="/events.html" id="events" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>EVENTS</h5>
 							</a>
 						</li>
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'data-' in segment %} active {% endif %}">
 							<a class="nav-link dropdown-toggle" href="#" id="data-takes" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>DATA AVAILABILITY</h5>
 							</a>
@@ -58,7 +58,7 @@
 								<a class="dropdown-item" href="/data-takes.html">Detail Data Availability</a>
 							</div>
 						</li>
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'processors' in segment %} active {% endif %}">
 							<a class="nav-link dropdown-toggle" href="/processors-viewer.html" id="processors" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>PROCESSORS</h5>
 							</a>
