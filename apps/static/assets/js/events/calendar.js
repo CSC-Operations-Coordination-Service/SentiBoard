@@ -59,7 +59,9 @@ class CalendarWidget {
     }
 
     init() {
-
+        // Hide the drop-down menu to select the time range
+        $('#time-period-select-container').hide();
+        
         this.selectedMission = 'all';
         this.selectedEventType = 'all';
         this.searchTerm = '';
@@ -718,8 +720,14 @@ class CalendarWidget {
             const category = event.category === "Platform" ? "Satellite" : event.category;
             if (selectedEventType !== 'all' && category.toLowerCase() !== selectedEventType) return false;
 
-            const text = event.text?.toLowerCase() || '';
-            if (searchText && !text.includes(searchText)) return false;
+            const searchLower = searchText.toLowerCase();
+            const matchesSearch =
+                (event.category?.toLowerCase().includes(searchLower)) ||
+                (event.environment?.toLowerCase().includes(searchLower)) ||
+                (event.title?.toLowerCase().includes(searchLower)) ||
+                (event.text?.toLowerCase().includes(searchLower));
+
+            if (searchText && !matchesSearch) return false;
 
             return true;
         });
