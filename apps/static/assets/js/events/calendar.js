@@ -231,7 +231,6 @@ class CalendarWidget {
 
             console.log("After prev click:", this.currentMonth, this.currentYear);
             this.generateCalendar(this.currentMonth, this.currentYear);
-            /*this.checkNoEventsBeforeDateMsgDisplay();*/
         }, 300));
 
         document.getElementById('nextMonth').addEventListener('click', debounce(() => {
@@ -269,7 +268,6 @@ class CalendarWidget {
         const calendarColumn = document.querySelector('.calendar-container');
         const eventDetails = document.getElementById('eventDetails');
 
-        /*container.style.height = 'auto';*/
         if (calendarColumn && eventDetails) {
             const height = calendarColumn.offsetHeight;
             eventDetails.style.maxHeight = height + 'px';
@@ -564,11 +562,6 @@ class CalendarWidget {
                     dayDiv.classList.add('selected');
                     this.lastSelectedDate = fullDate;
                     this.showEventDetails(fullDate);
-                    // Scroll to event detail section
-                    /*const detailsSection = document.getElementById('eventDetails');
-                    if (detailsSection) {
-                        detailsSection.scrollIntoView({ behavior: 'smooth' });
-                    }*/
                 });
 
                 //  1. Collect events for this specific day
@@ -602,15 +595,12 @@ class CalendarWidget {
                     const typeClass = `event-${mappedType.toLowerCase()}`;
                     if (!addedTypes.has(typeClass)) {
                         const eventLabel = document.createElement('div');
-                        //eventLabel.classList.add('event-label', typeClass);
                         eventLabel.classList.add(typeClass);
 
-                        // Use your icon map (with full FA class string like 'fas fa-rocket')
                         const iconClass = this.iconMap[mappedType.toLowerCase()] || 'fas fa-question-circle';
 
-                        // Create <i> tag for the icon
                         const iconElement = document.createElement('i');
-                        iconElement.classList.add(...iconClass.split(' '), 'event-icon'); // split to apply both 'fas' and 'fa-*'
+                        iconElement.classList.add(...iconClass.split(' '), 'event-icon');
 
                         eventLabel.appendChild(iconElement);
 
@@ -720,7 +710,7 @@ class CalendarWidget {
             const eventDate = normalizeDate(event.start || '');
             if (eventDate !== targetDate) return false;
 
-            const env = String(event.environment || '').toLowerCase().trim(); // cast + normalize
+            const env = String(event.environment || '').toLowerCase().trim();
             const mission = String(selectedMission || '').toLowerCase().trim();
             console.log("mission selected", mission);
             if (selectedMission !== 'all') {
@@ -758,11 +748,6 @@ class CalendarWidget {
             eventDetailsContent.innerHTML = `<p>No events for ${date}.</p>`;
             return;
         }
-
-        /*const subtitle = document.createElement('h6');
-        const fullDateStr = new Date(date).toString();
-        subtitle.textContent = `Events on ${fullDateStr}`;
-        eventDetailsContent.appendChild(subtitle);*/
 
         const list = document.createElement('ul');
         list.style.listStyle = 'none';
@@ -833,7 +818,7 @@ class CalendarWidget {
     parseDateString(str) {
         const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
         if (!match) return new Date(str); // fallback if format doesn't match
-    
+
         const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
         return new Date(
             parseInt(year),

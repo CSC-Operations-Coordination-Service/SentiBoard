@@ -33,7 +33,19 @@
 }
 
 .event-container {
-  margin-top: 22px;
+  margin-top: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-width: 100px;
+}
+
+.event-container>div {
+  flex: 1;
+  text-align: center;
 }
 
 .calendar-day .event-container {
@@ -44,13 +56,12 @@
   max-height: 60px;
   overflow-y: auto;
   width: 100%;
-  margin-left: 2px;
   align-items: center;
   justify-content: flex-start;
 }
 
 #eventDetails {
-  
+
   overflow-y: auto;
 }
 
@@ -404,8 +415,10 @@
   border-radius: 5px;
   cursor: pointer;
   color: white !important;
-  width: 50% !important;
+  width: 100% ;
   font-size: 16px;
+  transition: all 0.3s ease;
+  max-width: 200px;
 }
 
 .reset-button:hover {
@@ -498,8 +511,7 @@
     font-size: 14px;
 
     #filtersContainer select,
-    #filtersContainer input,
-    #filtersContainer .reset-button {
+    #filtersContainer input {
       width: 100%;
       margin-bottom: 8px;
     }
@@ -533,7 +545,9 @@
   }
 
   .reset-button {
-    width: 32%;
+    width: 100%;
+    font-size: 14px;
+    padding: 6px 6px;
   }
 }
 
@@ -544,6 +558,11 @@
 
   .event-details {
     max-height: 600px;
-    /* Match the calendar or left panel height */
+  }
+
+  .reset-button {
+    width: 40%;
+    font-size: 15px;
+    padding: 6px 8px;
   }
 }
