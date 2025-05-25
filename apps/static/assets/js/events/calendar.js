@@ -253,7 +253,10 @@ class CalendarWidget {
             document.getElementById('missionSelect').value = 'all';
             document.getElementById('eventTypeSelect').value = 'all';
             document.getElementById('eventSearchInput').value = '';
-            document.getElementById('eventDetails').innerHTML = `<p id="noEventMessage">Select a date to see event details.</p>`;
+            const noEventMessage = document.getElementById('noEventMessage');
+            const eventDetailsContent = document.getElementById('eventDetailsContent');
+            if (noEventMessage) noEventMessage.style.display = 'block';
+            if (eventDetailsContent) eventDetailsContent.innerHTML = '';
 
             this.generateCalendar(this.currentMonth, this.currentYear);
         });
@@ -651,15 +654,18 @@ class CalendarWidget {
 
     showEventDetails(date) {
         console.log("date", date);
-        const eventDetailsDiv = document.getElementById('eventDetails');
-        eventDetailsDiv.innerHTML = '';
+        const eventDetailsContent = document.getElementById('eventDetailsContent');
+        const noEventMessage = document.getElementById('noEventMessage');
+
+        eventDetailsContent.innerHTML = ''; // Clear old content
 
         // If no date is selected, show default message and exit
         if (!date) {
-            eventDetailsDiv.innerHTML = `<p id="noEventMessage">Select a date to see event details.</p>`;
+            noEventMessage.style.display = 'block';
             return;
         }
 
+        noEventMessage.style.display = 'none';
         const selectedMission = document.getElementById('missionSelect').value;
         const selectedEventType = document.getElementById('eventTypeSelect').value;
         const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
@@ -705,14 +711,15 @@ class CalendarWidget {
         };
         const targetDate = normalizeDate(date);
         if (!targetDate) {
-            eventDetailsDiv.innerHTML = `<p id="noEventMessage">Select a valid date to see event details.</p>`;
+            noEventMessage.style.display = 'block';
+            noEventMessage.textContent = 'Select a valid date to see event details.';
             return;
         }
-        eventDetailsDiv.innerHTML = '';
 
         let events = Object.values(this.anomalies).filter(event => {
             const eventDate = normalizeDate(event.start || '');
             if (eventDate !== targetDate) return false;
+
             const env = String(event.environment || '').toLowerCase().trim(); // cast + normalize
             const mission = String(selectedMission || '').toLowerCase().trim();
             console.log("mission selected", mission);
@@ -748,13 +755,14 @@ class CalendarWidget {
         });
 
         if (events.length === 0) {
-            eventDetailsDiv.innerHTML = `<p>No events for ${date}.</p>`;
+            eventDetailsContent.innerHTML = `<p>No events for ${date}.</p>`;
             return;
         }
 
-        const title = document.createElement('h3');
-        title.textContent = `Events on ${date}`;
-        eventDetailsDiv.appendChild(title);
+        /*const subtitle = document.createElement('h6');
+        const fullDateStr = new Date(date).toString();
+        subtitle.textContent = `Events on ${fullDateStr}`;
+        eventDetailsContent.appendChild(subtitle);*/
 
         const list = document.createElement('ul');
         list.style.listStyle = 'none';
@@ -810,7 +818,7 @@ class CalendarWidget {
             }
             listItem.innerHTML = `
             <small>${event.title || 'No description available'}</small><br>
-            <small>Occurrence date: ${event.start}</small><br>
+            <small>Occurrence date: ${this.parseDateString(event.start).toString()}</small><br>
             <small>Impacted satellite(s): ${item}</small><br>
             <small>Issue type: ${category}</small><br>
             <small>${event.text || event.key}</small><br>
@@ -819,7 +827,22 @@ class CalendarWidget {
             list.appendChild(listItem);
         });
 
-        eventDetailsDiv.appendChild(list);
+        eventDetailsContent.appendChild(list);
+    }
+
+    parseDateString(str) {
+        const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
+        if (!match) return new Date(str); // fallback if format doesn't match
+    
+        const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
+        return new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(hour),
+            parseInt(minute),
+            parseInt(second)
+        );
     }
 }
 const calendar = new CalendarWidget();
