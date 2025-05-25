@@ -61,7 +61,7 @@ class CalendarWidget {
     init() {
         // Hide the drop-down menu to select the time range
         $('#time-period-select-container').hide();
-        
+
         this.selectedMission = 'all';
         this.selectedEventType = 'all';
         this.searchTerm = '';
@@ -177,7 +177,6 @@ class CalendarWidget {
         return `${y}-${m}-${d}`;
     }
 
-
     addEventListeners() {
         if (this.listenersAttached) return; // Prevent duplicate attachments
         this.listenersAttached = true;
@@ -254,7 +253,7 @@ class CalendarWidget {
             document.getElementById('missionSelect').value = 'all';
             document.getElementById('eventTypeSelect').value = 'all';
             document.getElementById('eventSearchInput').value = '';
-            document.getElementById('eventDetails').innerHTML = '';
+            document.getElementById('eventDetails').innerHTML = `<p id="noEventMessage">Select a date to see event details.</p>`;
 
             this.generateCalendar(this.currentMonth, this.currentYear);
         });
@@ -263,11 +262,16 @@ class CalendarWidget {
         window.addEventListener('resize', () => this.adjustCalendarHeight());
     }
 
-
-
     adjustCalendarHeight() {
         const container = document.querySelector('.calendar-container');
-        container.style.height = 'auto';
+        const eventDetails = document.getElementById('eventDetails');
+
+        /*container.style.height = 'auto';*/
+        if (calendarColumn && eventDetails) {
+            const height = calendarColumn.offsetHeight;
+            eventDetails.style.maxHeight = height + 'px';
+            eventDetails.style.overflowY = 'auto';
+        }
     }
 
     buildEventInstanceFromAnomaly(anomaly) {
@@ -386,6 +390,7 @@ class CalendarWidget {
         content += '</ul></div></p><p></p></div>';
         return content;
     }
+
     calcDatatakeStatus(anomaly, datatake_id) {
 
         // Return one possible value in range: "ok", "partial", "failed", "undef"
@@ -416,6 +421,7 @@ class CalendarWidget {
         // If the datatake cannot be found, assume that the status is "undef"
         return 'undef';
     }
+
     overrideS1DatatakesId(datatake_id) {
         let num = datatake_id.trim().substring(4);
         let hexaNum = parseInt(num).toString(16);
@@ -530,7 +536,7 @@ class CalendarWidget {
             calendarGrid.innerHTML = "";
             monthYear.textContent = `${this.monthNames[month]} ${year}`;
 
-            const firstDay = new Date(year, month, 1).getDay();
+            const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
             // Blank cells for previous month
@@ -556,10 +562,10 @@ class CalendarWidget {
                     this.lastSelectedDate = fullDate;
                     this.showEventDetails(fullDate);
                     // Scroll to event detail section
-                    const detailsSection = document.getElementById('eventDetails');
+                    /*const detailsSection = document.getElementById('eventDetails');
                     if (detailsSection) {
                         detailsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    }*/
                 });
 
                 //  1. Collect events for this specific day
@@ -648,6 +654,12 @@ class CalendarWidget {
         const eventDetailsDiv = document.getElementById('eventDetails');
         eventDetailsDiv.innerHTML = '';
 
+        // If no date is selected, show default message and exit
+        if (!date) {
+            eventDetailsDiv.innerHTML = `<p id="noEventMessage">Select a date to see event details.</p>`;
+            return;
+        }
+
         const selectedMission = document.getElementById('missionSelect').value;
         const selectedEventType = document.getElementById('eventTypeSelect').value;
         const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
@@ -692,8 +704,11 @@ class CalendarWidget {
             return `${yyyy}-${mm}-${dd}`;
         };
         const targetDate = normalizeDate(date);
-        if (!targetDate) return;
-
+        if (!targetDate) {
+            eventDetailsDiv.innerHTML = `<p id="noEventMessage">Select a valid date to see event details.</p>`;
+            return;
+        }
+        eventDetailsDiv.innerHTML = '';
 
         let events = Object.values(this.anomalies).filter(event => {
             const eventDate = normalizeDate(event.start || '');

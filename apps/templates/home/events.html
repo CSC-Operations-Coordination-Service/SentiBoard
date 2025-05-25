@@ -74,7 +74,7 @@
       </div>
 
       <!-- Calendar container -->
-      <div class="row">
+      <div class="row align-items-stretch">
         <div id="calendarLoadingSpinner" style="display:none;">Loading...</div>
         <!-- Main timeline control -->
         <div class="col-12 calendar-window">
@@ -84,33 +84,39 @@
               <!-- <div id="myCalendar" class="calendar"></div> -->
                 <div class="row  align-items-start">
                     <!-- Left Panel -->
-                    <div class="col-12 col-md-3 left-panel mb-4 mb-md-0">
+                    <div class="col-12 col-lg-2 left-panel mb-4 mb-lg-0">
                         <div class="filter-panel p-3">
                             <h4 class="mb-0">Events</h4>
                             <hr>
-                            <div id="filtersContainer" class="filters-row">
-                                <select id="missionSelect" class="form-control d-inline-block ml-2">
-                                    <option value="all" selected="true">All Missions</option>
-                                    <option value="s1">Sentinel 1</option>
-                                    <option value="s2">Sentinel 2</option>
-                                    <option value="s3">Sentinel 3</option>
-                                    <option value="s5">Sentinel 5P</option>
-                                </select>
-                                <select id="eventTypeSelect" class="mt-2 form-control d-inline-block ml-2">
-                                    <option value="all" selected>All Events</option>
-                                    <option value="acquisition">Acquisition</option>
-                                    <option value="calibration">Calibration</option>
-                                    <option value="manoeuvre">Manoeuvre</option>
-                                    <option value="production">Production</option>
-                                    <option value="platform">Satellite</option>
-                                </select>
-                                <input type="text" class="mt-1 form-control ml-2" id="eventSearchInput"
-                                    placeholder="Search ..." />
+                            <div id="filtersContainer">
+                              <div class="form-group mb-2">
+                                <select id="missionSelect" class="form-control w-100">
+                                  <option value="all" selected="true">All Missions</option>
+                                  <option value="s1">Sentinel 1</option>
+                                  <option value="s2">Sentinel 2</option>
+                                  <option value="s3">Sentinel 3</option>
+                                  <option value="s5">Sentinel 5P</option>
+                              </select>
+                              </div>
+                              <div class="form-group mb-2">
+                                <select id="eventTypeSelect" class="form-control w-100">
+                                  <option value="all" selected>All Events</option>
+                                  <option value="acquisition">Acquisition</option>
+                                  <option value="calibration">Calibration</option>
+                                  <option value="manoeuvre">Manoeuvre</option>
+                                  <option value="production">Production</option>
+                                  <option value="platform">Satellite</option>
+                              </select>
+                              </div>
+                              <div class="form-group mb-2">
+                                <input type="text" class="form-control w-100" id="eventSearchInput"
+                                placeholder="Search ..." />
+                              </div>
                             </div>
-                            <div class="mt-2 ml-2">
-                              <button id="resetFilters" class="reset-button w-100">Reset</button>
+                            <div class="form-group mb-2">
+                              <button id="resetFilters" class="reset-button form-control">Reset</button>
                             </div>
-                            <div class="event-legend">
+                            <div class="event-legend mt-3">
                               <h4>Event Types</h4>
                               <div class="legend-item">
                                 <i class="fas fa-database legend-icon event-acquisition"></i> Acquisition
@@ -131,7 +137,7 @@
                         </div>
                     </div>
                     <!-- Calendar Section -->
-                    <div class="col-12 col-md-9">
+                    <div class="col-12 col-lg-7 mb-4 mb-lg-0">
                         <div class="calendar-container">
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
                                 <button id="prevMonth" class="btn">&lt;</button>
@@ -140,7 +146,12 @@
                             </div>
                             <div class="calendar-grid" id="calendarGrid"></div>
                         </div>
-                        <div id="eventDetails" class="event-details"></div>
+                    </div>
+                    <!-- Event Details (right) -->
+                    <div class="col-12 col-lg-3 mb-4">
+                      <div id="eventDetails" class="event-details  p-3">
+                          <p id="noEventMessage">Select a date to see event details.</p>
+                      </div>
                     </div>
                 </div>
             </div>
