@@ -36,15 +36,16 @@
   margin-top: 30px;
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   width: 100%;
-  min-width: 100px;
+  padding: 0 4px;
+  box-sizing: border-box;
 }
 
 .event-container>div {
-  flex: 1;
+  flex: 0 0 auto;
   text-align: center;
 }
 
@@ -61,7 +62,6 @@
 }
 
 #eventDetails {
-
   overflow-y: auto;
 }
 
@@ -324,8 +324,8 @@
 
 .event-icon {
   color: inherit;
-  font-size: 1.3em !important;
-  margin-right: 4px;
+  font-size: clamp(12px, 1.5vw, 20px) !important;
+  margin: 0;
 }
 
 .event-details {
@@ -415,7 +415,7 @@
   border-radius: 5px;
   cursor: pointer;
   color: white !important;
-  width: 100% ;
+  width: 100%;
   font-size: 16px;
   transition: all 0.3s ease;
   max-width: 200px;
@@ -564,5 +564,20 @@
     width: 40%;
     font-size: 15px;
     padding: 6px 8px;
+  }
+}
+
+/* Optional: make sure icons wrap better on small screens */
+@media (max-width: 500px) {
+  .event-container {
+    gap: 3px;
+  }
+
+  .event-container>div {
+    margin: 1px;
+  }
+
+  .event-icon {
+    font-size: clamp(12px, 1.2vw, 18px);
   }
 }
