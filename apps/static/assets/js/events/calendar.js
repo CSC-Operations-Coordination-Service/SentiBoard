@@ -263,7 +263,7 @@ class CalendarWidget {
     }
 
     adjustCalendarHeight() {
-        const container = document.querySelector('.calendar-container');
+        const calendarColumn = document.querySelector('.calendar-container');
         const eventDetails = document.getElementById('eventDetails');
 
         /*container.style.height = 'auto';*/
