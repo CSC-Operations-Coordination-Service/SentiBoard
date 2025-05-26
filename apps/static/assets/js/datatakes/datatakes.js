@@ -447,18 +447,18 @@ class Datatakes {
     }
 
     updateTitleAndDate(selectedKey) {
-        const titleElement = document.querySelector(".chart-container h4.text-left");
+        const titleSpan = document.querySelector(".chart-container h4 .title-text");
         const dateElement = document.querySelector(".chart-container p.text-left");
 
-        if (!titleElement || !dateElement) {
-            console.error("Title or date element not found!");
+        if (!titleSpan || !dateElement) {
+            console.error("Title span or date element not found!");
             return;
         }
 
         const dataTake = this.mockDataTakes.find(item => item.id === selectedKey);
         if (dataTake) {
             const startDate = new Date(dataTake.start).toISOString().replace("T", " ").slice(0, 19);
-            titleElement.childNodes[0].nodeValue = `${dataTake.id}`;
+            titleSpan.textContent = `${dataTake.id}`;
             dateElement.textContent = `${startDate}`;
         }
     }
