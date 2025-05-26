@@ -204,14 +204,14 @@
   }
   
   .filter-link:hover {
-    background-color: #00d4ff;
-    color: #1a1a40;
+    background-color: #3C5A74 !important;
+    color: whitesmoke !important;
   }
   
   
   .filter-link.active {
-    background-color: #FFAD00 !important;
-    color: darkslategray;
+    background-color: #006B7C !important;
+    color: lightgray;
     font-weight: bold;
   }
   

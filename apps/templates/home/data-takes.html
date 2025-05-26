@@ -1,11 +1,12 @@
 {% extends "layouts/base-responsive.html" %}
 
-{% block title %} UI Data Takes {% endblock %}
+{% block title %} UI Data Availability {% endblock %}
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
 
 	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+	<link rel="stylesheet" href="/static/assets/css/dataAvailability.css">
 
 {% endblock stylesheets %}
 
@@ -68,7 +69,7 @@
 								<div id="accordion">
 									<div class="card">
 										<div class="card-header" id="heading-description">
-											<h5 class="mb-0" style="color: white">
+											<h5 class="mb-0">
 												<a role="button" data-toggle="collapse" href="#description"
 												   aria-expanded="false" aria-controls="description"
 												   style="color: white; text-decoration: none">
@@ -111,30 +112,221 @@
 				<div class="col-md-12">
 					<div class="card">
 						<div class="card-body">
-							<div class="table-responsive">
-								<table id="basic-datatables-data-takes" class="display table table-striped table-hover" >
-									<thead>
-										<tr>
-											<th style="max-width: 120px">Data Take ID</th>
-											<th style="max-width: 110px">Platform</th>
-											<th>Start Date</th>
-											<th>Stop Date</th>
-											<th style="max-width: 140px">Acquisition
-												<i style="color: white; position: relative; top: -10px; left: -15px" class="btn la flaticon-round" onclick="event.stopPropagation(); datatakes.showAcquisitionColumnOnlineHelp()"></i>
-											</th>
-											<th style="max-width: 140px">Publication
-												<i style="color: white; position: relative; top: -10px; left: -15px" class="btn la flaticon-round" onclick="event.stopPropagation(); datatakes.showPublicationColumnOnlineHelp()"></i>
-											</th>
-											<th style="max-width: 60px">Actions</th>
-										</tr>
-									</thead>
-								</table>
+							<div class="row">
+									<!-- Left Panel -->
+								<div class="col-md-3 left-panel d-flex flex-column">
+									<div class="filter-panel p-3 flex-grow-1">
+											<hr>
+											<!-- Filter by Mission -->
+											<div class="form-group d-flex align-items-center flex-wrap gap-2">
+													<select id="mission-select" class="form-control mr-2">
+															<option value="">All Missions</option>
+															<option value="S1">Sentinel 1</option>
+															<option value="S2">Sentinel 2</option>
+															<option value="S3">Sentinel 3</option>
+															<option value="S5">Sentinel 5P</option>
+													</select>
+			
+													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset
+															Filter</button>
+											</div>
+											<hr>
+											<!-- Filter by Ground Station -->
+											<div class="form-group">
+													<input type="text" id="searchInput" class="form-control mb-3"
+															placeholder="Search...">
+													<ul class="list-unstyled" id="dataList">
+															<!-- Items will be injected here by JavaScript -->
+													</ul>
+											</div>
+									</div>
+								</div>
+								<!-- Main Content -->
+								<div class="col-md-9 d-flex flex-column">
+								<div class="container flex-grow-1">
+										<div class="chart-container">
+												<h4 class="text-left">S1 
+													<button id="infoButton" class="btn btn-link p-0 ml-2">
+															<i class="bi bi-info-circle"></i>
+													</button>
+												</h4>
+												<p class="text-left">Sentinel-1A-Apr 01, 2025 23:20:02</p>
+												<div class="d-flex justify-content-between align-items-start">
+														<!-- Donut Chart -->
+														<div style="flex: 1; max-width: 45%;">
+																<div id="missionDonutChart"></div>
+														</div>
+		
+														<!-- Hidden Table -->
+														<div id="infoTableContainer" style="display: none;">
+																<table class="custom-box-table table-m">
+																		<thead>
+																				<tr>
+																						<th>Product type</th>
+																						<th>Status(%)</th>
+																				</tr>
+																		</thead>
+																		<tbody id="infoTableBody">
+																				<!-- Dynamically filled -->
+																		</tbody>
+																</table>
+																<div id="paginationControls"
+																		style="margin-top: 10px; text-align: center;"></div>
+		
+														</div>
+												</div>
+										</div>
+										<!-- Datatake Details Section (Previously Modal) -->
+										<div id="tableSection" class="mt-4" style="display: none;">
+												<div id="table-container">
+														<button class="close-btn" id="closeTableButton" 
+																aria-label="Close table">✖</button>
+														<div class="custom-box-table-container">
+																<table id="timelineTable" class="custom-box-table table-sm">
+																		<thead>
+																				<tr>
+																						<th>Data Take ID</th>
+																						<th>Platform</th>
+																						<th>Start Date</th>
+																						<th>Stop Date</th>
+																						<th>
+																								<div class="custom-tooltip">
+																										Acquisition
+																										<sup><span
+																														class="tooltip-icon">ℹ</span></sup>
+																										<div
+																												class="tooltip-text">
+																												<strong>Acquisition
+																														Status</strong><br><br>
+																												This column
+																												reports the
+																												status of
+																												datatake
+																												acquisition from
+																												the Ground
+																												Station.
+																												Possible values
+																												are:<br><br>
+																												<strong>PLANNED:</strong>
+																												if the datatake
+																												is going to be
+																												acquired in the
+																												future<br>
+																												<strong>PROCESSING:</strong>
+																												after the
+																												contact with the
+																												ground station,
+																												and the
+																												processing of
+																												raw data is
+																												ongoing<br>
+																												<strong>ACQUIRED:</strong>
+																												if the datatake
+																												was successfully
+																												acquired<br>
+																												<strong>PARTIAL:</strong>
+																												if the datatake
+																												was acquired
+																												only in part
+																												(e.g., in case
+																												of ground
+																												station or
+																												satellite
+																												issues)<br>
+																												<strong>UNAVAILABLE:</strong>
+																												if the datatake
+																												was lost during
+																												downlink (e.g.,
+																												in case of a
+																												major issue
+																												concerning the
+																												ground station
+																												or the
+																												satellite)
+																										</div>
+																								</div>
+																						</th>
+																						<th>
+																								<div class="custom-tooltip">
+																										Publication
+																										<sup><span
+																														class="tooltip-icon">ℹ</span></sup>
+																										<div
+																												class="tooltip-text">
+																												<strong>Publication
+																														Status</strong><br><br>
+																												This column
+																												reports the
+																												publication
+																												status of
+																												products
+																												associated to a
+																												datatake,
+																												together with
+																												their overall
+																												completeness.
+																												Possible values
+																												are:<br><br>
+																												<strong>PLANNED:</strong>
+																												if the datatake
+																												is going to be
+																												processed and
+																												published in the
+																												future<br>
+																												<strong>PROCESSING:</strong>
+																												if the datatake
+																												processing is
+																												ongoing<br>
+																												<strong>DELAYED:</strong>
+																												if the datatake
+																												processing is
+																												taking more than
+																												the nominal
+																												time<br>
+																												<strong>PUBLISHED:</strong>
+																												if all expected
+																												products were
+																												successfully
+																												published and
+																												the average
+																												completeness
+																												exceeds 90%<br>
+																												<strong>PARTIAL:</strong>
+																												if not all
+																												expected
+																												products were
+																												successfully
+																												published,
+																												and/or the
+																												average
+																												completeness is
+																												below 90%<br>
+																												<strong>UNAVAILABLE:</strong>
+																												if no products
+																												could be
+																												published (e.g.,
+																												in case of a
+																												datatake lost
+																												during downlink)
+																										</div>
+																								</div>
+																						</th>
+																						<th>Actions</th>
+																				</tr>
+																		</thead>
+																		<tbody id="dataTableBody"></tbody>
+																		<!-- Populated dynamically -->
+																</table>
+														</div>
+												</div>
+										</div>
+								</div>
+								</div>
 							</div>
 						</div>
 					</div>
 				</div>
 			</div>
-
 		</div>
 	</div>
 
@@ -149,6 +341,11 @@
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
-	<script defer type="text/javascript">datatakes.init();</script>
+	 <script defer type="text/javascript">datatakes.init();</script>
+	<script>
+		$(function () {
+				$('[data-toggle="tooltip"]').tooltip();
+		});
+	</script>
 
 {% endblock javascripts %}
