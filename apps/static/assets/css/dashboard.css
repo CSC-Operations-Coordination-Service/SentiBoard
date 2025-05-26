@@ -600,14 +600,14 @@ a {
 }
 
 .card-green {
-  background-color: #354f32;
+  background-color: #006B7C;
 }
 
-.card-beige {
-  background-color: #b99f8a;
+.card-lightgreen {
+  background-color: #12B1BF;
 }
 
-.card-bluegray {
+/*.card-bluegray {
   background-color: #45787E;
 }
 
@@ -615,7 +615,7 @@ a {
   background-color: #BCA8D8
   ;
 }
-
+*/
 .btn-learn-more {
   display: inline-block;
   margin-top: 1rem;
