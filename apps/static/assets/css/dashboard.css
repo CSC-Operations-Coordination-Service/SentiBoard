@@ -1,3 +1,25 @@
+/*navigation responsive*/
+.logo-header {
+  background-color: #343a40 !important;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 15px;
+  position: relative;
+}
+
+.logo-header a.logo {
+  margin-right: 15px;
+  display: flex;
+  align-items: center;
+}
+
+.ec-logo {
+  position: absolute;
+  top: 5px;
+  display: none;
+}
+
 /* Home Page - Video frame */
 .video-frame {
 
@@ -651,6 +673,52 @@ button:focus {
 }
 
 @media (max-width: 768px) {
+  .logo-header {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .logo {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    position: static !important;
+  }
+
+  /* Resize ESA logo on mobile */
+  .esa-logo img {
+    max-width: 50px;
+  }
+  .sentiboard-logo img {
+    max-width: 100px;
+    padding-left: 120px; 
+    display: block;
+  }
+
+  .logo-header a.logo {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .logo-header a.logo img {
+    max-width: 80%;
+    height: auto;
+  }
+
+  .logo-header a.logo.sentiboard-logo img {
+    max-width: 50%;
+  }
+
+  #ec-logo-header {
+    position: static !important;
+    width: 80%;
+    max-width: 180px;
+    height: auto;
+    margin-top: 10px;
+  }
+
   .slider-container {
     flex-direction: column;
     height: auto;
@@ -728,6 +796,7 @@ button:focus {
     font-size: 1rem;
     padding: 0.5rem 1rem;
   }
+
   .mobile-slider {
     display: flex;
     flex-direction: column;
@@ -741,7 +810,7 @@ button:focus {
     padding: 0 1rem;
   }
 
-  .mobile-slide > div:first-child {
+  .mobile-slide>div:first-child {
     height: 200px;
     background-size: cover;
     background-position: center;
@@ -754,8 +823,9 @@ button:focus {
     padding: 1rem;
     border-radius: 10px;
   }
+
   .mobile-slide p {
     color: white !important;
   }
-  
+
 }
