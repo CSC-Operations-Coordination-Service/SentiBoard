@@ -14,7 +14,7 @@ delivered to him.
 class Home {
 
     constructor() {
-
+        window.addEventListener("resize", this.handleResponsiveSliderLayout.bind(this));
     }
 
     init() {
@@ -57,7 +57,7 @@ class Home {
         window.onload = function () {
             $('#home-video').get(0).play();
         }
-
+        this.handleResponsiveSliderLayout();
         this.initSlider();
 
         return;
@@ -205,24 +205,87 @@ class Home {
         })();
     }*/
 
-   /* displayPublishedProductsVolumeCount() {
-        publicdata.get_published_count_size_last_24h();
-        (async () => {
-            while (!publicdata.published_last24h['NUM'])
-                await new Promise(resolve => setTimeout(resolve, 250));
-            console.info('Number of published products: ' + publicdata.published_last24h['NUM']);
-            $('#published-products-count').html(new Intl.NumberFormat().format(publicdata.published_last24h['NUM']));
-        })();
-        (async () => {
-            while (!publicdata.published_last24h['VOL'])
-                await new Promise(resolve => setTimeout(resolve, 250));
-            var vol = publicdata.published_last24h['VOL'] / (1024 * 1024 * 1024 * 1024);
-            console.info('Volume of published products: ' + vol);
-            $('#published-products-volume').html(new Intl.NumberFormat().format(vol.toFixed(2)));
-        })();
-    }*/
+    /* displayPublishedProductsVolumeCount() {
+         publicdata.get_published_count_size_last_24h();
+         (async () => {
+             while (!publicdata.published_last24h['NUM'])
+                 await new Promise(resolve => setTimeout(resolve, 250));
+             console.info('Number of published products: ' + publicdata.published_last24h['NUM']);
+             $('#published-products-count').html(new Intl.NumberFormat().format(publicdata.published_last24h['NUM']));
+         })();
+         (async () => {
+             while (!publicdata.published_last24h['VOL'])
+                 await new Promise(resolve => setTimeout(resolve, 250));
+             var vol = publicdata.published_last24h['VOL'] / (1024 * 1024 * 1024 * 1024);
+             console.info('Volume of published products: ' + vol);
+             $('#published-products-volume').html(new Intl.NumberFormat().format(vol.toFixed(2)));
+         })();
+     }*/
     //AD vertical slider
+    handleResponsiveSliderLayout() {
+        const leftSlide = document.querySelector(".left-slide");
+        const rightSlide = document.querySelector(".right-slide");
+        const sliderContainer = document.querySelector(".slider-container");
+
+        // Mobile: stack slides vertically
+        if (window.innerWidth <= 768) {
+            if (!document.querySelector(".mobile-slide")) {
+                const mobileSlide = document.createElement("div");
+                mobileSlide.classList.add("mobile-slide");
+
+                const leftSlides = [...leftSlide.children];
+                const rightSlides = [...rightSlide.children].reverse(); // match original top-bottom order
+
+                for (let i = 0; i < leftSlides.length; i++) {
+                    mobileSlide.appendChild(rightSlides[i].cloneNode(true));
+                    mobileSlide.appendChild(leftSlides[i].cloneNode(true));
+                }
+
+                sliderContainer.innerHTML = "";
+                sliderContainer.appendChild(mobileSlide);
+            }
+        } else {
+            // Restore original slider layout
+            if (!document.querySelector(".left-slide") && !document.querySelector(".right-slide")) {
+                location.reload(); // simple reload fallback to reset DOM (or implement dynamic rebuild)
+            }
+        }
+    }
+
     initSlider() {
+        if (window.innerWidth <= 768) {
+            const leftSlide = document.querySelector('.left-slide');
+            const rightSlide = document.querySelector('.right-slide');
+
+            if (!leftSlide || !rightSlide) return;
+
+            const textCards = leftSlide.children;
+            const imageCards = rightSlide.children;
+
+            const mobileContainer = document.createElement('div');
+            mobileContainer.className = 'mobile-slider';
+
+            for (let i = 0; i < textCards.length; i++) {
+                const slideWrapper = document.createElement('div');
+                slideWrapper.className = 'mobile-slide';
+
+                const imgClone = imageCards[i].cloneNode(true);
+                const textClone = textCards[i].cloneNode(true);
+
+                slideWrapper.appendChild(imgClone);
+                slideWrapper.appendChild(textClone);
+                mobileContainer.appendChild(slideWrapper);
+            }
+            // Insert mobileContainer before the leftSlide (or wherever makes sense)
+            const parent = document.querySelector('#vertical-slider .container');
+            parent.insertBefore(mobileContainer, leftSlide);
+
+            // Hide the original slider on mobile
+            leftSlide.style.display = 'none';
+            rightSlide.style.display = 'none';
+            document.querySelector('.action-buttons').style.display = 'none';
+        }
+
         const sliderContainer = document.querySelector(".slider-container");
         const slideRight = document.querySelector(".right-slide");
         const slideLeft = document.querySelector(".left-slide");

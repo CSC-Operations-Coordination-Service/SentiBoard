@@ -42,13 +42,13 @@
 /* Chevron down positioning */
 .chevron-down {
   bottom: 80px;
-  color:#004f5f !important;
+  color: #004f5f !important;
 }
 
 /* Chevron up positioning */
 .chevron-up {
   bottom: 160px;
-  color:#004f5f !important;
+  color: #004f5f !important;
 }
 
 /* Hover effect */
@@ -194,6 +194,7 @@ a {
 .custom-dropdown-menu .dropdown-item {
   color: #fff !important;
 }
+
 .custom-dropdown-menu .dropdown-item:hover {
   background-color: #12b1bf !important;
   color: #fff !important;
@@ -559,13 +560,13 @@ a {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  text-align: left;
+  text-align: center;
   padding: 0 34px 0 3px;
 }
 
 .left-slide p {
   color: white !important;
-  margin-left: 10px !important;
+  margin: 10px !important;
   font-size: 20px;
 }
 
@@ -573,12 +574,6 @@ a {
   font-size: 40px;
   margin-bottom: 10px;
   margin-top: -30px;
-}
-
-/* .left-slide */
-.left-slide p,
-.right-slide p {
-  margin-right: 80px;
 }
 
 /* right-slide*/
@@ -607,15 +602,6 @@ a {
   background-color: #12B1BF;
 }
 
-/*.card-bluegray {
-  background-color: #45787E;
-}
-
-.card-lilla {
-  background-color: #BCA8D8
-  ;
-}
-*/
 .btn-learn-more {
   display: inline-block;
   margin-top: 1rem;
@@ -668,6 +654,7 @@ button:focus {
   .slider-container {
     flex-direction: column;
     height: auto;
+    overflow: visible;
   }
 
   .left-slide,
@@ -675,9 +662,100 @@ button:focus {
     position: relative;
     width: 100%;
     height: auto;
+    transform: none !important;
+  }
+
+  .right-slide,
+  .left-slide {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .right-slide>div,
+  .left-slide>div {
+    height: auto;
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .right-slide>div {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Stack: image followed by corresponding card */
+  .slider-container .container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .slider-container .container>.right-slide>div:nth-child(1)::after,
+  .slider-container .container>.right-slide>div:nth-child(2)::after,
+  .slider-container .container>.right-slide>div:nth-child(3)::after,
+  .slider-container .container>.right-slide>div:nth-child(4)::after,
+  .slider-container .container>.right-slide>div:nth-child(5)::after {
+    content: '';
+    display: block;
+    height: 1px;
+  }
+
+  .slider-container .container>.left-slide>div {
+    order: 2;
+  }
+
+  .slider-container .container>.right-slide>div {
+    order: 1;
   }
 
   .slider-container .action-buttons {
     display: none;
   }
+
+  .left-slide h1 {
+    font-size: 24px;
+    color: #fff;
+  }
+
+  .left-slide p {
+    font-size: 16px;
+    margin: 10px 0;
+    color: #fff;
+  }
+
+  .btn-learn-more {
+    font-size: 1rem;
+    padding: 0.5rem 1rem;
+  }
+  .mobile-slider {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .mobile-slide {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    padding: 0 1rem;
+  }
+
+  .mobile-slide > div:first-child {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .mobile-slide .card-green,
+  .mobile-slide .card-lightgreen {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+  .mobile-slide p {
+    color: white !important;
+  }
+  
 }
