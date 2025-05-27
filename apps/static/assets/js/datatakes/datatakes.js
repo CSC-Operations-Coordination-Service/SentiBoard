@@ -224,6 +224,24 @@ class Datatakes {
 
         // Populate the UI list
         this.populateDataList(false);
+        // ✅ If at least one datatake exists, update title and render
+        if (datatakes.length > 0) {
+            const first = datatakes[0];
+
+            // Update the title
+            const titleSpan = document.querySelector(".title-text");
+            if (titleSpan) {
+                titleSpan.textContent = first.id;
+            }
+
+            // Update the subheading paragraph
+            const subtitle = document.querySelector(".chart-container p");
+            if (subtitle) {
+                const formattedStart = moment(first.start).format("MMM DD, YYYY HH:mm:ss");
+                subtitle.textContent = `${first.satellite} - ${formattedStart}`;
+            }
+        }
+
     }
 
     errorLoadDatatake(response) {
@@ -341,23 +359,23 @@ class Datatakes {
 
     async toggleInfoTable() {
         this.fromInfoIcon = true;
-    
+
         const infoTable = document.getElementById("infoTableContainer");
         const paragraph = document.querySelector(".chart-container h4");
         if (!infoTable || !paragraph) {
             console.error("Info table container or paragraph not found!");
             return;
         }
-    
+
         let fullText = paragraph.textContent.trim().replace(/_/g, "-");
         const parts = fullText.split("-");
         const selectedId = parts.slice(0, 3).join("-");
-    
+
         console.log("Looking for datatake ID:", selectedId);
-    
+
         try {
             await this.renderInfoTable(selectedId);
-    
+
             const shouldShow = infoTable.style.display === "none" || infoTable.style.display === "";
             if (shouldShow) {
                 infoTable.style.display = "block";
@@ -379,7 +397,7 @@ class Datatakes {
             this.fromInfoIcon = false;
         }
     }
-    
+
 
 
 
@@ -666,29 +684,26 @@ class Datatakes {
     renderTableWithoutPagination(dataset, selectedId = '', searchQuery = '') {
         const tableBody = document.getElementById("dataTableBody");
         const tableSection = document.getElementById("tableSection");
-    
+
         if (!tableSection || !tableBody) {
             console.error("Table section or body not found in the DOM!");
             return;
         }
-    
-        // Only hide the table section if we're NOT coming from the info icon
-        if (!this.fromInfoIcon) {
-            tableSection.style.display = "none";
-        }
-    
+
+        tableSection.style.display = "none";
         tableBody.innerHTML = "";
-    
+
         // Find the selected data entry
         const selectedData = dataset.find(item => item.id === selectedId);
         if (!selectedData) {
             console.warn(`No data found for: ${selectedId}`);
             return;
         }
-    
+
         let data = [selectedData];
-    
-        // Optional search filtering
+
+
+        // Apply optional search filter
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             data = data.filter(item =>
@@ -696,27 +711,28 @@ class Datatakes {
                 item.satellite.toLowerCase().includes(query)
             );
         }
-    
+
         // Render each row
         data.forEach(row => {
             const raw = row.raw || {};
             const completeness = raw.completeness_status || {};
-    
+
             const acqStatus = completeness.ACQ?.status?.toUpperCase() || "UNKNOWN";
             const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
-    
+
             const platform = row.satellite || raw.satellite_unit || "N/A";
             const startTime = row.start ? moment(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
             const stopTime = row.stop ? moment(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
-    
+
+            // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
-                                     acqStatus === "UNAVAILABLE" ? "#FF0000" :
-                                     acqStatus === "PARTIAL" ? "#FFD700" : "#818181";
-    
+                acqStatus === "UNAVAILABLE" ? "#FF0000" :
+                    acqStatus === "PARTIAL" ? "#FFD700" : "#818181";
+
             const publicationColor = pubStatus === "PUBLISHED" ? "#0aa41b" :
-                                     pubStatus === "UNAVAILABLE" ? "#FF0000" :
-                                     pubStatus === "PARTIAL" ? "#FFD700" : "#818181";
-    
+                pubStatus === "UNAVAILABLE" ? "#FF0000" :
+                    pubStatus === "PARTIAL" ? "#FFD700" : "#818181";
+
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${row.id}</td>
@@ -726,20 +742,23 @@ class Datatakes {
                 <td><span style="color:${acquisitionColor}">${acqStatus}</span></td>
                 <td><span style="color:${publicationColor}">${pubStatus}</span></td>
                 <td>
-                    <button type="button" style="color: #8c90a0" class="btn-link" data-toggle="modal"
-                        data-target="#showDatatakeDetailsModal"
-                        onclick="datatakes.toggleInfoTable()">
+                    <button type="button" style="color: #8c90a0" class="btn-link">
                         <i class="la flaticon-search-1"></i>
                     </button>
                 </td>
             `;
+
+            // Attach the event listener to the icon button
+            const button = tr.querySelector("button");
+            button.addEventListener("click", () => this.toggleInfoTable());
+
             tableBody.appendChild(tr);
         });
-    
-        // Always show the section after rows are rendered
+
         tableSection.style.display = "block";
     }
-    
+
+
 
     updateTitleAndDate(selectedKey) {
         const titleSpan = document.querySelector(".chart-container h4 .title-text");
