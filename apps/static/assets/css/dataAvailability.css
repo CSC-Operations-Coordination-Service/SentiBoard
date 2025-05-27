@@ -620,6 +620,19 @@
     padding: 0 5px;
   }
 
+  #loadMoreBtn {
+    padding: 6px 10px;
+    background-color: #343A40 !important;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: white !important;
+    width: 100%;
+    font-size: 16px;
+    transition: all 0.3s ease;
+    max-width: 200px;
+}
+
   .custom-tooltip {
     position: relative;
     display: inline-flex;
@@ -638,7 +651,7 @@
     position: absolute;
     z-index: 10;
     bottom: 125%;
-    left: 50%;
+    left: 95%;
     transform: translateX(-50%);
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -672,7 +685,7 @@
 
   /* Move only the Publication tooltip more to the left */
   th:nth-of-type(6) .tooltip-text {
-    left: 25%;
+    left: 50%;
     transform: translateX(-15%);
     width: 370px;
   }

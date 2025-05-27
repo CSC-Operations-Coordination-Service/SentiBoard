@@ -12,78 +12,11 @@ delivered to him.
 */
 
 // Data for the mock Data Availability
-const mockDataTakes = [
-    { id: "S1A-474954", platform: "S1A (WV)", start: "2025-04-08T08:58:31.762Z", stop: "2025-04-08T09:12:11.993Z", acquisition: "ACQUIRED", publication: "PUBLISHED (100.0%)" },
-    { id: "S1A-474952", platform: "S1A (IW)", start: "2025-04-11T07:00:25.928Z", stop: "2025-04-11T07:03:50.986Z", acquisition: "ACQUIRED", publication: "PUBLISHED (100.0%)" },
-    { id: "S1A-474708", platform: "S1A (IW)", start: "2025-02-20T09:23:50.400Z", stop: "2025-02-20T09:28:53.810Z", acquisition: "ACQUIRED", publication: "PUBLISHED (100.0%)" },
-    { id: "S1A-474977", platform: "S1A (IW)", start: "2025-05-05T09:30:28.181Z", stop: "2025-05-05T09:34:22.533Z", acquisition: "PLANNED", publication: "PLANNED (0.0%)" },
-    { id: "S1A-474970", platform: "S1A (IW)", start: "2025-06-12T09:38:44.730Z", stop: "2025-06-12T09:42:47.800Z", acquisition: "PROCESSING", publication: "PROCESSING (12.7%)" },
-    { id: "S1C-118281", platform: "S1C (AIS)", start: "2025-04-11T07:25:43.172Z", stop: "2025-04-11T07:27:44.537Z", acquisition: "PARTIAL", publication: "PARTIAL (61.2%)" },
-    { id: "S1C-118282", platform: "S1C (AIS)", start: "2025-01-18T09:46:12.361Z", stop: "2025-01-18T09:54:01.064Z", acquisition: "UNAVAILABLE", publication: "UNAVAILABLE (0.0%)" },
-    { id: "S1C-118582", platform: "S1C (AIS)", start: "2025-03-10T10:00:31.527Z", stop: "2025-03-10T10:01:59.792Z", acquisition: "ACQUIRED", publication: "PUBLISHED (94.4%)" },
-    { id: "S1C-118590", platform: "S1C (AIS)", start: "2025-03-10T10:09:37.667Z", stop: "2025-03-10T10:15:58.309Z", acquisition: "PROCESSING", publication: "PROCESSING (9.7%)" },
-    { id: "S2A-51195-4", platform: "S2A (NOBS)", start: "2025-05-22T10:40:56.019Z", stop: "2025-05-22T10:41:29.118Z", acquisition: "ACQUIRED", publication: "PUBLISHED (97.9%)" },
-    { id: "S2A-51195-2", platform: "S2A (VIC)", start: "2025-07-01T10:42:01.009Z", stop: "2025-07-01T10:46:24.655Z", acquisition: "PROCESSING", publication: "PROCESSING (20.8%)" },
-    { id: "S2A-474708-1", platform: "S2A (NOBS)", start: "2025-04-18T08:08:19.047Z", stop: "2025-04-18T08:08:37.087Z", acquisition: "PLANNED", publication: "PLANNED (0.0%)" },
-    { id: "S2B-475497-2", platform: "S2B (VIC)", start: "2025-04-19T18:03:50.570Z", stop: "2025-04-19T18:06:29.322Z", acquisition: "PARTIAL", publication: "PARTIAL (69.0%)" },
-    { id: "S2B-42289-1", platform: "S2B (NOBS)", start: "2025-04-11T08:06:00.468Z", stop: "2025-04-11T08:40:13.420Z", acquisition: "ACQUIRED", publication: "PUBLISHED (100.0%)" },
-    { id: "S2C-3120-1", platform: "S2C (NOBS)", start: "2025-04-11T07:16:42.459Z", stop: "2025-04-11T07:47:29.755Z", acquisition: "ACQUIRED", publication: "PUBLISHED (100.0%)" },
-    { id: "S2B-42290-1", platform: "S2B (VIC)", start: "2025-04-18T02:55:19.030Z", stop: "2025-04-18T03:20:12.742Z", acquisition: "ACQUIRED", publication: "PUBLISHED (98.9%)" },
-    { id: "S2C-3123-1", platform: "S2C (NOBS)", start: "2025-04-17T16:23:38.086Z", stop: "2025-04-17T16:24:46.638Z", acquisition: "ACQUIRED", publication: "PUBLISHED (95.3%)" },
-    { id: "S2C-42288-2", platform: "S2C (NOBS)", start: "2025-04-11T08:56:20.355Z", stop: "2025-04-11T09:27:18.475Z", acquisition: "ACQUIRED", publication: "PUBLISHED (100.0%)" },
-    { id: "S3A-20250413144656047681", platform: "S3A", start: "2025-04-11T06:52:40.099Z", stop: "2025-04-11T08:29:40.099Z", acquisition: "ACQUIRED", publication: "PUBLISHED (94.4%)" },
-    { id: "S3A-20250413094701047678", platform: "S3A", start: "2025-04-18T05:32:20.802Z", stop: "2025-04-18T05:52:21.290Z", acquisition: "PROCESSING", publication: "PROCESSING (19.8%)" },
-    { id: "S3B-20250413054523036282", platform: "S3B", start: "2025-04-17T15:23:36.540Z", stop: "2025-04-17T17:00:36.540Z", acquisition: "ACQUIRED", publication: "PROCESSING (59.4%)" },
-    { id: "S3A-20250413062435047676", platform: "S3A", start: "2025-04-17T16:02:29.494Z", stop: "2025-04-17T17:39:29.494Z", acquisition: "ACQUIRED", publication: "PROCESSING (50.4%)" },
-    { id: "S5P-38645", platform: "S5P", start: "2025-04-17T22:18:05.000Z", stop: "2025-04-17T23:55:05.000Z", acquisition: "ACQUIRED", publication: "PROCESSING (70.8%)" },
-    { id: "S5P-38630", platform: "S5P", start: "2025-04-11T05:34:10.000Z", stop: "2025-04-11T07:11:10.000Z", acquisition: "ACQUIRED", publication: "PUBLISHED (97.9%)" },
-    { id: "S5P-38648", platform: "S5P", start: "2025-04-13T21:51:30.000Z", stop: "2025-04-13T23:28:30.000Z", acquisition: "ACQUIRED", publication: "PUBLISHED (91.7%)" },
-];
 
-const formatDataDetail = [
-    {
-        name: "S1A", acquisition: "ACQUIRED", data: [{ productType: "IW_ETA__AX", status: 0.00 }, { productType: "IW_GRDH_1A", status: 100.00 }, { productType: "IW_GRDH_1S", status: 100.00 }, { productType: "IW_OCN__2A", status: 100.00 }, { productType: "IW_OCN__2S", status, status: 100.00 }, { productType: "IW_RAW__0A", status, status: 100.00 }, { productType: "IW_RAW__0C", status, status: 100.00 }, { productType: "IW_RAW__0N", status: 100.00 }, { productType: "IW_RAW__0S", status: 100.00 }, { productType: "IW_SLC__1A", status: 100.00 }
-        ]
-    },
-    {
-        name: "S1A", acquisition: "PROCESSING", data: [{ productType: "IW_ETA__AX", status: 0.00 }, { productType: "IW_GRDH_1A", status: 0.00 }, { productType: "IW_GRDH_1S", status: 0.00 }, { productType: "IW_OCN__2A", status: 0.00 }, { productType: "IW_OCN__2S", status, status: 100.00 }, { productType: "IW_RAW__0A", status, status: 0.00 }, { productType: "IW_RAW__0C", status, status: 0.00 }, { productType: "IW_RAW__0N", status: 0.00 }, { productType: "IW_RAW__0S", status: 0.00 }, { productType: "IW_SLC__1A", status: 0.00 }
-        ]
-    },
-    {
-        name: "S1C", acquisition: "ACQUIRED", data: [{ productType: "WV_ETA__AX", status: 0.00 }, { productType: "WV_OCN__2A", status: 99.98 }, { productType: "WV_OCN__2S", status: 99.98 }, { productType: "WV_RAW__0A", status: 100.00 }, { productType: "WV_RAW__0C", status: 100.00 }, { productType: "WV_RAW__0N", status: 100.00 }, { productType: "WV_RAW__0S", status: 100.00 }, { productType: "WV_SLC__1A", status: 100.00 }, { productType: "WV_SLC__1S", status: 100.00 }
-        ]
-    },
-    {
-        name: "S1C", acquisition: "PARTIAL", data: [{ productType: "IW_GRDH_1A", status: 0.00 }, { productType: "IW_GRDH_1S", status: 0.00 }, { productType: "IW_OCN__2A", status: 0.00 }, { productType: "IW_OCN__2S", status: 0.00 }, { productType: "IW_RAW__0A", status: 100.00 }, { productType: "IW_RAW__0C", status: 100.00 }, { productType: "IW_RAW__0N", status: 100.00 }, { productType: "IW_RAW__0S", status: 94.31 }, { productType: "IW_SLC__1A", status: 0.00 }, { productType: "IW_SLC__1S", status: 0.00 }
-        ]
-    },
-    {
-        name: "S2A", acquisition: "PLANNED", data: [{ productType: "L0_", status: "24.98" }, { productType: "L1A", status: 0.00 }, { productType: "MSI_L0__DS", status: 26.88 }, { productType: "MSI_L0__GR", status: 23.08 }, { productType: "MSI_L1A_DS", status: 0.00 }, { productType: "MSI_L1A_GR", status: 0.00 }
-        ]
-    },
-    {
-        name: "S2A", acquisition: "PROCESSING", data: [{ productType: "L0_", status: 100.00 }, { productType: "L1B", status: 100.00 }, { productType: "L1C", status: 100.00 }, { productType: "L2A", status: "59.32" }, { productType: "MSI_L0__DS", status: 100.00 }, { productType: "MSI_L0__GR", status: 100.00 }, { productType: "MSI_L1B_DS", status: 100.00 }, { productType: "MSI_L1B_GR", status: 100.00 }, { productType: "MSI_L1C_DS", status: 100.00 }, { productType: "MSI_L1C_TC", status: 100.00 }
-        ]
-    },
-    {
-        name: "S2B", acquisition: "PLANNED", data: [{ productType: "L0_", status: 0.00 }, { productType: "L1B", status: 0.00 }, { productType: "L1C", status: 0.00 }, { productType: "L2A", status: 0.00 }, { productType: "MSI_L0__DS", status: 0.00 }, { productType: "MSI_L0__GR", status: 0.00 }, { productType: "MSI_L1B_DS", status: 0.00 }, { productType: "MSI_L1B_GR", status: 0.00 }, { productType: "MSI_L1C_DS", status: 0.00 }, { productType: "MSI_L2A_DS", status: 0.00, }
-        ]
-    },
-    {
-        name: "S2A", acquisition: "UNAVAILABLE", data: [{ productType: "L0_", status: 0.00 }, { productType: "L1B", status: 0.00 }, { productType: "L1C", status: 0.00 }, { productType: "L2A", status: 0.00 }, { productType: "MSI_L0__DS", status: 0.00 }, { productType: "MSI_L0__GR", status: 0.00 }, { productType: "MSI_L1B_DS", status: 0.00 }, { productType: "MSI_L1B_GR", status: 0.00 }, { productType: "MSI_L1C_DS", status: 0.00 }, { productType: "MSI_L2A_DS", status: 0.00, }
-        ]
-    },
-    {
-        name: "S3A", acquisition: "PROCESSING", data: [{ productType: "SL_2_FRP___#NT", status: 0.00 }, { productType: "SL_2_LST___#NR", status: 100.00 }, { productType: "SL_2_LST___#NT", status: 0.00 }, { productType: "SR_0_SRA___#NR", status: 100.00 }, { productType: "SR_0_SRA___#ST", status: 0.00 }, { productType: "SR_1_LAN_RD#NR", status: 100.00 }, { productType: "SR_1_LAN_RD#NT", status: 0.00 }, { productType: "SR_1_LAN_RD#ST", status: 0.00 }, { productType: "SR_1_SRA_A_#NR", status: 100.00 }, { productType: "SR_1_SRA_A_#NT", status: 0.00, }
-        ]
-    },
-    {
-        name: "S3B", acquisition: "ACQUIRED", data: [{ productType: "DO_0_DOP___#NR", status: 100.00 }, { productType: "DO_0_NAV___#AL", status: 100.00 }, { productType: "GN_0_GNS___#NR", status: 100.00 }, { productType: "MW_0_MWR___#NR", status: 100.00 }, { productType: "MW_1_CAL___#NR", status: 100.00 }, { productType: "MW_1_MWR___#NR", status: 100.00 }, { productType: "MW_1_MWR___#NT", status: 0.00 }, { productType: "MW_1_MWR___#ST", status: 100.00 }, { productType: "OL_0_EFR___#NR", status: 100.00 }, { productType: "OL_1_EFR___#NR", status: 100.00 }]
-    },
-    {
-        name: "S5P", acquisition: "ACQUIRED", data: [{ productType: "OFFL_L1B_RA_BD1", status: 100.00 }, { productType: "OFFL_L1B_RA_BD2", status: 100.00 }, { productType: "OFFL_L1B_RA_BD3", status: 100.00 }, { productType: "OFFL_L1B_RA_BD4", status: 100.00 }, { productType: "OFFL_L1B_RA_BD5", status: 100.00 }, { productType: "OFFL_L1B_RA_BD6", status: 100.00 }, { productType: "OFFL_L1B_RA_BD7", status: 100.00 }, { productType: "OFFL_L1B_RA_BD8", status: 100.00, productType: "OFFL_L2__AER_AI", status: 0.00 }, { productType: "OFFL_L2__AER_LH", status: 0.00, }]
-    }
-];
+const mockDataTakes = [];
+
+const formatDataDetail = [];
+
 
 class Datatakes {
     constructor(mockDataTakes, formatDataDetail) {
@@ -101,15 +34,232 @@ class Datatakes {
 
     init() {
         document.addEventListener("DOMContentLoaded", () => {
-            this.populateDataList();
+            // Hide EC and Copernicus logos from header
+            $('#copernicus-logo-header').hide();
+            $('#ec-logo-header').hide();
+
+
+
+            /*limit the diplay data takes*/
+            this.displayedCount = 0;
+            this.itemsPerPage = 10;
+
+
+            // Populate the data list and set default view
+            this.populateDataList(false);
             this.attachEventListeners();
             this.setDefaultView();
+
+
+            // Retrieve the user profile to determine quarter authorization
+            ajaxCall(
+                '/api/auth/quarter-authorized',
+                'GET',
+                {},
+                this.quarterAuthorizedProcess,
+                this.errorLoadAuthorized
+            );
+
+            // Retrieve the time select combo box instance
+            const time_period_sel = document.getElementById('time-period-select');
+
+            // Apply filtering on page load
+            if (this.filterDatatakesOnPageLoad()) {
+                time_period_sel.value = 'last-quarter';
+            } else {
+                time_period_sel.value = 'week';
+            }
+
+            // Add event listener for user selection
+            time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+
+            // Load datatakes for the selected period
+            this.loadDatatakesInPeriod(time_period_sel.value);
+
             console.log("Datatakes initialized.");
+
         });
     }
 
     bindEvents() {
         document.getElementById("infoButton").addEventListener("click", () => this.toggleInfoTable());
+    }
+
+    filterDatatakesOnPageLoad() {
+        var queryString = window.location.search;
+        var urlParams = new URLSearchParams(queryString);
+        var searchFilter = urlParams.get('search');
+        if (searchFilter) {
+            console.info('Accessing page with search filter: ' + searchFilter);
+            //var filteredData = this.dataTakeTable.search(searchFilter).draw();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    on_timeperiod_change() {
+        var time_period_sel = document.getElementById('time-period-select')
+        console.log("Time period changed to " + time_period_sel.value)
+        this.loadDatatakesInPeriod(time_period_sel.value);
+    }
+
+    quarterAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            var time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel.options.length == 4) {
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
+            }
+        }
+    }
+
+    errorLoadAuthorized(response) {
+        return;
+    }
+
+    loadDatatakesInPeriod(selected_time_period) {
+
+        // Acknowledge the retrieval of events with impact on DTs
+        console.info("Invoking events retrieval...");
+        asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
+            this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
+
+        // Acknowledge the invocation of rest APIs
+        console.info("Invoking Datatakes retrieval...");
+        if (selected_time_period === 'day') {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'week') {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-7d', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'month') {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-30d', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'prev-quarter') {
+            asyncAjaxCall('/api/worker/cds-datatakes/previous-quarter', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-quarter', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        }
+
+        return;
+    }
+
+    successLoadAnomalies(response) {
+
+        // Loop over anomalies, and bind every impaired DT with an anomaly
+        var rows = format_response(response);
+        for (var i = 0; i < rows.length; ++i) {
+
+            // Auxiliary variables
+            var anomaly = rows[i];
+            var datatakes_completeness = format_response(anomaly["datatakes_completeness"]);
+            for (var index = 0; index < datatakes_completeness.length; ++index) {
+                try {
+                    for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
+                        var datatake_id = Object.values(value)[0];
+                        var completeness = this.calcDatatakeCompleteness(Object.values(value));
+                        if (completeness < this.completeness_threshold) {
+                            this.datatakesEventsMap[datatake_id] = anomaly;
+                        }
+                    }
+                } catch (ex) {
+                    console.warn("Error ", ex);
+                    console.warn('An error occurred, while parsing the product level count string: ' +
+                        datatakes_completeness[index].replaceAll('\'', '\"'));
+                }
+            }
+        }
+        return;
+    }
+
+    errorLoadAnomalies(response) {
+        console.error(response);
+    }
+
+    successLoadDatatakes(response) {
+        const rows = format_response(response);
+        console.info('Datatakes successfully retrieved');
+        console.info("Number of records: " + rows.length);
+
+        // Prepare the datatake list
+        const datatakes = [];
+
+        for (const row of rows) {
+            const element = row['_source'];
+
+            // Build satellite unit name (e.g., "S1A (IW)")
+            let sat_unit = element['satellite_unit'];
+            if (sat_unit.includes('S1') || sat_unit.includes('S2')) {
+                sat_unit += ` (${element['instrument_mode']})`;
+            }
+
+            // Generate the datatake key (convert S1A IDs if needed)
+            let datatake_id = element['datatake_id'];
+            if (sat_unit.includes('S1')) {
+                datatake_id = this.overrideS1DatatakesId(datatake_id);
+            }
+
+            // Parse sensing time range
+            const sensing_start = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+            const sensing_stop = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+
+            // Push to list (simplified structure for UI display)
+            datatakes.push({
+                id: datatake_id,
+                satellite: sat_unit,
+                start: sensing_start,
+                stop: sensing_stop,
+                completenessStatus: element['completeness_status'],
+                raw: element // in case you need full access later
+            });
+        }
+
+        // Save the processed datatakes to the instance variable used by populateDataList
+        this.mockDataTakes = datatakes;
+
+        // Reset pagination count before repopulating
+        this.displayedCount = 0;
+
+        // Populate the UI list
+        this.populateDataList(false);
+    }
+
+    errorLoadDatatake(response) {
+        console.error(response)
+        return;
+    }
+
+    calcDatatakeCompleteness(dtCompleteness) {
+        var completeness = 0;
+        var count = 0;
+        for (var i = 1; i < dtCompleteness.length; ++i) {
+            count++;
+            completeness += dtCompleteness[i];
+        }
+        return (completeness / count);
+    }
+
+    overrideS1DatatakesId(datatake_id) {
+        let num = datatake_id.substring(4);
+        let hexaNum = parseInt(num).toString(16);
+        return (datatake_id + ' (' + hexaNum + ')');
+    }
+
+    refreshDatatable() {
+
+        // Acknowledge the refresh of data displayed in the Datatakes table
+        console.info('Refreshing Datatakes table data...');
+
+        // Rebuild data to be displayed
+        var allMissionData = new Array();
+        //allMissionData.push.apply(allMissionData, this.datatakeRows);
+
+        // Empty the table and reload rows
+        /*if (this.dataTakeTable) {
+            this.dataTakeTable.clear().rows.add(allMissionData).draw();
+        }*/
     }
 
     getGroundStation(id) {
@@ -120,11 +270,21 @@ class Datatakes {
         return "Sentinel";
     }
 
-    populateDataList() {
+    populateDataList(append = false) {
         const dataList = document.getElementById("dataList");
-        dataList.innerHTML = "";
 
-        this.mockDataTakes.forEach(take => {
+        // If not appending, clear existing items
+        if (!append) {
+            dataList.innerHTML = "";
+            this.displayedCount = 0;
+        }
+
+        const nextItems = this.mockDataTakes.slice(
+            this.displayedCount,
+            this.displayedCount + this.itemsPerPage
+        );
+
+        nextItems.forEach(take => {
             const li = document.createElement("li");
             const a = document.createElement("a");
             a.href = "#";
@@ -135,7 +295,18 @@ class Datatakes {
             li.appendChild(a);
             dataList.appendChild(li);
         });
+
+        this.displayedCount += nextItems.length;
+
+        // Show or hide "Load More" button
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        if (this.displayedCount >= this.mockDataTakes.length) {
+            loadMoreBtn.style.display = "none";
+        } else {
+            loadMoreBtn.style.display = "block";
+        }
     }
+
 
     toggleTableSection() {
         const tableSection = document.getElementById("tableSection");
@@ -168,56 +339,104 @@ class Datatakes {
         }
     }
 
-    toggleInfoTable() {
+    async toggleInfoTable() {
+        this.fromInfoIcon = true;
+    
         const infoTable = document.getElementById("infoTableContainer");
         const paragraph = document.querySelector(".chart-container h4");
         if (!infoTable || !paragraph) {
             console.error("Info table container or paragraph not found!");
             return;
         }
-
+    
         let fullText = paragraph.textContent.trim().replace(/_/g, "-");
         const parts = fullText.split("-");
-        const selectedId = parts[0] + "-" + parts[1];
-
-        const matchingItem = this.mockDataTakes.find(item => item.id.includes(selectedId));
-        if (!matchingItem) {
-            console.warn("No matching item found in mockDataTakes.");
-            return;
-        }
-
-        const acquisitionName = matchingItem.acquisition;
-        const platformName = matchingItem.platform.split('(')[0].trim().toLowerCase();
-
-        const filteredData = this.formatDataDetail.filter(item => {
-            const itemName = item.name ? item.name.toString().toLowerCase() : "";
-            return itemName === platformName && item.acquisition?.toLowerCase() === acquisitionName.toLowerCase();
-        });
-
-        this.renderInfoTable(filteredData);
-
-        if (infoTable.style.display === "none" || infoTable.style.display === "") {
-            infoTable.style.display = "block";
-            infoTable.style.opacity = "0";
-            setTimeout(() => {
+        const selectedId = parts.slice(0, 3).join("-");
+    
+        console.log("Looking for datatake ID:", selectedId);
+    
+        try {
+            await this.renderInfoTable(selectedId);
+    
+            const shouldShow = infoTable.style.display === "none" || infoTable.style.display === "";
+            if (shouldShow) {
+                infoTable.style.display = "block";
+                infoTable.style.opacity = "0";
+                setTimeout(() => {
+                    infoTable.style.transition = "opacity 0.3s ease-in-out";
+                    infoTable.style.opacity = "1";
+                }, 50);
+            } else {
                 infoTable.style.transition = "opacity 0.3s ease-in-out";
-                infoTable.style.opacity = "1";
-            }, 50);
-        } else {
-            infoTable.style.transition = "opacity 0.3s ease-in-out";
-            infoTable.style.opacity = "0";
-            setTimeout(() => {
-                infoTable.style.display = "none";
-            }, 300);
+                infoTable.style.opacity = "0";
+                setTimeout(() => {
+                    infoTable.style.display = "none";
+                }, 300);
+            }
+        } catch (err) {
+            console.error("Failed to render info table for datatake:", selectedId, err);
+        } finally {
+            this.fromInfoIcon = false;
         }
     }
+    
 
-    renderInfoTable(dataArray, page = 1) {
+
+
+    async renderInfoTable(dataInput, page = 1) {
         const tableBody = document.getElementById("infoTableBody");
         const paginationControls = document.getElementById("paginationControls");
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
+        let dataArray = [];
+
+        // If a string (datatake ID) is passed, fetch details first
+        if (typeof dataInput === "string") {
+            const datatake_id = dataInput.split('(')[0].trim();
+            $('#datatake-details').empty().html(`
+                <div class="spinner">
+                    <div class="bounce1"></div>
+                    <div class="bounce2"></div>
+                    <div class="bounce3"></div>
+                </div>`);
+
+            try {
+                const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
+                if (!response.ok) throw new Error("Failed to fetch datatake details");
+                const json = await response.json();
+                const datatake = format_response(json)[0];
+
+                // Format data from API to match table structure
+                for (let key of Object.keys(datatake)) {
+                    if (key.includes('local_percentage')) {
+                        dataArray.push({
+                            productType: key.replace('_local_percentage', ''),
+                            status: datatake[key].toFixed(2)
+                        });
+                    }
+                }
+
+                $('#datatake-details').empty().append(`
+                    <div class="form-group">
+                        <label>Datatake ID: ${datatake.key}</label>
+                        <label style="margin-left: 20px;">Timeliness: ${datatake.timeliness}</label>
+                    </div>
+                `);
+            } catch (err) {
+                $('#datatake-details').append(`
+                    <div class="form-group">
+                        <label>An error occurred while retrieving the datatake details</label>
+                    </div>
+                `);
+                console.error(err);
+                return;
+            }
+        } else {
+            dataArray = dataInput;
+        }
+
+        // Proceed with rendering the table
         if (!dataArray || dataArray.length === 0) {
             const row = document.createElement("tr");
             const cell = document.createElement("td");
@@ -228,24 +447,23 @@ class Datatakes {
             return;
         }
 
-        const flattenedData = dataArray.flatMap(item => item.data);
         this.currentDataArray = dataArray;
-        const totalItems = flattenedData.length;
+        const totalItems = dataArray.length;
         const totalPages = Math.ceil(totalItems / this.itemsPerPage);
         this.currentPage = page;
 
         const startIndex = (page - 1) * this.itemsPerPage;
         const endIndex = Math.min(startIndex + this.itemsPerPage, totalItems);
-        const pageItems = flattenedData.slice(startIndex, endIndex);
+        const pageItems = dataArray.slice(startIndex, endIndex);
 
-        pageItems.forEach(platform => {
+        pageItems.forEach(item => {
             const row = document.createElement("tr");
 
             const productTypeCell = document.createElement("td");
-            productTypeCell.textContent = platform.productType || "-";
+            productTypeCell.textContent = item.productType || "-";
 
             const statusCell = document.createElement("td");
-            statusCell.textContent = platform.status ?? "-";
+            statusCell.textContent = item.status ?? "-";
 
             row.appendChild(productTypeCell);
             row.appendChild(statusCell);
@@ -271,10 +489,6 @@ class Datatakes {
         }
     }
 
-    extractPercentage(str) {
-        const match = str.match(/\(([\d.]+)%\)/);
-        return match ? parseFloat(match[1]) : 0;
-    }
 
     updateCharts(linkKey) {
         const donutChartContainer = document.querySelector("#missionDonutChart");
@@ -294,36 +508,71 @@ class Datatakes {
             PUBLISHED: ['#4caf50', '#A5D6A7'],
             UNAVAILABLE: ['#FF0000', '#FF9999'],
             PLANNED: ['#9e9e9e', '#E0E0E0'],
-            PROCESSING: ['#9e9e9e', '#E0E0E0']
+            PROCESSING: ['#9e9e9e', '#E0E0E0'],
+            UNKNOWN: ['#666666', '#999999'] // Fallback for unknown publication types
         };
+
 
         const series = [];
         const labels = [];
         const colors = [];
+        // Collect and inspect unique publication types
+        const uniquePublicationTypes = new Set();
+
+        const pubValues = new Set();
+        relevantData.forEach(entry => {
+            const pubVal = entry.raw;
+            pubValues.add(pubVal);
+        });
+        console.log("Unique raw.publication values from backend:", Array.from(pubValues));
+
 
         relevantData.forEach(entry => {
-            const type = entry.publication?.split(" ")[0] || "UNKNOWN";
-            const percentage = this.extractPercentage(entry.publication || "");
+            const raw = entry.raw?.completeness_status?.PUB || {};
+            const publicationType = raw.status?.toUpperCase() || "UNKNOWN";
+            uniquePublicationTypes.add(publicationType);
+            const percentage = parseFloat(raw.percentage) || 0;
             const remaining = Math.max(0, 100 - percentage);
 
-            labels.push(`Complete`);
-            series.push(parseFloat(percentage.toFixed(2)));
-            colors.push((colorMap[type] || colorMap["UNKNOWN"])[0]);
+            const [completeColor, missingColor] = colorMap[publicationType] || colorMap["UNKNOWN"];
 
-            labels.push(`Missing`);
+            // Add "Complete" slice
+            labels.push("Complete");
+            series.push(parseFloat(percentage.toFixed(2)));
+            colors.push(completeColor);
+
+            // Add "Missing" slice
+            labels.push("Missing");
             series.push(parseFloat(remaining.toFixed(2)));
-            colors.push((colorMap[type] || colorMap["UNKNOWN"])[1]);
+            colors.push(missingColor);
         });
 
-        if (this.donutChartInstance) this.donutChartInstance.destroy();
+        console.log(" Unique publication types found in data:", Array.from(uniquePublicationTypes));
 
+        // Destroy existing chart before rendering a new one
+        if (this.donutChartInstance) {
+            this.donutChartInstance.destroy();
+        }
+
+        // Chart configuration
         const options = {
             chart: { type: 'donut', height: 350, toolbar: { show: false } },
             series,
             labels,
-            tooltip: { y: { formatter: val => `${val.toFixed(2)}%` } },
             colors,
-            states: { hover: { filter: { type: 'darken', value: 0.15 } } },
+            tooltip: {
+                y: {
+                    formatter: val => `${val.toFixed(2)}%`
+                }
+            },
+            states: {
+                hover: {
+                    filter: {
+                        type: 'darken',
+                        value: 0.15
+                    }
+                }
+            },
             legend: {
                 show: true,
                 position: 'right',
@@ -342,10 +591,8 @@ class Datatakes {
                                 label: 'Completion',
                                 color: '#FFFFFF',
                                 formatter: () => {
-                                    const totalPercent = series
-                                        .filter((_, i) => i % 2 === 0)
-                                        .reduce((sum, val) => sum + val, 0);
-                                    const avg = totalPercent / (series.length / 2);
+                                    const total = series.filter((_, i) => i % 2 === 0).reduce((acc, val) => acc + val, 0);
+                                    const avg = total / (series.length / 2);
                                     return `${avg.toFixed(1)}%`;
                                 }
                             }
@@ -370,81 +617,129 @@ class Datatakes {
     filterSidebarItems() {
         const selectedMission = document.getElementById("mission-select").value.toUpperCase();
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
-        const links = document.querySelectorAll("#dataList li");
+        const acquisitionStatusFilter = document.getElementById("acqStatusFilter")?.value.toUpperCase();
 
-        links.forEach((li) => {
-            const text = li.textContent.toUpperCase().trim();
-            const matchesMission = !selectedMission || text.startsWith(selectedMission);
-            const matchesSearch = searchQuery.split(/\s+/).every(q => text.includes(q));
+        const dataList = document.getElementById("dataList");
+        dataList.innerHTML = ""; // Clear the list for re-population
 
-            if (matchesMission && matchesSearch) {
-                li.style.display = "";
-            } else {
-                li.style.display = "none";
-            }
+        const filteredItems = this.mockDataTakes.filter(take => {
+            const id = take.id.toUpperCase();
+            const satellite = (take.satellite || take.raw?.satellite_unit || "").toUpperCase();
+            const acqStatus = take.raw?.completeness_status?.ACQ?.status?.toUpperCase() || "UNKNOWN";
+
+            const matchesMission = !selectedMission || id.startsWith(selectedMission);
+            const matchesSearch = !searchQuery || searchQuery.split(/\s+/).every(q =>
+                id.includes(q) || satellite.includes(q)
+            );
+            const matchesAcqStatus = !acquisitionStatusFilter || acqStatus === acquisitionStatusFilter;
+
+            return matchesMission && matchesSearch && matchesAcqStatus;
         });
+
+        if (filteredItems.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "No results found";
+            li.style.color = "#aaa";
+            dataList.appendChild(li);
+            return;
+        }
+
+        // Re-render the filtered list
+        filteredItems.forEach(take => {
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = "#";
+            a.className = "filter-link";
+            a.dataset.filterType = "groundStation";
+            a.dataset.filterValue = this.getGroundStation(take.id);
+            a.textContent = take.id;
+            li.appendChild(a);
+            dataList.appendChild(li);
+        });
+
+        // Optionally hide the Load More button since all matching items are shown
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        if (loadMoreBtn) loadMoreBtn.style.display = "none";
     }
+
 
     renderTableWithoutPagination(dataset, selectedId = '', searchQuery = '') {
         const tableBody = document.getElementById("dataTableBody");
         const tableSection = document.getElementById("tableSection");
-
+    
         if (!tableSection || !tableBody) {
             console.error("Table section or body not found in the DOM!");
             return;
         }
-
-        tableSection.style.display = "none";
+    
+        // Only hide the table section if we're NOT coming from the info icon
+        if (!this.fromInfoIcon) {
+            tableSection.style.display = "none";
+        }
+    
         tableBody.innerHTML = "";
-
+    
+        // Find the selected data entry
         const selectedData = dataset.find(item => item.id === selectedId);
         if (!selectedData) {
             console.warn(`No data found for: ${selectedId}`);
             return;
         }
-
+    
         let data = [selectedData];
+    
+        // Optional search filtering
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             data = data.filter(item =>
                 item.id.toLowerCase().includes(query) ||
-                item.platform.toLowerCase().includes(query)
+                item.satellite.toLowerCase().includes(query)
             );
         }
-
+    
+        // Render each row
         data.forEach(row => {
-            const acquisitionStatus = row.acquisition?.toUpperCase() || "";
-            const publicationStatus = row.publication?.toUpperCase() || "";
-
-            const acquisitionColor = acquisitionStatus.includes("ACQUIRED") ? "#0aa41b" :
-                acquisitionStatus.includes("UNAVAILABLE") ? "#FF0000" :
-                    acquisitionStatus.includes("PARTIAL") ? "#FFD700" : "#818181";
-
-            const publicationColor = publicationStatus.includes("PUBLISHED") ? "#0aa41b" :
-                publicationStatus.includes("UNAVAILABLE") ? "#FF0000" :
-                    publicationStatus.includes("PARTIAL") ? "#FFD700" : "#818181";
-
+            const raw = row.raw || {};
+            const completeness = raw.completeness_status || {};
+    
+            const acqStatus = completeness.ACQ?.status?.toUpperCase() || "UNKNOWN";
+            const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
+    
+            const platform = row.satellite || raw.satellite_unit || "N/A";
+            const startTime = row.start ? moment(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
+            const stopTime = row.stop ? moment(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
+    
+            const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
+                                     acqStatus === "UNAVAILABLE" ? "#FF0000" :
+                                     acqStatus === "PARTIAL" ? "#FFD700" : "#818181";
+    
+            const publicationColor = pubStatus === "PUBLISHED" ? "#0aa41b" :
+                                     pubStatus === "UNAVAILABLE" ? "#FF0000" :
+                                     pubStatus === "PARTIAL" ? "#FFD700" : "#818181";
+    
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${row.id}</td>
-                <td>${row.platform}</td>
-                <td>${row.start}</td>
-                <td>${row.stop}</td>
-                <td><span style="color:${acquisitionColor}">${row.acquisition}</span></td>
-                <td><span style="color:${publicationColor}">${row.publication}</span></td>
+                <td>${platform}</td>
+                <td>${startTime}</td>
+                <td>${stopTime}</td>
+                <td><span style="color:${acquisitionColor}">${acqStatus}</span></td>
+                <td><span style="color:${publicationColor}">${pubStatus}</span></td>
                 <td>
                     <button type="button" style="color: #8c90a0" class="btn-link" data-toggle="modal"
                         data-target="#showDatatakeDetailsModal"
-                        onclick="datatakes.showDatatakeDetails('${row.id}')">
+                        onclick="datatakes.toggleInfoTable()">
                         <i class="la flaticon-search-1"></i>
                     </button>
                 </td>
             `;
             tableBody.appendChild(tr);
         });
-
+    
+        // Always show the section after rows are rendered
         tableSection.style.display = "block";
     }
+    
 
     updateTitleAndDate(selectedKey) {
         const titleSpan = document.querySelector(".chart-container h4 .title-text");
@@ -464,19 +759,23 @@ class Datatakes {
     }
 
     resetFilters() {
-        document.getElementById("mission-select").value = "";
-        document.getElementById("searchInput").value = "";
+        // Reset form inputs
+        const missionSelect = document.getElementById("mission-select");
+        const searchInput = document.getElementById("searchInput");
+        if (missionSelect) missionSelect.value = "";
+        if (searchInput) searchInput.value = "";
+
+        // Show all list items and remove active classes
         const items = document.querySelectorAll("#dataList li");
         let firstVisibleLink = null;
 
-        // Make all items visible
         items.forEach(item => {
             item.style.display = "";
+            const link = item.querySelector(".filter-link");
+            if (link) link.classList.remove("active");
         });
-        // Remove 'active' from all filter-link anchors
-        document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
 
-        // Find the first visible .filter-link inside <li>
+        // Find the first visible filter-link
         for (const item of items) {
             if (item.style.display !== "none") {
                 const link = item.querySelector(".filter-link");
@@ -487,21 +786,22 @@ class Datatakes {
             }
         }
 
-        // Highlight and update using the first visible link
+        // Activate and update based on the first visible link
         if (firstVisibleLink) {
             firstVisibleLink.classList.add("active");
             const selectedKey = firstVisibleLink.textContent.trim();
 
             this.updateCharts(selectedKey);
-            this.renderTableWithoutPagination(mockDataTakes, selectedKey);
+            this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
             this.updateTitleAndDate(selectedKey);
         } else {
             console.warn("No visible item found after resetting filters.");
         }
 
-        this.hideTable(); // Hide the table when filters are reset
-
+        // Optionally hide the info table
+        this.hideTable();
     }
+
 
     attachEventListeners() {
         const searchInput = document.getElementById("searchInput");
@@ -550,6 +850,12 @@ class Datatakes {
             resetBtn.addEventListener("click", () => this.resetFilters());
         }
 
+        // Load More Button 
+        document.getElementById("loadMoreBtn").addEventListener("click", () => {
+            this.populateDataList(true); // append = true
+        });
+
+
         // Sidebar link click handling
         dataList.addEventListener("click", (e) => {
             const target = e.target.closest("a.filter-link");
@@ -560,6 +866,8 @@ class Datatakes {
             // Remove active classes
             document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
             target.classList.add("active");
+
+
 
             const selectedKey = target.textContent.trim();
             this.updateCharts(selectedKey);
