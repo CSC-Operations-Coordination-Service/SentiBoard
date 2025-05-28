@@ -28,8 +28,8 @@ class Datatakes {
         this.itemsPerPage = 7;
         this.currentDataArray = [];
         this.donutChartInstance = null;
-
-        this.bindEvents();
+        this.resizeListenerAttached = false;
+        //this.bindEvents();
     }
 
     init() {
@@ -81,9 +81,9 @@ class Datatakes {
         });
     }
 
-    bindEvents() {
+    /*bindEvents() {
         document.getElementById("infoButton").addEventListener("click", () => this.toggleInfoTable());
-    }
+    }*/
 
     filterDatatakesOnPageLoad() {
         var queryString = window.location.search;
@@ -205,14 +205,14 @@ class Datatakes {
             const sensing_start = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
             const sensing_stop = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
 
-            // Push to list (simplified structure for UI display)
+            // Push to list 
             datatakes.push({
                 id: datatake_id,
                 satellite: sat_unit,
                 start: sensing_start,
                 stop: sensing_stop,
                 completenessStatus: element['completeness_status'],
-                raw: element // in case you need full access later
+                raw: element
             });
         }
 
@@ -224,7 +224,7 @@ class Datatakes {
 
         // Populate the UI list
         this.populateDataList(false);
-        // ✅ If at least one datatake exists, update title and render
+        // If at least one datatake exists, update title and render
         if (datatakes.length > 0) {
             const first = datatakes[0];
 
@@ -240,6 +240,9 @@ class Datatakes {
                 const formattedStart = moment(first.start).format("MMM DD, YYYY HH:mm:ss");
                 subtitle.textContent = `${first.satellite} - ${formattedStart}`;
             }
+
+            //Extract linkKey from datatake ID and update the chart
+            this.updateCharts(first);
         }
 
     }
@@ -290,41 +293,82 @@ class Datatakes {
 
     populateDataList(append = false) {
         const dataList = document.getElementById("dataList");
+        const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
 
-        // If not appending, clear existing items
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
         }
 
-        const nextItems = this.mockDataTakes.slice(
-            this.displayedCount,
-            this.displayedCount + this.itemsPerPage
-        );
+        const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
+
+        if (nextItems.length === 0 && !append) {
+            const li = document.createElement("li");
+            li.textContent = "No results found";
+            li.style.color = "#aaa";
+            dataList.appendChild(li);
+            document.getElementById("loadMoreBtn").style.display = "none";
+            return;
+        }
 
         nextItems.forEach(take => {
             const li = document.createElement("li");
+
+            const containerDiv = document.createElement("div");
+            containerDiv.style.display = "flex";
+            containerDiv.style.alignItems = "center";
+            containerDiv.style.gap = "8px";
+
             const a = document.createElement("a");
             a.href = "#";
             a.className = "filter-link";
             a.dataset.filterType = "groundStation";
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
-            li.appendChild(a);
+
+            // Add click event to update chart
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                dataList.querySelectorAll('a.selected').forEach(el => el.classList.remove('selected'));
+                a.classList.add('selected');
+
+                this.updateCharts(take);
+
+                const titleSpan = document.querySelector(".title-text");
+                if (titleSpan) titleSpan.textContent = take.id;
+
+                const subtitle = document.querySelector(".chart-container p");
+                if (subtitle) {
+                    const formattedStart = moment(take.start).format("MMM DD, YYYY HH:mm:ss");
+                    subtitle.textContent = `${take.satellite} - ${formattedStart}`;
+                }
+            });
+
+            // Add status circle
+            const statusCircle = document.createElement("div");
+            const status = take.completenessStatus?.ACQ?.status?.toLowerCase() || "unknown";
+            statusCircle.className = `status-circle-dt-${status}`;
+
+            containerDiv.appendChild(a);
+            containerDiv.appendChild(statusCircle);
+            li.appendChild(containerDiv);
             dataList.appendChild(li);
         });
 
         this.displayedCount += nextItems.length;
 
-        // Show or hide "Load More" button
         const loadMoreBtn = document.getElementById("loadMoreBtn");
-        if (this.displayedCount >= this.mockDataTakes.length) {
+        if (this.displayedCount >= data.length) {
             loadMoreBtn.style.display = "none";
         } else {
             loadMoreBtn.style.display = "block";
         }
-    }
 
+        if (!append && nextItems.length > 0) {
+            const firstLink = dataList.querySelector('a');
+            if (firstLink) firstLink.click();
+        }
+    }
 
     toggleTableSection() {
         const tableSection = document.getElementById("tableSection");
@@ -397,9 +441,6 @@ class Datatakes {
             this.fromInfoIcon = false;
         }
     }
-
-
-
 
     async renderInfoTable(dataInput, page = 1) {
         const tableBody = document.getElementById("infoTableBody");
@@ -507,7 +548,6 @@ class Datatakes {
         }
     }
 
-
     updateCharts(linkKey) {
         const donutChartContainer = document.querySelector("#missionDonutChart");
         if (!donutChartContainer) {
@@ -517,7 +557,7 @@ class Datatakes {
 
         const relevantData = this.mockDataTakes.filter(dt => dt.id.startsWith(linkKey));
         if (relevantData.length === 0) {
-            console.warn(`No data found for platform: ${linkKey}`);
+            console.warn(`No data found for platform: ${relevantData}`);
             return;
         }
 
@@ -622,6 +662,13 @@ class Datatakes {
 
         this.donutChartInstance = new ApexCharts(donutChartContainer, options);
         this.donutChartInstance.render();
+        // Ensure responsive resizing
+        window.addEventListener("resize", () => {
+            if (this.donutChartInstance?.resize) {
+                this.donutChartInstance.resize();
+            }
+        });
+        this.resizeListenerAttached = true;
     }
 
     hideTable() {
@@ -637,49 +684,30 @@ class Datatakes {
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
         const acquisitionStatusFilter = document.getElementById("acqStatusFilter")?.value.toUpperCase();
 
-        const dataList = document.getElementById("dataList");
-        dataList.innerHTML = ""; // Clear the list for re-population
-
-        const filteredItems = this.mockDataTakes.filter(take => {
+        this.filteredDataTakes = this.mockDataTakes.filter(take => {
             const id = take.id.toUpperCase();
             const satellite = (take.satellite || take.raw?.satellite_unit || "").toUpperCase();
             const acqStatus = take.raw?.completeness_status?.ACQ?.status?.toUpperCase() || "UNKNOWN";
+            const pubStatus = take.raw?.completeness_status?.PUB?.status?.toUpperCase() || "UNKNOWN";
+            const overallStatus = take.completenessStatus ? JSON.stringify(take.completenessStatus).toUpperCase() : "";
 
             const matchesMission = !selectedMission || id.startsWith(selectedMission);
             const matchesSearch = !searchQuery || searchQuery.split(/\s+/).every(q =>
-                id.includes(q) || satellite.includes(q)
+                id.includes(q) ||
+                satellite.includes(q) ||
+                acqStatus.includes(q) ||
+                pubStatus.includes(q) ||
+                overallStatus.includes(q)
             );
+
             const matchesAcqStatus = !acquisitionStatusFilter || acqStatus === acquisitionStatusFilter;
 
             return matchesMission && matchesSearch && matchesAcqStatus;
         });
 
-        if (filteredItems.length === 0) {
-            const li = document.createElement("li");
-            li.textContent = "No results found";
-            li.style.color = "#aaa";
-            dataList.appendChild(li);
-            return;
-        }
-
-        // Re-render the filtered list
-        filteredItems.forEach(take => {
-            const li = document.createElement("li");
-            const a = document.createElement("a");
-            a.href = "#";
-            a.className = "filter-link";
-            a.dataset.filterType = "groundStation";
-            a.dataset.filterValue = this.getGroundStation(take.id);
-            a.textContent = take.id;
-            li.appendChild(a);
-            dataList.appendChild(li);
-        });
-
-        // Optionally hide the Load More button since all matching items are shown
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-        if (loadMoreBtn) loadMoreBtn.style.display = "none";
+        this.displayedCount = 0; // reset count for pagination
+        this.populateDataList(false); // re-render filtered list from scratch
     }
-
 
     renderTableWithoutPagination(dataset, selectedId = '', searchQuery = '') {
         const tableBody = document.getElementById("dataTableBody");
@@ -758,8 +786,6 @@ class Datatakes {
         tableSection.style.display = "block";
     }
 
-
-
     updateTitleAndDate(selectedKey) {
         const titleSpan = document.querySelector(".chart-container h4 .title-text");
         const dateElement = document.querySelector(".chart-container p.text-left");
@@ -778,59 +804,35 @@ class Datatakes {
     }
 
     resetFilters() {
-        // Reset form inputs
+        // Reset filter form inputs
         const missionSelect = document.getElementById("mission-select");
         const searchInput = document.getElementById("searchInput");
+        const acqStatusFilter = document.getElementById("acqStatusFilter");
+
         if (missionSelect) missionSelect.value = "";
         if (searchInput) searchInput.value = "";
+        if (acqStatusFilter) acqStatusFilter.value = "";
+        // Ensure internal state is cleared
+        this.filteredDataTakes = []; // or null or undefined
 
-        // Show all list items and remove active classes
-        const items = document.querySelectorAll("#dataList li");
-        let firstVisibleLink = null;
 
-        items.forEach(item => {
-            item.style.display = "";
-            const link = item.querySelector(".filter-link");
-            if (link) link.classList.remove("active");
-        });
+        // Re-run filtering logic which will default to mockDataTakes
+        this.filterSidebarItems();
 
-        // Find the first visible filter-link
-        for (const item of items) {
-            if (item.style.display !== "none") {
-                const link = item.querySelector(".filter-link");
-                if (link) {
-                    firstVisibleLink = link;
-                    break;
-                }
-            }
-        }
-
-        // Activate and update based on the first visible link
-        if (firstVisibleLink) {
-            firstVisibleLink.classList.add("active");
-            const selectedKey = firstVisibleLink.textContent.trim();
-
-            this.updateCharts(selectedKey);
-            this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
-            this.updateTitleAndDate(selectedKey);
-        } else {
-            console.warn("No visible item found after resetting filters.");
-        }
-
-        // Optionally hide the info table
+        // Hide table, as expected
         this.hideTable();
     }
-
 
     attachEventListeners() {
         const searchInput = document.getElementById("searchInput");
         const dataList = document.getElementById("dataList");
-        const infoButton = document.getElementById("infoButton");
+        //const infoButton = document.getElementById("infoButton");
         const tableSection = document.getElementById("tableSection");
         const missionSelect = document.getElementById("mission-select");
         const resetBtn = document.getElementById("resetFilterButton");
 
-        if (!dataList || !infoButton || !tableSection) {
+        //if (!dataList || !infoButton || !tableSection) {
+        if (!dataList || !tableSection) {
             console.error("One or more DOM elements missing for setup.");
             return;
         }
@@ -839,9 +841,9 @@ class Datatakes {
         tableSection.style.display = "none";
 
         // Toggle table section (if logic needed)
-        infoButton.addEventListener("click", () => {
+        /*infoButton.addEventListener("click", () => {
             tableSection.style.display = tableSection.style.display === "none" ? "block" : "none";
-        });
+        });*/
 
         // Filter list on input
         if (searchInput) {
@@ -855,6 +857,7 @@ class Datatakes {
                     searchInput.value = ""; // Reset search
                 }
                 this.filterSidebarItems();
+                this.hideTable();
             });
         }
 
