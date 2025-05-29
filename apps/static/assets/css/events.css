@@ -11,7 +11,7 @@
 }
 
 .calendar-card {
-  background-color: rgb(0, 107, 124) !important;
+  background-color: #343A40 !important;
 }
 
 .calendar-card,
@@ -30,7 +30,7 @@
   position: sticky;
   top: 80px;
   padding: 2.5rem !important;
-  background-color:#45787E;
+  background-color:#006B7C;
   margin-top: 18px;
   border-radius: 10px;
 }
@@ -56,7 +56,7 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 2px;
+  gap: 8px;
   max-height: 60px;
   overflow-y: auto;
   width: 100%;
@@ -183,7 +183,7 @@
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  background-color: #45787E;
+  background-color: #006B7C;
 }
 
 .calendar-header {
@@ -328,7 +328,7 @@
 
 .event-icon {
   color: inherit;
-  font-size: clamp(12px, 1.5vw, 20px) !important;
+  font-size: clamp(12px, 1.5vw, 14px) !important;
   margin: 0;
 }
 

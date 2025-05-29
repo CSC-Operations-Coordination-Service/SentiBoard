@@ -40,10 +40,26 @@
 
 				<!-- Data takes section -->
 				<li class="nav-item {% if 'data-' in segment %} active {% endif %}">
-					<a href="/data-takes.html">
+					<a data-toggle="collapse" href="#dataAvailabilitySubmenu" role="button" aria-expanded="false" aria-controls="dataAvailabilitySubmenu">
 						<i class="fas fa-globe"></i>
 						<p>Data Availability</p>
 					</a>
+					<div class="collapse {% if 'data-' in segment %} show {% endif %}" id="dataAvailabilitySubmenu">
+						<ul class="nav pl-4">
+							<li class="nav-item">
+								<a class="nav-link" href="/global-data-takes.html">
+									<i class="fas fa-grip-horizontal"></i>
+									<p>Global Data Availability</p>
+								</a>
+							</li>
+							<li class="nav-item">
+								<a class="nav-link" href="/data-takes.html">
+									<i class="fas fa-chart-pie"></i>
+									<p>Detail Data Availability</p>
+								</a>
+							</li>
+						</ul>
+					</div>
 				</li>
 
 				<!-- Public Statistics -->

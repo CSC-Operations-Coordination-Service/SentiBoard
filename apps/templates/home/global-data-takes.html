@@ -1,0 +1,187 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} UI Data Availability {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+	<link rel="stylesheet" href="/static/assets/css/globalDataAvailability.css">
+
+{% endblock stylesheets %}
+
+{% block content %}
+
+	<!-- Define page content -->
+	<div class="content" style="min-height: calc(100% - 130px);">
+		<div class="page-inner">
+
+			<!-- Breadcrumb -->
+			<div class="page-header">
+				<h4 class="page-title">Data Availability</h4>
+				<ul class="breadcrumbs">
+					<li class="nav-home">
+						<a href="/index.html">
+							<i class="flaticon-home"></i>
+						</a>
+					</li>
+					<li class="separator">
+						<i class="flaticon-right-arrow"></i>
+					</li>
+					<li class="nav-item">
+						<a href="#">Global Data Availability</a>
+					</li>
+				</ul>
+			</div>
+
+			<!-- Datatake details panel -->
+			<div class="modal fade" id="showDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+				<div class="modal-dialog" role="document">
+					<div class="modal-content" style="background: #202940">
+						<div class="modal-header no-bd">
+							<h5 class="modal-title">
+								<span class="fw-mediumbold">View</span>
+								<span class="fw-light">Datatake details</span>
+							</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+								<span aria-hidden="true" style="color: white">&times;</span>
+							</button>
+						</div>
+						<div class="modal-body">
+							<form>
+								<div id="datatake-details">
+								</div>
+							</form>
+						</div>
+						<div class="modal-footer no-bd">
+							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Collapsible description panel -->
+			<div class="row">
+				<div class="card-body" style="padding-bottom: 0.0rem !important">
+					<div class="flex flex-column faq-section">
+						<div class="row">
+							<div class="col-md-12">
+								<div id="accordion">
+									<div class="card">
+										<div class="card-header" id="heading-description">
+											<h5 class="mb-0">
+												<a role="button" data-toggle="collapse" href="#description"
+												   aria-expanded="false" aria-controls="description"
+												   style="color: white; text-decoration: none">
+													&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Description
+												</a>
+											</h5>
+										</div>
+										<div id="description" class="collapse hide" data-parent="#accordion"
+											 aria-labelledby="heading-description">
+											<div class="card-body">
+												The page collects all datatakes in the last 3 months, including those
+												already
+												planned up to 23:59:59 of tomorrow. Besides the acquisition platform and
+												sensor mode,
+												this shows, for every datatake, the acquisition status and the
+												total publication
+												completeness, expressed in terms of percentage, with a hourly refresh
+												rate. Records can
+												be filtered using the search input in the side of the graph,
+												by entering the mission or satellite name (i.e. "S1" or "S2A"). Datakes
+												can be also filtered on the basis of the completeness status.
+												Datatakes can be also filtered using combined queries on different
+												columns: as an example, try writing "S1 2024-01-22" to select all
+												datatakes of the Copernicus Sentinel-1 mission, acquired in the
+												specified date.
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Table container -->
+			<div class="container">
+				<div class="row align-items-end mb-3">
+					<div class="col-md-3">
+						<label for="mission-select">Select Mission:</label>
+						<select id="mission-select" class="mission-select form-control" onchange="filterByMission()">
+							<!-- <option value="">All Missions</option> -->
+							<option value="S1">Sentinel 1</option>
+							<option value="S2">Sentinel 2</option>
+							<option value="S3">Sentinel 3</option>
+							<option value="S5">Sentinel 5P</option>
+						</select>
+					</div>
+					<div class="col-md-3">
+						<label for="start-date" class="filter-label">From:</label>
+						<input type="date" class="mt-1 form-control d-inline-block ml-2" id="start-date">
+					</div>
+					<div class="col-md-3">
+						<label for="end-date" class="filter-label">To:</label>
+						<input type="date" class="mt-1 form-control d-inline-block ml-2 wide-date" id="end-date">
+					</div>
+					<div class="col-md-2">
+						<label for="time-period-select">Time Range:</label>
+						<select name="time-period-select" id="time-period-select" class="form-control">
+							<option value="day">Last 24 Hours</option>
+							<option selected value="week">Last 7 Days</option>
+							<option value="month">Last 30 Days</option>
+							<option value="last-quarter">Last 3 Months</option>
+						</select>
+					</div>
+					<div class="col-md-1">
+						<button class="filter-chart mt-2 d-inline-block ml-2" onclick="filterChart()">Apply</button>
+					</div>
+				</div>
+				<div class="row mb-4">
+					<div class="col-md-6">
+						<label for="search-input">Search by ID:</label>
+						<div class="suggestions-wrapper">
+							<input type="text" id="search-input" placeholder="Search by ID..." class="search-input"
+								oninput="updateSuggestions(this.value)" autocomplete="off" />
+							<div id="suggestions-container" class="suggestions-dropdown"></div>
+						</div>
+						<button class="mt-2 d-inline-block ml-2" onclick="resetHeatmapAndTable()">Reset</button>
+					</div>
+				</div>
+				<div class="mb-4">
+					<div id="heatmap"></div>
+				</div>
+	
+				<!-- Pie chart -->
+				<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;">
+					<!-- Donut Chart -->
+					<div id="pieChart" style="flex: 1 1 58%; min-width: 300px; height: 300px;"></div>
+	
+					<!-- ID List Container -->
+					<div id="idListContainer" style="flex: 1 1 38%; min-width: 250px;"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+	<!-- Specific plugins scripts -->
+	<!-- Datatables -->
+	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
+
+	<!-- Page related JS Class -->
+	<script src="/static/assets/js/datatakes/global-datatakes.js"></script>
+	 <script defer type="text/javascript">globaldatatakes.init();</script>
+	<script>
+		$(function () {
+				$('[data-toggle="tooltip"]').tooltip();
+		});
+	</script>
+
+{% endblock javascripts %}

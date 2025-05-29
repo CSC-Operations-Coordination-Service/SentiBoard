@@ -16,7 +16,7 @@ const mockDataTakes = [];
 const formatDataDetail = [];
 
 
-class Datatakes {
+class GlobalDatatakes {
     constructor(mockDataTakes, formatDataDetail) {
         this.mockDataTakes = mockDataTakes;
         this.formatDataDetail = formatDataDetail;
@@ -914,4 +914,4 @@ class Datatakes {
     }
 }
 
-window.datatakes = new Datatakes(mockDataTakes, formatDataDetail);
+window.datatakes = new GlobalDatatakes(mockDataTakes, formatDataDetail);
