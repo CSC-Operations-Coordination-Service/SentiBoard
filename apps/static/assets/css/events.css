@@ -265,7 +265,7 @@
 
 .calendar-day.selected {
   background-color: #89CACD;
-  border: 2px solid #000;
+  border: 2px solid #575962;
 }
 
 .calendar-day:hover {
@@ -414,21 +414,21 @@
 
 .reset-button {
   padding: 6px 10px;
-  background-color: #343A40 !important;
+  background-color: #FFC107 !important;
   border: none;
   border-radius: 5px;
   cursor: pointer;
-  color: white !important;
+  color: #212529 !important;
   width: 100%;
   font-size: 16px;
   transition: all 0.3s ease;
   max-width: 200px;
 }
 
-.reset-button:hover {
+/*.reset-button:hover {
   background-color: #45787E !important;
   color: #000;
-}
+}*/
 
 .navbar {
   padding: 1rem;

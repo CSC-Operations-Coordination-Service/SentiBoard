@@ -19,8 +19,8 @@ window.addEventListener("load", function() {
                 "text": "#ffffff",
             },
             "button": {
-                "background": "#0098db",
-                "text": "#ffffff",
+                "background": "#FFC107",
+                "text": "#212529",
             }
         },
         "onPopupOpen": function() {

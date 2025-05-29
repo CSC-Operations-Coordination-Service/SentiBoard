@@ -35,8 +35,7 @@ class Datatakes {
             // Hide EC and Copernicus logos from header
             $('#copernicus-logo-header').hide();
             $('#ec-logo-header').hide();
-
-
+            $('#esa-logo-header').hide();
 
             /*limit the diplay data takes*/
             this.displayedCount = 0;
@@ -768,8 +767,8 @@ class Datatakes {
                 <td><span style="color:${acquisitionColor}">${acqStatus}</span></td>
                 <td><span style="color:${publicationColor}">${pubStatus}</span></td>
                 <td>
-                    <button type="button" style="color: #8c90a0" class="btn-link">
-                        <i class="la flaticon-search-1"></i>
+                    <button type="button" style="background-color: #FFAD00; color: #212529;" class="btn-link">
+                        View Details
                     </button>
                 </td>
             `;

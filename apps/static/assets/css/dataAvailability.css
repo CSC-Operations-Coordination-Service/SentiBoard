@@ -35,13 +35,13 @@
     border-collapse: collapse;
     font-size: 13px;
   }
-  
+
   .custom-box-table-sm th,
   .custom-box-table-sm td {
     padding: 6px 10px;
     border: 1px solid #ddd;
   }
-  
+
 
 
   .datatakes-window {
@@ -348,7 +348,6 @@
   /*customized table*/
   .custom-box-table-container {
     max-width: 900px;
-    /* Make it wider */
     /*margin: 30px auto; /* Center horizontally with some vertical spacing */
     /*padding: 0 20px;*/
   }
@@ -508,15 +507,15 @@
   }
 
   .btn.btn-outline-secondary {
-    background-color: rgb(238, 238, 238);
-    color: #000;
+    background-color: #FFC107;
+    color: #212529;
     border-radius: 5px;
     padding: 5px 10px;
     font-size: 0.9rem;
   }
 
-  .btn.btn-secondary:hover {
-    background-color: #0056b3;
+  .btn.btn-outline-secondary:hover {
+    color: #12b1bf;
   }
 
   .btn.btn-link {
@@ -666,15 +665,26 @@
 
   #loadMoreBtn {
     padding: 6px 10px;
-    background-color: #343A40 !important;
+    background-color: #FFC107 !important;
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    color: white !important;
+    color: #212529 !important;
     width: 100%;
     font-size: 16px;
     transition: all 0.3s ease;
     max-width: 200px;
+  }
+
+  .loadMore:hover {
+    color: #12b1bf !important;
+  }
+
+  #tableSection,
+  #table-container,
+  .custom-box-table-container {
+    overflow: visible;
+    position: relative;
   }
 
   .custom-tooltip {
@@ -694,7 +704,7 @@
     padding: 12px 16px;
     position: absolute;
     z-index: 10;
-    bottom: 125%;
+    bottom: 30px;
     left: 95%;
     transform: translateX(-50%);
     opacity: 0;

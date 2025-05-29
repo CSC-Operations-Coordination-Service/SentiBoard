@@ -61,6 +61,7 @@ class CalendarWidget {
     init() {
         // Hide the drop-down menu to select the time range
         $('#time-period-select-container').hide();
+        $('#esa-logo-header').hide();
 
         this.selectedMission = 'all';
         this.selectedEventType = 'all';
@@ -85,7 +86,7 @@ class CalendarWidget {
             'acquisition': 'fas fa-database',
             'calibration': 'fas fa-compass',
             'manoeuvre': 'fas fa-wrench',
-            'production': 'fas fa-cogs',
+            'production': 'fas fa-cog',
             'satellite': 'fas fa-rss'
         };
 
@@ -761,34 +762,22 @@ class CalendarWidget {
             listItem.style.borderRadius = '5px';
             // Override "platform" category with "satellite"
             var category = event.category === "Platform" ? "Satellite" : event.category;
+            const categoryKey = category.toLowerCase(); // match iconMap keys
+            const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle'; // fallback icon
+            const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
+            const iconHtml = `<i class="${iconClass} event-${mappedType}" style="margin-right: 8px; font-size: 1.2rem"></i>`;
             var item = "";
             if (event.category === "Data access") {
                 item = "All Sentinels";
             } else {
-                if (event.environment.includes('S1A')) {
-                    item += "S1A, "
-                }
-                if (event.environment.includes('S1C')) {
-                    item += "S1C, "
-                }
-                if (event.environment.includes('S2A')) {
-                    item += "S2A, "
-                }
-                if (event.environment.includes('S2B')) {
-                    item += "S2B, "
-                }
-                if (event.environment.includes('S2C')) {
-                    item += "S2C, "
-                }
-                if (event.environment.includes('S3A')) {
-                    item += "S3A, "
-                }
-                if (event.environment.includes('S3B')) {
-                    item += "S3B, "
-                }
-                if (event.environment.includes('S5P')) {
-                    item += "S5P, "
-                }
+                if (event.environment.includes('S1A')) { item += "S1A, " }
+                if (event.environment.includes('S1C')) { item += "S1C, " }
+                if (event.environment.includes('S2A')) { item += "S2A, " }
+                if (event.environment.includes('S2B')) { item += "S2B, " }
+                if (event.environment.includes('S2C')) { item += "S2C, " }
+                if (event.environment.includes('S3A')) { item += "S3A, " }
+                if (event.environment.includes('S3B')) { item += "S3B, " }
+                if (event.environment.includes('S5P')) { item += "S5P, " }
                 item = item.substring(0, item.length - 2);
             }
 
@@ -802,7 +791,7 @@ class CalendarWidget {
                     </p>`;
             }
             listItem.innerHTML = `
-            <small>${event.title || 'No description available'}</small><br>
+            <small>${iconHtml}${event.title || 'No description available'}</small><br>
             <small>Occurrence date: ${this.parseDateString(event.start).toString()}</small><br>
             <small>Impacted satellite(s): ${item}</small><br>
             <small>Issue type: ${category}</small><br>

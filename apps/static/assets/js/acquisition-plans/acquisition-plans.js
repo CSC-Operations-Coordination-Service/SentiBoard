@@ -105,6 +105,8 @@ class MissionAcquisitionDates extends EventTarget {
             $('#acquisition-plans-day-select').show();
         }
 
+        $('#esa-logo-header').hide();
+
         // Set Empty Arrays for dates!
         for (const satellite of Object.keys(this.acqplansDates)) {
             this.acqplansDates[satellite].dates = new Array();
@@ -307,9 +309,7 @@ class AcquisitionPlansViewer {
         // Hide the drop-down menu to select the time range
         $('#time-period-select-container').hide();
 
-        // Hide footer
-        $('.footer').hide();
-
+        
         // Instantiate and activate PlansCoverage Class
         this.currentMission = null;
         this.parametersSelection.init();

@@ -35,8 +35,7 @@ class GlobalDatatakes {
             // Hide EC and Copernicus logos from header
             $('#copernicus-logo-header').hide();
             $('#ec-logo-header').hide();
-
-
+            $('#esa-logo-header').hide();
 
             /*limit the diplay data takes*/
             this.displayedCount = 0;
@@ -914,4 +913,4 @@ class GlobalDatatakes {
     }
 }
 
-window.datatakes = new GlobalDatatakes(mockDataTakes, formatDataDetail);
+window.globalDatatakes = new GlobalDatatakes(mockDataTakes, formatDataDetail);

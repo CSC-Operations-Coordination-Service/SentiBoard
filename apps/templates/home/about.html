@@ -2,6 +2,14 @@
 
 {% block title %} Dashboard {% endblock %}
 
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+	<link rel="stylesheet" href="/static/assets/css/about.css">
+
+{% endblock stylesheets %}
+
 {% block content %}
 
     <!-- Viewport definition -->
@@ -32,13 +40,12 @@
             </div>
 
             <!-- Main container -->
-            <div class="row">
+            <div class="row back-container">
 
 				<!-- Main timeline control -->
                 <div class="col-12 col-md-12">
 					<div class="card">
 						<div class="card-body">
-
                             <!-- Row hosting the general controls -->
                             <div class="row">
                                 <h4 style="color: lightgrey"><a style="color:#66B2FF" href="https://sentiwiki.copernicus.eu/web/copernicus-programme">Copernicus</a>
@@ -92,8 +99,8 @@
                                     <a style="color:#66B2FF" href="mailto:sentiboard@coordination-service.eu">sentiboard@coordination-service.eu</a>.
                                 </h4>
                             </div>
-
                         </div>
+                        <hr style="border-top: 5px solid #ccc; margin: 40px 0;">
                         <!-- FAQ Section -->
                          <div class="container">
                             <div class="row justify-content-center">
@@ -181,6 +188,7 @@
 
         // Hide the time period selector combobox
         $('#time-period-select-container').hide();
+        $('#esa-logo-header').hide();
         // ============================
         // FAQ Accordion Toggle Icons
         // ============================

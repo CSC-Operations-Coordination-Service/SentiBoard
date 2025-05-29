@@ -25,8 +25,8 @@ class Home {
         // Hide the time period selector combobox
         $('#time-period-select-container').hide();
 
-        // Hide footer
-        $('.footer').hide();
+        // Hide copyright footer
+        $('#footer-copyright').hide();
 
         // Shows logos in the Nav header
         $('#copernicus-logo-header').show();

@@ -78,6 +78,7 @@ class ProcessorsViewer {
         this.initMissionSelector();
 
         this.loadProcessorsReleases();
+        $('#esa-logo-header').hide();
 
     }
 
