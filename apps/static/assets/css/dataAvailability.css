@@ -297,10 +297,13 @@
 
   /* Make sure border doesn't add to size */
   .container-border {
+    display: inline-flex;  /* inline-flex will shrink-wrap to content width */
     border: 1.5px solid #FFC107; 
     padding: 2px 4px;            
     border-radius: 6px;
+    box-sizing: border-box;
   }
+  
   
 
 /* Border on hover of the container */

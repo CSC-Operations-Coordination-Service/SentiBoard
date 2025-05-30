@@ -315,7 +315,7 @@ class Datatakes {
             const containerDiv = document.createElement("div");
             containerDiv.classList.add('container-border');
 
-            containerDiv.style.display = "flex";
+            containerDiv.style.display = "inline-flex";
             containerDiv.style.alignItems = "center";
             containerDiv.style.gap = "8px";
             containerDiv.style.cursor = "pointer";
