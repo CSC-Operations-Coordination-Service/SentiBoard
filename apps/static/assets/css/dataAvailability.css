@@ -464,6 +464,68 @@
     background-color: #9e9e9e;
   }
 
+  .completeness-status {
+    background-color: #12B1BF;
+    margin-top: 42px;
+    padding: 10px;
+    font-size: 14px;
+    color: white;
+    max-height: 100%;
+    overflow-y: auto;
+    border-radius: 6px;
+    width: 100%;           /* Adjust width as needed */
+    max-width: 410px;     /* Optional max width */
+    margin-left: auto;    /* Center horizontally */
+    margin-right: auto;   /* Center horizontally */
+    box-sizing: border-box;
+  }
+  
+  .comple-title{
+    margin-left: 3px;
+  }
+  .legend-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Force 2 columns */
+    gap: 0px 0px; /* row and column spacing */
+  }
+  
+  .legend-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.875rem;
+  }
+  
+  /* Circle icon styling */
+  .legend-item i {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    min-width: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  
+  /* Individual circle colors */
+  .status-circle-dt-planned {
+    background-color: #9e9e9e;
+  }
+  
+  .status-circle-dt-processing {
+    background-color: #9e9e9e;
+  }
+  
+  .status-circle-dt-acquired {
+    background-color: #2b9d38 !important;
+  }
+  
+  .status-circle-dt-part {
+    background-color: #bb8747;
+  }
+  
+  .status-circle-dt-unavailable {
+    background-color: #FF0000;
+  }
+
 
   /* Mobile Responsiveness */
   @media (max-width: 768px) {

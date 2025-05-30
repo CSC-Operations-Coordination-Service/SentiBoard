@@ -225,18 +225,8 @@ class Datatakes {
         if (datatakes.length > 0) {
             const first = datatakes[0];
 
-            // Update the title
-            const titleSpan = document.querySelector(".title-text");
-            if (titleSpan) {
-                titleSpan.textContent = first.id;
-            }
-
-            // Update the subheading paragraph
-            const subtitle = document.querySelector(".chart-container p");
-            if (subtitle) {
-                const formattedStart = moment(first.start).format("MMM DD, YYYY HH:mm:ss");
-                subtitle.textContent = `${first.satellite} - ${formattedStart}`;
-            }
+            // Call your new method to update title and date
+            this.updateTitleAndDate(datatakes.id);
 
             //Extract linkKey from datatake ID and update the chart
             this.updateCharts(first);
@@ -341,14 +331,8 @@ class Datatakes {
 
                 this.updateCharts(take);
 
-                const titleSpan = document.querySelector(".title-text");
-                if (titleSpan) titleSpan.textContent = take.id;
-
-                const subtitle = document.querySelector(".chart-container p");
-                if (subtitle) {
-                    const formattedStart = moment(take.start).format("MMM DD, YYYY HH:mm:ss");
-                    subtitle.textContent = `${take.satellite} - ${formattedStart}`;
-                }
+                // Call your new method to update title and date
+                this.updateTitleAndDate(take.id);
             });
 
             // Add status circle

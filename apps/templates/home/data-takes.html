@@ -176,149 +176,182 @@
 														</div>
 												</div>
 										</div>
-										<!-- Datatake Details Section -->
-										<div id="tableSection" class="mt-4" style="display: none;">
-												<div id="table-container">
-														<div class="custom-box-table-container" style="position: relative;">
-															<button class="close-btn" id="closeTableButton" aria-label="Close table">✖</button>
-																<table id="timelineTable" class="custom-box-table table-sm">
-																		<thead>
-																				<tr>
-																						<th>Data Take ID</th>
-																						<th>Platform</th>
-																						<th>Start Date</th>
-																						<th>Stop Date</th>
-																						<th>
-																								<div class="custom-tooltip">
-																										Acquisition
-																										<sup><span
-																														class="tooltip-icon">ℹ</span></sup>
-																										<div
-																												class="tooltip-text">
-																												<strong>Acquisition
-																														Status</strong><br><br>
-																												This column
-																												reports the
-																												status of
-																												datatake
-																												acquisition from
-																												the Ground
-																												Station.
-																												Possible values
-																												are:<br><br>
-																												<strong>PLANNED:</strong>
-																												if the datatake
-																												is going to be
-																												acquired in the
-																												future<br>
-																												<strong>PROCESSING:</strong>
-																												after the
-																												contact with the
-																												ground station,
-																												and the
-																												processing of
-																												raw data is
-																												ongoing<br>
-																												<strong>ACQUIRED:</strong>
-																												if the datatake
-																												was successfully
-																												acquired<br>
-																												<strong>PARTIAL:</strong>
-																												if the datatake
-																												was acquired
-																												only in part
-																												(e.g., in case
-																												of ground
-																												station or
-																												satellite
-																												issues)<br>
-																												<strong>UNAVAILABLE:</strong>
-																												if the datatake
-																												was lost during
-																												downlink (e.g.,
-																												in case of a
-																												major issue
-																												concerning the
-																												ground station
-																												or the
-																												satellite)
-																										</div>
-																								</div>
-																						</th>
-																						<th>
-																								<div class="custom-tooltip">
-																										Publication
-																										<sup><span
-																														class="tooltip-icon">ℹ</span></sup>
-																										<div
-																												class="tooltip-text">
-																												<strong>Publication
-																														Status</strong><br><br>
-																												This column
-																												reports the
-																												publication
-																												status of
-																												products
-																												associated to a
-																												datatake,
-																												together with
-																												their overall
-																												completeness.
-																												Possible values
-																												are:<br><br>
-																												<strong>PLANNED:</strong>
-																												if the datatake
-																												is going to be
-																												processed and
-																												published in the
-																												future<br>
-																												<strong>PROCESSING:</strong>
-																												if the datatake
-																												processing is
-																												ongoing<br>
-																												<strong>DELAYED:</strong>
-																												if the datatake
-																												processing is
-																												taking more than
-																												the nominal
-																												time<br>
-																												<strong>PUBLISHED:</strong>
-																												if all expected
-																												products were
-																												successfully
-																												published and
-																												the average
-																												completeness
-																												exceeds 90%<br>
-																												<strong>PARTIAL:</strong>
-																												if not all
-																												expected
-																												products were
-																												successfully
-																												published,
-																												and/or the
-																												average
-																												completeness is
-																												below 90%<br>
-																												<strong>UNAVAILABLE:</strong>
-																												if no products
-																												could be
-																												published (e.g.,
-																												in case of a
-																												datatake lost
-																												during downlink)
-																										</div>
-																								</div>
-																						</th>
-																						<th>Actions</th>
-																				</tr>
-																		</thead>
-																		<tbody id="dataTableBody"></tbody>
-																		<!-- Populated dynamically -->
-																</table>
-														</div>
+										<div class="mt-4 d-flex gap-3" style="align-items: flex-start;">
+											<!-- Datatake Details Section -->
+											<div id="tableSection" class="mt-4" style="display: none;">
+													<div id="table-container">
+															<div class="custom-box-table-container" style="position: relative;">
+																<button class="close-btn" id="closeTableButton" aria-label="Close table">✖</button>
+																	<table id="timelineTable" class="custom-box-table table-sm">
+																			<thead>
+																					<tr>
+																							<th>Data Take ID</th>
+																							<th>Platform</th>
+																							<th>Start Date</th>
+																							<th>Stop Date</th>
+																							<th>
+																									<div class="custom-tooltip">
+																											Acquisition
+																											<sup><span
+																															class="tooltip-icon">ℹ</span></sup>
+																											<div
+																													class="tooltip-text">
+																													<strong>Acquisition
+																															Status</strong><br><br>
+																													This column
+																													reports the
+																													status of
+																													datatake
+																													acquisition from
+																													the Ground
+																													Station.
+																													Possible values
+																													are:<br><br>
+																													<strong>PLANNED:</strong>
+																													if the datatake
+																													is going to be
+																													acquired in the
+																													future<br>
+																													<strong>PROCESSING:</strong>
+																													after the
+																													contact with the
+																													ground station,
+																													and the
+																													processing of
+																													raw data is
+																													ongoing<br>
+																													<strong>ACQUIRED:</strong>
+																													if the datatake
+																													was successfully
+																													acquired<br>
+																													<strong>PARTIAL:</strong>
+																													if the datatake
+																													was acquired
+																													only in part
+																													(e.g., in case
+																													of ground
+																													station or
+																													satellite
+																													issues)<br>
+																													<strong>UNAVAILABLE:</strong>
+																													if the datatake
+																													was lost during
+																													downlink (e.g.,
+																													in case of a
+																													major issue
+																													concerning the
+																													ground station
+																													or the
+																													satellite)
+																											</div>
+																									</div>
+																							</th>
+																							<th>
+																									<div class="custom-tooltip">
+																											Publication
+																											<sup><span
+																															class="tooltip-icon">ℹ</span></sup>
+																											<div
+																													class="tooltip-text">
+																													<strong>Publication
+																															Status</strong><br><br>
+																													This column
+																													reports the
+																													publication
+																													status of
+																													products
+																													associated to a
+																													datatake,
+																													together with
+																													their overall
+																													completeness.
+																													Possible values
+																													are:<br><br>
+																													<strong>PLANNED:</strong>
+																													if the datatake
+																													is going to be
+																													processed and
+																													published in the
+																													future<br>
+																													<strong>PROCESSING:</strong>
+																													if the datatake
+																													processing is
+																													ongoing<br>
+																													<strong>DELAYED:</strong>
+																													if the datatake
+																													processing is
+																													taking more than
+																													the nominal
+																													time<br>
+																													<strong>PUBLISHED:</strong>
+																													if all expected
+																													products were
+																													successfully
+																													published and
+																													the average
+																													completeness
+																													exceeds 90%<br>
+																													<strong>PARTIAL:</strong>
+																													if not all
+																													expected
+																													products were
+																													successfully
+																													published,
+																													and/or the
+																													average
+																													completeness is
+																													below 90%<br>
+																													<strong>UNAVAILABLE:</strong>
+																													if no products
+																													could be
+																													published (e.g.,
+																													in case of a
+																													datatake lost
+																													during downlink)
+																											</div>
+																									</div>
+																							</th>
+																							<th>Actions</th>
+																					</tr>
+																			</thead>
+																			<tbody id="dataTableBody"></tbody>
+																			<!-- Populated dynamically -->
+																	</table>
+															</div>
+													</div>
+											</div>
+											<!-- Completeness Status Legend -->
+											<div class="completeness-status">
+												<h5 class="comple-title mb-2">Completeness Status:</h5>
+												<div class="legend-grid">
+													<div class="legend-item d-flex align-items-center mb-1">
+														<i class="status-circle-dt-planned me-2"></i>
+														<span>Planned</span>
+													</div>
+
+													<div class="legend-item d-flex align-items-center mb-1">
+														<i class="status-circle-dt-processing me-2"></i>
+														<span>Processing</span>
+													</div>
+
+													<div class="legend-item d-flex align-items-center mb-1">
+														<i class="status-circle-dt-acquired me-2"></i>
+														<span>Acquired</span>
+													</div>
+
+													<div class="legend-item d-flex align-items-center mb-1">
+														<i class="status-circle-dt-part me-2"></i>
+														<span>Partial</span>
+													</div>
+
+													<div class="legend-item d-flex align-items-center mb-1">
+														<i class="status-circle-dt-unavailable me-2"></i>
+														<span>Unavailable</span>
+													</div>
 												</div>
+											</div>
 										</div>
+									</div>	
 								</div>
 								</div>
 							</div>

@@ -147,8 +147,38 @@
                             <div class="calendar-grid" id="calendarGrid"></div>
                         </div>
                     </div>
-                    <!-- Event Details (right) -->
+                    
                     <div class="col-12 col-lg-3 mb-4">
+                      <!-- Completeness Status (Legend) -->
+                      <div class="completeness-status mb-3">
+                        <h4 class="comple-title mb-2">Completeness Status:</h4>
+                        <div class="legend-grid">
+                          <div class="legend-item d-flex align-items-center mb-1">
+                            <i class="status-circle-dt-planned me-2"></i>
+                            <span>Planned</span>
+                          </div>
+                      
+                          <div class="legend-item d-flex align-items-center mb-1">
+                            <i class="status-circle-dt-processing me-2"></i>
+                            <span>Processing</span>
+                          </div>
+                      
+                          <div class="legend-item d-flex align-items-center mb-1">
+                            <i class="status-circle-dt-acquired me-2"></i>
+                            <span>Acquired</span>
+                          </div>
+                      
+                          <div class="legend-item d-flex align-items-center mb-1">
+                            <i class="status-circle-dt-part me-2"></i>
+                            <span>Partial</span>
+                          </div>
+                      
+                          <div class="legend-item d-flex align-items-center mb-1">
+                            <i class="status-circle-dt-unavailable me-2"></i>
+                            <span>Unavailable</span>
+                          </div>
+                        </div>
+                      </div>
                       <div id="eventDetails" class="event-details  p-3">
                         <h5 id="eventDetailsTitle">Event Details</h5>
                         <p id="noEventMessage">Select a date to see event details.</p>
