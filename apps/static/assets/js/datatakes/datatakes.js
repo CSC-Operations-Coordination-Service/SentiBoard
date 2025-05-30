@@ -318,19 +318,24 @@ class Datatakes {
             containerDiv.style.display = "flex";
             containerDiv.style.alignItems = "center";
             containerDiv.style.gap = "8px";
-
+            containerDiv.style.cursor = "pointer";
+            containerDiv.classList.add('selected');
             const a = document.createElement("a");
             a.href = "#";
             a.className = "filter-link";
             a.dataset.filterType = "groundStation";
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
+            a.classList.add('selected');
+
+            // Prevent <a> default click behavior to avoid jumping
+            a.addEventListener('click', e => e.preventDefault());
 
             // Add click event to update chart
-            a.addEventListener('click', (e) => {
-                e.preventDefault();
+            containerDiv.addEventListener('click', () => {
                 dataList.querySelectorAll('.container-border.selected').forEach(el => el.classList.remove('selected'));
-                containerDiv.classList.add('selected');  // Add selected to containerDiv
+                containerDiv.classList.add('selected');
+
                 dataList.querySelectorAll('a.selected').forEach(el => el.classList.remove('selected'));
                 a.classList.add('selected');
 
@@ -899,11 +904,18 @@ class Datatakes {
 
             e.preventDefault();
 
-            // Remove active classes
+            // Remove active class from all links
             document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
             target.classList.add("active");
 
+            // Remove selected class from all container divs
+            document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
+            // Add selected class to the clicked link's container div
+            const containerDiv = target.closest('.container-border');
+            if (containerDiv) {
+                containerDiv.classList.add("selected");
+            }
 
             const selectedKey = target.textContent.trim();
             this.updateCharts(selectedKey);

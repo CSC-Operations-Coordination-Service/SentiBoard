@@ -314,6 +314,12 @@
   border: 1.5px solid #FFC107; /* yellow-ish border */
 }
 
+.filter-link.selected {
+  /* optional highlight styling for link */
+  font-weight: bold;
+  color: #FFC107;
+}
+
 /* Reset border if no hover or selection */
 .container-border:not(:hover):not(.selected) {
   border: 1.5px solid transparent; /* keep space but invisible */
