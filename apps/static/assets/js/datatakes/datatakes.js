@@ -62,9 +62,14 @@ class Datatakes {
 
             // Apply filtering on page load
             if (this.filterDatatakesOnPageLoad()) {
-                time_period_sel.value = 'last-quarter';
+                // If filtered, set some UI state, like time period select
+                const time_period_sel = document.getElementById('time-period-select');
+                if (time_period_sel) time_period_sel.value = 'last-quarter';
             } else {
-                time_period_sel.value = 'week';
+                // No search filter, load default data
+                const time_period_sel = document.getElementById('time-period-select');
+                if (time_period_sel) time_period_sel.value = 'week';
+                this.populateDataList(false);
             }
 
             // Add event listener for user selection
@@ -88,9 +93,18 @@ class Datatakes {
         var searchFilter = urlParams.get('search');
         if (searchFilter) {
             console.info('Accessing page with search filter: ' + searchFilter);
-            //var filteredData = this.dataTakeTable.search(searchFilter).draw();
+            // Filter the data by matching the 'id' containing searchFilter (case-insensitive)
+            this.filteredDataTakes = this.mockDataTakes.filter(take =>
+                take.id.toLowerCase().includes(searchFilter.toLowerCase())
+            );
+
+            // Populate data list with filtered results
+            this.populateDataList(false);
+
             return true;
         } else {
+            // No filter - reset filteredDataTakes so populate uses full list
+            this.filteredDataTakes = null;
             return false;
         }
     }
@@ -770,10 +784,10 @@ class Datatakes {
                 <td>${platform}</td>
                 <td>${startTime}</td>
                 <td>${stopTime}</td>
-                <td><span style="color:${acquisitionColor}">${acqStatus}</span></td>
-                <td><span style="color:${publicationColor}">${pubStatus}</span></td>
+                <td><span class="status-badge" style="background-color:${acquisitionColor}">${acqStatus}</span></td>
+                <td><span class="status-badge" style="background-color:${publicationColor}">${pubStatus}</span></td>
                 <td>
-                    <button type="button" style="background-color: #FFAD00; color: #212529;" class="btn-link">
+                    <button type="button" class="btn-link view-btn">
                         View Details
                     </button>
                 </td>

@@ -178,18 +178,22 @@ class CalendarWidget {
         return `${y}-${m}-${d}`;
     }
 
+    clearEventDetails() {
+        this.lastSelectedDate = null;
+        const eventDetails = document.getElementById('eventDetails');
+        if (eventDetails) eventDetails.innerHTML = '';
+    }
+
+
     addEventListeners() {
         if (this.listenersAttached) return; // Prevent duplicate attachments
         this.listenersAttached = true;
         console.log("addEventListeners called");
 
-        const clearEventDetails = () => {
-            this.lastSelectedDate = null;
-            document.getElementById('eventDetails').innerHTML = '';
-        };
+
 
         const onFilterChange = (getter) => {
-            clearEventDetails();
+            this.clearEventDetails();
             getter();
             this.generateCalendar(this.currentMonth, this.currentYear);
         };
@@ -222,6 +226,8 @@ class CalendarWidget {
         }, 300));
 
         document.getElementById('prevMonth').addEventListener('click', debounce(() => {
+            //this.clearEventDetails();
+
             console.log("Before prev click:", this.currentMonth, this.currentYear);
 
             this.currentMonth--;
@@ -235,6 +241,7 @@ class CalendarWidget {
         }, 300));
 
         document.getElementById('nextMonth').addEventListener('click', debounce(() => {
+            //this.clearEventDetails();
             this.currentMonth++;
             if (this.currentMonth > 11) {
                 this.currentMonth = 0;
@@ -648,6 +655,11 @@ class CalendarWidget {
         const eventDetailsContent = document.getElementById('eventDetailsContent');
         const noEventMessage = document.getElementById('noEventMessage');
 
+        if (!eventDetailsContent || !noEventMessage) {
+            console.warn('Missing #eventDetailsContent or #noEventMessage in DOM');
+            return;
+        }
+
         eventDetailsContent.innerHTML = ''; // Clear old content
 
         // If no date is selected, show default message and exit
@@ -822,6 +834,7 @@ class CalendarWidget {
             parseInt(second)
         );
     }
+
 }
 const calendar = new CalendarWidget();
 window.calendar = calendar; // make it accessible globally

@@ -444,7 +444,7 @@
 }
 
 .completeness-status {
-  background-color: #12B1BF;
+  background-color: #006B7C;
   margin-top: 20px;
   padding: 10px;
   font-size: 14px;
@@ -455,12 +455,12 @@
   width: 100%;           /* Adjust width as needed */
   max-width: 410px;     /* Optional max width */
   margin-left: auto;    /* Center horizontally */
-  margin-right: auto;   /* Center horizontally */
+  margin-right: 18px;   /* Center horizontally */
   box-sizing: border-box;
 }
 
 .comple-title{
-  margin-left: 3px;
+  margin-left: 0px;
 }
 .legend-grid {
   display: grid;

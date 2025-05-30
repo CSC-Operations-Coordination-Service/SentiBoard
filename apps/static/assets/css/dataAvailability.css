@@ -24,7 +24,12 @@
   }
 
   .custom-box-table-sm {
-    border: none;
+    border: 1px solid #ddd;
+    /* Add a border to the whole table */
+    border-radius: 8px;
+    /* Rounded corners */
+    overflow: hidden;
+    /* Ensure border-radius clips inner content */
     background-color: #f8f9fa;
     padding: 12px;
     margin-top: 16px;
@@ -32,16 +37,41 @@
     color: #000;
     min-width: 300px;
     width: 50%;
-    border-collapse: collapse;
+    border-collapse: separate;
+    /* Use separate so border-radius works */
+    border-spacing: 0;
+    /* Remove spacing between cells */
     font-size: 13px;
   }
 
   .custom-box-table-sm th,
   .custom-box-table-sm td {
     padding: 6px 10px;
-    border: 1px solid #ddd;
+    border: none;
   }
 
+  /* Add bottom border on rows except the last one */
+  .custom-box-table-sm tbody tr:not(:last-child) td {
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* Round the top-left and top-right corners of the first row */
+  .custom-box-table-sm thead tr th:first-child {
+    border-top-left-radius: 8px;
+  }
+
+  .custom-box-table-sm thead tr th:last-child {
+    border-top-right-radius: 8px;
+  }
+
+  /* Round the bottom-left and bottom-right corners of the last row */
+  .custom-box-table-sm tbody tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+  }
+
+  .custom-box-table-sm tbody tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+  }
 
 
   .datatakes-window {
@@ -297,36 +327,39 @@
 
   /* Make sure border doesn't add to size */
   .container-border {
-    display: inline-flex;  /* inline-flex will shrink-wrap to content width */
-    border: 1.5px solid #FFC107; 
-    padding: 2px 4px;            
+    display: inline-flex;
+    /* inline-flex will shrink-wrap to content width */
+    border: 1.5px solid #FFC107;
+    padding: 2px 4px;
     border-radius: 6px;
     box-sizing: border-box;
   }
-  
-  
 
-/* Border on hover of the container */
-.container-border:hover {
-  border: 1.5px solid #FFC107; 
-  cursor: pointer;
-}
 
-/* Border on selected link container */
-.container-border.selected {
-  border: 1.5px solid #FFC107; /* yellow-ish border */
-}
 
-.filter-link.selected {
-  /* optional highlight styling for link */
-  font-weight: bold;
-  color: #FFC107;
-}
+  /* Border on hover of the container */
+  .container-border:hover {
+    border: 1.5px solid #FFC107;
+    cursor: pointer;
+  }
 
-/* Reset border if no hover or selection */
-.container-border:not(:hover):not(.selected) {
-  border: 1.5px solid transparent; /* keep space but invisible */
-}
+  /* Border on selected link container */
+  .container-border.selected {
+    border: 1.5px solid #FFC107;
+    /* yellow-ish border */
+  }
+
+  .filter-link.selected {
+    /* optional highlight styling for link */
+    font-weight: bold;
+    color: #FFC107;
+  }
+
+  /* Reset border if no hover or selection */
+  .container-border:not(:hover):not(.selected) {
+    border: 1.5px solid transparent;
+    /* keep space but invisible */
+  }
 
 
 
@@ -404,7 +437,8 @@
   .custom-box-table td {
     border: none !important;
     padding: 10px 12px;
-    font-size: 16px;
+    font-size: 14px;
+    text-align: center;
   }
 
   .custom-box-table thead {
@@ -465,37 +499,54 @@
   }
 
   .completeness-status {
-    background-color: #12B1BF;
-    margin-top: 42px;
-    padding: 10px;
+    background-color: #006B7C;
+    margin-top: 43px;
+    /* reduced from 42px */
+    padding: 8px 10px;
     font-size: 14px;
     color: white;
     max-height: 100%;
     overflow-y: auto;
     border-radius: 6px;
-    width: 100%;           /* Adjust width as needed */
-    max-width: 410px;     /* Optional max width */
-    margin-left: auto;    /* Center horizontally */
-    margin-right: auto;   /* Center horizontally */
+    width: 100%;
+    max-width: 410px;
+    margin-left: auto;
+    margin-right: auto;
     box-sizing: border-box;
+    line-height: 1.1;
+    /* tighter line height */
   }
-  
-  .comple-title{
-    margin-left: 3px;
+
+  .completeness-status>* {
+    margin-top: 2px !important;
+    margin-bottom: 2px !important;
+    padding: 0 !important;
   }
+
+  .comple-title {
+    margin: 0 0 4px 0;
+    /* remove top margin, small bottom margin */
+    font-weight: 400;
+    line-height: 1.2;
+  }
+
   .legend-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* Force 2 columns */
-    gap: 0px 0px; /* row and column spacing */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0 0;
   }
-  
+
   .legend-item {
     display: flex;
     align-items: center;
     font-size: 0.875rem;
+    margin-bottom: 2px;
+    /* smaller bottom margin */
+    padding: 0;
+    line-height: 1.1;
+    /* tighter line height */
   }
-  
-  /* Circle icon styling */
+
   .legend-item i {
     display: inline-block;
     width: 10px;
@@ -504,28 +555,58 @@
     border-radius: 50%;
     margin-right: 8px;
   }
-  
+
   /* Individual circle colors */
   .status-circle-dt-planned {
     background-color: #9e9e9e;
   }
-  
+
   .status-circle-dt-processing {
     background-color: #9e9e9e;
   }
-  
+
   .status-circle-dt-acquired {
     background-color: #2b9d38 !important;
   }
-  
+
   .status-circle-dt-part {
     background-color: #bb8747;
   }
-  
+
   .status-circle-dt-unavailable {
     background-color: #FF0000;
   }
 
+  .view-btn,
+  .view-btn:focus,
+  .view-btn:active {
+    padding: 3px 10px;
+    background-color: #FFC107 !important;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #212529 !important;
+    width: 100%;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .view-btn:hover {
+    color: #12b1bf !important;
+    background-color: #FFC107 !important;
+    opacity: .9;
+    transition: all .3s;
+  }
+
+  .status-badge {
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    min-width: 70px;
+    text-align: center;
+    font-weight: normal;
+  }
 
   /* Mobile Responsiveness */
   @media (max-width: 768px) {
