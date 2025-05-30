@@ -308,10 +308,13 @@ class Datatakes {
             return;
         }
 
+
         nextItems.forEach(take => {
             const li = document.createElement("li");
 
             const containerDiv = document.createElement("div");
+            containerDiv.classList.add('container-border');
+
             containerDiv.style.display = "flex";
             containerDiv.style.alignItems = "center";
             containerDiv.style.gap = "8px";
@@ -326,6 +329,8 @@ class Datatakes {
             // Add click event to update chart
             a.addEventListener('click', (e) => {
                 e.preventDefault();
+                dataList.querySelectorAll('.container-border.selected').forEach(el => el.classList.remove('selected'));
+                containerDiv.classList.add('selected');  // Add selected to containerDiv
                 dataList.querySelectorAll('a.selected').forEach(el => el.classList.remove('selected'));
                 a.classList.add('selected');
 
@@ -632,7 +637,19 @@ class Datatakes {
                 show: true,
                 position: 'right',
                 horizontalAlign: 'left',
-                labels: { colors: '#FFFFFF' }
+                labels: { colors: '#FFFFFF' },
+                itemMargin: {
+                    vertical: 7
+                },
+                markers: {
+                    width: 12,
+                    height: 12,
+                    offsetX: -5, // Fine-tune horizontal alignment
+                    offsetY: 0
+                },
+                formatter: function (seriesName, opts) {
+                    return `<div style="margin-left: 0px;">${seriesName}</div>`; // Add horizontal space between marker and text
+                }
             },
             plotOptions: {
                 pie: {

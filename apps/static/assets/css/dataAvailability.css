@@ -253,7 +253,7 @@
   }
 
   .filter-link:hover {
-    background-color: #3C5A74 !important;
+    background-color: #FFC107 !important;
     color: whitesmoke !important;
   }
 
@@ -294,6 +294,32 @@
     margin: 0;
     list-style: none;
   }
+
+  /* Make sure border doesn't add to size */
+  .container-border {
+    border: 1.5px solid #FFC107; 
+    padding: 2px 4px;            
+    border-radius: 6px;
+  }
+  
+
+/* Border on hover of the container */
+.container-border:hover {
+  border: 1.5px solid #FFC107; 
+  cursor: pointer;
+}
+
+/* Border on selected link container */
+.container-border.selected {
+  border: 1.5px solid #FFC107; /* yellow-ish border */
+}
+
+/* Reset border if no hover or selection */
+.container-border:not(:hover):not(.selected) {
+  border: 1.5px solid transparent; /* keep space but invisible */
+}
+
+
 
   /* Table Styling */
   .table {
@@ -541,7 +567,6 @@
 
   #dataList li {
     transition: opacity 0.3s ease;
-    margin-bottom: -5px;
   }
 
   #dataList li[style*="display: none"] {
