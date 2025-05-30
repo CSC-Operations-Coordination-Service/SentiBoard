@@ -30,7 +30,7 @@
   position: sticky;
   top: 80px;
   padding: 2.5rem !important;
-  background-color:#006B7C;
+  background-color: #006B7C;
   margin-top: 18px;
   border-radius: 10px;
 }
@@ -66,6 +66,15 @@
 
 #eventDetails {
   overflow-y: auto;
+}
+
+.icon-bg {
+  display: inline-flex;
+  align-items: center;
+  background-color: #e0e0e0;
+  border-radius: 5px;
+  padding: 4px;
+  margin-right: 6px;
 }
 
 .event {

@@ -760,12 +760,13 @@ class CalendarWidget {
             listItem.style.padding = '10px';
             listItem.style.border = '1px solid #ccc';
             listItem.style.borderRadius = '5px';
+
             // Override "platform" category with "satellite"
             var category = event.category === "Platform" ? "Satellite" : event.category;
             const categoryKey = category.toLowerCase(); // match iconMap keys
             const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle'; // fallback icon
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
-            const iconHtml = `<i class="${iconClass} event-${mappedType}" style="margin-right: 8px; font-size: 1.2rem"></i>`;
+            const iconHtml = `<i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i>`;
             var item = "";
             if (event.category === "Data access") {
                 item = "All Sentinels";
@@ -791,7 +792,10 @@ class CalendarWidget {
                     </p>`;
             }
             listItem.innerHTML = `
-            <small>${iconHtml}${event.title || 'No description available'}</small><br>
+            <small>
+                <span class="icon-bg">${iconHtml}</span>
+                ${event.title || 'No description available'}
+            </small><br>
             <small>Occurrence date: ${this.parseDateString(event.start).toString()}</small><br>
             <small>Impacted satellite(s): ${item}</small><br>
             <small>Issue type: ${category}</small><br>

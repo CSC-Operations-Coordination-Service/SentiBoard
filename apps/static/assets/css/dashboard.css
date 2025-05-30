@@ -586,14 +586,16 @@ a {
   padding: 0 34px 0 3px;
 }
 
-.right-slide > div[style*="processors.png"] {
-  background-size: 100%; /* Zoomed out to show more */
+.right-slide>div[style*="processors.png"] {
+  background-size: 100%;
+  /* Zoomed out to show more */
   background-position: center center;
   background-repeat: no-repeat;
 }
 
-.right-slide > div[style*="events.png"] {
-  background-size: 120%; /* Zoomed out to show more */
+.right-slide>div[style*="events.png"] {
+  background-size: 100%;
+  /* Zoomed out to show more */
   background-position: center center;
   background-repeat: no-repeat;
 }
@@ -703,9 +705,10 @@ button:focus {
   .esa-logo img {
     max-width: 50px;
   }
+
   .sentiboard-logo img {
     max-width: 100px;
-    padding-left: 120px; 
+    padding-left: 120px;
     display: block;
   }
 
