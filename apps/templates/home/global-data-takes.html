@@ -107,47 +107,48 @@
 
 			<!-- Table container -->
 			<div class="container">
-				<div class="row align-items-end mb-3">
-					<div class="col-md-3">
-						<label for="mission-select">Select Mission:</label>
-						<select id="mission-select" class="mission-select form-control" onchange="filterByMission()">
-							<!-- <option value="">All Missions</option> -->
-							<option value="S1">Sentinel 1</option>
-							<option value="S2">Sentinel 2</option>
-							<option value="S3">Sentinel 3</option>
-							<option value="S5">Sentinel 5P</option>
-						</select>
+				<!-- Unified Filter Section -->
+				<div class="filter-section d-flex flex-wrap gap-3 mb-3">
+					<!-- Mission Select -->
+					<div class="filter-item">
+					<label for="mission-select">Select Mission:</label>
+					<select id="mission-select" class="mission-select form-control" onchange="filterByMission()">
+						<option value="S1">Sentinel 1</option>
+						<option value="S2">Sentinel 2</option>
+						<option value="S3">Sentinel 3</option>
+						<option value="S5">Sentinel 5P</option>
+					</select>
 					</div>
-					<div class="col-md-3">
-						<label for="start-date" class="filter-label">From:</label>
-						<input type="date" class="mt-1 form-control d-inline-block ml-2" id="start-date">
+				
+					<!-- Start Date -->
+					<div class="filter-item">
+					<label for="start-date">From:</label>
+					<input type="date" id="start-date" class="form-control">
 					</div>
-					<div class="col-md-3">
-						<label for="end-date" class="filter-label">To:</label>
-						<input type="date" class="mt-1 form-control d-inline-block ml-2 wide-date" id="end-date">
+				
+					<!-- End Date -->
+					<div class="filter-item">
+					<label for="end-date">To:</label>
+					<input type="date" id="end-date" class="form-control">
 					</div>
-					<div class="col-md-2">
-						<label for="time-period-select">Time Range:</label>
-						<select name="time-period-select" id="time-period-select" class="form-control">
-							<option value="day">Last 24 Hours</option>
-							<option selected value="week">Last 7 Days</option>
-							<option value="month">Last 30 Days</option>
-							<option value="last-quarter">Last 3 Months</option>
-						</select>
+				
+					<!-- Search by ID -->
+					<div class="filter-item flex-grow-1" style="min-width: 280px;">
+					<label for="search-input">Search by ID:</label>
+					<div class="suggestions-wrapper">
+						<input type="text" id="search-input" placeholder="Search by ID..." class="search-input form-control"
+						oninput="updateSuggestions(this.value)" autocomplete="off" />
+						<div id="suggestions-container" class="suggestions-dropdown"></div>
 					</div>
-					<div class="col-md-1">
-						<button class="filter-chart mt-2 d-inline-block ml-2" onclick="filterChart()">Apply</button>
 					</div>
-				</div>
-				<div class="row mb-4">
-					<div class="col-md-6">
-						<label for="search-input">Search by ID:</label>
-						<div class="suggestions-wrapper">
-							<input type="text" id="search-input" placeholder="Search by ID..." class="search-input"
-								oninput="updateSuggestions(this.value)" autocomplete="off" />
-							<div id="suggestions-container" class="suggestions-dropdown"></div>
+				
+					<!-- Apply & Reset Buttons Side-by-Side -->
+					<div class="filter-item d-flex flex-column">
+						<label>&nbsp;</label> <!-- spacing -->
+						<div class="d-flex button-group">
+							<button onclick="filterChart()" class="btn">Apply</button>
+							<button onclick="resetHeatmapAndTable()" class="btn">Reset</button>
 						</div>
-						<button class="mt-2 d-inline-block ml-2" onclick="resetHeatmapAndTable()">Reset</button>
 					</div>
 				</div>
 				<div class="mb-4">
