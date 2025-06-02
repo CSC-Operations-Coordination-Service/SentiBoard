@@ -698,6 +698,11 @@
       flex-direction: column !important;
       align-items: stretch !important;
     }
+
+    .custom-box-table th:nth-child(6),
+    .custom-box-table td:nth-child(6) {
+      display: none;
+    }
   }
 
   .btn.btn-secondary {
