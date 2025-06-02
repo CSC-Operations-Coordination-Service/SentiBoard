@@ -254,6 +254,12 @@
     font-size: 1.2rem;
   }
 
+  .filter-panel,
+  .completeness-status {
+    word-wrap: break-word;
+    min-width: 0;
+  }
+
   /* Content area */
   .content {
     padding: 20px;
@@ -346,7 +352,6 @@
   /* Border on selected link container */
   .container-border.selected {
     border: 1.5px solid #FFC107;
-    /* yellow-ish border */
   }
 
   .filter-link.selected {
@@ -652,6 +657,10 @@
       font-size: 0.8rem;
     }
 
+    #missionDonutChart {
+      max-width: 100% !important;
+    }
+
   }
 
   @media (max-width: 576px) {
@@ -674,6 +683,20 @@
 
     .chart-container canvas {
       max-height: 250px;
+    }
+
+    #resetFilterButton {
+      margin-top: 8px;
+      width: 100%;
+    }
+
+    #mission-select {
+      width: 100%;
+    }
+
+    .form-group.d-flex {
+      flex-direction: column !important;
+      align-items: stretch !important;
     }
   }
 

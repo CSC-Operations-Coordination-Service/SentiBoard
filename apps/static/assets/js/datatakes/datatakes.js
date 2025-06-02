@@ -313,7 +313,7 @@ class Datatakes {
         }
 
 
-        nextItems.forEach(take => {
+        nextItems.forEach((take, index) => {
             const li = document.createElement("li");
 
             const containerDiv = document.createElement("div");
@@ -323,14 +323,17 @@ class Datatakes {
             containerDiv.style.alignItems = "center";
             containerDiv.style.gap = "8px";
             containerDiv.style.cursor = "pointer";
-            containerDiv.classList.add('selected');
             const a = document.createElement("a");
             a.href = "#";
             a.className = "filter-link";
             a.dataset.filterType = "groundStation";
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
-            a.classList.add('selected');
+            // Only preselect the very first item on a fresh load
+            if (!append && this.displayedCount === 0 && index === 0) {
+                containerDiv.classList.add('selected');
+                a.classList.add('selected');
+            }
 
             // Prevent <a> default click behavior to avoid jumping
             a.addEventListener('click', e => e.preventDefault());
@@ -674,7 +677,19 @@ class Datatakes {
                         }
                     }
                 }
-            }
+            },
+            responsive: [{
+                breakpoint: 768,
+                options: {
+                    chart: {
+                        height: 300
+                    },
+                    legend: {
+                        position: 'bottom',
+                        horizontalAlign: 'center'
+                    }
+                }
+            }]
         };
 
         this.donutChartInstance = new ApexCharts(donutChartContainer, options);
