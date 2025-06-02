@@ -444,7 +444,7 @@ const monthsData = [
 
 
 class GlobalDatatakes {
-    constructor(mockDataTakes, formatDataDetail) {
+    constructor(monthsData, formatDataDetail) {
         this.mockDataTakes = monthsData;
         this.formatDataDetail = formatDataDetail;
         this.currentPage = 1;
@@ -470,9 +470,9 @@ class GlobalDatatakes {
             if (searchWrapper && suggestionsDropdown && !searchWrapper.contains(e.target)) {
                 suggestionsDropdown.style.display = "none";
             }
-            chartOptions.series = prepareHeatmapData(monthsData);
+            this.chartOptions.series = this.prepareHeatmapData(monthsData);
             // Render the chart
-            const chart = new ApexCharts(document.querySelector("#heatmap"), chartOptions);
+            const chart = new ApexCharts(document.querySelector("#heatmap"), this.chartOptions);
             chart.render();
             console.log("Datatakes initialized.");
 
@@ -965,7 +965,6 @@ class GlobalDatatakes {
         window.pieChartInstance.render();
     }
 
-
 }
 
-window.globalDatatakes = new GlobalDatatakes(mockDataTakes, formatDataDetail);
+window.globalDatatakes = new GlobalDatatakes(monthsData, formatDataDetail);
