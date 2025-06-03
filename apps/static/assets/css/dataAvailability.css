@@ -521,17 +521,10 @@
     /* tighter line height */
   }
 
-  .completeness-status>* {
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
-    padding: 0 !important;
-  }
-
   .comple-title {
-    margin: 0 0 4px 0;
-    /* remove top margin, small bottom margin */
+    margin: 0 0 12px 0;
     font-weight: 400;
-    line-height: 1.2;
+    line-height: 1;
   }
 
   .legend-grid {
