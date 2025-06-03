@@ -179,6 +179,48 @@ class CalendarWidget {
         return `${y}-${m}-${d}`;
     }
 
+    normalizeDateString(str) {
+        console.log('normalizeDateString called with:', str);
+
+        if (str == null) return null;
+
+        // Accept Date objects
+        if (str instanceof Date) {
+            if (isNaN(str)) return null;
+            return str.toISOString().split('T')[0];
+        }
+
+        str = String(str);
+
+        // Parse DD/MM/YYYY HH:mm:ss
+        const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
+        if (match) {
+            const [, day, month, year, hour, minute, second] = match;
+            const h = hour ?? '00';
+            const m = minute ?? '00';
+            const s = second ?? '00';
+
+            const date = new Date(
+                parseInt(year, 10),
+                parseInt(month, 10) - 1,
+                parseInt(day, 10),
+                parseInt(h, 10),
+                parseInt(m, 10),
+                parseInt(s, 10)
+            );
+
+            if (isNaN(date)) return null;
+
+            return date.toISOString().split('T')[0]; // YYYY-MM-DD
+        }
+
+        // Fallback to ISO or other valid format
+        const d = new Date(str);
+        if (isNaN(d)) return null;
+
+        return d.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+
     clearEventDetails() {
         this.lastSelectedDate = null;
         const eventDetails = document.getElementById('eventDetails');
@@ -194,6 +236,8 @@ class CalendarWidget {
 
 
         const onFilterChange = (getter) => {
+            console.log("selecte date 2", this.lastSelectedDate);
+
             this.clearEventDetails();
             getter();
             this.generateCalendar(this.currentMonth, this.currentYear);
@@ -537,37 +581,33 @@ class CalendarWidget {
         document.getElementById('calendarLoadingSpinner').style.display = 'block';
 
         try {
-
-            console.log(`Generating calendar for: ${month + 1}/${year}`);
             this.currentMonth = month;
             this.currentYear = year;
             const calendarGrid = document.getElementById('calendarGrid');
             const selectedMission = document.getElementById('missionSelect').value;
             const selectedEventType = document.getElementById('eventTypeSelect').value;
             const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
-
-
             const monthYear = document.getElementById('monthYear');
+
             calendarGrid.innerHTML = "";
             monthYear.textContent = `${this.monthNames[month]} ${year}`;
 
             const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
             const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-            // Blank cells for previous month
+            // Blank cells
             for (let i = 0; i < firstDay; i++) {
-                const emptyCell = document.createElement('div');
-                calendarGrid.appendChild(emptyCell);
+                calendarGrid.appendChild(document.createElement('div'));
             }
 
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayDiv = document.createElement('div');
-
                 dayDiv.classList.add('calendar-day');
 
-                const fullDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+                const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-                if (fullDate === formatDate(this.today)) {
+                console.log('Comparing fullDate:', fullDate, 'with', this.today, '→', this.normalizeDateString(this.today));
+                if (fullDate === this.normalizeDateString(this.today)) {
                     dayDiv.classList.add('today');
                 }
 
@@ -575,47 +615,35 @@ class CalendarWidget {
                     document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
                     dayDiv.classList.add('selected');
                     this.lastSelectedDate = fullDate;
+                    console.log("selecte date 3", this.lastSelectedDate);
+                    console.log("selecte date 4", fullDate);
+
                     this.showEventDetails(fullDate);
                 });
 
-                //  1. Collect events for this specific day
-                const allEventsForDay = Object.values(this.anomalies).filter(anomaly => {
-                    const anomalyDate = anomaly.start?.split(' ')[0];
-                    if (!anomalyDate) return false;
-
-                    const normalizedDate = anomalyDate.replace(/\//g, '-').split('-').reverse().join('-'); // DD/MM/YYYY → YYYY-MM-DD
-                    return normalizedDate === fullDate;
+                const allEventsForDay = Object.values(this.anomalies).filter(event => {
+                    return this.normalizeDateString(event.start) === fullDate;
                 });
 
-                // Check if filters are active
-                const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || (searchText && searchText.trim() !== '');
-
-                // Apply filters only if needed
+                const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || searchText;
                 const filteredEvents = isFiltering
                     ? allEventsForDay.filter(event => this.filterEvent(event, selectedMission, selectedEventType, searchText))
                     : allEventsForDay;
-                /*if (fullDate === '2025-03-27') {
-                    console.log("Filtered Events for May 27:", filteredEvents);
-                }*/
-                // Step 4: Render events
+
                 const eventTextContainer = document.createElement('div');
                 eventTextContainer.classList.add('event-container');
 
-                console.log("Events shown on this day:", filteredEvents.length);
                 const addedTypes = new Set();
                 filteredEvents.forEach(event => {
-                    let category = event.category === "Platform" ? "Satellite" : event.category;
+                    const category = event.category === "Platform" ? "Satellite" : event.category;
                     const mappedType = this.eventTypeMap[category] || category;
                     const typeClass = `event-${mappedType.toLowerCase()}`;
                     if (!addedTypes.has(typeClass)) {
+                        const iconElement = document.createElement('i');
+                        iconElement.classList.add(...(this.iconMap[mappedType.toLowerCase()] || 'fas fa-question-circle').split(' '), 'event-icon');
+
                         const eventLabel = document.createElement('div');
                         eventLabel.classList.add(typeClass);
-
-                        const iconClass = this.iconMap[mappedType.toLowerCase()] || 'fas fa-question-circle';
-
-                        const iconElement = document.createElement('i');
-                        iconElement.classList.add(...iconClass.split(' '), 'event-icon');
-
                         eventLabel.appendChild(iconElement);
 
                         eventTextContainer.appendChild(eventLabel);
@@ -623,30 +651,28 @@ class CalendarWidget {
                     }
                 });
 
-                // Step 5: Add day and events to calendar
                 const daySpan = document.createElement('span');
                 daySpan.textContent = day;
                 dayDiv.appendChild(daySpan);
-                calendarGrid.appendChild(dayDiv);
-
                 if (eventTextContainer.hasChildNodes()) {
                     dayDiv.appendChild(eventTextContainer);
                 }
+
+                calendarGrid.appendChild(dayDiv);
             }
 
-            // Restore previously selected date
-            const selectedDate = this.lastSelectedDate;
-            if (selectedDate) {
+            if (this.lastSelectedDate) {
+                console.log("selecte date 1", this.lastSelectedDate);
                 const allDayDivs = document.querySelectorAll('.calendar-day');
                 allDayDivs.forEach(div => {
-                    const dayNumber = selectedDate.split('-')[2];
+                    const dayNumber = this.lastSelectedDate.split('-')[2];
                     if (div.querySelector('span')?.textContent === dayNumber) {
                         div.classList.add('selected');
                     }
                 });
+                this.showEventDetails(this.lastSelectedDate);
             }
 
-            console.log(`Generating calendar for: ${month + 1}/${year}`);
             this.adjustCalendarHeight();
 
         } catch (error) {
@@ -658,130 +684,76 @@ class CalendarWidget {
         }
     }
 
-    getFilteredEvents(dateKey) {
-        return this.events.filter(event => {
-            const matchesDate = event.date === dateKey;
-            const matchesMission = this.selectedMission === 'all' || event.mission === this.selectedMission;
-            const matchesType = this.selectedEventType === 'all' || event.eventType === this.selectedEventType;
-            const matchesSearch = this.searchTerm === '' || (event.description && event.description.toLowerCase().includes(this.searchTerm));
-            return matchesDate && matchesMission && matchesType && matchesSearch;
+    filterEvents({ date, mission, eventType, searchText }) {
+
+        const targetDate = this.normalizeDateString(date);
+        const searchLower = searchText?.toLowerCase().trim() || '';
+        const missionMap = {
+            's1': ['S1A', 'S1C'],
+            's2': ['S2A', 'S2B', 'S2C'],
+            's3': ['S3A', 'S3B'],
+            's5': ['S5P']
+        };
+
+        return Object.values(this.anomalies).filter(event => {
+            const eventDate = this.normalizeDateString(event.start || '');
+            if (targetDate && eventDate !== targetDate) return false;
+
+            if (mission && mission !== 'all') {
+                const anomalyEnv = String(event.environment || '').toUpperCase();
+                const sats = missionMap[mission.toLowerCase()] || [];
+                const matches = sats.some(sat => anomalyEnv.includes(sat));
+                if (!matches) return false;
+            }
+
+            if (eventType && eventType !== 'all') {
+                const category = event.category === 'Platform' ? 'Satellite' : event.category;
+                if (category.toLowerCase() !== eventType.toLowerCase()) return false;
+            }
+
+            if (searchLower) {
+                const matchesSearch =
+                    (event.category?.toLowerCase().includes(searchLower)) ||
+                    (event.environment?.toLowerCase().includes(searchLower)) ||
+                    (event.title?.toLowerCase().includes(searchLower)) ||
+                    (event.text?.toLowerCase().includes(searchLower));
+                if (!matchesSearch) return false;
+            }
+
+            return true;
         });
     }
 
     showEventDetails(date) {
-        console.log('showEventDetails triggered with date:', date);
-        const eventDetailsContent = document.getElementById('eventDetailsContent');
-        const noEventMessage = document.getElementById('noEventMessage');
+        const { noEventMsg, content } = this.ensureEventDetailsElements();
 
-        if (!eventDetailsContent || !noEventMessage) {
-            console.warn('Missing #eventDetailsContent or #noEventMessage in DOM');
-            return;
-        }
-
-        eventDetailsContent.innerHTML = ''; // Clear old content
-
-        // If no date is selected, show default message and exit
+        eventDetailsContent.innerHTML = '';
         if (!date) {
-            noEventMessage.style.display = 'block';
-            noEventMessage.textContent =  `No events for ${targetDate}.`;
+            noEventMsg.style.display = 'block';
+            noEventMsg.textContent = 'Select a date to see event details.';
             return;
         }
 
-        noEventMessage.style.display = 'none';
+        const normalizedDate = this.normalizeDateString(date);
+
         const selectedMission = document.getElementById('missionSelect').value;
         const selectedEventType = document.getElementById('eventTypeSelect').value;
         const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
 
-        // Normalize input date to DD/MM/YYYY for comparison
-        const normalizeDate = str => {
-            if (!str) return null;
-
-            // Parse DD/MM/YYYY HH:mm:ss
-            const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
-            if (match) {
-                let [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
-
-                // Months are zero-based in JS Date
-                const date = new Date(
-                    parseInt(year),
-                    parseInt(month) - 1,
-                    parseInt(day),
-                    parseInt(hour),
-                    parseInt(minute),
-                    parseInt(second)
-                );
-
-                if (isNaN(date)) return null;
-
-                // Format to YYYY-MM-DD in local time
-                const yyyy = date.getFullYear();
-                const mm = String(date.getMonth() + 1).padStart(2, '0');
-                const dd = String(date.getDate()).padStart(2, '0');
-
-                return `${yyyy}-${mm}-${dd}`;
-            }
-
-            // Fallback to native parsing for ISO or others
-            const d = new Date(str);
-            if (isNaN(d)) return null;
-
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-
-            return `${yyyy}-${mm}-${dd}`;
-        };
-        const targetDate = normalizeDate(date);
-        if (!targetDate) {
-            noEventMessage.style.display = 'block';
-            noEventMessage.textContent = 'Select a valid date to see event details.';
-            return;
-        }
-
-        let events = Object.values(this.anomalies).filter(event => {
-            const eventDate = normalizeDate(event.start || '');
-            if (eventDate !== targetDate) return false;
-
-            const env = String(event.environment || '').toLowerCase().trim();
-            const mission = String(selectedMission || '').toLowerCase().trim();
-            console.log("mission selected", mission);
-            if (selectedMission !== 'all') {
-                const missionMap = {
-                    's1': ['S1A', 'S1C'],
-                    's2': ['S2A', 'S2B', 'S2C'],
-                    's3': ['S3A', 'S3B'],
-                    's5': ['S5P']
-                };
-
-                const selectedMissionKey = selectedMission.toLowerCase();
-                const matchingSatellites = missionMap[selectedMissionKey] || [];
-
-                const anomalyEnv = event.environment.toUpperCase();
-                const matches = matchingSatellites.some(sat => anomalyEnv.includes(sat));
-                if (!matches) return false;
-            }
-
-            const category = event.category === "Platform" ? "Satellite" : event.category;
-            if (selectedEventType !== 'all' && category.toLowerCase() !== selectedEventType) return false;
-
-            const searchLower = searchText.toLowerCase();
-            const matchesSearch =
-                (event.category?.toLowerCase().includes(searchLower)) ||
-                (event.environment?.toLowerCase().includes(searchLower)) ||
-                (event.title?.toLowerCase().includes(searchLower)) ||
-                (event.text?.toLowerCase().includes(searchLower));
-
-            if (searchText && !matchesSearch) return false;
-
-            return true;
+        const events = this.filterEvents({
+            date: normalizedDate,
+            mission: selectedMission,
+            eventType: selectedEventType,
+            searchText
         });
 
-        if (events.length === 0) {
-            eventDetailsContent.innerHTML = ''; // clear details content
-            noEventMessage.style.display = 'block';  // show the message again
-            noEventMessage.textContent = `No events for ${date}.`;
+        if (!events.length) {
+            noEventMsg.style.display = 'block';
+            noEventMsg.textContent = `No events for ${normalizedDate}.`;
             return;
         }
+
+        noEventMsg.style.display = 'none';
 
         const list = document.createElement('ul');
         list.style.listStyle = 'none';
@@ -794,51 +766,39 @@ class CalendarWidget {
             listItem.style.border = '1px solid #ccc';
             listItem.style.borderRadius = '5px';
 
-            // Override "platform" category with "satellite"
-            var category = event.category === "Platform" ? "Satellite" : event.category;
-            const categoryKey = category.toLowerCase(); // match iconMap keys
-            const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle'; // fallback icon
+            const category = event.category === "Platform" ? "Satellite" : event.category;
+            const categoryKey = category.toLowerCase();
+            const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle';
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
-            const iconHtml = `<i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i>`;
-            var item = "";
-            if (event.category === "Data access") {
-                item = "All Sentinels";
-            } else {
-                if (event.environment.includes('S1A')) { item += "S1A, " }
-                if (event.environment.includes('S1C')) { item += "S1C, " }
-                if (event.environment.includes('S2A')) { item += "S2A, " }
-                if (event.environment.includes('S2B')) { item += "S2B, " }
-                if (event.environment.includes('S2C')) { item += "S2C, " }
-                if (event.environment.includes('S3A')) { item += "S3A, " }
-                if (event.environment.includes('S3B')) { item += "S3B, " }
-                if (event.environment.includes('S5P')) { item += "S5P, " }
-                item = item.substring(0, item.length - 2);
-            }
 
-            let dtsHtml = '';
-            if (event.environment) {
-                const dts = event.environment.split(";");
-                dtsHtml = `
-                    <p style="color: white; font-size: 14px">
-                    List of impacted datatakes:<br>
-                    ${this.arrangeDatatakesList(event, dts)}
-                    </p>`;
-            }
+            const satellites = this.getSatellitesString(event.environment || '');
+            const datatakeHtml = event.environment
+                ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, event.environment.split(";"))}</p>`
+                : '';
+
             listItem.innerHTML = `
-            <small>
-                <span class="icon-bg">${iconHtml}</span>
-                ${event.title || 'No description available'}
-            </small><br>
-            <small>Occurrence date: ${this.parseDateString(event.start).toString()}</small><br>
-            <small>Impacted satellite(s): ${item}</small><br>
-            <small>Issue type: ${category}</small><br>
-            <small>${event.text || event.key}</small><br>
-            ${dtsHtml}
-        `;
+                <small>
+                    <span class="icon-bg"><i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i></span>
+                    ${event.title || 'No description available'}
+                </small><br>
+                <small>Occurrence date: ${this.parseDateString(event.start)}</small><br>
+                <small>Impacted satellite(s): ${satellites}</small><br>
+                <small>Issue type: ${category}</small><br>
+                <small>${event.text || event.key}</small><br>
+                ${datatakeHtml}
+            `;
             list.appendChild(listItem);
         });
 
         eventDetailsContent.appendChild(list);
+    }
+
+    getSatellitesString(envStr) {
+        if (!envStr) return '';
+        if (envStr.includes('Data access')) return 'All Sentinels';
+
+        const sats = ['S1A', 'S1C', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+        return sats.filter(sat => envStr.includes(sat)).join(', ');
     }
 
     parseDateString(str) {
@@ -855,6 +815,42 @@ class CalendarWidget {
             parseInt(second)
         );
     }
+
+    ensureEventDetailsElements() {
+        let container = document.getElementById('eventDetails');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'eventDetails';
+            container.className = 'event-details p-3';
+            document.body.appendChild(container); // Or insert it where you want
+        }
+
+        let title = document.getElementById('eventDetailsTitle');
+        if (!title) {
+            title = document.createElement('h5');
+            title.id = 'eventDetailsTitle';
+            title.textContent = 'Event Details';
+            container.appendChild(title);
+        }
+
+        let noEventMsg = document.getElementById('noEventMessage');
+        if (!noEventMsg) {
+            noEventMsg = document.createElement('p');
+            noEventMsg.id = 'noEventMessage';
+            noEventMsg.textContent = 'Select a date to see event details.';
+            container.appendChild(noEventMsg);
+        }
+
+        let content = document.getElementById('eventDetailsContent');
+        if (!content) {
+            content = document.createElement('div');
+            content.id = 'eventDetailsContent';
+            container.appendChild(content);
+        }
+
+        return { container, title, noEventMsg, content };
+    }
+
 
 }
 const calendar = new CalendarWidget();
