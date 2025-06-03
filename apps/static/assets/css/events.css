@@ -434,17 +434,19 @@
   max-width: 200px;
 }
 
-/*.reset-button:hover {
-  background-color: #45787E !important;
-  color: #000;
-}*/
+.reset-button:hover {
+  color: #212529 !important;
+  text-decoration: none !important;
+  background-color: #FFC107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7) !important;
+}
 
 .navbar {
   padding: 1rem;
 }
 
 .completeness-status {
-  background-color: #006B7C;
+  background-color: #5ED5DD;
   margin-top: 20px;
   padding: 10px;
   font-size: 14px;
@@ -452,27 +454,29 @@
   max-height: 100%;
   overflow-y: auto;
   border-radius: 6px;
-  width: 100%;           /* Adjust width as needed */
-  max-width: 410px;     /* Optional max width */
-  margin-left: auto;    /* Center horizontally */
-  margin-right: 18px;   /* Center horizontally */
+  width: 100%;
+  /* Adjust width as needed */
+  max-width: 410px;
+  /* Optional max width */
+  margin-left: auto;
+  /* Center horizontally */
+  margin-right: 18px;
+  /* Center horizontally */
   box-sizing: border-box;
 }
 
-.comple-title{
+.comple-title {
   margin-left: 0px;
 }
+
 .legend-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Force 2 columns */
-  gap: 0px 0px; /* row and column spacing */
+  grid-template-columns: repeat(2, 1fr);
+  /* Force 2 columns */
+  gap: 0px 0px;
+  /* row and column spacing */
 }
 
-.legend-item {
-  display: flex;
-  align-items: center;
-  font-size: 0.875rem;
-}
 
 /* Circle icon styling */
 .legend-item i {
@@ -636,7 +640,7 @@
   }
 
   .reset-button {
-    width: 40%;
+    width: 100%;
     font-size: 15px;
     padding: 6px 8px;
   }

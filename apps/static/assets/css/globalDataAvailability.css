@@ -85,8 +85,15 @@ input[type="date"] {
   cursor: pointer;
   font-size: 15px;
   padding: 15px;
-  color: rgb(33, 37, 41);
+  color: #212529;
   width: 100%;
+}
+
+.btn:hover{
+  color: #212529 !important;
+  background-color: #FFC107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
+  text-decoration: none;
 }
 
 .button-group{

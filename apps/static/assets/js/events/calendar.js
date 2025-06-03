@@ -55,7 +55,8 @@ class CalendarWidget {
         this.noEventsBeforeDateMsgDisplayed = false;
         this.isGenerating = false;
 
-        this.init();
+        window.addEventListener("DOMContentLoaded", this.init.bind(this));
+
     }
 
     init() {
@@ -196,6 +197,8 @@ class CalendarWidget {
             this.clearEventDetails();
             getter();
             this.generateCalendar(this.currentMonth, this.currentYear);
+
+            this.showEventDetails(this.lastSelectedDate || null);
         };
 
         const debounce = (func, delay) => {
@@ -262,8 +265,11 @@ class CalendarWidget {
             document.getElementById('eventSearchInput').value = '';
             const noEventMessage = document.getElementById('noEventMessage');
             const eventDetailsContent = document.getElementById('eventDetailsContent');
-            if (noEventMessage) noEventMessage.style.display = 'block';
             if (eventDetailsContent) eventDetailsContent.innerHTML = '';
+            if (noEventMessage) {
+                noEventMessage.textContent = 'Select a date to see event details.';
+                noEventMessage.style.display = 'block';
+            }
 
             this.generateCalendar(this.currentMonth, this.currentYear);
         });
@@ -628,6 +634,18 @@ class CalendarWidget {
                 }
             }
 
+            // Restore previously selected date
+            const selectedDate = this.lastSelectedDate;
+            if (selectedDate) {
+                const allDayDivs = document.querySelectorAll('.calendar-day');
+                allDayDivs.forEach(div => {
+                    const dayNumber = selectedDate.split('-')[2];
+                    if (div.querySelector('span')?.textContent === dayNumber) {
+                        div.classList.add('selected');
+                    }
+                });
+            }
+
             console.log(`Generating calendar for: ${month + 1}/${year}`);
             this.adjustCalendarHeight();
 
@@ -651,7 +669,7 @@ class CalendarWidget {
     }
 
     showEventDetails(date) {
-        console.log("date", date);
+        console.log('showEventDetails triggered with date:', date);
         const eventDetailsContent = document.getElementById('eventDetailsContent');
         const noEventMessage = document.getElementById('noEventMessage');
 
@@ -665,6 +683,7 @@ class CalendarWidget {
         // If no date is selected, show default message and exit
         if (!date) {
             noEventMessage.style.display = 'block';
+            noEventMessage.textContent =  `No events for ${targetDate}.`;
             return;
         }
 
@@ -758,7 +777,9 @@ class CalendarWidget {
         });
 
         if (events.length === 0) {
-            eventDetailsContent.innerHTML = `<p>No events for ${date}.</p>`;
+            eventDetailsContent.innerHTML = ''; // clear details content
+            noEventMessage.style.display = 'block';  // show the message again
+            noEventMessage.textContent = `No events for ${date}.`;
             return;
         }
 

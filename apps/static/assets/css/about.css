@@ -11,27 +11,47 @@
     /*min-height: 500px; */
   }
 
-  .h1, .h2, .h3, .h4, .h5, .h6, h1, h2, h3, h4, h5, h6 {
+  .h1,
+  .h2,
+  .h3,
+  .h4,
+  .h5,
+  .h6,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     line-height: 1.8 !important;
     color: white !important;
-}
+  }
 
 
-.row .card-text {
-  margin-left: 1px !important;
-  margin-right: 0px !important;
-}
+  .row .card-text {
+    margin-left: 1px !important;
+    margin-right: 0px !important;
+  }
 
   .card {
     background-color: transparent;
     box-shadow: none;
   }
 
-  .card-body {
+/*  .card-body {
+    background-color: rgba(52, 58, 64, 0.8);
+    border-radius: 10px;
+    padding: 20px !important;
+  }*/
+
+  .section-container {
+    width: 80%;
+    margin: 0 auto;
     background-color: rgba(52, 58, 64, 0.8);
     border-radius: 10px;
     padding: 20px !important;
   }
+
 
   .back-container::before {
     content: '';

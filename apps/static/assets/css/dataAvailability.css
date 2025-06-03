@@ -334,9 +334,8 @@
   /* Make sure border doesn't add to size */
   .container-border {
     display: inline-flex;
-    /* inline-flex will shrink-wrap to content width */
     border: 1.5px solid #FFC107;
-    padding: 2px 4px;
+    padding: 2px 10px;
     border-radius: 6px;
     box-sizing: border-box;
   }
@@ -585,7 +584,10 @@
   .view-btn,
   .view-btn:focus,
   .view-btn:active {
-    padding: 3px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1px 6px;
     background-color: #FFC107 !important;
     border: none;
     border-radius: 5px;
@@ -594,23 +596,29 @@
     width: 100%;
     font-size: 14px;
     transition: all 0.3s ease;
+    box-sizing: border-box;
   }
 
   .view-btn:hover {
-    color: #12b1bf !important;
+    padding: 1px 6px;
+    color: #212529 !important;
+    text-decoration: none !important;
     background-color: #FFC107 !important;
-    opacity: .9;
-    transition: all .3s;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.7) !important;
   }
 
   .status-badge {
     color: #fff;
     padding: 3px 8px;
     border-radius: 4px;
-    display: inline-block;
+    /*display: inline-flex;*/
+    align-items: center;
+    justify-content: center;
     min-width: 70px;
     text-align: center;
     font-weight: normal;
+    height: 100%;
+    line-height: 1;
   }
 
   /* Mobile Responsiveness */
@@ -718,10 +726,14 @@
     border-radius: 5px;
     padding: 5px 10px;
     font-size: 0.9rem;
+    transition: background-color 0.3s, box-shadow 0.3s;
+    width: 97%;
   }
 
   .btn.btn-outline-secondary:hover {
-    color: #12b1bf;
+    color: #212529;
+    background-color: #ffcf3f;
+    box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
   }
 
   .btn.btn-link {
