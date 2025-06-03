@@ -403,7 +403,7 @@ a {
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
-  background: #2b9d38;
+  background: #0aa41b;
 }
 
 .status-circle-dt-partial {
@@ -415,7 +415,7 @@ a {
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
-  background: #bb8747;
+  background: #FFD700;
 }
 
 .status-circle-dt-failed {
@@ -427,7 +427,7 @@ a {
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
-  background: red;
+  background: #FF0000;
 }
 
 .status-circle-dt-undef {

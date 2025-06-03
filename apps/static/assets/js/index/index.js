@@ -27,7 +27,8 @@ class Home {
 
         // Hide copyright footer
         $('#footer-copyright').hide();
-        $('#copernicus-logo-footer').hide();
+        //$('#copernicus-logo-footer').hide();
+        $('#copernicus-logo-footer').css('visibility', 'hidden');
 
         // Shows logos in the Nav header
         $('#copernicus-logo-header').show();

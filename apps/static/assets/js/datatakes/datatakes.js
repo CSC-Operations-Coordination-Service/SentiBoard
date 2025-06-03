@@ -645,12 +645,13 @@ class Datatakes {
                 horizontalAlign: 'left',
                 labels: { colors: '#FFFFFF' },
                 itemMargin: {
-                    vertical: 5
+                    vertical: 5,
+                    horizontal: 2
                 },
                 markers: {
                     width: 12,
                     height: 12,
-                    offsetX: -20, // Fine-tune horizontal alignment
+                    offsetX: -12, // Fine-tune horizontal alignment
                     offsetY: 0
                 },
                 formatter: function (seriesName, opts) {

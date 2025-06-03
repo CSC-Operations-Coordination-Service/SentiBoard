@@ -298,6 +298,11 @@
     align-items: center;
   }
 
+  .apexcharts-legend {
+    max-width: 180px;   /* Default max width for desktop */
+    padding-left: 5px;  /* Small padding to separate legend from donut */
+  }
+
   #infoButton {
     all: unset !important;
     cursor: pointer !important;
@@ -340,8 +345,6 @@
     box-sizing: border-box;
   }
 
-
-
   /* Border on hover of the container */
   .container-border:hover {
     border: 1.5px solid #FFC107;
@@ -354,7 +357,6 @@
   }
 
   .filter-link.selected {
-    /* optional highlight styling for link */
     font-weight: bold;
     color: #FFC107;
   }
@@ -362,10 +364,7 @@
   /* Reset border if no hover or selection */
   .container-border:not(:hover):not(.selected) {
     border: 1.5px solid transparent;
-    /* keep space but invisible */
   }
-
-
 
   /* Table Styling */
   .table {
@@ -392,7 +391,7 @@
 
   #table-container {
     position: relative;
-    /* for absolute positioning context */
+
   }
 
   #closeTableButton {
@@ -417,11 +416,8 @@
     color: #ffffff;
   }
 
-  /*customized table*/
   .custom-box-table-container {
     max-width: 900px;
-    /*margin: 30px auto; /* Center horizontally with some vertical spacing */
-    /*padding: 0 20px;*/
   }
 
   .custom-box-table {
@@ -472,13 +468,15 @@
     height: 10px;
     border-radius: 50%;
     background-color: #FFD700;
+    top:0 !important;
+    left:0 !important;
   }
 
   .status-circle-dt-acquired {
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #4caf50;
+    background-color: #0aa41b;
   }
 
   .status-circle-dt-unavailable {
@@ -505,7 +503,6 @@
   .completeness-status {
     background-color: #006B7C;
     margin-top: 43px;
-    /* reduced from 42px */
     padding: 8px 10px;
     font-size: 14px;
     color: white;
@@ -518,7 +515,6 @@
     margin-right: auto;
     box-sizing: border-box;
     line-height: 1.1;
-    /* tighter line height */
   }
 
   .comple-title {
@@ -538,10 +534,8 @@
     align-items: center;
     font-size: 0.875rem;
     margin-bottom: 2px;
-    /* smaller bottom margin */
     padding: 0;
     line-height: 1.1;
-    /* tighter line height */
   }
 
   .legend-item i {
@@ -563,11 +557,11 @@
   }
 
   .status-circle-dt-acquired {
-    background-color: #2b9d38 !important;
+    background-color: #0aa41b !important;
   }
 
   .status-circle-dt-part {
-    background-color: #bb8747;
+    background-color: #FFD700;
   }
 
   .status-circle-dt-unavailable {
@@ -660,6 +654,12 @@
 
     #missionDonutChart {
       max-width: 100% !important;
+    }
+
+    .apexcharts-legend {
+      max-width: 100%;  /* full width under chart */
+      padding-left: 0;
+      margin-top: 15px; /* some space above legend */
     }
 
   }

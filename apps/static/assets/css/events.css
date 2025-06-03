@@ -510,11 +510,11 @@
 }
 
 .status-circle-dt-acquired {
-  background-color: #2b9d38 !important;
+  background-color: #0aa41b !important;
 }
 
 .status-circle-dt-part {
-  background-color: #bb8747;
+  background-color: #FFD700;
 }
 
 .status-circle-dt-unavailable {
