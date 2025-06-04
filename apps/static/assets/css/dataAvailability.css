@@ -467,7 +467,7 @@
     width: 10px;
     height: 10px;
     border-radius: 50%;
-    background-color: #FFD700;
+    background-color: #bb8747;
     top:0 !important;
     left:0 !important;
   }
@@ -501,7 +501,7 @@
   }
 
   .completeness-status {
-    background-color: #006B7C;
+    background-color: #575962;
     margin-top: 43px;
     padding: 8px 10px;
     font-size: 14px;
@@ -561,7 +561,7 @@
   }
 
   .status-circle-dt-part {
-    background-color: #FFD700;
+    background-color: #bb8747;
   }
 
   .status-circle-dt-unavailable {

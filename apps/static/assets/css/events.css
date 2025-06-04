@@ -446,7 +446,7 @@
 }
 
 .completeness-status {
-  background-color: #5ED5DD;
+  background-color: #575962;
   margin-top: 20px;
   padding: 10px;
   font-size: 14px;
@@ -514,7 +514,7 @@
 }
 
 .status-circle-dt-part {
-  background-color: #FFD700;
+  background-color: #bb8747;
 }
 
 .status-circle-dt-unavailable {

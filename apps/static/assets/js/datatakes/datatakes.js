@@ -570,7 +570,7 @@ class Datatakes {
         }
 
         const colorMap = {
-            PARTIAL: ['#FFD700', '#FFF8DC'],
+            PARTIAL: ['#bb8747', '#e6c9a0'],
             PUBLISHED: ['#4caf50', '#A5D6A7'],
             UNAVAILABLE: ['#FF0000', '#FF9999'],
             PLANNED: ['#9e9e9e', '#E0E0E0'],
@@ -788,11 +788,11 @@ class Datatakes {
             // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
                 acqStatus === "UNAVAILABLE" ? "#FF0000" :
-                    acqStatus === "PARTIAL" ? "#FFD700" : "#818181";
+                    acqStatus === "PARTIAL" ? "#bb8747" : "#818181";
 
             const publicationColor = pubStatus === "PUBLISHED" ? "#0aa41b" :
                 pubStatus === "UNAVAILABLE" ? "#FF0000" :
-                    pubStatus === "PARTIAL" ? "#FFD700" : "#818181";
+                    pubStatus === "PARTIAL" ? "#bb8747" : "#818181";
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
