@@ -441,7 +441,22 @@ const monthsData = [
     }
 ];
 
+const getColorForPercentage = (percentage) => {
+    if (percentage <= 5) return '#FF6347';        // Unrecoverable
+    if (percentage <= 10) return '#FFFF99';       // Partial Data Unrecoverable
+    if (percentage <= 14) return '#71B5B8';        // Planned
+    if (percentage <= 20) return '#FFD700';       // Partial Dataset Availability
+    return '#0aa41b';                              // Full Data Availability
+};
 
+const publicationTypeColors = {
+    "UNAVAILABLE": "#FF6347",
+    "PARTIAL": "#FFFF99",
+    "PLANNED": "#71B5B8",
+    "PROCESSING": "#FFD700",
+    "PUBLISHED": "#0aa41b",
+    "DELAYED": "#ccc" // fallback color
+};
 
 class GlobalDatatakes {
     constructor(monthsData, formatDataDetail) {
@@ -463,17 +478,27 @@ class GlobalDatatakes {
             $('#ec-logo-header').hide();
             $('#esa-logo-header').hide();
 
+            // Event listeners
+            document.getElementById("mission-select").addEventListener("change", () => this.filterByMission());
+            document.getElementById("search-input").addEventListener("input", (e) => this.updateSuggestions(e.target.value));
+            document.getElementById("apply-filter-btn").addEventListener("click", () => this.filterChart());
+            document.getElementById("reset-btn").addEventListener("click", () => this.resetHeatmapAndTable());
 
-            const searchWrapper = document.querySelector(".search-update");
+            // Close suggestions dropdown on outside click
             const suggestionsDropdown = document.getElementById("suggestions-container");
+            document.addEventListener("click", (e) => {
+                const searchWrapper = document.querySelector(".search-update");
+                if (suggestionsDropdown && !searchWrapper?.contains(e.target)) {
+                    suggestionsDropdown.style.display = "none";
+                }
+            });
 
-            if (searchWrapper && suggestionsDropdown && !searchWrapper.contains(e.target)) {
-                suggestionsDropdown.style.display = "none";
-            }
-            this.chartOptions.series = this.prepareHeatmapData(monthsData);
-            // Render the chart
-            const chart = new ApexCharts(document.querySelector("#heatmap"), this.chartOptions);
-            chart.render();
+            this.chartOptions.series = this.prepareHeatmapData(this.mockDataTakes);
+
+            const chartElement = document.querySelector("#heatmap");
+            this.chartInstance = new ApexCharts(chartElement, this.chartOptions);
+            this.chartInstance.render();
+
             console.log("Datatakes initialized.");
 
         });
@@ -499,12 +524,13 @@ class GlobalDatatakes {
             width: '100%',
             toolbar: { show: false },
             events: {
-                dataPointSelection: function (event, chartContext, config) {
+                dataPointSelection: (event, chartContext, config) => {
                     const { seriesIndex, dataPointIndex } = config;
                     const point = monthsData[seriesIndex]?.data[dataPointIndex];
                     console.log("Clicked Point:", point);  // Debug log
                     if (point && point.id) {
-                        renderPieChartForDate(point.x);  // ⬅️ Call pie chart rendering function
+
+                        this.renderPieChartForDate(point.x);
                     }
                 }
             }
@@ -523,7 +549,8 @@ class GlobalDatatakes {
                 style: {
                     fontSize: '12px',
                     fontWeight: 'bold',
-                    colors: '#D3D3D3',  // Light grey color
+                    colors: '#FFFFFF',
+                    fontFamily: 'NotesEsa'
                 }
             },
         },
@@ -537,7 +564,9 @@ class GlobalDatatakes {
                 style: {
                     fontSize: '12px',
                     fontWeight: 'bold',
-                    colors: '#D3D3D3',  // Light grey color
+                    colors: '#ffffff',
+                    fontFamily: 'NotesEsa'
+
                 }
             },
         },
@@ -545,11 +574,11 @@ class GlobalDatatakes {
             heatmap: {
                 colorScale: {
                     ranges: [
-                        { from: 11, to: 14.1, name: 'Planned', color: '#007B7F' },
-                        { from: 1, to: 5.1, name: 'Unrecoverable', color: '#FF6347' },
-                        { from: 6, to: 10.1, name: 'Partial Data Unrecoverable', color: '#FFFF99' },
-                        { from: 15, to: 20.1, name: 'Partial Dataset Availability', color: '#FFD700' },
-                        { from: 21, to: 30.1, name: 'Full Data Availability', color: '#0aa41b' }
+                        { from: 11, to: 14.1, name: 'PLANNED', color: '#007B7F' },
+                        { from: 1, to: 5.1, name: 'UNRECOVERABLE', color: '#FF6347' },
+                        { from: 6, to: 10.1, name: 'PARTIAL DATA UNRECOVERABLE', color: '#FFFF99' },
+                        { from: 15, to: 20.1, name: 'PARTIAL DATASET AVAILABILITY', color: '#FFD700' },
+                        { from: 21, to: 30.1, name: 'FULL DATA AVAILABILITY', color: '#0aa41b' }
                     ]
                 },
                 background: '#f7f7f7'
@@ -585,31 +614,22 @@ class GlobalDatatakes {
     };
 
     filterByMission() {
-        const missionSelect = document.getElementById("mission-select");
-        const selectedMission = missionSelect.value;
+        const selectedMission = document.getElementById("mission-select").value;
 
-        // Filter each month's data based on the selected mission
-        const updatedChartData = monthsData.map(monthData => {
-            // Filter the data for each month based on the selected mission
-            const filteredData = monthData.data.filter((entry) => {
-                // Check if the first two characters of the ID match the selected mission
-                return selectedMission ? entry.id.substring(0, 2) === selectedMission : true;
-            });
-
-            // Return the updated chart data for this month
+        const updatedChartData = this.mockDataTakes.map(monthData => {
+            const filteredData = monthData.data.filter(entry =>
+                selectedMission ? entry.id.substring(0, 2) === selectedMission : true
+            );
             return {
                 name: monthData.name,
-                data: filteredData.map(entry => ({ x: entry.x, y: entry.y, id: entry.id })) // Keep x, y, id for the chart
+                data: filteredData
             };
         });
 
-        // Update the heatmap chart with the filtered data
-        chart.updateSeries(updatedChartData);
+        this.chartInstance.updateSeries(updatedChartData);
 
-        // Now, filter the table rows based on the selected mission
-        // Flatten the data to include entries from all months
-        const filteredRows = updatedChartData.flatMap(monthData =>
-            monthData.data.map(entry => ({
+        const filteredRows = updatedChartData.flatMap(month =>
+            month.data.map(entry => ({
                 id: entry.id,
                 platform: entry.platform,
                 start: entry.start,
@@ -619,9 +639,9 @@ class GlobalDatatakes {
             }))
         );
 
-        // Show the table with the filtered rows
-        showTable(filteredRows);
+        this.showTable(filteredRows);
     }
+
 
     updateSuggestions(inputValue) {
         const suggestionsContainer = document.getElementById("suggestions-container");
@@ -660,7 +680,10 @@ class GlobalDatatakes {
         const tableContainer = document.getElementById("table-container");
         const tableBody = document.querySelector("#basic-datatables-data-takes tbody");
 
-        tableBody.innerHTML = ""; // Clear previous content
+        if (!tableBody) {
+            console.warn("Table body not found. Skipping table rendering.");
+            return;
+        }
 
         filteredRows.forEach(row => {
             // Color logic for acquisition
@@ -719,7 +742,7 @@ class GlobalDatatakes {
             };
         });
 
-        chart.updateSeries(filteredSeries);
+        this.chartInstance.updateSeries(filteredSeries);
     }
     handleSuggestionClick(selectedId) {
         // Find the selected entry from monthsData instead of mockDataTakes
@@ -761,20 +784,35 @@ class GlobalDatatakes {
 
     resetHeatmapAndTable() {
         // Reset the search input field
-        document.getElementById("search-input").value = "";
+        const searchInput = document.getElementById("search-input");
+        if (searchInput) searchInput.value = "";
 
         // Clear the suggestions container
-        document.getElementById("suggestions-container").innerHTML = "";
+        const suggestionsContainer = document.getElementById("suggestions-container");
+        if (suggestionsContainer) suggestionsContainer.innerHTML = "";
 
-        // Reset the heatmap chart (you might need to reset the series or reload it)
-        chart.updateSeries(prepareHeatmapData(monthsData));
+        // Reset the heatmap chart
+        if (this.chartInstance) {
+            this.chartInstance.updateSeries(this.prepareHeatmapData(monthsData));
+        }
 
-        // Hide the table container
-        document.getElementById("table-container").style.display = "none";
+        // Hide the table container safely
+        const tableContainer = document.getElementById("table-container");
+        if (tableContainer) {
+            tableContainer.style.display = "none";
+        }
 
+        // Reset the mission select dropdown
         const select = document.getElementById("mission-select");
-        select.selectedIndex = 0;
+        if (select) select.selectedIndex = 0;
+
+        // Reset start and end date fields
+        const startDate = document.getElementById("start-date");
+        const endDate = document.getElementById("end-date");
+        if (startDate) startDate.value = "";
+        if (endDate) endDate.value = "";
     }
+
     generateSeries(startDate, endDate) {
         return monthsData.map(monthData => {
             const filteredData = monthData.data.filter(entry => {
@@ -799,7 +837,7 @@ class GlobalDatatakes {
     }
 
     filterChart() {
-        if (!chart) {
+        if (!this.chartInstance) {
             console.error('Chart is not initialized yet!');
             return;
         }
@@ -818,9 +856,9 @@ class GlobalDatatakes {
 
         // Filter chart
         const yValues = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-        const filteredSeries = generateSeries(start, end, yValues);
+        const filteredSeries = this.generateSeries(start, end, yValues);
 
-        chart.updateOptions({
+        this.chartInstance.updateOptions({
             series: filteredSeries
         });
 
@@ -874,7 +912,7 @@ class GlobalDatatakes {
         // Process the data and group by publication type, calculate average percentage, and store IDs
         filtered.forEach(entry => {
             const type = entry.publication?.split(" ")[0] || "UNKNOWN";
-            const percentage = extractPercentage(entry.publication || "");
+            const percentage = this.extractPercentage(entry.publication || "");
 
             if (!publicationMap[type]) {
                 publicationMap[type] = { total: 0, count: 0 };
@@ -889,11 +927,19 @@ class GlobalDatatakes {
         const labels = [];
 
         // Calculate average percentage for each publication type
+        const colors = [];
+
         for (const type in publicationMap) {
             const avg = publicationMap[type].total / publicationMap[type].count;
-            series.push(parseFloat(avg.toFixed(2)));
+            const roundedAvg = parseFloat(avg.toFixed(2));
+
+            series.push(roundedAvg);
             labels.push(type);
+
+            const color = publicationTypeColors[type] || publicationTypeColors["UNKNOWN"];
+            colors.push(color);
         }
+
 
         // Destroy the previous pie chart instance if it exists
         if (window.pieChartInstance) {
@@ -951,6 +997,7 @@ class GlobalDatatakes {
             },
             series: series,
             labels: labels,
+            colors: colors,
             title: {
             },
             tooltip: {

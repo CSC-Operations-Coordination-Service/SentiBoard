@@ -83,10 +83,6 @@ class Datatakes {
         });
     }
 
-    /*bindEvents() {
-        document.getElementById("infoButton").addEventListener("click", () => this.toggleInfoTable());
-    }*/
-
     filterDatatakesOnPageLoad() {
         var queryString = window.location.search;
         var urlParams = new URLSearchParams(queryString);
@@ -563,7 +559,20 @@ class Datatakes {
             return;
         }
 
-        const relevantData = this.mockDataTakes.filter(dt => dt.id.startsWith(linkKey));
+        if (typeof linkKey !== "string") {
+            console.warn("updateCharts: Expected string linkKey but got", typeof linkKey, linkKey);
+        }
+
+        const relevantData = this.mockDataTakes.filter(dt =>
+            (dt.id || "").toUpperCase().startsWith((linkKey || "").toString().toUpperCase())
+        );
+
+        if (relevantData.length > 0) {
+            console.log("DEBUG: Example matching datatake ID:", relevantData[0].id);
+        } else {
+            console.warn("DEBUG: No matching datatakes found for linkKey:", linkKey);
+        }
+
         if (relevantData.length === 0) {
             console.warn(`No data found for platform: ${relevantData}`);
             return;
@@ -577,7 +586,6 @@ class Datatakes {
             PROCESSING: ['#9e9e9e', '#E0E0E0'],
             UNKNOWN: ['#666666', '#999999'] // Fallback for unknown publication types
         };
-
 
         const series = [];
         const labels = [];
@@ -717,26 +725,61 @@ class Datatakes {
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
         const acquisitionStatusFilter = document.getElementById("acqStatusFilter")?.value.toUpperCase();
 
-        this.filteredDataTakes = this.mockDataTakes.filter(take => {
-            const id = take.id.toUpperCase();
-            const satellite = (take.satellite || take.raw?.satellite_unit || "").toUpperCase();
-            const acqStatus = take.raw?.completeness_status?.ACQ?.status?.toUpperCase() || "UNKNOWN";
-            const pubStatus = take.raw?.completeness_status?.PUB?.status?.toUpperCase() || "UNKNOWN";
-            const overallStatus = take.completenessStatus ? JSON.stringify(take.completenessStatus).toUpperCase() : "";
+        const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
+        try {
+            this.filteredDataTakes = this.mockDataTakes.filter(take => {
+                const id = (take.id || "").toUpperCase();
+                const satellite = (take.satellite || take.raw?.satellite_unit || "").toUpperCase();
+                const acqStatus = take.raw?.completeness_status?.ACQ?.status?.toUpperCase() || "UNKNOWN";
+                const pubStatus = take.raw?.completeness_status?.PUB?.status?.toUpperCase() || "UNKNOWN";
+                const overallStatus = take.completenessStatus ? JSON.stringify(take.completenessStatus).toUpperCase() : "";
 
-            const matchesMission = !selectedMission || id.startsWith(selectedMission);
-            const matchesSearch = !searchQuery || searchQuery.split(/\s+/).every(q =>
-                id.includes(q) ||
-                satellite.includes(q) ||
-                acqStatus.includes(q) ||
-                pubStatus.includes(q) ||
-                overallStatus.includes(q)
-            );
+                let acquisitionDateRaw = take.raw?.observation_time_start || take.start || "";
+                let acquisitionDate = "";
 
-            const matchesAcqStatus = !acquisitionStatusFilter || acqStatus === acquisitionStatusFilter;
+                if (acquisitionDateRaw instanceof Date) {
+                    acquisitionDate = acquisitionDateRaw.toISOString().split("T")[0].toUpperCase();
+                } else if (typeof acquisitionDateRaw === "string") {
+                    acquisitionDate = acquisitionDateRaw.includes("T")
+                        ? acquisitionDateRaw.split("T")[0].toUpperCase()
+                        : acquisitionDateRaw.toUpperCase();
+                }
+                const matchesMission = !selectedMission || id.startsWith(selectedMission);
+                const matchesAcqStatus = !acquisitionStatusFilter || acqStatus === acquisitionStatusFilter;
 
-            return matchesMission && matchesSearch && matchesAcqStatus;
-        });
+                const matchesSearch = !searchTerms.length || searchTerms.every(term => {
+                    const termMatch = id.includes(term) ||
+                        satellite.includes(term) ||
+                        acqStatus.includes(term) ||
+                        pubStatus.includes(term) ||
+                        overallStatus.includes(term) ||
+                        acquisitionDate.includes(term);
+
+                    if (!termMatch) {
+                        console.debug(`Term "${term}" did NOT match this take`, {
+                            id, satellite, acqStatus, pubStatus, acquisitionDate
+                        });
+                    } else {
+                        console.debug(`Term "${term}" matched`, {
+                            id, satellite, acquisitionDate
+                        });
+                    }
+                    if (!acquisitionDate) {
+                        console.debug("Skipping take with no date:", take.id);
+                    }
+                    return termMatch;
+                });
+
+                return matchesMission && matchesSearch && matchesAcqStatus;
+            });
+
+        } catch (err) {
+            console.error("Error during filtering:", err);
+        }
+
+        if (this.filteredDataTakes.length > 0) {
+            console.log("DEBUG: First matched datatake:", this.filteredDataTakes[0]);
+        }
 
         this.displayedCount = 0; // reset count for pagination
         this.populateDataList(false); // re-render filtered list from scratch

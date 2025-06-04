@@ -43,13 +43,15 @@
 
 /* Styling for each input in the filter */
 
-.filter-container select {
-  /*padding: 8px;*/
+.filter-container select,
+.filter-container input {
   font-size: 14px;
   border: 2px solid #555;
   color: black;
   border-radius: 5px;
-  margin-bottom: 10px;
+  padding: 8px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-section {
@@ -89,17 +91,18 @@ input[type="date"] {
   width: 100%;
 }
 
-.btn:hover{
+.btn:hover {
   color: #212529 !important;
   background-color: #FFC107 !important;
   box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
   text-decoration: none;
 }
 
-.button-group{
+.button-group {
   margin-bottom: 2px;
-  height:43px;
+  height: 43px;
 }
+
 .button-group button:first-child {
   margin-right: 10px;
 }
@@ -267,23 +270,36 @@ select {
   color: white !important;
   font-size: 16px !important;
 }
+#pieChart .apexcharts-legend-text {
+  color: white !important;
+  font-family: 'NotesEsa', sans-serif !important;
+  font-size: 14px !important;
+}
+
+#pieChart .apexcharts-pie-label {
+  fill: white !important;
+  font-family: 'NotesEsa', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: bold;
+}
+
+#pieChart .apexcharts-tooltip-text {
+  font-family: 'NotesEsa', sans-serif !important;
+  font-size: 12px !important;
+  color: white !important;
+}
 
 #idListContainer {
   margin-top: 20px;
   max-height: 300px;
-  /* Added max-height */
   overflow-y: auto;
-  /* Added scroll functionality */
   min-height: 50px;
-  /* Ensures the container has a visible height */
 }
 
 /*customized table*/
 .custom-box-table-container {
   max-width: 900px;
-  /* Make it wider */
   margin: 30px auto;
-  /* Center horizontally with some vertical spacing */
   padding: 0 20px;
 }
 
@@ -291,7 +307,6 @@ select {
   border: none;
   border-radius: 12px;
   background-color: #f8f9fa;
-  /* light gray background */
   padding: 20px;
   margin-top: 20px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -319,6 +334,7 @@ select {
   .filter-item {
     flex: 1 1 100%;
   }
+
   .d-flex.gap-2 {
     flex-direction: column;
   }

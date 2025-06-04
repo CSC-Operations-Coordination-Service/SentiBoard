@@ -340,7 +340,7 @@
   .container-border {
     display: inline-flex;
     border: 1.5px solid #FFC107;
-    padding: 2px 10px;
+    padding: 2px 18px;
     border-radius: 6px;
     box-sizing: border-box;
   }

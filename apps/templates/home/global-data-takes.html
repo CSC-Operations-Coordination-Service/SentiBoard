@@ -112,7 +112,7 @@
 					<!-- Mission Select -->
 					<div class="filter-item">
 					<label for="mission-select">Select Mission:</label>
-					<select id="mission-select" class="mission-select form-control" onchange="filterByMission()">
+					<select id="mission-select" class="mission-select form-control">
 						<option value="S1">Sentinel 1</option>
 						<option value="S2">Sentinel 2</option>
 						<option value="S3">Sentinel 3</option>
@@ -136,8 +136,7 @@
 					<div class="filter-item flex-grow-1" style="min-width: 280px;">
 					<label for="search-input">Search by ID:</label>
 					<div class="suggestions-wrapper">
-						<input type="text" id="search-input" placeholder="Search by ID..." class="search-input form-control"
-						oninput="updateSuggestions(this.value)" autocomplete="off" />
+						<input type="text" id="search-input" placeholder="Search by ID..." class="search-input form-control" autocomplete="off" />
 						<div id="suggestions-container" class="suggestions-dropdown"></div>
 					</div>
 					</div>
@@ -146,8 +145,8 @@
 					<div class="filter-item d-flex flex-column">
 						<label>&nbsp;</label> <!-- spacing -->
 						<div class="d-flex button-group">
-							<button onclick="filterChart()" class="btn">Apply</button>
-							<button onclick="resetHeatmapAndTable()" class="btn">Reset</button>
+							<button id="apply-filter-btn" class="btn">Apply</button>
+            			<button id="reset-btn" class="btn">Reset</button>
 						</div>
 					</div>
 				</div>
@@ -159,7 +158,17 @@
 				<div style="display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between;">
 					<!-- Donut Chart -->
 					<div id="pieChart" style="flex: 1 1 58%; min-width: 300px; height: 300px;"></div>
-	
+					<div id="legendExplanation">
+						<strong>Legend:</strong>
+						<ul style="list-style: none; padding-left: 0;">
+							<li><span style="background: #FF6347; display: inline-block; width: 12px; height: 12px; margin-right: 5px;"></span> UNAVAILABLE</li>
+							<li><span style="background: #FFFF99; display: inline-block; width: 12px; height: 12px; margin-right: 5px;"></span> PARTIAL</li>
+							<li><span style="background: #71B5B8; display: inline-block; width: 12px; height: 12px; margin-right: 5px;"></span> PLANNED</li>
+							<li><span style="background: #FFD700; display: inline-block; width: 12px; height: 12px; margin-right: 5px;"></span> PROCESSING</li>
+							<li><span style="background: #0aa41b; display: inline-block; width: 12px; height: 12px; margin-right: 5px;"></span> PUBLISHED</li>
+							<li><span style="background: #cccccc; display: inline-block; width: 12px; height: 12px; margin-right: 5px;"></span> DELAYED</li>
+						</ul>
+					</div>
 					<!-- ID List Container -->
 					<div id="idListContainer" style="flex: 1 1 38%; min-width: 250px;"></div>
 				</div>
