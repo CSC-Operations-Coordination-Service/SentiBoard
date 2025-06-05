@@ -999,7 +999,7 @@ class GlobalDatatakes {
         // Trigger filtering logic
         this.filterHeatmapChart([selectedId]);
 
-        // Highlight logic (optional)
+        // Highlight logic
         const date = new Date(selected.start);
         const selectedMonth = date.toLocaleString('default', { month: 'long' });
         const selectedDay = date.getDate();

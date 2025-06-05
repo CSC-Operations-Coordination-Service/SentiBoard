@@ -810,7 +810,7 @@ class Datatakes {
         let data = [selectedData];
 
 
-        // Apply optional search filter
+        // Apply search filter
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             data = data.filter(item =>
