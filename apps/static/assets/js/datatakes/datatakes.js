@@ -63,18 +63,6 @@ class Datatakes {
             // Retrieve the time select combo box instance
             const time_period_sel = document.getElementById('time-period-select');
 
-            // Apply filtering on page load
-            if (this.filterDatatakesOnPageLoad()) {
-                // If filtered, set some UI state, like time period select
-                const time_period_sel = document.getElementById('time-period-select');
-                if (time_period_sel) time_period_sel.value = 'last-quarter';
-            } else {
-                // No search filter, load default data
-                const time_period_sel = document.getElementById('time-period-select');
-                if (time_period_sel) time_period_sel.value = 'week';
-                this.populateDataList(false);
-            }
-
             // Add event listener for user selection
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
@@ -92,6 +80,7 @@ class Datatakes {
         var searchFilter = urlParams.get('search');
         if (searchFilter) {
             console.info('Accessing page with search filter: ' + searchFilter);
+            console.info('this.mockDataTakes: ' + this.mockDataTakes);
             // Filter the data by matching the 'id' containing searchFilter (case-insensitive)
             this.filteredDataTakes = this.mockDataTakes.filter(take =>
                 take.id.toLowerCase().includes(searchFilter.toLowerCase())
@@ -232,6 +221,14 @@ class Datatakes {
         // Reset pagination count before repopulating
         this.displayedCount = 0;
 
+        // Check for URL filter *after* mockDataTakes is ready
+        if (this.filterDatatakesOnPageLoad()) {
+            const time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel) time_period_sel.value = 'last-quarter';
+        } else {
+            this.populateDataList(false);
+        }
+
         // Populate the UI list
         this.populateDataList(false);
         // If at least one datatake exists, update title and render
@@ -295,6 +292,8 @@ class Datatakes {
         const dataList = document.getElementById("dataList");
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
 
+        console.log("filteredDataTakes", this.filteredDataTakes);
+        console.log("mockDataTakes", this.mockDataTakes);
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
@@ -621,9 +620,9 @@ class Datatakes {
             console.log("remaining color", remaining);
 
             // Add "Missing" slice
-                labels.push("Missing");
-                series.push(parseFloat(remaining.toFixed(2)));
-                colors.push(missingColor);
+            labels.push("Missing");
+            series.push(parseFloat(remaining.toFixed(2)));
+            colors.push(missingColor);
         });
 
         console.log(" Unique publication types found in data:", Array.from(uniquePublicationTypes));
