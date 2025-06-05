@@ -986,7 +986,6 @@ class GlobalDatatakes {
         suggestionsContainer.innerHTML = "";
         suggestionsContainer.style.display = "none"; // <-- make sure it hides
 
-        // Find selected item (optional logic, depending on your app)
         let selected = null;
         monthsData.forEach(month => {
             const entry = month.data.find(item => item.id === selectedId);

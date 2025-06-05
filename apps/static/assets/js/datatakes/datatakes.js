@@ -80,7 +80,6 @@ class Datatakes {
         var searchFilter = urlParams.get('search');
         if (searchFilter) {
             console.info('Accessing page with search filter: ' + searchFilter);
-            console.info('this.mockDataTakes: ' + this.mockDataTakes);
             // Filter the data by matching the 'id' containing searchFilter (case-insensitive)
             this.filteredDataTakes = this.mockDataTakes.filter(take =>
                 take.id.toLowerCase().includes(searchFilter.toLowerCase())
@@ -221,7 +220,7 @@ class Datatakes {
         // Reset pagination count before repopulating
         this.displayedCount = 0;
 
-        // Check for URL filter *after* mockDataTakes is ready
+        // Check for URL filter after mockDataTakes is ready
         if (this.filterDatatakesOnPageLoad()) {
             const time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel) time_period_sel.value = 'last-quarter';
@@ -235,7 +234,7 @@ class Datatakes {
         if (datatakes.length > 0) {
             const first = datatakes[0];
 
-            // Call your new method to update title and date
+            // Call new method to update title and date
             this.updateTitleAndDate(datatakes.id);
 
             //Extract linkKey from datatake ID and update the chart
@@ -346,7 +345,7 @@ class Datatakes {
 
                 this.updateCharts(take);
 
-                // Call your new method to update title and date
+                // Call new method to update title and date
                 this.updateTitleAndDate(take.id);
             });
 
