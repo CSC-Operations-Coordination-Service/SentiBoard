@@ -27,6 +27,10 @@ class Datatakes {
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
+
+        // Threshold used to state the completeness
+        this.completeness_threshold = 90;
+
     }
 
     init() {
@@ -579,7 +583,7 @@ class Datatakes {
 
         const colorMap = {
             PARTIAL: ['#bb8747', '#e6c9a0'],
-            PUBLISHED: ['#4caf50', '#A5D6A7'],
+            ACQUIRED: ['#4caf50', '#A5D6A7'],
             UNAVAILABLE: ['#FF0000', '#FF9999'],
             PLANNED: ['#9e9e9e', '#E0E0E0'],
             PROCESSING: ['#9e9e9e', '#E0E0E0'],
@@ -601,7 +605,7 @@ class Datatakes {
 
 
         relevantData.forEach(entry => {
-            const raw = entry.raw?.completeness_status?.PUB || {};
+            const raw = entry.raw?.completeness_status?.ACQ || {};
             const publicationType = raw.status?.toUpperCase() || "UNKNOWN";
             uniquePublicationTypes.add(publicationType);
             const percentage = parseFloat(raw.percentage) || 0;
@@ -613,11 +617,13 @@ class Datatakes {
             labels.push("Complete");
             series.push(parseFloat(percentage.toFixed(2)));
             colors.push(completeColor);
+            console.log("percentage type", percentage);
+            console.log("remaining color", remaining);
 
             // Add "Missing" slice
-            labels.push("Missing");
-            series.push(parseFloat(remaining.toFixed(2)));
-            colors.push(missingColor);
+                labels.push("Missing");
+                series.push(parseFloat(remaining.toFixed(2)));
+                colors.push(missingColor);
         });
 
         console.log(" Unique publication types found in data:", Array.from(uniquePublicationTypes));

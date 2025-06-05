@@ -660,7 +660,6 @@
   .completeness-status,
   #eventDetails {
     max-width: 410px;
-    margin-left: auto;
     margin-right: auto;
   }
 }
