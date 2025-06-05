@@ -544,10 +544,7 @@ class CalendarWidget {
         // Event type filter
         if (selectedEventType !== 'all') {
             const category = anomaly.category === "Platform" ? "Satellite" : anomaly.category;
-            console.log("category selected", category);
-            console.log("selectedEventType selected", selectedEventType);
             if (category.toLowerCase() !== selectedEventType.toLowerCase()) return false;
-            console.log("category selected2", category);
         }
 
         // Text search filter
@@ -559,9 +556,12 @@ class CalendarWidget {
                 anomaly.impactedItem,
                 anomaly.impactedSatellite
             ].some(field => field?.toLowerCase().includes(lowerSearch));
-            if (!matchesText) return false;
-        }
 
+            // Custom rule: if input starts with "sa", match category "platform"
+            const satellitePrefixMatch = lowerSearch.startsWith("sa") && anomaly.category?.toLowerCase() === "platform";
+
+            if (!matchesText && !satellitePrefixMatch) return false;
+        }
         return true;
     }
 
