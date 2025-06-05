@@ -163,7 +163,6 @@ class CalendarWidget {
         }
 
         // Now generate the calendar AFTER loading events
-        console.log("sucess anomalies prev click:", this.currentMonth, this.currentYear);
         this.generateCalendar(this.currentMonth, this.currentYear);
 
     }
@@ -180,8 +179,6 @@ class CalendarWidget {
     }
 
     normalizeDateString(str) {
-        console.log('normalizeDateString called with:', str);
-
         if (str == null) return null;
 
         // Accept Date objects
@@ -189,7 +186,6 @@ class CalendarWidget {
             if (isNaN(str)) return null;
             return str.toISOString().split('T')[0];
         }
-
         str = String(str);
 
         // Parse DD/MM/YYYY HH:mm:ss
@@ -231,13 +227,8 @@ class CalendarWidget {
     addEventListeners() {
         if (this.listenersAttached) return; // Prevent duplicate attachments
         this.listenersAttached = true;
-        console.log("addEventListeners called");
-
-
 
         const onFilterChange = (getter) => {
-            console.log("selecte date 2", this.lastSelectedDate);
-
             this.clearEventDetails();
             getter();
             this.generateCalendar(this.currentMonth, this.currentYear);
@@ -553,7 +544,10 @@ class CalendarWidget {
         // Event type filter
         if (selectedEventType !== 'all') {
             const category = anomaly.category === "Platform" ? "Satellite" : anomaly.category;
+            console.log("category selected", category);
+            console.log("selectedEventType selected", selectedEventType);
             if (category.toLowerCase() !== selectedEventType.toLowerCase()) return false;
+            console.log("category selected2", category);
         }
 
         // Text search filter
@@ -606,7 +600,7 @@ class CalendarWidget {
 
                 const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-                console.log('Comparing fullDate:', fullDate, 'with', this.today, '→', this.normalizeDateString(this.today));
+                //console.log('Comparing fullDate:', fullDate, 'with', this.today, '→', this.normalizeDateString(this.today));
                 if (fullDate === this.normalizeDateString(this.today)) {
                     dayDiv.classList.add('today');
                 }
@@ -615,8 +609,6 @@ class CalendarWidget {
                     document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
                     dayDiv.classList.add('selected');
                     this.lastSelectedDate = fullDate;
-                    console.log("selecte date 3", this.lastSelectedDate);
-                    console.log("selecte date 4", fullDate);
 
                     this.showEventDetails(fullDate);
                 });
@@ -636,6 +628,7 @@ class CalendarWidget {
                 const addedTypes = new Set();
                 filteredEvents.forEach(event => {
                     const category = event.category === "Platform" ? "Satellite" : event.category;
+                    console.log("category in calendar", category);
                     const mappedType = this.eventTypeMap[category] || category;
                     const typeClass = `event-${mappedType.toLowerCase()}`;
                     if (!addedTypes.has(typeClass)) {
@@ -662,7 +655,6 @@ class CalendarWidget {
             }
 
             if (this.lastSelectedDate) {
-                console.log("selecte date 1", this.lastSelectedDate);
                 const allDayDivs = document.querySelectorAll('.calendar-day');
                 allDayDivs.forEach(div => {
                     const dayNumber = this.lastSelectedDate.split('-')[2];
@@ -686,6 +678,7 @@ class CalendarWidget {
 
     filterEvents({ date, mission, eventType, searchText }) {
 
+        console.log("event type", eventType);
         const targetDate = this.normalizeDateString(date);
         const searchLower = searchText?.toLowerCase().trim() || '';
         const missionMap = {

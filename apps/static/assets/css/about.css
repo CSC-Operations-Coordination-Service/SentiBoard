@@ -64,7 +64,7 @@
     z-index: 1;
   }
 
-  /* To keep your content above the overlay */
+  /* To keep content above the overlay */
   .back-container>* {
     position: relative;
     z-index: 2;
