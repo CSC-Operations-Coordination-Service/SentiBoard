@@ -62,10 +62,18 @@
 }
 
 .filter-item {
-  flex: 1 1 160px;
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 200px;
   display: flex;
   flex-direction: column;
 }
+
+.filter-item.search-item {
+  max-width: 330px;
+  width: 330px;
+}
+
 
 input[type="date"] {
   padding: 10px;
@@ -73,6 +81,7 @@ input[type="date"] {
   color: black;
   border-radius: 5px;
   cursor: pointer;
+  width: 180px;
 }
 
 
@@ -86,9 +95,8 @@ input[type="date"] {
   background-color: #FFA500;
   cursor: pointer;
   font-size: 15px;
-  padding: 15px;
   color: #212529;
-  width: 100%;
+  width: 130px;
 }
 
 .btn:hover {
@@ -117,6 +125,93 @@ button:hover {
   padding: 6px 10px;
   border-radius: 5px;
   width: 100%;
+}
+
+/* Search container and input */
+.search-container {
+  flex-grow: 1;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.search-update {
+  margin-bottom: 15px;
+  width: 30%;
+}
+
+.search-selectMission {
+  margin-bottom: 15px;
+  width: 25%;
+  margin-left: 17px;
+}
+
+.search-input {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  width: 330px;
+  margin-bottom: 1px;
+}
+
+/* Mission select styling */
+.mission-select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  width: 180px;
+  margin-bottom: 1px;
+}
+
+/*Suggestions dropdown styling */
+.suggestions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.suggestions-dropdown {
+  border: 1px solid #ccc;
+  max-height: 150px;
+  overflow-y: auto;
+  position: absolute;
+  width: 330px;
+  background: white;
+  z-index: 10;
+  display: none;
+  color: #000;
+  box-sizing: border-box;
+}
+
+input,
+select {
+  height: 40px;
+  font-size: 14px;
+  padding: 5px;
+}
+
+.suggestion-item {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #f0f0f0;
+}
+
+.suggestions-dropdown div {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.suggestions-dropdown div:hover {
+  background-color: #f0f0f0;
+}
+
+.filter-section>div {
+  gap: 16px;
 }
 
 /* Table Styling */
@@ -162,88 +257,7 @@ td {
   border-bottom: 1px solid #ddd;
 }
 
-/* Search container and input */
-.search-container {
-  flex-grow: 1;
-  padding-left: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
 
-.search-update {
-  margin-bottom: 15px;
-  width: 30%;
-}
-
-.search-selectMission {
-  margin-bottom: 15px;
-  width: 25%;
-  margin-left: 17px;
-}
-
-.search-input {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  width: 100%;
-  margin-bottom: 1px;
-}
-
-/* Mission select styling */
-.mission-select {
-  padding: 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  width: 100%;
-  margin-bottom: 1px;
-}
-
-/* Suggestions dropdown styling */
-.suggestions-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.suggestions-dropdown {
-  border: 1px solid #ccc;
-  max-height: 150px;
-  overflow-y: auto;
-  position: absolute;
-  width: 67%;
-  background: white;
-  z-index: 10;
-  display: none;
-  color: #000;
-  box-sizing: border-box;
-}
-
-input,
-select {
-  height: 40px;
-  font-size: 14px;
-  padding: 5px;
-}
-
-.suggestion-item {
-  padding: 8px;
-  cursor: pointer;
-}
-
-.suggestion-item:hover {
-  background-color: #f0f0f0;
-}
-
-.suggestions-dropdown div {
-  padding: 6px 10px;
-  cursor: pointer;
-}
-
-.suggestions-dropdown div:hover {
-  background-color: #f0f0f0;
-}
 
 #heatmap {
   width: 100%;
@@ -270,6 +284,7 @@ select {
   color: white !important;
   font-size: 16px !important;
 }
+
 #pieChart .apexcharts-legend-text {
   color: white !important;
   font-family: 'NotesEsa', sans-serif !important;

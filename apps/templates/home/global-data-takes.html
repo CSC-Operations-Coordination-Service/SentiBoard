@@ -108,48 +108,62 @@
 			<!-- Table container -->
 			<div class="container">
 				<!-- Unified Filter Section -->
-				<div class="filter-section d-flex flex-wrap gap-3 mb-3">
-					<!-- Mission Select -->
-					<div class="filter-item">
-					<label for="mission-select">Select Mission:</label>
-					<select id="mission-select" class="mission-select form-control">
-						<option value="S1">Sentinel 1</option>
-						<option value="S2">Sentinel 2</option>
-						<option value="S3">Sentinel 3</option>
-						<option value="S5">Sentinel 5P</option>
-					</select>
-					</div>
-				
-					<!-- Start Date -->
-					<div class="filter-item">
-					<label for="start-date">From:</label>
-					<input type="date" id="start-date" class="form-control">
-					</div>
-				
-					<!-- End Date -->
-					<div class="filter-item">
-					<label for="end-date">To:</label>
-					<input type="date" id="end-date" class="form-control">
-					</div>
-				
-					<!-- Search by ID -->
-					<div class="filter-item flex-grow-1" style="min-width: 280px;">
-					<label for="search-input">Search by ID:</label>
-					<div class="suggestions-wrapper">
-						<input type="text" id="search-input" placeholder="Search by ID..." class="search-input form-control" autocomplete="off" />
-						<div id="suggestions-container" class="suggestions-dropdown"></div>
-					</div>
-					</div>
-				
-					<!-- Apply & Reset Buttons Side-by-Side -->
-					<div class="filter-item d-flex flex-column">
-						<label>&nbsp;</label> <!-- spacing -->
+				<div class="filter-section d-flex flex-column gap-3 mb-3">
+
+					<!-- First row: From, To, Apply -->
+					<div class="d-flex flex-wrap gap-3 align-items-end w-100">
+					  <!-- Start Date -->
+					  <div class="filter-item">
+						<label for="start-date">From:</label>
+						<input type="date" id="start-date" class="form-control">
+					  </div>
+				  
+					  <!-- End Date -->
+					  <div class="filter-item">
+						<label for="end-date">To:</label>
+						<input type="date" id="end-date" class="form-control">
+					  </div>
+				  
+					  <!-- Apply Button -->
+					  <div class="filter-item d-flex flex-column">
+						<label>&nbsp;</label>
 						<div class="d-flex button-group">
-							<button id="apply-filter-btn" class="btn">Apply</button>
-            			<button id="reset-btn" class="btn">Reset</button>
+						  <button id="apply-filter-btn" class="btn">Apply</button>
 						</div>
+					  </div>
 					</div>
-				</div>
+				  
+					<div class="d-flex flex-wrap gap-3 align-items-end w-100">
+						<!-- Mission Select -->
+						<div class="filter-item">
+						  <label for="mission-select">Select Mission:</label>
+						  <select id="mission-select" class="mission-select form-control">
+							<option value="S1">Sentinel 1</option>
+							<option value="S2">Sentinel 2</option>
+							<option value="S3">Sentinel 3</option>
+							<option value="S5">Sentinel 5P</option>
+						  </select>
+						</div>
+					  
+						<!-- Search by ID -->
+						<div class="filter-item search-item">
+						  <label for="search-input">Search by ID:</label>
+						  <div class="suggestions-wrapper">
+							<input type="text" id="search-input" placeholder="Search by ID..." class="search-input form-control" autocomplete="off" />
+							<div id="suggestions-container" class="suggestions-dropdown"></div>
+						  </div>
+						</div>
+					  
+						<!-- Reset Button -->
+						<div class="filter-item d-flex flex-column">
+						  <label>&nbsp;</label>
+						  <div class="d-flex button-group">
+							<button id="reset-btn" class="btn">Reset</button>
+						  </div>
+						</div>
+					  </div>
+				  </div>
+				  
 				<div class="mb-4">
 					<div id="heatmap"></div>
 				</div>

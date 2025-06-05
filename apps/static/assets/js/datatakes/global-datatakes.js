@@ -12,6 +12,7 @@ delivered to him.
 */
 
 const formatDataDetail = [];
+const globaldatatakesarray = [];
 
 const monthsData = [
     {
@@ -458,6 +459,7 @@ const publicationTypeColors = {
     "DELAYED": "#ccc" // fallback color
 };
 
+
 class GlobalDatatakes {
     constructor(monthsData, formatDataDetail) {
         this.mockDataTakes = monthsData;
@@ -469,6 +471,8 @@ class GlobalDatatakes {
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
+
+
     }
 
     init() {
@@ -477,6 +481,35 @@ class GlobalDatatakes {
             $('#copernicus-logo-header').hide();
             $('#ec-logo-header').hide();
             $('#esa-logo-header').hide();
+
+            // Retrieve the user profile to determine quarter authorization
+            ajaxCall(
+                '/api/auth/quarter-authorized',
+                'GET',
+                {},
+                this.quarterAuthorizedProcess,
+                this.errorLoadAuthorized
+            );
+
+            // Retrieve the time select combo box instance
+            const time_period_sel = document.getElementById('time-period-select');
+
+            // Apply filtering on page load
+            if (this.filterDatatakesOnPageLoad()) {
+                // If filtered, set some UI state, like time period select
+                const time_period_sel = document.getElementById('time-period-select');
+                if (time_period_sel) time_period_sel.value = 'last-quarter';
+            } else {
+                // No search filter, load default data
+                const time_period_sel = document.getElementById('time-period-select');
+                if (time_period_sel) time_period_sel.value = 'week';
+            }
+
+            // Add event listener for user selection
+            time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+
+            // Load datatakes for the selected period
+            this.loadDatatakesInPeriod(time_period_sel.value);
 
             // Event listeners
             document.getElementById("mission-select").addEventListener("change", () => this.filterByMission());
@@ -499,10 +532,200 @@ class GlobalDatatakes {
             this.chartInstance = new ApexCharts(chartElement, this.chartOptions);
             this.chartInstance.render();
 
+            window.exportTableToCSV = this.exportTableToCSV.bind(this);
+            window.handleSuggestionClick = this.handleSuggestionClick.bind(this);
             console.log("Datatakes initialized.");
 
         });
     }
+
+    quarterAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            var time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel.options.length == 4) {
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
+            }
+        }
+    }
+
+    errorLoadAuthorized(response) {
+        return;
+    }
+
+    filterDatatakesOnPageLoad() {
+        var queryString = window.location.search;
+        var urlParams = new URLSearchParams(queryString);
+        var searchFilter = urlParams.get('search');
+        if (searchFilter) {
+            console.info('Accessing page with search filter: ' + searchFilter);
+            // Filter the data by matching the 'id' containing searchFilter (case-insensitive)
+            this.filteredDataTakes = this.mockDataTakes.filter(take =>
+                take.id.toLowerCase().includes(searchFilter.toLowerCase())
+            );
+
+            // Populate data list with filtered results
+            this.populateDataList(false);
+
+            return true;
+        } else {
+            // No filter - reset filteredDataTakes so populate uses full list
+            this.filteredDataTakes = null;
+            return false;
+        }
+    }
+
+    on_timeperiod_change() {
+        var time_period_sel = document.getElementById('time-period-select')
+        console.log("Time period changed to " + time_period_sel.value)
+        this.loadDatatakesInPeriod(time_period_sel.value);
+    }
+
+    quarterAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            var time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel.options.length == 4) {
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
+            }
+        }
+    }
+
+    errorLoadAuthorized(response) {
+        return;
+    }
+
+    loadDatatakesInPeriod(selected_time_period) {
+
+        // Acknowledge the retrieval of events with impact on DTs
+        console.info("Invoking events retrieval...");
+        asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
+            this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
+
+        // Acknowledge the invocation of rest APIs
+        console.info("Invoking Datatakes retrieval...");
+        if (selected_time_period === 'day') {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'week') {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-7d', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'month') {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-30d', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else if (selected_time_period === 'prev-quarter') {
+            asyncAjaxCall('/api/worker/cds-datatakes/previous-quarter', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        } else {
+            asyncAjaxCall('/api/worker/cds-datatakes/last-quarter', 'GET', {},
+                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
+        }
+
+        return;
+    }
+
+    successLoadAnomalies(response) {
+
+        // Loop over anomalies, and bind every impaired DT with an anomaly
+        var rows = format_response(response);
+        for (var i = 0; i < rows.length; ++i) {
+
+            // Auxiliary variables
+            var anomaly = rows[i];
+            var datatakes_completeness = format_response(anomaly["datatakes_completeness"]);
+            for (var index = 0; index < datatakes_completeness.length; ++index) {
+                try {
+                    for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
+                        var datatake_id = Object.values(value)[0];
+                        var completeness = this.calcDatatakeCompleteness(Object.values(value));
+                        if (completeness < this.completeness_threshold) {
+                            this.datatakesEventsMap[datatake_id] = anomaly;
+                        }
+                    }
+                } catch (ex) {
+                    console.warn("Error ", ex);
+                    console.warn('An error occurred, while parsing the product level count string: ' +
+                        datatakes_completeness[index].replaceAll('\'', '\"'));
+                }
+            }
+        }
+        return;
+    }
+
+    errorLoadAnomalies(response) {
+        console.error(response);
+    }
+
+    successLoadDatatakes(response) {
+        const rows = format_response(response);
+        console.info('Datatakes successfully retrieved');
+        console.info("Number of records: " + rows.length);
+
+        // Prepare the datatake list
+        const datatakes = [];
+
+        for (const row of rows) {
+            const element = row['_source'];
+
+            // Build satellite unit name (e.g., "S1A (IW)")
+            let sat_unit = element['satellite_unit'];
+            if (sat_unit.includes('S1') || sat_unit.includes('S2')) {
+                sat_unit += ` (${element['instrument_mode']})`;
+            }
+
+            // Generate the datatake key (convert S1A IDs if needed)
+            let datatake_id = element['datatake_id'];
+            if (sat_unit.includes('S1')) {
+                datatake_id = this.overrideS1DatatakesId(datatake_id);
+            }
+
+            // Parse sensing time range
+            const sensing_start = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+            const sensing_stop = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+
+            // Push to list 
+            datatakes.push({
+                id: datatake_id,
+                satellite: sat_unit,
+                start: sensing_start,
+                stop: sensing_stop,
+                completenessStatus: element['completeness_status'],
+                raw: element
+            });
+        }
+
+        // Save the processed datatakes to the instance variable used by populateDataList
+        this.globaldatatakesarray = datatakes;
+
+        // Reset pagination count before repopulating
+        this.displayedCount = 0;
+
+        // If at least one datatake exists, update title and render
+        if (datatakes.length > 0) {
+            console.log("datatakes lenght", datatakes.length);
+        }
+
+    }
+
+    errorLoadDatatake(response) {
+        console.error(response)
+        return;
+    }
+
+    calcDatatakeCompleteness(dtCompleteness) {
+        var completeness = 0;
+        var count = 0;
+        for (var i = 1; i < dtCompleteness.length; ++i) {
+            count++;
+            completeness += dtCompleteness[i];
+        }
+        return (completeness / count);
+    }
+
+    overrideS1DatatakesId(datatake_id) {
+        let num = datatake_id.substring(4);
+        let hexaNum = parseInt(num).toString(16);
+        return (datatake_id + ' (' + hexaNum + ')');
+    }
+
 
     prepareHeatmapData(data) {
         return data.map((monthData) => {
@@ -642,8 +865,12 @@ class GlobalDatatakes {
         this.showTable(filteredRows);
     }
 
-
     updateSuggestions(inputValue) {
+        if (!inputValue.trim()) {
+            suggestionsContainer.style.display = "none";
+            return;
+        }
+
         const suggestionsContainer = document.getElementById("suggestions-container");
         suggestionsContainer.innerHTML = "";
 
@@ -672,6 +899,8 @@ class GlobalDatatakes {
             suggestion.onclick = () => handleSuggestionClick(item.id);
             suggestionsContainer.appendChild(suggestion);
         });
+
+
 
         suggestionsContainer.style.display = "block";
     }
@@ -744,8 +973,20 @@ class GlobalDatatakes {
 
         this.chartInstance.updateSeries(filteredSeries);
     }
+
     handleSuggestionClick(selectedId) {
-        // Find the selected entry from monthsData instead of mockDataTakes
+        const input = document.getElementById("search-input");
+        const suggestionsContainer = document.getElementById("suggestions-container");
+
+        // Update the input with selected ID
+        input.value = selectedId;
+
+
+        // Hide the suggestions dropdown
+        suggestionsContainer.innerHTML = "";
+        suggestionsContainer.style.display = "none"; // <-- make sure it hides
+
+        // Find selected item (optional logic, depending on your app)
         let selected = null;
         monthsData.forEach(month => {
             const entry = month.data.find(item => item.id === selectedId);
@@ -756,19 +997,13 @@ class GlobalDatatakes {
 
         if (!selected) return;
 
-        // Update input value and clear suggestions
-        document.getElementById("search-input").value = selectedId;
-        document.getElementById("suggestions-container").innerHTML = "";
+        // Trigger filtering logic
+        this.filterHeatmapChart([selectedId]);
 
-        // Filter heatmap
-        filterHeatmapChart([selectedId]);
-
-        // Optional: highlight in chart
+        // Highlight logic (optional)
         const date = new Date(selected.start);
         const selectedMonth = date.toLocaleString('default', { month: 'long' });
         const selectedDay = date.getDate();
-
-        // Find the correct entry in monthsData to highlight
         const monthData = monthsData.find(month => month.name.toLowerCase() === selectedMonth.toLowerCase());
         if (monthData) {
             const entry = monthData.data.find(entry => entry.x === selectedDay);
@@ -1010,6 +1245,41 @@ class GlobalDatatakes {
         // Create and render the pie chart
         window.pieChartInstance = new ApexCharts(document.querySelector("#pieChart"), options);
         window.pieChartInstance.render();
+    }
+
+    exportTableToCSV() {
+        const table = document.getElementById("idTable");
+        if (!table) {
+            console.error("Table not found for export.");
+            return;
+        }
+
+        let csv = [];
+        const rows = table.querySelectorAll("tr");
+
+        for (let row of rows) {
+            const cols = row.querySelectorAll("th, td");
+            let rowData = [];
+            cols.forEach(col => {
+                let text = col.textContent.trim().replace(/"/g, '""'); // Escape quotes
+                rowData.push(`"${text}"`);
+            });
+            csv.push(rowData.join(","));
+        }
+
+        // Create a blob and trigger download
+        const csvContent = csv.join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", "data_availability.csv");
+        link.style.display = "none";
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
 }

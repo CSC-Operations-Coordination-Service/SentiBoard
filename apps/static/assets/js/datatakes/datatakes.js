@@ -27,7 +27,6 @@ class Datatakes {
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
-        //this.bindEvents();
     }
 
     init() {
