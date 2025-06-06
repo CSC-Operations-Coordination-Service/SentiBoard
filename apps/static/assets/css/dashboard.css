@@ -646,7 +646,7 @@ a {
 }
 
 .right-slide>div[style*="acquisitions_status.png"] {
-  background-size: 100%;
+  background-size: 99%;
   background-position: center center;
   background-repeat: no-repeat;
 }
