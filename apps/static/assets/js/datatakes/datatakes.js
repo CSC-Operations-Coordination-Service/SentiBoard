@@ -27,6 +27,9 @@ class Datatakes {
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
+        this.datatakesEventsMap = {};
+        this.currentMission = "";
+        this.currentSearchTerm = "";
 
         // Threshold used to state the completeness
         this.completeness_threshold = 90;
@@ -146,6 +149,9 @@ class Datatakes {
 
     successLoadAnomalies(response) {
 
+        console.log('this inside successLoadAnomalies →', this);
+        this.datatakesEventsMap = {};
+
         // Loop over anomalies, and bind every impaired DT with an anomaly
         var rows = format_response(response);
         for (var i = 0; i < rows.length; ++i) {
@@ -239,6 +245,7 @@ class Datatakes {
 
             //Extract linkKey from datatake ID and update the chart
             this.updateCharts(first);
+            this.filterSidebarItems();
         }
 
     }
@@ -905,12 +912,10 @@ class Datatakes {
     attachEventListeners() {
         const searchInput = document.getElementById("searchInput");
         const dataList = document.getElementById("dataList");
-        //const infoButton = document.getElementById("infoButton");
         const tableSection = document.getElementById("tableSection");
         const missionSelect = document.getElementById("mission-select");
         const resetBtn = document.getElementById("resetFilterButton");
 
-        //if (!dataList || !infoButton || !tableSection) {
         if (!dataList || !tableSection) {
             console.error("One or more DOM elements missing for setup.");
             return;
@@ -919,20 +924,20 @@ class Datatakes {
         // Hide table by default
         tableSection.style.display = "none";
 
-        // Toggle table section (if logic needed)
-        /*infoButton.addEventListener("click", () => {
-            tableSection.style.display = tableSection.style.display === "none" ? "block" : "none";
-        });*/
-
         // Filter list on input
         if (searchInput) {
-            searchInput.addEventListener("input", () => this.filterSidebarItems());
+            searchInput.addEventListener("input", () => {
+                this.currentSearchTerm = searchInput.value;
+                this.filterSidebarItems();
+            });
         }
 
         // Mission dropdown
         if (missionSelect) {
             missionSelect.addEventListener("change", () => {
+                this.currentMission = missionSelect.value;
                 if (missionSelect.value === "") {
+                    this.currentSearchTerm = "";
                     searchInput.value = ""; // Reset search
                 }
                 this.filterSidebarItems();
