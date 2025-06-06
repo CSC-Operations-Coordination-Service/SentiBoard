@@ -21,18 +21,21 @@
 }
 
 /* Home Page - Video frame */
-.video-frame {
 
-  /* To generate border radius sequence, please refer to:
-    https://9elements.github.io/fancy-border-radius/
-    border-radius: 54% 46% 100% 0% / 0% 100% 0% 100%;
-    object-fit: cover;  */
+.video-frame {
   width: 100% !important;
   height: 100% !important;
   position: absolute;
-  top: 0px;
+  top: 10px;
   left: 0px;
   object-fit: cover;
+}
+
+#tutorial {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%; /* 9/16 = 0.5625 * 100% */
+  overflow: hidden;
 }
 
 /* Chevron down and up styles */
@@ -714,7 +717,8 @@ a {
   background-color: #12B1BF;
 }
 
-.btn-learn-more {
+.btn-learn-more,
+.intro-btn {
   display: inline-block;
   margin-top: 1rem;
   padding: 0.75rem 1.5rem;
@@ -726,7 +730,8 @@ a {
   text-decoration: none;
 }
 
-.btn-learn-more:hover {
+.btn-learn-more:hover,
+.intro-btn:hover {
   color: #212529 !important;
   text-decoration: none !important;
   background-color: #FFC107 !important;
