@@ -181,40 +181,36 @@ class CalendarWidget {
     normalizeDateString(str) {
         if (str == null) return null;
 
+        let date;
         // Accept Date objects
         if (str instanceof Date) {
             if (isNaN(str)) return null;
-            return str.toISOString().split('T')[0];
-        }
-        str = String(str);
-
-        // Parse DD/MM/YYYY HH:mm:ss
-        const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
-        if (match) {
-            const [, day, month, year, hour, minute, second] = match;
-            const h = hour ?? '00';
-            const m = minute ?? '00';
-            const s = second ?? '00';
-
-            const date = new Date(
-                parseInt(year, 10),
-                parseInt(month, 10) - 1,
-                parseInt(day, 10),
-                parseInt(h, 10),
-                parseInt(m, 10),
-                parseInt(s, 10)
-            );
+            date = str;
+        } else {
+            // Handle DD/MM/YYYY HH:mm:ss
+            const match = String(str).match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
+            if (match) {
+                const [, day, month, year, hour, minute, second] = match;
+                date = new Date(
+                    parseInt(year, 10),
+                    parseInt(month, 10) - 1,
+                    parseInt(day, 10),
+                    parseInt(hour || '0', 10),
+                    parseInt(minute || '0', 10),
+                    parseInt(second || '0', 10)
+                );
+            } else {
+                date = new Date(str);
+            }
 
             if (isNaN(date)) return null;
-
-            return date.toISOString().split('T')[0]; // YYYY-MM-DD
         }
 
-        // Fallback to ISO or other valid format
-        const d = new Date(str);
-        if (isNaN(d)) return null;
-
-        return d.toISOString().split('T')[0]; // YYYY-MM-DD
+        // Return YYYY-MM-DD in local time
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
     }
 
     clearEventDetails() {
@@ -600,7 +596,6 @@ class CalendarWidget {
 
                 const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
-                //console.log('Comparing fullDate:', fullDate, 'with', this.today, '→', this.normalizeDateString(this.today));
                 if (fullDate === this.normalizeDateString(this.today)) {
                     dayDiv.classList.add('today');
                 }
