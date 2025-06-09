@@ -78,9 +78,11 @@ class Datatakes {
     }
 
     filterDatatakesOnPageLoad() {
-        var queryString = window.location.search;
-        var urlParams = new URLSearchParams(queryString);
-        var searchFilter = urlParams.get('search');
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const searchFilter = urlParams.get('search');
+        console.info("Search param:", searchFilter);
+
         if (searchFilter) {
             console.info('Accessing page with search filter: ' + searchFilter);
             // Filter the data by matching the 'id' containing searchFilter (case-insensitive)
@@ -89,7 +91,14 @@ class Datatakes {
             );
 
             // Populate data list with filtered results
-            this.populateDataList(false);
+            //this.populateDataList(false);
+
+            // Manually update charts and title for first match
+            /*if (this.filteredDataTakes.length > 0) {
+                const first = this.filteredDataTakes[0];
+                this.updateCharts(first);
+                this.updateTitleAndDate(first.id);
+            }*/
 
             return true;
         } else {
@@ -185,67 +194,46 @@ class Datatakes {
     successLoadDatatakes(response) {
         const rows = format_response(response);
         console.info('Datatakes successfully retrieved');
-        console.info("Number of records: " + rows.length);
+        console.info("Number of records11-06: " + rows.length);
 
-        // Prepare the datatake list
-        const datatakes = [];
-
-        for (const row of rows) {
+        const datatakes = rows.map(row => {
             const element = row['_source'];
-
-            // Build satellite unit name (e.g., "S1A (IW)")
             let sat_unit = element['satellite_unit'];
             if (sat_unit.includes('S1') || sat_unit.includes('S2')) {
                 sat_unit += ` (${element['instrument_mode']})`;
             }
-
-            // Generate the datatake key (convert S1A IDs if needed)
             let datatake_id = element['datatake_id'];
             if (sat_unit.includes('S1')) {
                 datatake_id = this.overrideS1DatatakesId(datatake_id);
             }
-
-            // Parse sensing time range
             const sensing_start = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
             const sensing_stop = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
 
-            // Push to list 
-            datatakes.push({
+            return {
                 id: datatake_id,
                 satellite: sat_unit,
                 start: sensing_start,
                 stop: sensing_stop,
                 completenessStatus: element['completeness_status'],
                 raw: element
-            });
-        }
+            };
+        });
 
-        // Save the processed datatakes to the instance variable used by populateDataList
         this.mockDataTakes = datatakes;
-
-        // Reset pagination count before repopulating
         this.displayedCount = 0;
 
-        // Check for URL filter after mockDataTakes is ready
-        if (this.filterDatatakesOnPageLoad()) {
-            const time_period_sel = document.getElementById('time-period-select');
-            if (time_period_sel) time_period_sel.value = 'last-quarter';
-        } else {
-            this.populateDataList(false);
+        const hasSearchParam = this.filterDatatakesOnPageLoad(); //sets this.filteredDataTakes
+        if (hasSearchParam) {
+            const sel = document.getElementById('time-period-select');
+            if (sel) sel.value = 'last-quarter';
         }
 
-        // Populate the UI list
-        this.populateDataList(false);
-        // If at least one datatake exists, update title and render
-        if (datatakes.length > 0) {
-            const first = datatakes[0];
+        this.populateDataList(false); //respects .filteredDataTakes if set
 
-            // Call new method to update title and date
-            this.updateTitleAndDate(datatakes.id);
+        const list = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
 
-            //Extract linkKey from datatake ID and update the chart
-            this.updateCharts(first);
-            this.filterSidebarItems();
+        if (list.length > 0) {
+            this.handleInitialSelection(list[0]);
         }
 
     }
@@ -350,7 +338,7 @@ class Datatakes {
                 dataList.querySelectorAll('a.selected').forEach(el => el.classList.remove('selected'));
                 a.classList.add('selected');
 
-                this.updateCharts(take);
+                this.updateCharts(take.id);
 
                 // Call new method to update title and date
                 this.updateTitleAndDate(take.id);
@@ -378,7 +366,6 @@ class Datatakes {
 
         if (!append && nextItems.length > 0) {
             const firstLink = dataList.querySelector('a');
-            if (firstLink) firstLink.click();
         }
     }
 
@@ -413,7 +400,7 @@ class Datatakes {
         }
     }
 
-    async toggleInfoTable() {
+    async toggleInfoTable(passedId = null) {
         this.fromInfoIcon = true;
 
         const infoTable = document.getElementById("infoTableContainer");
@@ -423,9 +410,21 @@ class Datatakes {
             return;
         }
 
-        let fullText = paragraph.textContent.trim().replace(/_/g, "-");
-        const parts = fullText.split("-");
-        const selectedId = parts.slice(0, 3).join("-");
+        let selectedId = passedId;
+
+        // fallback to chart header text if no ID was passed
+        if (!selectedId && paragraph) {
+            const fullText = paragraph.textContent.trim().replace(/_/g, "-");
+            const parts = fullText.split("-");
+            selectedId = parts.slice(0, 3).join("-");
+        }
+
+        console.log("Looking for datatake ID:", selectedId);
+
+        if (!selectedId) {
+            console.error("No valid datatake ID to use for info table.");
+            return;
+        }
 
         console.log("Looking for datatake ID:", selectedId);
 
@@ -569,10 +568,23 @@ class Datatakes {
 
         if (typeof linkKey !== "string") {
             console.warn("updateCharts: Expected string linkKey but got", typeof linkKey, linkKey);
+            console.warn("linkKey value and type", linkKey, typeof linkKey);
+            console.warn("linkKey as JSON:", JSON.stringify(linkKey, null, 2));
+
         }
 
+        const normalizedLinkKey = typeof linkKey === "string"
+            ? linkKey
+            : (linkKey?.id || linkKey?.toString?.() || "").toString();
+
+        if (!normalizedLinkKey) {
+            console.warn("updateCharts: Could not derive a valid string linkKey from input", linkKey);
+            return;
+        }
+
+
         const relevantData = this.mockDataTakes.filter(dt =>
-            (dt.id || "").toUpperCase().startsWith((linkKey || "").toString().toUpperCase())
+            (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
         );
 
         if (relevantData.length > 0) {
@@ -723,7 +735,15 @@ class Datatakes {
     }
 
     hideTable() {
-        document.getElementById('tableSection').style.display = 'none';
+        //document.getElementById('tableSection').style.display = 'none';
+        const tableSection = document.getElementById("tableSection");
+        if (!tableSection) return;
+
+        tableSection.style.transition = "opacity 0.5s ease-in-out";
+        tableSection.style.opacity = "0";
+        setTimeout(() => {
+            tableSection.style.display = "none";
+        }, 500);
     }
 
     hideInfoTable() {
@@ -736,6 +756,7 @@ class Datatakes {
         const acquisitionStatusFilter = document.getElementById("acqStatusFilter")?.value.toUpperCase();
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
+
         try {
             this.filteredDataTakes = this.mockDataTakes.filter(take => {
                 const id = (take.id || "").toUpperCase();
@@ -787,12 +808,31 @@ class Datatakes {
             console.error("Error during filtering:", err);
         }
 
-        if (this.filteredDataTakes.length > 0) {
-            console.log("DEBUG: First matched datatake:", this.filteredDataTakes[0]);
-        }
-
         this.displayedCount = 0; // reset count for pagination
         this.populateDataList(false); // re-render filtered list from scratch
+        const first = this.filteredDataTakes?.[0];
+        if (first) {
+            this.handleInitialSelection(first); // updates charts, title, highlights, table
+        } else {
+            this.hideTable(); // hide table if nothing matches
+        }
+    }
+
+    showTableSection(firstId) {
+        const tableSection = document.getElementById("tableSection");
+        if (!tableSection) return;
+
+        const selectedData = this.mockDataTakes.find(item => item.id === firstId);
+        if (!selectedData) return;
+
+        this.renderTableWithoutPagination([selectedData], firstId);
+
+        //tableSection.style.display = "block";
+        tableSection.style.opacity = "0";
+        setTimeout(() => {
+            tableSection.style.transition = "opacity 0.5s ease-in-out";
+            tableSection.style.opacity = "1";
+        }, 50);
     }
 
     renderTableWithoutPagination(dataset, selectedId = '', searchQuery = '') {
@@ -815,7 +855,6 @@ class Datatakes {
         }
 
         let data = [selectedData];
-
 
         // Apply search filter
         if (searchQuery) {
@@ -864,10 +903,12 @@ class Datatakes {
 
             // Attach the event listener to the icon button
             const button = tr.querySelector("button");
-            button.addEventListener("click", () => this.toggleInfoTable());
+            button.addEventListener("click", () => this.toggleInfoTable(row.id));
+
 
             tableBody.appendChild(tr);
         });
+        console.log("render the table");
 
         tableSection.style.display = "block";
     }
@@ -898,15 +939,34 @@ class Datatakes {
         if (missionSelect) missionSelect.value = "";
         if (searchInput) searchInput.value = "";
         if (acqStatusFilter) acqStatusFilter.value = "";
-        // Ensure internal state is cleared
+
+        // Clear internal state
         this.filteredDataTakes = []; // or null or undefined
+        this.currentMission = "";
+        this.currentSearchTerm = "";
 
+        // Reset the URL (remove query params/hash)
+        if (window.history.replaceState) {
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState(null, '', cleanUrl);
+        }
 
-        // Re-run filtering logic which will default to mockDataTakes
-        this.filterSidebarItems();
+        //Reset sidebar highlights
+        document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
+        document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
-        // Hide table, as expected
-        this.hideTable();
+        //Re-render full datalist
+        this.displayedCount = 0;
+        this.populateDataList(false);
+
+        // Select the first item and load its data
+        const first = this.mockDataTakes?.[0];
+        if (first) {
+            this.handleInitialSelection(first);
+        }
+
+        // Clear any open detail sections
+        this.hideInfoTable?.();//side table of the pie chart
     }
 
     attachEventListeners() {
@@ -941,7 +1001,7 @@ class Datatakes {
                     searchInput.value = ""; // Reset search
                 }
                 this.filterSidebarItems();
-                this.hideTable();
+                //this.hideTable();
             });
         }
 
@@ -986,7 +1046,7 @@ class Datatakes {
             this.updateCharts(selectedKey);
             this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
             this.updateTitleAndDate(selectedKey);
-            this.hideInfoTable();
+            this.hideInfoTable();//side table of the pie chart
         });
     }
 
@@ -1005,6 +1065,22 @@ class Datatakes {
         this.updateTitleAndDate(defaultKey);
         this.updateCharts(defaultKey);
     }
+
+    handleInitialSelection(first) {
+        this.updateCharts(first.id);
+        this.updateTitleAndDate(first.id);
+        this.renderTableWithoutPagination([first], first.id);
+        const firstLink = [...document.querySelectorAll(".filter-link")]
+            .find(link => link.textContent.trim() === first.id);
+        if (firstLink) {
+            firstLink.classList.add("active");
+            const parentDiv = firstLink.closest(".container-border");
+            if (parentDiv) parentDiv.classList.add("selected");
+        }
+
+        this.showTableSection(first.id);
+    }
+
 }
 
 window.datatakes = new Datatakes(mockDataTakes, formatDataDetail);
