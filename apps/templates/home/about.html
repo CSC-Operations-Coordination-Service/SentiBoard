@@ -104,77 +104,15 @@
                             
                         </div>
                         <!-- FAQ Section -->
-                         <div class="container">
+                        <div class="container">
                             <div class="row justify-content-center">
-                                <div id="faq" class="col-md-12">
-                                    <h2 class="section-title">FAQs</h2>
-                                    <h4 class="section-subtitle">Find answers to the most common questions</h4>
-                                    <div id="faqAccordion">
-                                        <!-- FAQ 1 -->
-                                        <div class="card">
-                                            <div class="card-header" id="headingOne">
-                                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
-                                                    <button class="btn btn-link btn-block text-left" data-toggle="collapse"
-                                                        data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                                                        What is this platform about?
-                                                        <i class="fas fa-chevron-down float-right"></i>
-                                                    </button>
-                                                </h5>
-                                            </div>
-        
-                                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
-                                                data-parent="#faqAccordion">
-                                                <div class="card-body">
-                                                    This platform provides information about satellite data acquisitions, events, and available
-                                                    datasets.
-                                                </div>
-                                            </div>
-                                        </div>
-        
-                                        <!-- FAQ 2 -->
-                                        <div class="card">
-                                            <div class="card-header" id="headingTwo">
-                                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
-                                                    <button class="btn btn-link collapsed btn-block text-left" data-toggle="collapse"
-                                                        data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                                                        How do I check the data acquisition status?
-                                                        <i class="fas fa-chevron-down float-right"></i>
-                                                    </button>
-                                                </h5>
-                                            </div>
-        
-                                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#faqAccordion">
-                                                <div class="card-body">
-                                                    You can view the data acquisition status from the dedicated section on the homepage where
-                                                    the platform's latest updates are displayed.
-                                                </div>
-                                            </div>
-                                        </div>
-        
-                                        <!-- FAQ 3 -->
-                                        <div class="card">
-                                            <div class="card-header" id="headingThree">
-                                                <h5 class="mb-0 d-flex justify-content-between align-items-center">
-                                                    <button class="btn btn-link collapsed btn-block text-left" data-toggle="collapse"
-                                                        data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                                                        How can I access satellite data?
-                                                        <i class="fas fa-chevron-down float-right"></i>
-                                                    </button>
-                                                </h5>
-                                            </div>
-        
-                                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#faqAccordion">
-                                                <div class="card-body">
-                                                    Satellite data can be accessed through the provided links under the "Data Set Availability"
-                                                    section, or
-                                                    by contacting the platform administrators.
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                              <div id="faq" class="col-md-12">
+                                <h2 class="section-title">FAQs</h2>
+                                <h4 class="section-subtitle">Find answers to the most common questions</h4>
+                                <div id="faqAccordion"></div>
+                              </div>
                             </div>
-                         </div>
+                          </div>
                     </div>
                 </div>
             </div>
@@ -200,6 +138,13 @@
             }).on('hide.bs.collapse', function () {
                 $(this).prev().find('i').toggleClass('fa-chevron-up fa-chevron-down');
             });
+        });
+    </script>
+    <script src="/static/assets/js/about/about.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const faq = new About('/static/assets/json/faqs.json', 'faqAccordion');
+            faq.load();
         });
     </script>
 

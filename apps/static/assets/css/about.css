@@ -38,7 +38,7 @@
     box-shadow: none;
   }
 
-/*  .card-body {
+  /*  .card-body {
     background-color: rgba(52, 58, 64, 0.8);
     border-radius: 10px;
     padding: 20px !important;
@@ -68,4 +68,23 @@
   .back-container>* {
     position: relative;
     z-index: 2;
+  }
+
+  .bluesky-icon {
+    display: inline-block;
+    margin-right: 1rem;
+    transition: transform 0.2s ease;
+  }
+
+  .bluesky-icon:hover {
+    transform: scale(1.1);
+  }
+
+  .bluesky-fill {
+    fill: #FFFFFF;
+    transition: fill 0.3s ease;
+  }
+
+  .bluesky-icon:hover .bluesky-fill {
+    fill: #12b1bf !important;
   }
