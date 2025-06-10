@@ -14,12 +14,29 @@
 
     <!-- Data section-->
     <div class="content page-inner">
-        
         <!-- Video in background-->
-        <div id="tutorial">
+        <div id="tutorial" style="position: relative;">
             <video preload="metadata" loop muted controls="none" id="home-video" class="video-frame">
                 <source src="/static/assets/mv/home_v3.mp4"></source>
             </video>
+            <!-- Real-time events box positioned over video -->
+            <div style="
+            position: absolute;
+            top: 20px;       /* adjust vertically */
+            left: 20px;      /* adjust horizontally */
+            width: 347px;
+            background-color: #006B7C;
+            padding: 1rem;
+            z-index: 2;
+            border-radius: 8px;
+        ">
+            <h4 class="card-title" style="color: white; margin-bottom: 1rem;">Real-time events</h4>
+            <div>
+                <ol class="activity-feed" id="real-time-event-list" style="color: white; padding-left: 1rem; margin-bottom: 0;">
+                    <!-- Event items will be appended here -->
+                </ol>
+            </div>
+        </div>
         </div>
     </div>
     <!-- Vertical Slider pages -->
@@ -90,13 +107,6 @@
     <footer class="container-fluid" style="background-color: #343a40;">
 
     </footer>
-
-    <!-- Latest anomalies -->
-    <h4 class="card-title col-9" style="position: absolute; top: 13%; left: 77%">Real-time events</h4>
-    <div class="row col-9" style="position: absolute; top: 18%; left: 78%">
-        <ol class="activity-feed" id="real-time-event-list">
-        </ol>
-    </div>
 
 {% endblock content %}
 
