@@ -500,72 +500,6 @@ a {
   }
 }
 
-
-
-/*faqs*/
-#faqAccordion {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.section-title {
-  font-size: 2.5rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
-  text-align: center;
-}
-
-.section-subtitle {
-  font-size: 1.0375rem;
-  color: lightgray;
-  margin-left: 5px;
-}
-
-#faq {
-  color: white;
-}
-
-#faq .card {
-  border: 2px solid #ddd;
-  margin-bottom: 1rem;
-}
-
-#faq .card-header {
-  background-color: #006b7c;
-  color: white;
-  font-weight: bold;
-}
-
-#faq .btn-link {
-  text-decoration: none;
-  color: inherit;
-  font-size: 1.0375rem;
-}
-
-#faq .card-body {
-  background-color: #343a40 !important;
-  font-size: 1.0375rem;
-  padding: 1rem;
-  /*display: flex;*/
-  flex-direction: column;
-  text-align: left !important;
-  justify-content: left !important;
-}
-
-
-.accordion .card-header button {
-  font-size: 1.1rem;
-  text-align: left;
-  width: 100%;
-  padding: 10px 0;
-}
-
-/* Make chevrons rotate when the panel is expanded */
-.accordion .card-header button[aria-expanded="true"] i {
-  transform: rotate(180deg);
-  transition: transform 0.3s ease;
-}
-
 /* Chevron icon initially pointing down */
 .fas.fa-chevron-down .fas.fa-chevron-up {
   font-size: 1.5rem;
@@ -677,7 +611,6 @@ a {
   background-position: center center;
   background-repeat: no-repeat;
 }
-
 
 .left-slide p {
   color: white !important;

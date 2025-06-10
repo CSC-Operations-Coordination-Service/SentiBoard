@@ -3,54 +3,88 @@ console.log("about.js loaded");
 
 // about.js
 class About {
-    constructor(jsonPath, containerId) {
-        this.jsonPath = jsonPath;
-        this.containerId = containerId;
+  constructor(jsonPath, containerId) {
+    this.jsonPath = jsonPath;
+    this.containerId = containerId;
+  }
+
+  async load() {
+    try {
+      const response = await fetch(this.jsonPath);
+      const faqs = await response.json();
+      this.renderFaqs(faqs);
+    } catch (error) {
+      console.error('Error loading FAQs:', error);
+    }
+  }
+
+  renderFaqs(sections) {
+    const faqAccordion = document.getElementById(this.containerId);
+    if (!faqAccordion) {
+      console.warn(`Element with ID ${this.containerId} not found.`);
+      return;
     }
 
-    async load() {
-        try {
-            const response = await fetch(this.jsonPath);
-            const faqs = await response.json();
-            this.renderFaqs(faqs);
-        } catch (error) {
-            console.error('Error loading FAQs:', error);
-        }
-    }
+    faqAccordion.innerHTML = '';
 
-    renderFaqs(faqs) {
-        const faqAccordion = document.getElementById(this.containerId);
-        if (!faqAccordion) {
-            console.warn(`Element with ID ${this.containerId} not found.`);
-            return;
-        }
+    let globalIndex = 0;
 
-        faqAccordion.innerHTML = '';
+    sections.forEach((section, sectionIdx) => {
+      const sectionId = `sectionCollapse${sectionIdx}`;
 
-        faqs.forEach((faq, index) => {
-            const faqCard = `
-          <div class="card">
-            <div class="card-header" id="heading${index}">
-              <h5 class="mb-0 d-flex justify-content-between align-items-center">
-                <button class="btn btn-link ${index === 0 ? '' : 'collapsed'} btn-block text-left"
-                        data-toggle="collapse"
-                        data-target="#collapse${index}"
-                        aria-expanded="${index === 0 ? 'true' : 'false'}"
-                        aria-controls="collapse${index}">
-                  ${faq.question}
-                  <i class="fas fa-chevron-down float-right"></i>
+      // Section header with collapsible toggle
+      const sectionHtml = `
+          <div class="card my-3">
+            <div class="card-header section-header" id="sectionHeading${sectionIdx}">
+              <h5 class="mb-0">
+                <button class="btn btn-link section-title" type="button" data-toggle="collapse" data-target="#${sectionId}" aria-expanded="false" aria-controls="${sectionId}">
+                <i class="${section.icon || 'fa fa-folder'} mr-2"></i>  
+                ${section.section}
                 </button>
               </h5>
             </div>
-            <div id="collapse${index}" class="collapse ${index === 0 ? 'show' : ''}"
-                 aria-labelledby="heading${index}" data-parent="#${this.containerId}">
-              <div class="card-body">
-                ${faq.answer}
+    
+            <div id="${sectionId}" class="collapse" aria-labelledby="sectionHeading${sectionIdx}" data-parent="#${this.containerId}">
+              <div class="card-body p-2">
+                <div class="accordion" id="sectionAccordion${sectionIdx}">
+                  ${section.items.map((faq, itemIdx) => {
+        const questionId = `heading${globalIndex}`;
+        const collapseId = `collapse${globalIndex}`;
+        const show = globalIndex === 0 ? 'show' : '';
+        const collapsed = globalIndex === 0 ? '' : 'collapsed';
+        globalIndex++;
+
+        return `
+                      <div class="card mb-2">
+                        <div class="card-header faq-card-header" id="${questionId}">
+                          <h5 class="mb-0">
+                            <button class="btn btn-link ${collapsed} btn-block text-left faq-title" 
+                                    data-toggle="collapse" 
+                                    data-target="#${collapseId}" 
+                                    aria-expanded="${show ? 'true' : 'false'}" 
+                                    aria-controls="${collapseId}">
+                              ${faq.question}
+                              <i class="fas fa-chevron-down float-right"></i>
+                            </button>
+                          </h5>
+                        </div>
+                        <div id="${collapseId}" class="collapse ${show}" aria-labelledby="${questionId}" data-parent="#sectionAccordion${sectionIdx}">
+                          <div class="card-body">
+                            ${faq.answer}
+                          </div>
+                        </div>
+                      </div>
+                    `;
+      }).join('')}
+                </div>
               </div>
             </div>
           </div>
         `;
-            faqAccordion.innerHTML += faqCard;
-        });
-    }
+
+      faqAccordion.innerHTML += sectionHtml;
+    });
+  }
+
+
 }

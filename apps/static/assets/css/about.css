@@ -88,3 +88,109 @@
   .bluesky-icon:hover .bluesky-fill {
     fill: #12b1bf !important;
   }
+
+  /*faqs*/
+  #faqAccordion {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .faqs-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .faqs-subtitle {
+    font-size: 1.4rem;
+    color: lightgray;
+    margin-left: 5px;
+  }
+
+  #faq {
+    color: white;
+  }
+
+  #faq .card {
+    border: 2px solid #006b7c;
+    margin-bottom: 1rem;
+  }
+
+  #faq .card-header {
+    color: white;
+    font-weight: bold;
+  }
+
+  .section-title {
+    font-size: 1.25rem !important;
+  }
+
+  .faq-title {
+    font-size: 1.10rem !important;
+  }
+
+  #faq .btn-link {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  #faq .card-body {
+    background-color: #343a40 !important;
+    font-size: 1.0375rem;
+    padding: 1rem;
+    flex-direction: column;
+    text-align: left !important;
+    justify-content: left !important;
+  }
+
+  .accordion .card-header button {
+    text-align: left;
+    width: 100%;
+    padding: 10px 0;
+  }
+
+  /* Make chevrons rotate when the panel is expanded */
+  .accordion .card-header button[aria-expanded="true"] i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+  }
+
+  .card-header {
+    cursor: pointer;
+  }
+
+  .card .card-header,
+  .card-light .card-header {
+    padding: 1rem 1.25rem;
+    background-color: transparent;
+    border-bottom: none !important;
+  }
+
+  /* Section headers (dark teal) */
+  .section-header {
+    background-color: #006b7c !important;
+    color: white;
+    font-weight: bold;
+  }
+
+  /* Card (question) headers (light teal) */
+  .faq-card-header {
+    background-color: #12b1bf !important;
+    color: white;
+    font-weight: bold;
+  }
+
+  /*hover effects */
+  .section-header button:hover {
+    color: #12b1bf !important;
+  }
+
+  .faq-card-header button:hover {
+    color: #FFAD00 !important
+  }
+
+  .section-header i {
+    font-size: 1.2rem !important;
+    margin-right: 0.3rem;
+  }
