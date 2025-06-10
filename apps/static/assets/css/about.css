@@ -174,7 +174,6 @@
     font-weight: bold;
   }
 
-  /* Card (question) headers (light teal) */
   .faq-card-header {
     background-color: #12b1bf !important;
     color: white;
@@ -187,7 +186,7 @@
   }
 
   .faq-card-header button:hover {
-    color: #FFAD00 !important
+    color: #006b7c !important
   }
 
   .section-header i {
