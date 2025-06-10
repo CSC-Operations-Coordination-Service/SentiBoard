@@ -165,6 +165,9 @@ class CalendarWidget {
         // Now generate the calendar AFTER loading events
         this.generateCalendar(this.currentMonth, this.currentYear);
 
+        this.showDayEventsOnPageLoad();
+
+
     }
 
     errorLoadAnomalies(response) {
@@ -179,37 +182,37 @@ class CalendarWidget {
     }
 
     normalizeDateString(str) {
-        if (str == null) return null;
+        if (!str) return null;
 
         let date;
-        // Accept Date objects
-        if (str instanceof Date) {
-            if (isNaN(str)) return null;
+
+        if (str instanceof Date && !isNaN(str)) {
             date = str;
         } else {
-            // Handle DD/MM/YYYY HH:mm:ss
-            const match = String(str).match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
+            const input = String(str).trim();
+            const match = input.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
+
             if (match) {
-                const [, day, month, year, hour, minute, second] = match;
+                const [, day, month, year, hour = '0', minute = '0', second = '0'] = match;
                 date = new Date(
                     parseInt(year, 10),
                     parseInt(month, 10) - 1,
                     parseInt(day, 10),
-                    parseInt(hour || '0', 10),
-                    parseInt(minute || '0', 10),
-                    parseInt(second || '0', 10)
+                    parseInt(hour, 10),
+                    parseInt(minute, 10),
+                    parseInt(second, 10)
                 );
             } else {
-                date = new Date(str);
+                date = new Date(input);
             }
 
-            if (isNaN(date)) return null;
+            if (isNaN(date.getTime())) return null;
         }
 
-        // Return YYYY-MM-DD in local time
         const yyyy = date.getFullYear();
         const mm = String(date.getMonth() + 1).padStart(2, '0');
         const dd = String(date.getDate()).padStart(2, '0');
+
         return `${yyyy}-${mm}-${dd}`;
     }
 
@@ -713,6 +716,7 @@ class CalendarWidget {
     }
 
     showEventDetails(date) {
+        console.log("this is the date", date);
         const { noEventMsg, content } = this.ensureEventDetailsElements();
 
         eventDetailsContent.innerHTML = '';
@@ -839,6 +843,28 @@ class CalendarWidget {
         return { container, title, noEventMsg, content };
     }
 
+    showDayEventsOnPageLoad() {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const showDayEvents = urlParams.get('showDayEvents');
+        if (showDayEvents) {
+            for (const [key, anomaly] of Object.entries(this.anomalies)) {
+
+                // Parse showDayEvents and publicationDate as Date for comparison
+                const parts = showDayEvents.split('/');
+                const showDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                const showDateStr = this.normalizeDateString(showDayEvents);
+                const anomalyDateStr = this.normalizeDateString(anomaly.publicationDate);
+
+
+                if (showDateStr && showDateStr === anomalyDateStr) {
+                    console.info('Matched date founded:', anomalyDateStr);
+                    this.showEventDetails(new Date(anomaly.publicationDate));
+                }
+            }
+        }
+        this.generateCalendar(this.currentMonth, this.currentYear);
+    }
 
 }
 const calendar = new CalendarWidget();
