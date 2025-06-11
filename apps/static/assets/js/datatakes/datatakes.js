@@ -111,7 +111,7 @@ class Datatakes {
     on_timeperiod_change() {
         var time_period_sel = document.getElementById('time-period-select')
         console.log("Time period changed to " + time_period_sel.value)
-        this.loadDatatakesInPeriod(time_period_sel.value);
+        this.loadDatatakesInPeriod(time_period_sel.value, true);
     }
 
     quarterAuthorizedProcess(response) {
@@ -127,33 +127,36 @@ class Datatakes {
         return;
     }
 
-    loadDatatakesInPeriod(selected_time_period) {
-
-        // Acknowledge the retrieval of events with impact on DTs
+    loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
         console.info("Invoking events retrieval...");
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
             this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
-
-        // Acknowledge the invocation of rest APIs
+    
         console.info("Invoking Datatakes retrieval...");
-        if (selected_time_period === 'day') {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'week') {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-7d', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'month') {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-30d', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'prev-quarter') {
-            asyncAjaxCall('/api/worker/cds-datatakes/previous-quarter', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-quarter', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        }
-
-        return;
+    
+        const urlMap = {
+            day: '/api/worker/cds-datatakes/last-24h',
+            week: '/api/worker/cds-datatakes/last-7d',
+            month: '/api/worker/cds-datatakes/last-30d',
+            'prev-quarter': '/api/worker/cds-datatakes/previous-quarter',
+            default: '/api/worker/cds-datatakes/last-quarter'
+        };
+    
+        const url = urlMap[selected_time_period] || urlMap.default;
+    
+        asyncAjaxCall(url, 'GET', {},
+            (response) => {
+                this.successLoadDatatakes(response);
+    
+                if (shouldReapplyFilters) {
+                    const hasSearch = this.filterDatatakesOnPageLoad(); // apply search param
+                    if (!hasSearch) {
+                        this.filterSidebarItems(); // apply UI filters
+                    }
+                }
+            },
+            this.errorLoadDatatake
+        );
     }
 
     successLoadAnomalies(response) {
