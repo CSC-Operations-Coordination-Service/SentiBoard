@@ -532,7 +532,7 @@ class CalendarWidget {
     }
 
     filterEvent(anomaly, selectedMission, selectedEventType, searchText) {
-        // Mission filter
+
         if (selectedMission !== 'all') {
             const missionKey = selectedMission.toLowerCase();
             const satellites = this.missionMap[missionKey] || [];
@@ -676,7 +676,6 @@ class CalendarWidget {
 
     filterEvents({ date, mission, eventType, searchText }) {
 
-        console.log("event type", eventType);
         const targetDate = this.normalizeDateString(date);
         const searchLower = searchText?.toLowerCase().trim() || '';
         const missionMap = {
@@ -728,8 +727,8 @@ class CalendarWidget {
 
         const normalizedDate = this.normalizeDateString(date);
 
-        const selectedMission = document.getElementById('missionSelect').value;
-        const selectedEventType = document.getElementById('eventTypeSelect').value;
+        const selectedMission = document.getElementById('missionSelect')?.value || 'all';
+        const selectedEventType = document.getElementById('eventTypeSelect')?.value || 'all';
         const searchText = document.getElementById('eventSearchInput').value.trim().toLowerCase();
 
         const events = this.filterEvents({
@@ -852,14 +851,12 @@ class CalendarWidget {
 
                 // Parse showDayEvents and publicationDate as Date for comparison
                 const parts = showDayEvents.split('/');
-                const showDate = new Date(parts[2], parts[1] - 1, parts[0]);
                 const showDateStr = this.normalizeDateString(showDayEvents);
                 const anomalyDateStr = this.normalizeDateString(anomaly.publicationDate);
-
-
+                console.log('Comparing showDateStr:', showDateStr, 'with anomalyDateStr:', anomalyDateStr);
                 if (showDateStr && showDateStr === anomalyDateStr) {
-                    console.info('Matched date founded:', anomalyDateStr);
-                    this.showEventDetails(new Date(anomaly.publicationDate));
+                    console.info('Matched date founded:', anomalyDateStr, anomaly);
+                    this.showEventDetails(anomalyDateStr);
                 }
             }
         }
