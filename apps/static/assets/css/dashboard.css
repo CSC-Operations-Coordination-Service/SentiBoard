@@ -28,7 +28,9 @@
   position: absolute;
   top: 10px;
   left: 0px;
-  object-fit: cover;
+  object-fit: contain;
+  max-width: 1920px !important;
+  max-height: 1080px !important;
 }
 
 #tutorial {
