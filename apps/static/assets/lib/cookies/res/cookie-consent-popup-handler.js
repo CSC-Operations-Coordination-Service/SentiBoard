@@ -1,4 +1,35 @@
-window.addEventListener("load", function() {
+window.addEventListener("load", function () {
+    // Inject custom CSS styles for hover effects
+    const style = document.createElement("style");
+    style.innerHTML = `
+        .esa-custom-cookie-messsage {
+            margin-bottom: 1em;
+        }
+
+        .cc-allow, .cc-deny {
+            margin-right: 0.9em;
+            border: none;
+            padding: 0.5em 1em;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .cc-allow:hover {
+            color: #212529 !important;
+            text-decoration: none !important;
+            background-color: #FFC107 !important;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.7) !important;
+        }
+
+        .cc-deny:hover {
+            color: #212529 !important;
+            text-decoration: none !important;
+            background-color: #FFC107 !important;
+            box-shadow: 0 0 10px rgba(255, 193, 7, 0.7) !important;
+        }
+    `;
+    document.head.appendChild(style);
+
     window.cookieconsent.initialise({
         layout: 'esa-custom',
         layouts: {
@@ -15,21 +46,21 @@ window.addEventListener("load", function() {
         },
         "palette": {
             "popup": {
-                "background": "#003247",
+                "background": "#343a40 !important",
                 "text": "#ffffff",
             },
             "button": {
                 "background": "#FFC107",
-                "text": "#212529",
+                "text": "#212529 !important",
             }
         },
-        "onPopupOpen": function() {
-            document.querySelector('.cc-allow').addEventListener("click", function() {
+        "onPopupOpen": function () {
+            document.querySelector('.cc-allow').addEventListener("click", function () {
                 _paq.push(['rememberConsentGiven'])
             }, {
                 once: true
             })
-            document.querySelector('.cc-deny').addEventListener("click", function() {
+            document.querySelector('.cc-deny').addEventListener("click", function () {
                 _paq.push(['forgetConsentGiven'])
             }, {
                 once: true
@@ -38,7 +69,7 @@ window.addEventListener("load", function() {
     })
 });
 if (typeof window.cookieconsent !== "undefined") {
-    window.cookieconsent.utils.isMobile = function() {
+    window.cookieconsent.utils.isMobile = function () {
         return false
     };
 }
