@@ -84,11 +84,11 @@ class CalendarWidget {
         };
 
         this.iconMap = {
-            'acquisition': 'fas fa-database',
+            'acquisition': 'fas fa-broadcast-tower',
             'calibration': 'fas fa-compass',
-            'manoeuvre': 'fas fa-wrench',
+            'manoeuvre': '/static/assets/img/joystick.png',
             'production': 'fas fa-cog',
-            'satellite': 'fas fa-rss'
+            'satellite': 'fas fa-satellite-dish'
         };
 
         ajaxCall('/api/auth/quarter-authorized', 'GET', {},
@@ -627,11 +627,25 @@ class CalendarWidget {
                 filteredEvents.forEach(event => {
                     const category = event.category === "Platform" ? "Satellite" : event.category;
                     console.log("category in calendar", category);
+
                     const mappedType = this.eventTypeMap[category] || category;
                     const typeClass = `event-${mappedType.toLowerCase()}`;
+
                     if (!addedTypes.has(typeClass)) {
-                        const iconElement = document.createElement('i');
-                        iconElement.classList.add(...(this.iconMap[mappedType.toLowerCase()] || 'fas fa-question-circle').split(' '), 'event-icon');
+                        const iconValue = this.iconMap[mappedType.toLowerCase()] || 'fas fa-question-circle';
+                        let iconElement;
+
+                        // Check if it's an image path
+                        if (iconValue.startsWith('/') || iconValue.endsWith('.png') || iconValue.endsWith('.jpg')) {
+                            iconElement = document.createElement('img');
+                            iconElement.src = iconValue;
+                            iconElement.classList.add('event-icon', 'image-icon');
+                            iconElement.style.width = '16px';
+                            iconElement.style.height = '16px';
+                        } else {
+                            iconElement = document.createElement('i');
+                            iconElement.classList.add(...iconValue.split(' '), 'event-icon');
+                        }
 
                         const eventLabel = document.createElement('div');
                         eventLabel.classList.add(typeClass);
@@ -767,17 +781,22 @@ class CalendarWidget {
                 ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, event.environment.split(";"))}</p>`
                 : '';
 
+            const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');
+            const iconHTML = isImage
+                ? `<img src="${iconClass}" class="legend-icon image-icon event-${mappedType}" style="width: 1.2rem; height: 1.2rem; vertical-align: middle;">`
+                : `<i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i>`;
+
             listItem.innerHTML = `
-                <small>
-                    <span class="icon-bg"><i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i></span>
-                    ${event.title || 'No description available'}
-                </small><br>
-                <small>Occurrence date: ${this.parseDateString(event.start)}</small><br>
-                <small>Impacted satellite(s): ${satellites}</small><br>
-                <small>Issue type: ${category}</small><br>
-                <small>${event.text || event.key}</small><br>
-                ${datatakeHtml}
-            `;
+                    <small>
+                        <span class="icon-bg">${iconHTML}</span>
+                        ${event.title || 'No description available'}
+                    </small><br>
+                    <small>Occurrence date: ${this.parseDateString(event.start)}</small><br>
+                    <small>Impacted satellite(s): ${satellites}</small><br>
+                    <small>Issue type: ${category}</small><br>
+                    <small>${event.text || event.key}</small><br>
+                    ${datatakeHtml}
+                `;
             list.appendChild(listItem);
         });
 

@@ -560,6 +560,12 @@
   color: #FFAD00;
 }
 
+.image-icon {
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+}
+
 .event-acquisition {
   /* background-color: #495057;*/
   color: #495057;
