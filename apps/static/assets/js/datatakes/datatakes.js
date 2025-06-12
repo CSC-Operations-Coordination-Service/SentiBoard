@@ -131,9 +131,9 @@ class Datatakes {
         console.info("Invoking events retrieval...");
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
             this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
-    
+
         console.info("Invoking Datatakes retrieval...");
-    
+
         const urlMap = {
             day: '/api/worker/cds-datatakes/last-24h',
             week: '/api/worker/cds-datatakes/last-7d',
@@ -141,13 +141,13 @@ class Datatakes {
             'prev-quarter': '/api/worker/cds-datatakes/previous-quarter',
             default: '/api/worker/cds-datatakes/last-quarter'
         };
-    
+
         const url = urlMap[selected_time_period] || urlMap.default;
-    
+
         asyncAjaxCall(url, 'GET', {},
             (response) => {
                 this.successLoadDatatakes(response);
-    
+
                 if (shouldReapplyFilters) {
                     const hasSearch = this.filterDatatakesOnPageLoad(); // apply search param
                     if (!hasSearch) {
@@ -738,15 +738,10 @@ class Datatakes {
     }
 
     hideTable() {
-        //document.getElementById('tableSection').style.display = 'none';
         const tableSection = document.getElementById("tableSection");
-        if (!tableSection) return;
-
-        tableSection.style.transition = "opacity 0.5s ease-in-out";
-        tableSection.style.opacity = "0";
-        setTimeout(() => {
+        if (tableSection) {
             tableSection.style.display = "none";
-        }, 500);
+        }
     }
 
     hideInfoTable() {
@@ -854,6 +849,9 @@ class Datatakes {
         const selectedData = dataset.find(item => item.id === selectedId);
         if (!selectedData) {
             console.warn(`No data found for: ${selectedId}`);
+            // Clear content and explicitly hide if nothing found
+            tableBody.innerHTML = "";
+            tableSection.style.display = "none";
             return;
         }
 
@@ -866,6 +864,14 @@ class Datatakes {
                 item.id.toLowerCase().includes(query) ||
                 item.satellite.toLowerCase().includes(query)
             );
+        }
+
+        if (data.length === 0) {
+            console.warn("No data matched the search query.");
+
+            tableBody.innerHTML = "";
+            tableSection.style.display = "none";  // Ensure table is hidden in this case
+            return;
         }
 
         // Render each row
@@ -912,7 +918,6 @@ class Datatakes {
             tableBody.appendChild(tr);
         });
         console.log("render the table");
-
         tableSection.style.display = "block";
     }
 

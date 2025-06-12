@@ -794,7 +794,6 @@ class CalendarWidget {
                     <small>Occurrence date: ${this.parseDateString(event.start)}</small><br>
                     <small>Impacted satellite(s): ${satellites}</small><br>
                     <small>Issue type: ${category}</small><br>
-                    <small>${event.text || event.key}</small><br>
                     ${datatakeHtml}
                 `;
             list.appendChild(listItem);
