@@ -640,8 +640,9 @@ class CalendarWidget {
                             iconElement = document.createElement('img');
                             iconElement.src = iconValue;
                             iconElement.classList.add('event-icon', 'image-icon');
-                            iconElement.style.width = '16px';
+                            iconElement.style.width = '20px';
                             iconElement.style.height = '16px';
+                            iconElement.style.marginBottom = '6px';
                         } else {
                             iconElement = document.createElement('i');
                             iconElement.classList.add(...iconValue.split(' '), 'event-icon');

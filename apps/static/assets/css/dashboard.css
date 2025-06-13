@@ -26,7 +26,7 @@
   width: 100% !important;
   height: 100% !important;
   position: absolute;
-  top: 10px;
+  top: 3px;
   left: 0px;
   object-fit: contain;
   max-width: 1920px !important;
@@ -260,8 +260,6 @@ a {
   background: #12B1BF !important;
 }
 
-
-
 .sidebar.sidebar-style-2 .nav.nav-primary>.nav-item.active>a {
   background: #006B7C !important;
 }
@@ -311,7 +309,6 @@ a {
   font-size: 1.6em;
   color: white !important;
 }
-
 
 /* Collapsible description panels */
 .faq-section .mb-0>a {

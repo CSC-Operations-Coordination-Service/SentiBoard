@@ -206,6 +206,10 @@
     margin-bottom: 0.75rem;
   }
 
+  .float-right {
+    margin-top: -6px !important;
+    margin-left: 4px !important;
+  }
   p {
     font-family: "NotesEsa", sans-serif;
     font-weight: 400;

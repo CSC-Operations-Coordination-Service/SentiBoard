@@ -8,50 +8,101 @@
 {% endblock stylesheets %}
 
 {% block content %}
-<a href="#vertical-slider" class="chevron-down animate__animated animate__fadeInUp animate__delay-1s">
-    <i class="fas fa-chevron-down"></i>
-</a>
-<!-- Fullscreen layout: Events on LEFT, Video on RIGHT -->
-<div id="top-layout" style="
-    display: flex;
-    width: 100vw;
-    height: 100vh;
-    margin-top: 60px;
-    padding: 0;
-    box-sizing: border-box;
-    overflow: hidden;
-">
-
-    
-
-    <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; background-color: black;">
-        <video autoplay muted loop playsinline
-            style="width: auto; height: 100%; object-fit: contain; display: block;">
-            <source src="/static/assets/mv/home_v3.mp4" type="video/mp4">
-        </video>
-    </div>
-    <!-- Real-time events box -->
+    <a href="#vertical-slider" class="chevron-down animate__animated animate__fadeInUp animate__delay-1s">
+        <i class="fas fa-chevron-down"></i>
+    </a>
+    <!--Outer wrapper with background + border padding -->
     <div style="
-            top: 20px;       /* adjust vertically */
-            right: 20px;      /* adjust horizontally */
-            width: 347px;
-            background-color: #343a40;
-            padding: 1rem;
-            z-index: 2;
-            border-radius: 8px;
+    background-color: #006B7C;
+    padding-top: 35px;
+    padding-left: 60px;
+    padding-right: 35px;
+    padding-bottom: 30px;
+    box-sizing: border-box;
+    width: 100vw;
+    height: calc(100vh - 60px);
+    margin-top: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    ">
+        <!-- Fullscreen layout: Events on LEFT, Video on RIGHT -->
+        <div id="top-layout" style="
+            display: flex;
+            gap: 25px;
+            width: 100vw;
+            height: 100%;  
+            box-sizing: border-box;
+            overflow: hidden;
+            border-radius: 12px;
         ">
-        <h4 class="card-title" style="color: white; margin-bottom: 1rem;">Real-time events</h4>
-        <div>
-            <ol class="activity-feed" id="real-time-event-list" style="color: white; padding-left: 1rem; margin-bottom: 0;">
-                <!-- Event items will be appended here -->
-            </ol>
+            <div style="
+                flex:1;
+                min-width: 0;
+                min-height: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: black;
+                position: relative;
+                overflow: hidden;
+                border-radius: 12px;
+            ">
+                <div style="
+                    position: absolute;
+                    z-index: 2;
+                    top: 10%;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    text-align: center;
+                    max-width: 90%;
+                    padding: 1rem 2rem;
+                    font-size: 2rem;
+                    color: white;
+                    background: rgba(0, 0, 0, 0.6);
+                    border: 2px solid black;
+                    border-radius: 12px;
+                    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.8);
+                ">
+                    How to navigate our platform
+                </div>
+                
+                <video id="home-video" 
+                    autoplay
+                    muted
+                    loop
+                    playsinline
+                    style="
+                        width: 100%;
+                        height: 100%;
+                        object-fit: cover;
+                        display: block;
+                ">
+                    <source src="/static/assets/mv/home_v3.mp4" type="video/mp4">
+                </video>
+            </div>
+            <!-- Real-time events box -->
+            <div style="
+                    width: 347px;
+                    height:70%;
+                    background-color: #343a40;
+                    padding: 1rem;
+                    z-index: 2;
+                    border-radius: 8px;
+                    flex-shrink: 0;  /* Prevent shrinking in flex */
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: flex-start;
+                ">
+                <h4 class="card-title" style="color: white; margin-bottom: 1rem;">Real-time events</h4>
+                <div>
+                    <ol class="activity-feed" id="real-time-event-list" style="color: white; padding-left: 1rem; margin-bottom: 0;">
+                        <!-- Event items will be appended here -->
+                    </ol>
+                </div>
+            </div>
         </div>
     </div>
-
-</div>
-
-
-
     <!-- Vertical Slider pages -->
     <div id="vertical-slider" class="slider-container">
         <div class="container">
@@ -112,10 +163,10 @@
             </div>
         </div>
     </div>
-<!-- Chevron Up (placed just before the footer) -->
-<a href="#top-layout" class="chevron-up animate__animated animate__fadeInUp animate__delay-2s">
-    <i class="fas fa-chevron-up"></i>
-</a>
+    <!-- Chevron Up (placed just before the footer) -->
+    <a href="#top-layout" class="chevron-up animate__animated animate__fadeInUp animate__delay-2s">
+        <i class="fas fa-chevron-up"></i>
+    </a>
     <!-- Info boxes  -->
     <footer class="container-fluid" style="background-color: #343a40;">
 
