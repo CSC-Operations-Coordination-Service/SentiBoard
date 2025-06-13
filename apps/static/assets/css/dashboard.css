@@ -243,6 +243,7 @@ label {
 a:focus,
 a:hover {
   color: #12b1bf !important;
+  text-decoration: none !important;
 }
 
 a {

@@ -50,6 +50,7 @@ class Datatakes {
 
             // Populate the data list and set default view
             this.populateDataList(false);
+            this.setupResizeObserver();
             this.attachEventListeners();
             this.setDefaultView();
 
@@ -376,6 +377,28 @@ class Datatakes {
         if (!append && nextItems.length > 0) {
             const firstLink = dataList.querySelector('a');
         }
+    }
+
+    setupResizeObserver() {
+        const searchInput = document.getElementById("searchInput");
+        const updateContainerWidths = () => {
+            const inputWidth = searchInput?.offsetWidth || 300;
+            document.querySelectorAll(".container-border").forEach(div => {
+                div.style.width = `${inputWidth}px`;
+            });
+        };
+    
+        if (searchInput) {
+            const resizeObserver = new ResizeObserver(() => {
+                updateContainerWidths();
+            });
+            resizeObserver.observe(searchInput);
+        }
+    
+        window.addEventListener("resize", updateContainerWidths);
+    
+        // Call it once right away to apply initial sizing
+        updateContainerWidths();
     }
 
     toggleTableSection() {
