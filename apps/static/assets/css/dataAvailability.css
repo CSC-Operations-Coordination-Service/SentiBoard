@@ -241,7 +241,6 @@
     margin-left: auto;
     margin-right: auto;
     margin-top: 17px;
-    border: 1px solid #55558a;
     flex-grow: 1;
     display: flex;
     flex-direction: column;
@@ -271,7 +270,6 @@
 
   #searchInput {
     color: #000000;
-    border: 1px solid #55558a;
     border-radius: 8px;
     padding: 10px;
     font-size: 14px;
