@@ -287,6 +287,10 @@ class Datatakes {
 
     populateDataList(append = false) {
         const dataList = document.getElementById("dataList");
+        const searchInput = document.getElementById("searchInput"); // Adjust ID if different
+        const inputWidth = searchInput?.offsetWidth || 300; // Fallback width if not found
+
+
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
 
         console.log("filteredDataTakes", this.filteredDataTakes);
@@ -313,10 +317,12 @@ class Datatakes {
 
             const containerDiv = document.createElement("div");
             containerDiv.classList.add('container-border');
-
-            containerDiv.style.display = "inline-flex";
+            containerDiv.style.width = `${inputWidth}px`;
+            containerDiv.style.display = "flex";
             containerDiv.style.alignItems = "center";
-            containerDiv.style.gap = "8px";
+            containerDiv.style.justifyContent = "space-between";
+            containerDiv.style.padding = "0.5rem 0.75rem"; // Optional padding
+            containerDiv.style.boxSizing = "border-box"; // Ensures padding doesn't overflow
             containerDiv.style.cursor = "pointer";
             const a = document.createElement("a");
             a.href = "#";

@@ -276,6 +276,10 @@
     margin-bottom: 15px;
   }
 
+  .form-control:focus {
+    border-color: white !important;
+  }
+
   .filter-link {
     display: inline-block;
     padding: 5px 10px;
@@ -287,8 +291,9 @@
   }
 
   .filter-link:hover {
-    background-color: #FFC107 !important;
-    color: whitesmoke !important;
+    /*background-color: #FFC107 !important;*/
+    /*color: whitesmoke !important;*/
+    text-decoration: none !important;
   }
 
   .chart-container h4 {
@@ -297,8 +302,10 @@
   }
 
   .apexcharts-legend {
-    max-width: 180px;   /* Default max width for desktop */
-    padding-left: 5px;  /* Small padding to separate legend from donut */
+    max-width: 180px;
+    /* Default max width for desktop */
+    padding-left: 5px;
+    /* Small padding to separate legend from donut */
   }
 
   #infoButton {
@@ -316,7 +323,7 @@
   .filter-link.active {
     background-color: #006B7C !important;
     color: lightgray;
-    font-weight: bold;
+    /*font-weight: bold;*/
   }
 
   #dataList {
@@ -355,7 +362,7 @@
   }
 
   .filter-link.selected {
-    font-weight: bold;
+    /*font-weight: bold;*/
     color: #FFC107;
   }
 
@@ -466,8 +473,8 @@
     height: 10px;
     border-radius: 50%;
     background-color: #bb8747;
-    top:0 !important;
-    left:0 !important;
+    top: 0 !important;
+    left: 0 !important;
   }
 
   .status-circle-dt-acquired {
@@ -655,9 +662,11 @@
     }
 
     .apexcharts-legend {
-      max-width: 100%;  /* full width under chart */
+      max-width: 100%;
+      /* full width under chart */
       padding-left: 0;
-      margin-top: 15px; /* some space above legend */
+      margin-top: 15px;
+      /* some space above legend */
     }
 
   }
@@ -715,7 +724,7 @@
     background-color: #FFC107;
     color: #212529;
     border-radius: 5px;
-    padding: 5px 10px;
+    padding: 10px 10px;
     font-size: 0.9rem;
     transition: background-color 0.3s, box-shadow 0.3s;
     width: 97%;

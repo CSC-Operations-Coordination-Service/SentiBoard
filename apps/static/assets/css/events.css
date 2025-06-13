@@ -421,6 +421,10 @@
   font-size: 14px;
 }
 
+.form-control:focus {
+  border-color: white !important;
+}
+
 .reset-button {
   padding: 6px 10px;
   background-color: #FFC107 !important;
