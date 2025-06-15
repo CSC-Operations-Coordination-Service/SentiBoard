@@ -710,12 +710,6 @@ img.image-icon {
     margin-right: auto;
   }
 
-  .col-lg-2 {
-    -ms-flex: 0 0 16.666667%;
-    flex: 0 0 24.666667% !important;
-
-  }
-
   .left-panel {
     max-width: max-content !important;
   }
