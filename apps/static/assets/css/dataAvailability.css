@@ -92,8 +92,8 @@
 
 
 .datatakes-window {
-    padding-right: 21px;
-    padding-left: 21px;
+  padding-right: 21px;
+  padding-left: 21px;
 }
 
 .datatakes-card {
@@ -319,10 +319,9 @@ iframe {
 }
 
 .apexcharts-legend {
-  max-width: 180px;
-  /* Default max width for desktop */
-  padding-left: 5px;
-  /* Small padding to separate legend from donut */
+  max-width: 150px;
+  padding-left: 4px;
+  margin-left: -10px;
 }
 
 #infoButton {
@@ -552,12 +551,12 @@ ul#dataList {
 }
 
 .legend-item {
-  display: flex;
-  align-items: center;
-  font-size: 0.875rem;
-  margin-bottom: 2px;
-  padding: 0;
-  line-height: 1.1;
+  display: flex !important;
+  align-items: center !important;
+  font-size: 0.875rem !important;
+  margin-bottom: 2px !important;
+  padding: 0 !important;
+  line-height: 1.1 !important;
 }
 
 .legend-item i {
@@ -566,7 +565,6 @@ ul#dataList {
   height: 10px;
   min-width: 10px;
   border-radius: 50%;
-  margin-right: 8px;
 }
 
 /* Individual circle colors */
@@ -630,8 +628,16 @@ ul#dataList {
   line-height: 1;
 }
 
+/* Chart layout flexbox */
+.chart-container .d-flex {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: flex-start;
+}
+
 /* Mobile Responsiveness */
-  @media (max-width: 768px) {
+@media (max-width: 768px) {
   .container-fluid {
     padding: 10px;
   }
@@ -682,7 +688,8 @@ ul#dataList {
     max-width: 100%;
     padding-left: 0;
     margin-top: 15px;
-}
+    text-align: center;
+  }
 
 }
 
@@ -791,25 +798,26 @@ ul#dataList {
   text-align: center;
 }
 
-.pagination-button {
-  margin: 0 5px;
-  padding: 5px 10px;
-  cursor: pointer;
-  border: 1px solid #ddd;
-  background-color: #007bff;
-  border-radius: 5px;
+.pagination-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+
+  max-width: 50%;
+  /* Matches the table width */
+  overflow-x: auto;
+  /* Allows horizontal scrolling if too many buttons */
+  white-space: nowrap;
+  /* Prevents wrapping */
+  padding: 5px;
 }
 
-.pagination-button:hover {
-  background-color: #f0f0f0;
+.pagination-row .pagination-btn {
+  width: 100%;
+  text-align: center;
 }
 
-.pagination-button.active {
-  background-color: #007bff;
-  color: white;
-  cursor: default;
-  border-radius: 5px;
-}
 
 #pagination button:disabled {
   background-color: #92b6e0;
@@ -818,9 +826,27 @@ ul#dataList {
 }
 
 #paginationControls {
-  margin-top: 10px;
-  text-align: center;
-  margin-right: 320px;
+  display: flex;
+  justify-content: center;
+  /* Keep buttons centered */
+  flex-wrap: nowrap;
+  /* Keep them on one line */
+  gap: 5px;
+  max-width: 50%;
+  /* Matches table */
+  overflow-x: auto;
+  /* Scroll horizontally if needed */
+  white-space: nowrap;
+  padding: 5px;
+}
+
+#paginationControls::-webkit-scrollbar {
+  height: 6px;
+}
+
+#paginationControls::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
 }
 
 .pagination-btn {
@@ -908,10 +934,13 @@ ul#dataList {
   font-size: 16px;
   transition: all 0.3s ease;
   max-width: 200px;
+  margin-top: 10px;
 }
 
 .loadMore:hover {
-  color: #12b1bf !important;
+  color: #212529;
+  background-color: #ffcf3f;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
 }
 
 #tableSection,

@@ -24,6 +24,7 @@ class Datatakes {
         this.rowsPerPage = 10;
         this.currentInfoPage = 1;
         this.itemsPerPage = 7;
+        this.infoItemsPerPage= 8;
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
@@ -45,7 +46,7 @@ class Datatakes {
 
             /*limit the diplay data takes*/
             this.displayedCount = 0;
-            this.itemsPerPage = 10;
+            this.itemsPerPage = 5;
 
 
             // Populate the data list and set default view
@@ -551,11 +552,11 @@ class Datatakes {
 
         this.currentDataArray = dataArray;
         const totalItems = dataArray.length;
-        const totalPages = Math.ceil(totalItems / this.itemsPerPage);
+        const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
         this.currentPage = page;
 
-        const startIndex = (page - 1) * this.itemsPerPage;
-        const endIndex = Math.min(startIndex + this.itemsPerPage, totalItems);
+        const startIndex = (page - 1) * this.infoItemsPerPage;
+        const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
         const pageItems = dataArray.slice(startIndex, endIndex);
 
         pageItems.forEach(item => {
@@ -704,20 +705,20 @@ class Datatakes {
             legend: {
                 show: true,
                 position: 'right',
-                horizontalAlign: 'left',
+                horizontalAlign: 'center',
                 labels: { colors: '#FFFFFF' },
                 itemMargin: {
-                    vertical: 5,
-                    horizontal: 2
+                    vertical: 4,
+                    horizontal: 4
                 },
                 markers: {
                     width: 12,
                     height: 12,
-                    offsetX: -12, // Fine-tune horizontal alignment
+                    offsetX: -6, 
                     offsetY: 0
                 },
                 formatter: function (seriesName, opts) {
-                    return `<div style="margin-left: 0px;">${seriesName}</div>`; // Add horizontal space between marker and text
+                    return `<div style="margin-left: 0;">${seriesName}</div>`; 
                 }
             },
             plotOptions: {
