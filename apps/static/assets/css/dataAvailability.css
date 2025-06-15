@@ -1002,7 +1002,7 @@ ul#dataList {
 
 /* Move only the Publication tooltip more to the left */
 th:nth-of-type(6) .tooltip-text {
-  left: 50%;
+  left: 40%;
   transform: translateX(-15%);
   width: 370px;
 }
