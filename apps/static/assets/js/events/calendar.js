@@ -86,7 +86,7 @@ class CalendarWidget {
         this.iconMap = {
             'acquisition': 'fas fa-broadcast-tower',
             'calibration': 'fas fa-compass',
-            'manoeuvre': '/static/assets/img/joystick.png',
+            'manoeuvre': '/static/assets/img/joystick.svg',
             'production': 'fas fa-cog',
             'satellite': 'fas fa-satellite-dish'
         };
@@ -309,19 +309,49 @@ class CalendarWidget {
         });
 
         // Window resize adjustment
-        window.addEventListener('resize', () => this.adjustCalendarHeight());
+        window.addEventListener('resize', () => {
+            this.adjustCalendarHeight();
+            this.adjustLeftPanelHeight();
+        });
+
     }
 
     adjustCalendarHeight() {
-        const calendarColumn = document.querySelector('.calendar-container');
+        const calendarContainer = document.querySelector('.calendar-container');
         const eventDetails = document.getElementById('eventDetails');
 
-        if (calendarColumn && eventDetails) {
-            const height = calendarColumn.offsetHeight;
-            eventDetails.style.maxHeight = height + 'px';
-            eventDetails.style.overflowY = 'auto';
+        if (!calendarContainer || !eventDetails) return;
+
+        eventDetails.style.minHeight = '';
+        eventDetails.style.maxHeight = '';
+        eventDetails.style.overflowY = '';
+
+        if (window.innerWidth < 992) {
+            return;
         }
+
+        const height = calendarContainer.offsetHeight;
+        /*eventDetails.style.minHeight = `${height}px`;
+        eventDetails.style.maxHeight = `${height}px`;*/
+        eventDetails.style.overflowY = 'auto';
     }
+
+    adjustLeftPanelHeight() {
+        const calendarContainer = document.querySelector('.calendar-container');
+        const leftPanel = document.querySelector('.left-panel .filter-panel');
+
+        if (!calendarContainer || !leftPanel) return;
+
+        // Reset height for smaller screens
+        if (window.innerWidth < 992) {
+            leftPanel.style.minHeight = 'auto';
+            return;
+        }
+
+        const calendarHeight = calendarContainer.offsetHeight;
+        leftPanel.style.minHeight = `${calendarHeight}px`;
+    }
+
 
     buildEventInstanceFromAnomaly(anomaly) {
 
@@ -636,13 +666,16 @@ class CalendarWidget {
                         let iconElement;
 
                         // Check if it's an image path
-                        if (iconValue.startsWith('/') || iconValue.endsWith('.png') || iconValue.endsWith('.jpg')) {
+                        if (iconValue.startsWith('/') || iconValue.endsWith('.png') || iconValue.endsWith('.jpg')|| iconValue.endsWith('.svg')) {
                             iconElement = document.createElement('img');
                             iconElement.src = iconValue;
-                            iconElement.classList.add('event-icon', 'image-icon');
                             iconElement.style.width = '20px';
                             iconElement.style.height = '16px';
+                            iconElement.classList.add('event-icon', 'image-icon');
                             iconElement.style.marginBottom = '6px';
+                            iconElement.onload = () => {
+                                iconElement.style.visibility = 'visible';
+                            };
                         } else {
                             iconElement = document.createElement('i');
                             iconElement.classList.add(...iconValue.split(' '), 'event-icon');
@@ -679,6 +712,7 @@ class CalendarWidget {
             }
 
             this.adjustCalendarHeight();
+            this.adjustLeftPanelHeight();
 
         } catch (error) {
             console.error('Error in generateCalendar:', error);
