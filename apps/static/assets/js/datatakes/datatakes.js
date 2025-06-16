@@ -24,7 +24,7 @@ class Datatakes {
         this.rowsPerPage = 10;
         this.currentInfoPage = 1;
         this.itemsPerPage = 7;
-        this.infoItemsPerPage= 8;
+        this.infoItemsPerPage= 10;
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
@@ -262,21 +262,6 @@ class Datatakes {
         let num = datatake_id.substring(4);
         let hexaNum = parseInt(num).toString(16);
         return (datatake_id + ' (' + hexaNum + ')');
-    }
-
-    refreshDatatable() {
-
-        // Acknowledge the refresh of data displayed in the Datatakes table
-        console.info('Refreshing Datatakes table data...');
-
-        // Rebuild data to be displayed
-        var allMissionData = new Array();
-        //allMissionData.push.apply(allMissionData, this.datatakeRows);
-
-        // Empty the table and reload rows
-        /*if (this.dataTakeTable) {
-            this.dataTakeTable.clear().rows.add(allMissionData).draw();
-        }*/
     }
 
     getGroundStation(id) {
@@ -1039,7 +1024,7 @@ class Datatakes {
                     searchInput.value = ""; // Reset search
                 }
                 this.filterSidebarItems();
-                //this.hideTable();
+                this.hideInfoTable();
             });
         }
 
