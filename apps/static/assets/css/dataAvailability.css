@@ -42,22 +42,17 @@
 
 .custom-box-table-sm {
   border: 1px solid #ddd;
-  /* Add a border to the whole table */
   border-radius: 8px;
-  /* Rounded corners */
   overflow: hidden;
-  /* Ensure border-radius clips inner content */
   background-color: #f8f9fa;
   padding: 12px;
   margin-top: 16px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   color: #000;
-  min-width: 300px;
-  width: 50%;
+  min-width: 350px;
+  width: 60%;
   border-collapse: separate;
-  /* Use separate so border-radius works */
   border-spacing: 0;
-  /* Remove spacing between cells */
   font-size: 13px;
 }
 
@@ -285,11 +280,18 @@ iframe {
   margin: 0 0 10px 0;
 }
 
+#mission-select,
+#resetFilterButton,
 #searchInput {
   color: #000000;
   border-radius: 8px;
   padding: 10px;
   font-size: 14px;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+#searchInput {
   margin-bottom: 15px;
 }
 
@@ -717,11 +719,6 @@ ul#dataList {
 
   #resetFilterButton {
     margin-top: 8px;
-    width: 100%;
-  }
-
-  #mission-select {
-    width: 100%;
   }
 
   .form-group.d-flex {
@@ -733,7 +730,6 @@ ul#dataList {
   .custom-box-table td:nth-child(6) {
     display: none;
   }
-
 
 }
 
@@ -828,14 +824,10 @@ ul#dataList {
 #paginationControls {
   display: flex;
   justify-content: center;
-  /* Keep buttons centered */
   flex-wrap: nowrap;
-  /* Keep them on one line */
   gap: 5px;
-  max-width: 50%;
-  /* Matches table */
+  max-width: 60%;
   overflow-x: auto;
-  /* Scroll horizontally if needed */
   white-space: nowrap;
   padding: 5px;
 }

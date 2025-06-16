@@ -46,7 +46,7 @@ class Datatakes {
 
             /*limit the diplay data takes*/
             this.displayedCount = 0;
-            this.itemsPerPage = 5;
+            this.itemsPerPage = 10;
 
 
             // Populate the data list and set default view
