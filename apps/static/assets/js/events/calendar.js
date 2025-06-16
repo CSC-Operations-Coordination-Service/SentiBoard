@@ -669,9 +669,9 @@ class CalendarWidget {
                         if (iconValue.startsWith('/') || iconValue.endsWith('.png') || iconValue.endsWith('.jpg')|| iconValue.endsWith('.svg')) {
                             iconElement = document.createElement('img');
                             iconElement.src = iconValue;
-                            iconElement.style.width = '20px';
-                            iconElement.style.height = '16px';
-                            iconElement.classList.add('event-icon', 'image-icon');
+                            /*iconElement.style.width = '20px';
+                            iconElement.style.height = '16px';*/
+                            iconElement.classList.add('event-icon', 'image-icon', 'responsive-icon');
                             iconElement.style.marginBottom = '6px';
                             iconElement.onload = () => {
                                 iconElement.style.visibility = 'visible';

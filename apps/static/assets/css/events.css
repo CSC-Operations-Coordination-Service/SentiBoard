@@ -350,7 +350,7 @@
 
 .event-icon {
   color: inherit;
-  font-size: clamp(12px, 1.5vw, 14px) !important;
+  font-size: clamp(3px, 1.2vw, 14px) !important;
   margin: 0;
 }
 
@@ -629,6 +629,16 @@ img.image-icon {
   margin-bottom: 0.5rem;
 }
 
+.responsive-icon {
+  width: clamp(16px, 2vw, 20px);
+  height: auto;
+  max-height: 20px;
+  vertical-align: middle;
+}
+
+.event-icon.fas {
+  font-size: clamp(14px, 2vw, 20px);
+}
 
 /* Responsive Design for Smaller Screens */
 @media (max-width: 768px) {
@@ -646,8 +656,6 @@ img.image-icon {
     font-size: 16px;
   }
 
-
-
 }
 
 @media (min-width: 1200px) {
@@ -657,6 +665,12 @@ img.image-icon {
 }
 
 @media (max-width: 600px) {
+
+  .responsive-icon {
+    width: clamp(12px, 4vw, 16px);
+    max-height: 16px;
+  }
+
   #calendarGrid {
     width: 95%;
     gap: 2px;
@@ -751,7 +765,7 @@ img.image-icon {
   }
 
   .event-icon {
-    font-size: clamp(12px, 1.2vw, 18px);
+    font-size: clamp(3px, 1.2vw, 14px);
   }
 
   .calendar-day .event-container {
@@ -772,13 +786,14 @@ img.image-icon {
 }
 
 @media screen and (min-width: 1025px) and (max-width: 1300px) {
+
   /* Equalize width of left and right panels */
-  .calendar-window .row > .col-lg-2 {
+  .calendar-window .row>.col-lg-2 {
     flex: 0 0 20% !important;
     max-width: 20% !important;
   }
 
-  .calendar-window .row > .col-lg-8 {
+  .calendar-window .row>.col-lg-8 {
     flex: 0 0 60% !important;
     max-width: 60% !important;
   }
