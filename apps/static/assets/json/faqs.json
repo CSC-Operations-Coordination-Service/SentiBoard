@@ -5,7 +5,7 @@
         "items": [
             {
                 "question": "What is the SentiBoard?",
-                "answer": "The Operations Dashboard provides real-time and historical insights into the data availability and the processors baseline. It's intended for users who want an overview of satellite data flows. See the general explanation <a target='_blank' href='#about_text'>here</a>."
+                "answer": "The Operations Dashboard provides real-time and historical insights into the data availability and the processors baseline. It's intended for users who want an overview of satellite data flows. See the general explanation <a href='#about_text'>here</a>."
             },
             {
                 "question": "Who can use the Dashboard?",

@@ -149,7 +149,7 @@
   }
 
   .card-header {
-    cursor: pointer;
+    cursor: default;
   }
 
   .card .card-header,
@@ -170,6 +170,11 @@
     background-color: #12b1bf !important;
     color: white;
     font-weight: bold;
+  }
+
+  .accordion .card > .card-header {
+    cursor: default !important;
+    
   }
 
   /*hover effects */
