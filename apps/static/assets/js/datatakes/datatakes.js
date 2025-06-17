@@ -163,7 +163,6 @@ class Datatakes {
 
     successLoadAnomalies(response) {
 
-        /*console.log('this inside successLoadAnomalies →', this);*/
         this.datatakesEventsMap = {};
 
         // Loop over anomalies, and bind every impaired DT with an anomaly
@@ -280,8 +279,6 @@ class Datatakes {
 
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
 
-        /*console.log("filteredDataTakes", this.filteredDataTakes);
-        console.log("mockDataTakes", this.mockDataTakes);*/
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
@@ -437,14 +434,12 @@ class Datatakes {
             selectedId = parts.slice(0, 3).join("-");
         }
 
-        /*console.log("Looking for datatake ID:", selectedId);*/
-
         if (!selectedId) {
             console.error("No valid datatake ID to use for info table.");
             return;
         }
 
-        /*console.log("Looking for datatake ID:", selectedId);*/
+        console.log("Looking for datatake ID:", selectedId);
 
         try {
             await this.renderInfoTable(selectedId);
@@ -636,8 +631,6 @@ class Datatakes {
             const pubVal = entry.raw;
             pubValues.add(pubVal);
         });
-        /*console.log("Unique raw.publication values from backend:", Array.from(pubValues));*/
-
 
         relevantData.forEach(entry => {
             const raw = entry.raw?.completeness_status?.ACQ || {};
@@ -652,16 +645,12 @@ class Datatakes {
             labels.push("Complete");
             series.push(parseFloat(percentage.toFixed(2)));
             colors.push(completeColor);
-            /*console.log("percentage type", percentage);
-            console.log("remaining color", remaining);*/
 
             // Add "Missing" slice
             labels.push("Missing");
             series.push(parseFloat(remaining.toFixed(2)));
             colors.push(missingColor);
         });
-
-        //console.log(" Unique publication types found in data:", Array.from(uniquePublicationTypes));
 
         // Destroy existing chart before rendering a new one
         if (this.donutChartInstance) {
@@ -932,7 +921,6 @@ class Datatakes {
 
             tableBody.appendChild(tr);
         });
-        /*console.log("render the table");*/
         tableSection.style.display = "block";
     }
 
