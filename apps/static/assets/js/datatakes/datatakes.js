@@ -912,13 +912,13 @@ class Datatakes {
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
-                <td>${row.id}</td>
-                <td>${platform}</td>
-                <td>${startTime}</td>
-                <td>${stopTime}</td>
-                <td><span class="status-badge" style="background-color:${acquisitionColor}">${acqStatus}</span></td>
-                <td><span class="status-badge" style="background-color:${publicationColor}">${pubStatus}</span></td>
-                <td>
+                <td data-label="Data Take ID">${row.id}</td>
+                <td data-label="Platform">${platform}</td>
+                <td data-label="Start Date">${startTime}</td>
+                <td data-label="Stop Date">${stopTime}</td>
+                <td data-label="Acquisition"><span class="status-badge" style="background-color:${acquisitionColor}">${acqStatus}</span></td>
+                <td data-label="Publication"><span class="status-badge" style="background-color:${publicationColor}">${pubStatus}</span></td>
+                <td data-label="Actions">
                     <button type="button" class="btn-link view-btn">
                         View Details
                     </button>
