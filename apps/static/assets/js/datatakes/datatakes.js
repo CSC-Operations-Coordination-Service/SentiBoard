@@ -163,7 +163,7 @@ class Datatakes {
 
     successLoadAnomalies(response) {
 
-        console.log('this inside successLoadAnomalies →', this);
+        /*console.log('this inside successLoadAnomalies →', this);*/
         this.datatakesEventsMap = {};
 
         // Loop over anomalies, and bind every impaired DT with an anomaly
@@ -280,8 +280,8 @@ class Datatakes {
 
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
 
-        console.log("filteredDataTakes", this.filteredDataTakes);
-        console.log("mockDataTakes", this.mockDataTakes);
+        /*console.log("filteredDataTakes", this.filteredDataTakes);
+        console.log("mockDataTakes", this.mockDataTakes);*/
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
@@ -437,14 +437,14 @@ class Datatakes {
             selectedId = parts.slice(0, 3).join("-");
         }
 
-        console.log("Looking for datatake ID:", selectedId);
+        /*console.log("Looking for datatake ID:", selectedId);*/
 
         if (!selectedId) {
             console.error("No valid datatake ID to use for info table.");
             return;
         }
 
-        console.log("Looking for datatake ID:", selectedId);
+        /*console.log("Looking for datatake ID:", selectedId);*/
 
         try {
             await this.renderInfoTable(selectedId);
@@ -596,7 +596,7 @@ class Datatakes {
             : (linkKey?.id || linkKey?.toString?.() || "").toString();
 
         if (!normalizedLinkKey) {
-            console.warn("updateCharts: Could not derive a valid string linkKey from input", linkKey);
+            /*console.warn("updateCharts: Could not derive a valid string linkKey from input", linkKey);*/
             return;
         }
 
@@ -636,7 +636,7 @@ class Datatakes {
             const pubVal = entry.raw;
             pubValues.add(pubVal);
         });
-        console.log("Unique raw.publication values from backend:", Array.from(pubValues));
+        /*console.log("Unique raw.publication values from backend:", Array.from(pubValues));*/
 
 
         relevantData.forEach(entry => {
@@ -652,8 +652,8 @@ class Datatakes {
             labels.push("Complete");
             series.push(parseFloat(percentage.toFixed(2)));
             colors.push(completeColor);
-            console.log("percentage type", percentage);
-            console.log("remaining color", remaining);
+            /*console.log("percentage type", percentage);
+            console.log("remaining color", remaining);*/
 
             // Add "Missing" slice
             labels.push("Missing");
@@ -661,7 +661,7 @@ class Datatakes {
             colors.push(missingColor);
         });
 
-        console.log(" Unique publication types found in data:", Array.from(uniquePublicationTypes));
+        //console.log(" Unique publication types found in data:", Array.from(uniquePublicationTypes));
 
         // Destroy existing chart before rendering a new one
         if (this.donutChartInstance) {
@@ -932,7 +932,7 @@ class Datatakes {
 
             tableBody.appendChild(tr);
         });
-        console.log("render the table");
+        /*console.log("render the table");*/
         tableSection.style.display = "block";
     }
 
