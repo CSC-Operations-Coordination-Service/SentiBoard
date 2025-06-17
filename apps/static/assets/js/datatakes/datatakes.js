@@ -83,28 +83,15 @@ class Datatakes {
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         const searchFilter = urlParams.get('search');
-        console.info("Search param:", searchFilter);
+        /*console.info("Search param:", searchFilter);*/
 
         if (searchFilter) {
-            console.info('Accessing page with search filter: ' + searchFilter);
-            // Filter the data by matching the 'id' containing searchFilter (case-insensitive)
             this.filteredDataTakes = this.mockDataTakes.filter(take =>
                 take.id.toLowerCase().includes(searchFilter.toLowerCase())
             );
 
-            // Populate data list with filtered results
-            //this.populateDataList(false);
-
-            // Manually update charts and title for first match
-            /*if (this.filteredDataTakes.length > 0) {
-                const first = this.filteredDataTakes[0];
-                this.updateCharts(first);
-                this.updateTitleAndDate(first.id);
-            }*/
-
             return true;
         } else {
-            // No filter - reset filteredDataTakes so populate uses full list
             this.filteredDataTakes = null;
             return false;
         }
@@ -198,7 +185,7 @@ class Datatakes {
     successLoadDatatakes(response) {
         const rows = format_response(response);
         console.info('Datatakes successfully retrieved');
-        console.info("Number of records11-06: " + rows.length);
+        /*console.info("Number of records: " + rows.length);*/
 
         const datatakes = rows.map(row => {
             const element = row['_source'];
