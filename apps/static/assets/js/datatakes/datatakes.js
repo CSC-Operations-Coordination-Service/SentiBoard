@@ -40,7 +40,6 @@ class Datatakes {
     init() {
         document.addEventListener("DOMContentLoaded", () => {
             // Hide EC and Copernicus logos from header
-            $('#copernicus-logo-header').hide();
             $('#ec-logo-header').hide();
             $('#esa-logo-header').hide();
 
