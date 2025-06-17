@@ -255,6 +255,17 @@ a {
   background: #006B7C !important;
 }
 
+.logo-header .navbar-toggler .navbar-toggler-icon
+ {
+    height: 1em;
+    width: 1em;
+    color: white !important;
+    font-size: 22px;
+}
+
+
+
+
 .sidebar.sidebar-style-2 .nav .nav-item a:focus,
 .sidebar.sidebar-style-2 .nav .nav-item a:hover,
 .sidebar.sidebar-style-2 .nav .nav-item a[data-toggle=collapse][aria-expanded=true] {
@@ -884,4 +895,17 @@ button:focus {
     color: white !important;
   }
 
+}
+
+@media screen and (max-width: 991px) {
+  .logo-header .more {
+      opacity: 1;
+      color: white !important;
+      cursor: pointer;
+      display: inline-block;
+      line-height: 56px;
+      order: 3;
+      width: unset;
+      margin-left: auto;
+  }
 }
