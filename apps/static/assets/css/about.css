@@ -8,7 +8,6 @@
     position: relative;
     z-index: 0;
     overflow: hidden;
-    /*min-height: 500px; */
   }
 
 
@@ -73,12 +72,6 @@
     background-color: transparent;
     box-shadow: none;
   }
-
-  /*  .card-body {
-    background-color: rgba(52, 58, 64, 0.8);
-    border-radius: 10px;
-    padding: 20px !important;
-  }*/
 
   /*faqs*/
   #faqAccordion {
@@ -195,7 +188,6 @@
     font-size: 16px;
   }
 
-  /* Ensure text is readable and spacing is appropriate */
   #about_text {
     font-size: 1.05rem !important;
     line-height: 1.6;
