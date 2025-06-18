@@ -148,34 +148,35 @@ class Datatakes {
     }
 
     successLoadAnomalies(response) {
-
         this.datatakesEventsMap = {};
-
-        // Loop over anomalies, and bind every impaired DT with an anomaly
-        var rows = format_response(response);
-        for (var i = 0; i < rows.length; ++i) {
-
-            // Auxiliary variables
-            var anomaly = rows[i];
-            var datatakes_completeness = format_response(anomaly["datatakes_completeness"]);
-            for (var index = 0; index < datatakes_completeness.length; ++index) {
+        const rows = format_response(response);
+    
+        for (const anomaly of rows) {
+            const rawCompleteness = format_response(anomaly["datatakes_completeness"]);
+            for (const raw of rawCompleteness) {
+                let fixedStr;
                 try {
-                    for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
-                        var datatake_id = Object.values(value)[0];
-                        var completeness = this.calcDatatakeCompleteness(Object.values(value));
+                    // Only replace once and cache the cleaned string
+                    fixedStr = raw.replaceAll("'", '"');
+                    const completenessMap = JSON.parse(fixedStr);
+    
+                    for (const [_, value] of Object.entries(completenessMap)) {
+                        const datatakeId = Object.values(value)[0];
+                        const completeness = this.calcDatatakeCompleteness(Object.values(value));
+    
                         if (completeness < this.completeness_threshold) {
-                            this.datatakesEventsMap[datatake_id] = anomaly;
+                            this.datatakesEventsMap[datatakeId] = anomaly;
                         }
                     }
                 } catch (ex) {
-                    console.warn("Error ", ex);
-                    console.warn('An error occurred, while parsing the product level count string: ' +
-                        datatakes_completeness[index].replaceAll('\'', '\"'));
+                    console.warn("Error parsing datatake completeness:", ex);
+                    console.warn("Failed string:", fixedStr || raw);
+                    continue;
                 }
             }
         }
-        return;
     }
+    
 
     errorLoadAnomalies(response) {
         console.error(response);
@@ -225,7 +226,6 @@ class Datatakes {
         if (list.length > 0) {
             this.handleInitialSelection(list[0]);
         }
-
     }
 
     errorLoadDatatake(response) {
@@ -259,20 +259,18 @@ class Datatakes {
 
     populateDataList(append = false) {
         const dataList = document.getElementById("dataList");
-        const searchInput = document.getElementById("searchInput"); // Adjust ID if different
-        const inputWidth = searchInput?.offsetWidth || 300; // Fallback width if not found
-
-
+        const searchInput = document.getElementById("searchInput");
+        const inputWidth = searchInput?.offsetWidth || 300;
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
-
+    
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
         }
-
+    
         const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
-
-        if (nextItems.length === 0 && !append) {
+    
+        if (!append && nextItems.length === 0) {
             const li = document.createElement("li");
             li.textContent = "No results found";
             li.style.color = "#aaa";
@@ -280,73 +278,67 @@ class Datatakes {
             document.getElementById("loadMoreBtn").style.display = "none";
             return;
         }
-
-
+    
+        const fragment = document.createDocumentFragment();
+    
         nextItems.forEach((take, index) => {
             const li = document.createElement("li");
-
+    
             const containerDiv = document.createElement("div");
-            containerDiv.classList.add('container-border');
-            containerDiv.style.width = `${inputWidth}px`;
-            containerDiv.style.display = "flex";
-            containerDiv.style.alignItems = "center";
-            containerDiv.style.justifyContent = "space-between";
-            containerDiv.style.padding = "0.5rem 0.75rem"; // Optional padding
-            containerDiv.style.boxSizing = "border-box"; // Ensures padding doesn't overflow
-            containerDiv.style.cursor = "pointer";
+            containerDiv.className = "container-border";
+            Object.assign(containerDiv.style, {
+                width: `${inputWidth}px`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.5rem 0.75rem",
+                boxSizing: "border-box",
+                cursor: "pointer"
+            });
+    
             const a = document.createElement("a");
             a.href = "#";
             a.className = "filter-link";
             a.dataset.filterType = "groundStation";
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
-            // Only preselect the very first item on a fresh load
+    
+            // Preselect the first item on a full load
             if (!append && this.displayedCount === 0 && index === 0) {
-                containerDiv.classList.add('selected');
-                a.classList.add('selected');
+                containerDiv.classList.add("selected");
+                a.classList.add("selected");
             }
-
-            // Prevent <a> default click behavior to avoid jumping
-            a.addEventListener('click', e => e.preventDefault());
-
-            // Add click event to update chart
-            containerDiv.addEventListener('click', () => {
-                dataList.querySelectorAll('.container-border.selected').forEach(el => el.classList.remove('selected'));
-                containerDiv.classList.add('selected');
-
-                dataList.querySelectorAll('a.selected').forEach(el => el.classList.remove('selected'));
-                a.classList.add('selected');
-
+    
+            a.addEventListener("click", e => e.preventDefault());
+    
+            containerDiv.addEventListener("click", () => {
+                dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
+                dataList.querySelectorAll("a.selected").forEach(el => el.classList.remove("selected"));
+    
+                containerDiv.classList.add("selected");
+                a.classList.add("selected");
+    
                 this.updateCharts(take.id);
-
-                // Call new method to update title and date
                 this.updateTitleAndDate(take.id);
             });
-
-            // Add status circle
-            const statusCircle = document.createElement("div");
+    
             const status = take.completenessStatus?.ACQ?.status?.toLowerCase() || "unknown";
+            const statusCircle = document.createElement("div");
             statusCircle.className = `status-circle-dt-${status}`;
-
+    
             containerDiv.appendChild(a);
             containerDiv.appendChild(statusCircle);
             li.appendChild(containerDiv);
-            dataList.appendChild(li);
+            fragment.appendChild(li);
         });
-
+    
+        dataList.appendChild(fragment);
         this.displayedCount += nextItems.length;
-
+    
         const loadMoreBtn = document.getElementById("loadMoreBtn");
-        if (this.displayedCount >= data.length) {
-            loadMoreBtn.style.display = "none";
-        } else {
-            loadMoreBtn.style.display = "block";
-        }
-
-        if (!append && nextItems.length > 0) {
-            const firstLink = dataList.querySelector('a');
-        }
+        loadMoreBtn.style.display = this.displayedCount >= data.length ? "none" : "block";
     }
+    
 
     setupResizeObserver() {
         const searchInput = document.getElementById("searchInput");
@@ -774,15 +766,6 @@ class Datatakes {
                         overallStatus.includes(term) ||
                         acquisitionDate.includes(term);
 
-                    if (!termMatch) {
-                        console.debug(`Term "${term}" did NOT match this take`, {
-                            id, satellite, acqStatus, pubStatus, acquisitionDate
-                        });
-                    } else {
-                        console.debug(`Term "${term}" matched`, {
-                            id, satellite, acquisitionDate
-                        });
-                    }
                     if (!acquisitionDate) {
                         console.debug("Skipping take with no date:", take.id);
                     }
