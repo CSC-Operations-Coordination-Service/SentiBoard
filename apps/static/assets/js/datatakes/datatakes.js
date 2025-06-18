@@ -88,7 +88,6 @@ class Datatakes {
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         const searchFilter = urlParams.get('search');
-        /*console.info("Search param:", searchFilter);*/
 
         if (searchFilter) {
             this.filteredDataTakes = this.mockDataTakes.filter(take =>
@@ -191,7 +190,6 @@ class Datatakes {
     successLoadDatatakes(response) {
         const rows = format_response(response);
         console.info('Datatakes successfully retrieved');
-        /*console.info("Number of records: " + rows.length);*/
 
         const datatakes = rows.map(row => {
             const element = row['_source'];
@@ -575,7 +573,6 @@ class Datatakes {
             : (linkKey?.id || linkKey?.toString?.() || "").toString();
 
         if (!normalizedLinkKey) {
-            /*console.warn("updateCharts: Could not derive a valid string linkKey from input", linkKey);*/
             return;
         }
 
