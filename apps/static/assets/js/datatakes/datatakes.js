@@ -24,7 +24,7 @@ class Datatakes {
         this.rowsPerPage = 10;
         this.currentInfoPage = 1;
         this.itemsPerPage = 7;
-        this.infoItemsPerPage= 10;
+        this.infoItemsPerPage = 10;
         this.currentDataArray = [];
         this.donutChartInstance = null;
         this.resizeListenerAttached = false;
@@ -66,6 +66,12 @@ class Datatakes {
 
             // Retrieve the time select combo box instance
             const time_period_sel = document.getElementById('time-period-select');
+
+            // Set default value to "Last 7 Days"
+            time_period_sel.value = 'week';
+
+            // Trigger the change handler manually
+            this.on_timeperiod_change({ target: time_period_sel });
 
             // Add event listener for user selection
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
@@ -150,7 +156,7 @@ class Datatakes {
     successLoadAnomalies(response) {
         this.datatakesEventsMap = {};
         const rows = format_response(response);
-    
+
         for (const anomaly of rows) {
             const rawCompleteness = format_response(anomaly["datatakes_completeness"]);
             for (const raw of rawCompleteness) {
@@ -159,11 +165,11 @@ class Datatakes {
                     // Only replace once and cache the cleaned string
                     fixedStr = raw.replaceAll("'", '"');
                     const completenessMap = JSON.parse(fixedStr);
-    
+
                     for (const [_, value] of Object.entries(completenessMap)) {
                         const datatakeId = Object.values(value)[0];
                         const completeness = this.calcDatatakeCompleteness(Object.values(value));
-    
+
                         if (completeness < this.completeness_threshold) {
                             this.datatakesEventsMap[datatakeId] = anomaly;
                         }
@@ -176,7 +182,7 @@ class Datatakes {
             }
         }
     }
-    
+
 
     errorLoadAnomalies(response) {
         console.error(response);
@@ -262,14 +268,14 @@ class Datatakes {
         const searchInput = document.getElementById("searchInput");
         const inputWidth = searchInput?.offsetWidth || 300;
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
-    
+
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
         }
-    
+
         const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
-    
+
         if (!append && nextItems.length === 0) {
             const li = document.createElement("li");
             li.textContent = "No results found";
@@ -278,12 +284,12 @@ class Datatakes {
             document.getElementById("loadMoreBtn").style.display = "none";
             return;
         }
-    
+
         const fragment = document.createDocumentFragment();
-    
+
         nextItems.forEach((take, index) => {
             const li = document.createElement("li");
-    
+
             const containerDiv = document.createElement("div");
             containerDiv.className = "container-border";
             Object.assign(containerDiv.style, {
@@ -295,50 +301,50 @@ class Datatakes {
                 boxSizing: "border-box",
                 cursor: "pointer"
             });
-    
+
             const a = document.createElement("a");
             a.href = "#";
             a.className = "filter-link";
             a.dataset.filterType = "groundStation";
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
-    
+
             // Preselect the first item on a full load
             if (!append && this.displayedCount === 0 && index === 0) {
                 containerDiv.classList.add("selected");
                 a.classList.add("selected");
             }
-    
+
             a.addEventListener("click", e => e.preventDefault());
-    
+
             containerDiv.addEventListener("click", () => {
                 dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
                 dataList.querySelectorAll("a.selected").forEach(el => el.classList.remove("selected"));
-    
+
                 containerDiv.classList.add("selected");
                 a.classList.add("selected");
-    
+
                 this.updateCharts(take.id);
                 this.updateTitleAndDate(take.id);
             });
-    
+
             const status = take.completenessStatus?.ACQ?.status?.toLowerCase() || "unknown";
             const statusCircle = document.createElement("div");
             statusCircle.className = `status-circle-dt-${status}`;
-    
+
             containerDiv.appendChild(a);
             containerDiv.appendChild(statusCircle);
             li.appendChild(containerDiv);
             fragment.appendChild(li);
         });
-    
+
         dataList.appendChild(fragment);
         this.displayedCount += nextItems.length;
-    
+
         const loadMoreBtn = document.getElementById("loadMoreBtn");
         loadMoreBtn.style.display = this.displayedCount >= data.length ? "none" : "block";
     }
-    
+
 
     setupResizeObserver() {
         const searchInput = document.getElementById("searchInput");
@@ -348,16 +354,16 @@ class Datatakes {
                 div.style.width = `${inputWidth}px`;
             });
         };
-    
+
         if (searchInput) {
             const resizeObserver = new ResizeObserver(() => {
                 updateContainerWidths();
             });
             resizeObserver.observe(searchInput);
         }
-    
+
         window.addEventListener("resize", updateContainerWidths);
-    
+
         // Call it once right away to apply initial sizing
         updateContainerWidths();
     }
@@ -666,11 +672,11 @@ class Datatakes {
                 markers: {
                     width: 12,
                     height: 12,
-                    offsetX: -6, 
+                    offsetX: -6,
                     offsetY: 0
                 },
                 formatter: function (seriesName, opts) {
-                    return `<div style="margin-left: 0;">${seriesName}</div>`; 
+                    return `<div style="margin-left: 0;">${seriesName}</div>`;
                 }
             },
             plotOptions: {
