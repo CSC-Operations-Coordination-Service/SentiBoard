@@ -355,7 +355,7 @@ class Timeline {
                 content +=
                     '<li class="ml-5">' +
                         '<div style="display: flex">' +
-                            '<a href="/data-takes.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
+                            '<a href="/data-availability.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
                             '<div class="status-circle-dt-' + dtStatus + '"></div>' +
                         '</di>' +
                     '</li>';

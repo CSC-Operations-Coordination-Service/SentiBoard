@@ -1,0 +1,356 @@
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  padding: 1rem;
+}
+
+
+/* Heatmap Chart */
+#heatmap {
+  width: 100%;
+  height: 600px;
+  margin-bottom: 20px;
+  background: #333;
+  border-radius: 8px;
+}
+
+/* Filter Section */
+.filter-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.filter-container label {
+  /*display: block;*/
+  margin-bottom: 5px;
+}
+
+/* Group for date filters and button */
+.date-filters-container {
+  display: flex !important;
+  align-items: center !important;
+  width: 50% !important;
+  gap: 10px !important;
+  padding: 8px !important;
+  font-size: 14px;
+  margin-bottom: 15px !important;
+}
+
+/* Styling for each input in the filter */
+
+.filter-container select,
+.filter-container input {
+  font-size: 14px;
+  border: 2px solid #555;
+  color: black;
+  border-radius: 5px;
+  padding: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.filter-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.filter-item {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-item.search-item {
+  max-width: 330px;
+  width: 330px;
+}
+
+
+input[type="date"] {
+  padding: 10px;
+  border: 2px solid #555;
+  color: black;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 180px;
+}
+
+
+.btn {
+  border: none;
+  transition: background 0.3s ease;
+  border-radius: 5px !important;
+  cursor: pointer;
+  padding: 8px 12px !important;
+  border-radius: 5px;
+  background-color: #FFA500;
+  cursor: pointer;
+  font-size: 15px;
+  color: #212529;
+  width: 130px;
+}
+
+.btn:hover {
+  color: #212529 !important;
+  background-color: #FFC107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
+  text-decoration: none;
+}
+
+.button-group {
+  margin-bottom: 2px;
+  height: 43px;
+}
+
+.button-group button:first-child {
+  margin-right: 10px;
+}
+
+button:hover {
+  background: #FFA500 !important;
+}
+
+.resetButton {
+  background-color: #FFA500 !important;
+  color: rgb(33, 37, 41);
+  padding: 6px 10px;
+  border-radius: 5px;
+  width: 100%;
+}
+
+/* Search container and input */
+.search-container {
+  flex-grow: 1;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.search-update {
+  margin-bottom: 15px;
+  width: 30%;
+}
+
+.search-selectMission {
+  margin-bottom: 15px;
+  width: 25%;
+  margin-left: 17px;
+}
+
+.search-input {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  width: 330px;
+  margin-bottom: 1px;
+}
+
+/* Mission select styling */
+.mission-select {
+  padding: 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  width: 180px;
+  margin-bottom: 1px;
+}
+
+/*Suggestions dropdown styling */
+.suggestions-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.suggestions-dropdown {
+  border: 1px solid #ccc;
+  max-height: 150px;
+  overflow-y: auto;
+  position: absolute;
+  width: 330px;
+  background: white;
+  z-index: 10;
+  display: none;
+  color: #000;
+  box-sizing: border-box;
+}
+
+input,
+select {
+  height: 40px;
+  font-size: 14px;
+  padding: 5px;
+}
+
+.suggestion-item {
+  padding: 8px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #f0f0f0;
+}
+
+.suggestions-dropdown div {
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.suggestions-dropdown div:hover {
+  background-color: #f0f0f0;
+}
+
+.filter-section>div {
+  gap: 16px;
+}
+
+/* Table Styling */
+#table-container {
+  display: none;
+  width: 100%;
+  background: #333;
+  padding: 20px;
+  border: 2px solid #666;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+  text-align: center;
+  position: relative;
+  margin-top: 20px;
+  color: white;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 20px;
+  font-weight: bold;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: rgb(141, 137, 137);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+th {
+  background-color: #444;
+  color: white;
+  padding: 10px;
+}
+
+td {
+  padding: 8px;
+  border-bottom: 1px solid #ddd;
+}
+
+
+
+#heatmap {
+  width: 100%;
+  height: 400px;
+  margin-top: 20px;
+}
+
+#heatmap .apexcharts-xaxis-label,
+#heatmap .apexcharts-yaxis-label {
+  font-size: 12px;
+  color: white;
+}
+
+#heatmap .apexcharts-xaxis-title,
+#heatmap .apexcharts-yaxis-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: white;
+}
+
+#heatmap .apexcharts-legend-text {
+  padding-left: 15px;
+  margin-left: -15px;
+  color: white !important;
+  font-size: 16px !important;
+}
+
+#pieChart .apexcharts-legend-text {
+  color: white !important;
+  font-family: 'NotesEsa', sans-serif !important;
+  font-size: 14px !important;
+}
+
+#pieChart .apexcharts-pie-label {
+  fill: white !important;
+  font-family: 'NotesEsa', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: bold;
+}
+
+#pieChart .apexcharts-tooltip-text {
+  font-family: 'NotesEsa', sans-serif !important;
+  font-size: 12px !important;
+  color: white !important;
+}
+
+#idListContainer {
+  margin-top: 20px;
+  max-height: 300px;
+  overflow-y: auto;
+  min-height: 50px;
+}
+
+/*customized table*/
+.custom-box-table-container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 0 20px;
+}
+
+.custom-box-table {
+  border: none;
+  border-radius: 12px;
+  background-color: #f8f9fa;
+  padding: 20px;
+  margin-top: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  color: #000;
+}
+
+.custom-box-table th,
+.custom-box-table td {
+  border: none !important;
+  padding: 10px 12px;
+  font-size: 16px;
+}
+
+.custom-box-table thead {
+  background-color: transparent;
+  color: #333;
+  font-weight: bold;
+}
+
+.custom-box-table tr:not(:last-child) {
+  border-bottom: 1px solid #ddd;
+}
+
+@media (max-width: 768px) {
+  .filter-item {
+    flex: 1 1 100%;
+  }
+
+  .d-flex.gap-2 {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,35 @@
+@font-face {
+    font-family: "NotesEsa";
+    src:url('./NotesEsa.woff2') format('woff2'),
+        url('./NotesEsaReg.otf') format('opentype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: "NotesEsa";
+    src:url('./NotesEsa-Italic.woff2') format('woff2'),
+        url('./NotesEsaRegIta.otf') format('opentype');
+    font-weight: 400;
+    font-style: italic;
+    font-display: block;
+}
+
+@font-face {
+    font-family: "NotesEsa";
+    src:url('./NotesEsa-Bold.woff2') format('woff2'),
+        url('./NotesEsaBol.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+    font-display: block;
+}
+
+@font-face {
+    font-family: "NotesEsa";
+    src:url('./NotesEsa-BoldItalic.woff2') format('woff2'),
+        url('./NotesEsaBolIta.otf') format('opentype');
+    font-weight: 700;
+    font-style: italic;
+    font-display: block;
+}

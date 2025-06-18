@@ -1,0 +1,82 @@
+[
+    {
+        "section": "General Information",
+        "icon": "fas fa-globe",
+        "items": [
+            {
+                "question": "What is the SentiBoard?",
+                "answer": "The Operations Dashboard provides real-time and historical insights into the data availability and the processors baseline. It's intended for users who want an overview of satellite data flows. See the general explanation <a href='#about_text'>here</a>."
+            },
+            {
+                "question": "Who can use the Dashboard?",
+                "answer": "It is publicly accessible and designed for technical users, scientists, policymakers, and service operators interested in mission performance and service continuity."
+            }
+        ]
+    },
+    {
+        "section": "Sentinel Missions Monitoring",
+        "icon": "fa fa-rocket",
+        "items": [
+            {
+                "question": "What kind of mission data is displayed?",
+                "answer": "The dashboard shows the operational status of Sentinel satellites (e.g., Sentinel-1A/B, -2A/B, -3A/B, -5P), including acquisition planning, data availability, and processors baseline."
+            },
+            {
+                "question": "How frequently is data updated?",
+                "answer": "Most data is updated daily or in near real-time, depending on the subsystem (e.g., acquisitions, ground segment performance, data availability)."
+            }
+        ]
+    },
+    {
+        "section": "Data & Product Availability",
+        "icon": "fa fa-database",
+        "items": [
+            {
+                "question": "What product metrics can I view?",
+                "answer": "You can access statistics on data availability, completeness, latency, timeliness, and throughput for each Sentinel mission. These metrics help evaluate performance against service-level expectations."
+            },
+            {
+                "question": "Can I see long-term trends?",
+                "answer": "Yes. You can explore interactive graphs that span days, months, or years, with filtering options by mission, instrument, and product type. The available time span is three months."
+            }
+        ]
+    },
+    {
+        "section": "Navigation & Features",
+        "icon": "fa fa-compass",
+        "items": [
+            {
+                "question": "How do I find specific data?",
+                "answer": "To locate specific data, use the top navigation menu of the dashboard. The <strong>Acquisitions Status</strong> section presents past, current, and planned Copernicus Sentinel acquisitions on an interactive 3D globe. <strong>Events</strong> provides recent information about activities that may affect data production, such as manoeuvres or anomalies. In <strong>Data Availability</strong>, you'll find real-time access to delivered data collections, including <em>Detail Data Availability</em> and <em>Global Data Availability</em> views. These help users browse and assess products according to their research needs. Finally, the <strong>Processors</strong> tab  features an interactive timeline of Sentinel processor releases, allowing detailed inspection of each version. This timeline works in conjunction with the left-hand panel, where you can filter the data by mission (e.g., Sentinel-2). As you explore the timeline and filtered data, hovering over the graphs reveals tooltips with precise values and timestamps, providing a seamless, detailed view of processor updates."
+            },
+            {
+                "question": "Can I export the charts or data?",
+                "answer": "While there's no dedicated export button, screenshots and browser-based print/save tools can be used. For bulk or raw data, refer to the <a target='_blank' href='http://scihub.copernicus.eu/'>Copernicus Open Access Hub</a> or the <a target='_blank' href='https://dataspace.copernicus.eu/'>Data Space Ecosystem</a>."
+            }
+        ]
+    },
+    {
+        "section": "Troubleshooting",
+        "icon": "fa fa-wrench",
+        "items": [
+            {
+                "question": "Why is some data missing or flatlined?",
+                "answer": "Gaps may reflect planned maintenance, satellite anomalies, or delays in ground segment reporting. These are often documented in the <a target='_blank' href='https://sentinels.copernicus.eu/web/sentinel/news'>Sentinel news feed</a>."
+            },
+            {
+                "question": "The dashboard is not loading—what should I do?",
+                "answer": "First, ensure your browser allows scripts and cookies. If problems persist, try clearing your cache or switching to another browser. There is no login requirement for general access."
+            }
+        ]
+    },
+    {
+        "section": "Contact & Support",
+        "icon": "fa fa-envelope",
+        "items": [
+            {
+                "question": "How can I report a bug or request help?",
+                "answer": "For dashboard support, including data access and operational issues, please contact us at <a href='mailto:sentiboard@coordination-service.eu'>sentiboard@coordination-service.eu</a>."
+            }
+        ]
+    }
+]

@@ -1,0 +1,243 @@
+  .back-container {
+    background-image: url('/static/assets/img/about_bckgrd.png');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-radius: 12px;
+    padding: 40px;
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+  }
+
+
+  .back-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5));
+    z-index: 1;
+  }
+
+  .h1,
+  .h2,
+  .h3,
+  .h4,
+  .h5,
+  .h6,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    line-height: 1.8 !important;
+    color: white !important;
+  }
+
+  /* To keep content above the overlay */
+  .back-container>* {
+    position: relative;
+    z-index: 2;
+  }
+
+  .wide-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1rem;
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: white !important;
+  }
+
+  .section-container {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    background-color: rgba(52, 58, 64, 0.8);
+    border-radius: 10px;
+    padding: 20px !important;
+  }
+
+
+  .row .card-text {
+    margin-left: 1px !important;
+    margin-right: 0px !important;
+  }
+
+  .card {
+    background-color: transparent;
+    box-shadow: none;
+  }
+
+  /*faqs*/
+  #faqAccordion {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Typography */
+  .faqs-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+
+  .faqs-subtitle {
+    font-size: 1.4rem;
+    color: lightgray;
+    margin-left: 5px;
+  }
+
+  #faq {
+    color: white;
+  }
+
+  #faq .card {
+    border: 2px solid #006b7c;
+    margin-bottom: 1rem;
+  }
+
+  #faq .card-header {
+    color: white;
+    font-weight: bold;
+  }
+
+  .section-title {
+    font-size: 1.25rem !important;
+  }
+
+  .faq-title {
+    font-size: 1.10rem !important;
+  }
+
+  #faq .btn-link {
+    text-decoration: none !important;
+    color: inherit;
+  }
+
+  #faq .card-body {
+    background-color: #343a40 !important;
+    font-size: 1.0375rem;
+    padding: 1rem;
+    flex-direction: column;
+    text-align: left !important;
+    justify-content: left !important;
+  }
+
+  .accordion .card-header button {
+    text-align: left;
+    width: 100%;
+    padding: 10px 0;
+  }
+
+  /* Make chevrons rotate when the panel is expanded */
+  .accordion .card-header button[aria-expanded="true"] i {
+    transform: rotate(180deg);
+    transition: transform 0.3s ease;
+  }
+
+  .card-header {
+    cursor: default;
+  }
+
+  .card .card-header,
+  .card-light .card-header {
+    padding: 1rem 1.25rem;
+    background-color: transparent;
+    border-bottom: none !important;
+  }
+
+  /* Section headers (dark teal) */
+  .section-header {
+    background-color: #006b7c !important;
+    color: white;
+    font-weight: bold;
+  }
+
+  .faq-card-header {
+    background-color: #12b1bf !important;
+    color: white;
+    font-weight: bold;
+  }
+
+  .accordion .card > .card-header {
+    cursor: default !important;
+    
+  }
+
+  /*hover effects */
+  .section-header button:hover {
+    color: #12b1bf !important;
+  }
+
+  .faq-card-header button:hover {
+    color: #006b7c !important
+  }
+
+  .section-header i {
+    font-size: 1.2rem !important;
+    margin-right: 0.3rem;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  #about_text {
+    font-size: 1.05rem !important;
+    line-height: 1.6;
+  }
+
+  #about_text ul {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  #about_text li {
+    margin-bottom: 0.75rem;
+  }
+
+  .float-right {
+    margin-top: -6px !important;
+    margin-left: 4px !important;
+  }
+  p {
+    font-family: "NotesEsa", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+    font-size: 1.05rem !important;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+  @media (max-width: 768px) {
+    .faqs-title {
+      font-size: 1.8rem;
+    }
+
+    .faqs-subtitle {
+      font-size: 1.1rem;
+    }
+
+    .section-title,
+    .faq-title {
+      font-size: 1rem !important;
+    }
+
+    .back-container {
+      padding: 10px;
+    }
+
+    .section-container {
+      padding: 15px;
+    }
+
+    #about_text {
+      font-size: 0.95rem;
+    }
+  }

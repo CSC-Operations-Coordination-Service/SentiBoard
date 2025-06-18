@@ -11,13 +11,15 @@
 	<link rel="icon" href="/static/assets/img/favicon.png" type="image/x-icon"/>
 	<link rel="canonical" href="https://appseed.us/admin-dashboards/flask-dashboard-atlantis-dark">
 
+
+
 	<!-- Fonts and icons -->
 	<script src="/static/assets/js/plugin/webfont/webfont.min.js"></script>
 	<script>
 		WebFont.load({
 			google: {"families":["Lato"]},
-			custom: {"families":["Flaticon", "Font Awesome 5 Solid", "Font Awesome 5 Regular", "Font Awesome 5 Brands", "simple-line-icons"],
-			urls: ['/static/assets/fonts/esa/esa.css', '/static/assets/css/fonts.min.css']},
+			custom: {"families":["NotesEsa","Flaticon", "simple-line-icons", "FontAwesome"],
+			urls: ['/static/assets/fonts/esa/esa.css','/static/assets/fonts/esa/notesesa.css', '/static/assets/css/fonts.min.css','/static/assets/fonts/fontawesome5/css/all.css']},
 			active: function() {
 				sessionStorage.fonts = true;
 			}
@@ -67,17 +69,22 @@
 	<link rel="stylesheet" href="/static/assets/css/atlantis.min.css">
 
     <!-- Specific Page CSS goes HERE  -->
-    {% block stylesheets %}{% endblock stylesheets %}
+    {% block stylesheets %}
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+	<link rel="stylesheet" href="/static/assets/css/events.css">
+	<link rel="preload" as="image" href="/static/assets/img/joystick.svg">
+	{% endblock stylesheets %}
 
 </head>
-<body data-background-color="dark">
+<!--AD previous version <body data-background-color="dark"> -->
+	<body class="{% block body_class %}{% endblock %}" style="background-color:#343a40 !important">
 	<div class="wrapper">
 
         {% include 'includes/navigation-responsive.html' %}
 
         {% include 'includes/sidebar-responsive.html' %}
 
-		<div class="main-panel" style="width: 100% !important">
+		<div class="main-panel" style="width: 100% !important; background-color:#343a40 !important">
 			
 			{% block content %}{% endblock content %}
 
