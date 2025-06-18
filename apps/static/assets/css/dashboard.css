@@ -17,7 +17,6 @@ body {
   flex-direction: row;
   gap: 15px;
   position: relative;
-  /* margin-left: 200px;*/
   margin: 6px auto;
 }
 
@@ -28,7 +27,6 @@ body {
 }
 
 .ec-logo {
-  /*position: absolute;*/
   margin-bottom: 6px;
   display: none;
 }
@@ -52,7 +50,6 @@ body {
   position: relative;
   width: 100%;
   padding-top: 56.25%;
-  /* 9/16 = 0.5625 * 100% */
   overflow: hidden;
 }
 
@@ -61,7 +58,6 @@ body {
 .chevron-up {
   position: fixed;
   bottom: 100px;
-  /* adjust as needed */
   right: 30px;
   width: 50px;
   height: 50px;
@@ -74,7 +70,6 @@ body {
   font-size: 20px;
   text-align: center;
   line-height: 50px;
-  /* vertically center icon */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -106,7 +101,6 @@ body {
 .chevron-down.animate__animated,
 .chevron-up.animate__animated {
   animation-name: fadeInUp;
-  /* Add this */
   animation-duration: 3s;
   animation-fill-mode: both;
 }
@@ -336,7 +330,6 @@ a {
 
 }
 
-/**/
 /* Home Page - Real time events */
 .activity-feed .feed-item .date {
   top: -35px
@@ -369,7 +362,6 @@ a {
 
 .faq-section .mb-0>a:after {
   content: "\002B";
-  /*font-family: "Font Awesome 5 Free";*/
   position: absolute;
   left: 0;
   font-weight: 600;
@@ -377,7 +369,6 @@ a {
 
 .faq-section .mb-0>a[aria-expanded="true"]:after {
   content: "\2212";
-  /*font-family: "Font Awesome 5 Free";*/
   font-weight: 600;
 }
 
@@ -421,12 +412,10 @@ a {
 
 
 .ib-arrow-expand-left-right-icon {
-  /* border-color: #8f94a2; */
   display: none;
 }
 
 .ib-arrow-expand-left-right-icon::after {
-  /* border-color: #8f94a2; */
   display: none;
 }
 
@@ -555,7 +544,6 @@ a {
   transition: transform 0.3s ease;
 }
 
-/* Optionally, adjust the font-size for better visibility */
 .fas {
   font-size: 1.5rem;
 }
