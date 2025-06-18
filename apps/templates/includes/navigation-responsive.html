@@ -5,15 +5,11 @@
 			<!-- This section includes also the navigation menu button -->
 			<!--AD previous version <div class="logo-header" data-background-color="dark">-->
 			<div class="logo-header">
-				<a href="https://www.esa.int/" class="logo esa-logo" target="_blank">
-					<img src="/static/assets/img/esa_logo.png" id="esa-logo-header" width="90" height="33" alt="navbar brand" class="navbar-brand">
+				
+				<a href="/index.html" class="logo sentiboard-logo" style="padding-left:120px; margin-right:15px; display:flex; align-items:center;">
+					<img src="/static/assets/img/sentiboard.png" width="180" height="35" alt="navbar brand" class="navbar-brand">
 				</a>
-				<a href="/index.html" class="logo sentiboard-logo">
-					<img src="/static/assets/img/sentiboard.png" width="auto" height="33" alt="navbar brand" class="navbar-brand">
-				</a>
-				<a href="https://ec.europa.eu/info/index_en" target="blank_" class="logo d-none d-lg-block">
-					<img src="/static/assets/img/ec_logo_white.png" id="ec-logo-header" width="180" height="45" alt="navbar brand" class="ec-logo navbar-brand">
-				</a>
+				
 				<button class="navbar-toggler sidenav-toggler ml-auto d-lg-none" type="button" data-toggle="collapse" data-target="collapse" aria-expanded="false" aria-label="Toggle navigation">
 					<span class="navbar-toggler-icon">
 						<i class="icon-menu"></i>
@@ -32,8 +28,8 @@
 			<!--AD previous version<nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">-->
 			<nav class="navbar navbar-header navbar-expand-lg" style="background-color:#343a40 !important" >
 
-				<div class="container-fluid">
-					<ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
+				<div class="container d-flex justify-content-center">
+					<ul class="navbar-nav topbar-nav justify-content-center text-center w-100 align-items-center">
 
 						<!-- Navigation menu -->
 						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'about' in segment %} active {% endif %}">
@@ -152,7 +148,7 @@
 
                         <!-- Time range filter -->
                         <li class="nav-item dropdown hidden-caret d-none d-lg-block">
-							<div class="form-group form-floating-label" style="width: 180px" id="time-period-select-container">
+							<div class="form-group form-floating-label" id="time-period-select-container">
 								<select name="time-period-select" id="time-period-select"
 										class="form-control input-solid">
 									<option value="day">Last 24 Hours</option>
@@ -198,11 +194,17 @@
 
                     </ul>
 				</div>
-
-				<a href="https://www.copernicus.eu/" target="blank_" class="logo d-none d-lg-block">
-					<img src="/static/assets/img/copernicus_logo.png" id="copernicus-logo-header" width="80" height="40" alt="navbar brand" class="navbar-brand" style="display: none">
-				</a>
-
+				<div class="d-flex align-items-center logo-container" style="margin-right: 60px;">
+					<a href="https://www.esa.int/" class="logo esa-logo mx-2" target="_blank">
+					  <img src="/static/assets/img/esa_logo.png" id="esa-logo-header" width="40" alt="ESA Logo" class="navbar-brand">
+					</a>
+					<a href="https://ec.europa.eu/info/index_en" target="_blank" class="logo d-none d-lg-block mx-2">
+					  <img src="/static/assets/img/ec_logo_white.png" id="ec-logo-header" width="80" height="30" alt="EC Logo" class="ec-logo navbar-brand mt-1">
+					</a>
+					<a href="https://www.copernicus.eu/" target="_blank" class="logo d-none d-lg-block mx-2">
+					  <img src="/static/assets/img/copernicus_logo.png" id="copernicus-logo-header" width="60" height="auto" alt="Copernicus Logo" class="navbar-brand">
+					</a>
+				  </div>
 			</nav>
 			<!-- End Navbar -->
         </div>

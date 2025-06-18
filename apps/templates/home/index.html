@@ -5,6 +5,14 @@
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+    <style>
+        @media (min-width: 1600px) {
+          #tutorial > div {
+            right: 40px;
+            top: 80px;
+          }
+        }
+    </style>
 {% endblock stylesheets %}
 
 {% block content %}
@@ -12,33 +20,44 @@
     <i class="fas fa-chevron-down"></i>
 </a>
 
-    <!-- Data section-->
-    <div class="content page-inner">
-        <!-- Video in background-->
-        <div id="tutorial" style="position: relative;">
-            <video preload="metadata" loop muted controls="none" id="home-video" class="video-frame">
-                <source src="/static/assets/mv/home_v3.mp4"></source>
-            </video>
-            <!-- Real-time events box positioned over video -->
-            <div style="
-            position: absolute;
-            top: 60px;       /* adjust vertically */
-            right: 20px;      /* adjust horizontally */
-            width: 347px;
-            background-color: #343a40;
-            padding: 1rem;
-            z-index: 2;
-            border-radius: 8px;
-        ">
-            <h4 class="card-title" style="color: white; margin-bottom: 1rem;">Real-time events</h4>
-            <div>
-                <ol class="activity-feed" id="real-time-event-list" style="color: white; padding-left: 1rem; margin-bottom: 0;">
-                    <!-- Event items will be appended here -->
-                </ol>
-            </div>
+ <!-- Data section -->
+<div class="content page-inner" style="background-color: #006B7C">
+    <!-- Responsive container -->
+    <div style="width: 100%; position: relative;">
+      
+      <!-- Video -->
+      <video preload="metadata" loop muted controls="none" id="home-video" class="img-fluid w-100">
+        <source src="/static/assets/mv/home_v4.mp4">
+      </video>
+  
+      <!-- Real-time events box for large screens -->
+      <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
+           style="top: 60px; right: 20px; width: 347px; z-index: 2;">
+        <h4 class="card-title mb-3">Real-time events</h4>
+        <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-lg">
+          <!-- Event items will be appended here -->
+        </ol>
+      </div>
+  
+      <!-- Real-time events collapsible box for small/medium screens -->
+      <div class="d-block d-lg-none mt-3">
+        <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile" aria-expanded="false" aria-controls="eventBoxMobile">
+          Show Real-time Events
+        </button>
+        <div class="collapse" id="eventBoxMobile">
+          <div class="bg-dark text-white p-3 rounded">
+            <h4 class="card-title mb-3">Real-time events</h4>
+            <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-sm">
+              <!-- Event items will be appended here -->
+            </ol>
+          </div>
         </div>
-        </div>
+      </div>
+  
     </div>
+  </div>
+  
+  
     <!-- Vertical Slider pages -->
     <div id="vertical-slider" class="slider-container">
         <div class="container">

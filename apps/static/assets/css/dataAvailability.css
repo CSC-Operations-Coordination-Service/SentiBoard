@@ -1,16 +1,3 @@
-html,
-body {
-  font-family: 'NotesEsa', sans-serif !important;
-}
-
-.main-panel .page-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  margin-left: 28px !important;
-}
-
-
 .container-fluid {
   padding-left: 0px !important;
 }
@@ -144,11 +131,9 @@ body {
   align-items: stretch;
 }
 
-/* Make the row flex with full height */
 .row.full-height {
   display: flex;
   align-items: stretch;
-  /* stretch children vertically */
 }
 
 #timeRangeFilter {
@@ -367,7 +352,6 @@ ul#dataList {
   list-style: none;
 }
 
-/* Make sure border doesn't add to size */
 .container-border {
   display: inline-flex;
   border: 1.5px solid #FFC107;
@@ -376,13 +360,11 @@ ul#dataList {
   box-sizing: border-box;
 }
 
-/* Border on hover of the container */
 .container-border:hover {
   border: 1.5px solid #FFC107;
   cursor: pointer;
 }
 
-/* Border on selected link container */
 .container-border.selected {
   border: 1.5px solid #FFC107;
 }
@@ -391,12 +373,10 @@ ul#dataList {
   color: #FFC107;
 }
 
-/* Reset border if no hover or selection */
 .container-border:not(:hover):not(.selected) {
   border: 1.5px solid transparent;
 }
 
-/* Table Styling */
 .table {
   background-color: #12B1BF;
   color: white;
@@ -764,11 +744,6 @@ ul#dataList {
   font-weight: bold;
 }
 
-.logo-header {
-  background-color: #1b2136;
-  padding: 0.5rem 1rem;
-}
-
 .navbar {
   background-color: #1b2136;
 }
@@ -780,14 +755,6 @@ ul#dataList {
 .select#time-period-select {
   color: black;
   border: 1px solid #12B1BF;
-}
-
-.main-header {
-  padding: 0.5rem 0;
-}
-
-.logo-header {
-  padding: 0.5rem 1rem;
 }
 
 .navbar-nav h5 {
@@ -805,7 +772,7 @@ ul#dataList {
   color: black;
 }
 
-.container {
+.datatakes-container {
   padding-top: 1rem;
   max-width: 1440px;
 }
@@ -898,14 +865,12 @@ ul#dataList {
   cursor: pointer;
 }
 
-/* Move only the Publication tooltip more to the left */
 th:nth-of-type(6) .tooltip-text {
   left: 40%;
   transform: translateX(-15%);
   width: 370px;
 }
 
-/* Move the tooltip arrow for the Publication tooltip */
 th:nth-of-type(6) .tooltip-text::after {
   left: 25%;
   transform: translateX(-25%);

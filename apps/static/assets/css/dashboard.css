@@ -1,3 +1,14 @@
+html,
+body {
+  font-family: 'NotesEsa', sans-serif !important;
+}
+
+
+.main-panel>.content {
+  margin-top: 65px !important;
+}
+
+
 /*navigation responsive*/
 .logo-header {
   background-color: #343a40 !important;
@@ -6,6 +17,8 @@
   flex-direction: row;
   gap: 15px;
   position: relative;
+  /* margin-left: 200px;*/
+  margin: 6px auto;
 }
 
 .logo-header a.logo {
@@ -15,10 +28,12 @@
 }
 
 .ec-logo {
-  position: absolute;
-  top: 5px;
+  /*position: absolute;*/
+  margin-bottom: 6px;
   display: none;
 }
+
+
 
 /* Home Page - Video frame */
 
@@ -36,7 +51,8 @@
 #tutorial {
   position: relative;
   width: 100%;
-  padding-top: 56.25%; /* 9/16 = 0.5625 * 100% */
+  padding-top: 56.25%;
+  /* 9/16 = 0.5625 * 100% */
   overflow: hidden;
 }
 
@@ -183,13 +199,36 @@ p {
   position: fixed;
   z-index: 1001;
   box-shadow: 0 0 5px rgba(18, 23, 39, .5);
+  padding: 10px;
 }
+
+.main-header .navbar,
+.main-header .logo-header {
+  padding: 12px 30px;
+}
+
+.logo-container a {
+  margin: 0 10px;
+}
+
+.logo-container {
+  margin-right: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 
 .main-panel .page-header {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
   margin-left: 10px;
+}
+
+body.events-page .main-panel .page-header,
+body.dataAvilability-page .main-panel .page-header {
+  margin-left: 28px !important;
 }
 
 .main-panel .page-header .page-title {
@@ -255,12 +294,11 @@ a {
   background: #006B7C !important;
 }
 
-.logo-header .navbar-toggler .navbar-toggler-icon
- {
-    height: 1em;
-    width: 1em;
-    color: white !important;
-    font-size: 22px;
+.logo-header .navbar-toggler .navbar-toggler-icon {
+  height: 1em;
+  width: 1em;
+  color: white !important;
+  font-size: 22px;
 }
 
 
@@ -594,7 +632,7 @@ a {
 }
 
 .right-slide>div[style*="acquisitions_status.png"] {
-  background-size: 99%;
+  background-size: 100%;
   background-position: center center;
   background-repeat: no-repeat;
 }
@@ -758,9 +796,16 @@ button:focus {
   }
 
   .sentiboard-logo img {
-    max-width: 100px;
-    padding-left: 120px;
-    display: block;
+    max-width: 160px !important;
+    padding-left: 0 !important;
+    display: block !important;
+  }
+
+  .logo-header a.logo.sentiboard-logo {
+    margin-right: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    padding-left: 120px !important;
   }
 
   .logo-header a.logo {
@@ -899,13 +944,13 @@ button:focus {
 
 @media screen and (max-width: 991px) {
   .logo-header .more {
-      opacity: 1;
-      color: white !important;
-      cursor: pointer;
-      display: inline-block;
-      line-height: 56px;
-      order: 3;
-      width: unset;
-      margin-left: auto;
+    opacity: 1;
+    color: white !important;
+    cursor: pointer;
+    display: inline-block;
+    line-height: 56px;
+    order: 3;
+    width: unset;
+    margin-left: auto;
   }
 }

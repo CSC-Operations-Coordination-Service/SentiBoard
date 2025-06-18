@@ -129,7 +129,7 @@ class Home {
         // If no events is present, display a pleasant statement
         if (details.length == 0) {
             console.info('No recent event collected');
-            $('#real-time-event-list').append(
+            $('#real-time-event-list-lg, #real-time-event-list-sm').append(
                 '<li class="feed-item feed-item-success">' +
                 '<i class="flaticon-success feed-item-icon"></i>' +
                 '<h4 style="color: white; position: relative; top: -27px" class="text">Nominal operations</h4>' +
@@ -139,7 +139,7 @@ class Home {
         }
 
         // Otherwise, display the collected events
-        $('#real-time-event-list').html('');
+        $('#real-time-event-list-lg, #real-time-event-list-sm').html('');
         for (var i = 0; i < details.length; ++i) {
             var time_ago = (now.getTime() - details[i].time.getTime()) / (3600000);
             var time_measures = ' hour(s) ago';
@@ -152,7 +152,7 @@ class Home {
                 time_ago = (now.getTime() - details[i].time.getTime()) / (60000);
                 time_measures = ' minute(s) ago';
             }
-            $('#real-time-event-list').append(
+            $('#real-time-event-list-lg, #real-time-event-list-sm').append(
                 '<li class="feed-item feed-item-warning" style="color: white">' +
                 '<i class="flaticon-alarm-1 feed-item-icon"></i>' +
                 '<time class="date">' + time_ago + time_measures + '</time>' +

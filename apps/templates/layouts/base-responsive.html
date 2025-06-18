@@ -77,7 +77,7 @@
 
 </head>
 <!--AD previous version <body data-background-color="dark"> -->
-	<body style="background-color:#343a40 !important">
+	<body class="{% block body_class %}{% endblock %}" style="background-color:#343a40 !important">
 	<div class="wrapper">
 
         {% include 'includes/navigation-responsive.html' %}

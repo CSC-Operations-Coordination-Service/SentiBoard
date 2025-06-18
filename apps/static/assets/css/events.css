@@ -1,13 +1,4 @@
 /*AD calendar new*/
-
-.main-panel .page-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-  margin-left: 28px !important;
-}
-
-
 .calendar-window {
   padding-right: 21px;
   padding-left: 21px;
@@ -15,13 +6,7 @@
 
 .container {
   max-width: 1200px;
-  /* Increase the width of the container for larger screens */
 }
-
-/*.faq-section {
-  margin-left: 21px !important;
-  margin-right: 20px !important;
-}*/
 
 .calendar-card {
   background-color: #343A40 !important;
@@ -273,7 +258,6 @@
   font-size: 12px;
   z-index: 2;
   background-color: white;
-  /* Optional: to avoid overlap */
 }
 
 .calendar-day .events-wrapper {
@@ -311,7 +295,6 @@
   left: 50%;
   transform: translateX(-50%);
   font-size: 14px;
-  /*font-weight: bold;*/
   color: white;
 }
 
@@ -359,7 +342,6 @@
   padding: 10px;
   font-size: 14px;
   color: white;
-  /*max-height: 100%;*/
   overflow-y: auto;
   border-radius: 6px;
 }
@@ -501,9 +483,7 @@
 .legend-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  /* Force 2 columns */
   gap: 0px 0px;
-  /* row and column spacing */
 }
 
 /* Individual circle colors */
@@ -581,7 +561,6 @@
 }
 
 .event-manoeuvre {
-  /*background-color: #FFAD00;*/
   color: #FFAD00;
 }
 
@@ -590,31 +569,25 @@ img.image-icon {
   height: 16px !important;
   vertical-align: middle;
   object-fit: contain;
-  /*visibility: hidden;*/
 }
 
 .event-acquisition {
-  /* background-color: #495057;*/
   color: #495057;
 }
 
 .event-calibration {
-  /*background-color: #B0DFE5;*/
   color: #B0DFE5;
 }
 
 .event-production {
-  /*background-color: #7b1fa2;*/
   color: #7b1fa2;
 }
 
 .event-data-access {
-  /*background-color: #EE8216;*/
   color: #EE8216;
 }
 
 .event-satellite {
-  /*background-color: #EE8216;*/
   color: #EE8216;
 }
 
@@ -727,21 +700,6 @@ img.image-icon {
   .left-panel {
     max-width: max-content !important;
   }
-
-  /*.calendar-day .event-container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 3px;
-    max-height: 60px;
-    overflow-y: auto;
-    width: 100%;
-    align-items: start;
-    justify-content: flex-start;
-    margin-top: 14px;
-    padding: 0 4px;
-    box-sizing: border-box;
-  }*/
 }
 
 @media (max-width: 991.98px) {
@@ -754,7 +712,6 @@ img.image-icon {
   }
 }
 
-/* Optional: make sure icons wrap better on small screens */
 @media (max-width: 500px) {
   .event-container {
     gap: 3px;
@@ -798,7 +755,6 @@ img.image-icon {
     max-width: 60% !important;
   }
 
-  /* Avoid unnecessary width constraints */
   .completeness-status,
   #eventDetails,
   .left-panel {
@@ -852,7 +808,6 @@ img.image-icon {
     padding: 10px;
   }
 
-  /* Ensure calendar grid fits smaller screens */
   #calendarGrid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -870,7 +825,6 @@ img.image-icon {
     overflow-y: auto;
   }
 
-  /* Adjust header and other UI elements */
   .calendar-header {
     flex-direction: column;
     align-items: flex-start;
