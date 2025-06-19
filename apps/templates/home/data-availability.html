@@ -82,21 +82,16 @@
 										<div id="description" class="collapse hide" data-parent="#accordion"
 											 aria-labelledby="heading-description">
 											<div class="card-body">
-												The page collects all datatakes in the last 3 months, including those
-												already
-												planned up to 23:59:59 of tomorrow. Besides the acquisition platform and
-												sensor mode,
-												this shows, for every datatake, the acquisition status and the
-												total publication
-												completeness, expressed in terms of percentage, with a hourly refresh
-												rate. Records can
-												be filtered using the search input in the side of the graph,
-												by entering the mission or satellite name (i.e. "S1" or "S2A"). Datakes
-												can be also filtered on the basis of the completeness status.
-												Datatakes can be also filtered using combined queries on different
-												columns: as an example, try writing "S1 2024-01-22" to select all
-												datatakes of the Copernicus Sentinel-1 mission, acquired in the
-												specified date.
+												This page displays all datatakes from the past three months, 
+												including those scheduled up to 23:59:59 of the following day. 
+												or each datatake, key information is shown—such as the acquisition 
+												platform, sensor mode, acquisition status, and total publication 
+												completeness (expressed as a percentage)—with updates refreshed hourly.
+												You can filter the records by mission and, optionally, by satellite. 
+												Alternatively, filtering by satellite alone is also possible. For 
+												Sentinel-5P, the satellite selector is disabled, as only one satellite is available. 
+												Additional filters include a custom date range (aligned with the time filter 
+												selected at the top of the page), as well as direct searches by datatake ID.
 											</div>
 										</div>
 									</div>
@@ -117,7 +112,7 @@
 								<div class="col-12 col-md-3 left-panel d-flex flex-column mb-3 mb-md-0">
 									<div class="filter-panel p-3 flex-grow-1">
 											<!-- Filter by Mission -->
-											<div class="form-group d-flex align-items-center flex-wrap gap-2">
+											<div class="form-group d-flex flex-column gap-2">
 												<select id="mission-select" class="form-control" onchange="datatakes.filterSidebarItems()">
 															<option value="">All Missions</option>
 															<option value="S1">Sentinel 1</option>
@@ -125,15 +120,35 @@
 															<option value="S3">Sentinel 3</option>
 															<option value="S5">Sentinel 5P</option>
 													</select>
+													<select id="satellite-select" class="form-control" onchange="datatakes.filterSidebarItems()">
+														<option value="">All Satellites</option>
+														<option value="S1a">S1A</option>
+														<option value="S1c">S1C</option>
+														<option value="S2a">S2A</option>
+														<option value="S2b">S2B</option>
+														<option value="S2c">S2C</option>
+														<option value="S3a">S3A</option>
+														<option value="S3b">S3B</option>
+													</select>
 			
-													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset
-															Filter</button>
+													<!-- Inline Date Range -->
+													<div class="d-flex flex-column gap-2">
+														<div class="d-flex align-items-center gap-2">
+															<label for="from-date"  class="inline-label" style="min-width: 40px;">From</label>
+															<input type="date" id="from-date" class="form-control" onchange="datatakes.filterSidebarItems()">
+														</div>
+													
+														<div class="d-flex align-items-center gap-2">
+															<label for="to-date"  class="inline-label" style="min-width: 40px;">To</label>
+															<input type="date" id="to-date" class="form-control" onchange="datatakes.filterSidebarItems()">
+														</div>
+													</div>
+													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
 											</div>
-											<hr>
 											<!-- Filter by Ground Station -->
 											<div class="form-group">
 												<input type="text" id="searchInput" class="form-control mb-3"
-												placeholder="Search by id, mission, acquisition, " oninput="datatakes.filterSidebarItems()">
+												placeholder="Search by id," oninput="datatakes.filterSidebarItems()">
 													<ul class="list-unstyled" id="dataList">
 															<!-- Items will be injected here by JavaScript -->
 													</ul>

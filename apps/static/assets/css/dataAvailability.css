@@ -234,6 +234,7 @@ iframe {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
+  max-width: 320px;
 }
 
 .filter-panel {
@@ -277,7 +278,10 @@ iframe {
 }
 
 #mission-select,
+#satellite-select,
 #resetFilterButton,
+#from-date,
+#to-date,
 #searchInput {
   color: #000000;
   border-radius: 8px;
@@ -285,6 +289,13 @@ iframe {
   font-size: 14px;
   margin-bottom: 10px;
   width: 100%;
+}
+
+label.inline-label {
+  margin-bottom: 0;
+  min-width: 40px;
+  font-size: 14px;
+  color: #333;
 }
 
 #searchInput {
@@ -609,7 +620,6 @@ ul#dataList {
   color: #fff;
   padding: 3px 8px;
   border-radius: 4px;
-  /*display: inline-flex;*/
   align-items: center;
   justify-content: center;
   min-width: 70px;
@@ -619,15 +629,12 @@ ul#dataList {
   line-height: 1;
 }
 
-/* Chart layout flexbox */
 .chart-container .d-flex {
   display: flex;
   flex-direction: row;
   gap: 12px;
   align-items: flex-start;
 }
-
-
 
 .btn.btn-secondary {
   color: #fff;
@@ -919,6 +926,7 @@ th:nth-of-type(6) .tooltip-text::after {
   }
 
   #mission-select,
+  #satellite-select,
   #resetFilterButton {
     width: 100%;
   }

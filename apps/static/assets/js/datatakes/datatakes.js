@@ -30,7 +30,10 @@ class Datatakes {
         this.resizeListenerAttached = false;
         this.datatakesEventsMap = {};
         this.currentMission = "";
+        this.currentSatellite = "";
         this.currentSearchTerm = "";
+        this.fromDate = "";
+        this.toDate = "";
 
         // Threshold used to state the completeness
         this.completeness_threshold = 90;
@@ -102,9 +105,14 @@ class Datatakes {
     }
 
     on_timeperiod_change() {
-        var time_period_sel = document.getElementById('time-period-select')
-        console.log("Time period changed to " + time_period_sel.value)
-        this.loadDatatakesInPeriod(time_period_sel.value, true);
+        const time_period_sel = document.getElementById('time-period-select');
+        const selected = time_period_sel.value;
+        console.log("Time period changed to " + selected);
+
+        //Set the calendar inputs based on selected period
+        this.setDateRangeLimits(selected);
+
+        this.loadDatatakesInPeriod(selected, true);
     }
 
     quarterAuthorizedProcess(response) {
@@ -161,7 +169,6 @@ class Datatakes {
             for (const raw of rawCompleteness) {
                 let fixedStr;
                 try {
-                    // Only replace once and cache the cleaned string
                     fixedStr = raw.replaceAll("'", '"');
                     const completenessMap = JSON.parse(fixedStr);
 
@@ -223,7 +230,7 @@ class Datatakes {
             if (sel) sel.value = 'last-quarter';
         }
 
-        this.populateDataList(false); //respects .filteredDataTakes if set
+        this.populateDataList(false); 
 
         const list = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
 
@@ -735,8 +742,16 @@ class Datatakes {
 
     filterSidebarItems() {
         const selectedMission = document.getElementById("mission-select").value.toUpperCase();
+        const selectedSatellite = document.getElementById("satellite-select").value.toUpperCase();
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
         const acquisitionStatusFilter = document.getElementById("acqStatusFilter")?.value.toUpperCase();
+
+        // Read and store from/to date values
+        const fromInput = document.getElementById("from-date").value;
+        const toInput = document.getElementById("to-date").value;
+
+        this.fromDate = fromInput;
+        this.toDate = toInput;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
@@ -759,15 +774,11 @@ class Datatakes {
                         : acquisitionDateRaw.toUpperCase();
                 }
                 const matchesMission = !selectedMission || id.startsWith(selectedMission);
+                const matchesSatellite = !selectedSatellite || id.startsWith(selectedSatellite);
                 const matchesAcqStatus = !acquisitionStatusFilter || acqStatus === acquisitionStatusFilter;
 
                 const matchesSearch = !searchTerms.length || searchTerms.every(term => {
-                    const termMatch = id.includes(term) ||
-                        satellite.includes(term) ||
-                        acqStatus.includes(term) ||
-                        pubStatus.includes(term) ||
-                        overallStatus.includes(term) ||
-                        acquisitionDate.includes(term);
+                    const termMatch = id.includes(term);
 
                     if (!acquisitionDate) {
                         console.debug("Skipping take with no date:", take.id);
@@ -775,7 +786,7 @@ class Datatakes {
                     return termMatch;
                 });
 
-                return matchesMission && matchesSearch && matchesAcqStatus;
+                return matchesMission && matchesSearch && matchesAcqStatus && matchesSatellite && this.isWithinDateRange(acquisitionDate);
             });
 
         } catch (err) {
@@ -792,6 +803,69 @@ class Datatakes {
         }
     }
 
+    isWithinDateRange(dateString) {
+        if (!dateString) return true; 
+        const date = new Date(dateString);
+        const from = this.fromDate ? new Date(this.fromDate) : null;
+        const to = this.toDate ? new Date(this.toDate) : null;
+
+        if (from && date < from) return false;
+        if (to && date > to) return false;
+
+        return true;
+    }
+
+    setDateRangeLimits(period) {
+        const fromInput = document.getElementById("from-date");
+        const toInput = document.getElementById("to-date");
+        if (!fromInput || !toInput) return;
+
+        const today = new Date();
+        const maxDate = new Date(today);
+        let fromDate = new Date(today);
+
+        switch (period) {
+            case 'day':
+                fromDate.setDate(fromDate.getDate() - 1);
+                break;
+            case 'week':
+                fromDate.setDate(fromDate.getDate() - 7);
+                break;
+            case 'month':
+                fromDate.setMonth(fromDate.getMonth() - 1);
+                break;
+            case 'last-quarter':
+            case 'default': {
+                const dayOfMonth = fromDate.getDate();
+                const targetMonth = fromDate.getMonth() - 3;
+                fromDate.setMonth(targetMonth, 1);
+                const lastDay = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0).getDate();
+                fromDate.setDate(Math.min(dayOfMonth, lastDay)); 
+                break;
+            }
+        }
+
+        const format = (d) => d.toISOString().split("T")[0];
+
+        const min = format(fromDate);
+        const max = format(maxDate);
+
+        fromInput.min = min;
+        fromInput.max = max;
+        toInput.min = min;
+        toInput.max = max;
+
+        if (fromInput.value && (fromInput.value < min || fromInput.value > max)) {
+            fromInput.value = '';
+        }
+        if (toInput.value && (toInput.value < min || toInput.value > max)) {
+            toInput.value = '';
+        }
+
+        console.log(`[Date Range Limits] Period: ${period}, Min: ${min}, Max: ${max}`);
+    }
+
+
     showTableSection(firstId) {
         const tableSection = document.getElementById("tableSection");
         if (!tableSection) return;
@@ -801,7 +875,6 @@ class Datatakes {
 
         this.renderTableWithoutPagination([selectedData], firstId);
 
-        //tableSection.style.display = "block";
         tableSection.style.opacity = "0";
         setTimeout(() => {
             tableSection.style.transition = "opacity 0.5s ease-in-out";
@@ -821,11 +894,9 @@ class Datatakes {
         tableSection.style.display = "none";
         tableBody.innerHTML = "";
 
-        // Find the selected data entry
         const selectedData = dataset.find(item => item.id === selectedId);
         if (!selectedData) {
             console.warn(`No data found for: ${selectedId}`);
-            // Clear content and explicitly hide if nothing found
             tableBody.innerHTML = "";
             tableSection.style.display = "none";
             return;
@@ -833,7 +904,6 @@ class Datatakes {
 
         let data = [selectedData];
 
-        // Apply search filter
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
             data = data.filter(item =>
@@ -846,11 +916,10 @@ class Datatakes {
             console.warn("No data matched the search query.");
 
             tableBody.innerHTML = "";
-            tableSection.style.display = "none";  // Ensure table is hidden in this case
+            tableSection.style.display = "none"; 
             return;
         }
 
-        // Render each row
         data.forEach(row => {
             const raw = row.raw || {};
             const completeness = raw.completeness_status || {};
@@ -916,40 +985,41 @@ class Datatakes {
     resetFilters() {
         // Reset filter form inputs
         const missionSelect = document.getElementById("mission-select");
+        const satelliteSelect = document.getElementById("satellite-select");
         const searchInput = document.getElementById("searchInput");
         const acqStatusFilter = document.getElementById("acqStatusFilter");
+        const fromDateInput = document.getElementById("from-date");
+        const toDateInput = document.getElementById("to-date");
 
         if (missionSelect) missionSelect.value = "";
+        if (satelliteSelect) satelliteSelect.value = "";
         if (searchInput) searchInput.value = "";
         if (acqStatusFilter) acqStatusFilter.value = "";
+        if (fromDateInput) fromDateInput.value = "";
+        if (toDateInput) toDateInput.value = "";
 
         // Clear internal state
-        this.filteredDataTakes = []; // or null or undefined
+        this.filteredDataTakes = []; 
         this.currentMission = "";
         this.currentSearchTerm = "";
 
-        // Reset the URL (remove query params/hash)
         if (window.history.replaceState) {
             const cleanUrl = window.location.origin + window.location.pathname;
             window.history.replaceState(null, '', cleanUrl);
         }
 
-        //Reset sidebar highlights
         document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
         document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
-        //Re-render full datalist
         this.displayedCount = 0;
         this.populateDataList(false);
 
-        // Select the first item and load its data
         const first = this.mockDataTakes?.[0];
         if (first) {
             this.handleInitialSelection(first);
         }
 
-        // Clear any open detail sections
-        this.hideInfoTable?.();//side table of the pie chart
+        this.hideInfoTable?.();
     }
 
     attachEventListeners() {
@@ -958,16 +1028,17 @@ class Datatakes {
         const tableSection = document.getElementById("tableSection");
         const missionSelect = document.getElementById("mission-select");
         const resetBtn = document.getElementById("resetFilterButton");
+        const satelliteSelect = document.getElementById("satellite-select");
+        const allSatelliteOptions = Array.from(satelliteSelect.options).slice(1);
+
 
         if (!dataList || !tableSection) {
             console.error("One or more DOM elements missing for setup.");
             return;
         }
 
-        // Hide table by default
         tableSection.style.display = "none";
 
-        // Filter list on input
         if (searchInput) {
             searchInput.addEventListener("input", () => {
                 this.currentSearchTerm = searchInput.value;
@@ -975,14 +1046,33 @@ class Datatakes {
             });
         }
 
-        // Mission dropdown
-        if (missionSelect) {
+        if (missionSelect && satelliteSelect) {
             missionSelect.addEventListener("change", () => {
-                this.currentMission = missionSelect.value;
-                if (missionSelect.value === "") {
+                const selectedMission = missionSelect.value;
+                this.currentMission = selectedMission;
+
+                // Reset search input if mission reset
+                if (selectedMission === "") {
                     this.currentSearchTerm = "";
-                    searchInput.value = ""; // Reset search
+                    searchInput.value = "";
                 }
+
+                // Enable satellite select unless it's Sentinel 5P
+                if (selectedMission === "S5") {
+                    satelliteSelect.disabled = true;
+                    satelliteSelect.value = ""; 
+                } else {
+                    satelliteSelect.disabled = false;
+
+                    // Restore all then filter
+                    satelliteSelect.innerHTML = `
+                        <option value="">All Satellites</option>
+                    `;
+
+                    const filtered = allSatelliteOptions.filter(opt => opt.value.startsWith(selectedMission));
+                    filtered.forEach(opt => satelliteSelect.appendChild(opt));
+                }
+
                 this.filterSidebarItems();
                 this.hideInfoTable();
             });
@@ -1001,25 +1091,21 @@ class Datatakes {
 
         // Load More Button 
         document.getElementById("loadMoreBtn").addEventListener("click", () => {
-            this.populateDataList(true); // append = true
+            this.populateDataList(true); 
         });
 
 
-        // Sidebar link click handling
         dataList.addEventListener("click", (e) => {
             const target = e.target.closest("a.filter-link");
             if (!target) return;
 
             e.preventDefault();
 
-            // Remove active class from all links
             document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
             target.classList.add("active");
 
-            // Remove selected class from all container divs
             document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
-            // Add selected class to the clicked link's container div
             const containerDiv = target.closest('.container-border');
             if (containerDiv) {
                 containerDiv.classList.add("selected");
@@ -1029,7 +1115,7 @@ class Datatakes {
             this.updateCharts(selectedKey);
             this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
             this.updateTitleAndDate(selectedKey);
-            this.hideInfoTable();//side table of the pie chart
+            this.hideInfoTable();
         });
     }
 
