@@ -55,13 +55,32 @@ window.addEventListener("load", function () {
             }
         },
         "onPopupOpen": function () {
+            const acceptLink = document.getElementById("cookie-accept");
+            const refuseLink = document.getElementById("cookie-refuse");
+
+            // Optional: Set initial state from localStorage (if you store consent state)
+            const consent = localStorage.getItem("cookie-consent");
+            if (consent === "accepted") {
+                acceptLink.classList.add("hide");
+                refuseLink.classList.remove("hide");
+            } else if (consent === "refused") {
+                refuseLink.classList.add("hide");
+                acceptLink.classList.remove("hide");
+            }
+
             document.querySelector('.cc-allow').addEventListener("click", function () {
-                _paq.push(['rememberConsentGiven'])
+                _paq.push(['rememberConsentGiven']);
+                acceptLink.classList.add("hide");
+                refuseLink.classList.remove("hide");
+                localStorage.setItem("cookie-consent", "accepted");
             }, {
                 once: true
             })
             document.querySelector('.cc-deny').addEventListener("click", function () {
-                _paq.push(['forgetConsentGiven'])
+                _paq.push(['forgetConsentGiven']);
+                refuseLink.classList.add("hide");
+                acceptLink.classList.remove("hide");
+                localStorage.setItem("cookie-consent", "refused");
             }, {
                 once: true
             })
