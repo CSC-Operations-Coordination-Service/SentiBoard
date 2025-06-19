@@ -295,9 +295,6 @@ a {
   font-size: 22px;
 }
 
-
-
-
 .sidebar.sidebar-style-2 .nav .nav-item a:focus,
 .sidebar.sidebar-style-2 .nav .nav-item a:hover,
 .sidebar.sidebar-style-2 .nav .nav-item a[data-toggle=collapse][aria-expanded=true] {
@@ -763,6 +760,20 @@ button:focus {
   fill: #12b1bf !important;
 }
 
+/*terms and conditions*/
+.center-links {
+  position: absolute !important;
+  top: 50px !important;
+  left: 45% !important;
+  transform: translateX(-50%) !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  font-weight: 400 !important;
+}
+
+.list-unstyled{
+  font-weight: 400 !important;
+}
 
 @media (max-width: 768px) {
   .logo-header {
@@ -926,6 +937,13 @@ button:focus {
 
   .mobile-slide p {
     color: white !important;
+  }
+
+  /*terms and conditions*/
+  .center-links {
+    position: static;
+    transform: none;
+    margin-top: 10px;
   }
 
 }
