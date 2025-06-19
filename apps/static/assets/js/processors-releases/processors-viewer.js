@@ -51,7 +51,10 @@ class ProcessorsViewer {
 
         // Define the processors on the basis of the selected mission
         this.IPFsMap = {
-            'S1': ['S1_L0', 'S1_L1L2', 'S1_ERRMAT', 'S1_SETAP', 'S1_AMALFI'],
+            'S1': ['S1_L0',
+		    'S1_L1L2',
+		    'S1_SETAP',
+	    ],
             'S2': ['S2_L0', 'S2_L1', 'S2_L2', 'S2_EUP'],
             'S3': ['S3_PUG', 'S3_L0', 'S3_OL1', 'S3_OL1_RAC', 'S3_OL1_SPC', 'S3_OL2',
                    'S3_SL1', 'S3_SL2', 'S3_SL2_LST', 'S3_SL2_FRP',
@@ -157,7 +160,7 @@ class ProcessorsViewer {
         for (var i = 0 ; i < procViewer.processorsReleases.length; i++) {
             var pr = procViewer.processorsReleases[i];
             var event = procViewer.buildEventInstance(pr);
-            if (event) {
+            if (event && pr['target_ipfs'] && pr['target_ipfs'].length > 0 && !['S1_ERRMAT', 'S1_AMALFI'].includes(pr['target_ipfs'][0].split(':')[0])) {
                 procViewer.loadedEvents.add(event);
                 var detailsPanel = procViewer.buildDetailsPanel(pr);
                 procViewer.detailsMap[pr['id']] = detailsPanel;
@@ -186,7 +189,9 @@ class ProcessorsViewer {
         var count = 0;
         var grpArray = [];
         ipfs.forEach(ipf => {
+	    if (!['S1_ERRMAT', 'S1_AMALFI'].includes(ipf)){
             grpArray.push({ id: ipf, content: ipf.substring(ipf.indexOf('_') + 1, ipf.length)});
+	    }
         });
         procViewer.groups = new vis.DataSet(grpArray);
         procViewer.timeline.setGroups(procViewer.groups);
@@ -195,7 +200,7 @@ class ProcessorsViewer {
         procViewer.filteredEvents = new vis.DataSet();
         for (var i = 0 ; i < procViewer.processorsReleases.length; i++) {
             var pr = procViewer.processorsReleases[i];
-            if (pr['mission'] === selectedMission) {
+            if (pr['mission'] === selectedMission && pr['target_ipfs'] && pr['target_ipfs'].length > 0 && !['S1_ERRMAT', 'S1_AMALFI'].includes(pr['target_ipfs'][0].split(':')[0])) {
                 var event = procViewer.buildEventInstance(pr);
                 if (event) procViewer.filteredEvents.add(event);
             }
