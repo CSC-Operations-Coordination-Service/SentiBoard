@@ -41,7 +41,7 @@ window.addEventListener("load", function () {
             "message": "We use cookies which are essential for you to access our website and to provide you with our services and allow us to measure and improve the performance of our website. Please consult our ",
         },
         'elements': {
-            "privacyPolicyLink": '<a href="https://sentinels.copernicus.eu/web/sentinel/cookie-notice">Cookie Notice </a>',
+            "privacyPolicyLink": '<a href="/cookie-notice.html">Cookie Notice </a>',
             "message2": "for further information or to change your preferences."
         },
         "palette": {
