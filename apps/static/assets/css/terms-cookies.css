@@ -1,4 +1,4 @@
-  .back-container-terms {
+  .back-container {
     background-image: url('/static/assets/img/about_bckgrd.png');
     background-size: cover;
     background-repeat: no-repeat;
@@ -11,7 +11,7 @@
   }
 
 
-  .back-container-terms::before {
+  .back-container::before {
     content: '';
     position: absolute;
     top: 0;
@@ -39,7 +39,7 @@
   }
 
   /* To keep content above the overlay */
-  .back-container-terms>* {
+  .back-container>* {
     position: relative;
     z-index: 2;
   }
@@ -141,11 +141,20 @@
     margin-left: 4px !important;
   }
 
+  h2 {
+    font-size: 2.3rem !important;
+  }
+
+  h3 {
+    font-size: 2rem !important;
+    font-weight: 600;
+  }
+
   p {
     font-family: "NotesEsa", sans-serif !important;
     font-weight: 400 !important;
     font-style: normal !important;
-    font-size: 1.05rem !important;
+    font-size: 1.2rem !important;
     line-height: 1.6 !important;
     margin-bottom: 1rem !important;
   }
@@ -154,6 +163,10 @@
     font-weight: bold !important;
     color: #006B7C !important;
     font-size: 2rem !important;
+  }
+
+  .hide {
+    display: none !important;
   }
 
   @media (max-width: 768px) {
