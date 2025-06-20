@@ -117,11 +117,11 @@ class ElasticClient:
             query = {"query": {"match_all": {}}}
         logger.debug("Executing Elastic query : %s, on index : %s",
                      query, index)
-        result = scan(
+        result = self.filtered_scan(
             self.get_connection(),
-            index=index,
-            query=query,
-            clear_scroll=False
+            index,
+            query,
+            False
         )
         return result
 
@@ -158,11 +158,11 @@ class ElasticClient:
                 query,
                 range_clause
             ]}}}
-        result = scan(
+        result = self.filtered_scan(
             self.get_connection(),
-            index=index,
-            query=query,
-            clear_scroll=False
+            index,
+            query,
+            False
         )
         return result
 
@@ -184,3 +184,23 @@ class ElasticClient:
                          body, index)
             raise ex
         return result
+
+    def filtered_scan(self, connection, index, query, clear_scroll):
+        if index == 'cds-datatake':
+            filtered_query = {
+                "bool": {
+                    "must": 
+                        query['query'],
+                    "must_not":{
+                        "term" : { "instrument_mode": "AIS" }
+                    }
+                }
+            }
+            query['query'] = filtered_query
+
+        return  scan(
+            connection,
+            index=index,
+            query=query,
+            clear_scroll=clear_scroll
+        )
