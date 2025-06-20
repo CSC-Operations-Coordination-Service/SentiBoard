@@ -763,8 +763,8 @@ button:focus {
 /*terms and conditions*/
 .center-links {
   position: absolute !important;
-  top: 50px !important;
-  left: 45% !important;
+  top: 57px !important;
+  left: 46% !important;
   transform: translateX(-50%) !important;
   text-align: center !important;
   white-space: nowrap !important;
@@ -943,7 +943,7 @@ button:focus {
   .center-links {
     position: static;
     transform: none;
-    margin-top: 10px;
+    margin-top: 38px;
   }
 
 }
