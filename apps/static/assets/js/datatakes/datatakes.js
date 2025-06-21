@@ -249,12 +249,11 @@ class Datatakes {
             const firstTake = currentList[0];
             this.updateTitleAndDate(firstTake.id);
             this.updateCharts(firstTake.id);
-            // If you have a method to update the info table, call it here too
+            
             if (this.updateInfoTable) {
                 this.updateInfoTable(firstTake.id);
             }
 
-            // Also update the UI selection highlight in the list
             const dataList = document.getElementById("dataList");
             if (dataList) {
                 dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
@@ -411,7 +410,6 @@ class Datatakes {
 
         window.addEventListener("resize", updateContainerWidths);
 
-        // Call it once right away to apply initial sizing
         updateContainerWidths();
     }
 
