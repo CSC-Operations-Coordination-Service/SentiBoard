@@ -236,6 +236,30 @@ class Datatakes {
         this.populateDataList(false);
 
         const list = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
+
+        if (currentList.length > 0) {
+            const firstTake = currentList[0];
+            this.updateTitleAndDate(firstTake.id);
+            this.updateCharts(firstTake.id);
+            // If you have a method to update the info table, call it here too
+            if (this.updateInfoTable) {
+                this.updateInfoTable(firstTake.id);
+            }
+
+            // Also update the UI selection highlight in the list
+            const dataList = document.getElementById("dataList");
+            if (dataList) {
+                dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
+                dataList.querySelectorAll("a.selected").forEach(el => el.classList.remove("selected"));
+
+                const selectedContainer = [...dataList.querySelectorAll("li div.container-border")]
+                    .find(div => div.querySelector("a")?.textContent === firstTake.id);
+                if (selectedContainer) {
+                    selectedContainer.classList.add("selected");
+                    selectedContainer.querySelector("a")?.classList.add("selected");
+                }
+            }
+        }
     }
 
     errorLoadDatatake(response) {
@@ -369,7 +393,6 @@ class Datatakes {
         const loadMoreBtn = document.getElementById("loadMoreBtn");
         loadMoreBtn.style.display = this.displayedCount >= data.length ? "none" : "block";
     }
-
 
     setupResizeObserver() {
         const searchInput = document.getElementById("searchInput");
@@ -796,17 +819,35 @@ class Datatakes {
                 return matchesMission && matchesSearch && matchesSatellite && this.isWithinDateRange(acquisitionDate);
             });
 
+
+
         } catch (err) {
             console.error("Error during filtering:", err);
         }
 
-        this.displayedCount = 0; // reset count for pagination
-        this.populateDataList(false); // re-render filtered list from scratch
+        this.filteredDataTakes.sort((a, b) => {
+            const timeA = Date.parse(a.raw?.observation_time_start || "");
+            const timeB = Date.parse(b.raw?.observation_time_start || "");
+
+            if (!isNaN(timeA) && !isNaN(timeB)) {
+                return timeA - timeB; // Ascending by date
+            } else if (!isNaN(timeA)) {
+                return -1; // Put valid dates before invalid
+            } else if (!isNaN(timeB)) {
+                return 1;
+            } else {
+                // Fallback to datatake_id comparison
+                return (a.raw?.datatake_id || "").localeCompare(b.raw?.datatake_id || "");
+            }
+        });
+
+        this.displayedCount = 0;
+        this.populateDataList(false);
         const first = this.filteredDataTakes?.[0];
         if (first) {
-            this.handleInitialSelection(first); // updates charts, title, highlights, table
+            this.handleInitialSelection(first);
         } else {
-            this.hideTable(); // hide table if nothing matches
+            this.hideTable();
         }
     }
 
