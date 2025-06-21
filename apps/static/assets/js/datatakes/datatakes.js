@@ -236,10 +236,6 @@ class Datatakes {
         this.populateDataList(false);
 
         const list = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
-
-        if (list.length > 0) {
-            this.handleInitialSelection(list[0]);
-        }
     }
 
     errorLoadDatatake(response) {
@@ -363,6 +359,10 @@ class Datatakes {
             fragment.appendChild(li);
         });
 
+        if (!append && this.displayedCount === 0 && nextItems.length > 0) {
+            this.handleInitialSelection(nextItems[0]);
+        }
+
         dataList.appendChild(fragment);
         this.displayedCount += nextItems.length;
 
@@ -483,7 +483,6 @@ class Datatakes {
 
         let dataArray = [];
 
-        // If a string (datatake ID) is passed, fetch details first
         if (typeof dataInput === "string") {
             const datatake_id = dataInput.split('(')[0].trim();
             $('#datatake-details').empty().html(`
