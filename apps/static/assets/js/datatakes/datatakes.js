@@ -151,7 +151,6 @@ class Datatakes {
         asyncAjaxCall(url, 'GET', {},
             (response) => {
                 this.successLoadDatatakes(response);
-
                 if (shouldReapplyFilters) {
                     const hasSearch = this.filterDatatakesOnPageLoad(); // apply search param
                     if (!hasSearch) {
@@ -244,7 +243,7 @@ class Datatakes {
 
         this.populateDataList(false);
 
-        const list = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
+        const currentList  = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
 
         if (currentList.length > 0) {
             const firstTake = currentList[0];
@@ -784,8 +783,8 @@ class Datatakes {
         const fromInput = document.getElementById("from-date").value;
         const toInput = document.getElementById("to-date").value;
 
-        this.fromDate = fromInput;
-        this.toDate = toInput;
+        this.fromDate = fromInput.value;
+        this.toDate = toInput.value;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
