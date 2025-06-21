@@ -70,9 +70,12 @@ class Datatakes {
             // Retrieve the time select combo box instance
             const time_period_sel = document.getElementById('time-period-select');
 
-            // Set default value to "Last 7 Days"
-            time_period_sel.value = 'week';
+            // Check if search parameter exists in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasSearch = urlParams.has('search');
 
+            // Set time period based on presence of search
+            time_period_sel.value = hasSearch ? 'prev-quarter' : 'week';
             // Trigger the change handler manually
             this.on_timeperiod_change({ target: time_period_sel });
 
