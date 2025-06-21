@@ -1060,11 +1060,7 @@ class Datatakes {
         this.displayedCount = 0;
         this.populateDataList(false);
 
-        const first = this.mockDataTakes?.[0];
-        if (first) {
-            this.handleInitialSelection(first);
-        }
-
+        
         this.hideInfoTable?.();
     }
 
