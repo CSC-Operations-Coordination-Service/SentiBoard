@@ -224,7 +224,16 @@ class Datatakes {
             };
         });
 
-        this.mockDataTakes = datatakes;
+        this.mockDataTakes = datatakes.sort((a, b) => {
+            const timeA = Date.parse(a.raw?.observation_time_start || "");
+            const timeB = Date.parse(b.raw?.observation_time_start || "");
+
+            if (!isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
+            if (!isNaN(timeA)) return -1;
+            if (!isNaN(timeB)) return 1;
+            return (a.raw?.datatake_id || "").localeCompare(b.raw?.datatake_id || "");
+        });
+
         this.displayedCount = 0;
 
         const hasSearchParam = this.filterDatatakesOnPageLoad(); //sets this.filteredDataTakes
@@ -303,16 +312,7 @@ class Datatakes {
             return valid;
         });
 
-        const sortedData = [...validData].sort((a, b) => {
-            const dateA = new Date(a.raw.observation_time_start);
-            const dateB = new Date(b.raw.observation_time_start);
-
-            if (dateA < dateB) return -1;
-            if (dateA > dateB) return 1;
-
-            return a.raw.datatake_id.localeCompare(b.raw.datatake_id);
-        });
-
+        const sortedData = validData;
 
         if (!append) {
             dataList.innerHTML = "";
@@ -825,22 +825,6 @@ class Datatakes {
             console.error("Error during filtering:", err);
         }
 
-        this.filteredDataTakes.sort((a, b) => {
-            const timeA = Date.parse(a.raw?.observation_time_start || "");
-            const timeB = Date.parse(b.raw?.observation_time_start || "");
-
-            if (!isNaN(timeA) && !isNaN(timeB)) {
-                return timeA - timeB; // Ascending by date
-            } else if (!isNaN(timeA)) {
-                return -1; // Put valid dates before invalid
-            } else if (!isNaN(timeB)) {
-                return 1;
-            } else {
-                // Fallback to datatake_id comparison
-                return (a.raw?.datatake_id || "").localeCompare(b.raw?.datatake_id || "");
-            }
-        });
-
         this.displayedCount = 0;
         this.populateDataList(false);
         const first = this.filteredDataTakes?.[0];
@@ -1060,7 +1044,7 @@ class Datatakes {
         this.displayedCount = 0;
         this.populateDataList(false);
 
-        
+
         this.hideInfoTable?.();
     }
 
