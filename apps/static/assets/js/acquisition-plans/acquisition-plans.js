@@ -924,6 +924,7 @@ class AcquisitionPlansViewer {
         var css = document.getElementById('container-acq-plans').style;
         var height = window.screen.availHeight - 375
         css.height = height.toString() + 'px';
+        css.minHeight = '70vh';
     }
 }
 
