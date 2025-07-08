@@ -138,7 +138,6 @@ class CalendarWidget {
 
     succesLoadAnomalies(response) {
         var rows = format_response(response);
-        console.info('Events loaded. Num of events: ' + rows.length);
 
         var datatakeList = [];
 
@@ -653,8 +652,10 @@ class CalendarWidget {
 
                 const addedTypes = new Set();
                 filteredEvents.forEach(event => {
+                    if (event.category === 'Archive' || event.category === 'Data access') {
+                        return;
+                    }
                     const category = event.category === "Platform" ? "Satellite" : event.category;
-                    console.log("category in calendar", category);
 
                     const mappedType = this.eventTypeMap[category] || category;
                     const typeClass = `event-${mappedType.toLowerCase()}`;
@@ -664,10 +665,10 @@ class CalendarWidget {
                         let iconElement;
 
                         // Check if it's an image path
-                        if (iconValue.startsWith('/') || iconValue.endsWith('.png') || iconValue.endsWith('.jpg')|| iconValue.endsWith('.svg')) {
+                        if (iconValue.startsWith('/') || iconValue.endsWith('.png') || iconValue.endsWith('.jpg') || iconValue.endsWith('.svg')) {
                             iconElement = document.createElement('img');
                             iconElement.src = iconValue;
-                            
+
                             iconElement.classList.add('event-icon', 'image-icon', 'responsive-icon');
                             iconElement.style.marginBottom = '6px';
                             iconElement.onload = () => {
@@ -783,7 +784,7 @@ class CalendarWidget {
             eventType: selectedEventType,
             searchText
         });
-
+        // console.log("Filtered events:", events);
         if (!events.length) {
             noEventMsg.style.display = 'block';
             noEventMsg.textContent = `No events for ${normalizedDate}.`;
@@ -797,6 +798,9 @@ class CalendarWidget {
         list.style.padding = '0';
 
         events.forEach(event => {
+            if (event.category === 'Archive' || event.category === 'Data access') {
+                return;
+            }
             const listItem = document.createElement('li');
             listItem.style.marginBottom = '1em';
             listItem.style.padding = '10px';
@@ -821,9 +825,8 @@ class CalendarWidget {
             listItem.innerHTML = `
                     <small>
                         <span class="icon-bg">${iconHTML}</span>
-                        ${event.title || 'No description available'}
+                        Occurrence date: ${this.parseDateString(event.start)}
                     </small><br>
-                    <small>Occurrence date: ${this.parseDateString(event.start)}</small><br>
                     <small>Impacted satellite(s): ${satellites}</small><br>
                     <small>Issue type: ${category}</small><br>
                     ${datatakeHtml}
@@ -903,9 +906,7 @@ class CalendarWidget {
                 const parts = showDayEvents.split('/');
                 const showDateStr = this.normalizeDateString(showDayEvents);
                 const anomalyDateStr = this.normalizeDateString(anomaly.publicationDate);
-                console.log('Comparing showDateStr:', showDateStr, 'with anomalyDateStr:', anomalyDateStr);
                 if (showDateStr && showDateStr === anomalyDateStr) {
-                    console.info('Matched date founded:', anomalyDateStr, anomaly);
                     this.showEventDetails(anomalyDateStr);
                 }
             }

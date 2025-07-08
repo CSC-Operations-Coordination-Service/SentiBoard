@@ -705,6 +705,9 @@ class AcquisitionPlansViewer {
             that.flyToDatatake(dt);
         });
 
+        // Trigger change manually after populating the list
+        $('#acq-datatakes-select').trigger('change');
+
         // Acknowledge the completion of the drop-down datatake list
         console.debug("Completed building dropdown menu with Datatakes List");
     }

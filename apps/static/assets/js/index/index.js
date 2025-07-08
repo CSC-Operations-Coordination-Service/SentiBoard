@@ -75,6 +75,7 @@ class Home {
         var now = new Date();
         var count = 0;
         var details = [];
+        const allowedCategories = ['Platform', 'Acquisition', 'Production', 'Manoeuvre', 'Calibration'];
         for (var i = 0; i < rows.length; ++i) {
             var element = rows[i];
 
@@ -89,6 +90,10 @@ class Home {
             if ((now.getTime() - start_time.getTime() <= 48 * 60 * 60 * 1000) &&
                 home.datatakesImpacted(element)) {
 
+                var category = element["category"];
+                if (!allowedCategories.includes(category)) {
+                    continue;
+                }
                 // Increment count
                 count++;
 
@@ -96,7 +101,6 @@ class Home {
                 // Create a new event to add in the Timeline
                 // Modify the end date, based on the issue type
                 var title;
-                var category = element["category"];
                 var item = element["impactedSatellite"];
                 if (category == 'Platform') {
                     title = 'Satellite issue, affecting ' + item + ' data.';
@@ -106,9 +110,12 @@ class Home {
                 } else if (category == 'Production') {
                     title = 'Production issue, affecting ' + item + ' data.';
                     end_time.setTime(start_time.getTime() + 120 * 60 * 1000);
-                } else {
-                    title = 'Data Access issue, affecting ' + item + ' data.';
-                    end_time.setTime(start_time.getTime() + 15 * 60 * 1000);
+                } else if (category == 'Manoeuvre') {
+                    title = 'Manoeuvre issue, affecting ' + item + ' data.';
+                    end_time.setTime(start_time.getTime() + 120 * 60 * 1000);
+                } else if (category == 'Calibration') {
+                    title = 'Calibration issue, affecting ' + item + ' data.';
+                    end_time.setTime(start_time.getTime() + 120 * 60 * 1000);
                 }
 
                 // Add link to timeline session
