@@ -262,17 +262,12 @@ class CalendarWidget {
         }, 300));
 
         document.getElementById('prevMonth').addEventListener('click', debounce(() => {
-            //this.clearEventDetails();
-
-            console.log("Before prev click:", this.currentMonth, this.currentYear);
-
             this.currentMonth--;
             if (this.currentMonth < 0) {
                 this.currentMonth = 11;
                 this.currentYear--;
             }
 
-            console.log("After prev click:", this.currentMonth, this.currentYear);
             this.generateCalendar(this.currentMonth, this.currentYear);
         }, 300));
 
@@ -351,7 +346,6 @@ class CalendarWidget {
 
 
     buildEventInstanceFromAnomaly(anomaly) {
-
         // Build the event instance from the anomaly.
         var start_time = moment(anomaly['publicationDate'], 'DD/MM/YYYY HH:mm:ss').toDate();
         var end_time = moment(anomaly['end'], 'DD/MM/YYYY HH:mm:ss').toDate();
@@ -639,7 +633,7 @@ class CalendarWidget {
                 });
 
                 const allEventsForDay = Object.values(this.anomalies).filter(event => {
-                    return this.normalizeDateString(event.start) === fullDate;
+                    return this.normalizeDateString(event.publicationDate) === fullDate;
                 });
 
                 const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || searchText;
@@ -733,7 +727,7 @@ class CalendarWidget {
         };
 
         return Object.values(this.anomalies).filter(event => {
-            const eventDate = this.normalizeDateString(event.start || '');
+            const eventDate = this.normalizeDateString(event.publicationDate || '');
             if (targetDate && eventDate !== targetDate) return false;
 
             if (mission && mission !== 'all') {
@@ -762,7 +756,6 @@ class CalendarWidget {
     }
 
     showEventDetails(date) {
-        console.log("this is the date", date);
         const { noEventMsg, content } = this.ensureEventDetailsElements();
 
         eventDetailsContent.innerHTML = '';
@@ -784,7 +777,6 @@ class CalendarWidget {
             eventType: selectedEventType,
             searchText
         });
-        // console.log("Filtered events:", events);
         if (!events.length) {
             noEventMsg.style.display = 'block';
             noEventMsg.textContent = `No events for ${normalizedDate}.`;
@@ -825,7 +817,7 @@ class CalendarWidget {
             listItem.innerHTML = `
                     <small>
                         <span class="icon-bg">${iconHTML}</span>
-                        Occurrence date: ${this.parseDateString(event.start)}
+                        Occurrence date: ${this.parseDateString(event.publicationDate)}
                     </small><br>
                     <small>Impacted satellite(s): ${satellites}</small><br>
                     <small>Issue type: ${category}</small><br>
@@ -847,17 +839,32 @@ class CalendarWidget {
 
     parseDateString(str) {
         const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
-        if (!match) return new Date(str); // fallback if format doesn't match
+        if (!match) return this.formatDateUTC(new Date(str));
 
         const [, day, month, year, hour = '00', minute = '00', second = '00'] = match;
-        return new Date(
+        const utcDate = new Date(Date.UTC(
             parseInt(year),
             parseInt(month) - 1,
             parseInt(day),
             parseInt(hour),
             parseInt(minute),
             parseInt(second)
-        );
+        ));
+
+        return this.formatDateUTC(utcDate);
+    }
+
+    formatDateUTC(date) {
+        const day = String(date.getUTCDate()).padStart(2, '0');
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const month = monthNames[date.getUTCMonth()];
+        const year = date.getUTCFullYear();
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+
+        return `${day} ${month} ${year} ${hours}:${minutes}:${seconds} UTC`;
     }
 
     ensureEventDetailsElements() {
