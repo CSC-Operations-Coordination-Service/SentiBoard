@@ -21,8 +21,7 @@ logger = logging.getLogger(__name__)
 def get_html_page(url, decode_utf=True):
     try:
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        
         with urllib.request.urlopen(url, context=ctx) as fp:
             mybytes = fp.read()
             html_page = mybytes.decode('utf-8', 'ignore') if decode_utf else mybytes
