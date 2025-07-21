@@ -51,10 +51,7 @@ class ProcessorsViewer {
 
         // Define the processors on the basis of the selected mission
         this.IPFsMap = {
-            'S1': ['S1_L0',
-		    'S1_L1L2',
-		    'S1_SETAP',
-	    ],
+            'S1': ['S1_L0', 'S1_L1L2', 'S1_ERRMAT', 'S1_SETAP', 'S1_AMALFI'],
             'S2': ['S2_L0', 'S2_L1', 'S2_L2', 'S2_EUP'],
             'S3': ['S3_PUG', 'S3_L0', 'S3_OL1', 'S3_OL1_RAC', 'S3_OL1_SPC', 'S3_OL2',
                    'S3_SL1', 'S3_SL2', 'S3_SL2_LST', 'S3_SL2_FRP',
@@ -65,6 +62,52 @@ class ProcessorsViewer {
                     'S5P_L2_NO2', 'S5P_L2_SO2', 'S5P_L2_CO', 'S5P_L2_CH4', 'S5P_L2_HCHO',
                     'S5P_L2_CLOUD', 'S5P_L2AER_AI', 'S5P_L2AER_LH', 'S5P_L2SUOMI_CLOUD']
         };
+
+	this.IPFsGroupsMap = {
+            'S1_L0': 'S1_L0',
+	    'S1_L1L2': 'S1_L1L2',
+	    'S1_ERRMAT': 'S1_ERRMAT',
+	    'S1_SETAP': 'S1_SETAP',
+	    'S1_AMALFI': 'S1_AMALFI',
+            'S2_L0': 'S2_L0',
+	    'S2_L1': 'S2_L1',
+	    'S2_L2': 'S2_L2',
+	    'S2_EUP': 'S2_EUP',
+            'S3_PUG': 'S3_PUG',
+	    'S3_L0': 'S3_L0',
+	    'S3_OL1': 'S3_OL1',
+	    'S3_OL1_RAC': 'S3_OL1_RAC',
+	    'S3_OL1_SPC': 'S3_OL1_SPC',
+	    'S3_OL2': 'S3_OL2',
+            'S3_SL1': 'S3_SL1',
+	    'S3_SL2': 'S3_SL2',
+	    'S3_SL2_LST': 'S3_SL2_LST',
+	    'S3_SL2_FRP': 'S3_SL2_FRP',
+            'S3_SR1': 'S3_SR1',
+	    'S3_SR2': 'S3_SR2',
+	    'S3_SM2_HY': 'S3_SM2_HY',
+	    'S3_SM2_LI': 'S3_SM2_LI',
+	    'S3_SM2_SI': 'S3_SM2_SI',
+	    'S3_MW1': 'S3_MW1',
+            'S3_SY2': 'S3_SY2',
+	    'S3_SY2_AOD': 'S3_SY2_AOD',
+	    'S3_SY2_VGS': 'S3_SY2_VGS',
+	    'S3_SY2_VGP': 'S3_SY2_VGP',
+            'S5P_L1B': 'S5P_L1B',
+            'S5P_L2O3_NRT': 'S5P_L2',
+	    'S5P_L2O3_OFFL': 'S5P_L2',
+	    'S5P_L2O3_TCL': 'S5P_L2',
+	    'S5P_L2O3_PR': 'S5P_L2',
+            'S5P_L2_NO2': 'S5P_L2',
+	    'S5P_L2_SO2': 'S5P_L2',
+	    'S5P_L2_CO': 'S5P_L2',
+	    'S5P_L2_CH4': 'S5P_L2',
+	    'S5P_L2_HCHO': 'S5P_L2',
+            'S5P_L2_CLOUD': 'S5P_L2',
+	    'S5P_L2AER_AI': 'S5P_L2',
+	    'S5P_L2AER_LH': 'S5P_L2',
+	    'S5P_L2SUOMI_CLOUD': 'S5P_SNPP_CLOUD'
+	}
 
         // Set the main class members
         this.processorsReleases = [];
@@ -81,7 +124,6 @@ class ProcessorsViewer {
         this.initMissionSelector();
 
         this.loadProcessorsReleases();
-        $('#esa-logo-header').hide();
 
     }
 
@@ -159,9 +201,9 @@ class ProcessorsViewer {
         procViewer.loadedEvents = new vis.DataSet();
         for (var i = 0 ; i < procViewer.processorsReleases.length; i++) {
             var pr = procViewer.processorsReleases[i];
-            var event = procViewer.buildEventInstance(pr);
-            if (event && pr['target_ipfs'] && pr['target_ipfs'].length > 0 && !['S1_ERRMAT', 'S1_AMALFI'].includes(pr['target_ipfs'][0].split(':')[0])) {
-                procViewer.loadedEvents.add(event);
+            var events = procViewer.buildEventInstances(pr);
+	    if (events) {
+                procViewer.loadedEvents.add(events);
                 var detailsPanel = procViewer.buildDetailsPanel(pr);
                 procViewer.detailsMap[pr['id']] = detailsPanel;
             }
@@ -187,22 +229,22 @@ class ProcessorsViewer {
         // Update the timeline groups
         let ipfs = procViewer.IPFsMap[selectedMission];
         var count = 0;
-        var grpArray = [];
+        procViewer.groups = new vis.DataSet([]);
         ipfs.forEach(ipf => {
-	    if (!['S1_ERRMAT', 'S1_AMALFI'].includes(ipf)){
-            grpArray.push({ id: ipf, content: ipf.substring(ipf.indexOf('_') + 1, ipf.length)});
-	    }
+	    let ipfMapped = this.IPFsGroupsMap[ipf];
+	    // using update because its like add but doesnt crash on duplicate ids, instead it updates them (in this case with the same data)
+            procViewer.groups.update({ id: ipfMapped, content: ipfMapped.substring(ipfMapped.indexOf('_') + 1, ipfMapped.length)});
         });
-        procViewer.groups = new vis.DataSet(grpArray);
+        
         procViewer.timeline.setGroups(procViewer.groups);
 
         // Filter processors releases
         procViewer.filteredEvents = new vis.DataSet();
         for (var i = 0 ; i < procViewer.processorsReleases.length; i++) {
             var pr = procViewer.processorsReleases[i];
-            if (pr['mission'] === selectedMission && pr['target_ipfs'] && pr['target_ipfs'].length > 0 && !['S1_ERRMAT', 'S1_AMALFI'].includes(pr['target_ipfs'][0].split(':')[0])) {
-                var event = procViewer.buildEventInstance(pr);
-                if (event) procViewer.filteredEvents.add(event);
+            if (pr['mission'] === selectedMission) {
+                var events = procViewer.buildEventInstances(pr);
+                if (events) procViewer.filteredEvents.add(events);
             }
         }
         procViewer.timeline.setItems(procViewer.filteredEvents);
@@ -217,7 +259,7 @@ class ProcessorsViewer {
         // Display the details panel on event click
         procViewer.timeline.on('click', function (properties) {
         if (properties.item) {
-                $('#processor-release-details').html(procViewer.detailsMap[properties.item]);
+                $('#processor-release-details').html(procViewer.detailsMap[properties.item.split("-")[0]]);
             }
         });
     }
@@ -228,7 +270,13 @@ class ProcessorsViewer {
         return;
     }
 
-    buildEventInstance(procRelease) {
+    buildEventInstances(procRelease) {
+	var result = [];
+        procRelease['target_ipfs'].forEach((element) => result.push(this.buildEventInstance(procRelease, element.split(':')[0])));
+	return result;
+    }
+
+    buildEventInstance(procRelease, category_id) {
 
         // Build the event instance from the processor release
         // Set the event title
@@ -238,19 +286,14 @@ class ProcessorsViewer {
         // Set the group and the class name
         var mission = procRelease['mission'];
         var cssClass = procViewer.cssClassMap[mission];
-        var category_id = null;
-        if (procRelease['target_ipfs'] && procRelease['target_ipfs'].length > 0) {
-            category_id = procRelease['target_ipfs'][0].split(':')[0];
-        }
-        if (!procRelease['id'] || !category_id) {
+        if (!procRelease['id']) {
             console.warn("Incomplete record");
             console.warn(procRelease);
             return null;
         }
 
         // The start time is based on the processor TTO date, and the end time is set as 1 hour later
-        var date_str = procRelease['validity_start_date'] ?
-            procRelease['validity_start_date'] : procRelease['release_date'];
+        var date_str = procRelease['validity_start_date'] ? procRelease['validity_start_date'] : procRelease['release_date'];
         var start_time = moment(date_str, 'DD/MM/YYYY').toDate();
         var end_time = moment(date_str, 'DD/MM/YYYY').add(1, 'hours').toDate();
 
@@ -259,9 +302,10 @@ class ProcessorsViewer {
 
         // Return the event instance
         return {
-            id: procRelease['id'],
+            id: procRelease['id'].concat("-", category_id),
+	    release_id: procRelease['id'],
             title: title,
-            group: category_id,
+            group: this.IPFsGroupsMap[category_id],
             start: start_time,
             end: end_time,
             className: cssClass,
@@ -317,7 +361,7 @@ class ProcessorsViewer {
         // anomalies matching the filter
         procViewer.loadedEvents.forEach(function(event) {
             if (filter) {
-                if (procViewer.detailsMap[event.id].toUpperCase().includes(filter.toUpperCase())) {
+                if (procViewer.detailsMap[event.release_id].toUpperCase().includes(filter.toUpperCase())) {
                     procViewer.filteredEvents.add(event);
                 }
             } else {
