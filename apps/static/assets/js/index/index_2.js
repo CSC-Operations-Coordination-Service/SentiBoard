@@ -73,7 +73,7 @@ class Home {
 
                 const adminLinkHtml = `
                 <div class="text-right mb-2">
-                    <a href="/admin/message" style="color: #ffc107; font-weight: 500; text-decoration: underline;">
+                    <a href="/admin/message?next=/index_2.html" style="color: #ffc107; font-weight: 500; text-decoration: underline;">
                         Add a new news item
                     </a>
                 </div>`;

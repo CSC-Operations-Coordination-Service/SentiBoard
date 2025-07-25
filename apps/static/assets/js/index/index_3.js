@@ -47,7 +47,7 @@ class Home {
         /*this.displayPublishedProductsVolumeCount();*/
 
         // Load the custom message from the JSON file
-        console.info('Loading custom messages...');
+        console.info('Loading custom message...');
         // This is a custom message that can be used to display important information
         // in the Home page, such as anomalies or important updates.
         // The message is loaded from a JSON file, which can be edited by the user.
@@ -65,15 +65,18 @@ class Home {
         // If the "text" field is not present, the default text will be "No message"
 
         $.getJSON("/api/news-images", function (imageList) {
+            //console.log("News images loaded:", imageList);
             $.getJSON("/static/assets/json/custom-message.json", function (messages) {
                 if (!Array.isArray(messages)) {
                     messages = [messages];
                 }
 
-                let indicatorsHtml = '';
-                let itemsHtml = '';
-                let activeIndex = 0;
-
+                const adminLinkHtml = `
+                <div class="text-right mt-3">
+                    <a href="/admin/message?next=/index_3.html" style="color: #ffc107; font-weight: 500; text-decoration: underline;">
+                        Add a new news item
+                    </a>
+                </div>`;
 
                 function getBorderColor(type) {
                     switch (type) {
@@ -95,170 +98,97 @@ class Home {
                     }
                 }
 
-                function getRandomImageUrl() {
-                    if (!imageList.length) return null;
+                /*function getRandomImageUrl() {
+                    if (!imageList.length) {
+                        return '/static/assets/img/default-news.jpg';
+                    }
                     const randomImage = imageList[Math.floor(Math.random() * imageList.length)];
                     return `/static/assets/img/news/${randomImage}`;
-                }
+                }*/
 
-                messages.forEach((msg, index) => {
-                    if (msg.active && activeIndex < 6) {
-                        const bgImage = getRandomImageUrl();
+                const allActiveMessages  = messages.filter(msg => msg.active);
+                const displayedMessages = allActiveMessages.slice(0, 3);
+                const pageSize = 3;
+                let currentPage = 0;
+                const totalPages = 1;
+                const colClass = displayedMessages.length >= 3 ? 'col-md-6 col-lg-4' : displayedMessages.length === 2 ? 'col-md-6' : 'col-12';
+
+                function renderPage(page) {
+                    const startIndex = page * pageSize;
+                    const group = displayedMessages.slice(startIndex, startIndex + pageSize);
+                    let newsHtml = '<div class="d-flex flex-column gap-3">';
+
+                    group.forEach((msg, j) => {
+                        //const imgUrl = getRandomImageUrl();
                         const iconClass = getIcon(msg.type);
+                        const borderColor = getBorderColor(msg.type);
+                        const delay = (j * 0.2 + 0.2).toFixed(1);
 
-                        indicatorsHtml += `
-                            <li data-target="#customBannerCarousel" data-slide-to="${activeIndex}" ${activeIndex === 0 ? 'class="active"' : ''}></li>
-                        `;
-
-                        itemsHtml += `
-                            <div class="carousel-item ${activeIndex === 0 ? 'active' : ''}">
-                                <div class="d-flex justify-content-center align-items-center" style="min-height: 180px; background-color: #00252E;">
-                                    <div class="d-flex w-100 justify-content-between align-items-center px-4 py-3" style="max-width: 900px;">
-                                        <!-- Image section -->
-                                        <div class="news-img col-5 animate-left" style="max-height: 120px; overflow: hidden;">
-                                            ${getRandomImageUrl() ? `<img src="${getRandomImageUrl()}" alt="News Image" class="img-fluid rounded shadow" style="max-height: 120px;">` : ''}
-                                        </div>
-
-                                        <!-- Text section -->
-                                        <div class="news-text col-7 text-white animate-right" style="font-size: 1.1rem;">
-                                            <div>
-                                                <i class="fa ${iconClass}" style="color: ${getBorderColor(msg.type)}; margin-right: 0.5rem;"></i>
-                                                ${msg.text}
-                                            </div>
-                                            ${msg.link ? `<div class="mt-2"><a href="${msg.link}" class="alert-link" style="color: #ffc107; text-decoration: underline;">Read more</a></div>` : ''}
-                                        </div>
+                        newsHtml += `
+                        <div class="mb-4" style="max-width: 800px; width: 100%; margin: 0 auto;">
+                            <div class="bg-dark news-card p-3 rounded shadow animate__animated animate__fadeInUp"
+                                style="color: white; animation-delay: ${delay}s;">
+                                <div class="d-flex align-items-start">
+                                    <div class="news-card-icon flex-shrink-0" style="font-size: 2rem; color: ${borderColor}; margin-right: 1rem;">
+                                        <i class="fa ${iconClass}"></i>
+                                    </div>
+                                    <div class="news-card-content" style="font-size: 0.9rem;">
+                                        <div>${msg.text}</div>
+                                        ${msg.link ? `<div class="mt-2"><a href="${msg.link}" style="color: #ffc107; text-decoration: none;">Read more</a></div>` : ''}
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
+                    });
+                    newsHtml += '</div>';
 
-                        activeIndex++;
-                    }
-                });
-
-
-                if (activeIndex > 0) {
-                    const carouselHtml = `
-                    <style>
-                        @media (max-width: 480px) {
-                            #customBannerCarousel .carousel-item > div > div {
-                                width: 95% !important;
-                                height: auto !important;
-                                padding: 1rem !important;
-                                flex-direction: column !important;
-                                text-align: center !important;
-                            }
-                            #customBannerCarousel .carousel-item .mr-2 {
-                                margin-right: 0 !important;
-                                margin-bottom: 0.5rem !important;
-                                font-size: 1.8rem !important;
-                            }
-                            #customBannerCarousel .carousel-item .flex-grow-1 div {
-                                font-size: 1.2rem !important;
-                            }
-                            #customBannerCarousel .carousel-item .flex-grow-1 a {
-                                font-size: 1rem !important;
-                            }
-                        }
-
-                        .animate-left {
-                            animation: slideInLeft 1s ease forwards;
-                        }
-                        .animate-right {
-                            animation: slideInRight 1s ease forwards;
-                        }
-
-                        @keyframes slideInLeft {
-                            from { transform: translateX(-300px); opacity: 0; }
-                            to { transform: translateX(0); opacity: 1; }
-                        }
-
-                        @keyframes slideInRight {
-                            from { transform: translateX(300px); opacity: 0; }
-                            to { transform: translateX(0); opacity: 1; }
-                        }
-
-                        #customBannerCarousel .carousel-control-prev,
-                        #customBannerCarousel .carousel-control-next {
-                            width: 5%;
-                            top: 50%;
-                            transform: translateY(-50%);
-                            bottom: auto;
-                            opacity: 0.8;
-                            z-index: 2;
-                        }
-
-                        #customBannerCarousel .carousel-control-prev-icon,
-                        #customBannerCarousel .carousel-control-next-icon {
-                            background-color: rgba(0,0,0,0.3);
-                            border-radius: 50%;
-                            padding: 1rem;
-                        }
-                    </style>
-
-                    <!--  Wrapper with background applied -->
-                    <div style="background-color: #00252E; padding: 2rem 0;">
-                        <div class="px-4 mb-2 text-center">
-                            <h2 class="text-white m-0" style="font-weight: 600;">NEWS</h2>
-                            <div class="d-flex justify-content-end mt-1">
-                                <a href="/admin/message?next=/index_1.html" class="text-warning font-weight-bold" style="text-decoration: underline;">Add a new news item</a>
-                            </div>
-                        </div>
-
-
-                        <div id="customBannerCarousel" class="carousel slide my-1 my-md-2" data-ride="carousel" data-interval="5000" style="min-height: 140px;">
-                            <div class="carousel-inner">
-                                ${itemsHtml}
-                            </div>
-                            <!-- Chevrons -->
-                            <a class="carousel-control-prev" href="#customBannerCarousel" role="button" data-slide="prev">
-                                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                                <span class="sr-only">Previous</span>
-                            </a>
-                            <a class="carousel-control-next" href="#customBannerCarousel" role="button" data-slide="next">
-                                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                                <span class="sr-only">Next</span>
-                            </a>
-                            <ol class="carousel-indicators d-flex justify-content-center mt-4" style="position: static;">
-                                ${indicatorsHtml}
-                            </ol>
-                        </div>
+                    // Pagination Controls
+                    let paginationControls = '';
+                        paginationControls += `
+                        
                         <div class="text-center mt-3">
-                            <a href="/news-public.html" class="btn btn-outline-light btn" style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important; border-color: #ffc107; !important;">
-                                View All News
+                            <a href="/news-over.html" class="btn btn-outline-light btn"  style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important;">
+                                View all news
                             </a>
+                        </div>`;
+                    
+
+                    const newsSectionHtml = `
+                    <div class="bg-dark"">
+                        <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>
+                        <div class="container">
+                            ${newsHtml}
+                            ${paginationControls}
+                            ${adminLinkHtml}
                         </div>
+                    </div>`;
 
-                    </div>
-                    `;
+                    $('#custom-banner-placeholder').html(newsSectionHtml);
 
-                    $('#custom-banner-placeholder').html(carouselHtml);
-                    $('#customBannerCarousel .carousel-item.active .news-img').addClass('animate-left');
-                    $('#customBannerCarousel .carousel-item.active .news-text').addClass('animate-right');
-
-                    // Re-trigger animations on each carousel slide
-                    $('#customBannerCarousel').on('slid.bs.carousel', function (e) {
-                        const nextSlide = $(e.relatedTarget);
-
-                        // Remove animations from all slides
-                        $('#customBannerCarousel .carousel-item .news-img').removeClass('animate-left');
-                        $('#customBannerCarousel .carousel-item .news-text').removeClass('animate-right');
-
-                        // Force reflow (optional but sometimes needed)
-                        void nextSlide[0].offsetWidth;
-
-                        // Add animation to the now-visible slide
-                        nextSlide.find('.news-img').addClass('animate-left');
-                        nextSlide.find('.news-text').addClass('animate-right');
+                    $('#prevPage').on('click', () => {
+                        if (currentPage > 0) {
+                            currentPage--;
+                            renderPage(currentPage);
+                        }
                     });
 
-                } else {
+                    $('#nextPage').on('click', () => {
+                        if (currentPage < totalPages - 1) {
+                            currentPage++;
+                            renderPage(currentPage);
+                        }
+                    });
+                }
+
+                if (displayedMessages.length === 0) {
                     $('#custom-banner-placeholder').empty();
+                } else {
+                    renderPage(currentPage);
                 }
             });
         });
 
-        // Remove Home video controls
+
+
         $('#home-video').hover(function toggleControls() {
             if (this.hasAttribute("controls")) {
                 this.removeAttribute("controls")

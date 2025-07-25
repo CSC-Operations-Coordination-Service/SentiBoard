@@ -1,6 +1,30 @@
 [
   {
     "active": true,
+    "type": "danger",
+    "text": "Discover what\u2019s next for ESA's EO Missions and Data management \u2013 in person, in conversation, live at Living Planet Symposium 2025",
+    "link": "https://sentinels.copernicus.eu/sentinel-news"
+  },
+  {
+    "active": true,
+    "type": "info",
+    "text": "Sentinel-1C products are now calibrated",
+    "link": "https://sentinels.copernicus.eu/web/sentinel/-/sentinel-1c-products-are-now-calibrated"
+  },
+  {
+    "active": true,
+    "type": "warning",
+    "text": "What are the Top Reasons for contributing to Copernicus?",
+    "link": "https://sentinels.copernicus.eu/web/sentinel/-/what-are-the-top-reasons-for-contributing-to-copernicus-"
+  },
+  {
+    "active": true,
+    "type": "success",
+    "text": "Sentinel-1 ETAD Product evolution: new processor version (v3.0)",
+    "link": "https://sentinels.copernicus.eu/web/sentinel/-/sentinel-1-etad-product-evolution-new-processor-version-v3.0"
+  },
+  {
+    "active": true,
     "type": "info",
     "text": "The 6th EOPF Zarr Samples Webinar \u2013 Oceanography Use Case",
     "link": "https://sentinels.copernicus.eu/web/sentinel/-/the-6th-eopf-zarr-samples-webinar-oceanography-use-case"

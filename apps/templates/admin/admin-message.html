@@ -21,7 +21,9 @@
             </li>
             </ul>
         </div>
-    <form method="POST">
+    <form method="POST" action="{{ url_for('home_blueprint.admin_home_message') }}">
+        <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, msg in messages %}
                 <div class="alert alert-{{ category }}">{{ msg }}</div>

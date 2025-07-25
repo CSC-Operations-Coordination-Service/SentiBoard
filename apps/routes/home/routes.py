@@ -14,11 +14,12 @@ delivered to him.
 
 from flask import render_template, request, redirect, url_for, flash, current_app, Response, Flask, jsonify
 from jinja2 import TemplateNotFound
-
+from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
 import os
 import json
+import traceback
 
 
 @blueprint.route('/index')
@@ -84,41 +85,63 @@ def requires_auth(f):
         return f(*args, **kwargs)
     return decorated
 
-# --- Admin route to manage the home banner ---
-@blueprint.route("/admin/message", methods=["GET", "POST"])
-# --- @requires_auth ---
+def is_safe_url(target):
+    # Prevent open redirects
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+# --- @requires_auth to put this below the next line---
+@blueprint.route("/admin/message", methods=["GET", "POST"])  
 def admin_home_message():
-    json_path = os.path.join(current_app.root_path, "static/assets/json/custom-message.json")
-    os.makedirs(os.path.dirname(json_path), exist_ok=True)
-
     try:
-        with open(json_path, "r") as f:
-            messages = json.load(f)
-            if not isinstance(messages, list):
-                messages = []
-    except Exception:
-        messages = []
-
-    if request.method == "POST":
-        new_message = {
-            "active": request.form.get("active") == "on",
-            "type": request.form.get("type", "info"),
-            "text": request.form.get("text", ""),
-            "link": request.form.get("link", "")
-        }
-        messages.insert(0, new_message)
+        json_path = os.path.join(current_app.root_path, "static/assets/json/custom-message.json")
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
 
         try:
-            with open(json_path, "w") as f:
-                json.dump(messages, f, indent=2)
-            flash("Message saved!", "success")
-        except Exception as e:
-            current_app.logger.error(f"Error writing JSON: {e}")
-            flash("Failed to save message", "danger")
+            with open(json_path, "r") as f:
+                messages = json.load(f)
+                if not isinstance(messages, list):
+                    messages = []
+        except Exception:
+            messages = []
 
-        return redirect("/index_2.html")
 
-    return render_template("admin/admin-message.html", message=messages, segment="admin-message")
+        empty_message = {
+            "active": False,
+            "type": "info",
+            "text": "",
+            "link": ""
+        }
+
+        if request.method == "POST":
+            new_message = {
+                "active": request.form.get("active") == "on",
+                "type": request.form.get("type", "info"),
+                "text": request.form.get("text", ""),
+                "link": request.form.get("link", "")
+            }
+            messages.insert(0, new_message)
+
+            try:
+                with open(json_path, "w") as f:
+                    json.dump(messages, f, indent=2)
+                flash("Message saved!", "success")
+            except Exception as e:
+                current_app.logger.error(f"Error writing JSON: {e}")
+                flash("Failed to save message", "danger")
+
+            next_url = request.form.get('next')
+            if next_url and is_safe_url(next_url):
+                return redirect(next_url)
+            return redirect("/index_3.html")
+        
+
+        return render_template("admin/admin-message.html", message=empty_message, segment="admin-message")
+    except Exception as e:
+            current_app.logger.error("Exception in admin_home_message: %s", traceback.format_exc())
+            # Return an error page or message for debugging
+            return f"An error occurred: {e}", 500
 
 @blueprint.route('/api/news-images')
 def list_news_images():
