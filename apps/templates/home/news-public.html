@@ -34,10 +34,10 @@
     }
 
     a {
-        color: #ffc107 !important;
+        color: #212529 !important;
     }
     a:focus, a:hover {
-        color: #212529 !important;
+        color: #12b1bf !important;
         text-decoration: none !important;
     }
   </style>
@@ -138,7 +138,7 @@
                   <h5><i class="fa ${n.iconClass}" style="color:${n.color};"></i> News</h5>
                   <p>${n.text}</p>
                   ${n.link
-                    ? `<a href="${n.link}" target="_blank" rel="noopener">Read more</a>`
+                    ? `<a href="${n.link}" class="text-warning" style="text-decoration: none;" target="_blank" rel="noopener">Read more</a>`
                     : ''
                   }
                 </div>
