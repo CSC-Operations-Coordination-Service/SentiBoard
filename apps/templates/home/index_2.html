@@ -1,0 +1,158 @@
+{% extends "layouts/base-responsive.html" %}
+
+{% block title %} Dashboard {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+
+    <link rel="stylesheet" href="/static/assets/css/dashboard_2.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+
+    <style>
+        @media (min-width: 1600px) {
+          #tutorial > div {
+            right: 40px;
+            top: 80px;
+          }
+        }
+    </style>
+    <style>
+        @font-face {
+          font-family: "NotesEsa";
+          src: url("/static/assets/fonts/esa/NotesEsa.woff2") format("woff2"),
+              url("/static/assets/fonts/esa/NotesEsa.woff") format("woff");
+          font-weight: 400;
+          font-style: normal;
+        }
+    </style>
+{% endblock stylesheets %}
+
+{% block content %}
+<a href="#vertical-slider" class="chevron-down animate__animated animate__fadeInUp animate__delay-1s">
+    <i class="fas fa-chevron-down"></i>
+</a>
+
+ <!-- Data section -->
+<div class="content page-inner" style="background-color: #006B7C">
+    <!-- Responsive container -->
+    <div style="width: 100%; position: relative;">
+      
+      <!-- Video -->
+      <video preload="metadata" loop muted controls="none" id="home-video" class="img-fluid w-100">
+        <source src="/static/assets/mv/home_v4.mp4">
+      </video>
+  
+      <!-- Real-time events box for large screens -->
+      <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
+           style="top: 60px; right: 16px; width: 347px; z-index: 2;">
+        <h4 class="card-title mb-3">Real-time events</h4>
+        <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-lg">
+          <!-- Event items will be appended here -->
+        </ol>
+      </div>
+  
+      <!-- Real-time events collapsible box for small/medium screens -->
+      <div class="d-block d-lg-none mt-3">
+        <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile" aria-expanded="false" aria-controls="eventBoxMobile">
+          Show Real-time Events
+        </button>
+        <div class="collapse" id="eventBoxMobile">
+          <div class="bg-dark text-white p-3 rounded">
+            <h4 class="card-title mb-3">Real-time events</h4>
+            <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-sm">
+              <!-- Event items will be appended here -->
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- News banner placeholder-->
+  <div id="custom-banner-placeholder" style="z-index: 3;"></div>
+
+  
+    <!-- Vertical Slider pages -->
+    <div id="vertical-slider" class="slider-container">
+        <div class="container">
+            <div class="left-slide">
+                <div class="card-green">
+                    <h1>Acquisitions Status</h1>
+                    <p>View displays the past, current and future Copernicus Sentinels' acquisition on an interactive,
+                        3D globe. Through this view, users can either inspect the status of a past acquistion, or learn
+                        about the planned acquisitions for the mission of interest. By default, the real-time sensing
+                        scenario is displayed.</p><a href="/acquisitions-status.html" class="btn btn-lg rounded mt-3 btn-learn-more">Learn more</a>
+                </div>
+                <div class="card-lightgreen">
+                    <h1>Events</h1>
+                    <p>Provides details of the events over the past three months that could impede data production,
+                        such as planned calibration activities, manoeuvres, or anomalies. Information on the extent to
+                        which these events affect data production and the data products impacted is provided.</p><a href="/events.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                        >Learn more</a>
+                </div>
+                <div class="card-green">
+                    <h1>Data Availability</h1>
+                    <p>Section of the dashboard hosts a real-time list of available collections delivered by the
+                        missions, enabling users to scan through these products to find data that meet their research
+                        and development requirements, and to assess their quality.</p> <a href="/data-availability.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                        >Learn more</a>
+                </div>
+                <div class="card-lightgreen">
+                    <h1>Processors</h1>
+                    <p>Shows the complete list of the releases of the Copernicus Sentinels processors, on an
+                        interactive timeline.</p> <a href="/processors-viewer.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                        >Learn more</a>
+                </div>
+                <div class="card-green">
+                    <h1>About</h1>
+                    <p>Copernicus is the EU's Earth observation programme, providing open Sentinel satellite data.
+                        Managed by ESA, it supports research through the Operations Dashboard, offering real-time
+                        insights and key data stats.</p><a href="/about.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                        >Learn more</a>
+                </div>
+            </div>
+            <div class="right-slide">
+                <div style="background-image: url('/static/assets/img/about.png');">
+                </div>
+                <div style="background-image: url('/static/assets/img/processors.png');"></div>
+                <div style="background-image: url('/static/assets/img/data_availability.png');">
+                </div>
+                <div style="background-image: url('/static/assets/img/events.png');">
+                </div>
+                <div style="background-image: url('/static/assets/img/acquisitions_status.png');">
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="down-button">
+                    <i class="fas fa-arrow-down"></i>
+                </button>
+                <button class="up-button">
+                    <i class="fas fa-arrow-up"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+<!-- Chevron Up (placed just before the footer) -->
+<a href="#home-video" class="chevron-up animate__animated animate__fadeInUp animate__delay-2s">
+    <i class="fas fa-chevron-up"></i>
+</a>
+    <!-- Info boxes  -->
+    <footer class="container-fluid" style="background-color: #343a40;">
+
+    </footer>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+    <!-- Specific page style -->
+    <link rel="stylesheet" href="/static/assets/css/dashboard_1.css">
+
+    <!-- Specific plugin scripts -->
+	<script src="/static/assets/js/datatakes/datatakes.js"></script>
+	<script src="/static/assets/js/statistics/publication-statistics.js"></script>
+  <script src="/static/assets/js/index/index_2.js"></script>
+	<script defer type="text/javascript">home.init();</script>
+
+{% endblock javascripts %}
