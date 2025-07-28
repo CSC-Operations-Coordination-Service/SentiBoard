@@ -243,13 +243,13 @@ class Datatakes {
 
         this.populateDataList(false);
 
-        const currentList  = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
+        const currentList = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
 
         if (currentList.length > 0) {
             const firstTake = currentList[0];
             this.updateTitleAndDate(firstTake.id);
             this.updateCharts(firstTake.id);
-            
+
             if (this.updateInfoTable) {
                 this.updateInfoTable(firstTake.id);
             }
@@ -778,11 +778,9 @@ class Datatakes {
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
 
         // Read and store from/to date values
-        const fromInput = document.getElementById("from-date").value;
-        const toInput = document.getElementById("to-date").value;
 
-        this.fromDate = fromInput.value;
-        this.toDate = toInput.value;
+        this.fromDate = document.getElementById("from-date").value;;
+        this.toDate = document.getElementById("to-date").value;;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
@@ -795,28 +793,19 @@ class Datatakes {
                 let acquisitionDate = "";
 
                 if (acquisitionDateRaw instanceof Date) {
-                    acquisitionDate = acquisitionDateRaw.toISOString().split("T")[0].toUpperCase();
+                    acquisitionDate = acquisitionDateRaw.toISOString();
                 } else if (typeof acquisitionDateRaw === "string") {
-                    acquisitionDate = acquisitionDateRaw.includes("T")
-                        ? acquisitionDateRaw.split("T")[0].toUpperCase()
-                        : acquisitionDateRaw.toUpperCase();
+                    acquisitionDate = new Date(acquisitionDateRaw).toISOString();
                 }
                 const matchesMission = !selectedMission || id.startsWith(selectedMission);
                 const matchesSatellite = !selectedSatellite || satellite.startsWith(selectedSatellite);
 
                 const matchesSearch = !searchTerms.length || searchTerms.every(term => {
-                    const termMatch = id.includes(term);
-
-                    if (!acquisitionDate) {
-                        console.debug("Skipping take with no date:", take.id);
-                    }
-                    return termMatch;
+                    return id.includes(term);
                 });
 
                 return matchesMission && matchesSearch && matchesSatellite && this.isWithinDateRange(acquisitionDate);
             });
-
-
 
         } catch (err) {
             console.error("Error during filtering:", err);
@@ -849,9 +838,9 @@ class Datatakes {
         const toInput = document.getElementById("to-date");
         if (!fromInput || !toInput) return;
 
-        const today = new Date();
-        const maxDate = new Date(today);
-        let fromDate = new Date(today);
+        const now = new Date();
+        const maxDate = new Date(now);
+        let fromDate = new Date(now);
 
         switch (period) {
             case 'day':
@@ -865,19 +854,21 @@ class Datatakes {
                 break;
             case 'last-quarter':
             case 'default': {
-                const dayOfMonth = fromDate.getDate();
-                const targetMonth = fromDate.getMonth() - 3;
-                fromDate.setMonth(targetMonth, 1);
+                const day = fromDate.getDate();
+                fromDate.setMonth(fromDate.getMonth() - 3, 1);
                 const lastDay = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0).getDate();
-                fromDate.setDate(Math.min(dayOfMonth, lastDay));
+                fromDate.setDate(Math.min(day, lastDay));
                 break;
             }
         }
 
-        const format = (d) => d.toISOString().split("T")[0];
+        const formatDateTimeLocal = (d) => {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
 
-        const min = format(fromDate);
-        const max = format(maxDate);
+        const min = formatDateTimeLocal(fromDate);
+        const max = formatDateTimeLocal(maxDate);
 
         fromInput.min = min;
         fromInput.max = max;
