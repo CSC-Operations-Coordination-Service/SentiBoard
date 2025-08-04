@@ -838,6 +838,15 @@ class Datatakes {
         const toInput = document.getElementById("to-date");
         if (!fromInput || !toInput) return;
 
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasSearch = urlParams.has('search');
+
+        // Skip setting values if search is present
+        if (hasSearch) {
+            console.log("[Date Range Limits] Skipping setting date inputs due to search param.");
+            return;
+        }
+
         const now = new Date();
         const maxDate = new Date(now);
         let fromDate = new Date(now);

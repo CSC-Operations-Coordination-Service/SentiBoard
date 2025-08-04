@@ -183,7 +183,7 @@ p {
 
 
 .page-inner {
-  padding: 2.5rem 0;
+  padding: 4.5rem 0;
 }
 
 .main-header {
@@ -585,6 +585,42 @@ a {
   }
 }
 
+/*login page*/
+.credential-button {
+  padding: 6px 10px;
+  background-color: #FFC107 !important;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  color: #212529 !important;
+  width: 100%;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  max-width: 200px;
+}
+
+.credential-button:hover {
+  color: #212529 !important;
+  text-decoration: none !important;
+  background-color: #FFC107 !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7) !important;
+}
+
+.navbar-expand-lg .navbar-nav .dropdown-menu,
+.drop-item {
+  background-color: #006B7C !important;
+  color: #fff !important;
+}
+
+.dropdown-divider {
+  border-top: 1px solid #006B7C !important;
+}
+
+.nav-align-fix {
+  margin-top: 7px;
+}
+
+/*end */
 
 /* Slider vertical container*/
 .slider-container {
@@ -676,10 +712,39 @@ a {
   width: 100%;
 }
 
-.card-green {
+/*roles page*/
+
+.card-green,
+.card-admin {
   background-color: #006B7C;
 }
 
+.btn.btn-primary {
+  color: #212529;
+  background-color: #ffcf3f !important;
+}
+
+.btn.btn-primary:hover,
+.btn-primary:disabled,
+.btn-primary:focus {
+  color: #212529;
+  background-color: #ffcf3f !important;
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
+  text-decoration: none !important;
+}
+/*end*/
+
+/*anomalies page*/
+.btn-link {
+    font-weight: 400;
+    color: #ffcf3f !important;
+    background-color: transparent;
+}
+.btn-link:hover {
+    color: #12b1bf !important;
+    text-decoration: none !important;
+}
+/**/
 .card-lightgreen {
   background-color: #12B1BF;
 }
@@ -771,8 +836,32 @@ button:focus {
   font-weight: 400 !important;
 }
 
-.list-unstyled{
+.list-unstyled {
   font-weight: 400 !important;
+}
+
+/*News on top of video*/
+.news-card i {
+  display: block;
+}
+
+.news-cards {
+  background-color: #12b1bf !important;
+  
+}
+
+.page-item.active .page-link {
+  color: #212529 !important;
+  background-color: #ffc107 !important;
+  border-color: #ffc107 !important;
+}
+
+
+
+a:focus,
+a:hover {
+  color: #12b1bf !important;
+  text-decoration: none !important;
 }
 
 @media (max-width: 768px) {
@@ -944,6 +1033,13 @@ button:focus {
     position: static;
     transform: none;
     margin-top: 38px;
+  }
+
+  /*messages*/
+  #custom-banner-placeholder {
+    position: static !important;
+    width: 100% !important;
+    padding: 1rem;
   }
 
 }
