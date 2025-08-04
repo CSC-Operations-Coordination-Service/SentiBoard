@@ -28,7 +28,8 @@
 			<!--AD previous version<nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">-->
 			<nav class="navbar navbar-header navbar-expand-lg" style="background-color:#343a40 !important" >
 
-				<div class="container d-flex justify-content-center">
+				<div class="container d-flex justify-content-center {% if current_user.role == 'admin' %} ml-5 {% endif %}">
+
 					<ul class="navbar-nav topbar-nav justify-content-center text-center w-100 align-items-center">
 
 						<!-- Navigation menu -->
@@ -37,7 +38,7 @@
 								<h5>ABOUT</h5>
 							</a>
 						</li>
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'acquisition' in segment %} active {% endif %}">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'acquisitions-status' in segment %} active {% endif %}">
 							<a aria-expanded="false" aria-haspopup="true" class="nav-link dropdown-toggle"
 								href="/acquisitions-status.html" id="acquisitions-status" style="margin-top: 7px">
 								<h5>ACQUISITIONS STATUS</h5>
@@ -48,7 +49,7 @@
 								<h5>EVENTS</h5>
 							</a>
 						</li>
-						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'data-' in segment %} active {% endif %}">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block {% if 'data-availability' in segment %} active {% endif %}">
 							<a class="nav-link dropdown-toggle" href="/data-availability.html" id="data-availability" role="button" aria-haspopup="true" aria-expanded="false" style="margin-top: 7px">
 								<h5>DATA AVAILABILITY</h5>
 							</a>
@@ -59,81 +60,81 @@
 							</a>
 						</li>
 							{% if current_user.is_authenticated %}
-								<div class="d-inline ">
+								<li class="nav-item dropdown hidden-caret d-none d-lg-block nav-align-fix {% if 'space' in segment or 'service' in segment or 'access' in segment or 'archive' in segment or 'product' in segment %} active {% endif %}">
 									<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-									   data-toggle="dropdown" href="#" style="margin-top: 7px">
+									   data-toggle="dropdown" href="#">
 										<h5>QUARTERLY REPORTS</h5>
 									</a>
-									<ul class="dropdown-menu dropdown-user animated fadeIn" style="background-color: #202940 !important; text-align: left">
+									<ul class="dropdown-menu dropdown-user animated fadeIn" style="text-align: left">
 										<div class="dropdown-user-scroll scrollbar-outer">
 											<li>
 												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-													href="/space-segment.html" style="margin-top: 7px">
+													href="/space-segment.html" >
 													<h6>SPACE SEGMENT</h6>
 												</a>
 											</li>
 											<li>
 												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-													href="/acquisition-service.html" style="margin-top: 7px">
+													href="/acquisition-service.html">
 													<h6>ACQUISITION SERVICE</h6>
 												</a>
 											</li>
 											<li>
 												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-													href="/data-access.html" style="margin-top: 7px">
+													href="/data-access.html">
 													<h6>DATA ACCESS SERVICE</h6>
 												</a>
 											</li>
 											<li>
 												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-													href="/data-archive.html" style="margin-top: 7px">
+													href="/data-archive.html">
 													<h6>DATA ARCHIVE SERVICE</h6>
 												</a>
 											</li>
 											<li>
 												<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-													href="/product-timeliness.html" style="margin-top: 7px">
+													href="/product-timeliness.html">
 													<h6>PRODUCT TIMELINESS</h6>
 												</a>
 											</li>
 										</div>
 									</ul>
-								</div>
+								</li>
 								{% if current_user.role == 'admin' %}
-									<div class="d-inline ">
+									<li class="nav-item dropdown hidden-caret d-none d-lg-block nav-align-fix {% if 'roles' in segment or 'users' in segment or 'news' in segment or 'anomalies' in segment%} active {% endif %}">
 										<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-										   data-toggle="dropdown" href="#" style="margin-top: 7px">
+										   data-toggle="dropdown" href="#">
 											<h5>ADMINISTRATION</h5>
 										</a>
-										<ul class="dropdown-menu dropdown-user animated fadeIn" style="background-color: #202940 !important; text-align: left">
+										<ul class="dropdown-menu dropdown-user animated fadeIn" style="text-align: left">
 											<div class="dropdown-user-scroll scrollbar-outer">
 												<li>
 													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-														href="/roles.html" style="margin-top: 7px">
+														href="/roles.html">
 														<h6>ROLES</h6>
 													</a>
 												</li>
 												<li>
 													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-														href="/users.html" style="margin-top: 7px">
+														href="/users.html">
 														<h6>USERS</h6>
 													</a>
 												</li>
 												<li>
 													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-														href="/news.html" style="margin-top: 7px">
+														href="/news.html">
 														<h6>NEWS</h6>
 													</a>
 												</li>
 												<li>
 													<a aria-expanded="false" aria-haspopup="true"  class="nav-link dropdown-toggle"
-														href="/anomalies.html" style="margin-top: 7px">
+														href="/anomalies.html">
 														<h6>ANOMALIES</h6>
 													</a>
 												</li>
 											</div>
 										</ul>
-									</div>
+									</li>
 								{% endif %}
 							{% else %}
 							<li class="nav-item dropdown hidden-caret d-none d-lg-block">
@@ -173,19 +174,17 @@
 												<h4>
 													{{ current_user.username }}
 												</h4>
-												<p class="text-muted">
+												<p class="text-white">
 													{{ current_user.email }}
 												</p>
-												<a href="#" class="btn btn-xs btn-secondary btn-sm">View Profile</a>
+												<!-- <a href="#" class="btn btn-xs credential-button btn-sm">VIEW PROFILE</a> -->
 											</div>
 										</div>
 									</li>
 									<li>
-										<div class="dropdown-divider"></div>
-										<a class="dropdown-item" href="#">Account Setting</a>
-										<div class="dropdown-divider"></div>
-                                        <a class="dropdown-item"
-                                           href="{{ url_for('auth_blueprint.logout') }}">Logout</a>
+										<!-- <a class="dropdown-item drop-item" href="#">ACCOUNT SETTING</a> -->
+                                        <a class="dropdown-item drop-item"
+                                           href="{{ url_for('auth_blueprint.logout') }}">LOGOUT</a>
 									</li>
 								</div>
 							</ul>
@@ -195,9 +194,11 @@
                     </ul>
 				</div>
 				<div class="d-flex align-items-center logo-container" style="margin-right: 60px;">
-					<a href="https://www.esa.int/" class="logo esa-logo mx-2" target="_blank">
-					  <img src="/static/assets/img/esa_logo.png" id="esa-logo-header" width="40" alt="ESA Logo" class="navbar-brand">
-					</a>
+					{% if 'login' not in segment %}
+						<a href="https://www.esa.int/" class="logo esa-logo mx-2" target="_blank">
+						<img src="/static/assets/img/esa_logo.png" id="esa-logo-header" width="40" alt="ESA Logo" class="navbar-brand">
+						</a>
+					{% endif %}
 					<a href="https://ec.europa.eu/info/index_en" target="_blank" class="logo d-none d-lg-block mx-2">
 					  <img src="/static/assets/img/ec_logo_white.png" id="ec-logo-header" width="80" height="30" alt="EC Logo" class="ec-logo navbar-brand mt-1">
 					</a>

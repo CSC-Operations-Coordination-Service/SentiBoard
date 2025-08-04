@@ -14,7 +14,7 @@ delivered to him.
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 
 from flask import request, Response
 from flask_login import login_required
@@ -33,7 +33,8 @@ import apps.ingestion.anomalies_ingestor as anomalies_ingestor
 import apps.ingestion.news_ingestor as news_ingestor
 import apps.models.anomalies as anomalies_model
 import apps.models.news as news_model
-from apps import flask_cache
+import apps.models.instant_messages as instant_messages_model
+from apps import flask_cache, db
 from . import blueprint
 from ...utils import auth_utils, db_utils
 
@@ -164,6 +165,185 @@ def get_news_previous_quarter():
     #    events_cache.load_news_cache_previous_quarter()
     return flask_cache.get(news_api_uri)
 
+@blueprint.route('/api/instant-messages/add', methods=['POST'])
+@login_required
+def add_instant_message():
+    logger.info("Called API Add Instant Message")
+    try:
+        if not auth_utils.is_user_authorized(['admin']):
+            return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
+                            mimetype="application/json", status=401)
+
+        data = json.loads(request.data.decode('utf8'))
+        logger.info(f"Received data: {data}")
+
+        title = data.get('title', '')
+        text = data.get('text', '')
+        link = data.get('link', '')
+        message_type = data.get('messageType', '').strip()
+        publication_date_str = data.get('publicationDate', '').strip()
+
+        if not title or not text or not publication_date_str:
+            return Response(json.dumps({'error': 'Missing required fields'}), mimetype="application/json", status=400)
+
+        try:
+            publication_date = datetime.strptime(publication_date_str, '%Y-%m-%d')
+        except ValueError:
+            return Response(json.dumps({'error': 'Invalid publication date format, use yyyy-mm-dd'}),
+                            mimetype="application/json", status=400)
+
+        modify_date = datetime.now(timezone.utc)
+
+        instant_messages_model.save_instant_messages(
+            title=title,
+            text=text,
+            link=link,
+            publication_date=publication_date,
+            message_type=message_type,
+            modify_date=modify_date
+        )
+
+        return Response(json.dumps({'OK': 'Message added'}), mimetype="application/json", status=200)
+
+    except Exception as ex:
+        logger.exception("Error while adding instant message")
+        return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
+
+@blueprint.route('/api/instant-messages/all', methods=['GET'])
+def get_all_instant_messages():
+    logger.info("Called API Instant Messages with pagination")
+    try:
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('pageSize', 20))
+
+        query = db.session.query(instant_messages_model.InstantMessages).order_by(
+            instant_messages_model.InstantMessages.modifyDate.desc()
+        )
+
+        total_count = query.count()
+        messages = query.offset((page - 1) * page_size).limit(page_size).all()
+
+        result = {
+            "total": total_count,
+            "page": page,
+            "pageSize": page_size,
+            "messages": messages
+        }
+
+        return Response(json.dumps(result, cls=db_utils.AlchemyEncoder), mimetype="application/json", status=200)
+    except Exception as ex:
+        logger.exception("Failed to fetch paginated instant messages")
+        return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
+
+@blueprint.route('/api/instant-messages/get', methods=['GET'])
+@login_required
+def get_instant_message():
+    logger.info("Called API Get Instant Message")
+    try:
+        message_id = request.args.get('id', '').strip()
+        if not message_id:
+            return Response(json.dumps({'error': 'Missing ID'}), mimetype="application/json", status=400)
+
+        message = db.session.query(instant_messages_model.InstantMessages).filter_by(id=message_id).first()
+        if not message:
+            return Response(json.dumps({'error': 'Message not found'}), mimetype="application/json", status=404)
+
+        result = {
+            'id': message.id,
+            'title': message.title,
+            'text': message.text,
+            'link': message.link,
+            'messageType': message.messageType,
+            'publicationDate': message.publicationDate.strftime('%Y-%m-%d') if message.publicationDate else ''
+        }
+
+        return Response(json.dumps(result), mimetype="application/json", status=200)
+    except Exception as ex:
+        logger.exception("Error retrieving instant message")
+        return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
+
+
+@blueprint.route('/api/instant-messages/update', methods=['POST'])
+@login_required
+def update_instant_message():
+    logger.info("Called API Instant Message Update")
+    try:
+        if not auth_utils.is_user_authorized(['admin']):
+            return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
+                            mimetype="application/json", status=401)
+
+        data = json.loads(request.data.decode('utf8'))
+        logger.info(f"Update data: {data}")
+
+        message_id = data.get('id', '').strip()
+        if not message_id:
+            return Response(json.dumps({'error': 'Missing message ID'}), mimetype="application/json", status=400)
+
+        title = data.get('title', '').strip()
+        text = data.get('text', '').strip()
+        link = data.get('link', '').strip()
+        message_type = data.get('messageType', '').strip()
+        publication_date_str = data.get('publicationDate', '').strip()
+
+        if not publication_date_str:
+            return Response(json.dumps({'error': 'Missing publication date'}), mimetype="application/json", status=400)
+
+        try:
+            publication_date = datetime.strptime(publication_date_str, '%Y-%m-%d')
+        except ValueError:
+            return Response(json.dumps({'error': 'Invalid publication date format, use yyyy-mm-dd'}),
+                            mimetype="application/json", status=400)
+
+        modify_date = datetime.utcnow()
+
+        # Fetch the existing message
+        message = db.session.query(instant_messages_model.InstantMessages).filter_by(id=message_id).first()
+        if not message:
+            return Response(json.dumps({'error': 'Message not found'}), mimetype="application/json", status=404)
+
+        # Update fields
+        message.title = title
+        message.text = text
+        message.link = link
+        message.messageType = message_type
+        message.publicationDate = publication_date
+        message.modifyDate = modify_date
+
+        db.session.commit()
+
+        return Response(json.dumps({'OK': 'Message updated'}), mimetype="application/json", status=200)
+
+    except Exception as ex:
+        logger.exception("Error updating instant message")
+        db.session.rollback()
+        return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
+
+@blueprint.route('/api/instant-messages/delete', methods=['POST'])
+@login_required
+def delete_instant_message():
+    try:
+        if not auth_utils.is_user_authorized(['admin']):
+            return Response(json.dumps("Not authorized"), mimetype="application/json", status=401)
+
+        data = json.loads(request.data.decode('utf8'))
+        message_id = data.get('id', '').strip()
+
+        if not message_id:
+            return Response(json.dumps({'error': 'Missing message ID'}), mimetype="application/json", status=400)
+
+        message = db.session.query(instant_messages_model.InstantMessages).filter_by(id=message_id).first()
+        if not message:
+            return Response(json.dumps({'error': 'Message not found'}), mimetype="application/json", status=404)
+
+        db.session.delete(message)
+        db.session.commit()
+
+        return Response(json.dumps({'OK': 'Message deleted'}), mimetype="application/json", status=200)
+    except Exception as ex:
+        logger.exception("Error deleting instant message")
+        db.session.rollback()
+        return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
+    
 
 @blueprint.route('/api/worker/cds-datatake/<datatake_id>', methods=['GET'])
 def get_cds_datatake(datatake_id):

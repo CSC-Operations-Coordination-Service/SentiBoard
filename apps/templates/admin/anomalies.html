@@ -3,7 +3,9 @@
 {% block title %} UI Data Takes {% endblock %}
 
 <!-- Specific Page CSS goes HERE  -->
-{% block stylesheets %}{% endblock stylesheets %}
+{% block stylesheets %}
+	<link rel="stylesheet" href="/static/assets/css/dashboard.css">
+{% endblock stylesheets %}
 
 {% block content %}
 
@@ -38,7 +40,7 @@
 			<!-- Edit anomaly modal panel -->
 			<div class="modal fade" id="editAnomalyModal" tabindex="-1" role="dialog" aria-hidden="true">
 				<div class="modal-dialog" role="document">
-					<div class="modal-content" style="background: #202940">
+					<div class="modal-content" style="background: #575962">
 						<div class="modal-header no-bd">
 							<h5 class="modal-title">
 								<span class="fw-mediumbold">Edit</span>
@@ -78,7 +80,7 @@
 
 				<!-- Table container -->
 				<div class="col-md-12">
-					<div class="card">
+					<div class="card card-admin">
 						<div class="card-body">
 							<div class="table-responsive">
 								<table id="basic-datatables-anomalies" class="display table table-striped table-hover" >

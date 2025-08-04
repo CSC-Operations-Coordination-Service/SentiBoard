@@ -91,69 +91,23 @@ def is_safe_url(target):
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
-# --- @requires_auth to put this below the next line---
-@blueprint.route("/admin/message", methods=["GET", "POST"])  
+@blueprint.route("/admin/message", methods=["GET"])
 def admin_home_message():
     try:
-        json_path = os.path.join(current_app.root_path, "static/assets/json/custom-message.json")
-        os.makedirs(os.path.dirname(json_path), exist_ok=True)
-
-        try:
-            with open(json_path, "r") as f:
-                messages = json.load(f)
-                if not isinstance(messages, list):
-                    messages = []
-        except Exception:
-            messages = []
-
-
+        # This empty object is used to populate the form initially
         empty_message = {
-            "active": False,
-            "type": "info",
+            "title": "",
             "text": "",
-            "link": ""
+            "link": "",
+            "messageType": "info",
+            "publicationDate": ""
         }
 
-        if request.method == "POST":
-            new_message = {
-                "active": request.form.get("active") == "on",
-                "type": request.form.get("type", "info"),
-                "text": request.form.get("text", ""),
-                "link": request.form.get("link", "")
-            }
-            messages.insert(0, new_message)
+        return render_template("admin/newMessages.html", message=empty_message, segment="admin-message")
 
-            try:
-                with open(json_path, "w") as f:
-                    json.dump(messages, f, indent=2)
-                flash("Message saved!", "success")
-            except Exception as e:
-                current_app.logger.error(f"Error writing JSON: {e}")
-                flash("Failed to save message", "danger")
-
-            next_url = request.form.get('next')
-            if next_url and is_safe_url(next_url):
-                return redirect(next_url)
-            return redirect("/index_3.html")
-        
-
-        return render_template("admin/admin-message.html", message=empty_message, segment="admin-message")
     except Exception as e:
-            current_app.logger.error("Exception in admin_home_message: %s", traceback.format_exc())
-            # Return an error page or message for debugging
-            return f"An error occurred: {e}", 500
+        current_app.logger.error("Exception in admin_home_message: %s", traceback.format_exc())
+        return f"An error occurred: {e}", 500
 
-@blueprint.route('/api/news-images')
-def list_news_images():
-    image_folder = os.path.join(current_app.static_folder, 'assets', 'img', 'news')
-
-    try:
-        images = [
-            f for f in os.listdir(image_folder)
-            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif'))
-        ]
-    except FileNotFoundError:
-        images = []
-
-    return jsonify(images)
+   
 

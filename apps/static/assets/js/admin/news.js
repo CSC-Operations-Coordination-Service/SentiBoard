@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -66,7 +66,7 @@ class News {
     }
 
     init() {
-
+        $('#esa-logo-header').hide();
         // Retrieve the anomalies from local MYSQL DB
         asyncAjaxCall('/api/events/news/previous-quarter', 'GET', {}, news.successLoadNews.bind(this),
             news.errorLoadNews.bind(this));
