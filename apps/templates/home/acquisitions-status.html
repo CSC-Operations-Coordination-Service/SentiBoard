@@ -190,10 +190,25 @@
     <!-- Specific plugins scripts -->
 	<!-- Datatables -->
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
-
     <!-- Page related JS Class -->
+
+    <script src="/static/assets/lib/markdown-it/markdown-it.min.js"></script>
+    <script src="/static/assets/lib/markdown-it/markdown-it-sanitizer.min.js"></script>
+    <script src="/static/assets/lib/hammer/hammer.min.js"></script>
+    <script src="/static/assets/lib/knockout/knockout-3.5.1.debug.js"></script>
+    <script src="/static/assets/lib/knockout/knockout-es5.min.js"></script>
+
     <script src="/static/assets/lib/Cesium/1.106/Cesium.js"></script>
+    
+    <script src="/static/assets/lib/CesiumNavigation/cesium-navigation.js"></script>
+    <link href="/static/assets/lib/CesiumNavigation/cesium-navigation.css" rel="stylesheet">
+
     <script src="/static/assets/js/acquisition-plans/acquisition-plans.js"></script>
-    <script defer type="text/javascript">acquisitionPlanViewer.init();</script>
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(() => acquisitionPlanViewer.init(), 0); 
+        });
+    </script>
+
 
 {% endblock javascripts %}
