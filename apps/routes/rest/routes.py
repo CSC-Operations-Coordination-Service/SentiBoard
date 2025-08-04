@@ -170,7 +170,7 @@ def get_news_previous_quarter():
 def add_instant_message():
     logger.info("Called API Add Instant Message")
     try:
-        if not auth_utils.is_user_authorized(['admin']):
+        if not auth_utils.is_user_authorized(['admin', 'ecuser', 'esauser']):
             return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
                             mimetype="application/json", status=401)
 
@@ -268,7 +268,7 @@ def get_instant_message():
 def update_instant_message():
     logger.info("Called API Instant Message Update")
     try:
-        if not auth_utils.is_user_authorized(['admin']):
+        if not auth_utils.is_user_authorized(['admin', 'ecuser', 'esauser']):
             return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
                             mimetype="application/json", status=401)
 
@@ -322,7 +322,7 @@ def update_instant_message():
 @login_required
 def delete_instant_message():
     try:
-        if not auth_utils.is_user_authorized(['admin']):
+        if not auth_utils.is_user_authorized(['admin', 'ecuser', 'esauser']):
             return Response(json.dumps("Not authorized"), mimetype="application/json", status=401)
 
         data = json.loads(request.data.decode('utf8'))
