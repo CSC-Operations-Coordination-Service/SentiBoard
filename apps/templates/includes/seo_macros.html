@@ -1,0 +1,68 @@
+{# includes/seo_macros.html #}
+{% macro seo_meta(title='', description='', keywords='', image_url='', page_url='', twitter_handle='sentinelonline_', bluesky_profile='sentinelonline.bsky.social', publisher_name='European Space Agency', publisher_url='https://www.esa.int/', publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png') %}
+    <title>{{ title }} | Copernicus Dashboard</title>
+    
+    <meta name="description" content="{{ description }}">
+    <meta name="keywords" content="{{ keywords }}">
+
+    <!-- Open Graph (LinkedIn) -->
+    <meta property="og:title" content="{{ title }}">
+    <meta property="og:description" content="{{ description }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ page_url }}">
+    {% if image_url %}
+    <meta property="og:image" content="{{ image_url }}">
+    {% endif %}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@{{ twitter_handle }}">
+    <meta name="twitter:creator" content="@{{ twitter_handle }}">
+    <meta name="twitter:title" content="{{ title }}">
+    <meta name="twitter:description" content="{{ description }}">
+    <meta name="twitter:url" content="{{ page_url }}">
+    {% if image_url %}
+    <meta name="twitter:image" content="{{ image_url }}">
+    {% endif %}
+
+    <!-- Bluesky (Bsky.app) basic OEmbed link -->
+    <link rel="alternate" href="https://bsky.app/profile/{{ bluesky_profile }}" type="application/json+oembed" />
+
+    <meta name="bsky:title" content="{{ title }}">
+    <meta name="bsky:description" content="{{ description }}">
+    {% if image_url %}
+    <meta name="bsky:image" content="{{ image_url }}">
+    {% endif %}
+
+    {# JSON-LD structured data for SEO #}
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "url": {{ page_url | tojson }},
+        "name": {{ title | tojson }},
+        "description": {{ description | tojson }}{% if image_url %},
+        "image": {{ image_url | tojson }}{% endif %},
+        "inLanguage": "en",
+        {% if image_url %}"image": {{ image_url | tojson }},{% endif %}
+        "publisher": {
+            "@type": "Organization",
+            "name": {{ publisher_name | tojson }},
+            "url": {{ publisher_url | tojson }},
+            "logo": {
+                "@type": "ImageObject",
+                "url": {{ publisher_logo | tojson }},
+                "width": 60,
+                "height": 60
+            }
+        },
+        "isPartOf": {
+            "@type": "WebSite",
+            "name": "Copernicus Dashboard",
+            "url": {{ request.host_url | tojson }}
+        }
+    }
+    </script>
+
+
+{% endmacro %}

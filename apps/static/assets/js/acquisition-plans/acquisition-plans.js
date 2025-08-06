@@ -160,9 +160,9 @@ class MissionAcquisitionDates extends EventTarget {
         // load response
         // set initial values for Select Controls
         for (const  [mission, missionData] of  Object.entries(json_resp)) {
-            console.log("From response, extracting mission ", mission);
+            //console.log("From response, extracting mission ", mission);
             for (const [satellite, dayList] of Object.entries(missionData)) {
-                console.log("From response, extracting satellite ", satellite, ", days: ", dayList);
+                //console.log("From response, extracting satellite ", satellite, ", days: ", dayList);
                 // Check if Mission/satellite are present in Availabilities table
                 this.acqplansDates[satellite].dates.push.apply(this.acqplansDates[satellite].dates, dayList);
             }
@@ -220,7 +220,7 @@ class MissionAcquisitionDates extends EventTarget {
 
         // day_list.map(day_str => [day_str, moment(day_str, 'yyyy-MM-DD').toLocaleString()])
         // Build list of date formatted, day list
-        console.log("List of dates for selected satellite: ", day_list);
+        //console.log("List of dates for selected satellite: ", day_list);
         this.setAvailableDays(day_select_items);
     }
     
