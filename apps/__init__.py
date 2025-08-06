@@ -8,7 +8,7 @@ import socket
 from importlib import import_module
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, request
 from flask_caching import Cache
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
@@ -285,6 +285,14 @@ def create_app(config):
     print("Configuring Application ...")
     register_extensions(app)
     register_blueprints(app)
+     # Add this context processor
+    @app.context_processor
+    def inject_page_url():
+        try:
+            return dict(page_url=request.url)
+        except RuntimeError:
+            return dict(page_url='')
+        
     print("Starting Cache ...")
     flask_cache.init_app(app)
     print("Starting Database ...")

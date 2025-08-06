@@ -1,6 +1,16 @@
 {% extends "layouts/base-responsive.html" %}
+{% from 'includes/seo_macros.html' import seo_meta %}
 
-{% block title %} Dashboard {% endblock %} 
+{% block head_meta %}
+  {{ seo_meta(
+    title="Real-Time Copernicus Sentinel Data | ESA Operations Dashboard",
+    description="Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. Stay informed with the Operations Dashboard.",
+    keywords="Copernicus, ESA, Sentinel, Earth Observation, Satellite Dashboard, Data Availability, Events",
+    image_url=request.host_url ~ 'static/assets/img/favicon.png',
+    page_url=page_url
+  ) }}
+{% endblock %}
+
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
@@ -24,7 +34,7 @@
 <div class="content page-inner" style="background-color: #006B7C">
     <!-- Responsive container -->
     <div style="width: 100%; position: relative;">
-      
+      <h1 class="sr-only">Copernicus Sentinel Operations Dashboard</h1>
       <!-- Video -->
       <video preload="metadata" loop muted controls="none" id="home-video" class="img-fluid w-100">
         <source src="/static/assets/mv/home_v4.mp4">

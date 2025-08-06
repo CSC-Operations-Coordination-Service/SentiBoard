@@ -132,11 +132,11 @@ class Datatakes {
     }
 
     loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
-        console.info("Invoking events retrieval...");
+        //console.info("Invoking events retrieval...");
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
             this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
 
-        console.info("Invoking Datatakes retrieval...");
+        //console.info("Invoking Datatakes retrieval...");
 
         const urlMap = {
             day: '/api/worker/cds-datatakes/last-24h',
