@@ -62,7 +62,7 @@ def update_instant_messages(title, text, link, publication_date, message_type, m
             instant_message.publicationDate = publication_date
             instant_message.modifyDate = modify_date
         else:
-            logger.warning("Instant message with title %s not found, creating new entry", title)
+            logger.warning("News with title %s not found, creating new entry", title)
             instant_message = InstantMessages(id=str(generate_uuid()), title=title, text=text, link=link,
                                                publicationDate=publication_date, messageType=message_type,
                                                modifyDate=modify_date)
@@ -99,7 +99,7 @@ def get_instant_messages(start_date=None, end_date=None):
                 filter(InstantMessages.publicationDate >= start_date).filter(InstantMessages.publicationDate <= end_date).order_by(
                 InstantMessages.publicationDate.asc()).all()
     except Exception as ex:
-        logger.error("Retrieving Instant Messages, received error: %s", ex, exc_info=True)
+        logger.error("Retrieving News, received error: %s", ex, exc_info=True)
         return None
 
 
