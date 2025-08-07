@@ -150,7 +150,7 @@ class NewsMessages {
                         if (data.error) {
                             showAlert('danger', 'Error: ' + data.error);
                         } else {
-                            showAlert('success', 'Message deleted successfully.');
+                            showAlert('success', 'News post deleted successfully.');
                             this.loadMessages(); // refresh list
                         }
                     })
@@ -194,12 +194,6 @@ class NewsMessages {
     }
 
 
-}
-
-function formatDate(dateStr) {
-    // from yyyy-mm-dd to dd/mm/yyyy
-    const [yyyy, mm, dd] = dateStr.split('-');
-    return `${dd}/${mm}/${yyyy}`;
 }
 
 function showAlert(type, message, duration = 4000) {
@@ -308,7 +302,7 @@ $(document).ready(() => {
                     } else {
                         showBootstrapAlert(isEdit ? 'Message updated successfully!' : 'Message added successfully!', 'success', 3000);
                         setTimeout(() => {
-                            window.location.href = '/messagesList.html';
+                            window.location.href = '/newsList.html';
                         }, 1000);
                     }
                 })

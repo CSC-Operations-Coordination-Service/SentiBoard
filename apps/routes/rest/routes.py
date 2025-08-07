@@ -168,7 +168,7 @@ def get_news_previous_quarter():
 @blueprint.route('/api/instant-messages/add', methods=['POST'])
 @login_required
 def add_instant_message():
-    logger.info("Called API Add Instant Message")
+    logger.info("Called API Add Home News")
     try:
         if not auth_utils.is_user_authorized(['admin', 'ecuser', 'esauser']):
             return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
@@ -203,15 +203,15 @@ def add_instant_message():
             modify_date=modify_date
         )
 
-        return Response(json.dumps({'OK': 'Message added'}), mimetype="application/json", status=200)
+        return Response(json.dumps({'OK': 'News post added'}), mimetype="application/json", status=200)
 
     except Exception as ex:
-        logger.exception("Error while adding instant message")
+        logger.exception("Error while adding Home News")
         return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
 
 @blueprint.route('/api/instant-messages/all', methods=['GET'])
 def get_all_instant_messages():
-    logger.info("Called API Instant Messages with pagination")
+    logger.info("Called API Home News with pagination")
     try:
         page = int(request.args.get('page', 1))
         page_size = int(request.args.get('pageSize', 20))
@@ -232,13 +232,13 @@ def get_all_instant_messages():
 
         return Response(json.dumps(result, cls=db_utils.AlchemyEncoder), mimetype="application/json", status=200)
     except Exception as ex:
-        logger.exception("Failed to fetch paginated instant messages")
+        logger.exception("Failed to fetch paginated Home News")
         return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
 
 @blueprint.route('/api/instant-messages/get', methods=['GET'])
 @login_required
 def get_instant_message():
-    logger.info("Called API Get Instant Message")
+    logger.info("Called API Get Home News")
     try:
         message_id = request.args.get('id', '').strip()
         if not message_id:
@@ -246,7 +246,7 @@ def get_instant_message():
 
         message = db.session.query(instant_messages_model.InstantMessages).filter_by(id=message_id).first()
         if not message:
-            return Response(json.dumps({'error': 'Message not found'}), mimetype="application/json", status=404)
+            return Response(json.dumps({'error': 'News post not found'}), mimetype="application/json", status=404)
 
         result = {
             'id': message.id,
@@ -259,14 +259,14 @@ def get_instant_message():
 
         return Response(json.dumps(result), mimetype="application/json", status=200)
     except Exception as ex:
-        logger.exception("Error retrieving instant message")
+        logger.exception("Error retrieving Home News")
         return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
 
 
 @blueprint.route('/api/instant-messages/update', methods=['POST'])
 @login_required
 def update_instant_message():
-    logger.info("Called API Instant Message Update")
+    logger.info("Called API Home News Update")
     try:
         if not auth_utils.is_user_authorized(['admin', 'ecuser', 'esauser']):
             return Response(json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
@@ -277,7 +277,7 @@ def update_instant_message():
 
         message_id = data.get('id', '').strip()
         if not message_id:
-            return Response(json.dumps({'error': 'Missing message ID'}), mimetype="application/json", status=400)
+            return Response(json.dumps({'error': 'Missing news ID'}), mimetype="application/json", status=400)
 
         title = data.get('title', '').strip()
         text = data.get('text', '').strip()
@@ -294,12 +294,12 @@ def update_instant_message():
             return Response(json.dumps({'error': 'Invalid publication date format, use yyyy-mm-dd'}),
                             mimetype="application/json", status=400)
 
-        modify_date = datetime.utcnow()
+        modify_date = datetime.now(timezone.utc)
 
         # Fetch the existing message
         message = db.session.query(instant_messages_model.InstantMessages).filter_by(id=message_id).first()
         if not message:
-            return Response(json.dumps({'error': 'Message not found'}), mimetype="application/json", status=404)
+            return Response(json.dumps({'error': 'News post not found'}), mimetype="application/json", status=404)
 
         # Update fields
         message.title = title
@@ -311,10 +311,10 @@ def update_instant_message():
 
         db.session.commit()
 
-        return Response(json.dumps({'OK': 'Message updated'}), mimetype="application/json", status=200)
+        return Response(json.dumps({'OK': 'News post updated'}), mimetype="application/json", status=200)
 
     except Exception as ex:
-        logger.exception("Error updating instant message")
+        logger.exception("Error updating News post")
         db.session.rollback()
         return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
 
@@ -329,18 +329,18 @@ def delete_instant_message():
         message_id = data.get('id', '').strip()
 
         if not message_id:
-            return Response(json.dumps({'error': 'Missing message ID'}), mimetype="application/json", status=400)
+            return Response(json.dumps({'error': 'Missing news ID'}), mimetype="application/json", status=400)
 
         message = db.session.query(instant_messages_model.InstantMessages).filter_by(id=message_id).first()
         if not message:
-            return Response(json.dumps({'error': 'Message not found'}), mimetype="application/json", status=404)
+            return Response(json.dumps({'error': 'News not found'}), mimetype="application/json", status=404)
 
         db.session.delete(message)
         db.session.commit()
 
-        return Response(json.dumps({'OK': 'Message deleted'}), mimetype="application/json", status=200)
+        return Response(json.dumps({'OK': 'News post deleted'}), mimetype="application/json", status=200)
     except Exception as ex:
-        logger.exception("Error deleting instant message")
+        logger.exception("Error deleting News post")
         db.session.rollback()
         return Response(json.dumps({'error': str(ex)}), mimetype="application/json", status=500)
     
