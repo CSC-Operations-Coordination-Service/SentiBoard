@@ -331,6 +331,24 @@ class Home {
     }
 
     /*messages*/
+    formatDate(dateString) {
+        if (!dateString) return 'No date provided';
+
+        // Expecting format: "DD/MM/YYYY HH:mm:ss"
+        const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(dateString);
+        if (match) {
+            const [_, day, month, year] = match;
+            const date = new Date(Number(year), Number(month) - 1, Number(day));
+            return date.toLocaleDateString('en-GB', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        return 'Invalid date';
+    }
+
     fetchInstantMessages() {
         $.getJSON('/api/instant-messages/all', (data) => {
             const firstThree = data.messages.slice(0, 3);
@@ -348,15 +366,15 @@ class Home {
         const adminLinkHtml = isPrivilegedUser ? `
         <div class="text-right mt-3">
             <a href="/admin/message?next=/index.html" style="color: #ffc107; font-weight: 500; text-decoration: none; margin-right: 16px;">
-                Add a new message
+                Add News
             </a>
         </div>` : '';
 
         if (!instantMessages.length) {
             $('#custom-banner-placeholder').html(`
             <div class="bg-dark text-white text-center py-4">
-                <h4 style="font-weight: 500;">Instant Messages</h4>
-                <p class="mb-2">There are no messages at the moment.</p>
+                <h4 style="font-weight: 500;">News</h4>
+                <p class="mb-2">There are no news at the moment.</p>
                 ${adminLinkHtml}
             </div>`);
             return;
@@ -364,14 +382,13 @@ class Home {
 
         let html = `
         <div class="bg-dark">
-            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">Instant Messages</h4>
+            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>
             <div class="container d-flex flex-column gap-3">`;
 
         instantMessages.forEach((item, index) => {
             const delay = (index * 0.2 + 0.2).toFixed(1);
             const icon = this.getIcon(item.messageType);
             const borderColor = this.getTypeColor(item.messageType);
-
             html += `
             <div class="mb-3" style="max-width: 800px; width: 100%; margin: 0 auto;">
                 <div class="bg-dark news-card p-3 rounded shadow animate__animated animate__fadeInUp" style="color: white; animation-delay: ${delay}s;">
@@ -380,7 +397,9 @@ class Home {
                             <i class="fa ${icon}"></i>
                         </div>
                         <div class="news-card-content" style="font-size: 0.9rem;">
-                            <div>${item.title}</div>
+                            <div class="fw-bold">${item.title}</div>
+                            <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
+                            <div class="mt-2">${item.text || ''}</div>
                             ${item.link ? `<div class="mt-2"><a href="${item.link}" target="_blank" rel="noopener noreferrer" style="color: #ffc107; text-decoration: none;">Read more</a></div>` : ''}
                         </div>
                     </div>
@@ -390,9 +409,9 @@ class Home {
 
         html += `
             <div class="text-center mt-3">
-                <a href="/messagesList.html" class="btn btn-outline-light btn"
+                <a href="/newsList.html" class="btn btn-outline-light btn"
                    style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important;">
-                   View all messages
+                   View all news
                 </a>
             </div>
             ${adminLinkHtml}
@@ -421,10 +440,6 @@ class Home {
             default: return '#006B7C';
         }
     }
-
-
-
-
 
 }
 // Smooth scroll for chevrons

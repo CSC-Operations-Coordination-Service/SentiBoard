@@ -20,7 +20,7 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">New Message</a>
+                <a href="#">Create News</a>
             </li>
             </ul>
         </div>
@@ -33,12 +33,12 @@
         {% endwith %}
 
         <div class="mb-3">
-            <label for="title" class="form-label">Message Title</label>
+            <label for="title" class="form-label">News Title</label>
             <input type="text" class="form-control" id="title" name="title" required>
         </div>
 
         <div class="mb-3">
-            <label for="text" class="form-label">Message Text</label>
+            <label for="text" class="form-label">News Text</label>
             <textarea class="form-control" id="text" name="text" rows="3" required></textarea>
         </div>
 
@@ -48,7 +48,7 @@
         </div>
 
         <div class="mb-3">
-            <label for="messageType" class="form-label">Message Type</label>
+            <label for="messageType" class="form-label">News Type</label>
             <select class="form-control" id="messageType" name="messageType" required>
                 <option value="">-- Select Type --</option>
                 <option value="info">Info (Blue)</option>
@@ -62,8 +62,8 @@
             <label for="publicationDate" class="form-label">Publication Date</label>
             <input type="date" class="form-control" id="publicationDate" name="publicationDate" required>
         </div>
-        <button type="submit" class="btn btn-success">Save Message</button>
-        <a href="/messagesList.html" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-success">Save</button>
+        <a href="/newsList.html" class="btn btn-secondary">Cancel</a>
     </form>
 
 </div>
