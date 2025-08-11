@@ -37,6 +37,7 @@ class Datatakes {
 
         // Threshold used to state the completeness
         this.completeness_threshold = 90;
+        this.activeRequestsCount = 0;  // count of ongoing requests
 
     }
 
@@ -132,12 +133,25 @@ class Datatakes {
     }
 
     loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
+        this.activeRequestsCount = 0;
+        this.showSpinner(); // Show spinner at start
         console.info("Invoking events retrieval...");
+        this.showSpinner(); // also for anomalies retrieval
+
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
-            this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
+            (response) => {
+                this.successLoadAnomalies(response);
+                this.hideSpinner();
+            },
+            (response) => {
+                this.errorLoadAnomalies(response);
+                this.hideSpinner();
+            }
+        );
 
         console.info("Invoking Datatakes retrieval...");
-
+        // Start datatakes request
+        this.showSpinner();
         const urlMap = {
             day: '/api/worker/cds-datatakes/last-24h',
             week: '/api/worker/cds-datatakes/last-7d',
@@ -157,8 +171,17 @@ class Datatakes {
                         this.filterSidebarItems(); // apply UI filters
                     }
                 }
+                this.hideSpinner();
             },
-            this.errorLoadDatatake
+            (response) => {
+                if (response && response.status === 500) {
+                    console.warn("Server error 500 - spinner remains visible");
+                    this.showErrorMessage("Server error occurred. Please try again later.");
+                } else {
+                    this.errorLoadDatatake(response);
+                    this.hideSpinner();
+                }
+            }
         );
     }
 
@@ -271,7 +294,12 @@ class Datatakes {
 
     errorLoadDatatake(response) {
         console.error(response)
-        return;
+        if (response && response.status === 500) {
+            console.warn("Server error 500 - spinner will hide and error shown");
+            this.hideSpinner(); 
+        } else {
+            this.hideSpinner();
+        }
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
@@ -1172,6 +1200,23 @@ class Datatakes {
 
         this.showTableSection(first.id);
     }
+
+    showSpinner() {
+        if (this.activeRequestsCount === 0) {
+            document.getElementById('spinner').classList.add('active');
+        }
+        this.activeRequestsCount++;
+    }
+
+    hideSpinner() {
+        if (this.activeRequestsCount > 0) {
+            this.activeRequestsCount--;
+        }
+        if (this.activeRequestsCount === 0) {
+            document.getElementById('spinner').classList.remove('active');
+        }
+    }
+
 
 }
 

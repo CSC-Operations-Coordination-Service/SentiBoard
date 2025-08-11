@@ -891,6 +891,51 @@ th:nth-of-type(6) .tooltip-text::after {
   flex-wrap: nowrap;
 }
 
+/*SPINNER*/
+/*spinner container */
+
+#spinner {
+  display: none;  
+  position: absolute; 
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.7);
+  z-index: 10;
+  justify-content: center;
+  align-items: center;
+}
+
+#spinner.active {
+  display: flex;  /* show when active */
+}
+
+/*spinner bar*/
+.spinner-bar {
+  width: 80px;
+  height: 8px;
+  background: #eee;
+  overflow: hidden;
+  position: relative;
+  margin: auto;
+  border-radius: 4px;
+}
+
+.spinner-bar::before {
+  content: "";
+  position: absolute;
+  width: 40px;
+  height: 8px;
+  background: #12B1BF;
+  animation: rolling-bar 1s linear infinite;
+  border-radius: 4px;
+}
+
+@keyframes rolling-bar {
+  0% { left: -40px; }
+  100% { left: 80px; }
+}
+
+
+/**/
 /* Mobile Responsiveness */
 @media (max-width: 767.98px) {
   .container-fluid {
