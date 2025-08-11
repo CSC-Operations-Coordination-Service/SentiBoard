@@ -84,7 +84,7 @@ class Datatakes {
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
             // Load datatakes for the selected period
-            this.loadDatatakesInPeriod(time_period_sel.value);
+            //this.loadDatatakesInPeriod(time_period_sel.value);
 
             console.log("Datatakes initialized.");
 
@@ -133,25 +133,37 @@ class Datatakes {
     }
 
     loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
-        this.activeRequestsCount = 0;
+        this.completedRequestsCount = 0;
+        this.hasServerError = false; 
         this.showSpinner(); // Show spinner at start
-        console.info("Invoking events retrieval...");
-        this.showSpinner(); // also for anomalies retrieval
+        
 
+        const markRequestDone = () => {
+            if (this.hasServerError) return; 
+            this.completedRequestsCount++;
+            if (this.completedRequestsCount >= 2) {
+                this.hideSpinner();
+            }
+        };
+
+        console.info("Invoking events retrieval...");
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
             (response) => {
                 this.successLoadAnomalies(response);
-                this.hideSpinner();
+                markRequestDone();
             },
             (response) => {
-                this.errorLoadAnomalies(response);
-                this.hideSpinner();
+                if (response && response.status === 500) {
+                    console.error("500 error on anomalies");
+                    this.hasServerError = true;
+                    return; 
+                }
+                console.error("Anomalies load error", response);
+                markRequestDone();
             }
         );
 
         console.info("Invoking Datatakes retrieval...");
-        // Start datatakes request
-        this.showSpinner();
         const urlMap = {
             day: '/api/worker/cds-datatakes/last-24h',
             week: '/api/worker/cds-datatakes/last-7d',
@@ -171,16 +183,16 @@ class Datatakes {
                         this.filterSidebarItems(); // apply UI filters
                     }
                 }
-                this.hideSpinner();
+                markRequestDone();
             },
             (response) => {
                 if (response && response.status === 500) {
-                    console.warn("Server error 500 - spinner remains visible");
-                    this.showErrorMessage("Server error occurred. Please try again later.");
-                } else {
-                    this.errorLoadDatatake(response);
-                    this.hideSpinner();
+                    console.error("500 error on datatakes");
+                    this.hasServerError = true;
+                    return; 
                 }
+                this.errorLoadDatatake(response);
+                markRequestDone();
             }
         );
     }
@@ -213,7 +225,6 @@ class Datatakes {
             }
         }
     }
-
 
     errorLoadAnomalies(response) {
         console.error(response);
@@ -296,7 +307,7 @@ class Datatakes {
         console.error(response)
         if (response && response.status === 500) {
             console.warn("Server error 500 - spinner will hide and error shown");
-            this.hideSpinner(); 
+            this.hideSpinner();
         } else {
             this.hideSpinner();
         }
