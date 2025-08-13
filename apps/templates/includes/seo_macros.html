@@ -1,18 +1,28 @@
 {# includes/seo_macros.html #}
-{% macro seo_meta(title='', description='', keywords='', image_url='', page_url='', twitter_handle='sentinelonline_', bluesky_profile='sentinelonline.bsky.social', publisher_name='European Space Agency', publisher_url='https://www.esa.int/', publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png') %}
+{% macro seo_meta(
+    title='', 
+    description='', 
+    keywords='', 
+    image_url='', 
+    page_url='', 
+    twitter_handle='sentinelonline_', 
+    bluesky_profile='sentinelonline.bsky.social', 
+    publisher_name='European Space Agency', 
+    publisher_url='https://www.esa.int/', 
+    publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png'
+) %}
     <title>{{ title }} | Copernicus Dashboard</title>
     
     <meta name="description" content="{{ description }}">
-    <meta name="keywords" content="{{ keywords }}">
+    {% if keywords %}<meta name="keywords" content="{{ keywords }}">{% endif %}
 
-    <!-- Open Graph (LinkedIn) -->
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Copernicus Dashboard">
     <meta property="og:title" content="{{ title }}">
     <meta property="og:description" content="{{ description }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ page_url }}">
-    {% if image_url %}
-    <meta property="og:image" content="{{ image_url }}">
-    {% endif %}
+    {% if image_url %}<meta property="og:image" content="{{ image_url }}">{% endif %}
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
@@ -21,11 +31,9 @@
     <meta name="twitter:title" content="{{ title }}">
     <meta name="twitter:description" content="{{ description }}">
     <meta name="twitter:url" content="{{ page_url }}">
-    {% if image_url %}
-    <meta name="twitter:image" content="{{ image_url }}">
-    {% endif %}
+    {% if image_url %}<meta name="twitter:image" content="{{ image_url }}">{% endif %}
 
-    <!-- Bluesky (Bsky.app) basic OEmbed link -->
+    <!-- Bluesky profile link -->
     <link rel="alternate" href="https://bsky.app/profile/{{ bluesky_profile }}" type="application/json+oembed" />
 
     <meta name="bsky:title" content="{{ title }}">
@@ -41,10 +49,9 @@
         "@type": "WebPage",
         "url": {{ page_url | tojson }},
         "name": {{ title | tojson }},
-        "description": {{ description | tojson }}{% if image_url %},
-        "image": {{ image_url | tojson }}{% endif %},
-        "inLanguage": "en",
+        "description": {{ description | tojson }},
         {% if image_url %}"image": {{ image_url | tojson }},{% endif %}
+        "inLanguage": "en",
         "publisher": {
             "@type": "Organization",
             "name": {{ publisher_name | tojson }},
@@ -63,6 +70,4 @@
         }
     }
     </script>
-
-
 {% endmacro %}
