@@ -12,37 +12,42 @@
     publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png'
 ) %}
     <title>{{ title }} | Copernicus Dashboard</title>
-    
     <meta name="description" content="{{ description }}">
-    {% if keywords %}<meta name="keywords" content="{{ keywords }}">{% endif %}
+    {% if keywords %}
+      <meta name="keywords" content="{{ keywords }}">
+    {% endif %}
+    <link rel="canonical" href="{{ page_url }}">
 
-    <!-- Open Graph -->
+    {# --- Open Graph --- #}
     <meta property="og:site_name" content="Copernicus Dashboard">
     <meta property="og:title" content="{{ title }}">
     <meta property="og:description" content="{{ description }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ page_url }}">
-    {% if image_url %}<meta property="og:image" content="{{ image_url }}">{% endif %}
+    {% if image_url %}
+      <meta property="og:image" content="{{ image_url }}">
+    {% endif %}
 
-    <!-- Twitter Card -->
+    {# --- Twitter Card --- #}
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@{{ twitter_handle }}">
     <meta name="twitter:creator" content="@{{ twitter_handle }}">
     <meta name="twitter:title" content="{{ title }}">
     <meta name="twitter:description" content="{{ description }}">
     <meta name="twitter:url" content="{{ page_url }}">
-    {% if image_url %}<meta name="twitter:image" content="{{ image_url }}">{% endif %}
+    {% if image_url %}
+      <meta name="twitter:image" content="{{ image_url }}">
+    {% endif %}
 
-    <!-- Bluesky profile link -->
+    {# --- Bluesky Profile --- #}
     <link rel="alternate" href="https://bsky.app/profile/{{ bluesky_profile }}" type="application/json+oembed" />
-
     <meta name="bsky:title" content="{{ title }}">
     <meta name="bsky:description" content="{{ description }}">
     {% if image_url %}
-    <meta name="bsky:image" content="{{ image_url }}">
+      <meta name="bsky:image" content="{{ image_url }}">
     {% endif %}
 
-    {# JSON-LD structured data for SEO #}
+    {# --- JSON-LD Structured Data --- #}
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
@@ -50,7 +55,9 @@
         "url": {{ page_url | tojson }},
         "name": {{ title | tojson }},
         "description": {{ description | tojson }},
-        {% if image_url %}"image": {{ image_url | tojson }},{% endif %}
+        {% if image_url %}
+          "image": {{ image_url | tojson }},
+        {% endif %}
         "inLanguage": "en",
         "publisher": {
             "@type": "Organization",
@@ -66,7 +73,7 @@
         "isPartOf": {
             "@type": "WebSite",
             "name": "Copernicus Dashboard",
-            "url": {{ request.host_url | tojson }}
+            "url": {{ (request.host_url | trim('/') ) | tojson }}
         }
     }
     </script>

@@ -19,8 +19,8 @@
     crossorigin="anonymous"
   >
   
-  <link rel="preload" as="image" href="/static/assets/img/home_preview.webp" type="image/webp" importance="high">
-  <link rel="preload" as="image" href="/static/assets/img/home_preview.jpg" type="image/jpeg" importance="high">
+  <!-- Preload LCP image with high priority -->
+  <link rel="preload" as="image" href="/static/assets/img/home_preview.webp" fetchpriority="high">
 
   <!-- Inline critical CSS for LCP -->
   <style>
@@ -38,6 +38,11 @@
         right: 40px;
         top: 80px;
       }
+    }
+    @font-face {
+      font-family: 'NotesEsa';
+      src: url('/static/assets/fonts/esa/NotesEsa.woff2') format('woff2');
+      font-display: swap;
     }
   </style>
 
@@ -64,7 +69,8 @@
     <div id="hero-container" class="position-relative">
       <!-- LCP Poster Image -->
       <picture>
-        <source srcset="/static/assets/img/home_preview.webp" type="image/webp">
+        <source srcset="/static/assets/img/home_preview.avif" type="image/avif" fetchpriority="high">
+        <source srcset="/static/assets/img/home_preview.webp" type="image/webp" fetchpriority="high">
         <img 
           id="hero-poster"
           src="/static/assets/img/home_preview.jpg"
@@ -73,8 +79,10 @@
           height="1080"
           class="img-fluid w-100"
           style="cursor: pointer;"
+          fetchpriority="high"
         >
       </picture>
+
       <!-- Video -->
       <video 
         id="home-video" 
@@ -191,34 +199,31 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
-
-  <!-- Specific plugin scripts -->
-	<script src="/static/assets/js/datatakes/datatakes.js" defer></script>
-	<script src="/static/assets/js/statistics/publication-statistics.js" defer></script>
-  <script src="/static/assets/js/index/index.js" defer></script>
-	<script defer>
+  <!-- Inline tiny script for faster mobile interactivity -->
+  <script>
     document.addEventListener("DOMContentLoaded", function () {
-      if (typeof home !== 'undefined' && typeof home.init === 'function') {
-        home.init();
-      }
       const poster = document.getElementById("hero-poster");
       const video = document.getElementById("home-video");
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-      // Function to show video and hide poster
-      const playVideo = () => {
-        poster?.classList.add("d-none");
-        video?.classList.remove("d-none");
-        video?.play();
-      };
-
       if (isMobile) {
-        // Mobile: wait for user tap
-        poster?.addEventListener("click", playVideo);
+        poster.addEventListener("click", function () {
+          poster.classList.add("d-none");
+          video.classList.remove("d-none");
+          video.play();
+        });
       } else {
-        playVideo();
-        video?.setAttribute("autoplay", "");
+        poster.classList.add("d-none");
+        video.classList.remove("d-none");
+        video.autoplay = true;
+        video.play();
       }
     });
   </script>
+
+  <!-- Defer heavier JS -->
+  <script src="/static/assets/js/datatakes/datatakes.js" defer></script>
+  <script src="/static/assets/js/statistics/publication-statistics.js" defer></script>
+  <script src="/static/assets/js/index/index.js" defer></script>
 {% endblock javascripts %}
+
