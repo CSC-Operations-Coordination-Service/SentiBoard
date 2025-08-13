@@ -3,18 +3,13 @@
 <head>
 	<meta charset="utf-8" />
 	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-
-	<title>
-        Copernicus Dashboard - {% block title %}{% endblock %} | ESA
-    </title>
-	{% block head_meta %}{% endblock %}
-
-	<meta name="description" content="{% block meta_description %}Copernicus Dashboard - Real-time satellite insights and data from the Copernicus Sentinels.{% endblock %}">
-	<meta name="keywords" content="{% block meta_keywords %}Copernicus, Sentinel satellites, ESA, Earth observation, acquisition status, satellite data, real-time events, satellite anomalies, data availability, datatakes, Sentinel processors{% endblock %}">
+  	<meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+	
+	{% block head_meta %}{% endblock head_meta%}
 
 	<meta content='width=device-width, initial-scale=1.0, shrink-to-fit=no' name='viewport' />
 	<link rel="icon" href="/static/assets/img/favicon.png" type="image/x-icon"/>
-	<link rel="canonical" href="https://appseed.us/admin-dashboards/flask-dashboard-atlantis-dark">
+	<link rel="canonical" href="{{ page_url }}">
 
 	<!--  user -->
 	<script>
