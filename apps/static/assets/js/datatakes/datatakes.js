@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -133,37 +133,54 @@ class Datatakes {
     }
 
     loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
+        // Reset counters and flags
         this.completedRequestsCount = 0;
-        this.hasServerError = false; 
-        this.showSpinner(); // Show spinner at start
-        
+        this.hasServerError = false;
+        this.pendingDatatakes = null;
 
-        const markRequestDone = () => {
-            if (this.hasServerError) return; 
+        // Show spinner immediately
+        this.showSpinner();
+
+        // Function to track requests and manage spinner
+        const finishRequest = (wasSuccessful) => {
             this.completedRequestsCount++;
-            if (this.completedRequestsCount >= 2) {
-                this.hideSpinner();
+
+            // If this request succeeded, clear server error
+            if (wasSuccessful) {
+                this.hasServerError = false;
             }
+
+            // Only hide spinner when both requests have succeeded at least once
+            if (this.completedRequestsCount >= 2 && !this.hasServerError) {
+                this.hideSpinner();
+
+                // Update charts and table
+                if (this.pendingDatatakes?.length > 0) {
+                    const firstTake = this.pendingDatatakes[0];
+                    this.updateTitleAndDate(firstTake.id);
+                    this.updateCharts(firstTake.id);
+
+                    if (this.updateInfoTable) {
+                        this.updateInfoTable(firstTake.id);
+                    }
+                }
+            } 
         };
 
-        console.info("Invoking events retrieval...");
+        // Events anomalies request
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
             (response) => {
                 this.successLoadAnomalies(response);
-                markRequestDone();
+                finishRequest(true); // mark success
             },
             (response) => {
-                if (response && response.status === 500) {
-                    console.error("500 error on anomalies");
-                    this.hasServerError = true;
-                    return; 
-                }
                 console.error("Anomalies load error", response);
-                markRequestDone();
+                if (response?.status === 500) this.hasServerError = true;
+                finishRequest(false); // mark failure
             }
         );
 
-        console.info("Invoking Datatakes retrieval...");
+        // Datatakes request
         const urlMap = {
             day: '/api/worker/cds-datatakes/last-24h',
             week: '/api/worker/cds-datatakes/last-7d',
@@ -177,27 +194,26 @@ class Datatakes {
         asyncAjaxCall(url, 'GET', {},
             (response) => {
                 this.successLoadDatatakes(response);
+                this.pendingDatatakes = response; // store for chart update later
+
                 if (shouldReapplyFilters) {
                     const hasSearch = this.filterDatatakesOnPageLoad(); // apply search param
                     if (!hasSearch) {
                         this.filterSidebarItems(); // apply UI filters
                     }
                 }
-                markRequestDone();
+                finishRequest(true); // mark success
             },
             (response) => {
-                if (response && response.status === 500) {
-                    console.error("500 error on datatakes");
-                    this.hasServerError = true;
-                    return; 
-                }
-                this.errorLoadDatatake(response);
-                markRequestDone();
+                console.error("Datatakes load error", response);
+                if (response?.status === 500) this.hasServerError = true;
+                finishRequest(false); // mark failure
             }
         );
     }
 
     successLoadAnomalies(response) {
+        console.log("Anomalies successfully retrieved");
         this.datatakesEventsMap = {};
         const rows = format_response(response);
 
@@ -233,6 +249,7 @@ class Datatakes {
     successLoadDatatakes(response) {
         const rows = format_response(response);
         console.info('Datatakes successfully retrieved');
+
 
         const datatakes = rows.map(row => {
             const element = row['_source'];
@@ -1213,22 +1230,24 @@ class Datatakes {
     }
 
     showSpinner() {
-        if (this.activeRequestsCount === 0) {
-            document.getElementById('spinner').classList.add('active');
+        const spinner = document.getElementById('spinner');
+        if (spinner && this.activeRequestsCount === 0) {
+            console.log("Showing spinner...");
+            spinner.classList.add('active');
         }
         this.activeRequestsCount++;
     }
 
     hideSpinner() {
-        if (this.activeRequestsCount > 0) {
-            this.activeRequestsCount--;
-        }
+        if (this.activeRequestsCount > 0) this.activeRequestsCount--;
         if (this.activeRequestsCount === 0) {
-            document.getElementById('spinner').classList.remove('active');
+            const spinner = document.getElementById('spinner');
+            if (spinner) {
+                console.log("Hiding spinner...");
+                spinner.classList.remove('active');
+            }
         }
     }
-
-
 }
 
 window.datatakes = new Datatakes(mockDataTakes, formatDataDetail);
