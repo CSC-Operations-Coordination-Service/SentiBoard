@@ -69,8 +69,11 @@
     <div id="hero-container" class="position-relative">
       <!-- LCP Poster Image -->
       <picture>
+        <!-- AVIF first -->
         <source srcset="/static/assets/img/home_preview.avif" type="image/avif" fetchpriority="high">
+        <!-- WebP fallback -->
         <source srcset="/static/assets/img/home_preview.webp" type="image/webp" fetchpriority="high">
+        <!-- JPEG fallback -->
         <img 
           id="hero-poster"
           src="/static/assets/img/home_preview.jpg"
@@ -82,7 +85,6 @@
           fetchpriority="high"
         >
       </picture>
-
       <!-- Video -->
       <video 
         id="home-video" 
