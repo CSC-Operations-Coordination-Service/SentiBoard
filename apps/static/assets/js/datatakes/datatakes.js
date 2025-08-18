@@ -663,12 +663,7 @@ class Datatakes {
             return;
         }
 
-        if (typeof linkKey !== "string") {
-            console.warn("updateCharts: Expected string linkKey but got", typeof linkKey, linkKey);
-            console.warn("linkKey value and type", linkKey, typeof linkKey);
-            console.warn("linkKey as JSON:", JSON.stringify(linkKey, null, 2));
-
-        }
+        
 
         const normalizedLinkKey = typeof linkKey === "string"
             ? linkKey
