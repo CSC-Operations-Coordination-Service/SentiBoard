@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -37,6 +37,7 @@ class Datatakes {
 
         // Threshold used to state the completeness
         this.completeness_threshold = 90;
+        this.activeRequestsCount = 0;  // count of ongoing requests
 
     }
 
@@ -83,7 +84,7 @@ class Datatakes {
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
             // Load datatakes for the selected period
-            this.loadDatatakesInPeriod(time_period_sel.value);
+            //this.loadDatatakesInPeriod(time_period_sel.value);
 
             console.log("Datatakes initialized.");
 
@@ -132,12 +133,54 @@ class Datatakes {
     }
 
     loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
-        //console.info("Invoking events retrieval...");
+        // Reset counters and flags
+        this.completedRequestsCount = 0;
+        this.hasServerError = false;
+        this.pendingDatatakes = null;
+
+        // Show spinner immediately
+        this.showSpinner();
+
+        // Function to track requests and manage spinner
+        const finishRequest = (wasSuccessful) => {
+            this.completedRequestsCount++;
+
+            // If this request succeeded, clear server error
+            if (wasSuccessful) {
+                this.hasServerError = false;
+            }
+
+            // Only hide spinner when both requests have succeeded at least once
+            if (this.completedRequestsCount >= 2 && !this.hasServerError) {
+                this.hideSpinner();
+
+                // Update charts and table
+                if (this.pendingDatatakes?.length > 0) {
+                    const firstTake = this.pendingDatatakes[0];
+                    this.updateTitleAndDate(firstTake.id);
+                    this.updateCharts(firstTake.id);
+
+                    if (this.updateInfoTable) {
+                        this.updateInfoTable(firstTake.id);
+                    }
+                }
+            } 
+        };
+
+        // Events anomalies request
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
-            this.successLoadAnomalies.bind(this), this.errorLoadAnomalies);
+            (response) => {
+                this.successLoadAnomalies(response);
+                finishRequest(true); // mark success
+            },
+            (response) => {
+                console.error("Anomalies load error", response);
+                if (response?.status === 500) this.hasServerError = true;
+                finishRequest(false); // mark failure
+            }
+        );
 
-        //console.info("Invoking Datatakes retrieval...");
-
+        // Datatakes request
         const urlMap = {
             day: '/api/worker/cds-datatakes/last-24h',
             week: '/api/worker/cds-datatakes/last-7d',
@@ -151,18 +194,26 @@ class Datatakes {
         asyncAjaxCall(url, 'GET', {},
             (response) => {
                 this.successLoadDatatakes(response);
+                this.pendingDatatakes = response; // store for chart update later
+
                 if (shouldReapplyFilters) {
                     const hasSearch = this.filterDatatakesOnPageLoad(); // apply search param
                     if (!hasSearch) {
                         this.filterSidebarItems(); // apply UI filters
                     }
                 }
+                finishRequest(true); // mark success
             },
-            this.errorLoadDatatake
+            (response) => {
+                console.error("Datatakes load error", response);
+                if (response?.status === 500) this.hasServerError = true;
+                finishRequest(false); // mark failure
+            }
         );
     }
 
     successLoadAnomalies(response) {
+        console.log("Anomalies successfully retrieved");
         this.datatakesEventsMap = {};
         const rows = format_response(response);
 
@@ -191,7 +242,6 @@ class Datatakes {
         }
     }
 
-
     errorLoadAnomalies(response) {
         console.error(response);
     }
@@ -199,6 +249,7 @@ class Datatakes {
     successLoadDatatakes(response) {
         const rows = format_response(response);
         console.info('Datatakes successfully retrieved');
+
 
         const datatakes = rows.map(row => {
             const element = row['_source'];
@@ -271,7 +322,12 @@ class Datatakes {
 
     errorLoadDatatake(response) {
         console.error(response)
-        return;
+        if (response && response.status === 500) {
+            console.warn("Server error 500 - spinner will hide and error shown");
+            this.hideSpinner();
+        } else {
+            this.hideSpinner();
+        }
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
@@ -607,12 +663,7 @@ class Datatakes {
             return;
         }
 
-        if (typeof linkKey !== "string") {
-            console.warn("updateCharts: Expected string linkKey but got", typeof linkKey, linkKey);
-            console.warn("linkKey value and type", linkKey, typeof linkKey);
-            console.warn("linkKey as JSON:", JSON.stringify(linkKey, null, 2));
-
-        }
+        
 
         const normalizedLinkKey = typeof linkKey === "string"
             ? linkKey
@@ -1173,6 +1224,25 @@ class Datatakes {
         this.showTableSection(first.id);
     }
 
+    showSpinner() {
+        const spinner = document.getElementById('spinner');
+        if (spinner && this.activeRequestsCount === 0) {
+            console.log("Showing spinner...");
+            spinner.classList.add('active');
+        }
+        this.activeRequestsCount++;
+    }
+
+    hideSpinner() {
+        if (this.activeRequestsCount > 0) this.activeRequestsCount--;
+        if (this.activeRequestsCount === 0) {
+            const spinner = document.getElementById('spinner');
+            if (spinner) {
+                console.log("Hiding spinner...");
+                spinner.classList.remove('active');
+            }
+        }
+    }
 }
 
 window.datatakes = new Datatakes(mockDataTakes, formatDataDetail);
