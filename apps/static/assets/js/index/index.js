@@ -352,14 +352,14 @@ class Home {
     fetchInstantMessages() {
         $.getJSON('/api/instant-messages/all', (data) => {
             const firstThree = data.messages.slice(0, 3);
-            this.renderInstantMessageCards(firstThree);
+            this.renderInstantMessageCards(firstThree, data.messages.length);
         }).fail((xhr) => {
             console.error("Failed to load instant messages:", xhr.responseText);
             $('#custom-banner-placeholder').html('<div class="bg-dark text-white text-center p-4 rounded">Failed to load instant messages.</div>');
         });
     }
 
-    renderInstantMessageCards(instantMessages) {
+    renderInstantMessageCards(instantMessages, totalMessages) {
         const allowedRoles = ['admin', 'esauser', 'ecuser']; // Add more roles if needed
         const isPrivilegedUser = allowedRoles.includes(window.userRole);
 
@@ -407,16 +407,17 @@ class Home {
             </div>`;
         });
 
-        html += `
-            <div class="text-center mt-3">
-                <a href="/newsList.html" class="btn btn-outline-light btn"
-                   style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important;">
-                   View all news
-                </a>
-            </div>
-            ${adminLinkHtml}
-        </div>
-    </div>`;
+        // Only show "View all news" if total messages > 3
+        const viewAllButtonHtml = totalMessages > 3 ? `
+        <div class="text-center mt-3">
+            <a href="/newsList.html" class="btn btn-outline-light btn"
+               style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important;">
+               View all news
+            </a>
+        </div>` : '';
+
+        html += `${viewAllButtonHtml}${adminLinkHtml}</div></div>`;
+
 
         $('#custom-banner-placeholder').html(html);
     }
