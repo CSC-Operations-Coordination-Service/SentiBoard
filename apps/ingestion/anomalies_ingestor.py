@@ -117,7 +117,7 @@ class AnomaliesIngestor:
                     if impacted_satellite is not None:
                         anomaly["impactedSatellite"] = impacted_satellite.name
                         break
-            origin = extract["_source"]["origin"]
+            origin = getattr(extract["_source"], "origin", None)
 
             if origin == "Satellite":
                 anomaly["category"] = "Platform"
