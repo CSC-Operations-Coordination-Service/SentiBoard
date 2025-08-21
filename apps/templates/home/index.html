@@ -69,8 +69,11 @@
     <div id="hero-container" class="position-relative">
       <!-- LCP Poster Image -->
       <picture>
+        <!-- AVIF first -->
         <source srcset="/static/assets/img/home_preview.avif" type="image/avif" fetchpriority="high">
+        <!-- WebP fallback -->
         <source srcset="/static/assets/img/home_preview.webp" type="image/webp" fetchpriority="high">
+        <!-- JPEG fallback -->
         <img 
           id="hero-poster"
           src="/static/assets/img/home_preview.jpg"
@@ -82,7 +85,6 @@
           fetchpriority="high"
         >
       </picture>
-
       <!-- Video -->
       <video 
         id="home-video" 
@@ -123,6 +125,15 @@
   <div id="custom-banner-placeholder"
       class="position-absolute text-white"
       style="top: 125px; left: 15px; width: 350px; z-index: 3;">
+  </div>
+  <!-- News banner for mobile -->
+  <div class="d-block d-lg-none mt-3">
+    <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#customBannerMobile">
+      Show News
+    </button>
+    <div class="collapse" id="customBannerMobile">
+      <div id="custom-banner-mobile" class="bg-dark text-white p-3 rounded"></div>
+    </div>
   </div>
 </div>
 
@@ -166,16 +177,13 @@
             </div>
         </div>
         <div class="right-slide">
-            <div style="background-image: url('/static/assets/img/about.png');">
-            </div>
-            <div style="background-image: url('/static/assets/img/processors.png');"></div>
-            <div style="background-image: url('/static/assets/img/data_availability.png');">
-            </div>
-            <div style="background-image: url('/static/assets/img/events.png');">
-            </div>
-            <div style="background-image: url('/static/assets/img/acquisitions_status.png');">
-            </div>
+          <div class="slide about"><img src="/static/assets/img/about.png" alt="About" /></div>
+          <div class="slide processors"><img src="/static/assets/img/processors.png" alt="Processors" /></div>
+          <div class="slide data-availability"><img src="/static/assets/img/data_availability.png" alt="Data Availability" /></div>
+          <div class="slide events"><img src="/static/assets/img/events.png" alt="Events" /></div>
+          <div class="slide acquisitions-status"><img src="/static/assets/img/acquisitions_status.png" alt="Acquisitions Status" /></div>
         </div>
+
         <div class="action-buttons">
             <button class="down-button">
                 <i class="fas fa-arrow-down"></i>
@@ -223,7 +231,19 @@
 
   <!-- Defer heavier JS -->
   <script src="/static/assets/js/datatakes/datatakes.js" defer></script>
-  <script src="/static/assets/js/statistics/publication-statistics.js" defer></script>
   <script src="/static/assets/js/index/index.js" defer></script>
+  <!-- Initialize Home after DOM is ready -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      if (typeof Home !== "undefined") {
+        const home = new Home();
+        home.init();
+      }
+      if (window.innerWidth <= 768) {
+        document.querySelectorAll('#vertical-slider img').forEach(img => img.style.display = 'none');
+    }
+
+    });
+  </script>
 {% endblock javascripts %}
 
