@@ -704,6 +704,20 @@ a {
   transition: transform 0.5s ease-in-out;
 }
 
+.right-slide .slide {
+  width: 100%;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.right-slide .slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .right-slide>div {
   background-repeat: no-repeat;
   background-size: cover;
@@ -732,18 +746,21 @@ a {
   box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
   text-decoration: none !important;
 }
+
 /*end*/
 
 /*anomalies page*/
 .btn-link {
-    font-weight: 400;
-    color: #ffcf3f !important;
-    background-color: transparent;
+  font-weight: 400;
+  color: #ffcf3f !important;
+  background-color: transparent;
 }
+
 .btn-link:hover {
-    color: #12b1bf !important;
-    text-decoration: none !important;
+  color: #12b1bf !important;
+  text-decoration: none !important;
 }
+
 /**/
 .card-lightgreen {
   background-color: #12B1BF;
@@ -847,7 +864,7 @@ button:focus {
 
 .news-cards {
   background-color: #12b1bf !important;
-  
+
 }
 
 .page-item.active .page-link {
@@ -920,9 +937,9 @@ a:hover {
   }
 
   .slider-container {
+    display: flex;
     flex-direction: column;
     height: auto;
-    overflow: visible;
   }
 
   .left-slide,
@@ -935,8 +952,19 @@ a:hover {
 
   .right-slide,
   .left-slide {
-    display: flex;
-    flex-direction: column;
+    position: relative;
+    width: 100%;
+    height: auto;
+    transform: none !important;
+  }
+
+  .right-slide img,
+  .right-slide .slide img {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   .right-slide>div,
@@ -945,12 +973,12 @@ a:hover {
     width: 100%;
     border-radius: 10px;
     margin-bottom: 1rem;
+    background-image: none !important;
   }
 
   .right-slide>div {
-    height: 200px;
-    background-size: cover;
-    background-position: center;
+    height: auto;
+    margin-bottom: 1rem;
   }
 
   /* Stack: image followed by corresponding card */
@@ -977,7 +1005,7 @@ a:hover {
     order: 1;
   }
 
-  .slider-container .action-buttons {
+  .action-buttons {
     display: none;
   }
 
@@ -990,6 +1018,11 @@ a:hover {
     font-size: 16px;
     margin: 10px 0;
     color: #fff;
+  }
+
+  .left-slide>div {
+    width: 100%;
+    margin-bottom: 1rem;
   }
 
   .btn-learn-more {
@@ -1044,6 +1077,18 @@ a:hover {
 
 }
 
+@media (min-width: 992px) {
+  #custom-banner-placeholder {
+    position: absolute;
+    top: 125px;
+    left: 15px;
+    width: 350px;
+    z-index: 3;
+  }
+}
+
+
+
 @media screen and (max-width: 991px) {
   .logo-header .more {
     opacity: 1;
@@ -1054,5 +1099,15 @@ a:hover {
     order: 3;
     width: unset;
     margin-left: auto;
+  }
+
+  #custom-banner-placeholder {
+    display: none;
+  }
+
+  #custom-banner-mobile {
+    position: relative;
+    width: 100%;
+    padding: 0.5rem;
   }
 }
