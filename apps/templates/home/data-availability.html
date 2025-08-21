@@ -84,7 +84,7 @@
 											<div class="card-body">
 												This page displays all datatakes from the past three months, 
 												including those scheduled up to 23:59:59 of the following day. 
-												or each datatake, key information is shown—such as the acquisition 
+												For each datatake, key information is shown—such as the acquisition 
 												platform, sensor mode, acquisition status, and total publication 
 												completeness (expressed as a percentage)—with updates refreshed hourly.
 												You can filter the records by mission and, optionally, by satellite. 
@@ -92,6 +92,7 @@
 												Sentinel-5P, the satellite selector is disabled, as only one satellite is available. 
 												Additional filters include a custom date range (aligned with the time filter 
 												selected at the top of the page), as well as direct searches by datatake ID.
+												Please note: the selected "from"-"to" time range applies to the start date of the datatakes.
 											</div>
 										</div>
 									</div>
@@ -135,12 +136,12 @@
 													<div class="d-flex flex-column gap-2">
 														<div class="d-flex align-items-center gap-2">
 															<label for="from-date"  class="inline-label" style="min-width: 40px;">From</label>
-															<input type="date" id="from-date" class="form-control" onchange="datatakes.filterSidebarItems()">
+															<input type="datetime-local" id="from-date" class="form-control" onchange="datatakes.filterSidebarItems()">
 														</div>
 													
 														<div class="d-flex align-items-center gap-2">
 															<label for="to-date"  class="inline-label" style="min-width: 40px;">To</label>
-															<input type="date" id="to-date" class="form-control" onchange="datatakes.filterSidebarItems()">
+															<input type="datetime-local" id="to-date" class="form-control" onchange="datatakes.filterSidebarItems()">
 														</div>
 													</div>
 													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
@@ -158,13 +159,14 @@
 								</div>
 								<!-- Main Content -->
 								<div class="col-12 col-md-9 d-flex flex-column">
+									
 									<div class="datatakes-container flex-grow-1">
-										<div class="chart-container">
+										<div class="chart-container" style="position: relative;">
+											<div id="spinner" class="spinner-overlay">
+												<div class="spinner-bar"></div>
+											</div>
 												<h4 class="mb-0">
 													<span class="title-text">S</span> 
-													<!-- <button id="infoButton" style="all: unset; cursor: pointer; margin-left: 2px; vertical-align: super; font-size: 0.7em;">
-															<i class="fas fa-info-circle" style="font-size: 0.85em; vertical-align: top; color: #FFAD00;"></i>
-													</button> -->
 												</h4>
 												<p class="text-left">Sentinel-</p>
 												<div class="d-flex align-items-start" style="gap: 8px;">

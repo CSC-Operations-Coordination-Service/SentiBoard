@@ -36,6 +36,7 @@ def register_blueprints(app):
 
 
 def configure_database(app):
+    from apps.models.instant_messages import InstantMessages
     @app.before_first_request
     def initialize_database():
         app.logger.info("Initializing Database")

@@ -2,20 +2,24 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 """
 
-from flask import render_template, request
+from flask import render_template, request, redirect, url_for, flash, current_app, Response, Flask, jsonify
 from jinja2 import TemplateNotFound
-
+from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
+from functools import wraps
+import os
+import json
+import traceback
 
 
 @blueprint.route('/index')
@@ -64,3 +68,46 @@ def get_segment(request):
 
     except:
         return None
+
+# --- BASIC AUTH ---
+def check_auth(username, password):
+    return username == 'admin' and password == 'yourpassword'  
+
+def authenticate():
+    return Response('Login required.', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+def is_safe_url(target):
+    # Prevent open redirects
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
+
+@blueprint.route("/admin/message", methods=["GET"])
+def admin_home_message():
+    try:
+        # This empty object is used to populate the form initially
+        empty_message = {
+            "title": "",
+            "text": "",
+            "link": "",
+            "messageType": "info",
+            "publicationDate": ""
+        }
+
+        return render_template("admin/newMessages.html", message=empty_message, segment="admin-message")
+
+    except Exception as e:
+        current_app.logger.error("Exception in admin_home_message: %s", traceback.format_exc())
+        return f"An error occurred: {e}", 500
+
+   
+

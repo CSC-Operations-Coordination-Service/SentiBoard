@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -38,13 +38,10 @@ class Home {
         console.info('Loading events...');
         asyncAjaxCall('/api/events/anomalies/last-24h', 'GET', {}, this.succesLoadAnomalies, this.errorLoadAnomalies);
 
-        // Load data takes and calculate the hours of sensing
-        console.info('Retrieving the hours of sensing...');
-        /*this.displaySensingTimeMinutes();*/
+        // Load the custom message from the JSON file
+        console.info('Loading custom message...');
 
-        // Retrieve the number and size of the published products
-        console.info('Retrieving the volume and number of published products...');
-        /*this.displayPublishedProductsVolumeCount();*/
+        this.fetchInstantMessages();
 
         // Remove Home video controls
         $('#home-video').hover(function toggleControls() {
@@ -61,7 +58,6 @@ class Home {
         }
         this.handleResponsiveSliderLayout();
         this.initSlider();
-
         return;
     }
 
@@ -332,6 +328,118 @@ class Home {
 
         upButton.addEventListener("click", () => changeSlide("up"));
         downButton.addEventListener("click", () => changeSlide("down"));
+    }
+
+    /*messages*/
+    formatDate(dateString) {
+        if (!dateString) return 'No date provided';
+
+        // Expecting format: "DD/MM/YYYY HH:mm:ss"
+        const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(dateString);
+        if (match) {
+            const [_, day, month, year] = match;
+            const date = new Date(Number(year), Number(month) - 1, Number(day));
+            return date.toLocaleDateString('en-GB', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        return 'Invalid date';
+    }
+
+    fetchInstantMessages() {
+        $.getJSON('/api/instant-messages/all', (data) => {
+            const firstThree = data.messages.slice(0, 3);
+            this.renderInstantMessageCards(firstThree, data.messages.length);
+        }).fail((xhr) => {
+            console.error("Failed to load instant messages:", xhr.responseText);
+            $('#custom-banner-placeholder').html('<div class="bg-dark text-white text-center p-4 rounded">Failed to load instant messages.</div>');
+        });
+    }
+
+    renderInstantMessageCards(instantMessages, totalMessages) {
+        const allowedRoles = ['admin', 'esauser', 'ecuser']; // Add more roles if needed
+        const isPrivilegedUser = allowedRoles.includes(window.userRole);
+
+        const adminLinkHtml = isPrivilegedUser ? `
+        <div class="text-right mt-3">
+            <a href="/admin/message?next=/index.html" style="color: #ffc107; font-weight: 500; text-decoration: none; margin-right: 16px;">
+                Add News
+            </a>
+        </div>` : '';
+
+        if (!instantMessages.length) {
+            $('#custom-banner-placeholder').html(`
+            <div class="bg-dark text-white text-center py-4">
+                <h4 style="font-weight: 500;">News</h4>
+                <p class="mb-2">There are no news at the moment.</p>
+                ${adminLinkHtml}
+            </div>`);
+            return;
+        }
+
+        let html = `
+        <div class="bg-dark">
+            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>
+            <div class="container d-flex flex-column gap-3">`;
+
+        instantMessages.forEach((item, index) => {
+            const delay = (index * 0.2 + 0.2).toFixed(1);
+            const icon = this.getIcon(item.messageType);
+            const borderColor = this.getTypeColor(item.messageType);
+            html += `
+            <div class="mb-3" style="max-width: 800px; width: 100%; margin: 0 auto;">
+                <div class="bg-dark news-card p-3 rounded shadow animate__animated animate__fadeInUp" style="color: white; animation-delay: ${delay}s;">
+                    <div class="d-flex align-items-start">
+                        <div class="news-card-icon flex-shrink-0" style="font-size: 1.5rem; color: ${borderColor}; margin-right: 1rem;">
+                            <i class="fa ${icon}"></i>
+                        </div>
+                        <div class="news-card-content" style="font-size: 0.9rem;">
+                            <div class="fw-bold">${item.title}</div>
+                            <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
+                            <div class="mt-2">${item.text || ''}</div>
+                            ${item.link ? `<div class="mt-2"><a href="${item.link}" target="_blank" rel="noopener noreferrer" style="color: #ffc107; text-decoration: none;">Read more</a></div>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        });
+
+        // Only show "View all news" if total messages > 3
+        const viewAllButtonHtml = totalMessages > 3 ? `
+        <div class="text-center mt-3">
+            <a href="/newsList.html" class="btn btn-outline-light btn"
+               style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important;">
+               View all news
+            </a>
+        </div>` : '';
+
+        html += `${viewAllButtonHtml}${adminLinkHtml}</div></div>`;
+
+
+        $('#custom-banner-placeholder').html(html);
+    }
+
+    getIcon(type) {
+        switch ((type || '').toLowerCase()) {
+            case 'success': return 'fa-check-circle';
+            case 'info': return 'fa-info-circle';
+            case 'warning': return 'fa-exclamation-circle';
+            case 'danger': return 'fa-exclamation-triangle';
+            default: return 'fa-bullhorn';
+        }
+    }
+
+    getTypeColor(type) {
+        switch ((type || '').toLowerCase()) {
+            case 'success': return '#28a745';
+            case 'info': return '#17a2b8';
+            case 'warning': return '#ffc107';
+            case 'danger': return '#dc3545';
+            default: return '#006B7C';
+        }
     }
 
 }

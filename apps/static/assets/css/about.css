@@ -115,6 +115,12 @@
     font-size: 1.10rem !important;
   }
 
+  .btn-link {
+    font-weight: 400;
+    color: white !important;
+    background-color: transparent;
+  }
+
   #faq .btn-link {
     text-decoration: none !important;
     color: inherit;
@@ -207,6 +213,7 @@
     margin-top: -6px !important;
     margin-left: 4px !important;
   }
+  
   p {
     font-family: "NotesEsa", sans-serif;
     font-weight: 400;
@@ -214,7 +221,8 @@
     font-size: 1.05rem !important;
     line-height: 1.6;
     margin-bottom: 1rem;
-}
+  }
+
   @media (max-width: 768px) {
     .faqs-title {
       font-size: 1.8rem;
