@@ -44,6 +44,34 @@
       src: url('/static/assets/fonts/esa/NotesEsa.woff2') format('woff2');
       font-display: swap;
     }
+
+    #hero-container {
+    position: relative;
+    }
+
+  /* Poster starts visible above the video */
+    #hero-poster {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      z-index: 2;
+      transition: opacity 1s ease;
+    }
+
+  /* Hidden state when video is ready */
+    #hero-poster.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+  /* Ensure video fills container */
+    #home-video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
   </style>
 
 {% endblock head_meta %}
@@ -215,35 +243,72 @@
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
       if (isMobile) {
+        // Mobile: user taps poster to start video
         poster.addEventListener("click", function () {
           poster.classList.add("d-none");
           video.classList.remove("d-none");
-          video.play();
+          video.play().catch(() => {
+            // fallback: keep poster if autoplay/play fails
+            poster.classList.remove("d-none");
+            video.classList.add("d-none");
+          });
         });
       } else {
-        poster.classList.add("d-none");
+        // Desktop: keep poster until video actually plays
         video.classList.remove("d-none");
         video.autoplay = true;
-        video.play();
+
+        let played = false;
+
+        video.addEventListener("canplay", () => {
+          video.play().catch(() => {
+            // fallback if autoplay blocked
+            console.warn("Autoplay blocked, keeping poster visible.");
+            video.classList.add("d-none");
+          });
+        });
+
+        video.addEventListener("playing", () => {
+          played = true;
+          poster.classList.add("d-none");
+        });
+
+        // fallback: if video never starts within 5s, keep poster visible
+        setTimeout(() => {
+          if (!played) {
+            console.warn("Video did not start, showing poster fallback.");
+            video.classList.add("d-none");
+            poster.classList.remove("d-none");
+          }
+        }, 5000);
       }
     });
   </script>
 
-  <!-- Defer heavier JS -->
-  <script src="/static/assets/js/datatakes/datatakes.js" defer></script>
-  <script src="/static/assets/js/index/index.js" defer></script>
-  <!-- Initialize Home after DOM is ready -->
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      if (typeof Home !== "undefined") {
-        const home = new Home();
-        home.init();
-      }
-      if (window.innerWidth <= 768) {
-        document.querySelectorAll('#vertical-slider img').forEach(img => img.style.display = 'none');
+  <!-- Keep index.js deferred -->
+<script src="/static/assets/js/index/index.js" defer></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Mobile fallback
+    if (window.innerWidth <= 768) {
+      document.querySelectorAll('#vertical-slider img').forEach(img => img.style.display = 'none');
     }
 
-    });
-  </script>
+    // Lazy-load datatakes.js only if slider exists
+    if (document.getElementById("vertical-slider")) {
+      import("/static/assets/js/datatakes/datatakes.js")
+        .then(() => console.log("datatakes.js loaded"))
+        .catch(err => console.error("Failed to load datatakes.js", err));
+    }
+
+    // Initialize Home (from index.js, already loaded with defer)
+    if (typeof Home !== "undefined") {
+      const home = new Home();
+      home.init();
+    }
+  });
+</script>
+
 {% endblock javascripts %}
 

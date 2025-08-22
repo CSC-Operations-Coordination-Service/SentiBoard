@@ -389,13 +389,18 @@ class Home {
             const icon = this.getIcon(item.messageType);
             const borderColor = this.getTypeColor(item.messageType);
             desktopHtml += `
-            <div class="news-card p-2 rounded shadow mb-2" style="color: white;">
-                <i class="fa ${icon}" style="color: ${borderColor}; font-size: 1.5rem;"></i>
-                <div class="fw-bold">${item.title}</div>
-                <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
-                <div>${item.text || ''}</div>
-                ${item.link ? `<div><a href="${item.link}" target="_blank" style="color: #ffc107;">Read more</a></div>` : ''}
-            </div>`;
+                <div class="news-card p-2 rounded shadow mb-2" style="color: white;">
+                <div class="d-flex align-items-start">
+                    <i class="fa ${icon}" 
+                    style="color: ${borderColor}; font-size: 1.2rem; margin-right: 8px; margin-top: 2px;"></i>
+                    <div>
+                    <div class="fw-bold">${item.title}</div>
+                    <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
+                    <div>${item.text || ''}</div>
+                    ${item.link ? `<div><a href="${item.link}" target="_blank" style="color: #ffc107;">Read more</a></div>` : ''}
+                    </div>
+                </div>
+                </div>`;
         });
 
         if (totalMessages > 3) {
