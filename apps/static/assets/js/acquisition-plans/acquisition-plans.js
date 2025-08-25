@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 // List of missions for which KML of acquistion plans is generated
@@ -357,6 +357,18 @@ class AcquisitionPlansViewer {
         this.viewer_widget.scene.globe.showGroundAtmosphere = true;
         this.viewer_widget.scene.globe.enableLighting = true;
 
+        this.waitForCesiumToolbar(this.viewer_widget, () => {
+            viewerCesiumNavigationMixin(
+                this.viewer_widget,
+                {
+                    enableCompass: true,
+                    enableZoomControls: true,
+                    enableDistanceLegend: false,
+                    defaultResetView: Cesium.Rectangle.fromDegrees(-180, -90, 180, 90),
+                    container: this.viewer_widget.container
+                }
+            );
+        });
         // Set the Animation View Widget properties
         // var multipliers = new Array(1, 120, 180, 300, 600, 1200, 1800, 3600);
         // Cesium.AnimationViewModel.defaultTicks = multipliers;
@@ -376,6 +388,17 @@ class AcquisitionPlansViewer {
         // Display acquisition stations
         asyncAjaxCall('/api/acquisitions/stations', 'GET', {},
             this.successLoadAcquisitionStations.bind(this), this.failureLoadAcquisitionStations);
+    }
+
+    waitForCesiumToolbar(viewer, callback, attempt = 0) {
+        const toolbar = viewer.container.querySelector('.cesium-viewer-toolbar');
+        if (toolbar) {
+            callback(); // safe to initialize plugin
+        } else if (attempt < 20) {
+            setTimeout(() => this.waitForCesiumToolbar(viewer, callback, attempt + 1), 100);
+        } else {
+            console.error('Cesium viewer toolbar not found after 2s.');
+        }
     }
 
     // SatelliteChange: the event handler is attached to MissionAcquisitionDays object
@@ -796,7 +819,7 @@ class AcquisitionPlansViewer {
     clearAcquisitionPlans() {
         this.currentKMLDatasources.forEach(function(item) {
             acquisitionPlanViewer.viewer_widget.dataSources.remove(item);
-        });
+        }, this);
         this.currentKMLDatasources = [];
         this.datatakes_list = new Map();
         $('#acq-datatakes-select').find('option').remove().end();
