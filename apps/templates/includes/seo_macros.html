@@ -9,7 +9,10 @@
     bluesky_profile='sentinelonline.bsky.social', 
     publisher_name='European Space Agency', 
     publisher_url='https://www.esa.int/', 
-    publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png'
+    publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png',
+    theme_color='#006B7C',
+    video_url='/static/assets/mv/home_v4.mp4',
+    video_thumbnail='/static/assets/img/home_preview.webp'
 ) %}
     <title>{{ title }} | Copernicus Dashboard</title>
     <meta name="description" content="{{ description }}">
@@ -18,14 +21,22 @@
     {% endif %}
     <link rel="canonical" href="{{ page_url }}">
 
+    {# --- Favicon / Icons --- #}
+    <link rel="icon" href="/static/assets/img/favicon.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/static/assets/img/favicon.png">
+    <meta name="theme-color" content="{{ theme_color }}">
+
     {# --- Open Graph --- #}
     <meta property="og:site_name" content="Copernicus Dashboard">
     <meta property="og:title" content="{{ title }}">
     <meta property="og:description" content="{{ description }}">
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ page_url }}">
+    <meta property="og:locale" content="en_GB">
     {% if image_url %}
       <meta property="og:image" content="{{ image_url }}">
+      <meta property="og:image:width" content="{{ image_width }}">
+      <meta property="og:image:height" content="{{ image_height }}">
     {% endif %}
 
     {# --- Twitter Card --- #}
@@ -37,6 +48,7 @@
     <meta name="twitter:url" content="{{ page_url }}">
     {% if image_url %}
       <meta name="twitter:image" content="{{ image_url }}">
+      <meta name="twitter:image:alt" content="{{ description }}">
     {% endif %}
 
     {# --- Bluesky Profile --- #}
@@ -51,30 +63,59 @@
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
-        "@type": "WebPage",
-        "url": {{ page_url | tojson }},
-        "name": {{ title | tojson }},
-        "description": {{ description | tojson }},
-        {% if image_url %}
-          "image": {{ image_url | tojson }},
-        {% endif %}
-        "inLanguage": "en",
-        "publisher": {
-            "@type": "Organization",
-            "name": {{ publisher_name | tojson }},
-            "url": {{ publisher_url | tojson }},
-            "logo": {
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "url": {{ (request.host_url | trim('/') ) | tojson }},
+            "name": "Copernicus Dashboard",
+            "publisher": {
+              "@type": "Organization",
+              "name": {{ publisher_name | tojson }},
+              "url": {{ publisher_url | tojson }},
+              "logo": {
                 "@type": "ImageObject",
                 "url": {{ publisher_logo | tojson }},
                 "width": 60,
                 "height": 60
+              }
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {{ (request.host_url ~ 'search?q={search_term_string}') | tojson }},
+              "query-input": "required name=search_term_string"
             }
-        },
-        "isPartOf": {
-            "@type": "WebSite",
-            "name": "Copernicus Dashboard",
-            "url": {{ (request.host_url | trim('/') ) | tojson }}
-        }
+          },
+          {
+            "@type": "WebPage",
+            "url": {{ page_url | tojson }},
+            "name": {{ title | tojson }},
+            "description": {{ description | tojson }},
+            {% if image_url %}
+              "image": {{ image_url | tojson }},
+            {% endif %}
+            "inLanguage": "en",
+            "isPartOf": { "@id": {{ (request.host_url | trim('/') ) | tojson }} }
+          },
+          {
+            "@type": "VideoObject",
+            "name": {{ title | tojson }},
+            "description": {{ description | tojson }},
+            "thumbnailUrl": [ {{ video_thumbnail | tojson }} ],
+            "uploadDate": "2025-01-01",
+            "contentUrl": {{ video_url | tojson }},
+            "embedUrl": {{ page_url | tojson }},
+            "publisher": {
+              "@type": "Organization",
+              "name": {{ publisher_name | tojson }},
+              "logo": {
+                "@type": "ImageObject",
+                "url": {{ publisher_logo | tojson }},
+                "width": 60,
+                "height": 60
+              }
+            }
+          }
+        ]
     }
     </script>
 {% endmacro %}
