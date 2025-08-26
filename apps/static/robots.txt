@@ -1,0 +1,11 @@
+# robots.txt for Copernicus Sentinel Operations Dashboard
+
+User-agent: *
+# Allow crawling of all main content pages
+Allow: /
+
+# Disallow crawling of static assets (CSS, JS, fonts, images)
+Disallow: /static/
+
+# Sitemap reference for better indexing
+Sitemap: https://operations.dashboard.copernicus.eu/sitemap.xml

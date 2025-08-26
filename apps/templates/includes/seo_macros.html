@@ -4,6 +4,8 @@
     description='', 
     keywords='', 
     image_url='', 
+    image_width='1200',
+    image_height='630',
     page_url='', 
     twitter_handle='sentinelonline_', 
     bluesky_profile='sentinelonline.bsky.social', 
@@ -12,7 +14,8 @@
     publisher_logo='https://operations.dashboard.copernicus.eu/static/assets/img/favicon.png',
     theme_color='#006B7C',
     video_url='/static/assets/mv/home_v4.mp4',
-    video_thumbnail='/static/assets/img/home_preview.webp'
+    video_thumbnail='/static/assets/img/home_preview.webp',
+    manifest_url='/static/manifest.json'
 ) %}
     <title>{{ title }} | Copernicus Dashboard</title>
     <meta name="description" content="{{ description }}">
@@ -21,9 +24,16 @@
     {% endif %}
     <link rel="canonical" href="{{ page_url }}">
 
-    {# --- Favicon / Icons --- #}
-    <link rel="icon" href="/static/assets/img/favicon.png" type="image/png" sizes="32x32">
-    <link rel="apple-touch-icon" href="/static/assets/img/favicon.png">
+    {# --- Favicon / Icons / Manifest --- #}
+    <link rel="icon" href="/static/assets/img/icons/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/assets/img/favicon.png">
+    <link rel="icon" type="image/png" sizes="96x96" href="/static/assets/img/icons/favicon-96.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/assets/img/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/static/assets/img/icons/icon-512.png">
+
+    <link rel="apple-touch-icon" href="/static/assets/img/icons/apple-touch-icon.png" sizes="180x180">
+
+    <link rel="manifest" href="{{ manifest_url }}">
     <meta name="theme-color" content="{{ theme_color }}">
 
     {# --- Open Graph --- #}
