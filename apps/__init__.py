@@ -285,10 +285,13 @@ def create_app(config):
     # --- Google verification route ---
     @app.route('/<filename>')
     def google_verification(filename):
-        return send_from_directory(
-            os.path.join(app.root_path, 'static/verification'),
-            filename
-    )
+        if filename.startswith("google"):
+            return send_from_directory(
+                os.path.join(app.root_path, 'static/verification'),
+                f"{filename}.html"
+        )
+    # If not a Google file, return 404 normally
+    return "Not Found", 404
     # ---------------------------------
     print("Configuring Application ...")
     register_extensions(app)
