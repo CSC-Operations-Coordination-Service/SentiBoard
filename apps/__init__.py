@@ -282,15 +282,13 @@ def create_app(config):
     print("Creating Application...")
     app = Flask(__name__)
     app.config.from_object(config)
-    # --- Google verification route ---
-    @app.route('/<filename>')
-    def google_verification(filename):
-        if filename.startswith("google"):
-            return send_from_directory(
-                os.path.join(app.root_path, 'static/verification'),
-                f"{filename}.html"
+    # --- Google verification route (safe) ---
+    @app.route('/google<verification_id>.html')
+    def google_verification(verification_id):
+        return send_from_directory(
+            os.path.join(app.root_path, 'static/verification'),
+            f"google{verification_id}.html"
         )
-        return "Not Found", 404
     # ---------------------------------
     print("Configuring Application ...")
     register_extensions(app)
