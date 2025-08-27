@@ -8,7 +8,7 @@ import socket
 from importlib import import_module
 from pathlib import Path
 
-from flask import Flask, request
+from flask import Flask, request, send_from_directory
 from flask_caching import Cache
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
