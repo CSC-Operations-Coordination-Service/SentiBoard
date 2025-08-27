@@ -290,8 +290,7 @@ def create_app(config):
                 os.path.join(app.root_path, 'static/verification'),
                 f"{filename}.html"
         )
-    # If not a Google file, return 404 normally
-    return "Not Found", 404
+        return "Not Found", 404
     # ---------------------------------
     print("Configuring Application ...")
     register_extensions(app)
