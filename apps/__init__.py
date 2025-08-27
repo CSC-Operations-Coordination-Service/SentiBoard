@@ -282,6 +282,11 @@ def create_app(config):
     print("Creating Application...")
     app = Flask(__name__)
     app.config.from_object(config)
+    # --- Google verification route ---
+    @app.route('/google800f0854e01d0089.html')
+    def google_verification():
+        return send_from_directory('apps/static/verification', 'google800f0854e01d0089.html')
+    # ---------------------------------
     print("Configuring Application ...")
     register_extensions(app)
     register_blueprints(app)
