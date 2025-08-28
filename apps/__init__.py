@@ -297,13 +297,39 @@ def create_app(config):
             os.path.join(app.root_path, 'static'),  
             'robots.txt'
         )
-    # ------------------------
+   # --- Manifest.json route (dynamic for prod URLs) ---
     @app.route('/manifest.json')
     def manifest():
-        return send_from_directory(
-            os.path.join(app.root_path, 'static'),  
-            'manifest.json'
-        )
+        from flask import jsonify
+        return jsonify({
+            "name": "Copernicus Sentinel Operations Dashboard",
+            "short_name": "Copernicus Dashboard",
+            "description": "Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels.",
+            "start_url": "https://operations.dashboard.copernicus.eu/",
+            "scope": "https://operations.dashboard.copernicus.eu/",
+            "display": "standalone",
+            "background_color": "#006B7C",
+            "theme_color": "#006B7C",
+            "icons": [
+                {
+                    "src": "/static/assets/img/icons/favicon-96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/assets/img/icons/icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                },
+                {
+                    "src": "/static/assets/img/icons/icon-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ]
+        })
      # ------------------------
      # --- Sitemap.xml route ---
     @app.route('/sitemap.xml')
