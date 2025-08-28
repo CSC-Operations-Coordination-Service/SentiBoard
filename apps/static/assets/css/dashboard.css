@@ -1,6 +1,7 @@
 html,
 body {
   font-family: 'NotesEsa', sans-serif !important;
+  background-color: #343a40 !important;
 }
 
 
@@ -17,7 +18,8 @@ body {
   flex-direction: row;
   gap: 15px;
   position: relative;
-  margin: 6px auto;
+  margin: 0;
+  padding: 6px auto;
 }
 
 .logo-header a.logo {
@@ -188,6 +190,7 @@ p {
 
 .main-header {
   background: #343a40;
+  background-color: #343a40 !important;
   min-height: 60px;
   width: 100%;
   position: fixed;

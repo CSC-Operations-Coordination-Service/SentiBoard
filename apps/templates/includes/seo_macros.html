@@ -22,7 +22,7 @@
     {% if keywords %}
       <meta name="keywords" content="{{ keywords }}">
     {% endif %}
-    <link rel="canonical" href="{{ page_url }}">
+    <link rel="canonical" href="{{ page_url() }}">
 
     {# --- Favicon / Icons / Manifest --- #}
     <link rel="icon" href="/static/assets/img/icons/favicon.ico" sizes="any">
@@ -41,7 +41,7 @@
     <meta property="og:title" content="{{ title }}">
     <meta property="og:description" content="{{ description }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ page_url }}">
+    <meta property="og:url" content="{{ page_url() }}">
     <meta property="og:locale" content="en_GB">
     {% if image_url %}
       <meta property="og:image" content="{{ image_url }}">
@@ -55,7 +55,7 @@
     <meta name="twitter:creator" content="@{{ twitter_handle }}">
     <meta name="twitter:title" content="{{ title }}">
     <meta name="twitter:description" content="{{ description }}">
-    <meta name="twitter:url" content="{{ page_url }}">
+    <meta name="twitter:url" content="{{ page_url() }}">
     {% if image_url %}
       <meta name="twitter:image" content="{{ image_url }}">
       <meta name="twitter:image:alt" content="{{ description }}">
@@ -76,7 +76,7 @@
         "@graph": [
           {
             "@type": "WebSite",
-            "url": {{ (request.host_url | trim('/') ) | tojson }},
+            "url": {{ "https://operations.dashboard.copernicus.eu/" | tojson }},
             "name": "Copernicus Dashboard",
             "publisher": {
               "@type": "Organization",
@@ -91,20 +91,20 @@
             },
             "potentialAction": {
               "@type": "SearchAction",
-              "target": {{ (request.host_url ~ 'search?q={search_term_string}') | tojson }},
+              "target": {{ ("https://operations.dashboard.copernicus.eu/search?q={search_term_string}") | tojson }},
               "query-input": "required name=search_term_string"
             }
           },
           {
             "@type": "WebPage",
-            "url": {{ page_url | tojson }},
+            "url": {{ page_url() | tojson }},
             "name": {{ title | tojson }},
             "description": {{ description | tojson }},
             {% if image_url %}
               "image": {{ image_url | tojson }},
             {% endif %}
             "inLanguage": "en",
-            "isPartOf": { "@id": {{ (request.host_url | trim('/') ) | tojson }} }
+            "isPartOf": { "@id": "https://operations.dashboard.copernicus.eu/" }
           },
           {
             "@type": "VideoObject",
@@ -113,7 +113,7 @@
             "thumbnailUrl": [ {{ video_thumbnail | tojson }} ],
             "uploadDate": "2025-01-01",
             "contentUrl": {{ video_url | tojson }},
-            "embedUrl": {{ page_url | tojson }},
+            "embedUrl": {{ page_url() | tojson }},
             "publisher": {
               "@type": "Organization",
               "name": {{ publisher_name | tojson }},

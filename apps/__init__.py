@@ -296,11 +296,16 @@ def create_app(config):
      # Add this context processor
     @app.context_processor
     def inject_page_url():
-        try:
-            return dict(page_url=request.url)
-        except RuntimeError:
-            return dict(page_url='')
-        
+        def page_url():
+            try:
+                # Always enforce https and production hostname
+                return request.url.replace(
+                    request.host, "operations.dashboard.copernicus.eu"
+                ).replace("http://", "https://")
+            except RuntimeError:
+                return ""
+        return dict(page_url=page_url)
+
     print("Starting Cache ...")
     flask_cache.init_app(app)
     print("Starting Database ...")
