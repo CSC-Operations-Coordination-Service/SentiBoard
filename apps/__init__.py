@@ -290,6 +290,30 @@ def create_app(config):
             f"google{verification_id}.html"
         )
     # ---------------------------------
+    # --- Robots.txt route ---
+    @app.route('/robots.txt')
+    def robots_txt():
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'),  
+            'robots.txt'
+        )
+    # ------------------------
+    @app.route('/manifest.json')
+    def manifest():
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'),  
+            'manifest.json'
+        )
+     # ------------------------
+     # --- Sitemap.xml route ---
+    @app.route('/sitemap.xml')
+    def sitemap():
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'),  
+            'sitemap.xml',
+            mimetype='application/xml'
+        )
+    # ------------------------
     print("Configuring Application ...")
     register_extensions(app)
     register_blueprints(app)
