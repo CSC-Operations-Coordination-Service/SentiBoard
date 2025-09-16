@@ -207,12 +207,18 @@
     <link rel="stylesheet" href="/static/assets/css/events.css">
 
   <!-- Calendar plugin scripts -->
+  <script type="text/javascript">
+    const QUARTER_AUTHORIZED = {{ 'true' if quarter_authorized else 'false' }} ;
+    window.ANOMALIES_DATA = {{ anomalies | tojson | safe }};
+  </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
-  <script defer type="text/javascript">
-    calendar.init()
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+        calendar.init();
+    });
   </script>
-
+  
   <!-- Timeline plugin style -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css" />
   <link rel="stylesheet" href="/static/assets/css/dashboard.css" />

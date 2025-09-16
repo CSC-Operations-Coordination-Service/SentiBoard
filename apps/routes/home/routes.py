@@ -12,14 +12,21 @@ behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 """
 
-from flask import render_template, request, redirect, url_for, flash, current_app, Response, Flask, jsonify
+from flask import render_template, request, current_app, Response
+from flask_login import current_user
 from jinja2 import TemplateNotFound
 from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
+from apps.utils.events_utils import (
+    get_previous_quarter_anomalies,
+    get_last_quarter_anomalies,
+    serialize_anomalie
+)
 import os
 import json
 import traceback
+import logging
 
 
 @blueprint.route('/index')
@@ -27,33 +34,57 @@ def index():
     return render_template('home/index.html', segment='index')
 
 
+@blueprint.route('/events')
+def events():
+    
+    quarter_authorized = False
+    if current_user.is_authenticated:
+        quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
+
+    if quarter_authorized:
+        raw_events = get_previous_quarter_anomalies()
+    else:
+        raw_events = get_last_quarter_anomalies()
+    
+    anomalies = [serialize_anomalie(e) for e in raw_events]
+    
+    return render_template(
+        "home/events.html",
+        quarter_authorized=quarter_authorized,
+        anomalies=anomalies
+    )
+    
+
 @blueprint.route('/<template>')
 def route_template(template):
     try:
-
         if not template.endswith('.html'):
             template += '.html'
 
         # Detect the current page
         segment = get_segment(request)
 
-        # Serve the file (if exists) from app/templates/home/FILE.html
-        # or from app/templates/admin/FILE.html, depending on the requested page
+        # List of admin pages
         admin_pages = ['users.html', 'roles.html', 'news.html', 'anomalies.html']
-        if template in admin_pages:
 
-            # Serve the file (if exists) from app/templates/admin/FILE.html
+        # Handle admin pages
+        if template in admin_pages:
             return render_template("admin/" + template, segment=segment)
 
-        # Serve the file (if exists) from app/templates/home/FILE.html
+        # Special case: events page
+        if template in ["events", "events.html"]:
+            # Determine if the user is quarter authorized
+            return events()
+
+        # Default: serve page from home
         return render_template("home/" + template, segment=segment)
 
     except TemplateNotFound:
         return render_template('home/page-404.html'), 404
 
-    except:
+    except Exception as e:
+        current_app.logger.exception(e)
         return render_template('home/page-500.html'), 500
-
 
 # Helper - Extract current page name from request
 def get_segment(request):

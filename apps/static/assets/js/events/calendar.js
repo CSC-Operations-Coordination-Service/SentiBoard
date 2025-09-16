@@ -91,69 +91,67 @@ class CalendarWidget {
             'satellite': 'fas fa-satellite-dish'
         };
 
-        ajaxCall('/api/auth/quarter-authorized', 'GET', {},
+        /*ajaxCall('/api/auth/quarter-authorized', 'GET', {},
             this.quarterAuthorizedProcess.bind(this),
             this.errorLoadAuthorized.bind(this)
-        );
+        );*/
+        // Authorization check
+        console.log("User authorized:", QUARTER_AUTHORIZED);
+        //console.log("ANOMALIES_DATA:", window.ANOMALIES_DATA);
+        if (QUARTER_AUTHORIZED) {
+            this.loadEventsECUser();
+        } else {
+            this.errorLoadAuthorized();
+        }
 
         this.addEventListeners();
     }
 
-    quarterAuthorizedProcess(response) {
-        if (response['authorized'] === true) {
-            this.loadEventsECUser();
-        } else {
-            this.loadEventsGuestUser();
-        }
+    errorLoadAuthorized() {
+        console.info('Guest user');
+        this.loadEventsGuestUser();
     }
 
-    errorLoadAuthorized(response) {
-        console.error('Authorization error', response);
+    loadEventsGuestUser() {
+        console.info('Loading events in the last quarter (SSR)...');
+
+        if (window.ANOMALIES_DATA && window.ANOMALIES_DATA.length > 0) {
+            this.successLoadAnomalies(window.ANOMALIES_DATA);
+        } else {
+            console.warn("No anomalies data found for GuestUser");
+            this.errorLoadAnomalies("No anomalies data");
+        }
     }
 
     loadEventsECUser() {
         console.info('Loading events up to the previous quarter...');
-
-        // Set startEventsDate to the beginning of the previous quarter
-        const quarter = getPreviousQuarter(this.startEventsDate);
-        this.startEventsDate.setFullYear(quarter.year); // Use setFullYear instead of deprecated setYear
-        this.startEventsDate.setMonth((quarter.quarter - 1) * 3, 1); // Month is zero-indexed
-
-
-        asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
-            this.succesLoadAnomalies.bind(this),
-            this.errorLoadAnomalies.bind(this)
-        );
+        if (window.ANOMALIES_DATA && window.ANOMALIES_DATA.length > 0) {
+            this.successLoadAnomalies(window.ANOMALIES_DATA);
+        } else {
+            console.warn("No anomalies data found for authorizedUser");
+            this.errorLoadAnomalies("No anomalies data");
+        }
     }
 
-    loadEventsGuestUser() {
-        console.info('Loading events in the last quarter...');
-        this.startEventsDate.setMonth(this.startEventsDate.getMonth() - 3);
-        this.startEventsDate.setHours(0, 0, 0, 0);
-        asyncAjaxCall('/api/events/anomalies/last-quarter', 'GET', {},
-            this.succesLoadAnomalies.bind(this),
-            this.errorLoadAnomalies.bind(this)
-        );
-    }
-
-    succesLoadAnomalies(response) {
-        var rows = format_response(response);
+    successLoadAnomalies(response) {
+        var rows = Array.isArray(response) ? response : [];
 
         var datatakeList = [];
 
         for (let i = 0; i < rows.length; ++i) {
             let anomaly = rows[i];
+            console.debug('Processing anomaly:', anomaly);
             if (datatakeList.includes(anomaly['environment'])) {
                 continue;
             } else {
                 datatakeList.push(anomaly['environment']);
             }
-            // Append the calendar event instance only if the event has an impact on datatakes (not fully recovered)
+            // Append the calendar event instance only if the event has an impact on datatakes
             let instance = this.buildEventInstanceFromAnomaly(anomaly);
             if (!instance.fullRecover) {
 
                 // Store the anomalies in the class member
-                this.anomalies[anomaly['key']] = anomaly;
+                this.anomalies[anomaly.id || anomaly.key] = anomaly;
 
                 // Append the event instance
                 this.events.push(instance);
@@ -161,7 +159,7 @@ class CalendarWidget {
             }
         }
 
-        // Now generate the calendar AFTER loading events
+        // generate the calendar AFTER loading events
         this.generateCalendar(this.currentMonth, this.currentYear);
 
         this.showDayEventsOnPageLoad();
