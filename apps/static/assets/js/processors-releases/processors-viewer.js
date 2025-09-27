@@ -202,7 +202,7 @@ class ProcessorsViewer {
         for (var i = 0 ; i < procViewer.processorsReleases.length; i++) {
             var pr = procViewer.processorsReleases[i];
             var events = procViewer.buildEventInstances(pr);
-	    if (events) {
+	    if (events && pr['target_ipfs'] && pr['target_ipfs'].length > 0 && Object.values(this.IPFsMap).some(y => y.includes(pr['target_ipfs'][0].split(':')[0]))) {
                 procViewer.loadedEvents.add(events);
                 var detailsPanel = procViewer.buildDetailsPanel(pr);
                 procViewer.detailsMap[pr['id']] = detailsPanel;
@@ -231,10 +231,12 @@ class ProcessorsViewer {
         var count = 0;
         procViewer.groups = new vis.DataSet([]);
         ipfs.forEach(ipf => {
-	    let ipfMapped = this.IPFsGroupsMap[ipf];
-	    // using update because its like add but doesnt crash on duplicate ids, instead it updates them (in this case with the same data)
-            procViewer.groups.update({ id: ipfMapped, content: ipfMapped.substring(ipfMapped.indexOf('_') + 1, ipfMapped.length)});
-        });
+			if (Object.values(this.IPFsMap).some(y => y.includes(ipf))) {
+				let ipfMapped = this.IPFsGroupsMap[ipf];
+	    		// using update because its like add but doesnt crash on duplicate ids, instead it updates them (in this case with the same data)
+            	procViewer.groups.update({ id: ipfMapped, content: ipfMapped.substring(ipfMapped.indexOf('_') + 1, ipfMapped.length)});
+			}
+		});
         
         procViewer.timeline.setGroups(procViewer.groups);
 
@@ -242,7 +244,8 @@ class ProcessorsViewer {
         procViewer.filteredEvents = new vis.DataSet();
         for (var i = 0 ; i < procViewer.processorsReleases.length; i++) {
             var pr = procViewer.processorsReleases[i];
-            if (pr['mission'] === selectedMission) {
+            if (pr['mission'] === selectedMission && pr['target_ipfs'] && pr['target_ipfs'].length > 0 && Object.values(this.IPFsMap).some(y => y.includes(pr['target_ipfs'][0].split(':')[0]))) {
+
                 var events = procViewer.buildEventInstances(pr);
                 if (events) procViewer.filteredEvents.add(events);
             }
