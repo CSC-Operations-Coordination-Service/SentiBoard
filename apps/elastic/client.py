@@ -213,7 +213,7 @@ class ElasticClient:
             filtered_query = {
                 "bool": {
                     "must": query["query"],
-                    "must_not": {filter_expression},
+                    "must_not": filter_expression,
                 }
             }
             query["query"] = filtered_query
