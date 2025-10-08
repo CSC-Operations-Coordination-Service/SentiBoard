@@ -573,12 +573,22 @@ class Datatakes {
 
         console.log("Looking for datatake ID:", selectedId);
 
+        const $modal = $('#completenessTableModal');
+
+        // Ensure this is attached only once
+        $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
+            // Remove focus from anything inside the modal before hiding
+            document.activeElement.blur();
+        });
+
         try {
             await this.renderInfoTable(selectedId);
 
-            $('#completenessTableModal').modal('show');
-            $('#completenessTableModal .modal-body').scrollTop(0);
+            // Show the modal
+            $modal.modal('show');
 
+            // Ensure scroll reset
+            $modal.find('.modal-body').scrollTop(0);
 
         } catch (err) {
             console.error("Failed to render info table for datatake:", selectedId, err);
@@ -872,7 +882,12 @@ class Datatakes {
     }
 
     hideInfoTable() {
-        document.getElementById('infoTableContainer').style.display = 'none';
+        /*const infoTable = document.getElementById('infoTableContainer');
+        if (infoTable) {
+            infoTable.style.display = 'none';
+        }*/
+
+        $('#completenessTableModal').modal('hide');
     }
 
     filterSidebarItems() {
