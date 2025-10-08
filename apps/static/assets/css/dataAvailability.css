@@ -895,17 +895,21 @@ th:nth-of-type(6) .tooltip-text::after {
 /*spinner container */
 
 #spinner {
-  display: none;  
-  position: absolute; 
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.7);
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
   z-index: 10;
   justify-content: center;
   align-items: center;
 }
 
 #spinner.active {
-  display: flex;  /* show when active */
+  display: flex;
+  /* show when active */
 }
 
 /*spinner bar*/
@@ -930,13 +934,61 @@ th:nth-of-type(6) .tooltip-text::after {
 }
 
 @keyframes rolling-bar {
-  0% { left: -40px; }
-  100% { left: 80px; }
+  0% {
+    left: -40px;
+  }
+
+  100% {
+    left: 80px;
+  }
 }
 
+/* --- Donut Charts Responsive Layout --- */
+.donut-charts-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+  text-align: center;
+}
 
-/**/
+.donut-charts-wrapper>div {
+  flex: 1 1 45%;
+  max-width: 45%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#acquisitionDonutChart,
+#publicationDonutChart {
+  width: 100% !important;
+  max-width: 400px;
+}
+
 /* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .donut-charts-wrapper {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 16px;
+  }
+
+  .donut-charts-wrapper>div {
+    width: 100% !important;
+    max-width: 100% !important;
+    justify-content: center !important;
+  }
+
+  #acquisitionDonutChart,
+  #publicationDonutChart {
+    width: 100% !important;
+    max-width: 320px;
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 767.98px) {
   .container-fluid {
     padding: 10px;
@@ -1326,5 +1378,5 @@ th:nth-of-type(6) .tooltip-text::after {
     font-size: 12px;
     padding: 4px 8px;
   }
-  
+
 }

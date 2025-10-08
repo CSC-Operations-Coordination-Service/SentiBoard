@@ -202,8 +202,8 @@ class Datatakes {
         const url = urlMap[selected_time_period] || urlMap.default;
 
         asyncAjaxCall(url, 'GET', {},
-            (response) => {
-                this.successLoadDatatakes(response);
+            async (response) => {
+                await this.successLoadDatatakes(response);
                 this.pendingDatatakes = response; // store for chart update later
 
                 if (shouldReapplyFilters) {
@@ -212,6 +212,12 @@ class Datatakes {
                         this.filterSidebarItems(); // apply UI filters
                     }
                 }
+                if (this.mockDataTakes?.length > 0) {
+                    this.setDefaultView();
+                } else {
+                    console.warn("mockDataTakes empty — skipping setDefaultView()");
+                }
+
                 finishRequest(true); // mark success
             },
             (response) => {
@@ -303,6 +309,7 @@ class Datatakes {
         }
 
         this.populateDataList(false);
+        this.setDefaultView();
 
         const currentList = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
 
@@ -566,12 +573,22 @@ class Datatakes {
 
         console.log("Looking for datatake ID:", selectedId);
 
+        const $modal = $('#completenessTableModal');
+
+        // Ensure this is attached only once
+        $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
+            // Remove focus from anything inside the modal before hiding
+            document.activeElement.blur();
+        });
+
         try {
             await this.renderInfoTable(selectedId);
 
-            $('#completenessTableModal').modal('show');
-            $('#completenessTableModal .modal-body').scrollTop(0);
+            // Show the modal
+            $modal.modal('show');
 
+            // Ensure scroll reset
+            $modal.find('.modal-body').scrollTop(0);
 
         } catch (err) {
             console.error("Failed to render info table for datatake:", selectedId, err);
@@ -721,7 +738,7 @@ class Datatakes {
             (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
         );
 
-        console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
+        //console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
 
         if (relevantData.length === 0) {
             console.warn(`No data found for key: ${normalizedLinkKey}`);
@@ -865,7 +882,12 @@ class Datatakes {
     }
 
     hideInfoTable() {
-        document.getElementById('infoTableContainer').style.display = 'none';
+        /*const infoTable = document.getElementById('infoTableContainer');
+        if (infoTable) {
+            infoTable.style.display = 'none';
+        }*/
+
+        $('#completenessTableModal').modal('hide');
     }
 
     filterSidebarItems() {
@@ -1026,7 +1048,7 @@ class Datatakes {
             tableSection.style.display = "none";
             return;
         }
-        console.log("algo aqui pasa ", selectedData.raw.completeness_status);
+        //console.log("completeness_status", selectedData.raw.completeness_status);
 
         let data = [selectedData];
 
@@ -1092,6 +1114,25 @@ class Datatakes {
     }
 
     updateTitleAndDate(selectedKey) {
+        if (!selectedKey) {
+            return;
+        }
+
+        if (!this.mockDataTakes || this.mockDataTakes.length === 0) {
+            console.warn("mockDataTakes is empty or not loaded yet.");
+            return;
+        }
+
+        // Find datatake
+        const dataTake = this.mockDataTakes.find(item => item.id === selectedKey);
+
+        if (!dataTake) {
+            console.warn(`Datatake not found for key: ${selectedKey}`);
+            console.log("Available datatake IDs:", this.mockDataTakes.map(item => item.id));
+            return;
+        }
+
+
         const container = document.querySelector(".datatakes-container");
         if (!container) {
             console.error("Datatakes container not found!");
@@ -1102,12 +1143,6 @@ class Datatakes {
 
         if (!titleSpan || !dateElement) {
             console.error("Title span or date element not found!");
-            return;
-        }
-
-        const dataTake = this.mockDataTakes?.find(item => item.id === selectedKey);
-        if (!dataTake) {
-            console.warn(`Datatake not found for key: ${selectedKey}`);
             return;
         }
 
@@ -1203,11 +1238,11 @@ class Datatakes {
 
                     const filtered = allSatelliteOptions.filter(opt => opt.value.startsWith(selectedMission));
                     filtered.forEach(opt => satelliteSelect.appendChild(opt));
-                    
+
                     /*if (filtered.length > 0) {
                         satelliteSelect.value = filtered[0].value;
                     } else {*/
-                        satelliteSelect.value = "";
+                    satelliteSelect.value = "";
                     //}
                 }
 
@@ -1266,9 +1301,26 @@ class Datatakes {
         });
     }
 
-    async setDefaultView() {
+    async setDefaultView(retryCount = 0) {
         const sidebarItems = document.querySelectorAll(".filter-link");
+
+        if (sidebarItems.length === 0) {
+            if (retryCount < 5) { // retry up to 5 times
+                console.warn("Sidebar not ready, retrying setDefaultView...");
+                setTimeout(() => this.setDefaultView(retryCount + 1), 200);
+            } else {
+                console.error("Sidebar items not found after retries.");
+            }
+            return;
+        }
+
         const firstLink = sidebarItems[0];
+        const defaultKey = firstLink.textContent.trim();
+
+        if (!defaultKey) {
+            console.warn("Sidebar first link has no valid text, cannot update title/date.");
+            return;
+        }
 
         if (!firstLink) {
             console.warn("No sidebar items found.");
@@ -1277,7 +1329,6 @@ class Datatakes {
 
         firstLink.classList.add("active");
 
-        const defaultKey = firstLink.textContent.trim();
 
         // Safely update title and charts once the DOM is ready
         if (document.querySelector(".datatakes-container")) {
