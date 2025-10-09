@@ -14,8 +14,12 @@ delivered to him.
 class Home {
 
     constructor() {
-        window.addEventListener("resize", this.handleResponsiveSliderLayout.bind(this));
+        // Bind the method correctly for both load and resize
+        const boundSlider = this.handleResponsiveSliderLayout.bind(this);
+        window.addEventListener("load", boundSlider);
+        window.addEventListener("resize", boundSlider);
     }
+
 
     init() {
 
@@ -57,7 +61,7 @@ class Home {
             $('#home-video').get(0).play();
         }
         this.handleResponsiveSliderLayout();
-        this.initSlider();
+        //this.initSlider();
         return;
     }
 
@@ -231,76 +235,75 @@ class Home {
         const leftSlide = document.querySelector(".left-slide");
         const rightSlide = document.querySelector(".right-slide");
         const sliderContainer = document.querySelector(".slider-container");
+        if (!leftSlide || !rightSlide || !sliderContainer) return;
 
-        // Mobile: stack slides vertically
+        const actionButtons = sliderContainer.querySelector(".action-buttons");
+
         if (window.innerWidth <= 768) {
-            if (!document.querySelector(".mobile-slide")) {
+            // Remove existing mobile slider
+            const existingMobile = sliderContainer.querySelector(".mobile-slider");
+            if (existingMobile) existingMobile.remove();
+
+            leftSlide.style.display = "none";
+            rightSlide.style.display = "none";
+            if (actionButtons) actionButtons.style.display = "none";
+
+            const mobileContainer = document.createElement("div");
+            mobileContainer.classList.add("mobile-slider");
+
+            const leftCards = Array.from(leftSlide.children);
+            const rightCards = Array.from(rightSlide.children);
+
+            leftCards.forEach((leftCard, i) => {
                 const mobileSlide = document.createElement("div");
                 mobileSlide.classList.add("mobile-slide");
 
-                const leftSlides = [...leftSlide.children];
-                const rightSlides = [...rightSlide.children].reverse(); // match original top-bottom order
+                // Clone text content only
+                const textClone = leftCard.cloneNode(true);
 
-                for (let i = 0; i < leftSlides.length; i++) {
-                    mobileSlide.appendChild(rightSlides[i].cloneNode(true));
-                    mobileSlide.appendChild(leftSlides[i].cloneNode(true));
+                // Clone <img> if exists in right card
+                const rightImg = rightCards[i]?.querySelector('img');
+                if (rightImg) {
+                    const imgClone = rightImg.cloneNode(true);
+                    mobileSlide.appendChild(imgClone);
                 }
 
-                sliderContainer.innerHTML = "";
-                sliderContainer.appendChild(mobileSlide);
-            }
+                mobileSlide.appendChild(textClone);
+                mobileContainer.appendChild(mobileSlide);
+            });
+
+            sliderContainer.appendChild(mobileContainer);
+
         } else {
-            // Restore original slider layout
-            if (!document.querySelector(".left-slide") && !document.querySelector(".right-slide")) {
-                location.reload(); // simple reload fallback to reset DOM (or implement dynamic rebuild)
-            }
+            // Remove mobile slider if exists
+            const mobileSlider = sliderContainer.querySelector(".mobile-slider");
+            if (mobileSlider) mobileSlider.remove();
+
+            // Restore desktop slider
+            leftSlide.style.display = "";
+            rightSlide.style.display = "";
+            if (actionButtons) actionButtons.style.display = "";
+
+            // Reset positions
+            leftSlide.style.transform = '';
+            rightSlide.style.transform = '';
+            const slidesLength = rightSlide.children.length;
+            leftSlide.style.top = `-${(slidesLength - 1) * 80}vh`;
+
+            // Re-init slider animation
+            this.initSlider();
         }
     }
 
+
     initSlider() {
-        if (window.innerWidth <= 768) {
-            const leftSlide = document.querySelector('.left-slide');
-            const rightSlide = document.querySelector('.right-slide');
-
-            if (!leftSlide || !rightSlide) return;
-
-            const textCards = leftSlide.children;
-            const imageCards = rightSlide.children;
-
-            const mobileContainer = document.createElement('div');
-            mobileContainer.className = 'mobile-slider';
-
-            for (let i = 0; i < textCards.length; i++) {
-                const slideWrapper = document.createElement('div');
-                slideWrapper.className = 'mobile-slide';
-
-                const imgClone = imageCards[i].cloneNode(true);
-                const textClone = textCards[i].cloneNode(true);
-
-                slideWrapper.appendChild(imgClone);
-                slideWrapper.appendChild(textClone);
-                mobileContainer.appendChild(slideWrapper);
-            }
-            // Insert mobileContainer before the leftSlide (or wherever makes sense)
-            const parent = document.querySelector('#vertical-slider .container');
-            parent.insertBefore(mobileContainer, leftSlide);
-
-            // Hide the original slider on mobile
-            leftSlide.style.display = 'none';
-            rightSlide.style.display = 'none';
-            document.querySelector('.action-buttons').style.display = 'none';
-        }
-
         const sliderContainer = document.querySelector(".slider-container");
         const slideRight = document.querySelector(".right-slide");
         const slideLeft = document.querySelector(".left-slide");
         const upButton = document.querySelector(".up-button");
         const downButton = document.querySelector(".down-button");
 
-        if (!sliderContainer || !slideRight || !slideLeft || !upButton || !downButton) {
-            console.warn("Slider elements not found. Skipping slider initialization.");
-            return;
-        }
+        if (!sliderContainer || !slideRight || !slideLeft || !upButton || !downButton) return;
 
         const slidesLength = slideRight.querySelectorAll("div").length;
         let activeSlideIndex = 0;
@@ -310,18 +313,12 @@ class Home {
         const changeSlide = (direction) => {
             if (direction === "up") {
                 activeSlideIndex++;
-                if (activeSlideIndex > slidesLength - 1) {
-                    activeSlideIndex = 0;
-                }
-            } else if (direction === "down") {
+                if (activeSlideIndex > slidesLength - 1) activeSlideIndex = 0;
+            } else {
                 activeSlideIndex--;
-                if (activeSlideIndex < 0) {
-                    activeSlideIndex = slidesLength - 1;
-                }
+                if (activeSlideIndex < 0) activeSlideIndex = slidesLength - 1;
             }
-
             const height = sliderContainer.clientHeight;
-
             slideRight.style.transform = `translateY(-${activeSlideIndex * height}px)`;
             slideLeft.style.transform = `translateY(${activeSlideIndex * height}px)`;
         };
@@ -329,6 +326,7 @@ class Home {
         upButton.addEventListener("click", () => changeSlide("up"));
         downButton.addEventListener("click", () => changeSlide("down"));
     }
+
 
     /*messages*/
     formatDate(dateString) {
@@ -360,66 +358,83 @@ class Home {
     }
 
     renderInstantMessageCards(instantMessages, totalMessages) {
-        const allowedRoles = ['admin', 'esauser', 'ecuser']; // Add more roles if needed
+        const allowedRoles = ['admin', 'esauser', 'ecuser'];
         const isPrivilegedUser = allowedRoles.includes(window.userRole);
 
         const adminLinkHtml = isPrivilegedUser ? `
         <div class="text-right mt-3">
-            <a href="/admin/message?next=/index.html" style="color: #ffc107; font-weight: 500; text-decoration: none; margin-right: 16px;">
+            <a href="/admin/message?next=/index.html" style="color: #ffc107; font-weight: 500; text-decoration: none;">
                 Add News
             </a>
         </div>` : '';
 
         if (!instantMessages.length) {
-            $('#custom-banner-placeholder').html(`
+            const noNewsHtml = `
             <div class="bg-dark text-white text-center py-4">
                 <h4 style="font-weight: 500;">News</h4>
                 <p class="mb-2">There are no news at the moment.</p>
                 ${adminLinkHtml}
-            </div>`);
+            </div>`;
+            $('#custom-banner-placeholder').html(noNewsHtml); // desktop
+            $('#custom-banner-mobile').html(noNewsHtml); // mobile
             return;
         }
 
-        let html = `
-        <div class="bg-dark">
-            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>
-            <div class="container d-flex flex-column gap-3">`;
+        // --- Desktop overlay ---
+        let desktopHtml = `
+        <div class="bg-dark p-3 rounded">
+            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>`;
 
-        instantMessages.forEach((item, index) => {
-            const delay = (index * 0.2 + 0.2).toFixed(1);
+        instantMessages.forEach(item => {
             const icon = this.getIcon(item.messageType);
             const borderColor = this.getTypeColor(item.messageType);
-            html += `
-            <div class="mb-3" style="max-width: 800px; width: 100%; margin: 0 auto;">
-                <div class="bg-dark news-card p-3 rounded shadow animate__animated animate__fadeInUp" style="color: white; animation-delay: ${delay}s;">
-                    <div class="d-flex align-items-start">
-                        <div class="news-card-icon flex-shrink-0" style="font-size: 1.5rem; color: ${borderColor}; margin-right: 1rem;">
-                            <i class="fa ${icon}"></i>
-                        </div>
-                        <div class="news-card-content" style="font-size: 0.9rem;">
-                            <div class="fw-bold">${item.title}</div>
-                            <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
-                            <div class="mt-2">${item.text || ''}</div>
-                            ${item.link ? `<div class="mt-2"><a href="${item.link}" target="_blank" rel="noopener noreferrer" style="color: #ffc107; text-decoration: none;">Read more</a></div>` : ''}
-                        </div>
+            desktopHtml += `
+                <div class="news-card p-2 rounded shadow mb-2" style="color: white;">
+                <div class="d-flex align-items-start">
+                    <i class="fa ${icon}" 
+                    style="color: ${borderColor}; font-size: 1.2rem; margin-right: 8px; margin-top: 2px;"></i>
+                    <div>
+                    <div class="fw-bold">${item.title}</div>
+                    <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
+                    <div>${item.text || ''}</div>
+                    ${item.link ? `<div><a href="${item.link}" target="_blank" style="color: #ffc107;">Read more</a></div>` : ''}
                     </div>
                 </div>
+                </div>`;
+        });
+
+        if (totalMessages > 3) {
+            desktopHtml += `
+            <div class="text-center mt-2">
+                <a href="/newsList.html" class="btn btn-outline-light" style="border-color: #ffc107; font-weight: 500;  background-color: #FFC107 !important; color: #212529 !important;">View all news</a>
+            </div>`;
+        }
+
+        desktopHtml += adminLinkHtml + '</div>';
+        $('#custom-banner-placeholder').html(desktopHtml);
+
+
+        // --- Mobile collapsible ---
+        let mobileHtml = '';
+        instantMessages.forEach(item => {
+            mobileHtml += `
+            <div class="news-card p-2 rounded shadow mb-2">
+                <div class="fw-bold">${item.title}</div>
+                <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
+                <div>${item.text || ''}</div>
+                ${item.link ? `<div><a href="${item.link}" target="_blank" style="color: #ffc107;">Read more</a></div>` : ''}
             </div>`;
         });
 
-        // Only show "View all news" if total messages > 3
-        const viewAllButtonHtml = totalMessages > 3 ? `
-        <div class="text-center mt-3">
-            <a href="/newsList.html" class="btn btn-outline-light btn"
-               style="border-color: #ffc107; color: #212529 !important; font-weight: 500; background-color: #FFC107 !important;">
-               View all news
-            </a>
-        </div>` : '';
+        if (totalMessages > 3) {
+            mobileHtml += `
+            <div class="text-center mt-2">
+                <a href="/newsList.html" class="btn btn-outline-light" style="border-color: #ffc107; background-color: #FFC107; color: #212529 !important;">View all news</a>
+            </div>`;
+        }
 
-        html += `${viewAllButtonHtml}${adminLinkHtml}</div></div>`;
-
-
-        $('#custom-banner-placeholder').html(html);
+        mobileHtml += adminLinkHtml;
+        $('#custom-banner-mobile').html(mobileHtml);
     }
 
     getIcon(type) {

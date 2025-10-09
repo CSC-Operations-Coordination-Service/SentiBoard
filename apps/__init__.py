@@ -8,7 +8,7 @@ import socket
 from importlib import import_module
 from pathlib import Path
 
-from flask import Flask
+from flask import Flask, request, send_from_directory
 from flask_caching import Cache
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
@@ -282,9 +282,80 @@ def create_app(config):
     print("Creating Application...")
     app = Flask(__name__)
     app.config.from_object(config)
+    # --- Google verification route (safe) ---
+    @app.route('/google<verification_id>.html')
+    def google_verification(verification_id):
+        return send_from_directory(
+            os.path.join(app.root_path, 'static/verification'),
+            f"google{verification_id}.html"
+        )
+    # ---------------------------------
+    # --- Robots.txt route ---
+    @app.route('/robots.txt')
+    def robots_txt():
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'),  
+            'robots.txt'
+        )
+   # --- Manifest.json route (dynamic for prod URLs) ---
+    @app.route('/manifest.json')
+    def manifest():
+        from flask import jsonify
+        return jsonify({
+            "name": "Copernicus Sentinel Operations Dashboard",
+            "short_name": "Copernicus Dashboard",
+            "description": "Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels.",
+            "start_url": "https://operations.dashboard.copernicus.eu/",
+            "scope": "https://operations.dashboard.copernicus.eu/",
+            "display": "standalone",
+            "background_color": "#006B7C",
+            "theme_color": "#006B7C",
+            "icons": [
+                {
+                    "src": "/static/assets/img/icons/favicon-96.png",
+                    "sizes": "96x96",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/assets/img/icons/icon-192.png",
+                    "sizes": "192x192",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                },
+                {
+                    "src": "/static/assets/img/icons/icon-512.png",
+                    "sizes": "512x512",
+                    "type": "image/png",
+                    "purpose": "any maskable"
+                }
+            ]
+        })
+     # ------------------------
+     # --- Sitemap.xml route ---
+    @app.route('/sitemap.xml')
+    def sitemap():
+        return send_from_directory(
+            os.path.join(app.root_path, 'static'),  
+            'sitemap.xml',
+            mimetype='application/xml'
+        )
+    # ------------------------
     print("Configuring Application ...")
     register_extensions(app)
     register_blueprints(app)
+     # Add this context processor
+    @app.context_processor
+    def inject_page_url():
+        def page_url():
+            try:
+                # Always enforce https and production hostname
+                return request.url.replace(
+                    request.host, "operations.dashboard.copernicus.eu"
+                ).replace("http://", "https://")
+            except RuntimeError:
+                return ""
+        return dict(page_url=page_url)
+
     print("Starting Cache ...")
     flask_cache.init_app(app)
     print("Starting Database ...")
