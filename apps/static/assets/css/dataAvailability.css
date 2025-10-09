@@ -957,14 +957,17 @@ th:nth-of-type(6) .tooltip-text::after {
   flex: 1 1 45%;
   max-width: 45%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  justify-content: flex-start;
   align-items: center;
+  margin-bottom: 20px;
 }
 
 #acquisitionDonutChart,
 #publicationDonutChart {
   width: 100% !important;
-  max-width: 68% !important;
+  max-width: 400px !important;
+  margin-top: 10px;
 }
 
 .chart-container {
@@ -978,6 +981,12 @@ th:nth-of-type(6) .tooltip-text::after {
   text-align: center;
   font-weight: 600;
   width: 100%;
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+
+.apexcharts-canvas {
+  margin: 0 auto !important;
 }
 
 
@@ -993,13 +1002,18 @@ th:nth-of-type(6) .tooltip-text::after {
     width: 100% !important;
     max-width: 100% !important;
     justify-content: center !important;
+    flex: 1 1 100%;
   }
 
   #acquisitionDonutChart,
   #publicationDonutChart {
-    width: 100% !important;
-    max-width: 320px;
-    margin: 0 auto;
+    max-width: 280px;
+    margin-top: 20px;
+  }
+
+  .chart-title {
+    margin-bottom: 12px;
+    font-size: 1rem;
   }
 }
 
