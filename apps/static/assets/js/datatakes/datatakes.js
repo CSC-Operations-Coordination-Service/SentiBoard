@@ -802,7 +802,9 @@ class Datatakes {
             colors,
             tooltip: {
                 y: {
-                    formatter: val => `${val.toFixed(2)}%`
+                    formatter: function (val) {
+                        return val.toFixed(2) + '%';
+                    }
                 }
             },
             states: {
@@ -836,12 +838,21 @@ class Datatakes {
                         labels: {
                             show: true,
                             name: { color: '#FFFFFF' },
-                            value: { color: '#FFFFFF' },
+                            value: { 
+                                color: '#FFFFFF',
+                                formatter: function (val) {
+                                    const numberVal = parseFloat(val);
+                                    return numberVal.toFixed(2) + '%';
+                                }
+                            },
                             total: {
                                 show: true,
                                 label: 'Completeness',
                                 color: '#FFFFFF',
-                                formatter: () => `${avgPercentage.toFixed(1)}%`
+                                formatter: function(w) {
+                                    const totalVal = parseFloat(w.globals.series[0]) || 0;
+                                    return totalVal.toFixed(2) + '%';
+                                }
                             }
                         }
                     }
