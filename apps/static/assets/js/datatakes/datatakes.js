@@ -171,9 +171,9 @@ class Datatakes {
                         }
                     })();
 
-                    if (this.updateInfoTable) {
+                    /*if (this.updateInfoTable) {
                         this.updateInfoTable(firstTake.id);
-                    }
+                    }*/
                 }
             }
         };
@@ -328,9 +328,22 @@ class Datatakes {
                 console.error("Error rendering charts:", err);
             }
 
-            if (this.updateInfoTable) {
+            /*if (this.updateInfoTable) {
                 this.updateInfoTable(firstTake.id);
+            }*/
+            if (hasSearchParam && this.filteredDataTakes?.length) {
+                const tableSection = document.getElementById("tableSection");
+                if (tableSection) {
+                    tableSection.style.display = "block";
+                    tableSection.style.opacity = "1";
+                }
+                if (typeof this.renderTableWithoutPagination === "function") {
+                    this.renderTableWithoutPagination(this.filteredDataTakes, this.filteredDataTakes[0].id);
+                }else { 
+                    console.warn("renderTableWithoutPagination function not found, skipping table render.");
+                }
             }
+
 
             const dataList = document.getElementById("dataList");
             if (dataList) {
@@ -839,7 +852,7 @@ class Datatakes {
                         labels: {
                             show: true,
                             name: { color: '#FFFFFF' },
-                            value: { 
+                            value: {
                                 color: '#FFFFFF',
                                 formatter: function (val) {
                                     const numberVal = parseFloat(val);
@@ -850,7 +863,7 @@ class Datatakes {
                                 show: true,
                                 label: 'Completeness',
                                 color: '#FFFFFF',
-                                formatter: function(w) {
+                                formatter: function (w) {
                                     const totalVal = parseFloat(w.globals.series[0]) || 0;
                                     return totalVal.toFixed(2) + '%';
                                 }
@@ -894,11 +907,7 @@ class Datatakes {
     }
 
     hideInfoTable() {
-        /*const infoTable = document.getElementById('infoTableContainer');
-        if (infoTable) {
-            infoTable.style.display = 'none';
-        }*/
-
+        
         $('#completenessTableModal').modal('hide');
     }
 
