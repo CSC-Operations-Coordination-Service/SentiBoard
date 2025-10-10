@@ -137,6 +137,7 @@ class Datatakes {
         this.completedRequestsCount = 0;
         this.hasServerError = false;
         this.pendingDatatakes = null;
+        this.activeRequestsCount = 0;
 
         // Show spinner immediately
         this.showSpinner();
@@ -1149,7 +1150,7 @@ class Datatakes {
             console.error("Datatakes container not found!");
             return;
         }
-        const titleSpan = container.querySelector("h4 .title-text");
+        const titleSpan = container.querySelector("h4.title-text");
         const dateElement = container.querySelector("p.text-left");
 
         if (!titleSpan || !dateElement) {
@@ -1397,6 +1398,7 @@ class Datatakes {
 
     showSpinner() {
         const spinner = document.getElementById('spinner');
+        console.log("Active requests count before showSpinner:", this.activeRequestsCount);
         if (spinner && this.activeRequestsCount === 0) {
             console.log("Showing spinner...");
             spinner.classList.add('active');
