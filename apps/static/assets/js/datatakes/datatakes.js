@@ -1150,7 +1150,7 @@ class Datatakes {
             console.error("Datatakes container not found!");
             return;
         }
-        const titleSpan = container.querySelector("h4.title-text");
+        const titleSpan = container.querySelector("h4 .title-text");
         const dateElement = container.querySelector("p.text-left");
 
         if (!titleSpan || !dateElement) {
