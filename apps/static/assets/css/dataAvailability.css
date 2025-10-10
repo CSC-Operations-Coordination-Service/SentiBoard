@@ -111,10 +111,10 @@
   text-align: center;
   width: 100%;
   margin: 0 auto;
-  padding: 20px 15px;
+  padding: 16px 12px 8px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-start;
 }
 
@@ -994,6 +994,8 @@ th:nth-of-type(6) .tooltip-text::after {
   gap: 24px;
   flex-wrap: wrap;
   text-align: center;
+  margin: 0;
+  padding: 0;
 }
 
 .donut-charts-wrapper>div {
@@ -1019,6 +1021,7 @@ th:nth-of-type(6) .tooltip-text::after {
   width: 100%;
   margin-bottom: 8px;
   white-space: nowrap;
+  margin-bottom: 0.25rem;
 }
 
 .apexcharts-canvas {
@@ -1038,6 +1041,10 @@ th:nth-of-type(6) .tooltip-text::after {
     align-items: center !important;
     gap: 16px;
   }
+
+  .donut-charts-wrapper .col-md-6 {
+    margin-bottom: 0.5rem !important;
+  } 
 
   .donut-charts-wrapper>div {
     width: 100% !important;
@@ -1068,7 +1075,7 @@ th:nth-of-type(6) .tooltip-text::after {
   }
 
   .chart-container canvas {
-    max-height: 300px;
+    max-height: 260px;
   }
 
   #timeRangeFilter {
