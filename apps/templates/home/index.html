@@ -1,18 +1,87 @@
 {% extends "layouts/base-responsive.html" %}
+{% from 'includes/seo_macros.html' import seo_meta %}
 
-{% block title %} Dashboard {% endblock %} 
+{% block head_meta %}
+  {{ seo_meta(
+    title="Real-Time Copernicus Sentinel Data | ESA Operations Dashboard",
+    description="Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. Stay informed with the Operations Dashboard.",
+    keywords="Copernicus, ESA, Sentinel, Earth Observation, Satellite Dashboard, Data Availability, Events",
+    image_url=request.host_url ~ 'static/assets/img/favicon.png',
+    page_url=page_url
+  ) }}
+
+  <!-- Preload custom font -->
+  <link
+    rel="preload"
+    href="/static/assets/fonts/esa/NotesEsa.woff2"
+    as="font"
+    type="font/woff2"
+    crossorigin="anonymous"
+  >
+  
+  <!-- Preload LCP image with high priority -->
+  <link rel="preload" as="image" href="/static/assets/img/home_preview.webp" fetchpriority="high">
+
+  <!-- Inline critical CSS for LCP -->
+  <style>
+    html, body {
+      font-family: 'NotesEsa', sans-serif !important;
+      margin: 0;
+      padding: 0;
+      background-color: #006B7C;
+    }
+    .main-panel > .content {
+      margin-top: 65px !important;
+    }
+    @media (min-width: 1600px) {
+      #tutorial > div {
+        right: 40px;
+        top: 80px;
+      }
+    }
+    @font-face {
+      font-family: 'NotesEsa';
+      src: url('/static/assets/fonts/esa/NotesEsa.woff2') format('woff2');
+      font-display: swap;
+    }
+
+    #hero-container {
+    position: relative;
+    }
+
+  /* Poster starts visible above the video */
+    #hero-poster {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: auto;
+      z-index: 2;
+      transition: opacity 1s ease;
+    }
+
+  /* Hidden state when video is ready */
+    #hero-poster.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+  /* Ensure video fills container */
+    #home-video {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  </style>
+
+{% endblock head_meta %}
+
 
 <!-- Specific Page CSS goes HERE  -->
 {% block stylesheets %}
-    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
-    <style>
-        @media (min-width: 1600px) {
-          #tutorial > div {
-            right: 40px;
-            top: 80px;
-          }
-        }
-    </style>
+  <!-- Load main CSS deferred to improve LCP -->
+  <link rel="stylesheet" href="/static/assets/css/dashboard.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="/static/assets/css/dashboard.css"></noscript>
 {% endblock stylesheets %}
 
 {% block content %}
@@ -20,129 +89,226 @@
     <i class="fas fa-chevron-down"></i>
 </a>
 
- <!-- Data section -->
+<!-- Hero section -->
 <div class="content page-inner" style="background-color: #006B7C">
-    <!-- Responsive container -->
-    <div style="width: 100%; position: relative;">
-      
+  <div style="width: 100%; position: relative;">
+    <h1 class="sr-only">Copernicus Sentinel Operations Dashboard</h1>
+
+    <div id="hero-container" class="position-relative">
+      <!-- LCP Poster Image -->
+      <picture>
+        <!-- AVIF first -->
+        <source srcset="/static/assets/img/home_preview.avif" type="image/avif" fetchpriority="high">
+        <!-- WebP fallback -->
+        <source srcset="/static/assets/img/home_preview.webp" type="image/webp" fetchpriority="high">
+        <!-- JPEG fallback -->
+        <img 
+          id="hero-poster"
+          src="/static/assets/img/home_preview.jpg"
+          alt="Copernicus Sentinel Operations Dashboard preview"
+          width="1920"
+          height="1080"
+          class="img-fluid w-100"
+          style="cursor: pointer;"
+          fetchpriority="high"
+        >
+      </picture>
       <!-- Video -->
-      <video preload="metadata" loop muted controls="none" id="home-video" class="img-fluid w-100">
-        <source src="/static/assets/mv/home_v4.mp4">
+      <video 
+        id="home-video" 
+        class="img-fluid w-100 d-none"
+        poster="/static/assets/img/home_preview.webp"
+        preload="none"
+        muted
+        playsinline
+        loop
+        width="1920"
+        height="1080"
+      >
+        <source src="/static/assets/mv/home_v4.mp4" type="video/mp4">
       </video>
-  
-      <!-- Real-time events box for large screens -->
-      <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
-           style="top: 60px; right: 16px; width: 347px; z-index: 2;">
-        <h4 class="card-title mb-3">Real-time events</h4>
-        <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-lg">
-          <!-- Event items will be appended here -->
-        </ol>
-      </div>
-  
-      <!-- Real-time events collapsible box for small/medium screens -->
-      <div class="d-block d-lg-none mt-3">
-        <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile" aria-expanded="false" aria-controls="eventBoxMobile">
-          Show Real-time Events
-        </button>
-        <div class="collapse" id="eventBoxMobile">
-          <div class="bg-dark text-white p-3 rounded">
-            <h4 class="card-title mb-3">Real-time events</h4>
-            <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-sm">
-              <!-- Event items will be appended here -->
-            </ol>
-          </div>
+    </div>
+
+    <!-- Real-time events box for large screens -->
+    <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
+         style="top: 60px; right: 16px; width: 347px; z-index: 2;">
+      <h4 class="card-title mb-3">Real-time events</h4>
+      <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-lg"></ol>
+    </div>
+
+    <!-- Real-time events for mobile -->
+    <div class="d-block d-lg-none mt-3">
+      <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile">
+        Show Real-time Events
+      </button>
+      <div class="collapse" id="eventBoxMobile">
+        <div class="bg-dark text-white p-3 rounded">
+          <h4 class="card-title mb-3">Real-time events</h4>
+          <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-sm"></ol>
         </div>
-      </div>  
+      </div>
     </div>
   </div>
-  
-   <!-- News banner overlay -->
+  <!-- News banner overlay (instant messages placeholder) -->
   <div id="custom-banner-placeholder"
       class="position-absolute text-white"
       style="top: 125px; left: 15px; width: 350px; z-index: 3;">
   </div>
-  
-    <!-- Vertical Slider pages -->
-    <div id="vertical-slider" class="slider-container">
-        <div class="container">
-            <div class="left-slide">
-                <div class="card-green">
-                    <h1>Acquisitions Status</h1>
-                    <p>View displays the past, current and future Copernicus Sentinels' acquisition on an interactive,
-                        3D globe. Through this view, users can either inspect the status of a past acquistion, or learn
-                        about the planned acquisitions for the mission of interest. By default, the real-time sensing
-                        scenario is displayed.</p><a href="/acquisitions-status.html" class="btn btn-lg rounded mt-3 btn-learn-more">Learn more</a>
-                </div>
-                <div class="card-lightgreen">
-                    <h1>Events</h1>
-                    <p>Provides details of the events over the past three months that could impede data production,
-                        such as planned calibration activities, manoeuvres, or anomalies. Information on the extent to
-                        which these events affect data production and the data products impacted is provided.</p><a href="/events.html" class="btn btn-lg rounded mt-3 btn-learn-more"
-                        >Learn more</a>
-                </div>
-                <div class="card-green">
-                    <h1>Data Availability</h1>
-                    <p>Section of the dashboard hosts a real-time list of available collections delivered by the
-                        missions, enabling users to scan through these products to find data that meet their research
-                        and development requirements, and to assess their quality.</p> <a href="/data-availability.html" class="btn btn-lg rounded mt-3 btn-learn-more"
-                        >Learn more</a>
-                </div>
-                <div class="card-lightgreen">
-                    <h1>Processors</h1>
-                    <p>Shows the complete list of the releases of the Copernicus Sentinels processors, on an
-                        interactive timeline.</p> <a href="/processors-viewer.html" class="btn btn-lg rounded mt-3 btn-learn-more"
-                        >Learn more</a>
-                </div>
-                <div class="card-green">
-                    <h1>About</h1>
-                    <p>Copernicus is the EU's Earth observation programme, providing open Sentinel satellite data.
-                        Managed by ESA, it supports research through the Operations Dashboard, offering real-time
-                        insights and key data stats.</p><a href="/about.html" class="btn btn-lg rounded mt-3 btn-learn-more"
-                        >Learn more</a>
-                </div>
+  <!-- News banner for mobile -->
+  <div class="d-block d-lg-none mt-3">
+    <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#customBannerMobile">
+      Show News
+    </button>
+    <div class="collapse" id="customBannerMobile">
+      <div id="custom-banner-mobile" class="bg-dark text-white p-3 rounded"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Vertical Slider pages -->
+<div id="vertical-slider" class="slider-container">
+    <div class="container">
+        <div class="left-slide">
+            <div class="card-green">
+                <h1>Acquisitions Status</h1>
+                <p>View displays the past, current and future Copernicus Sentinels' acquisition on an interactive,
+                    3D globe. Through this view, users can either inspect the status of a past acquistion, or learn
+                    about the planned acquisitions for the mission of interest. By default, the real-time sensing
+                    scenario is displayed.</p><a href="/acquisitions-status.html" class="btn btn-lg rounded mt-3 btn-learn-more">Learn more</a>
             </div>
-            <div class="right-slide">
-                <div style="background-image: url('/static/assets/img/about.png');">
-                </div>
-                <div style="background-image: url('/static/assets/img/processors.png');"></div>
-                <div style="background-image: url('/static/assets/img/data_availability.png');">
-                </div>
-                <div style="background-image: url('/static/assets/img/events.png');">
-                </div>
-                <div style="background-image: url('/static/assets/img/acquisitions_status.png');">
-                </div>
+            <div class="card-lightgreen">
+                <h1>Events</h1>
+                <p>Provides details of the events over the past three months that could impede data production,
+                    such as planned calibration activities, manoeuvres, or anomalies. Information on the extent to
+                    which these events affect data production and the data products impacted is provided.</p><a href="/events.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                    >Learn more</a>
             </div>
-            <div class="action-buttons">
-                <button class="down-button">
-                    <i class="fas fa-arrow-down"></i>
-                </button>
-                <button class="up-button">
-                    <i class="fas fa-arrow-up"></i>
-                </button>
+            <div class="card-green">
+                <h1>Data Availability</h1>
+                <p>Section of the dashboard hosts a real-time list of available collections delivered by the
+                    missions, enabling users to scan through these products to find data that meet their research
+                    and development requirements, and to assess their quality.</p> <a href="/data-availability.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                    >Learn more</a>
+            </div>
+            <div class="card-lightgreen">
+                <h1>Processors</h1>
+                <p>Shows the complete list of the releases of the Copernicus Sentinels processors, on an
+                    interactive timeline.</p> <a href="/processors-viewer.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                    >Learn more</a>
+            </div>
+            <div class="card-green">
+                <h1>About</h1>
+                <p>Copernicus is the EU's Earth observation programme, providing open Sentinel satellite data.
+                    Managed by ESA, it supports research through the Operations Dashboard, offering real-time
+                    insights and key data stats.</p><a href="/about.html" class="btn btn-lg rounded mt-3 btn-learn-more"
+                    >Learn more</a>
             </div>
         </div>
+        <div class="right-slide">
+          <div class="slide about"><img src="/static/assets/img/about.png" alt="About" /></div>
+          <div class="slide processors"><img src="/static/assets/img/processors.png" alt="Processors" /></div>
+          <div class="slide data-availability"><img src="/static/assets/img/data_availability.png" alt="Data Availability" /></div>
+          <div class="slide events"><img src="/static/assets/img/events.png" alt="Events" /></div>
+          <div class="slide acquisitions-status"><img src="/static/assets/img/acquisitions_status.png" alt="Acquisitions Status" /></div>
+        </div>
+
+        <div class="action-buttons">
+            <button class="down-button">
+                <i class="fas fa-arrow-down"></i>
+            </button>
+            <button class="up-button">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+        </div>
     </div>
+</div>
 <!-- Chevron Up (placed just before the footer) -->
 <a href="#home-video" class="chevron-up animate__animated animate__fadeInUp animate__delay-2s">
     <i class="fas fa-chevron-up"></i>
 </a>
-    <!-- Info boxes  -->
-    <footer class="container-fluid" style="background-color: #343a40;">
+<!-- Info boxes  -->
+<footer class="container-fluid" style="background-color: #343a40;">
 
-    </footer>
+</footer>
 
 {% endblock content %}
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+  <!-- Inline tiny script for faster mobile interactivity -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const poster = document.getElementById("hero-poster");
+      const video = document.getElementById("home-video");
+      const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-    <!-- Specific page style -->
-    <link rel="stylesheet" href="/static/assets/css/dashboard.css">
+      if (isMobile) {
+        // Mobile: user taps poster to start video
+        poster.addEventListener("click", function () {
+          poster.classList.add("d-none");
+          video.classList.remove("d-none");
+          video.play().catch(() => {
+            // fallback: keep poster if autoplay/play fails
+            poster.classList.remove("d-none");
+            video.classList.add("d-none");
+          });
+        });
+      } else {
+        // Desktop: keep poster until video actually plays
+        video.classList.remove("d-none");
+        video.autoplay = true;
 
-    <!-- Specific plugin scripts -->
-	<script src="/static/assets/js/datatakes/datatakes.js"></script>
-	<script src="/static/assets/js/statistics/publication-statistics.js"></script>
-  <script src="/static/assets/js/index/index.js"></script>
-	<script defer type="text/javascript">home.init();</script>
+        let played = false;
+
+        video.addEventListener("canplay", () => {
+          video.play().catch(() => {
+            // fallback if autoplay blocked
+            console.warn("Autoplay blocked, keeping poster visible.");
+            video.classList.add("d-none");
+          });
+        });
+
+        video.addEventListener("playing", () => {
+          played = true;
+          poster.classList.add("d-none");
+        });
+
+        // fallback: if video never starts within 5s, keep poster visible
+        setTimeout(() => {
+          if (!played) {
+            console.warn("Video did not start, showing poster fallback.");
+            video.classList.add("d-none");
+            poster.classList.remove("d-none");
+          }
+        }, 5000);
+      }
+    });
+  </script>
+
+  <!-- Keep index.js deferred -->
+<script src="/static/assets/js/index/index.js" defer></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Mobile fallback
+    if (window.innerWidth <= 768) {
+      document.querySelectorAll('#vertical-slider img').forEach(img => img.style.display = 'none');
+    }
+
+    // Lazy-load datatakes.js only if slider exists
+    if (document.getElementById("vertical-slider")) {
+      import("/static/assets/js/datatakes/datatakes.js")
+        .then(() => console.log("datatakes.js loaded"))
+        .catch(err => console.error("Failed to load datatakes.js", err));
+    }
+
+    // Initialize Home (from index.js, already loaded with defer)
+    if (typeof Home !== "undefined") {
+      const home = new Home();
+      home.init();
+    }
+  });
+</script>
 
 {% endblock javascripts %}
+
