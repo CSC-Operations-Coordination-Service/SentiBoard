@@ -8,7 +8,7 @@ import socket
 from importlib import import_module
 from pathlib import Path
 
-from flask import Flask, request, send_from_directory
+from flask import Flask, request, send_from_directory, Response
 from flask_caching import Cache
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
@@ -293,10 +293,22 @@ def create_app(config):
     # --- Robots.txt route ---
     @app.route('/robots.txt')
     def robots_txt():
-        return send_from_directory(
-            os.path.join(app.root_path, 'static'),  
-            'robots.txt'
-        )
+        host=request.host.lower()
+
+        if "staging.sentiboard.onda-dias.com" in host:
+            content = """# Robots.txt for Copernicus Sentinel Operations Dashboard (STAGING)
+            User-agent: *
+            Disallow: /
+            """
+        else:
+            content = """# Robots.txt for Copernicus Sentinel Operations Dashboard (PRODUCTION)
+            User-agent: *
+            Allow: /
+            Sitemap: https://operations.dashboard.copernicus.eu/sitemap.xml
+            """
+        
+        
+        return Response(content, mimetype='text/plain')
    # --- Manifest.json route (dynamic for prod URLs) ---
     @app.route('/manifest.json')
     def manifest():
