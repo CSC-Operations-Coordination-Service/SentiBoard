@@ -17,12 +17,9 @@ from flask_login import current_user
 from jinja2 import TemplateNotFound
 from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
+from apps.elastic.modules import datatakes as datatakes_module
 from functools import wraps
-from apps.utils.events_utils import (
-    get_previous_quarter_anomalies,
-    get_last_quarter_anomalies,
-    serialize_anomalie
-)
+from apps.elastic.modules import anomalies as elastic_anomalies
 import os
 import json
 import traceback
@@ -42,11 +39,11 @@ def events():
         quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
 
     if quarter_authorized:
-        raw_events = get_previous_quarter_anomalies()
+        raw_events = elastic_anomalies.fetch_anomalies_prev_quarter()
     else:
-        raw_events = get_last_quarter_anomalies()
+        raw_events = elastic_anomalies.fetch_anomalies_last_quarter()
     
-    anomalies = [serialize_anomalie(e) for e in raw_events]
+    anomalies = raw_events
     
     return render_template(
         "home/events.html",
@@ -54,6 +51,33 @@ def events():
         anomalies=anomalies
     )
     
+@blueprint.route('/data-availability')
+def data_availability():
+    """
+     Render the Data Availability page with datatakes data embedded via SSR.
+    """
+    try:
+        quarter_authorized = False
+        if current_user.is_authenticated:
+            quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
+
+        raw_events = elastic_anomalies.fetch_anomalies_prev_quarter() if quarter_authorized else elastic_anomalies.fetch_anomalies_last_quarter()
+        anomalies = raw_events
+
+        if quarter_authorized:
+            datatakes_data = datatakes_module.fetch_anomalies_datatakes_prev_quarter()
+        else:
+            datatakes_data = datatakes_module.fetch_anomalies_datatakes_last_quarter()
+
+        return render_template(
+            "home/data-availability.html",
+            quarter_authorized=quarter_authorized,
+            datatakes=datatakes_data,
+            anomalies=anomalies
+        )
+    except Exception as e:
+        current_app.logger.error(f"Exception in data_availability: {e}", exec_info=True)
+        return render_template("home/page-500.html"), 500
 
 @blueprint.route('/<template>')
 def route_template(template):
@@ -99,6 +123,8 @@ def get_segment(request):
 
     except:
         return None
+
+
 
 # --- BASIC AUTH ---
 def check_auth(username, password):

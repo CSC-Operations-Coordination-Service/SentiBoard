@@ -43,6 +43,12 @@ class Datatakes {
 
     init() {
         document.addEventListener("DOMContentLoaded", () => {
+            console.log("Initializing Datatakes SSR version...");
+
+            this.quarterAuthorizedProcess = window.quarterAuthorized || false;
+            this.anomalies = window.anomaliesData || [];
+            this.datatakes = window.datatakesData || [];
+
             // Hide EC and Copernicus logos from header
             $('#ec-logo-header').hide();
             $('#esa-logo-header').hide();
@@ -50,7 +56,6 @@ class Datatakes {
             /*limit the diplay data takes*/
             this.displayedCount = 0;
             this.itemsPerPage = 10;
-
 
             // Populate the data list and set default view
             this.populateDataList(false);
@@ -60,13 +65,13 @@ class Datatakes {
 
 
             // Retrieve the user profile to determine quarter authorization
-            ajaxCall(
+            /*ajaxCall(
                 '/api/auth/quarter-authorized',
                 'GET',
                 {},
                 this.quarterAuthorizedProcess,
                 this.errorLoadAuthorized
-            );
+            );*/
 
             // Retrieve the time select combo box instance
             const time_period_sel = document.getElementById('time-period-select');
@@ -86,10 +91,11 @@ class Datatakes {
             // Load datatakes for the selected period
             //this.loadDatatakesInPeriod(time_period_sel.value);
 
-            console.log("Datatakes initialized.");
+            console.log("Datatakes initialized (API mode).");
 
         });
     }
+
 
     filterDatatakesOnPageLoad() {
         const queryString = window.location.search;

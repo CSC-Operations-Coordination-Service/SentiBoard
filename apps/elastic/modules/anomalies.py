@@ -5,25 +5,27 @@ Copernicus Operations Dashboard
 Copyright (C) - 
 All rights reserved.
 
-This document discloses subject matter in which  has 
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or 
 disclose in whole or in part, information contained herein except for or on 
 behalf of  to fulfill the purpose for which the document was 
 delivered to him.
 """
 
+from locale import normalize
 import logging
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
 
 from apps.elastic import client as elastic_client
+from apps.routes.home.routes import serialize_anomalie
 from apps.utils import date_utils
 
 logger = logging.getLogger(__name__)
 
 
-def fetch_anomalies_last_quarter():
+def fetch_anomalies_last_quarter(normalize=True):
     """
     Fetch the anomalies in the last 3 months with a definite impact on datatakes from Elastic DB, using the
     exposed REST APIs. The start time is set at 00:00:00 of the first day of the temporal interval; the stop time
@@ -65,12 +67,15 @@ def fetch_anomalies_last_quarter():
 
     except Exception as ex:
         logger.error(ex)
+        
+    if normalize:
+        anomalies = [serialize_anomalie(e) for e in anomalies]
 
     # Return the complete and normalized set of datatakes
     return anomalies
 
 
-def fetch_anomalies_prev_quarter():
+def fetch_anomalies_prev_quarter(normalize=True):
     """
     Fetch the anomalies in the last completed quarter with a definite impact on datatakes from Elastic DB, using the
     exposed REST APIs. The start time is set at 00:00:00 of the first day of the temporal interval; the stop time
@@ -110,6 +115,17 @@ def fetch_anomalies_prev_quarter():
 
     except Exception as ex:
         logger.error(ex)
+        
+    if normalize:
+        anomalies = [serialize_anomalie(e) for e in anomalies]
 
     # Return the complete and normalized set of datatakes
     return anomalies
+
+def serialize_anomalie(anomaly):
+    return {
+        "key": anomaly.get("key"),
+        "datatake_ids": anomaly.get("datatake_ids","").split(";") if anomaly.get("datatake_ids") else [],
+        "description": anomaly.get("description", ""),
+        "status": anomaly.get("status", ""),
+    }

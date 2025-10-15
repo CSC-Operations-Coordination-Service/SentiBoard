@@ -420,13 +420,22 @@
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
 
+	<script>
+		window.quarterAuthorized = {{ quarterAuthorized|tojson }};
+		window.anomaliesData = {{ anomalies|tojson }};
+		window.datatakesData = {{ datatakes|tojson }};
+	</script>
 	<!-- Specific plugins scripts -->
 	<!-- Datatables -->
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
-	 <script defer type="text/javascript">datatakes.init();</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			datatakes.init();
+		});
+	</script>
 	<script>
 		$(function () {
 				$('[data-toggle="tooltip"]').tooltip();
