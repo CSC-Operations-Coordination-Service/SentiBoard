@@ -238,6 +238,7 @@
   background-color: transparent;
   border: none;
   cursor: default;
+  pointer-events: none;
 }
 
 .calendar-day .day-number {
@@ -278,6 +279,11 @@
   background-color: #5ED5DD;
   color: white;
   transform: scale(1.05);
+}
+
+.calendar-day:not(.empty):hover {
+  background-color: #f0f0f0;
+  cursor: pointer;
 }
 
 .calendar-day.today {

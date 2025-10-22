@@ -96,12 +96,21 @@ class CalendarWidget {
             this.errorLoadAuthorized.bind(this)
         );*/
         // Authorization check
-        console.log("User authorized:", QUARTER_AUTHORIZED);
-        //console.log("ANOMALIES_DATA:", window.ANOMALIES_DATA);
-        if (QUARTER_AUTHORIZED) {
-            this.loadEventsECUser();
+
+        const anomalyDataEl = document.getElementById('anomalyData');
+        this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomalies || '[]');
+
+        const quarterAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
+
+        this.isAuthorized = quarterAuthorized;
+
+        console.log("User authorized:", this.isAuthorized);
+        console.log("Loaded anomalies:", this.anomaliesData.length);
+        if (this.isAuthorized) {
+            this.loadEvents(this.anomaliesData);
         } else {
-            this.errorLoadAuthorized();
+            console.info('Guest user');
+            this.loadEvents(this.anomaliesData);
         }
 
         this.addEventListeners();
@@ -109,21 +118,26 @@ class CalendarWidget {
 
     errorLoadAuthorized() {
         console.info('Guest user');
-        this.loadEventsGuestUser();
+        this.loadEvents();
     }
 
-    loadEventsGuestUser() {
-        console.info('Loading events in the last quarter (SSR)...');
+    loadEvents(anomaliesData = []) {
 
-        if (window.ANOMALIES_DATA && window.ANOMALIES_DATA.length > 0) {
-            this.successLoadAnomalies(window.ANOMALIES_DATA);
+        console.info(
+            this.isAuthorized
+                ? 'loading events up to the previous quarter (authorized)'
+                : 'Loading events in the last quarter (guest)'
+        );
+
+        if (anomaliesData.length > 0) {
+            this.successLoadAnomalies(anomaliesData);
         } else {
             console.warn("No anomalies data found for GuestUser");
             this.errorLoadAnomalies("No anomalies data");
         }
     }
 
-    loadEventsECUser() {
+    /*loadEventsECUser() {
         console.info('Loading events up to the previous quarter...');
         if (window.ANOMALIES_DATA && window.ANOMALIES_DATA.length > 0) {
             this.successLoadAnomalies(window.ANOMALIES_DATA);
@@ -131,7 +145,7 @@ class CalendarWidget {
             console.warn("No anomalies data found for authorizedUser");
             this.errorLoadAnomalies("No anomalies data");
         }
-    }
+    }*/
 
     successLoadAnomalies(response) {
         var rows = Array.isArray(response) ? response : [];
@@ -151,7 +165,7 @@ class CalendarWidget {
             if (!instance.fullRecover) {
 
                 // Store the anomalies in the class member
-                this.anomalies[anomaly.id || anomaly.key] = anomaly;
+                this.anomalies[anomaly.key || anomaly.id] = anomaly;
 
                 // Append the event instance
                 this.events.push(instance);
@@ -160,7 +174,7 @@ class CalendarWidget {
         }
 
         // generate the calendar AFTER loading events
-        this.generateCalendar(this.currentMonth, this.currentYear);
+        //this.generateCalendar(this.currentMonth, this.currentYear);
 
         this.showDayEventsOnPageLoad();
 
@@ -227,7 +241,7 @@ class CalendarWidget {
         const onFilterChange = (getter) => {
             this.clearEventDetails();
             getter();
-            this.generateCalendar(this.currentMonth, this.currentYear);
+            //this.generateCalendar(this.currentMonth, this.currentYear);
 
             this.showEventDetails(this.lastSelectedDate || null);
         };
@@ -266,7 +280,7 @@ class CalendarWidget {
                 this.currentYear--;
             }
 
-            this.generateCalendar(this.currentMonth, this.currentYear);
+            //this.generateCalendar(this.currentMonth, this.currentYear);
         }, 300));
 
         document.getElementById('nextMonth').addEventListener('click', debounce(() => {
@@ -276,7 +290,7 @@ class CalendarWidget {
                 this.currentMonth = 0;
                 this.currentYear++;
             }
-            this.generateCalendar(this.currentMonth, this.currentYear);
+            //this.generateCalendar(this.currentMonth, this.currentYear);
         }, 300));
 
         // Reset filters
@@ -297,7 +311,7 @@ class CalendarWidget {
                 noEventMessage.style.display = 'block';
             }
 
-            this.generateCalendar(this.currentMonth, this.currentYear);
+            //this.generateCalendar(this.currentMonth, this.currentYear);
         });
 
         // Window resize adjustment
@@ -775,6 +789,7 @@ class CalendarWidget {
             eventType: selectedEventType,
             searchText
         });
+        console.log('Events for', normalizedDate, events);
         if (!events.length) {
             noEventMsg.style.display = 'block';
             noEventMsg.textContent = `No events for ${normalizedDate}.`;
@@ -916,7 +931,7 @@ class CalendarWidget {
                 }
             }
         }
-        this.generateCalendar(this.currentMonth, this.currentYear);
+        //this.generateCalendar(this.currentMonth, this.currentYear);
     }
 
 }

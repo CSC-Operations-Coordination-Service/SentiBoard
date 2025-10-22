@@ -45,7 +45,7 @@ class Datatakes {
         document.addEventListener("DOMContentLoaded", () => {
             console.log("Initializing Datatakes SSR version...");
 
-            this.quarterAuthorizedProcess = window.quarterAuthorized || false;
+            this.quarterAuthorizedProcess = window.quarter_authorized || false;
             this.anomalies = window.anomaliesData || [];
             this.datatakes = window.datatakesData || [];
 

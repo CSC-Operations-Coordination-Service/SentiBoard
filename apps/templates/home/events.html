@@ -152,16 +152,56 @@
                     <div class="col-12 col-lg-8 mb-4 mb-lg-0">
                         <div class="calendar-container">
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
-                               <!--  <button id="prevMonth" class="btn">&lt;</button> -->
                                 <i id="prevMonth" class="fas fa-chevron-left fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
-                                <h1 id="monthYear" class="mb-0"></h1>
+                                <h1 id="monthYear" class="mb-0">
+                                  {{ current_month_name }} {{ current_year }}
+                                </h1>
                                 <!-- <button id="nextMonth" class="btn">&gt;</button>-->
                                 <i id="nextMonth" class="fas fa-chevron-right fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
                             </div>
-                            <div class="calendar-grid" id="calendarGrid"></div>
+                            <div class="calendar-grid" id="calendarGrid">
+                              {% for _ in range(first_day_offset) %}
+                                <div class="calendar-day empty"></div>
+                              {% endfor %}
+
+                              {% for day in range(1, days_in_month +1) %}
+                                {% set date_str = "%04d-%02d-%02d" | format(current_year, current_month, day) %}
+                                {% set day_anomalies = anomalies_by_date.get(date_str, []) %}
+
+                                <div 
+                                  class="calendar-day"
+                                   data-date= "{{ date_str }}" 
+                                >
+                                  <span> {{ day }} </span>
+
+                                  {% if day_anomalies %}
+                                    <div class="event-container">
+                                      {% set added_types = [] %}
+                                      {% for event in day_anomalies %}
+                                        {% if event.category not in ['Archive', 'Data access'] %}
+                                          {% set category = 'Satellite' if event.category == 'Platform' else event.category %}
+                                          {% set mapped_type = event_type_map.get(category, category)|lower %}
+                                          {% if mapped_type not in added_types %}
+                                            {% set _= added_types.append(mapped_type) %}
+                                            {% set icon_value = icon_map.get(mapped_type, 'fas fa-question-circle') %}
+
+                                            <div class="event-{{ mapped_type }}">
+                                              {% if icon_value.startswith('/') %}
+                                                <img src="{{ icon_value }}" class="event-icon image-icon" alt="{{ mapped_type }}"/>
+                                              {% else %}
+                                                <i class="{{ icon_value }} event-icon"></i>
+                                              {% endif %}
+                                            </div>
+                                          {% endif %}
+                                        {% endif %}
+                                      {% endfor %}
+                                    </div>
+                                  {% endif %}
+                                </div>
+                              {% endfor %}
+                            </div>
                         </div>
                     </div>
-                    
                     <div class="col-12 col-lg-2 mb-4 matching-width">
                       <!-- Completeness Status (Legend) -->
                       <div class="completeness-status mb-3">
@@ -204,6 +244,12 @@
           </div>
       </div>
     </div>
+    <div
+      id="anomalyData"
+      data-anomalies='{{ json_anomalies | tojson | safe}}'
+      data-datatakes='{{ json_datatakes | tojson | safe}}'
+      data-quarter-authorized='{{ "true" if quarter_authorized else "false" }}'
+    ></div>
 
 {% endblock content %}
 
@@ -216,28 +262,56 @@
     <link rel="stylesheet" href="/static/assets/css/events.css">
 
   <!-- Calendar plugin scripts -->
-  <script type="text/javascript">
-    const QUARTER_AUTHORIZED = {{ 'true' if quarter_authorized else 'false' }} ;
-    window.ANOMALIES_DATA = {{ anomalies | tojson | safe }};
-  </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
   <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", function() {
         calendar.init();
+
+        const prevBtn = document.getElementById('prevMonth');
+        const nextBtn = document.getElementById('nextMonth');
+        const monthYear = document.getElementById('monthYear');
+        
+        if(!monthYear) return;
+        
+        const [monthName, yearStr] = monthYear.textContent.trim().split(" ");
+        const currentMonth = new Date(`${monthName} 1, ${yearStr}`).getMonth() + 1;
+        const currentYear = parseInt(yearStr);
+
+        const navigate = (delta) => {
+          let newMonth = currentMonth + delta;
+          let newYear = currentYear;
+          if (newMonth < 1) {
+            newMonth = 12;
+            newYear--;
+          } else if (newMonth > 12) {
+            newMonth = 1;
+            newYear++;
+          }
+          const params = new URLSearchParams({ year: newYear, month: newMonth });
+          window.location.href = `/events?${params.toString()}`;
+        };
+
+        prevBtn.addEventListener("click", () => navigate(-1));
+        nextBtn.addEventListener("click", () => navigate(1));
+
+        const dayCells = document.querySelectorAll('.calendar-day');
+
+        dayCells.forEach(cell => {
+          cell.addEventListener('click', () =>{
+            document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+            cell.classList.add('selected');
+
+            const selectedDate = cell.dataset.date;
+            calendar.showEventDetails(selectedDate);
+          });
+        });
     });
   </script>
   
   <!-- Timeline plugin style -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css" />
   <link rel="stylesheet" href="/static/assets/css/dashboard.css" />
-
-  <!-- Timeline plugin scripts 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js"></script>
-  <script src="/static/assets/js/events/timeline.js"></script>
-  <script defer type="text/javascript">
-    timeline.init()
-  </script>-->
 
   <script>
 

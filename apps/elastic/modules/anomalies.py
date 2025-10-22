@@ -19,7 +19,6 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from apps.elastic import client as elastic_client
-from apps.routes.home.routes import serialize_anomalie
 from apps.utils import date_utils
 
 logger = logging.getLogger(__name__)
@@ -68,8 +67,8 @@ def fetch_anomalies_last_quarter(normalize=True):
     except Exception as ex:
         logger.error(ex)
         
-    if normalize:
-        anomalies = [serialize_anomalie(e) for e in anomalies]
+    #if normalize:
+     #   anomalies = [serialize_anomalie(e) for e in anomalies]
 
     # Return the complete and normalized set of datatakes
     return anomalies
@@ -123,9 +122,12 @@ def fetch_anomalies_prev_quarter(normalize=True):
     return anomalies
 
 def serialize_anomalie(anomaly):
-    return {
-        "key": anomaly.get("key"),
-        "datatake_ids": anomaly.get("datatake_ids","").split(";") if anomaly.get("datatake_ids") else [],
+    source = anomaly.get("_source", anomaly)
+    
+    normalized = {
+        "key": source.get("key"),
+        "datatake_ids": source.get("datatake_ids","").split(";") if anomaly.get("datatake_ids") else [],
         "description": anomaly.get("description", ""),
         "status": anomaly.get("status", ""),
     }
+    return {"_source":normalized}

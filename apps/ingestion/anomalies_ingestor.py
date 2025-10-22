@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -36,7 +36,13 @@ class AnomaliesIngestor:
     def get_anomalies_elastic(self, start=None):
         anomalies = []
         records = anomalies_elastic_client.fetch_anomalies_last_quarter()
+        logger.info("fetched %d anomalies from elastic", len(records))
         for extract in records:
+            src = extract.get("_source", {})
+            if not src:
+                logger.warning("Skipping anomaly without _source: %s", extract)
+                continue
+
             # Create the anomaly record with baseline properties
             public_date = date_utils.format_date_to_str(
                 extract["_source"]["occurence_date"], "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -48,10 +54,10 @@ class AnomaliesIngestor:
                 extract["_source"]["updated"], "%Y-%m-%dT%H:%M:%S.%fZ"
             )
             anomaly = {
-                "key": extract["_source"]["key"],
+                "key": src.get("key"),
                 "publicationDate": public_date,
-                "title": extract["_source"]["title"],
-                "text": extract["_source"]["description"],
+                "title": src.get("title", ""),
+                "text": src.get("description"),
                 "category": "",
                 "impactedItem": "",
                 "impactedSatellite": "",
