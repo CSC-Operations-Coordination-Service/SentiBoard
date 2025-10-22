@@ -345,7 +345,7 @@ class Datatakes {
                 }
                 if (typeof this.renderTableWithoutPagination === "function") {
                     this.renderTableWithoutPagination(this.filteredDataTakes, this.filteredDataTakes[0].id);
-                }else { 
+                } else {
                     console.warn("renderTableWithoutPagination function not found, skipping table render.");
                 }
             }
@@ -816,7 +816,17 @@ class Datatakes {
 
         // Chart configuration
         const options = {
-            chart: { type: 'donut', height: 350, toolbar: { show: false } },
+            chart: { type: 'donut', height: 350, toolbar: { show: false }, offsetX: 0, offsetY: 0 },
+            title: {
+                text: type === "publication" ? "Publication" : "Acquisition",
+                align: 'center',
+                style: {
+                    fontSize: '16px',
+                    fontWeight: 600,
+                    color: '#FFFFFF',
+                },
+                offsetY: 0,
+            },
             series,
             labels,
             colors,
@@ -837,24 +847,16 @@ class Datatakes {
             },
             legend: {
                 show: true,
+                floating: true,
                 position: 'right',
                 horizontalAlign: 'center',
                 labels: { colors: '#FFFFFF' },
-                itemMargin: {
-                    vertical: 4,
-                    horizontal: 4
-                },
-                markers: {
-                    width: 12,
-                    height: 12,
-                    offsetX: -6,
-                    offsetY: 0
-                },
                 formatter: seriesName => `<div style="margin-left: 0;">${seriesName}</div>`
             },
             plotOptions: {
                 pie: {
                     donut: {
+                        size: '70%',
                         labels: {
                             show: true,
                             name: { color: '#FFFFFF' },
@@ -882,12 +884,26 @@ class Datatakes {
                 breakpoint: 768,
                 options: {
                     chart: {
-                        height: 300
+                        height: 300,
+                        width: '100%',
                     },
                     legend: {
+                        show: true,
+                        floating: false,
                         position: 'bottom',
-                        horizontalAlign: 'center'
-                    }
+                        horizontalAlign: 'center',
+                        labels: { colors: '#FFFFFF' },
+                        itemMargin: { vertical: 2, horizontal: 6 },
+                        fontSize: '12px',
+                    },
+                    plotOptions: {
+                        pie: {
+                            donut: { size: '60%' }
+                        }
+                    },
+                    title: {
+                        offsetY: 0
+                    },
                 }
             }]
         };
@@ -913,7 +929,7 @@ class Datatakes {
     }
 
     hideInfoTable() {
-        
+
         $('#completenessTableModal').modal('hide');
     }
 

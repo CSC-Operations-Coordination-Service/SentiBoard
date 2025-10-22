@@ -983,6 +983,14 @@ th:nth-of-type(6) .tooltip-text::after {
   width: 100%;
   max-width: 420px;
   height: 400px;
+  display: flex;
+  justify-content: center;
+}
+
+.col-md-6 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* --- Donut Charts Responsive Layout --- */
@@ -1018,20 +1026,27 @@ th:nth-of-type(6) .tooltip-text::after {
 .chart-title {
   text-align: center;
   font-weight: 600;
-  width: 100%;
-  margin-bottom: 8px;
-  white-space: nowrap;
   margin-bottom: 0.25rem;
 }
 
+.chart-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 400px;
+  width: 100%;
+}
+
 .apexcharts-canvas {
+  display: flex !important;
+  justify-content: center !important;
   margin: 0 auto !important;
 }
 
 
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
-  .donut-charts {
+  .donut-chart {
     max-width: 320px;
     height: 320px;
   }
@@ -1039,29 +1054,36 @@ th:nth-of-type(6) .tooltip-text::after {
   .donut-charts-wrapper {
     flex-direction: column !important;
     align-items: center !important;
-    gap: 16px;
+    gap: 12px;
   }
 
   .donut-charts-wrapper .col-md-6 {
     margin-bottom: 0.5rem !important;
-  } 
+  }
 
   .donut-charts-wrapper>div {
     width: 100% !important;
-    max-width: 100% !important;
-    justify-content: center !important;
-    flex: 1 1 100%;
+    max-width: 320px !important;
   }
 
   #acquisitionDonutChart,
   #publicationDonutChart {
-    max-width: 280px;
-    margin-top: 20px;
+    margin: 0 auto;
+  }
+
+  .apexcharts-canvas {
+    overflow: visible !important;
   }
 
   .chart-title {
     margin-bottom: 12px;
     font-size: 1rem;
+  }
+
+  .apexcharts-legend {
+    margin-top: 115px !important;
+    text-align: center !important;
+    max-width: 100%;
   }
 }
 
