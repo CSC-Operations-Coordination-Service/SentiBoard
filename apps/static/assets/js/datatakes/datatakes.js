@@ -45,7 +45,7 @@ class Datatakes {
         document.addEventListener("DOMContentLoaded", () => {
             console.log("Initializing Datatakes SSR version...");
 
-            this.quarterAuthorizedProcess = window.quarter_authorized || false;
+            this.quarterAuthorizedProcess = window.quarter_authorized || true;
             this.anomalies = window.anomaliesData || [];
             this.datatakes = window.datatakesData || [];
 
@@ -65,13 +65,13 @@ class Datatakes {
 
 
             // Retrieve the user profile to determine quarter authorization
-            /*ajaxCall(
+            ajaxCall(
                 '/api/auth/quarter-authorized',
                 'GET',
                 {},
                 this.quarterAuthorizedProcess,
                 this.errorLoadAuthorized
-            );*/
+            );
 
             // Retrieve the time select combo box instance
             const time_period_sel = document.getElementById('time-period-select');
@@ -89,7 +89,7 @@ class Datatakes {
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
             // Load datatakes for the selected period
-            //this.loadDatatakesInPeriod(time_period_sel.value);
+            this.loadDatatakesInPeriod(time_period_sel.value);
 
             console.log("Datatakes initialized (API mode).");
 

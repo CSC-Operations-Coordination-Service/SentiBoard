@@ -23,7 +23,7 @@ from apps.elastic.modules import anomalies as elastic_anomalies
 from apps.models import anomalies as anomalies_model
 from apps.utils import date_utils
 from apps.utils.anomalies_utils import model_to_dict
-from datetime import datetime
+from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
 from calendar import monthrange
 import os
@@ -53,127 +53,64 @@ def index():
 @blueprint.route("/events")
 def events():
     today = datetime.today()
+    try:
+        year = request.args.get("year", type=int, default=today.year)
+        month = request.args.get("month", type=int, default=today.month)
+        quarter_authorized = False
+        if current_user.is_authenticated:
+            quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
 
-    year = request.args.get("year", type=int, default=today.year)
-    month = request.args.get("month", type=int, default=today.month)
+        if quarter_authorized:
+            start_date, end_date = date_utils.prev_quarter_interval_from_date(today)
+        else:
+            start_date = today - relativedelta(months=3)
+            end_date = today
 
-    icon_map = {
-        "acquisition": "fas fa-broadcast-tower",
-        "calibration": "fas fa-compass",
-        "manoeuvre": "/static/assets/img/joystick.svg",
-        "production": "fas fa-cog",
-        "satellite": "fas fa-satellite-dish",
-    }
-
-    event_type_map = {
-        "Acquisition": "acquisition",
-        "calibration": "calibration",
-        "Data access": "data-access",
-        "Manoeuvre": "manoeuvre",
-        "Production": "production",
-        "Satellite": "satellite",
-    }
-
-    quarter_authorized = False
-    if current_user.is_authenticated:
-        quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
-
-    if quarter_authorized:
-        start_date, end_date = date_utils.prev_quarter_interval_from_date(today)
-    else:
-        start_date = today - relativedelta(months=3)
-        end_date = today
-
-    anomalies = anomalies_model.get_anomalies(start_date, end_date)
-    datatakes_data = datatakes_module._get_cds_datatakes(start_date, end_date)
-
-    anomalies_by_date = {}
-    if anomalies:
-        for anomaly in anomalies:
-
-            completeness_raw = getattr(anomaly, "datatakes_completeness", None)
-            if not completeness_raw:
-                anomaly.status = "unknown"
-                continue
-            try:
-                dt_list = json.loads(anomaly.datatakes_completeness.replace("'", '"'))
-            except Exception as e:
-                logger.warning(f"Could not parse completeness for {anomaly.id}:{e}")
-                anomaly.status = "unknown"
-                continue
-
-            full_recover = True
-            threshold = 90
-            for dt_dict in dt_list:
-                completeness_values = [
-                    float(v)
-                    for k, v in dt_dict.items()
-                    if isinstance(v, (int, float, str)) and k.startswith("L")
-                ]
-                if not completeness_values:
-                    continue
-
-                avg_s = sum(completeness_values) / len(completeness_values)
-                if avg_s < threshold:
-                    full_recover = False
-
-            anomaly.status = "ok" if full_recover else "partial"
-            occ_field = next(
-                (
-                    getattr(anomaly, f, None)
-                    for f in ("start", "end", "publicationDate", "modifyDate")
-                    if getattr(anomaly, f, None)
-                ),
-                None,
+        raw_anomalies = {
+            (
+                elastic_anomalies.fetch_anomalies_prev_quarter()
+                if quarter_authorized
+                else elastic_anomalies.fetch_anomalies_last_quarter()
             )
-            anomaly.occurrence_date = (
-                occ_field.strftime("%Y-%m-%d") if occ_field else None
+        }
+
+        datatakes_data = {
+            (
+                datatakes_module.fetch_anomalies_datatakes_prev_quarter()
+                if quarter_authorized
+                else datatakes_module.fetch_anomalies_datatakes_last_quarter()
             )
+        }
 
-            if getattr(anomaly, "occurrence_date", None):
-                date_str = anomaly.occurrence_date
-                anomalies_by_date.setdefault(date_str, []).append(anomaly)
+        anomalies_by_date = {}
+        if raw_anomalies:
+            for a in raw_anomalies:
+                date_key = a.get("occurrence_date")[:10]
+                anomalies_by_date.setdefault(date_key, []).append(a)
 
-        days_in_month = monthrange(year, month)[1]
-        first_day_offset = datetime(year, month, 1).weekday()
-    else:
-        logger.info("no anomalies found in this period")
+            days_in_month = monthrange(year, month)[1]
+            first_day_offset = date(year, month, 1).weekday()
+            month_name = date(year, month, 1).strftime("%B")
 
-    if isinstance(datatakes_data, list):
-        try:
-            datatakes_dict = {}
-            for dt in datatakes_data:
-                anomaly_id = getattr(dt, "anomaly_id", None)
-                if anomaly_id:
-                    datatakes_dict.setdefault(anomaly_id, []).append(dt)
-        except Exception as e:
-            logger.warning(f"Could not group datatakes by anomaly_id: {e}")
-            datatakes_dict = {}
-    else:
-        datatakes_dict = datatakes_data or {}
+        else:
+            logger.info("no anomalies found in this period")
 
-    json_anomalies = [model_to_dict(a) for a in anomalies] if anomalies else []
-    json_datatakes = {
-        k: [model_to_dict(dt) for dt in v] for k, v in datatakes_dict.items()
-    }
+        return render_template(
+            "home/events.html",
+            current_month=month,
+            current_year=year,
+            current_month_name=month_name,
+            days_in_month=days_in_month,
+            first_day_offset=first_day_offset,
+            anomalies_by_date=anomalies_by_date,
+            json_anomalies=raw_anomalies,
+            json_datatakes=datatakes_data,
+            quarter_authorized=quarter_authorized,
+        )
 
-    return render_template(
-        "home/events.html",
-        quarter_authorized=quarter_authorized,
-        anomalies=anomalies,
-        datatakes=datatakes_dict,
-        json_anomalies=json_anomalies,
-        json_datatakes=json_datatakes,
-        anomalies_by_date=anomalies_by_date,
-        current_month=month,
-        current_year=year,
-        current_month_name=datetime(year, month, 1).strftime("%B"),
-        days_in_month=days_in_month,
-        first_day_offset=first_day_offset,
-        today_str=today.strftime("%Y-%m-%d"),
-        icon_map=icon_map,
-        event_type_map=event_type_map,
-    )
+    except Exception as e:
+        current_app.logger.error(f"Exception in events: {e}", exc_info=True)
+        return render_template("home/page-500.html"), 500
 
 
 @blueprint.route("/data-availability")
@@ -205,7 +142,7 @@ def data_availability():
             anomalies=anomalies,
         )
     except Exception as e:
-        current_app.logger.error(f"Exception in data_availability: {e}", exec_info=True)
+        current_app.logger.error(f"Exception in data_availability", exc_info=True)
         return render_template("home/page-500.html"), 500
 
 

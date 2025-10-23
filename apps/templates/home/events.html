@@ -170,8 +170,8 @@
 
                                 <div 
                                   class="calendar-day"
-                                   data-date= "{{ date_str }}" 
-                                >
+                                   data-date= "{{ date_str }}"
+                                   data-has-anomalies="{{ 'true' if day_anomalies else 'false' }}">
                                   <span> {{ day }} </span>
 
                                   {% if day_anomalies %}
@@ -316,11 +316,7 @@
   <script>
 
     // Display selector
-        $('#event-display-select').change(function() {
-      if ($(this).val() === 'timeline') {
-                document.getElementById('myCalendar').style.display = 'none';
-                document.getElementById('myTimeline').style.display = 'block';
-      }
+    $('#event-display-select').change(function() {
       if ($(this).val() === 'calendar') {
                 document.getElementById('myCalendar').style.display = 'block';
                 document.getElementById('myTimeline').style.display = 'none';
@@ -328,10 +324,9 @@
     })
     
     // Filter anomalies
-        $('#anomalies_filter_search').on('input', function(event) {
-            calendar.filterEvents($(this).val());
-            timeline.filterEvents($(this).val());
-        });
+    $('#anomalies_filter_search').on('input', function(event) {
+        calendar.filterEvents($(this).val());
+    });
 
   </script>
 

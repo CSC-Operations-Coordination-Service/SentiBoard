@@ -419,7 +419,7 @@
 {% block javascripts %}
 
 	<script>
-		window.quarterAuthorized = {{ quarterAuthorized|tojson }};
+		window.quarterAuthorized = {{ quarter_authorized|tojson }};
 		window.anomaliesData = {{ anomalies|tojson }};
 		window.datatakesData = {{ datatakes|tojson }};
 	</script>
