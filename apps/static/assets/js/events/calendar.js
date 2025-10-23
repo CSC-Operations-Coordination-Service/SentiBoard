@@ -448,13 +448,19 @@ class CalendarWidget {
                 if (value.includes('S1')) {
                     hexaVal = this.overrideS1DatatakesId(value)
                 }
-                content +=
-                    '<li class="ml-5">' +
-                    '<div style="display: flex">' +
-                    '<a href="/data-availability.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
-                    '<div class="status-circle-dt-' + dtStatus + '"></div>' +
-                    '</div>' +
-                    '</li>';
+
+                if (dtStatus) {
+                    content +=
+                        '<li class="ml-5">' +
+                        '<div style="display: flex">' +
+                        '<a href="/data-availability.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
+                        '<div class="status-circle-dt-' + dtStatus + '"></div>' +
+                        '</div>' +
+                        '</li>';
+                } else {
+                    console.debug('Skipping datatake with no status', value);
+                }
+
             }
         }.bind(this));
         content += '</ul></div></p><p></p></div>';
@@ -463,7 +469,7 @@ class CalendarWidget {
 
     calcDatatakeStatus(anomaly, datatake_id) {
 
-        // Return one possible value in range: "ok", "partial", "failed", "undef"
+        // Return one possible value in range: "ok", "partial", "failed", or null (hidden)
         let datatakes_completeness = format_response(anomaly.datatakes_completeness);
         var completeness = 0;
         for (var index = 0; index < datatakes_completeness.length; ++index) {
@@ -472,24 +478,21 @@ class CalendarWidget {
                     var objValues = Object.values(value);
                     if (objValues[0] == datatake_id) {
                         completeness = this.calcDatatakeCompleteness(objValues);
-                        if (completeness >= 90) {
-                            return 'ok';
-                        } else if (completeness >= 10 && completeness < 90) {
-                            return 'partial';
-                        } else if (completeness < 10) {
-                            return 'failed';
-                        } else {
-                            return 'undef';
-                        }
+                        if (completeness >= 90) { return 'ok'; }
+                        if (completeness >= 10 && completeness < 90) { return 'partial'; }
+                        if (completeness < 10) { return 'failed'; }
+
+                        return null;
                     }
                 }
             } catch (ex) {
-                return 'undef';
+                console.warn('Error parsing datatake completeness:', ex);
+                return null;
             }
         }
 
-        // If the datatake cannot be found, assume that the status is "undef"
-        return 'undef';
+        // If the datatake cannot be found, assume that the status is null
+        return null;
     }
 
     overrideS1DatatakesId(datatake_id) {
