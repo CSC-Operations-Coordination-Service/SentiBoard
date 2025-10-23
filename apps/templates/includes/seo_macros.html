@@ -1,8 +1,8 @@
 {# includes/seo_macros.html #}
 {% macro seo_meta(
     title='', 
-    description='', 
-    keywords='', 
+    description=None, 
+    keywords=None, 
     image_url='', 
     image_width='1200',
     image_height='630',
@@ -17,11 +17,22 @@
     video_thumbnail='/static/assets/img/home_preview.webp',
     manifest_url='/manifest.json'
 ) %}
+
+    {# --- Use passed description if available, otherwise use SEO description --- #}
     <title>{{ title }} | Copernicus Dashboard</title>
-    <meta name="description" content="{{ description }}">
+    {% if description %}
+      <meta name="description" content="{{ description }}">
+    {% elif seo_description is defined %}
+      <meta name="description" content="{{ seo_description() }}">
+    {% endif %}
+
+    {# Keywords can be a string or a callable that returns a string #}
     {% if keywords %}
       <meta name="keywords" content="{{ keywords }}">
+    {% elif seo_keywords is defined %}
+      <meta name="keywords" content="{{ seo_keywords() }}">
     {% endif %}
+    
     <link rel="canonical" href="{{ page_url() }}">
 
     {# --- Favicon / Icons / Manifest --- #}

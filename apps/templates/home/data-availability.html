@@ -5,7 +5,7 @@
   {{ seo_meta(
     title="Copernicus Sentinel Data Availability",
     description="Explore real-time data availability and completeness for Copernicus Sentinel satellite missions. Monitor delivery status, publication percentages, and filter by satellite or mission.",
-    keywords="Copernicus Sentinel, data availability, datatakes, satellite data monitoring, ESA dashboard, Sentinel publication status, Earth observation data",
+    keywords=get_keywords('data_availability'),
     image_url=request.host_url ~ 'static/assets/img/favicon.png',
     page_url=page_url
   ) }}
@@ -48,7 +48,7 @@
 			<!-- Datatake details panel -->
 			<div class="modal fade" id="showDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
 				<div class="modal-dialog" role="document">
-					<div class="modal-content" style="background: #202940">
+					<div class="modal-content" style="background: #006B7C">
 						<div class="modal-header no-bd">
 							<h5 class="modal-title">
 								<span class="fw-mediumbold">View</span>
@@ -70,7 +70,43 @@
 					</div>
 				</div>
 			</div>
+			<!-- Completeness Table Modal -->
+			<div class="modal fade" id="completenessTableModal" tabindex="-1" role="dialog">
+				<div class="modal-dialog modal-md" role="document">
+					<div class="modal-content" style="background: #006B7C; color: #fff;">
+						<div class="modal-header no-bd">
+							<h5 class="modal-title">
+							<span class="fw-mediumbold">Datatake</span>
+							<span class="fw-light">Details</span>
+							</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true" style="color: white">&times;</span>
+							</button>
+						</div>
 
+						<div class="modal-body">
+							<div class="d-flex justify-content-center">
+								<div class="table-responsive" style="max-width: 80%;">
+									<table class="custom-box-table-sm table-m text-center">
+										<thead style="border-bottom: 2px solid #fff;">
+										<tr>
+											<th>Product type</th>
+											<th>Status(%)</th>
+										</tr>
+										</thead>
+										<tbody id="modalInfoTableBody"></tbody>
+									</table>
+									<div id="modalPaginationControls" class="pagination-row"></div>
+								</div>
+							</div>
+						</div>
+
+						<div class="modal-footer no-bd">
+							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
 			<!-- Collapsible description panel -->
 			<div class="row">
 				<div class="card-body" style="padding-bottom: 0.0rem !important">
@@ -168,42 +204,33 @@
 								</div>
 								<!-- Main Content -->
 								<div class="col-12 col-md-9 d-flex flex-column">
-									
 									<div class="datatakes-container flex-grow-1">
+										<!-- Loading Spinner -->
 										<div class="chart-container" style="position: relative;">
 											<div id="spinner" class="spinner-overlay">
-												<div class="spinner-bar"></div>
+												<div class="spinner-bar"> </div>
 											</div>
-												<h4 class="mb-0">
-													<span class="title-text">S</span> 
-												</h4>
-												<p class="text-left">Sentinel-</p>
-												<div class="d-flex align-items-start" style="gap: 8px;">
-														<!-- Donut Chart -->
-														<div style="flex: 1; max-width: 70%;">
-																<div id="missionDonutChart"></div>
-														</div>
-														<!-- Hidden Table -->
-														<div id="infoTableContainer" style="display: none;">
-																<table class="custom-box-table-sm table-m">
-																		<thead>
-																				<tr>
-																						<th>Product type</th>
-																						<th>Status(%)</th>
-																				</tr>
-																		</thead>
-																		<tbody id="infoTableBody">
-																				<!-- Dynamically filled -->
-																		</tbody>
-																</table>
-																<div id="paginationControls" class="pagination-row">
-																</div>
-														</div>
+											<!-- Charts Section -->
+											<h4><span class="title-text"></span></h4>
+											<p class="text-left"></p>
+
+											<div class="row donut-charts-wrapper justify-content-center text-center">
+												<!-- Donut Chart 1: Acquisition -->
+												<div class="col-md-6 mb-3 d-flex flex-column align-items-center">
+													<div id="acquisitionDonutChart" class="donut-chart"></div>
 												</div>
+
+												<!-- Donut Chart 2: Publication -->
+												<div class="col-md-6 mb-3 d-flex flex-column align-items-center">
+													<div id="publicationDonutChart" class="donut-chart"></div>
+												</div>
+											</div>
 										</div>
-										<div class="mt-4 d-flex flex-md-row table-legend-wrapper gap-3 align-items-start">
+										
+										<!-- Table and Legend Section -->
+										<div class="table-legend-wrapper mt-3">
 											<!-- Datatake Details Section -->
-											<div id="tableSection" class="mt-4" style="display: none;">
+											<div id="tableSection" class="mt-2" style="display: none;">
 													<div id="table-container">
 															<div class="custom-box-table-container table-responsive" style="position: relative;">
 																<button class="close-btn" id="closeTableButton" aria-label="Close table">✖</button>
