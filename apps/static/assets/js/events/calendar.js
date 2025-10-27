@@ -808,8 +808,10 @@ class CalendarWidget {
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
 
             const satellites = this.getSatellitesString(event.environment || '');
-            const datatakeHtml = event.environment
-                ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, event.environment.split(";"))}</p>`
+
+            const dataTakeCandidates = (event.environment || '').split(";").map(v => v.trim()).filter(v => /^S\d/.test(v));
+            const datatakeHtml = dataTakeCandidates.length
+                ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, dataTakeCandidates)}</p>`
                 : '';
 
             const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');
