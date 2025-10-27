@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -60,9 +60,11 @@ class CalendarWidget {
     }
 
     init() {
+        console.time("init-total");
         // Hide the drop-down menu to select the time range
         $('#time-period-select-container').hide();
         $('#esa-logo-header').hide();
+
 
         this.selectedMission = 'all';
         this.selectedEventType = 'all';
@@ -96,24 +98,71 @@ class CalendarWidget {
             this.errorLoadAuthorized.bind(this)
         );*/
         // Authorization check
-
+        console.time("parse-json")
         const anomalyDataEl = document.getElementById('anomalyData');
         this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomalies || '[]');
+        this.datatakesData = JSON.parse(anomalyDataEl.dataset.datatakes || '[]');
+        console.timeEnd("parse-json");
 
-        const quarterAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
+        console.log("Parsed-anomalies", this.anomaliesData.length);
+        console.log("Parsed-datatakes", this.datatakesData.length);
 
-        this.isAuthorized = quarterAuthorized;
+        this.isAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
+
+        console.time("buildanomaliesbyDate");
+        this.buildAnomaliesByDate(this.anomaliesData);
+        console.timeEnd("buildanomaliesbyDate");
 
         console.log("User authorized:", this.isAuthorized);
         console.log("Loaded anomalies:", this.anomaliesData.length);
+
         if (this.isAuthorized) {
+            console.time("loadevents");
             this.loadEvents(this.anomaliesData);
+            console.timeEnd("loadevents");
         } else {
             console.info('Guest user');
+            console.time("loadevents");
             this.loadEvents(this.anomaliesData);
+            console.timeEnd("loadevents");
         }
-
+        console.time("addeventlisteners");
         this.addEventListeners();
+        console.timeEnd("addeventlisteners");
+    }
+
+    buildAnomaliesByDate(anomaliesArray) {
+        console.time("buildAnomaliesbydate-loop");
+        console.log("building anomalies by date. total anomalies:", anomaliesArray.length);
+        this.anomaliesByDate = {}; // reset
+
+        if (!Array.isArray(anomaliesArray)) return;
+
+        anomaliesArray.forEach(a => {
+            // Normalize date:
+            // server sets publicationDate as ISO string (or occurence_date). Use publicationDate then fallback.
+            let iso = a.publicationDate || a.publication_date || a.occurence_date || a.occurrence_date || a.publication;
+            if (!iso) return;
+
+            // If it's already "YYYY-MM-DD", keep, otherwise slice first 10 chars from ISO
+            if (typeof iso === 'string') {
+                const dateKey = iso.length >= 10 ? iso.slice(0, 10) : this.normalizeDateString(iso);
+                if (!dateKey) return;
+                this.anomaliesByDate[dateKey] = this.anomaliesByDate[dateKey] || [];
+                this.anomaliesByDate[dateKey].push(a);
+            } else if (iso instanceof Date) {
+                const yyyy = iso.getFullYear();
+                const mm = String(iso.getMonth() + 1).padStart(2, '0');
+                const dd = String(iso.getDate()).padStart(2, '0');
+                const dateKey = `${yyyy}-${mm}-${dd}`;
+                this.anomaliesByDate[dateKey] = this.anomaliesByDate[dateKey] || [];
+                this.anomaliesByDate[dateKey].push(a);
+            }
+        });
+
+        // Optional: store count for quick debugging
+        this._anomaliesCount = Object.values(this.anomaliesByDate).reduce((s, arr) => s + arr.length, 0);
+        console.info('Built anomaliesByDate with', this._anomaliesCount, 'items across', Object.keys(this.anomaliesByDate).length, 'days');
     }
 
     errorLoadAuthorized() {
@@ -148,9 +197,16 @@ class CalendarWidget {
     }*/
 
     successLoadAnomalies(response) {
+        console.time("successanomalies");
         var rows = Array.isArray(response) ? response : [];
 
         var datatakeList = [];
+
+        this.anomaliesData = rows;
+
+        console.time("buildanomaliesbydate");
+        this.buildAnomaliesByDate(this.anomaliesData);
+        console.timeEnd("buildanomaliesbydate");
 
         for (let i = 0; i < rows.length; ++i) {
             let anomaly = rows[i];
@@ -172,6 +228,8 @@ class CalendarWidget {
 
             }
         }
+
+        console.timeEnd("successanomalies");
 
         // generate the calendar AFTER loading events
         //this.generateCalendar(this.currentMonth, this.currentYear);
@@ -242,8 +300,15 @@ class CalendarWidget {
             this.clearEventDetails();
             getter();
             //this.generateCalendar(this.currentMonth, this.currentYear);
-
-            this.showEventDetails(this.lastSelectedDate || null);
+            if (this.lastSelectedDate) {
+                this.showEventDetails(this.lastSelectedDate);
+            } else {
+                const noEventMsg = document.getElementById('noEventMessage');
+                if (noEventMsg) {
+                    noEventMsg.textContent = 'Select a date to see event details.';
+                    noEventMsg.style.display = 'block';
+                }
+            }
         };
 
         const debounce = (func, delay) => {
@@ -318,6 +383,28 @@ class CalendarWidget {
         window.addEventListener('resize', () => {
             this.adjustCalendarHeight();
             this.adjustLeftPanelHeight();
+        });
+
+        // Day click listener
+        this.calendarGrid.addEventListener('click', (e) => {
+            const dayCell = e.target.closest('.calendar-day[data-date]');
+            if (!dayCell) return;
+
+            const date = dayCell.getAttribute('data-date');
+            const hasAnomalies = dayCell.dataset.hasAnomalies === 'true';
+            this.lastSelectedDate = date;
+
+            if (hasAnomalies) {
+                console.log('Clicked date:', date);
+                this.showEventDetails(date);
+            } else {
+                this.clearEventDetails();
+                const noEventMsg = document.getElementById('noEventMessage');
+                if (noEventMsg) {
+                    noEventMsg.textContent = `No events for ${date}.`;
+                    noEventMsg.style.display = 'block';
+                }
+            }
         });
 
     }
@@ -452,25 +539,7 @@ class CalendarWidget {
     }
 
     arrangeDatatakesList(anomaly, dtList) {
-        var content = '<div class="row col-md-12" style="list-style-type: none;">';
-        dtList.forEach(function (value, index, array) {
-            if (value) {
-                var dtStatus = this.calcDatatakeStatus(anomaly, value);
-                let hexaVal = value;
-                if (value.includes('S1')) {
-                    hexaVal = this.overrideS1DatatakesId(value)
-                }
-                content +=
-                    '<li class="ml-5">' +
-                    '<div style="display: flex">' +
-                    '<a href="/data-availability.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
-                    '<div class="status-circle-dt-' + dtStatus + '"></div>' +
-                    '</div>' +
-                    '</li>';
-            }
-        }.bind(this));
-        content += '</ul></div></p><p></p></div>';
-        return content;
+        return dtList.map(dt => `<p style="margin:2px 0;">${dt}</p>`).join('');
     }
 
     calcDatatakeStatus(anomaly, datatake_id) {
@@ -728,19 +797,24 @@ class CalendarWidget {
     }
 
     filterEvents({ date, mission, eventType, searchText }) {
-
+        console.log("filter called:", { date, mission, eventType, searchText });
+        if (!date) return [];
         const targetDate = this.normalizeDateString(date);
-        const searchLower = searchText?.toLowerCase().trim() || '';
-        const missionMap = {
+
+        if (!targetDate) return [];
+
+        const events = (this.anomaliesByDate && this.anomaliesByDate[targetDate]) ? this.anomaliesByDate[targetDate] : [];
+
+        console.log(`found ${events.length} events for date ${targetDate}`);
+        const searchLower = (searchText || '').toLowerCase().trim();
+        const missionMap = this.missionMap || {
             's1': ['S1A', 'S1C'],
             's2': ['S2A', 'S2B', 'S2C'],
             's3': ['S3A', 'S3B'],
             's5': ['S5P']
         };
 
-        return Object.values(this.anomalies).filter(event => {
-            const eventDate = this.normalizeDateString(event.publicationDate || '');
-            if (targetDate && eventDate !== targetDate) return false;
+        return events.filter(event => {
 
             if (mission && mission !== 'all') {
                 const anomalyEnv = String(event.environment || '').toUpperCase();
@@ -769,6 +843,8 @@ class CalendarWidget {
 
     showEventDetails(date) {
         const { noEventMsg, content } = this.ensureEventDetailsElements();
+
+        content.innerHTML = '';
 
         eventDetailsContent.innerHTML = '';
         if (!date) {
@@ -818,8 +894,17 @@ class CalendarWidget {
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
 
             const satellites = this.getSatellitesString(event.environment || '');
-            const datatakeHtml = event.environment
-                ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, event.environment.split(";"))}</p>`
+            const dtList = event.datatake_ids?.length ? event.datatake_ids : (event.environment ? event.environment.split(";") : []);
+
+            const validDtList = dtList.filter(dt =>
+                dt.startsWith("S1") || dt.startsWith("S2") || dt.startsWith("S3") || dt.startsWith("S5")
+            );
+
+            const datatakeHtml = validDtList.length
+                ? `<div style="color: white; font-size: 14px">
+                    <p style= "margin-bottom:4px;"> List of impacted datatakes:</p>
+                    ${validDtList.map(dt => `<p style="margin:2px 0;">${dt}</p>`).join('')}
+                    </div>`
                 : '';
 
             const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');

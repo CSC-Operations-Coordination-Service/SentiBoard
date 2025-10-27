@@ -30,6 +30,7 @@ import os
 import json
 import traceback
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,24 @@ def events():
     try:
         year = request.args.get("year", type=int, default=today.year)
         month = request.args.get("month", type=int, default=today.month)
+
+        icon_map = {
+            "acquisition": "fas fa-broadcast-tower",
+            "calibration": "fas fa-compass",
+            "manoeuvre": "/static/assets/img/joystick.svg",
+            "production": "fas fa-cog",
+            "satellite": "fas fa-satellite-dish",
+        }
+
+        event_type_map = {
+            "Acquisition": "acquisition",
+            "calibration": "calibration",
+            "Data access": "data-access",
+            "Manoeuvre": "manoeuvre",
+            "Production": "production",
+            "Satellite": "satellite",
+        }
+
         quarter_authorized = False
         if current_user.is_authenticated:
             quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
@@ -66,26 +85,146 @@ def events():
             start_date = today - relativedelta(months=3)
             end_date = today
 
-        raw_anomalies = {
-            (
-                elastic_anomalies.fetch_anomalies_prev_quarter()
-                if quarter_authorized
-                else elastic_anomalies.fetch_anomalies_last_quarter()
-            )
-        }
+        raw_anomalies = (
+            elastic_anomalies.fetch_anomalies_prev_quarter()
+            if quarter_authorized
+            else elastic_anomalies.fetch_anomalies_last_quarter()
+        )
 
-        datatakes_data = {
-            (
-                datatakes_module.fetch_anomalies_datatakes_prev_quarter()
-                if quarter_authorized
-                else datatakes_module.fetch_anomalies_datatakes_last_quarter()
+        def serialize_anomalie(anomaly):
+            source = anomaly.get(
+                "_source", anomaly if isinstance(anomaly, dict) else {}
             )
-        }
+
+            iso_date = (
+                source.get("occurence_date")
+                or source.get("occurrence_date")
+                or source.get("publicationDate")
+                or source.get("created")
+                or None
+            )
+            if isinstance(iso_date, datetime):
+                iso_date = iso_date.isoformat()
+
+            dt_ids = (
+                source.get("datatake_ids")
+                or source.get("datatakes")
+                or source.get("datatakes_ids_raw")
+                or []
+            )
+
+            if isinstance(dt_ids, str):
+                dt_ids = [s.strip() for s in re.split(r"[;,]\s*", dt_ids) if s.strip()]
+
+            environment = (
+                ";".join(dt_ids) if dt_ids else source.get("environment") or ""
+            )
+
+            origin = source.get("origin")
+
+            category = (
+                source.get("category") or origin or source.get("type") or "Unknown"
+            )
+
+            if origin in ("Satellite",):
+                category = "Platform"
+            elif origin in ("Production",):
+                category = "Production"
+            elif origin in ("DD",):
+                category = "Data access"
+            elif origin in ("LTA",):
+                category = "Archive"
+            elif origin in ("Acquisition",):
+                category = "Acquisition"
+            elif origin in ("RFI",):
+                category = "Acquisition"
+            elif origin in ("CAM",):
+                category = "Manoeuvre"
+
+            if category.upper() == "RFI":
+                category = "Acquisition"
+
+            if not category or category.strip().lower() in ("other", "unknown", ""):
+                return None
+
+            datatakes_completeness = source.get("datatakes_completeness") or []
+
+            normalized = {
+                "key": source.get("key") or source.get("id") or anomaly.get("_id"),
+                "occurence_date": (
+                    iso_date[:10]
+                    if isinstance(iso_date, str)
+                    else (
+                        iso_date.date().isoformat()
+                        if isinstance(iso_date, datetime)
+                        else None
+                    )
+                ),
+                "publicationDate": iso_date,
+                "environment": environment,
+                "datatakes_completeness": datatakes_completeness,
+                "description": source.get("description", ""),
+                "status": source.get("status", ""),
+                "category": category,
+                "impactedSatellite": source.get("affected_systems")
+                or source.get("impactedSatellite")
+                or "",
+                "newsLink": source.get("url") or source.get("newsLink", ""),
+                "newsTitle": source.get("title") or source.get("newsTitle", ""),
+                "_raw_source": source,
+            }
+            return normalized
+
+        anomalies = [
+            s for a in raw_anomalies if (s := serialize_anomalie(a)) is not None
+        ]
+
+        valid_prefixes = ("S1", "S2", "S3", "S5")
+
+        def has_valid_datatake(anomaly):
+            env = anomaly.get("environment", "")
+            if not env or env.lower().startswith("no"):
+                return False
+            datatakes = re.split(r"[;,]\s*", env)
+            for dt in datatakes:
+                if any(dt.strip().startswith(prefix) for prefix in valid_prefixes):
+                    return True
+            return False
+
+        anomalies = [a for a in anomalies if has_valid_datatake(a)]
+
+        datatakes_data = (
+            datatakes_module.fetch_anomalies_datatakes_prev_quarter()
+            if quarter_authorized
+            else datatakes_module.fetch_anomalies_datatakes_last_quarter()
+        )
 
         anomalies_by_date = {}
-        if raw_anomalies:
-            for a in raw_anomalies:
-                date_key = a.get("occurrence_date")[:10]
+        if anomalies:
+            for a in anomalies:
+                occur_date = (
+                    a.get("occurrence_date")
+                    or a.get("occurence_date")
+                    or a.get("publicationDate")
+                    or a.get("created")
+                    or None
+                )
+                if not occur_date:
+                    logger.warning(
+                        f"Anomaly without occurrence date: {a.get('key','unknown')}"
+                    )
+                    continue
+
+                if isinstance(occur_date, datetime):
+                    occur_date = occur_date.isoformat()
+
+                if not isinstance(occur_date, str) or len(occur_date) < 10:
+                    logger.warning(
+                        f"Anomaly has invalid occurrence_date format: {a.get('key', 'unknown')}-> {occur_date}"
+                    )
+                    continue
+
+                date_key = occur_date[:10]
                 anomalies_by_date.setdefault(date_key, []).append(a)
 
             days_in_month = monthrange(year, month)[1]
@@ -103,9 +242,11 @@ def events():
             days_in_month=days_in_month,
             first_day_offset=first_day_offset,
             anomalies_by_date=anomalies_by_date,
-            json_anomalies=raw_anomalies,
+            json_anomalies=anomalies,
             json_datatakes=datatakes_data,
             quarter_authorized=quarter_authorized,
+            icon_map=icon_map,
+            event_type_map=event_type_map,
         )
 
     except Exception as e:

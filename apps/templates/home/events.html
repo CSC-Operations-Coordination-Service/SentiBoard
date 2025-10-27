@@ -149,6 +149,12 @@
                         </div>
                     </div>
                     <!-- Calendar Section -->
+                     <div
+                        id="anomalyData"
+                        data-anomalies='{{ json_anomalies | tojson | safe}}'
+                        data-datatakes='{{ json_datatakes | tojson | safe}}'
+                        data-quarter-authorized='{{ "true" if quarter_authorized else "false" }}'
+                      ></div>
                     <div class="col-12 col-lg-8 mb-4 mb-lg-0">
                         <div class="calendar-container">
                             <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
@@ -179,7 +185,14 @@
                                       {% set added_types = [] %}
                                       {% for event in day_anomalies %}
                                         {% if event.category not in ['Archive', 'Data access'] %}
-                                          {% set category = 'Satellite' if event.category == 'Platform' else event.category %}
+                                          {% set raw_category = event.category or '' %}
+                                          {% if raw_category|lower == 'platform' %}
+                                            {% set category = 'Satellite' %}
+                                          {% elif raw_category|lower in ['data access','data-access'] %}
+                                            {% set category = 'Data access' %}
+                                          {% else %}
+                                            {% set category = raw_category %}
+                                          {% endif %}
                                           {% set mapped_type = event_type_map.get(category, category)|lower %}
                                           {% if mapped_type not in added_types %}
                                             {% set _= added_types.append(mapped_type) %}
@@ -244,13 +257,6 @@
           </div>
       </div>
     </div>
-    <div
-      id="anomalyData"
-      data-anomalies='{{ json_anomalies | tojson | safe}}'
-      data-datatakes='{{ json_datatakes | tojson | safe}}'
-      data-quarter-authorized='{{ "true" if quarter_authorized else "false" }}'
-    ></div>
-
 {% endblock content %}
 
 <!-- Specific Page JS goes HERE  -->
@@ -297,13 +303,11 @@
 
         const dayCells = document.querySelectorAll('.calendar-day');
 
-        dayCells.forEach(cell => {
+        document.querySelectorAll('.calendar-day').forEach((cell) => {
           cell.addEventListener('click', () =>{
             document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
             cell.classList.add('selected');
-
-            const selectedDate = cell.dataset.date;
-            calendar.showEventDetails(selectedDate);
+            calendar.showEventDetails(cell.dataset.date);
           });
         });
     });
