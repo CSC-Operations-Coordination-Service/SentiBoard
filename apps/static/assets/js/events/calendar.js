@@ -796,6 +796,17 @@ class CalendarWidget {
             if (event.category === 'Archive' || event.category === 'Data access') {
                 return;
             }
+            const satellites = this.getSatellitesString(event.environment || '');
+            const dataTakeCandidates = (event.environment || '')
+                .split(";")
+                .map(v => v.trim())
+                .filter(v => /^S\d/.test(v));
+
+
+            if (!satellites && dataTakeCandidates.length === 0) {
+                return;
+            }
+
             const listItem = document.createElement('li');
             listItem.style.marginBottom = '1em';
             listItem.style.padding = '10px';
@@ -807,9 +818,6 @@ class CalendarWidget {
             const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle';
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
 
-            const satellites = this.getSatellitesString(event.environment || '');
-
-            const dataTakeCandidates = (event.environment || '').split(";").map(v => v.trim()).filter(v => /^S\d/.test(v));
             const datatakeHtml = dataTakeCandidates.length
                 ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, dataTakeCandidates)}</p>`
                 : '';
