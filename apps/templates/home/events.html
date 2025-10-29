@@ -92,7 +92,6 @@
           <div class="card calendar-card" >
             <div class="card-body">
               <!-- The Calendar control -->
-              <!-- <div id="myCalendar" class="calendar"></div> -->
                 <div class="row  align-items-start">
                     <!-- Left Panel -->
                     <div class="col-12 col-lg-2 left-panel mb-4 mb-lg-0 matching-width">
@@ -263,11 +262,16 @@
 {% block javascripts %}
 
   <!-- Calendar plugin style -->
+   
     <link rel="stylesheet" href="/static/assets/lib/calendar/css/calendarjs.min.css">
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
     <link rel="stylesheet" href="/static/assets/css/events.css">
 
   <!-- Calendar plugin scripts -->
+  <script>
+    window.iconMap = {{ icon_map | tojson | safe}};
+    window.eventTypeMap = {{ event_type_map | tojson | safe}};
+  </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
   <script type="text/javascript">

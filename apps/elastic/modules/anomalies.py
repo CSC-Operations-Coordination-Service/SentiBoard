@@ -78,8 +78,8 @@ def fetch_anomalies_last_quarter(normalize=True):
     except Exception as ex:
         logger.error(ex)
 
-    # if normalize:
-    #   anomalies = [serialize_anomalie(e) for e in anomalies]
+    if normalize:
+        anomalies = [serialize_anomalie(e) for e in anomalies]
 
     # Return the complete and normalized set of datatakes
     return anomalies

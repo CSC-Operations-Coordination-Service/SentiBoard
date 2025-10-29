@@ -435,51 +435,32 @@ a {
   color: white;
 }
 
-.status-circle-dt-ok {
-  position: relative;
-  top: 7px;
-  left: 5px;
+.status-circle-dt-ok,
+.status-circle-dt-partial,
+.status-circle-dt-failed,
+.status-circle-dt-undef {
   width: 8px;
   height: 8px;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
+  border-radius: 50%;
+  margin-left: 5px;
+  /* spacing from the text */
+  flex-shrink: 0;
+  /* prevent shrinking in flex container */
+}
+
+.status-circle-dt-ok {
   background: #0aa41b;
 }
 
 .status-circle-dt-partial {
-  position: relative;
-  top: 7px;
-  left: 5px;
-  width: 8px;
-  height: 8px;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
   background: #bb8747;
 }
 
 .status-circle-dt-failed {
-  position: relative;
-  top: 7px;
-  left: 5px;
-  width: 8px;
-  height: 8px;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
   background: #FF0000;
 }
 
 .status-circle-dt-undef {
-  position: relative;
-  top: 7px;
-  left: 5px;
-  width: 8px;
-  height: 8px;
-  -webkit-border-radius: 4px;
-  -moz-border-radius: 4px;
-  border-radius: 4px;
   background: grey;
 }
 
@@ -749,18 +730,21 @@ a {
   box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
   text-decoration: none !important;
 }
+
 /*end*/
 
 /*anomalies page*/
 .btn-link {
-    font-weight: 400;
-    color: #ffcf3f !important;
-    background-color: transparent;
+  font-weight: 400;
+  color: #ffcf3f !important;
+  background-color: transparent;
 }
+
 .btn-link:hover {
-    color: #12b1bf !important;
-    text-decoration: none !important;
+  color: #12b1bf !important;
+  text-decoration: none !important;
 }
+
 /**/
 .card-lightgreen {
   background-color: #12B1BF;
@@ -864,7 +848,7 @@ button:focus {
 
 .news-cards {
   background-color: #12b1bf !important;
-  
+
 }
 
 .page-item.active .page-link {

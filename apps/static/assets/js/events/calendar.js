@@ -60,7 +60,6 @@ class CalendarWidget {
     }
 
     init() {
-        console.time("init-total");
         // Hide the drop-down menu to select the time range
         $('#time-period-select-container').hide();
         $('#esa-logo-header').hide();
@@ -92,54 +91,34 @@ class CalendarWidget {
             'production': 'fas fa-cog',
             'satellite': 'fas fa-satellite-dish'
         };
-
-        /*ajaxCall('/api/auth/quarter-authorized', 'GET', {},
-            this.quarterAuthorizedProcess.bind(this),
-            this.errorLoadAuthorized.bind(this)
-        );*/
         // Authorization check
-        console.time("parse-json")
         const anomalyDataEl = document.getElementById('anomalyData');
         this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomalies || '[]');
         this.datatakesData = JSON.parse(anomalyDataEl.dataset.datatakes || '[]');
-        console.timeEnd("parse-json");
 
-        console.log("Parsed-anomalies", this.anomaliesData.length);
-        console.log("Parsed-datatakes", this.datatakesData.length);
 
         this.isAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
 
-        console.time("buildanomaliesbyDate");
         this.buildAnomaliesByDate(this.anomaliesData);
-        console.timeEnd("buildanomaliesbyDate");
 
         console.log("User authorized:", this.isAuthorized);
         console.log("Loaded anomalies:", this.anomaliesData.length);
 
         if (this.isAuthorized) {
-            console.time("loadevents");
             this.loadEvents(this.anomaliesData);
-            console.timeEnd("loadevents");
         } else {
             console.info('Guest user');
-            console.time("loadevents");
             this.loadEvents(this.anomaliesData);
-            console.timeEnd("loadevents");
         }
-        console.time("addeventlisteners");
         this.addEventListeners();
-        console.timeEnd("addeventlisteners");
     }
 
     buildAnomaliesByDate(anomaliesArray) {
-        console.time("buildAnomaliesbydate-loop");
-        console.log("building anomalies by date. total anomalies:", anomaliesArray.length);
         this.anomaliesByDate = {}; // reset
 
         if (!Array.isArray(anomaliesArray)) return;
 
         anomaliesArray.forEach(a => {
-            // Normalize date:
             // server sets publicationDate as ISO string (or occurence_date). Use publicationDate then fallback.
             let iso = a.publicationDate || a.publication_date || a.occurence_date || a.occurrence_date || a.publication;
             if (!iso) return;
@@ -160,9 +139,7 @@ class CalendarWidget {
             }
         });
 
-        // Optional: store count for quick debugging
         this._anomaliesCount = Object.values(this.anomaliesByDate).reduce((s, arr) => s + arr.length, 0);
-        console.info('Built anomaliesByDate with', this._anomaliesCount, 'items across', Object.keys(this.anomaliesByDate).length, 'days');
     }
 
     errorLoadAuthorized() {
@@ -197,20 +174,16 @@ class CalendarWidget {
     }*/
 
     successLoadAnomalies(response) {
-        console.time("successanomalies");
         var rows = Array.isArray(response) ? response : [];
 
         var datatakeList = [];
 
         this.anomaliesData = rows;
 
-        console.time("buildanomaliesbydate");
         this.buildAnomaliesByDate(this.anomaliesData);
-        console.timeEnd("buildanomaliesbydate");
 
         for (let i = 0; i < rows.length; ++i) {
             let anomaly = rows[i];
-            console.debug('Processing anomaly:', anomaly);
             if (datatakeList.includes(anomaly['environment'])) {
                 continue;
             } else {
@@ -228,15 +201,7 @@ class CalendarWidget {
 
             }
         }
-
-        console.timeEnd("successanomalies");
-
-        // generate the calendar AFTER loading events
-        //this.generateCalendar(this.currentMonth, this.currentYear);
-
         this.showDayEventsOnPageLoad();
-
-
     }
 
     errorLoadAnomalies(response) {
@@ -291,15 +256,20 @@ class CalendarWidget {
         if (eventDetails) eventDetails.innerHTML = '';
     }
 
-
     addEventListeners() {
-        if (this.listenersAttached) return; // Prevent duplicate attachments
-        this.listenersAttached = true;
+        const missionSelect = document.getElementById('missionSelect');
+        const eventTypeSelect = document.getElementById('eventTypeSelect');
+        const searchInput = document.getElementById('eventSearchInput');
+        const resetBtn = document.getElementById('resetFilters');
 
-        const onFilterChange = (getter) => {
-            this.clearEventDetails();
-            getter();
-            //this.generateCalendar(this.currentMonth, this.currentYear);
+        const handleFilterChange = () => {
+            this.selectedMission = missionSelect.value;
+            this.selectedEventType = eventTypeSelect.value;
+            this.searchTerm = searchInput.value.trim().toLowerCase();
+
+            this.updateCalendarGrid();
+
+            // If a date is already selected, refresh details for that date
             if (this.lastSelectedDate) {
                 this.showEventDetails(this.lastSelectedDate);
             } else {
@@ -311,72 +281,53 @@ class CalendarWidget {
             }
         };
 
-        const debounce = (func, delay) => {
-            let timeout;
-            return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func(...args), delay);
-            };
-        };
+        const debounceFilterChange = this.debounce(handleFilterChange, 300);
 
-        // Filter dropdowns
-        document.getElementById('missionSelect').addEventListener('change', () => {
-            onFilterChange(() => {
-                this.selectedMission = document.getElementById('missionSelect').value;
-            });
+        missionSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'all') {
+                searchInput.value = '';
+                this.searchTerm = '';
+                if (debounceFilterChange.cancel) debounceFilterChange.cancel();
+                handleFilterChange();
+            } else {
+                handleFilterChange();
+            }
         });
 
-        document.getElementById('eventTypeSelect').addEventListener('change', () => {
-            onFilterChange(() => {
-                this.selectedEventType = document.getElementById('eventTypeSelect').value;
-            });
+        eventTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'all') {
+                searchInput.value = '';
+                this.searchTerm = '';
+                if (debounceFilterChange.cancel) debounceFilterChange.cancel();
+                handleFilterChange();
+            } else {
+                handleFilterChange();
+            }
         });
 
-        document.getElementById('eventSearchInput').addEventListener('input', debounce(() => {
-            onFilterChange(() => {
-                this.searchTerm = document.getElementById('eventSearchInput').value.toLowerCase();
-            });
-        }, 300));
+        searchInput.addEventListener('input', debounceFilterChange);
 
-        document.getElementById('prevMonth').addEventListener('click', debounce(() => {
-            this.currentMonth--;
-            if (this.currentMonth < 0) {
-                this.currentMonth = 11;
-                this.currentYear--;
-            }
-
-            //this.generateCalendar(this.currentMonth, this.currentYear);
-        }, 300));
-
-        document.getElementById('nextMonth').addEventListener('click', debounce(() => {
-            //this.clearEventDetails();
-            this.currentMonth++;
-            if (this.currentMonth > 11) {
-                this.currentMonth = 0;
-                this.currentYear++;
-            }
-            //this.generateCalendar(this.currentMonth, this.currentYear);
-        }, 300));
-
-        // Reset filters
-        document.getElementById('resetFilters').addEventListener('click', () => {
+        resetBtn.addEventListener('click', () => {
+            missionSelect.value = 'all';
+            eventTypeSelect.value = 'all';
+            searchInput.value = '';
             this.selectedMission = 'all';
             this.selectedEventType = 'all';
             this.searchTerm = '';
             this.lastSelectedDate = null;
 
-            document.getElementById('missionSelect').value = 'all';
-            document.getElementById('eventTypeSelect').value = 'all';
-            document.getElementById('eventSearchInput').value = '';
+            if (debounceFilterChange.cancel) debounceFilterChange.cancel();
+
+            this.updateCalendarGrid();
+
+            const content = document.getElementById('eventDetailsContent');
+            if (content) content.innerHTML = '';
+
             const noEventMessage = document.getElementById('noEventMessage');
-            const eventDetailsContent = document.getElementById('eventDetailsContent');
-            if (eventDetailsContent) eventDetailsContent.innerHTML = '';
             if (noEventMessage) {
                 noEventMessage.textContent = 'Select a date to see event details.';
                 noEventMessage.style.display = 'block';
             }
-
-            //this.generateCalendar(this.currentMonth, this.currentYear);
         });
 
         // Window resize adjustment
@@ -385,28 +336,34 @@ class CalendarWidget {
             this.adjustLeftPanelHeight();
         });
 
-        // Day click listener
-        this.calendarGrid.addEventListener('click', (e) => {
-            const dayCell = e.target.closest('.calendar-day[data-date]');
-            if (!dayCell) return;
-
-            const date = dayCell.getAttribute('data-date');
-            const hasAnomalies = dayCell.dataset.hasAnomalies === 'true';
-            this.lastSelectedDate = date;
-
-            if (hasAnomalies) {
-                console.log('Clicked date:', date);
+        // Handle day click
+        document.querySelectorAll('.calendar-day[data-date]').forEach(cell => {
+            cell.addEventListener('click', () => {
+                document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+                cell.classList.add('selected');
+                const date = cell.getAttribute('data-date');
+                this.lastSelectedDate = date;
                 this.showEventDetails(date);
-            } else {
-                this.clearEventDetails();
-                const noEventMsg = document.getElementById('noEventMessage');
-                if (noEventMsg) {
-                    noEventMsg.textContent = `No events for ${date}.`;
-                    noEventMsg.style.display = 'block';
-                }
-            }
+            });
         });
+    }
 
+    debounce(func, delay) {
+        let timeout = null;
+        const debounced = (...args) => {
+            if (timeout) clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                timeout = null;
+                func(...args);
+            }, delay);
+        };
+        debounced.cancel = () => {
+            if (timeout) {
+                clearTimeout(timeout);
+                timeout = null;
+            }
+        };
+        return debounced;
     }
 
     adjustCalendarHeight() {
@@ -539,38 +496,70 @@ class CalendarWidget {
     }
 
     arrangeDatatakesList(anomaly, dtList) {
-        return dtList.map(dt => `<p style="margin:2px 0;">${dt}</p>`).join('');
+        const validPrefixes = ["S1", "S2", "S3", "S5"];
+        const content = dtList
+            .filter(dt => validPrefixes.some(prefix => dt.startsWith(prefix)))
+            .map(value => {
+                const dtStatus = this.calcDatatakeStatus
+                    ? this.calcDatatakeStatus(anomaly, value)
+                    : null;
+
+                if (!dtStatus) {
+                    console.log(`Skipping datatake ${value} no completeness data`);
+                    return '';
+                }
+
+                let hexaVal = value;
+                if (value.includes("S1") && this.overrideS1DatatakesId) {
+                    hexaVal = this.overrideS1DatatakesId(value);
+                }
+                return `
+                <li style="margin: 2px 0; list-style: none;">
+                    <div style="display: flex; align-items: center;">
+                        <a href="/data-availability.html?search=${value}" target="_blank" 
+                            style="color: #aad; text-decoration: underline; font-weight:500;">
+                            ${hexaVal}
+                        </a>
+                        <div class="status-circle-dt-${dtStatus}"></div>
+                    </div>
+                </li>`;
+            })
+            .filter(html => html.trim() !== '')
+            .join("");
+
+        return `<ul style="padding-left: 0; margin: 0;">${content}</ul>`;
     }
 
     calcDatatakeStatus(anomaly, datatake_id) {
 
-        // Return one possible value in range: "ok", "partial", "failed", "undef"
-        let datatakes_completeness = format_response(anomaly.datatakes_completeness);
-        var completeness = 0;
-        for (var index = 0; index < datatakes_completeness.length; ++index) {
+        // Return one possible value in range: "ok", "partial", "failed", or null (hidden)
+        const datatakes_completeness = anomaly.datatakes_completeness || [];
+        if (!datatakes_completeness || !datatakes_completeness.length) {
+            console.log('No datatakes_completeness for this anomaly');
+            return null;
+        }
+        console.log(' Checking datatake:', datatake_id);
+        console.log('Raw datatakes_completeness:', datatakes_completeness);
+        for (let dt of datatakes_completeness) {
             try {
-                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
-                    var objValues = Object.values(value);
-                    if (objValues[0] == datatake_id) {
-                        completeness = this.calcDatatakeCompleteness(objValues);
-                        if (completeness >= 90) {
-                            return 'ok';
-                        } else if (completeness >= 10 && completeness < 90) {
-                            return 'partial';
-                        } else if (completeness < 10) {
-                            return 'failed';
-                        } else {
-                            return 'undef';
-                        }
-                    }
+                if (dt.datatakeID && dt.datatakeID.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
+                    const values = Object.values(dt).filter(v => typeof v === 'number');
+                    const completeness = this.calcDatatakeCompleteness(values);
+                    console.log(`Found match for ${datatake_id}: completeness=${completeness}`);
+                    if (completeness >= 90) return 'ok';
+                    if (completeness >= 10 && completeness < 90) return 'partial';
+                    if (completeness < 10) return 'failed';
+                    console.log('No status for', datatake_id, 'completeness data:', datatakes_completeness);
+                    return null;
+
                 }
             } catch (ex) {
-                return 'undef';
+                console.warn('Error parsing datatake completeness:', ex);
+                return null;
             }
         }
-
-        // If the datatake cannot be found, assume that the status is "undef"
-        return 'undef';
+        console.log(` No match found for ${datatake_id}, returning null`);
+        return null;
     }
 
     overrideS1DatatakesId(datatake_id) {
@@ -664,6 +653,65 @@ class CalendarWidget {
             if (!matchesText && !satellitePrefixMatch) return false;
         }
         return true;
+    }
+
+    updateCalendarGrid() {
+        const cells = document.querySelectorAll('.calendar-day[data-date]');
+        if (!cells.length) return;
+
+        cells.forEach(cell => {
+            const date = cell.getAttribute('data-date');
+            const eventContainer = cell.querySelector('.event-container');
+            if (eventContainer) eventContainer.innerHTML = ''; // Clear old icons
+
+            // Get events matching current filters
+            const events = this.filterEvents({
+                date,
+                mission: this.selectedMission,
+                eventType: this.selectedEventType,
+                searchText: this.searchTerm
+            });
+
+            // If no events match, mark as empty
+            if (!events.length) {
+                cell.dataset.hasAnomalies = 'false';
+                return;
+            }
+
+            // Otherwise, rebuild icons for that date
+            cell.dataset.hasAnomalies = 'true';
+            if (!eventContainer) {
+                const newContainer = document.createElement('div');
+                newContainer.classList.add('event-container');
+                cell.appendChild(newContainer);
+            }
+            const container = cell.querySelector('.event-container');
+
+            const addedTypes = new Set();
+            for (const event of events) {
+                let rawCategory = event.category || '';
+                let category = rawCategory.toLowerCase() === 'platform' ? 'Satellite' : rawCategory;
+                const mappedType = this.eventTypeMap[category] || category.toLowerCase();
+                if (addedTypes.has(mappedType)) continue;
+                addedTypes.add(mappedType);
+
+                const iconValue = this.iconMap[mappedType] || 'fas fa-question-circle';
+                const iconDiv = document.createElement('div');
+                iconDiv.classList.add(`event-${mappedType}`);
+                if (iconValue.startsWith('/')) {
+                    const img = document.createElement('img');
+                    img.src = iconValue;
+                    img.alt = mappedType;
+                    img.classList.add('event-icon', 'image-icon');
+                    iconDiv.appendChild(img);
+                } else {
+                    const i = document.createElement('i');
+                    i.className = `${iconValue} event-icon`;
+                    iconDiv.appendChild(i);
+                }
+                container.appendChild(iconDiv);
+            }
+        });
     }
 
     generateCalendar(month, year) {
@@ -800,9 +848,6 @@ class CalendarWidget {
         console.log("filter called:", { date, mission, eventType, searchText });
         if (!date) return [];
         const targetDate = this.normalizeDateString(date);
-
-        if (!targetDate) return [];
-
         const events = (this.anomaliesByDate && this.anomaliesByDate[targetDate]) ? this.anomaliesByDate[targetDate] : [];
 
         console.log(`found ${events.length} events for date ${targetDate}`);
@@ -813,18 +858,21 @@ class CalendarWidget {
             's3': ['S3A', 'S3B'],
             's5': ['S5P']
         };
-
+        console.log("all events for date", targetDate, events);
         return events.filter(event => {
 
             if (mission && mission !== 'all') {
                 const anomalyEnv = String(event.environment || '').toUpperCase();
                 const sats = missionMap[mission.toLowerCase()] || [];
                 const matches = sats.some(sat => anomalyEnv.includes(sat));
+                console.log('mission check', anomalyEnv, sats, matches);
                 if (!matches) return false;
             }
 
             if (eventType && eventType !== 'all') {
                 const category = event.category === 'Platform' ? 'Satellite' : event.category;
+                const matchesType = category.toLowerCase() === eventType.toLowerCase();
+                console.log('event typ check', category, eventType, matchesType);
                 if (category.toLowerCase() !== eventType.toLowerCase()) return false;
             }
 
@@ -846,7 +894,6 @@ class CalendarWidget {
 
         content.innerHTML = '';
 
-        eventDetailsContent.innerHTML = '';
         if (!date) {
             noEventMsg.style.display = 'block';
             noEventMsg.textContent = 'Select a date to see event details.';
@@ -901,11 +948,12 @@ class CalendarWidget {
             );
 
             const datatakeHtml = validDtList.length
-                ? `<div style="color: white; font-size: 14px">
-                    <p style= "margin-bottom:4px;"> List of impacted datatakes:</p>
-                    ${validDtList.map(dt => `<p style="margin:2px 0;">${dt}</p>`).join('')}
+                ? `<div style="color: white; font-size: 14px;">
+                        <p style="margin-bottom: 4px;">List of impacted datatakes:</p>
+                        ${this.arrangeDatatakesList(event, validDtList)}
                     </div>`
                 : '';
+
 
             const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');
             const iconHTML = isImage

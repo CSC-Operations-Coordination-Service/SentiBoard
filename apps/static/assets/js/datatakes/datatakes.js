@@ -43,12 +43,6 @@ class Datatakes {
 
     init() {
         document.addEventListener("DOMContentLoaded", () => {
-            console.log("Initializing Datatakes SSR version...");
-
-            this.quarterAuthorizedProcess = window.quarter_authorized || true;
-            this.anomalies = window.anomaliesData || [];
-            this.datatakes = window.datatakesData || [];
-
             // Hide EC and Copernicus logos from header
             $('#ec-logo-header').hide();
             $('#esa-logo-header').hide();
@@ -56,6 +50,7 @@ class Datatakes {
             /*limit the diplay data takes*/
             this.displayedCount = 0;
             this.itemsPerPage = 10;
+
 
             // Populate the data list and set default view
             this.populateDataList(false);
@@ -89,13 +84,12 @@ class Datatakes {
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
             // Load datatakes for the selected period
-            this.loadDatatakesInPeriod(time_period_sel.value);
+            //this.loadDatatakesInPeriod(time_period_sel.value);
 
-            console.log("Datatakes initialized (API mode).");
+            console.log("Datatakes initialized.");
 
         });
     }
-
 
     filterDatatakesOnPageLoad() {
         const queryString = window.location.search;
@@ -143,7 +137,6 @@ class Datatakes {
         this.completedRequestsCount = 0;
         this.hasServerError = false;
         this.pendingDatatakes = null;
-        this.activeRequestsCount = 0;
 
         // Show spinner immediately
         this.showSpinner();
@@ -165,21 +158,11 @@ class Datatakes {
                 if (this.pendingDatatakes?.length > 0) {
                     const firstTake = this.pendingDatatakes[0];
                     this.updateTitleAndDate(firstTake.id);
-                    // Render both charts asynchronously
-                    (async () => {
-                        try {
-                            await Promise.all([
-                                this.updateCharts("publication", firstTake.id),
-                                this.updateCharts("acquisition", firstTake.id)
-                            ]);
-                        } catch (err) {
-                            console.error("Error rendering charts:", err);
-                        }
-                    })();
+                    this.updateCharts(firstTake.id);
 
-                    /*if (this.updateInfoTable) {
+                    if (this.updateInfoTable) {
                         this.updateInfoTable(firstTake.id);
-                    }*/
+                    }
                 }
             }
         };
@@ -209,8 +192,8 @@ class Datatakes {
         const url = urlMap[selected_time_period] || urlMap.default;
 
         asyncAjaxCall(url, 'GET', {},
-            async (response) => {
-                await this.successLoadDatatakes(response);
+            (response) => {
+                this.successLoadDatatakes(response);
                 this.pendingDatatakes = response; // store for chart update later
 
                 if (shouldReapplyFilters) {
@@ -219,12 +202,6 @@ class Datatakes {
                         this.filterSidebarItems(); // apply UI filters
                     }
                 }
-                if (this.mockDataTakes?.length > 0) {
-                    this.setDefaultView();
-                } else {
-                    console.warn("mockDataTakes empty — skipping setDefaultView()");
-                }
-
                 finishRequest(true); // mark success
             },
             (response) => {
@@ -269,7 +246,7 @@ class Datatakes {
         console.error(response);
     }
 
-    async successLoadDatatakes(response) {
+    successLoadDatatakes(response) {
         const rows = format_response(response);
         console.info('Datatakes successfully retrieved');
 
@@ -316,40 +293,17 @@ class Datatakes {
         }
 
         this.populateDataList(false);
-        this.setDefaultView();
 
         const currentList = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
 
         if (currentList.length > 0) {
             const firstTake = currentList[0];
-
             this.updateTitleAndDate(firstTake.id);
+            this.updateCharts(firstTake.id);
 
-            try {
-                await Promise.all([
-                    this.updateCharts("publication", firstTake.id),
-                    this.updateCharts("acquisition", firstTake.id)
-                ]);
-            } catch (err) {
-                console.error("Error rendering charts:", err);
-            }
-
-            /*if (this.updateInfoTable) {
+            if (this.updateInfoTable) {
                 this.updateInfoTable(firstTake.id);
-            }*/
-            if (hasSearchParam && this.filteredDataTakes?.length) {
-                const tableSection = document.getElementById("tableSection");
-                if (tableSection) {
-                    tableSection.style.display = "block";
-                    tableSection.style.opacity = "1";
-                }
-                if (typeof this.renderTableWithoutPagination === "function") {
-                    this.renderTableWithoutPagination(this.filteredDataTakes, this.filteredDataTakes[0].id);
-                } else {
-                    console.warn("renderTableWithoutPagination function not found, skipping table render.");
-                }
             }
-
 
             const dataList = document.getElementById("dataList");
             if (dataList) {
@@ -406,8 +360,6 @@ class Datatakes {
         const inputWidth = searchInput?.offsetWidth || 300;
         const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
 
-        if (!dataList) return;
-
         const validData = data.filter(take => {
             const valid = take?.raw?.observation_time_start && take?.raw?.datatake_id;
             if (!valid) console.warn("Skipping invalid take:", take);
@@ -457,10 +409,10 @@ class Datatakes {
             a.textContent = take.id;
 
             // Preselect the first item on a full load
-            /*if (!append && this.displayedCount === 0 && index === 0) {
+            if (!append && this.displayedCount === 0 && index === 0) {
                 containerDiv.classList.add("selected");
                 a.classList.add("selected");
-            }*/
+            }
 
             a.addEventListener("click", e => e.preventDefault());
 
@@ -471,23 +423,8 @@ class Datatakes {
                 containerDiv.classList.add("selected");
                 a.classList.add("selected");
 
-                if (document.querySelector(".datatakes-container")) {
-                    this.updateTitleAndDate(take.id);
-
-                    // Render both charts asynchronously
-                    (async () => {
-                        try {
-                            await Promise.all([
-                                this.updateCharts("publication", take.id),
-                                this.updateCharts("acquisition", take.id)
-                            ]);
-                        } catch (err) {
-                            console.error("Error rendering charts:", err);
-                        }
-                    })();
-                } else {
-                    console.warn("Datatakes container not found, skipping chart/title update.");
-                }
+                this.updateCharts(take.id);
+                this.updateTitleAndDate(take.id);
             });
 
             const status = take.completenessStatus?.ACQ?.status?.toLowerCase() || "unknown";
@@ -500,18 +437,15 @@ class Datatakes {
             fragment.appendChild(li);
         });
 
-        dataList.appendChild(fragment);
-        this.displayedCount += nextItems.length;
-
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-        if (loadMoreBtn) {
-            loadMoreBtn.style.display = this.displayedCount >= sortedData.length ? "none" : "block";
-        }
-
         if (!append && this.displayedCount === 0 && nextItems.length > 0) {
             this.handleInitialSelection(nextItems[0]);
         }
 
+        dataList.appendChild(fragment);
+        this.displayedCount += nextItems.length;
+
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        loadMoreBtn.style.display = this.displayedCount >= data.length ? "none" : "block";
     }
 
     setupResizeObserver() {
@@ -569,11 +503,10 @@ class Datatakes {
     async toggleInfoTable(passedId = null) {
         this.fromInfoIcon = true;
 
-        const modalEl = document.getElementById("completenessTableModal");
-        const paragraph = document.querySelector(".datatakes-container h4");
-
-        if (!modalEl || !paragraph) {
-            console.error("Modal container or paragraph not found!");
+        const infoTable = document.getElementById("infoTableContainer");
+        const paragraph = document.querySelector(".chart-container h4");
+        if (!infoTable || !paragraph) {
+            console.error("Info table container or paragraph not found!");
             return;
         }
 
@@ -593,23 +526,24 @@ class Datatakes {
 
         console.log("Looking for datatake ID:", selectedId);
 
-        const $modal = $('#completenessTableModal');
-
-        // Ensure this is attached only once
-        $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
-            // Remove focus from anything inside the modal before hiding
-            document.activeElement.blur();
-        });
-
         try {
             await this.renderInfoTable(selectedId);
 
-            // Show the modal
-            $modal.modal('show');
-
-            // Ensure scroll reset
-            $modal.find('.modal-body').scrollTop(0);
-
+            const shouldShow = infoTable.style.display === "none" || infoTable.style.display === "";
+            if (shouldShow) {
+                infoTable.style.display = "block";
+                infoTable.style.opacity = "0";
+                setTimeout(() => {
+                    infoTable.style.transition = "opacity 0.3s ease-in-out";
+                    infoTable.style.opacity = "1";
+                }, 50);
+            } else {
+                infoTable.style.transition = "opacity 0.3s ease-in-out";
+                infoTable.style.opacity = "0";
+                setTimeout(() => {
+                    infoTable.style.display = "none";
+                }, 300);
+            }
         } catch (err) {
             console.error("Failed to render info table for datatake:", selectedId, err);
         } finally {
@@ -618,8 +552,8 @@ class Datatakes {
     }
 
     async renderInfoTable(dataInput, page = 1) {
-        const tableBody = document.getElementById("modalInfoTableBody");
-        const paginationControls = document.getElementById("modalPaginationControls");
+        const tableBody = document.getElementById("infoTableBody");
+        const paginationControls = document.getElementById("paginationControls");
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
@@ -722,119 +656,87 @@ class Datatakes {
         }
     }
 
-    updateCharts(type, linkKey) {
-        // Select the right container & chart instance name
-        const chartMap = {
-            publication: {
-                id: "#publicationDonutChart",
-                instanceKey: "publicationChartInstance"
-            },
-            acquisition: {
-                id: "#acquisitionDonutChart",
-                instanceKey: "acquisitionChartInstance"
-            }
-        };
-
-        const chartConfig = chartMap[type];
-        if (!chartConfig) {
-            console.error(`Unknown chart type: ${type}`);
-            return;
-        }
-
-        const donutChartContainer = document.querySelector(chartConfig.id);
+    updateCharts(linkKey) {
+        const donutChartContainer = document.querySelector("#missionDonutChart");
         if (!donutChartContainer) {
-            console.error(`${chartConfig.id} container not found!`);
+            console.error("missionDonutChart container not found!");
             return;
         }
 
-        // Normalize linkKey and find relevant data
+
+
         const normalizedLinkKey = typeof linkKey === "string"
             ? linkKey
             : (linkKey?.id || linkKey?.toString?.() || "").toString();
 
-        if (!normalizedLinkKey) return;
+        if (!normalizedLinkKey) {
+            return;
+        }
 
         const relevantData = this.mockDataTakes.filter(dt =>
             (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
         );
 
-        //console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
-
         if (relevantData.length === 0) {
-            console.warn(`No data found for key: ${normalizedLinkKey}`);
+            console.warn(`No data found for platform: ${relevantData}`);
             return;
         }
 
-        // Shared color map
         const colorMap = {
-            PUBLISHED: ['#0aa41b', '#A5D6A7'],
             PARTIAL: ['#bb8747', '#e6c9a0'],
+            ACQUIRED: ['#4caf50', '#A5D6A7'],
             UNAVAILABLE: ['#FF0000', '#FF9999'],
-            ACQUIRED: ['#0aa41b', '#A5D6A7'],
             PLANNED: ['#9e9e9e', '#E0E0E0'],
             PROCESSING: ['#9e9e9e', '#E0E0E0'],
             UNKNOWN: ['#666666', '#999999']
         };
 
-        // Build series depending on chart type
-        let series = [];
-        let labels = [];
-        let colors = [];
-        let avgPercentage = 0;
+        const series = [];
+        const labels = [];
+        const colors = [];
+        // Collect and inspect unique publication types
+        const uniquePublicationTypes = new Set();
 
-        if (type === "publication") {
-            const entry = relevantData[0];
-            const pub = entry.raw?.completeness_status?.PUB || {};
-            const percentage = parseFloat(pub.percentage) || 0;
-            const status = pub.status?.toUpperCase() || "UNKNOWN";
+        const pubValues = new Set();
+        relevantData.forEach(entry => {
+            const pubVal = entry.raw;
+            pubValues.add(pubVal);
+        });
+
+        relevantData.forEach(entry => {
+            const raw = entry.raw?.completeness_status?.ACQ || {};
+            const publicationType = raw.status?.toUpperCase() || "UNKNOWN";
+            uniquePublicationTypes.add(publicationType);
+            const percentage = parseFloat(raw.percentage) || 0;
             const remaining = Math.max(0, 100 - percentage);
-            const [completeColor, missingColor] = colorMap[status] || colorMap["UNKNOWN"];
 
-            series = [percentage, remaining];
-            labels = ["Published", "Missing"];
-            colors = [completeColor, missingColor];
-            avgPercentage = percentage;
-        }
-        else if (type === "acquisition") {
-            const entry = relevantData[0];
-            const acq = entry.raw?.completeness_status?.ACQ || {};
-            const percentage = parseFloat(acq.percentage) || 0;
-            const status = acq.status?.toUpperCase() || "UNKNOWN";
-            const remaining = Math.max(0, 100 - percentage);
-            const [completeColor, missingColor] = colorMap[status] || colorMap["UNKNOWN"];
+            const [completeColor, missingColor] = colorMap[publicationType] || colorMap["UNKNOWN"];
 
-            series = [percentage, remaining];
-            labels = ["Acquired", "Missing"];
-            colors = [completeColor, missingColor];
-            avgPercentage = percentage;
-        }
+            // Add "Complete" slice
+            labels.push("Complete");
+            series.push(parseFloat(percentage.toFixed(2)));
+            colors.push(completeColor);
 
-        // Destroy existing instance if any
-        if (this[chartConfig.instanceKey]) {
-            this[chartConfig.instanceKey].destroy();
+            // Add "Missing" slice
+            labels.push("Missing");
+            series.push(parseFloat(remaining.toFixed(2)));
+            colors.push(missingColor);
+        });
+
+        // Destroy existing chart before rendering a new one
+        if (this.donutChartInstance) {
+            this.donutChartInstance.destroy();
         }
 
         // Chart configuration
         const options = {
-            chart: { type: 'donut', height: 350, toolbar: { show: false }, offsetX: 0, offsetY: 0 },
-            title: {
-                text: type === "publication" ? "Publication" : "Acquisition",
-                align: 'center',
-                style: {
-                    fontSize: '16px',
-                    fontWeight: 600,
-                    color: '#FFFFFF',
-                },
-                offsetY: 0,
-            },
+            chart: { type: 'donut', height: 350, toolbar: { show: false } },
             series,
             labels,
             colors,
             tooltip: {
                 y: {
-                    formatter: function (val) {
-                        return val.toFixed(2) + '%';
-                    }
+                    formatter: val => `${val.toFixed(2)}%`
                 }
             },
             states: {
@@ -847,33 +749,38 @@ class Datatakes {
             },
             legend: {
                 show: true,
-                floating: true,
                 position: 'right',
                 horizontalAlign: 'center',
                 labels: { colors: '#FFFFFF' },
-                formatter: seriesName => `<div style="margin-left: 0;">${seriesName}</div>`
+                itemMargin: {
+                    vertical: 4,
+                    horizontal: 4
+                },
+                markers: {
+                    width: 12,
+                    height: 12,
+                    offsetX: -6,
+                    offsetY: 0
+                },
+                formatter: function (seriesName, opts) {
+                    return `<div style="margin-left: 0;">${seriesName}</div>`;
+                }
             },
             plotOptions: {
                 pie: {
                     donut: {
-                        size: '70%',
                         labels: {
                             show: true,
                             name: { color: '#FFFFFF' },
-                            value: {
-                                color: '#FFFFFF',
-                                formatter: function (val) {
-                                    const numberVal = parseFloat(val);
-                                    return numberVal.toFixed(2) + '%';
-                                }
-                            },
+                            value: { color: '#FFFFFF' },
                             total: {
                                 show: true,
-                                label: 'Completeness',
+                                label: 'Completion',
                                 color: '#FFFFFF',
-                                formatter: function (w) {
-                                    const totalVal = parseFloat(w.globals.series[0]) || 0;
-                                    return totalVal.toFixed(2) + '%';
+                                formatter: () => {
+                                    const total = series.filter((_, i) => i % 2 === 0).reduce((acc, val) => acc + val, 0);
+                                    const avg = total / (series.length / 2);
+                                    return `${avg.toFixed(1)}%`;
                                 }
                             }
                         }
@@ -884,38 +791,22 @@ class Datatakes {
                 breakpoint: 768,
                 options: {
                     chart: {
-                        height: 300,
-                        width: '100%',
+                        height: 300
                     },
                     legend: {
-                        show: true,
-                        floating: false,
                         position: 'bottom',
-                        horizontalAlign: 'center',
-                        labels: { colors: '#FFFFFF' },
-                        itemMargin: { vertical: 2, horizontal: 6 },
-                        fontSize: '12px',
-                    },
-                    plotOptions: {
-                        pie: {
-                            donut: { size: '60%' }
-                        }
-                    },
-                    title: {
-                        offsetY: 0
-                    },
+                        horizontalAlign: 'center'
+                    }
                 }
             }]
         };
 
-        // Render new chart
-        this[chartConfig.instanceKey] = new ApexCharts(donutChartContainer, options);
-        this[chartConfig.instanceKey].render();
-
+        this.donutChartInstance = new ApexCharts(donutChartContainer, options);
+        this.donutChartInstance.render();
         // Ensure responsive resizing
         window.addEventListener("resize", () => {
-            if (this[chartConfig.instanceKey]?.resize) {
-                this[chartConfig.instanceKey].resize();
+            if (this.donutChartInstance?.resize) {
+                this.donutChartInstance.resize();
             }
         });
         this.resizeListenerAttached = true;
@@ -929,8 +820,7 @@ class Datatakes {
     }
 
     hideInfoTable() {
-
-        $('#completenessTableModal').modal('hide');
+        document.getElementById('infoTableContainer').style.display = 'none';
     }
 
     filterSidebarItems() {
@@ -1091,7 +981,6 @@ class Datatakes {
             tableSection.style.display = "none";
             return;
         }
-        //console.log("completeness_status", selectedData.raw.completeness_status);
 
         let data = [selectedData];
 
@@ -1157,45 +1046,20 @@ class Datatakes {
     }
 
     updateTitleAndDate(selectedKey) {
-        if (!selectedKey) {
-            return;
-        }
-
-        if (!this.mockDataTakes || this.mockDataTakes.length === 0) {
-            console.warn("mockDataTakes is empty or not loaded yet.");
-            return;
-        }
-
-        // Find datatake
-        const dataTake = this.mockDataTakes.find(item => item.id === selectedKey);
-
-        if (!dataTake) {
-            console.warn(`Datatake not found for key: ${selectedKey}`);
-            console.log("Available datatake IDs:", this.mockDataTakes.map(item => item.id));
-            return;
-        }
-
-
-        const container = document.querySelector(".datatakes-container");
-        if (!container) {
-            console.error("Datatakes container not found!");
-            return;
-        }
-        const titleSpan = container.querySelector("h4 .title-text");
-        const dateElement = container.querySelector("p.text-left");
+        const titleSpan = document.querySelector(".chart-container h4 .title-text");
+        const dateElement = document.querySelector(".chart-container p.text-left");
 
         if (!titleSpan || !dateElement) {
             console.error("Title span or date element not found!");
             return;
         }
 
-        const startDate = new Date(dataTake.start)
-            .toISOString()
-            .replace("T", " ")
-            .slice(0, 19);
-
-        titleSpan.textContent = `${dataTake.id}`;
-        dateElement.textContent = `${startDate}`;
+        const dataTake = this.mockDataTakes.find(item => item.id === selectedKey);
+        if (dataTake) {
+            const startDate = new Date(dataTake.start).toISOString().replace("T", " ").slice(0, 19);
+            titleSpan.textContent = `${dataTake.id}`;
+            dateElement.textContent = `${startDate}`;
+        }
     }
 
     resetFilters() {
@@ -1281,12 +1145,6 @@ class Datatakes {
 
                     const filtered = allSatelliteOptions.filter(opt => opt.value.startsWith(selectedMission));
                     filtered.forEach(opt => satelliteSelect.appendChild(opt));
-
-                    /*if (filtered.length > 0) {
-                        satelliteSelect.value = filtered[0].value;
-                    } else {*/
-                    satelliteSelect.value = "";
-                    //}
                 }
 
                 this.filterSidebarItems();
@@ -1311,7 +1169,7 @@ class Datatakes {
         });
 
 
-        dataList.addEventListener("click", async (e) => {
+        dataList.addEventListener("click", (e) => {
             const target = e.target.closest("a.filter-link");
             if (!target) return;
 
@@ -1328,42 +1186,16 @@ class Datatakes {
             }
 
             const selectedKey = target.textContent.trim();
-            this.updateTitleAndDate(selectedKey);
-
-            // Render both donut charts asynchronously
-            try {
-                await Promise.all([
-                    this.updateCharts("publication", selectedKey),
-                    this.updateCharts("acquisition", selectedKey)
-                ]);
-            } catch (err) {
-                console.error("Error rendering charts:", err);
-            }
+            this.updateCharts(selectedKey);
             this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
+            this.updateTitleAndDate(selectedKey);
             this.hideInfoTable();
         });
     }
 
-    async setDefaultView(retryCount = 0) {
+    setDefaultView() {
         const sidebarItems = document.querySelectorAll(".filter-link");
-
-        if (sidebarItems.length === 0) {
-            if (retryCount < 5) { // retry up to 5 times
-                console.warn("Sidebar not ready, retrying setDefaultView...");
-                setTimeout(() => this.setDefaultView(retryCount + 1), 200);
-            } else {
-                console.error("Sidebar items not found after retries.");
-            }
-            return;
-        }
-
         const firstLink = sidebarItems[0];
-        const defaultKey = firstLink.textContent.trim();
-
-        if (!defaultKey) {
-            console.warn("Sidebar first link has no valid text, cannot update title/date.");
-            return;
-        }
 
         if (!firstLink) {
             console.warn("No sidebar items found.");
@@ -1372,52 +1204,17 @@ class Datatakes {
 
         firstLink.classList.add("active");
 
-
-        // Safely update title and charts once the DOM is ready
-        if (document.querySelector(".datatakes-container")) {
-            this.updateTitleAndDate(defaultKey);
-
-            (async () => {
-                try {
-                    await Promise.all([
-                        this.updateCharts("publication", defaultKey),
-                        this.updateCharts("acquisition", defaultKey)
-                    ]);
-                } catch (err) {
-                    console.error("Error rendering initial charts:", err);
-                }
-            })();
-        } else {
-            console.warn("Datatakes container not found, skipping chart update.");
-        }
+        const defaultKey = firstLink.textContent.trim();
+        this.updateTitleAndDate(defaultKey);
+        this.updateCharts(defaultKey);
     }
 
     handleInitialSelection(first) {
-        if (!first) return;
-
-        // Ensure the DOM elements are ready
-        if (document.querySelector(".datatakes-container")) {
-            this.updateTitleAndDate(first.id);
-
-            (async () => {
-                try {
-                    await Promise.all([
-                        this.updateCharts("publication", first.id),
-                        this.updateCharts("acquisition", first.id)
-                    ]);
-                } catch (err) {
-                    console.error("Error rendering charts for initial selection:", err);
-                }
-            })();
-        } else {
-            console.warn("Datatakes container not found for initial selection.");
-        }
-
+        this.updateCharts(first.id);
+        this.updateTitleAndDate(first.id);
         this.renderTableWithoutPagination([first], first.id);
-
         const firstLink = [...document.querySelectorAll(".filter-link")]
             .find(link => link.textContent.trim() === first.id);
-
         if (firstLink) {
             firstLink.classList.add("active");
             const parentDiv = firstLink.closest(".container-border");
@@ -1429,7 +1226,6 @@ class Datatakes {
 
     showSpinner() {
         const spinner = document.getElementById('spinner');
-        console.log("Active requests count before showSpinner:", this.activeRequestsCount);
         if (spinner && this.activeRequestsCount === 0) {
             console.log("Showing spinner...");
             spinner.classList.add('active');

@@ -81,6 +81,7 @@ def events():
 
         if quarter_authorized:
             start_date, end_date = date_utils.prev_quarter_interval_from_date(today)
+            current_app.logger.info(f"start date {start_date} end date {end_date} ")
         else:
             start_date = today - relativedelta(months=3)
             end_date = today
@@ -91,9 +92,20 @@ def events():
             else elastic_anomalies.fetch_anomalies_last_quarter()
         )
 
+        current_app.logger.info(
+            f"loaded {len(raw_anomalies)} anomalies for {'authorized' if quarter_authorized else 'guest'} user"
+        )
+
         def serialize_anomalie(anomaly):
             source = anomaly.get(
                 "_source", anomaly if isinstance(anomaly, dict) else {}
+            )
+            anomaly_key = source.get("key") or source.get("id") or anomaly.get("_id")
+            datatakes_completeness = source.get("datatakes_completeness") or []
+
+            current_app.logger.debug(f"debug anomaly key: {anomaly_key}")
+            current_app.logger.debug(
+                f"debug datatakes_complete: {datatakes_completeness}"
             )
 
             iso_date = (
@@ -199,7 +211,34 @@ def events():
             else datatakes_module.fetch_anomalies_datatakes_last_quarter()
         )
 
+        datatakes_by_id = {}
+        for d in datatakes_data:
+            src = d.get("_source", {})
+            dt_id = src.get("datatake_id")
+            if dt_id:
+                datatakes_by_id[dt_id] = {
+                    "datatakeID": dt_id,
+                    "L0_": src.get("L0_")
+                    or src.get("completeness_status", {})
+                    .get("ACQ", {})
+                    .get("percentage"),
+                    "L1_": src.get("L1_"),
+                    "L2_": src.get("L2_")
+                    or src.get("completeness_status", {})
+                    .get("PUB", {})
+                    .get("percentage"),
+                    "completeness_status": src.get("completeness_status"),
+                    "instrument_mode": src.get("instrument_mode"),
+                    "satellite_unit": src.get("satellite_unit"),
+                }
+
         anomalies_by_date = {}
+        missing_datatakes_info = []
+
+        days_in_month = monthrange(year, month)[1]
+        first_day_offset = date(year, month, 1).weekday()
+        month_name = date(year, month, 1).strftime("%B")
+
         if anomalies:
             for a in anomalies:
                 occur_date = (
@@ -227,10 +266,24 @@ def events():
                 date_key = occur_date[:10]
                 anomalies_by_date.setdefault(date_key, []).append(a)
 
-            days_in_month = monthrange(year, month)[1]
-            first_day_offset = date(year, month, 1).weekday()
-            month_name = date(year, month, 1).strftime("%B")
+                env = a.get("environment", "")
+                datatake_ids = [
+                    s.strip() for s in re.split(r"[;,]\s*", env) if s.strip()
+                ]
+                missing = [dt for dt in datatake_ids if dt not in datatakes_by_id]
 
+                if missing:
+                    missing_datatakes_info.append(
+                        {"anomaly_key": a.get("key"), "missing_ids": missing}
+                    )
+
+                a["datatakes_completeness"] = [
+                    datatakes_by_id[dt_id]
+                    for dt_id in datatake_ids
+                    if dt_id in datatakes_by_id
+                ]
+
+                anomalies_by_date.setdefault(date_key, []).append(a)
         else:
             logger.info("no anomalies found in this period")
 
@@ -247,43 +300,11 @@ def events():
             quarter_authorized=quarter_authorized,
             icon_map=icon_map,
             event_type_map=event_type_map,
+            missing_datatakes_info=missing_datatakes_info,
         )
 
     except Exception as e:
         current_app.logger.error(f"Exception in events: {e}", exc_info=True)
-        return render_template("home/page-500.html"), 500
-
-
-@blueprint.route("/data-availability")
-def data_availability():
-    """
-    Render the Data Availability page with datatakes data embedded via SSR.
-    """
-    try:
-        quarter_authorized = False
-        if current_user.is_authenticated:
-            quarter_authorized = current_user.role in ("admin", "ecuser", "esauser")
-
-        raw_events = (
-            elastic_anomalies.fetch_anomalies_prev_quarter()
-            if quarter_authorized
-            else elastic_anomalies.fetch_anomalies_last_quarter()
-        )
-        anomalies = raw_events
-
-        if quarter_authorized:
-            datatakes_data = datatakes_module.fetch_anomalies_datatakes_prev_quarter()
-        else:
-            datatakes_data = datatakes_module.fetch_anomalies_datatakes_last_quarter()
-
-        return render_template(
-            "home/data-availability.html",
-            quarter_authorized=quarter_authorized,
-            datatakes=datatakes_data,
-            anomalies=anomalies,
-        )
-    except Exception as e:
-        current_app.logger.error(f"Exception in data_availability", exc_info=True)
         return render_template("home/page-500.html"), 500
 
 
@@ -307,10 +328,6 @@ def route_template(template):
         if template in ["events", "events.html"]:
             # Determine if the user is quarter authorized
             return events()
-
-        # Special case: data availability page
-        if template in ["data-availability", "data-availability.html"]:
-            return data_availability()
 
         # Default: serve page from home
         return render_template("home/" + template, segment=segment)
