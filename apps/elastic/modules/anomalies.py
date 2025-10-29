@@ -78,8 +78,8 @@ def fetch_anomalies_last_quarter(normalize=True):
     except Exception as ex:
         logger.error(ex)
 
-    if normalize:
-        anomalies = [serialize_anomalie(e) for e in anomalies]
+    # if normalize:
+    #    anomalies = [serialize_anomalie(e) for e in anomalies]
 
     # Return the complete and normalized set of datatakes
     return anomalies
@@ -96,7 +96,7 @@ def fetch_anomalies_prev_quarter(normalize=True):
     # Retrieve data takes in the previous, completed quarter and store results of query in cache
     start_date, end_date = date_utils.prev_quarter_interval_from_date(datetime.today())
     start_date = datetime.strftime(start_date, "%Y-%m-%d")
-    end_date = datetime.strftime(end_date, "%Y-%m-%d")
+    end_date = datetime.today()
 
     try:
 
