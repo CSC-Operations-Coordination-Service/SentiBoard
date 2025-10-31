@@ -96,6 +96,8 @@ class CalendarWidget {
         this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomalies || '[]');
         this.datatakesData = JSON.parse(anomalyDataEl.dataset.datatakes || '[]');
 
+        console.log("Loaded anomalies:", this.anomaliesData.length);
+        //console.log("Sample anomaly:", this.anomaliesData[0]);
 
         this.isAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
 
@@ -116,6 +118,9 @@ class CalendarWidget {
     buildAnomaliesByDate(anomaliesArray) {
         this.anomaliesByDate = {}; // reset
 
+        //console.log("built anomaliesbydate:", Object.keys(this.anomaliesByDate).length);
+        //console.log("dates available", Object.keys(this.anomaliesByDate).slice(0, 10));
+
         if (!Array.isArray(anomaliesArray)) return;
 
         anomaliesArray.forEach(a => {
@@ -123,22 +128,17 @@ class CalendarWidget {
             let iso = a.publicationDate || a.publication_date || a.occurence_date || a.occurrence_date || a.publication;
             if (!iso) return;
 
-            // If it's already "YYYY-MM-DD", keep, otherwise slice first 10 chars from ISO
-            if (typeof iso === 'string') {
-                const dateKey = iso.length >= 10 ? iso.slice(0, 10) : this.normalizeDateString(iso);
-                if (!dateKey) return;
-                this.anomaliesByDate[dateKey] = this.anomaliesByDate[dateKey] || [];
-                this.anomaliesByDate[dateKey].push(a);
-            } else if (iso instanceof Date) {
-                const yyyy = iso.getFullYear();
-                const mm = String(iso.getMonth() + 1).padStart(2, '0');
-                const dd = String(iso.getDate()).padStart(2, '0');
-                const dateKey = `${yyyy}-${mm}-${dd}`;
-                this.anomaliesByDate[dateKey] = this.anomaliesByDate[dateKey] || [];
-                this.anomaliesByDate[dateKey].push(a);
-            }
-        });
+            const dateKey = this.normalizeDateString(iso);
+            if (!dateKey) return
 
+            if (!this.anomaliesByDate[dateKey]) {
+                this.anomaliesByDate[dateKey] = [];
+            }
+            this.anomaliesByDate[dateKey].push(a);
+
+        });
+        console.log("anomaliebydate built:", Object.keys(this.anomaliesByDate).length, "unique dates");
+        //console.log("sample date keys:", Object.keys(this.anomaliesByDate).slice(0, 10));
         this._anomaliesCount = Object.values(this.anomaliesByDate).reduce((s, arr) => s + arr.length, 0);
     }
 
@@ -162,16 +162,6 @@ class CalendarWidget {
             this.errorLoadAnomalies("No anomalies data");
         }
     }
-
-    /*loadEventsECUser() {
-        console.info('Loading events up to the previous quarter...');
-        if (window.ANOMALIES_DATA && window.ANOMALIES_DATA.length > 0) {
-            this.successLoadAnomalies(window.ANOMALIES_DATA);
-        } else {
-            console.warn("No anomalies data found for authorizedUser");
-            this.errorLoadAnomalies("No anomalies data");
-        }
-    }*/
 
     successLoadAnomalies(response) {
         var rows = Array.isArray(response) ? response : [];
@@ -267,7 +257,7 @@ class CalendarWidget {
             this.selectedEventType = eventTypeSelect.value;
             this.searchTerm = searchInput.value.trim().toLowerCase();
 
-            this.updateCalendarGrid();
+            this.generateCalendar(this.currentMonth, this.currentYear);
 
             // If a date is already selected, refresh details for that date
             if (this.lastSelectedDate) {
@@ -318,8 +308,10 @@ class CalendarWidget {
 
             if (debounceFilterChange.cancel) debounceFilterChange.cancel();
 
-            this.updateCalendarGrid();
+            // Re-render calendar
+            this.generateCalendar(this.currentMonth, this.currentYear);
 
+            // Clear side panel
             const content = document.getElementById('eventDetailsContent');
             if (content) content.innerHTML = '';
 
@@ -328,6 +320,7 @@ class CalendarWidget {
                 noEventMessage.textContent = 'Select a date to see event details.';
                 noEventMessage.style.display = 'block';
             }
+
         });
 
         // Window resize adjustment
@@ -366,6 +359,14 @@ class CalendarWidget {
         return debounced;
     }
 
+    getAppliedFilters() {
+        return {
+            mission: this.selectedMission,
+            eventType: this.selectedEventType,
+            searchText: this.searchTerm
+        }
+    }
+
     adjustCalendarHeight() {
         const calendarContainer = document.querySelector('.calendar-container');
         const eventDetails = document.getElementById('eventDetails');
@@ -400,79 +401,47 @@ class CalendarWidget {
         leftPanel.style.minHeight = `${calendarHeight}px`;
     }
 
-
     buildEventInstanceFromAnomaly(anomaly) {
-        // Build the event instance from the anomaly.
-        var start_time = moment(anomaly['publicationDate'], 'DD/MM/YYYY HH:mm:ss').toDate();
-        var end_time = moment(anomaly['end'], 'DD/MM/YYYY HH:mm:ss').toDate();
+        // Ensure publicationDate is available
+        let start_time = anomaly['publicationDate'] ? new Date(anomaly['publicationDate']) : new Date();
+        let end_time = anomaly['end'] ? new Date(anomaly['end']) : new Date(start_time.getTime() + 1);
 
-        // Generate a simplified, custom description for the reported anomaly
-        // Choose color code based on platform
-        var title = "Event(s)";
-        var item = "";
-        var description = "";
-        var color = "blue";
-        var recovered = false;
+        let title = "Event(s)";
+        let description = "";
+        let color = "#273295"; // default blue
+        let recovered = false;
 
-        // Append impacted item
-        item += anomaly["impactedSatellite"];
-        description += anomaly["category"] === "Data access" ?
-            "Impacted Satellite: All Sentinels " : "Impacted Satellite: " + item + '. ';
+        const impactedSat = anomaly["impactedSatellite"] || "N/A";
+        description += `Impacted Satellite: ${impactedSat}. `;
+        description += `Issue type: ${anomaly.category || "Unknown"}. `;
 
-        // Choose an appropriate description
-        if (anomaly["category"] === "Platform") {
-            // title = "Satellite";
-            description += 'Issue type: Satellite / Instrument. ';
-        } else if (anomaly["category"] === "Acquisition") {
-            // title = "Acquisition";
-            description += 'Issue type: Acquisition. ';
-        } else if (anomaly["category"] === "Production") {
-            // title = "Production";
-            description += 'Issue type: Production. ';
-        } else if (anomaly["category"] === "Data access") {
-            // title = "Data Access"
-            description += 'Issue type: Data Access. ';
-        } else if (anomaly["category"] === "Calibration") {
-            // title = "Calibration"
-            description += 'Issue type: Calibration ';
-        } else if (anomaly["category"] === "Manoeuvre") {
-            // title = "Manoeuvre"
-            description += 'Issue type: Manoeuvre ';
-        } else;
+        // Full recovery logic
+        let allRecovered = true;
+        const threshold = 90;
+        const dtCompletenessArray = Array.isArray(anomaly.datatakes_completeness)
+            ? anomaly.datatakes_completeness
+            : [];
 
-        // Override the end date in the Calendar view only
-        end_time.setTime(start_time.getTime() + 1);
-
-        // Analyze the impact on production, anc choose the proper colour. If all products associated to
-        // data takes where restored, display the anomaly in green; otherwise, use default orange color.
-        color = "#273295";
-        var threshold = 90;
-        var datatakes_completeness = format_response(anomaly['datatakes_completeness']);
-        var completeness = 0;
-        var allRecovered = true;
-        for (var index = 0; index < datatakes_completeness.length; ++index) {
+        for (let dtObj of dtCompletenessArray) {
             try {
-                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
-                    var objValues = Object.values(value);
-                    completeness = this.calcDatatakeCompleteness(objValues);
-                    if (completeness < threshold) {
-                        allRecovered = false;
-                    }
+                const parsed = typeof dtObj === "string" ? JSON.parse(dtObj.replaceAll("'", '"')) : dtObj;
+                for (const [_, val] of Object.entries(parsed)) {
+                    const values = Object.values(val).filter(v => typeof v === "number");
+                    const completeness = this.calcDatatakeCompleteness(values);
+                    if (completeness < threshold) allRecovered = false;
                 }
-            } catch (ex) {
+            } catch (e) {
                 allRecovered = false;
             }
         }
 
-        // Set the anomaly to green if and only if all impacted datatakes have been recovered
         if (allRecovered) {
-            color = "#31ce36";
+            color = "#31ce36"; // green
             recovered = true;
         }
 
-        // Return the event instance
         return {
-            id: anomaly['key'],
+            id: anomaly.key,
             from: start_time,
             to: end_time,
             title: title,
@@ -497,68 +466,65 @@ class CalendarWidget {
 
     arrangeDatatakesList(anomaly, dtList) {
         const validPrefixes = ["S1", "S2", "S3", "S5"];
+
         const content = dtList
             .filter(dt => validPrefixes.some(prefix => dt.startsWith(prefix)))
-            .map(value => {
-                const dtStatus = this.calcDatatakeStatus
-                    ? this.calcDatatakeStatus(anomaly, value)
-                    : null;
+            .map(dt => {
+                const status = this.calcDatatakeStatus(anomaly, dt);
+                if (!status) return '';
 
-                if (!dtStatus) {
-                    console.log(`Skipping datatake ${value} no completeness data`);
-                    return '';
-                }
+                const displayId = (dt.includes("S1") && this.overrideS1DatatakesId)
+                    ? this.overrideS1DatatakesId(dt)
+                    : dt;
 
-                let hexaVal = value;
-                if (value.includes("S1") && this.overrideS1DatatakesId) {
-                    hexaVal = this.overrideS1DatatakesId(value);
-                }
                 return `
-                <li style="margin: 2px 0; list-style: none;">
-                    <div style="display: flex; align-items: center;">
-                        <a href="/data-availability.html?search=${value}" target="_blank" 
-                            style="color: #aad; text-decoration: underline; font-weight:500;">
-                            ${hexaVal}
-                        </a>
-                        <div class="status-circle-dt-${dtStatus}"></div>
-                    </div>
-                </li>`;
+            <li style="margin: 2px 0; list-style: none;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <a href="/data-availability.html?search=${displayId}" target="_blank"
+                        style="color: #aad; text-decoration: underline; font-weight:500;">
+                        ${displayId}
+                    </a>
+                    <div class="status-circle-dt-${status}" title="${status}"></div>
+                </div>
+            </li>`;
             })
             .filter(html => html.trim() !== '')
-            .join("");
+            .join('');
 
-        return `<ul style="padding-left: 0; margin: 0;">${content}</ul>`;
+        return content ? `<ul style="padding-left: 0; margin: 0;">${content}</ul>` : '<p>No valid datatakes</p>';
     }
 
     calcDatatakeStatus(anomaly, datatake_id) {
+        const dtCompletenessArray = anomaly.datatakes_completeness || [];
+        if (!dtCompletenessArray.length) return null;
 
-        // Return one possible value in range: "ok", "partial", "failed", or null (hidden)
-        const datatakes_completeness = anomaly.datatakes_completeness || [];
-        if (!datatakes_completeness || !datatakes_completeness.length) {
-            console.log('No datatakes_completeness for this anomaly');
-            return null;
-        }
-        console.log(' Checking datatake:', datatake_id);
-        console.log('Raw datatakes_completeness:', datatakes_completeness);
-        for (let dt of datatakes_completeness) {
+        for (let dtObj of dtCompletenessArray) {
             try {
-                if (dt.datatakeID && dt.datatakeID.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
-                    const values = Object.values(dt).filter(v => typeof v === 'number');
-                    const completeness = this.calcDatatakeCompleteness(values);
-                    console.log(`Found match for ${datatake_id}: completeness=${completeness}`);
+                const parsed = typeof dtObj === "string" ? JSON.parse(dtObj.replaceAll("'", '"')) : dtObj;
+
+                for (const [key, val] of Object.entries(parsed)) {
+                    if (key.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
+                        const values = Object.values(val).filter(v => typeof v === "number");
+                        const completeness = this.calcDatatakeCompleteness(values);
+                        if (completeness >= 90) return 'ok';
+                        if (completeness >= 10 && completeness < 90) return 'partial';
+                        if (completeness < 10) return 'failed';
+                    }
+                }
+
+                if (parsed.datatakeID && parsed.datatakeID.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
+                    const completeness = parsed.L2_ || parsed.L0_ || parsed.completeness || 100;
                     if (completeness >= 90) return 'ok';
                     if (completeness >= 10 && completeness < 90) return 'partial';
                     if (completeness < 10) return 'failed';
-                    console.log('No status for', datatake_id, 'completeness data:', datatakes_completeness);
-                    return null;
-
                 }
+
             } catch (ex) {
-                console.warn('Error parsing datatake completeness:', ex);
-                return null;
+                console.warn("Error parsing dt completeness", ex);
+                continue;
             }
         }
-        console.log(` No match found for ${datatake_id}, returning null`);
+
         return null;
     }
 
@@ -655,65 +621,6 @@ class CalendarWidget {
         return true;
     }
 
-    updateCalendarGrid() {
-        const cells = document.querySelectorAll('.calendar-day[data-date]');
-        if (!cells.length) return;
-
-        cells.forEach(cell => {
-            const date = cell.getAttribute('data-date');
-            const eventContainer = cell.querySelector('.event-container');
-            if (eventContainer) eventContainer.innerHTML = ''; // Clear old icons
-
-            // Get events matching current filters
-            const events = this.filterEvents({
-                date,
-                mission: this.selectedMission,
-                eventType: this.selectedEventType,
-                searchText: this.searchTerm
-            });
-
-            // If no events match, mark as empty
-            if (!events.length) {
-                cell.dataset.hasAnomalies = 'false';
-                return;
-            }
-
-            // Otherwise, rebuild icons for that date
-            cell.dataset.hasAnomalies = 'true';
-            if (!eventContainer) {
-                const newContainer = document.createElement('div');
-                newContainer.classList.add('event-container');
-                cell.appendChild(newContainer);
-            }
-            const container = cell.querySelector('.event-container');
-
-            const addedTypes = new Set();
-            for (const event of events) {
-                let rawCategory = event.category || '';
-                let category = rawCategory.toLowerCase() === 'platform' ? 'Satellite' : rawCategory;
-                const mappedType = this.eventTypeMap[category] || category.toLowerCase();
-                if (addedTypes.has(mappedType)) continue;
-                addedTypes.add(mappedType);
-
-                const iconValue = this.iconMap[mappedType] || 'fas fa-question-circle';
-                const iconDiv = document.createElement('div');
-                iconDiv.classList.add(`event-${mappedType}`);
-                if (iconValue.startsWith('/')) {
-                    const img = document.createElement('img');
-                    img.src = iconValue;
-                    img.alt = mappedType;
-                    img.classList.add('event-icon', 'image-icon');
-                    iconDiv.appendChild(img);
-                } else {
-                    const i = document.createElement('i');
-                    i.className = `${iconValue} event-icon`;
-                    iconDiv.appendChild(i);
-                }
-                container.appendChild(iconDiv);
-            }
-        });
-    }
-
     generateCalendar(month, year) {
         if (this.isGenerating) {
             console.warn('generateCalendar skipped: already generating');
@@ -761,13 +668,12 @@ class CalendarWidget {
                     this.showEventDetails(fullDate);
                 });
 
-                const allEventsForDay = Object.values(this.anomalies).filter(event => {
-                    return this.normalizeDateString(event.publicationDate) === fullDate;
-                });
+                const allEventsForDay = this.anomaliesByDate?.[fullDate] || [];
 
-                const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || searchText;
+                const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || searchText.length > 0;
                 const filteredEvents = isFiltering
-                    ? allEventsForDay.filter(event => this.filterEvent(event, selectedMission, selectedEventType, searchText))
+                    ? allEventsForDay.filter(event =>
+                        this.filterEvent(event, selectedMission, selectedEventType, searchText))
                     : allEventsForDay;
 
                 const eventTextContainer = document.createElement('div');
@@ -850,7 +756,10 @@ class CalendarWidget {
         const targetDate = this.normalizeDateString(date);
         const events = (this.anomaliesByDate && this.anomaliesByDate[targetDate]) ? this.anomaliesByDate[targetDate] : [];
 
-        console.log(`found ${events.length} events for date ${targetDate}`);
+        /*console.log("all anomalies by date :", Object.keys(this.anomaliesByDate || {}));
+        console.log("target date :", targetDate);
+        console.log("Raw events for date before filtering:", events);
+        console.log(`found ${events.length} events for date ${targetDate}`);*/
         const searchLower = (searchText || '').toLowerCase().trim();
         const missionMap = this.missionMap || {
             's1': ['S1A', 'S1C'],
@@ -858,21 +767,24 @@ class CalendarWidget {
             's3': ['S3A', 'S3B'],
             's5': ['S5P']
         };
-        console.log("all events for date", targetDate, events);
+        //console.log("all events for date", targetDate, events);
         return events.filter(event => {
+            if (['archive', 'data access', 'data-access'].includes((event.category || '').toLowerCase())) {
+                return false;
+            }
 
             if (mission && mission !== 'all') {
                 const anomalyEnv = String(event.environment || '').toUpperCase();
                 const sats = missionMap[mission.toLowerCase()] || [];
                 const matches = sats.some(sat => anomalyEnv.includes(sat));
-                console.log('mission check', anomalyEnv, sats, matches);
+                //console.log('mission check', anomalyEnv, sats, matches);
                 if (!matches) return false;
             }
 
             if (eventType && eventType !== 'all') {
                 const category = event.category === 'Platform' ? 'Satellite' : event.category;
                 const matchesType = category.toLowerCase() === eventType.toLowerCase();
-                console.log('event typ check', category, eventType, matchesType);
+                //console.log('event typ check', category, eventType, matchesType);
                 if (category.toLowerCase() !== eventType.toLowerCase()) return false;
             }
 

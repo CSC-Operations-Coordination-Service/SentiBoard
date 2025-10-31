@@ -186,13 +186,14 @@
                                         {% if event.category not in ['Archive', 'Data access'] %}
                                           {% set raw_category = event.category or '' %}
                                           {% if raw_category|lower == 'platform' %}
-                                            {% set category = 'Satellite' %}
+                                            {% set category = 'satellite' %}
                                           {% elif raw_category|lower in ['data access','data-access'] %}
-                                            {% set category = 'Data access' %}
+                                            {% set category = 'data access' %}
                                           {% else %}
                                             {% set category = raw_category %}
                                           {% endif %}
-                                          {% set mapped_type = event_type_map.get(category, category)|lower %}
+                                          {% set normalized_cat = (category or '')|lower %}
+                                          {% set mapped_type = event_type_map.get(normalized_cat, normalized_cat)|lower %}
                                           {% if mapped_type not in added_types %}
                                             {% set _= added_types.append(mapped_type) %}
                                             {% set icon_value = icon_map.get(mapped_type, 'fas fa-question-circle') %}
@@ -281,41 +282,54 @@
         const prevBtn = document.getElementById('prevMonth');
         const nextBtn = document.getElementById('nextMonth');
         const monthYear = document.getElementById('monthYear');
-        
-        if(!monthYear) return;
-        
-        const [monthName, yearStr] = monthYear.textContent.trim().split(" ");
-        const currentMonth = new Date(`${monthName} 1, ${yearStr}`).getMonth() + 1;
-        const currentYear = parseInt(yearStr);
+        if (!monthYear) return;
 
-        const navigate = (delta) => {
-          let newMonth = currentMonth + delta;
-          let newYear = currentYear;
-          if (newMonth < 1) {
-            newMonth = 12;
-            newYear--;
-          } else if (newMonth > 12) {
-            newMonth = 1;
-            newYear++;
-          }
-          const params = new URLSearchParams({ year: newYear, month: newMonth });
-          window.location.href = `/events?${params.toString()}`;
-        };
+        // Track current visible month/year as mutable vars
+        let [monthName, yearStr] = monthYear.textContent.trim().split(" ");
+        let currentMonth = new Date(`${monthName} 1, ${yearStr}`).getMonth() + 1; // 1-based
+        let currentYear = parseInt(yearStr);
+
+        // Spinner overlay
+        const spinner = document.createElement("div");
+        spinner.id = "spinnerOverlay";
+        spinner.innerHTML = `<div class="spinner"></div>`;
+        document.body.appendChild(spinner);
+
+        async function navigate(delta) {
+            let newMonth = currentMonth + delta;
+            let newYear = currentYear;
+            if (newMonth < 1) { newMonth = 12; newYear--; }
+            else if (newMonth > 12) { newMonth = 1; newYear++; }
+
+            const params = new URLSearchParams({ year: newYear, month: newMonth });
+
+            try {
+                spinner.style.display = "flex";
+
+                const res = await fetch(`/events_data?${params.toString()}`);
+                if (!res.ok) throw new Error("Failed to fetch events data");
+                const data = await res.json();
+
+                // Set anomalies and regenerate the calendar grid
+                calendar.anomalies = Object.values(data.anomalies_by_date).flat();
+                calendar.generateCalendar(newMonth - 1, newYear); // JS months are 0-based
+
+                // Update current month/year for navigation
+                currentMonth = newMonth;
+                currentYear = newYear;
+            } catch (err) {
+                console.error("Error loading new month:", err);
+            } finally {
+                spinner.style.display = "none";
+            }
+        }
 
         prevBtn.addEventListener("click", () => navigate(-1));
         nextBtn.addEventListener("click", () => navigate(1));
 
-        const dayCells = document.querySelectorAll('.calendar-day');
-
-        document.querySelectorAll('.calendar-day').forEach((cell) => {
-          cell.addEventListener('click', () =>{
-            document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
-            cell.classList.add('selected');
-            calendar.showEventDetails(cell.dataset.date);
-          });
-        });
+        // Optional: click on day cells already handled in generateCalendar()
     });
-  </script>
+</script>
   
   <!-- Timeline plugin style -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css" />
