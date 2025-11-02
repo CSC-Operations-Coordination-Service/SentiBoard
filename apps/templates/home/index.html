@@ -130,25 +130,58 @@
     </div>
 
     <!-- Real-time events box for large screens -->
-    <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
-         style="top: 60px; right: 16px; width: 347px; z-index: 2;">
-      <h4 class="card-title mb-3">Real-time events</h4>
-      <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-lg"></ol>
-    </div>
-
-    <!-- Real-time events for mobile -->
-    <div class="d-block d-lg-none mt-3">
-      <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile">
-        Show Real-time Events
-      </button>
-      <div class="collapse" id="eventBoxMobile">
-        <div class="bg-dark text-white p-3 rounded">
-          <h4 class="card-title mb-3">Real-time events</h4>
-          <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-sm"></ol>
+<div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
+     style="top: 60px; right: 16px; width: 347px; z-index: 2;">
+  <h4 class="card-title mb-3">Real-time events</h4>
+  <ol class="activity-feed mb-0 pl-3">
+    {% if anomalies_details and anomalies_details|length > 0 %}
+      {% for detail in anomalies_details %}
+      <li class="feed-item feed-item-warning" style="color: white">
+        <i class="flaticon-alarm-1 feed-item-icon"></i>
+        <time class="date">{{ detail.time_ago }}</time>
+        <div class="text" style="word-wrap: break-word; max-width: 250px;">
+          {{ detail.content }}
         </div>
-      </div>
+      </li>
+      {% endfor %}
+    {% else %}
+      <li class="feed-item feed-item-success">
+        <i class="flaticon-success feed-item-icon"></i>
+        <h4 style="color: white; position: relative; top: -27px" class="text">Nominal operations</h4>
+      </li>
+    {% endif %}
+  </ol>
+</div>
+
+<!-- Real-time events for mobile -->
+<div class="d-block d-lg-none mt-3">
+  <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile">
+    Show Real-time Events
+  </button>
+  <div class="collapse" id="eventBoxMobile">
+    <div class="bg-dark text-white p-3 rounded">
+      <h4 class="card-title mb-3">Real-time events</h4>
+      <ol class="activity-feed mb-0 pl-3">
+        {% if anomalies_details and anomalies_details|length > 0 %}
+          {% for detail in anomalies_details %}
+          <li class="feed-item feed-item-warning" style="color: white">
+            <i class="flaticon-alarm-1 feed-item-icon"></i>
+            <time class="date">{{ detail.time_ago }}</time>
+            <div class="text" style="word-wrap: break-word; max-width: 250px;">
+              {{ detail.content }}
+            </div>
+          </li>
+          {% endfor %}
+        {% else %}
+          <li class="feed-item feed-item-success">
+            <i class="flaticon-success feed-item-icon"></i>
+            <h4 style="color: white; position: relative; top: -27px" class="text">Nominal operations</h4>
+          </li>
+        {% endif %}
+      </ol>
     </div>
   </div>
+</div>
   <!-- News banner overlay (instant messages placeholder) -->
   <div id="custom-banner-placeholder"
       class="position-absolute text-white"

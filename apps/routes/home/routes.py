@@ -26,6 +26,7 @@ from apps.utils.anomalies_utils import model_to_dict
 from datetime import datetime, date, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 from calendar import monthrange
+from apps import flask_cache
 import os
 import json
 from flask import jsonify
@@ -50,7 +51,43 @@ def admin_required(f):
 
 @blueprint.route("/index")
 def index():
-    return render_template("home/index.html", segment="index")
+    segment = "index"
+    period_id = "24h"
+
+    anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
+    anomalies_data = flask_cache.get(anomalies_api_uri) or []
+    now = datetime.now(timezone.utc)
+    anomalies_details = []
+    for item in anomalies_data:
+        event_time_str = item.get("time")
+        if not event_time_str:
+            continue
+        try:
+            event_time = datetime.fromisoformat(event_time_str)
+        except Exception as e:
+            current_app.logger.warning(
+                "Invalid datetime format in event: %s (%s)", item, e
+            )
+            continue
+
+        diff = now - event_time
+        if diff.days >= 1:
+            time_ago = f"{diff.days} day(s) ago"
+        elif diff.seconds >= 3600:
+            time_ago = f"{diff.seconds // 3600 } hour(s) ago"
+        else:
+            time_ago = f"{diff.seconds // 60 } minute(s) ago"
+
+        anomalies_details.append(
+            {
+                "time_ago": time_ago,
+                "content": item.get("content", "No details available"),
+            }
+        )
+
+    return render_template(
+        "home/index.html", segment=segment, anomalies_details=anomalies_details
+    )
 
 
 @blueprint.route("/events")
@@ -383,12 +420,12 @@ def events_data():
         return jsonify({"error": "Missing year or month"}), 400
 
     try:
+        # Decide which cache to load
         quarter_authorized = current_user.is_authenticated and current_user.role in (
             "admin",
             "ecuser",
             "esauser",
         )
-
         if quarter_authorized:
             events_cache.load_anomalies_cache_previous_quarter()
             cache_key = events_cache.anomalies_cache_key.format("previous", "quarter")
@@ -409,7 +446,6 @@ def events_data():
             )
             if isinstance(date_str, datetime):
                 date_str = date_str.isoformat()
-
             return {
                 "key": src.get("key") or src.get("id"),
                 "category": src.get("category") or src.get("type") or "Unknown",
@@ -424,22 +460,25 @@ def events_data():
         today = datetime.now(timezone.utc)
         three_months_ago = today - timedelta(days=90)
 
-        # Group anomalies by date
-        anomalies_by_date = {}
+        # Filter: keep only anomalies in the last 90 days
+        recent_anomalies = []
         for a in anomalies:
             date_str = a.get("publicationDate")
             if not date_str:
                 continue
-
             try:
-                dt_naive = datetime.fromisoformat(date_str[:10])
-                dt = dt_naive.replace(tzinfo=timezone.utc)
+                dt = datetime.fromisoformat(date_str[:10]).replace(tzinfo=timezone.utc)
             except (ValueError, TypeError):
                 continue
-            if dt < three_months_ago or dt > today:
-                continue
-            if dt.year != year or dt.month != month:
-                continue
+            if three_months_ago <= dt <= today:
+                recent_anomalies.append((dt, a))
+
+        # Group only those that match the requested month/year
+        anomalies_by_date = {}
+        for dt, a in recent_anomalies:
+            if dt.year == year and dt.month == month:
+                date_key = dt.strftime("%Y-%m-%d")
+                anomalies_by_date.setdefault(date_key, []).append(a)
 
         return jsonify(
             {

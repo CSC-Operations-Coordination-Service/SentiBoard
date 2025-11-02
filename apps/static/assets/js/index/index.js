@@ -40,7 +40,7 @@ class Home {
 
         // Load the events from local db
         console.info('Loading events...');
-        asyncAjaxCall('/api/events/anomalies/last-24h', 'GET', {}, this.succesLoadAnomalies, this.errorLoadAnomalies);
+        //asyncAjaxCall('/api/events/anomalies/last-24h', 'GET', {}, this.succesLoadAnomalies, this.errorLoadAnomalies);
 
         // Load the custom message from the JSON file
         console.info('Loading custom message...');
