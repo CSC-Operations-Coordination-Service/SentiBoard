@@ -100,17 +100,7 @@ def build_event_instance(a, logger=None):
     date_str = a.get("publicationDate")
     start_date = None
     if date_str:
-        try:
-            start_date = datetime.fromisoformat(date_str)
-        except ValueError:
-            try:
-                start_date = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
-            except Exception:
-                if logger:
-                    logger.warning(
-                        f"[build_event_instance] Invalid date '{date_str}', using now()."
-                    )
-                start_date = datetime.now(timezone.utc)
+        start_date = to_utc(date_str)
     else:
         start_date = datetime.now(timezone.utc)
 
@@ -377,6 +367,49 @@ def safe_get(val, default=""):
     return val
 
 
+def to_utc_iso(dt):
+    """
+    Convert a datetime to UTC and return ISO string.
+    """
+    if isinstance(dt, str):
+        # try to parse string first
+        try:
+            if "/" in dt:
+                dt = datetime.strptime(dt, "%d/%m/%Y %H:%M:%S")
+            else:
+                dt = datetime.fromisoformat(dt)
+        except Exception:
+            # fallback to now
+            dt = datetime.now(timezone.utc)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.isoformat()
+
+
+def to_utc(dt):
+    """
+    Convert a datetime or string to UTC datetime (aware).
+    Returns a datetime object, not a string.
+    """
+    if isinstance(dt, str):
+        try:
+            if "/" in dt:
+                dt = datetime.strptime(dt, "%d/%m/%Y %H:%M:%S")
+            else:
+                dt = datetime.fromisoformat(dt)
+        except Exception:
+            dt = datetime.now(timezone.utc)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt
+
+
 def admin_required(f):
     @wraps(f)
     @login_required
@@ -544,12 +577,12 @@ def events_data():
                 or src.get("created")
             )
             if isinstance(date_str, datetime):
-                date_str = date_str.isoformat()
+                date_str = to_utc_iso(date_str)
 
             if isinstance(date_str, str) and "/" in date_str:
                 try:
                     dt = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
-                    date_str = dt.isoformat()
+                    date_str = to_utc_iso(dt)
                 except Exception:
                     pass
 

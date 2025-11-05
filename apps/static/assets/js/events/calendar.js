@@ -103,14 +103,14 @@ class CalendarWidget {
         this.buildAnomaliesByDate(this.anomaliesData);
 
         console.log("User authorized:", this.isAuthorized);
-        console.log("Loaded anomalies:", this.anomaliesData);
+        //console.log("Loaded anomalies:", this.anomaliesData);
 
-        if (this.isAuthorized) {
+        /*if (this.isAuthorized) {
             this.loadEvents(this.anomaliesData);
         } else {
             console.info('Guest user');
             this.loadEvents(this.anomaliesData);
-        }
+        }*/
         this.addEventListeners();
     }
 
