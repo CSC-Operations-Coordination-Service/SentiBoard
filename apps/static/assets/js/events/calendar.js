@@ -93,18 +93,17 @@ class CalendarWidget {
         };
         // Authorization check
         const anomalyDataEl = document.getElementById('anomalyData');
-        this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomalies || '[]');
+        this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomaliesByDate || '{}');
         this.datatakesData = JSON.parse(anomalyDataEl.dataset.datatakes || '[]');
 
         console.log("Loaded anomalies:", this.anomaliesData.length);
-        //console.log("Sample anomaly:", this.anomaliesData[0]);
 
         this.isAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
 
         this.buildAnomaliesByDate(this.anomaliesData);
 
         console.log("User authorized:", this.isAuthorized);
-        console.log("Loaded anomalies:", this.anomaliesData.length);
+        console.log("Loaded anomalies:", this.anomaliesData);
 
         if (this.isAuthorized) {
             this.loadEvents(this.anomaliesData);

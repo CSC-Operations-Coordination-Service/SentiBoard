@@ -45,6 +45,28 @@ THRESHOLD_OK = 80
 THRESHOLD_PARTIAL = 10
 
 
+def get_impacted_satellite(a):
+    """
+    Determine impacted satellite from provided field or environment.
+    Picks the first valid prefix in VALID_PREFIXES from semicolon-separated environment string.
+    """
+    impacted_satellite = a.get("impactedSatellite") or ""
+    if impacted_satellite and any(
+        impacted_satellite.startswith(p) for p in VALID_PREFIXES
+    ):
+        return impacted_satellite
+
+    env = a.get("environment", "")
+    if isinstance(env, str):
+        # Split by ';' and check each segment
+        candidates = [seg.strip() for seg in env.split(";") if seg.strip()]
+        for candidate in candidates:
+            prefix_part = candidate.split("-")[0].strip()
+            if any(prefix_part.startswith(p) for p in VALID_PREFIXES):
+                return prefix_part
+    return ""  # fallback if nothing valid
+
+
 def parse_datatakes_completeness(raw_field):
     """Safely parse datatakes_completeness field."""
     if not raw_field:
@@ -95,11 +117,7 @@ def build_event_instance(a, logger=None):
     end_date = start_date + timedelta(minutes=1)
 
     # Impacted satellite: prefer provided, otherwise derive from environment
-    impacted_satellite = a.get("impactedSatellite") or ""
-    if not impacted_satellite:
-        env = a.get("environment", "")
-        if isinstance(env, str) and "-" in env:
-            impacted_satellite = env.split("-")[0].strip()
+    impacted_satellite = get_impacted_satellite(a)
 
     category = a.get("category", "Unknown")
 
@@ -376,13 +394,31 @@ def index():
     period_id = "24h"
 
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
-    anomalies_data = flask_cache.get(anomalies_api_uri) or []
+    anomalies_data = flask_cache.get(anomalies_api_uri)
+
+    # Ensure anomalies_data is a list
+    if hasattr(anomalies_data, "get_json"):  # if it's a Response
+        try:
+            anomalies_data = anomalies_data.get_json() or []
+        except Exception as e:
+            current_app.logger.warning(
+                "Failed to parse JSON from cached Response: %s", e
+            )
+            anomalies_data = []
+    elif not isinstance(anomalies_data, list):
+        anomalies_data = []
+
     now = datetime.now(timezone.utc)
     anomalies_details = []
+
     for item in anomalies_data:
+        if not isinstance(item, dict):
+            continue  # skip invalid entries
+
         event_time_str = item.get("time")
         if not event_time_str:
             continue
+
         try:
             event_time = datetime.fromisoformat(event_time_str)
         except Exception as e:
@@ -395,9 +431,9 @@ def index():
         if diff.days >= 1:
             time_ago = f"{diff.days} day(s) ago"
         elif diff.seconds >= 3600:
-            time_ago = f"{diff.seconds // 3600 } hour(s) ago"
+            time_ago = f"{diff.seconds // 3600} hour(s) ago"
         else:
-            time_ago = f"{diff.seconds // 60 } minute(s) ago"
+            time_ago = f"{diff.seconds // 60} minute(s) ago"
 
         anomalies_details.append(
             {
@@ -413,225 +449,58 @@ def index():
 
 @blueprint.route("/events")
 def events():
-    from datetime import datetime, date, timedelta, timezone
-    from calendar import monthrange
-    import json, re, ast
 
-    today = datetime.today()
-    year = request.args.get("year", type=int, default=today.year)
-    month = request.args.get("month", type=int, default=today.month)
+    try:
+        today = datetime.today()
+        year = request.args.get("year", type=int, default=today.year)
+        month = request.args.get("month", type=int, default=today.month)
 
-    icon_map = {
-        "acquisition": "fas fa-broadcast-tower",
-        "calibration": "fas fa-compass",
-        "manoeuvre": "/static/assets/img/joystick.svg",
-        "production": "fas fa-cog",
-        "satellite": "fas fa-satellite-dish",
-    }
-
-    event_type_map = {
-        "acquisition": "acquisition",
-        "calibration": "calibration",
-        "data access": "data-access",
-        "manoeuvre": "manoeuvre",
-        "production": "production",
-        "satellite": "satellite",
-    }
-
-    valid_prefixes = ("S1", "S2", "S3", "S5")
-    quarter_authorized = current_user.is_authenticated and current_user.role in (
-        "admin",
-        "ecuser",
-        "esauser",
-    )
-
-    # Load cached anomalies
-    if quarter_authorized:
-        events_cache.load_anomalies_cache_previous_quarter()
-        cache_key = events_cache.anomalies_cache_key.format("previous", "quarter")
-    else:
-        events_cache.load_anomalies_cache_last_quarter()
-        cache_key = events_cache.anomalies_cache_key.format("last", "quarter")
-
-    cache_entry = events_cache.flask_cache.get(cache_key)
-    raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
-
-    # --- Serialize anomalies ---
-    def serialize_anomaly(a):
-        source = a.get("_source", a if isinstance(a, dict) else {})
-        iso_date = (
-            source.get("occurence_date")
-            or source.get("occurrence_date")
-            or source.get("publicationDate")
-            or source.get("created")
-        )
-        if isinstance(iso_date, datetime):
-            iso_date = iso_date.isoformat()
-
-        dt_ids = (
-            source.get("datatake_ids")
-            or source.get("datatakes")
-            or source.get("datatakes_ids_raw")
-            or []
-        )
-        if isinstance(dt_ids, str):
-            dt_ids = [s.strip() for s in re.split(r"[;,]\s*", dt_ids) if s.strip()]
-
-        environment = ";".join(dt_ids) if dt_ids else source.get("environment") or ""
-        origin = source.get("origin")
-        category = source.get("category") or origin or source.get("type") or "Unknown"
-
-        # Normalize category
-        mapping = {
-            "Satellite": "Platform",
-            "Production": "Production",
-            "DD": "Data access",
-            "LTA": "Archive",
-            "Acquisition": "Acquisition",
-            "RFI": "Acquisition",
-            "CAM": "Manoeuvre",
-        }
-        category = mapping.get(origin, category)
-        if category.strip().lower() in ("other", "unknown", ""):
-            return None
-
-        dt_completeness = source.get("datatakes_completeness") or []
-        return {
-            "key": source.get("key") or source.get("id") or a.get("_id"),
-            "publicationDate": iso_date,
-            "environment": environment,
-            "datatakes_ids": dt_ids,
-            "datatakes_completeness": dt_completeness,
-            "category": category,
-            "impactedSatellite": source.get("affected_systems")
-            or source.get("impactedSatellite")
-            or "",
-            "description": source.get("description", ""),
-            "status": source.get("status", ""),
-            "newsLink": source.get("url") or source.get("newsLink", ""),
-            "newsTitle": source.get("title") or source.get("newsTitle", ""),
-            "_raw_source": source,
+        icon_map = {
+            "acquisition": "fas fa-broadcast-tower",
+            "calibration": "fas fa-compass",
+            "manoeuvre": "/static/assets/img/joystick.svg",
+            "production": "fas fa-cog",
+            "satellite": "fas fa-satellite-dish",
         }
 
-    anomalies = [s for a in raw_anomalies if (s := serialize_anomaly(a)) is not None]
+        event_type_map = {
+            "acquisition": "acquisition",
+            "calibration": "calibration",
+            "data access": "data-access",
+            "manoeuvre": "manoeuvre",
+            "production": "production",
+            "satellite": "satellite",
+        }
 
-    # --- Normalize datatakes_completeness ---
-    for a in anomalies:
-        dtc = a.get("datatakes_completeness")
-        if isinstance(dtc, str):
-            try:
-                dtc = ast.literal_eval(dtc)
-            except Exception:
-                dtc = []
-        elif not isinstance(dtc, list):
-            dtc = []
-        a["datatakes_completeness"] = dtc
-
-    # --- Filtering functions ---
-    def has_valid_datatake(a):
-        env = a.get("environment", "")
-        if not env or env.lower().startswith("no"):
-            return False
-        datatakes = [s.strip() for s in re.split(r"[;,]\s*", env) if s.strip()]
-        return any(
-            dt.startswith(prefix) for dt in datatakes for prefix in valid_prefixes
+        quarter_authorized = current_user.is_authenticated and current_user.role in (
+            "admin",
+            "ecuser",
+            "esauser",
         )
 
-    def has_relevant_datatakes(a):
-        return any(
-            isinstance(dt, dict) and dt.get("datatakeID")
-            for dt in a.get("datatakes_completeness", [])
+        days_in_month = monthrange(year, month)[1]
+        first_day_offset = date(year, month, 1).weekday()
+        month_name = date(year, month, 1).strftime("%B")
+
+        return render_template(
+            "home/events.html",
+            current_month=month,
+            current_year=year,
+            current_month_name=month_name,
+            days_in_month=days_in_month,
+            first_day_offset=first_day_offset,
+            anomalies_by_date={},
+            json_anomalies=[],
+            json_events=[],
+            json_datatakes=[],
+            quarter_authorized=quarter_authorized,
+            icon_map=icon_map,
+            event_type_map=event_type_map,
+            missing_datatakes_info=[],
         )
-
-    def has_impacted_satellite(a):
-        return bool(a.get("impactedSatellite", "").strip())
-
-    anomalies = [
-        a
-        for a in anomalies
-        if has_valid_datatake(a)
-        and (has_relevant_datatakes(a) or has_impacted_satellite(a))
-    ]
-
-    # --- Load datatakes ---
-    datatakes_data = (
-        datatakes_module.fetch_anomalies_datatakes_prev_quarter()
-        if quarter_authorized
-        else datatakes_module.fetch_anomalies_datatakes_last_quarter()
-    )
-    datatakes_by_id = {}
-    for d in datatakes_data:
-        src = d.get("_source", {})
-        dt_id = src.get("datatake_id")
-        if dt_id:
-            datatakes_by_id[dt_id] = {
-                "datatakeID": dt_id,
-                "L0_": src.get("L0_")
-                or src.get("completeness_status", {}).get("ACQ", {}).get("percentage"),
-                "L1_": src.get("L1_"),
-                "L2_": src.get("L2_")
-                or src.get("completeness_status", {}).get("PUB", {}).get("percentage"),
-                "instrument_mode": src.get("instrument_mode"),
-                "satellite_unit": src.get("satellite_unit"),
-            }
-
-    # --- Build anomalies by date & check missing datatakes ---
-    anomalies_by_date = {}
-    missing_datatakes_info = []
-
-    for a in anomalies:
-        iso_date = a.get("publicationDate")
-        if not iso_date:
-            continue
-        date_key = (
-            iso_date[:10] if isinstance(iso_date, str) else iso_date.date().isoformat()
-        )
-        env = a.get("environment", "")
-        dt_ids = [s.strip() for s in re.split(r"[;,]\s*", env) if s.strip()]
-        missing = [dt for dt in dt_ids if dt not in datatakes_by_id]
-        if missing:
-            missing_datatakes_info.append(
-                {"anomaly_key": a.get("key"), "missing_ids": missing}
-            )
-        anomalies_by_date.setdefault(date_key, []).append(a)
-
-    seen_envs = set()
-    calendar_events = []
-    for a in anomalies:
-        env = a.get("environment")
-        if env in seen_envs:
-            continue
-        seen_envs.add(env)
-        instance = build_event_instance(a, current_app.logger)
-        if not instance:
-            current_app.logger.warning(
-                f"[SKIP EVENT] instance returned None for {a.get('key')}"
-            )
-            continue
-        if not instance.get("fullRecover"):
-            calendar_events.append(instance)
-
-    # --- Month info ---
-    days_in_month = monthrange(year, month)[1]
-    first_day_offset = date(year, month, 1).weekday()
-    month_name = date(year, month, 1).strftime("%B")
-
-    return render_template(
-        "home/events.html",
-        current_month=month,
-        current_year=year,
-        current_month_name=month_name,
-        days_in_month=days_in_month,
-        first_day_offset=first_day_offset,
-        anomalies_by_date=anomalies_by_date,
-        json_anomalies=anomalies,
-        json_events=calendar_events,
-        json_datatakes=datatakes_data,
-        quarter_authorized=quarter_authorized,
-        icon_map=icon_map,
-        event_type_map=event_type_map,
-        missing_datatakes_info=missing_datatakes_info,
-    )
+    except Exception as e:
+        current_app.logger.error(f"Error rendering / events: {e}", exc_info=True)
+        abort(500)
 
 
 @blueprint.route("/events_data")
@@ -662,6 +531,10 @@ def events_data():
                 f"[RAW] First anomaly: {json.dumps(raw_anomalies[0], indent=2)}"
             )
 
+        if not raw_anomalies:
+            current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
+            return jsonify({"anomalies": [], "anomalies_by_date": {}, "events": []})
+
         def serialize_anomalie(a):
             src = a.get("_source", a)
             date_str = (
@@ -673,16 +546,14 @@ def events_data():
             if isinstance(date_str, datetime):
                 date_str = date_str.isoformat()
 
-            environment = src.get("environment", "")
-            impacted_satellite = ""
-            if environment:
-                impacted_satellite = environment.split(";")[0].split("-")[0].strip()
+            if isinstance(date_str, str) and "/" in date_str:
+                try:
+                    dt = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
+                    date_str = dt.isoformat()
+                except Exception:
+                    pass
 
-            if not any(impacted_satellite.startswith(p) for p in VALID_PREFIXES):
-                current_app.logger.info(
-                    f"[SKIP serialize_anomalie] Non-Sx prefix: '{impacted_satellite}' | env = '{environment}'"
-                )
-                return None
+            impacted_satellite = get_impacted_satellite(src)
 
             datatakes_completeness = src.get("datatakes_completeness", [])
             if isinstance(datatakes_completeness, str):
@@ -726,10 +597,15 @@ def events_data():
                 current_app.logger.info(f"Skipping instance without 'from': {instance}")
                 continue
             try:
-                dt = datetime.fromisoformat(instance["from"][:10])
+                dt = datetime.fromisoformat(date_str)
             except Exception:
-                current_app.logger.info(f"invalid date format in instance: {instance}")
-                continue
+                try:
+                    dt = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
+                except Exception:
+                    current_app.logger.info(
+                        f"invalid date format in instance: {instance}"
+                    )
+                    continue
 
             if dt.year == year and dt.month == month:
                 date_key = dt.strftime("%Y-%m-%d")
@@ -771,6 +647,7 @@ def events_data():
             {
                 "year": year,
                 "month": month,
+                "anomalies": anomalies,
                 "anomalies_by_date": anomalies_by_date,
                 "count": sum(len(v) for v in anomalies_by_date.values()),
                 "events": events,

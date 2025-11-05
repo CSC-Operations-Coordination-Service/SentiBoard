@@ -150,6 +150,7 @@
                     <!-- Calendar Section -->
                      <div
                         id="anomalyData"
+                        data-anomalies-by-date='{{ anomalies_by_date | tojson | safe }}'
                         data-anomalies='{{ json_anomalies | tojson | safe }}'
                         data-datatakes='{{ json_datatakes | tojson | safe }}'
                         data-quarter-authorized='{{ "true" if quarter_authorized else "false" }}'
