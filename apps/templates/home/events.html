@@ -150,70 +150,54 @@
                     <!-- Calendar Section -->
                      <div
                         id="anomalyData"
-                        data-anomalies='{{ json_anomalies | tojson | safe}}'
-                        data-datatakes='{{ json_datatakes | tojson | safe}}'
+                        data-anomalies='{{ json_anomalies | tojson | safe }}'
+                        data-datatakes='{{ json_datatakes | tojson | safe }}'
                         data-quarter-authorized='{{ "true" if quarter_authorized else "false" }}'
+                        data-events='{{ json_events | tojson | safe }}'
                       ></div>
                     <div class="col-12 col-lg-8 mb-4 mb-lg-0">
-                        <div class="calendar-container">
-                            <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
-                                <i id="prevMonth" class="fas fa-chevron-left fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
-                                <h1 id="monthYear" class="mb-0">
-                                  {{ current_month_name }} {{ current_year }}
-                                </h1>
-                                <!-- <button id="nextMonth" class="btn">&gt;</button>-->
-                                <i id="nextMonth" class="fas fa-chevron-right fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
-                            </div>
-                            <div class="calendar-grid" id="calendarGrid">
-                              {% for _ in range(first_day_offset) %}
-                                <div class="calendar-day empty"></div>
-                              {% endfor %}
-
-                              {% for day in range(1, days_in_month +1) %}
-                                {% set date_str = "%04d-%02d-%02d" | format(current_year, current_month, day) %}
-                                {% set day_anomalies = anomalies_by_date.get(date_str, []) %}
-
-                                <div 
-                                  class="calendar-day"
-                                   data-date= "{{ date_str }}"
-                                   data-has-anomalies="{{ 'true' if day_anomalies else 'false' }}">
-                                  <span> {{ day }} </span>
-
-                                  {% if day_anomalies %}
-                                    <div class="event-container">
-                                      {% set added_types = [] %}
-                                      {% for event in day_anomalies %}
-                                        {% if event.category not in ['Archive', 'Data access'] %}
-                                          {% set raw_category = event.category or '' %}
-                                          {% if raw_category|lower == 'platform' %}
-                                            {% set category = 'satellite' %}
-                                          {% elif raw_category|lower in ['data access','data-access'] %}
-                                            {% set category = 'data access' %}
-                                          {% else %}
-                                            {% set category = raw_category %}
-                                          {% endif %}
-                                          {% set normalized_cat = (category or '')|lower %}
-                                          {% set mapped_type = event_type_map.get(normalized_cat, normalized_cat)|lower %}
-                                          {% if mapped_type not in added_types %}
-                                            {% set _= added_types.append(mapped_type) %}
-                                            {% set icon_value = icon_map.get(mapped_type, 'fas fa-question-circle') %}
-
-                                            <div class="event-{{ mapped_type }}">
-                                              {% if icon_value.startswith('/') %}
-                                                <img src="{{ icon_value }}" class="event-icon image-icon" alt="{{ mapped_type }}"/>
-                                              {% else %}
-                                                <i class="{{ icon_value }} event-icon"></i>
-                                              {% endif %}
-                                            </div>
-                                          {% endif %}
-                                        {% endif %}
-                                      {% endfor %}
-                                    </div>
-                                  {% endif %}
-                                </div>
-                              {% endfor %}
-                            </div>
+                      <div class="calendar-container">
+                        <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+                          <i id="prevMonth" class="fas fa-chevron-left fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
+                          <h1 id="monthYear" class="mb-0">
+                            {{ current_month_name }} {{ current_year }}
+                          </h1>
+                          <i id="nextMonth" class="fas fa-chevron-right fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
                         </div>
+
+                        <div class="calendar-grid" id="calendarGrid">
+                          {% for _ in range(first_day_offset) %}
+                            <div class="calendar-day empty"></div>
+                          {% endfor %}
+
+                          {% for day in range(1, days_in_month + 1) %}
+                            {% set date_str = "%04d-%02d-%02d" | format(current_year, current_month, day) %}
+                            {% set day_events = [] %}
+                            {% for e in json_events %}
+                              {% if e.from[:10] == date_str %}
+                                {% set _ = day_events.append(e) %}
+                              {% endif %}
+                            {% endfor %}
+
+                            <div
+                              class="calendar-day"
+                              data-date="{{ date_str }}"
+                              data-has-events="{{ 'true' if day_events else 'false' }}">
+                              <span>{{ day }}</span>
+
+                              {% if day_events %}
+                                <div class="event-container">
+                                  {% for e in day_events %}
+                                    <div class="event" style="background-color: {{ e.color }}; color: {{ e.colorText }}; border: 1px solid {{ e.colorBorder }};" title="{{ e.description }}">
+                                      <i class="fas fa-circle"></i> {{ e.title }}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </div>
                     </div>
                     <div class="col-12 col-lg-2 mb-4 matching-width">
                       <!-- Completeness Status (Legend) -->
@@ -272,62 +256,107 @@
   <script>
     window.iconMap = {{ icon_map | tojson | safe}};
     window.eventTypeMap = {{ event_type_map | tojson | safe}};
+    window.anomaliesByDate = {{anomalies_by_date | tojson | safe}};
+    const defaultYear = Number({{ current_year | int }}) || new Date().getFullYear();
+    const defaultMonth = Number ({{ current_month | int }}) || (new Date().getMonth() + 1);
+
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    const yearParam = Number(urlParams.get('year'));
+    const monthParam = Number(urlParams.get('month'));
+
+    if(!isNaN(yearParam) && yearParam > 1970){
+      window.currentYear = yearParam;
+    } else {
+      window.currentYear = defaultYear;
+    }
+
+    if(!isNaN(monthParam) && monthParam >=1 && monthParam <= 12){
+      window.currentMonth = monthParam - 1;
+    } else {
+      window.currentMonth = defaultMonth -1;
+    }
+    console.log("[INIT PARAMS]", {year: window.currentYear, month0: window.currentMonth});
   </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
   <script type="text/javascript">
-    document.addEventListener("DOMContentLoaded", function() {
-        calendar.init();
+    document.addEventListener("DOMContentLoaded", async function() {
+      const spinner = document.getElementById('spinnerOverlay');
+      if (spinner) spinner.style.display ="flex";
 
-        const prevBtn = document.getElementById('prevMonth');
-        const nextBtn = document.getElementById('nextMonth');
-        const monthYear = document.getElementById('monthYear');
-        if (!monthYear) return;
+      try{
+        await calendar.init();
+        
+        const fetchMonth = window.currentMonth + 1;
+        const fetchYear = window.currentYear;
 
-        // Track current visible month/year as mutable vars
-        let [monthName, yearStr] = monthYear.textContent.trim().split(" ");
-        let currentMonth = new Date(`${monthName} 1, ${yearStr}`).getMonth() + 1; // 1-based
-        let currentYear = parseInt(yearStr);
+        console.log(`[FETCH INIT ] /events_data?year=${fetchYear}&month=${fetchMonth}`); 
 
-        // Spinner overlay
-        const spinner = document.createElement("div");
-        spinner.id = "spinnerOverlay";
-        spinner.innerHTML = `<div class="spinner"></div>`;
-        document.body.appendChild(spinner);
+        const res = await fetch(`/events_data?year=${fetchYear}&month=${fetchMonth}`);
 
-        async function navigate(delta) {
-            let newMonth = currentMonth + delta;
-            let newYear = currentYear;
-            if (newMonth < 1) { newMonth = 12; newYear--; }
-            else if (newMonth > 12) { newMonth = 1; newYear++; }
+        if (!res.ok) throw new Error("Failed to fetch initial events data");
+        const data = await res.json();
 
-            const params = new URLSearchParams({ year: newYear, month: newMonth });
+        console.log(`[INIT] loaded ${data.count} anomalies for ${fetchMonth}/${data.year}`);
 
-            try {
-                spinner.style.display = "flex";
+        //populate calendar data
+        calendar.currentMonth = window.currentMonth;
+        calendar.currentYear = window.currentYear;
+        calendar.anomaliesByDate = data.anomalies_by_date || {};
+        calendar.anomalies = Object.values(calendar.anomaliesByDate).flat();
 
-                const res = await fetch(`/events_data?${params.toString()}`);
-                if (!res.ok) throw new Error("Failed to fetch events data");
-                const data = await res.json();
+        calendar.generateCalendar(calendar.currentMonth, calendar.currentYear); // JS months are 0-based
+        
+        updateURL(window.currentYear, window.currentMonth);
+      }
+      catch(err){
+        console.error("Error fetching initial events:", err);
+      } finally {
+        if (spinner) spinner.style.display = "none";
+      }
 
-                // Set anomalies and regenerate the calendar grid
-                calendar.anomalies = Object.values(data.anomalies_by_date).flat();
-                calendar.generateCalendar(newMonth - 1, newYear); // JS months are 0-based
+      function updateURL(year, month0){
+        const month = month0 + 1;
+        const params =  new URLSearchParams({year: year, month: month});
+        history.replaceState(null, "", `?${params.toString()}`);
+      }
+      
+      calendar.prevMonthButton.addEventListener("click", async () => {
+        calendar.navigateMonth(-1)
+        window.currentMonth = calendar.currentMonth;
+        window.currentYear = calendar.currentYear;
+        updateURL(window.currentYear, window.currentMonth);
+        await reloadEvents();
+      });
 
-                // Update current month/year for navigation
-                currentMonth = newMonth;
-                currentYear = newYear;
-            } catch (err) {
-                console.error("Error loading new month:", err);
-            } finally {
-                spinner.style.display = "none";
-            }
+      calendar.nextMonthButton.addEventListener("click", async () => {
+        calendar.navigateMonth(1)
+        window.currentMonth = calendar.currentMonth;
+        window.currentYear = calendar.currentYear;
+        updateURL(window.currentYear, window.currentMonth);
+        await reloadEvents();
+      
+      });
+
+      async function reloadEvents(){
+        if (spinner) spinner.style.display ="flex";
+        try{
+          const fetchMonth = window.currentMonth + 1;
+          const fetchYear = window.currentYear;
+          const res = await fetch(`/events_data?year=${fetchYear}&month=${fetchMonth}`);
+          if (!res.ok) throw new Error("Failed to fetch initial events data");
+
+          const data = await res.json();
+          calendar.anomaliesByDate = data.anomalies_by_date || {};
+          calendar.anomalies = Object.values(calendar.anomaliesByDate).flat();
+          calendar.generateCalendar(calendar.currentMonth, calendar.currentYear); 
+        } catch(err){
+          console.error("Error reloading events:", err);
+        } finally{
+          if(spinner) spinner.style.display = "none";
         }
-
-        prevBtn.addEventListener("click", () => navigate(-1));
-        nextBtn.addEventListener("click", () => navigate(1));
-
-        // Optional: click on day cells already handled in generateCalendar()
+      }
     });
 </script>
   

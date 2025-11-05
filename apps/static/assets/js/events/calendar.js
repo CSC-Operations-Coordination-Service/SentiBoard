@@ -115,30 +115,83 @@ class CalendarWidget {
         this.addEventListeners();
     }
 
+    navigateMonth(delta) {
+        let newMonth = this.currentMonth + delta;
+        let newYear = this.currentYear;
+
+        if (newMonth < 0) {
+            newMonth = 11;
+            newYear--;
+        } else if (newMonth > 11) {
+            newMonth = 0;
+            newYear++;
+        }
+
+        this.currentMonth = newMonth;
+        this.currentYear = newYear;
+
+        const params = new URLSearchParams({ year: newYear, month: newMonth + 1 });
+        history.replaceState(null, "", `?${params.toString()}`)
+
+        const spinner = document.getElementById('spinnerOverlay');
+        if (spinner) spinner.style.display = "flex";
+
+
+
+        fetch(`/events_data?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                window.anomaliesByDate = data.anomalies_by_date || {};
+                this.anomaliesByDate = data.anomalies_by_date || {};
+
+                this.anomalies = Object.values(this.anomaliesByDate).flat();
+
+                this.generateCalendar(this.currentMonth, this.currentYear);
+
+            })
+            .catch(err => console.error('Error fetching new month', err))
+            .finally(() => {
+                if (spinner) spinner.style.display = "none";
+            });
+    }
+
     buildAnomaliesByDate(anomaliesArray) {
-        this.anomaliesByDate = {}; // reset
+        if (!anomaliesArray) return;
 
-        //console.log("built anomaliesbydate:", Object.keys(this.anomaliesByDate).length);
-        //console.log("dates available", Object.keys(this.anomaliesByDate).slice(0, 10));
+        console.log("built anomaliesbydate:", Object.keys(anomaliesArray).length);
+        console.log("dates available", Object.keys(anomaliesArray).slice(0, 10));
 
-        if (!Array.isArray(anomaliesArray)) return;
 
-        anomaliesArray.forEach(a => {
-            // server sets publicationDate as ISO string (or occurence_date). Use publicationDate then fallback.
-            let iso = a.publicationDate || a.publication_date || a.occurence_date || a.occurrence_date || a.publication;
-            if (!iso) return;
+        if (Array.isArray(anomaliesArray)) {
+            this.anomaliesByDate = {}; // reset
+            anomaliesArray.forEach((anomaly) => {
+                const iso = anomaly.publicationDate || anomaly.publication_date || anomaly.occurence_date || anomaly.occurrence_date || anomaly.publication || anomaly.from;
+                if (!iso) {
+                    console.warn("Skipping anomaly without date:", anomaly);
+                    return;
+                }
 
-            const dateKey = this.normalizeDateString(iso);
-            if (!dateKey) return
+                const dateKey = this.normalizeDateString(iso);
+                if (!this.anomaliesByDate[dateKey]) this.anomaliesByDate[dateKey] = [];
 
-            if (!this.anomaliesByDate[dateKey]) {
-                this.anomaliesByDate[dateKey] = [];
-            }
-            this.anomaliesByDate[dateKey].push(a);
+                anomaly._isFullyRecover = anomaly.fullRecover === true
 
-        });
-        console.log("anomaliebydate built:", Object.keys(this.anomaliesByDate).length, "unique dates");
-        //console.log("sample date keys:", Object.keys(this.anomaliesByDate).slice(0, 10));
+                if (!anomaly.category || anomaly.category.trim() === "") {
+                    anomaly._category = "Unknown";
+                } else if (anomaly.category === "Platform") {
+                    anomaly._category = "Satellite"
+                } else {
+                    anomaly._category = anomaly.category;
+                }
+                this.anomaliesByDate[dateKey].push(anomaly);
+
+            });
+
+        } else {
+            this.anomaliesByDate = anomaliesArray;
+        }
+
+        console.log("anomaliesByDate built:", Object.keys(this.anomaliesByDate).length, "unique dates");
         this._anomaliesCount = Object.values(this.anomaliesByDate).reduce((s, arr) => s + arr.length, 0);
     }
 
@@ -166,31 +219,28 @@ class CalendarWidget {
     successLoadAnomalies(response) {
         var rows = Array.isArray(response) ? response : [];
 
-        var datatakeList = [];
-
         this.anomaliesData = rows;
 
         this.buildAnomaliesByDate(this.anomaliesData);
 
-        for (let i = 0; i < rows.length; ++i) {
-            let anomaly = rows[i];
-            if (datatakeList.includes(anomaly['environment'])) {
-                continue;
-            } else {
-                datatakeList.push(anomaly['environment']);
-            }
+        const datatakeList = new Set();
+
+        rows.forEach(anomaly => {
+            if (anomaly.environment && datatakeList.has(anomaly.environment)) return;
+            if (anomaly.environment) datatakeList.add(anomaly.environment);
             // Append the calendar event instance only if the event has an impact on datatakes
-            let instance = this.buildEventInstanceFromAnomaly(anomaly);
-            if (!instance.fullRecover) {
+            const instance = this.buildEventInstanceFromAnomaly(anomaly);
+            if (anomaly.fullRecover) instance.color = "#31ce36"; // green for full recovery{
 
-                // Store the anomalies in the class member
-                this.anomalies[anomaly.key || anomaly.id] = anomaly;
+            instance.category = anomaly.category || "Unknown";
 
-                // Append the event instance
-                this.events.push(instance);
+            // Store the anomalies in the class member
+            this.anomalies[anomaly.key || anomaly.id] = anomaly;
 
-            }
-        }
+            // Append the event instance
+            this.events.push(instance);
+
+        });
         this.showDayEventsOnPageLoad();
     }
 
@@ -455,27 +505,31 @@ class CalendarWidget {
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
-        var completeness = 0;
-        var count = 0;
-        for (var i = 1; i < dtCompleteness.length; ++i) {
-            count++;
-            completeness += dtCompleteness[i];
-        }
-        return (completeness / count);
+        if (!dtCompleteness || !dtCompleteness.length) return 0;
+        const validValues = dtCompleteness.filter(v => typeof v === "number" && v >= 0);
+        if (!validValues.length) return 0;
+        const sum = validValues.reduce((a, b) => a + b, 0);
+        return sum / validValues.length;
     }
 
     arrangeDatatakesList(anomaly, dtList) {
         const validPrefixes = ["S1", "S2", "S3", "S5"];
 
         const content = dtList
-            .filter(dt => validPrefixes.some(prefix => dt.startsWith(prefix)))
+            .filter(dt => dt?.datatake_id && validPrefixes.some(prefix => dt.datatake_id.startsWith(prefix)))
             .map(dt => {
-                const status = this.calcDatatakeStatus(anomaly, dt);
-                if (!status) return '';
+                const { datatake_id, status, completeness } = dt;
+                if (!status) {
+                    return ''
+                };
 
-                const displayId = (dt.includes("S1") && this.overrideS1DatatakesId)
-                    ? this.overrideS1DatatakesId(dt)
-                    : dt;
+                const displayId = (datatake_id.includes("S1") && this.overrideS1DatatakesId)
+                    ? this.overrideS1DatatakesId(datatake_id)
+                    : datatake_id;
+
+                const completenessText = completeness !== undefined
+                    ? `(${completeness.toFixed(1)})`
+                    : '';
 
                 return `
             <li style="margin: 2px 0; list-style: none;">
@@ -500,27 +554,47 @@ class CalendarWidget {
 
         for (let dtObj of dtCompletenessArray) {
             try {
-                const parsed = typeof dtObj === "string" ? JSON.parse(dtObj.replaceAll("'", '"')) : dtObj;
+                // Normalize both string and object cases
+                const parsed = typeof dtObj === "string"
+                    ? JSON.parse(dtObj.replaceAll("'", '"'))
+                    : dtObj;
 
+                // Case 1: Old format -> {"S1C-35496": {"L0_":86.3,"L1_":0,"L2_":0}}
                 for (const [key, val] of Object.entries(parsed)) {
                     if (key.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
-                        const values = Object.values(val).filter(v => typeof v === "number");
-                        const completeness = this.calcDatatakeCompleteness(values);
+                        const numericValues = Object.values(val).filter(v => typeof v === "number");
+                        const completeness = this.calcDatatakeCompleteness(numericValues);
+
+                        if (datatake_id.includes('S1C-35496')) {
+                            console.log(`[DEBUG] old-format ${datatake_id}: completeness=${completeness}`);
+                        }
+
                         if (completeness >= 90) return 'ok';
                         if (completeness >= 10 && completeness < 90) return 'partial';
                         if (completeness < 10) return 'failed';
                     }
                 }
 
-                if (parsed.datatakeID && parsed.datatakeID.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
-                    const completeness = parsed.L2_ || parsed.L0_ || parsed.completeness || 100;
+                // Case 2: New format -> {datatakeID:"S1C-35496", L0_:86.3, L1_:0, L2_:0}
+                if (
+                    parsed.datatakeID &&
+                    parsed.datatakeID.trim().toUpperCase() === datatake_id.trim().toUpperCase()
+                ) {
+                    const numericValues = [parsed.L0_, parsed.L1_, parsed.L2_]
+                        .filter(v => typeof v === "number");
+                    const completeness = this.calcDatatakeCompleteness(numericValues);
+
+                    if (datatake_id.includes('S1C-35496')) {
+                        console.log(`[DEBUG] new-format ${datatake_id}: completeness=${completeness}`);
+                    }
+
                     if (completeness >= 90) return 'ok';
                     if (completeness >= 10 && completeness < 90) return 'partial';
                     if (completeness < 10) return 'failed';
                 }
 
             } catch (ex) {
-                console.warn("Error parsing dt completeness", ex);
+                console.warn("Error parsing dt completeness", ex, dtObj);
                 continue;
             }
         }
@@ -622,6 +696,8 @@ class CalendarWidget {
     }
 
     generateCalendar(month, year) {
+        console.log(`[generateCalendar] rendering ${month + 1}/${year}`);
+
         if (this.isGenerating) {
             console.warn('generateCalendar skipped: already generating');
             return;
@@ -669,6 +745,7 @@ class CalendarWidget {
                 });
 
                 const allEventsForDay = this.anomaliesByDate?.[fullDate] || [];
+                this.anomaliesData = Object.values(this.anomaliesByDate || {}).flat();
 
                 const isFiltering = selectedMission !== 'all' || selectedEventType !== 'all' || searchText.length > 0;
                 const filteredEvents = isFiltering
@@ -681,12 +758,21 @@ class CalendarWidget {
 
                 const addedTypes = new Set();
                 filteredEvents.forEach(event => {
+                    if (!event || !event.category) {
+                        console.warn('Skipping event without category:', event);
+                        return;
+                    }
+
                     if (event.category === 'Archive' || event.category === 'Data access') {
                         return;
                     }
                     const category = event.category === "Platform" ? "Satellite" : event.category;
 
                     const mappedType = this.eventTypeMap[category] || category;
+                    if (!mappedType) {
+                        console.warn('Skipping event with Unmapped category:', category);
+                        return;
+                    }
                     const typeClass = `event-${mappedType.toLowerCase()}`;
 
                     if (!addedTypes.has(typeClass)) {
@@ -852,17 +938,24 @@ class CalendarWidget {
             const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle';
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
 
+
             const satellites = this.getSatellitesString(event.environment || '');
-            const dtList = event.datatake_ids?.length ? event.datatake_ids : (event.environment ? event.environment.split(";") : []);
+            console.log("[EVENT DEBUG]", event);
 
-            const validDtList = dtList.filter(dt =>
-                dt.startsWith("S1") || dt.startsWith("S2") || dt.startsWith("S3") || dt.startsWith("S5")
-            );
+            const dtList = Array.isArray(event.datatakes_completeness)
+                ? event.datatakes_completeness
+                : [];
 
-            const datatakeHtml = validDtList.length
+            console.log("[DATATAKES DEBUG]", event.id, dtList);
+
+            /* const validDtList = dtList.filter(dt =>
+                 dt.id.startsWith("S1") || dt.id.startsWith("S2") || dt.id.startsWith("S3") || dt.id.startsWith("S5")
+             );*/
+
+            const datatakeHtml = dtList
                 ? `<div style="color: white; font-size: 14px;">
                         <p style="margin-bottom: 4px;">List of impacted datatakes:</p>
-                        ${this.arrangeDatatakesList(event, validDtList)}
+                        ${this.arrangeDatatakesList(event, dtList)}
                     </div>`
                 : '';
 
@@ -896,6 +989,8 @@ class CalendarWidget {
     }
 
     parseDateString(str) {
+        if (!str) return "Unknown date";
+
         const match = str.match(/^(\d{2})\/(\d{2})\/(\d{4})(?: (\d{2}):(\d{2}):(\d{2}))?$/);
         if (!match) return this.formatDateUTC(new Date(str));
 
