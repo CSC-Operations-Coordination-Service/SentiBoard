@@ -290,7 +290,7 @@ def events_data():
                 events.append(instance)
 
         # --- Summary logs ---
-        total_events = len(events)
+        # total_events = len(events)
         # current_app.logger.info(
         #     f"[SUMMARY] Total anomalies processed: {len(anomalies)} | "
         #     f"Kept active: {kept_partial} | Skipped full-recovered: {skipped_full}"

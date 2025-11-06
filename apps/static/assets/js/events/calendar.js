@@ -286,7 +286,12 @@ class CalendarWidget {
     clearEventDetails() {
         this.lastSelectedDate = null;
         const eventDetails = document.getElementById('eventDetails');
-        if (eventDetails) eventDetails.innerHTML = '';
+        if (!eventDetails) return;
+        eventDetails.innerHTML = `
+            <h5 id="eventDetailsTitle">Event Details</h5>
+            <p id="noEventMessage">Select a date to see event details.</p>
+            <div id="eventDetailsContent"></div>
+        `;
     }
 
     addEventListeners() {
