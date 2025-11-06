@@ -349,7 +349,10 @@
           const data = await res.json();
           calendar.anomaliesByDate = data.anomalies_by_date || {};
           calendar.anomalies = Object.values(calendar.anomaliesByDate).flat();
-          calendar.generateCalendar(calendar.currentMonth, calendar.currentYear); 
+
+          calendar.generateCalendar(calendar.currentMonth, calendar.currentYear);
+
+          calendar.clearEventDetails();
         } catch(err){
           console.error("Error reloading events:", err);
         } finally{
