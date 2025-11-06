@@ -96,7 +96,7 @@ class CalendarWidget {
         this.anomaliesData = JSON.parse(anomalyDataEl.dataset.anomaliesByDate || '{}');
         this.datatakesData = JSON.parse(anomalyDataEl.dataset.datatakes || '[]');
 
-        console.log("Loaded anomalies:", this.anomaliesData.length);
+        //console.log("Loaded anomalies:", this.anomaliesData.length);
 
         this.isAuthorized = anomalyDataEl?.dataset?.quarterAuthorized === 'true';
 
@@ -105,12 +105,6 @@ class CalendarWidget {
         console.log("User authorized:", this.isAuthorized);
         //console.log("Loaded anomalies:", this.anomaliesData);
 
-        /*if (this.isAuthorized) {
-            this.loadEvents(this.anomaliesData);
-        } else {
-            console.info('Guest user');
-            this.loadEvents(this.anomaliesData);
-        }*/
         this.addEventListeners();
     }
 
@@ -157,8 +151,8 @@ class CalendarWidget {
     buildAnomaliesByDate(anomaliesArray) {
         if (!anomaliesArray) return;
 
-        console.log("built anomaliesbydate:", Object.keys(anomaliesArray).length);
-        console.log("dates available", Object.keys(anomaliesArray).slice(0, 10));
+        //console.log("built anomaliesbydate:", Object.keys(anomaliesArray).length);
+        //console.log("dates available", Object.keys(anomaliesArray).slice(0, 10));
 
 
         if (Array.isArray(anomaliesArray)) {
@@ -190,7 +184,7 @@ class CalendarWidget {
             this.anomaliesByDate = anomaliesArray;
         }
 
-        console.log("anomaliesByDate built:", Object.keys(this.anomaliesByDate).length, "unique dates");
+        //console.log("anomaliesByDate built:", Object.keys(this.anomaliesByDate).length, "unique dates");
         this._anomaliesCount = Object.values(this.anomaliesByDate).reduce((s, arr) => s + arr.length, 0);
     }
 
@@ -526,10 +520,6 @@ class CalendarWidget {
                     ? this.overrideS1DatatakesId(datatake_id)
                     : datatake_id;
 
-                const completenessText = completeness !== undefined
-                    ? `(${completeness.toFixed(1)})`
-                    : '';
-
                 return `
             <li style="margin: 2px 0; list-style: none;">
                 <div style="display: flex; align-items: center; gap: 8px;">
@@ -564,10 +554,6 @@ class CalendarWidget {
                         const numericValues = Object.values(val).filter(v => typeof v === "number");
                         const completeness = this.calcDatatakeCompleteness(numericValues);
 
-                        if (datatake_id.includes('S1C-35496')) {
-                            console.log(`[DEBUG] old-format ${datatake_id}: completeness=${completeness}`);
-                        }
-
                         if (completeness >= 90) return 'ok';
                         if (completeness >= 10 && completeness < 90) return 'partial';
                         if (completeness < 10) return 'failed';
@@ -582,10 +568,6 @@ class CalendarWidget {
                     const numericValues = [parsed.L0_, parsed.L1_, parsed.L2_]
                         .filter(v => typeof v === "number");
                     const completeness = this.calcDatatakeCompleteness(numericValues);
-
-                    if (datatake_id.includes('S1C-35496')) {
-                        console.log(`[DEBUG] new-format ${datatake_id}: completeness=${completeness}`);
-                    }
 
                     if (completeness >= 90) return 'ok';
                     if (completeness >= 10 && completeness < 90) return 'partial';
@@ -695,7 +677,7 @@ class CalendarWidget {
     }
 
     generateCalendar(month, year) {
-        console.log(`[generateCalendar] rendering ${month + 1}/${year}`);
+        //console.log(`[generateCalendar] rendering ${month + 1}/${year}`);
 
         if (this.isGenerating) {
             console.warn('generateCalendar skipped: already generating');
@@ -836,15 +818,11 @@ class CalendarWidget {
     }
 
     filterEvents({ date, mission, eventType, searchText }) {
-        console.log("filter called:", { date, mission, eventType, searchText });
+        //console.log("filter called:", { date, mission, eventType, searchText });
         if (!date) return [];
         const targetDate = this.normalizeDateString(date);
         const events = (this.anomaliesByDate && this.anomaliesByDate[targetDate]) ? this.anomaliesByDate[targetDate] : [];
 
-        /*console.log("all anomalies by date :", Object.keys(this.anomaliesByDate || {}));
-        console.log("target date :", targetDate);
-        console.log("Raw events for date before filtering:", events);
-        console.log(`found ${events.length} events for date ${targetDate}`);*/
         const searchLower = (searchText || '').toLowerCase().trim();
         const missionMap = this.missionMap || {
             's1': ['S1A', 'S1C'],
@@ -852,7 +830,6 @@ class CalendarWidget {
             's3': ['S3A', 'S3B'],
             's5': ['S5P']
         };
-        //console.log("all events for date", targetDate, events);
         return events.filter(event => {
             if (['archive', 'data access', 'data-access'].includes((event.category || '').toLowerCase())) {
                 return false;
@@ -862,14 +839,12 @@ class CalendarWidget {
                 const anomalyEnv = String(event.environment || '').toUpperCase();
                 const sats = missionMap[mission.toLowerCase()] || [];
                 const matches = sats.some(sat => anomalyEnv.includes(sat));
-                //console.log('mission check', anomalyEnv, sats, matches);
                 if (!matches) return false;
             }
 
             if (eventType && eventType !== 'all') {
                 const category = event.category === 'Platform' ? 'Satellite' : event.category;
                 const matchesType = category.toLowerCase() === eventType.toLowerCase();
-                //console.log('event typ check', category, eventType, matchesType);
                 if (category.toLowerCase() !== eventType.toLowerCase()) return false;
             }
 
@@ -909,7 +884,6 @@ class CalendarWidget {
             eventType: selectedEventType,
             searchText
         });
-        console.log('Events for', normalizedDate, events);
         if (!events.length) {
             noEventMsg.style.display = 'block';
             noEventMsg.textContent = `No events for ${normalizedDate}.`;
@@ -939,13 +913,13 @@ class CalendarWidget {
 
 
             const satellites = this.getSatellitesString(event.environment || '');
-            console.log("[EVENT DEBUG]", event);
+            //console.log("[EVENT DEBUG]", event);
 
             const dtList = Array.isArray(event.datatakes_completeness)
                 ? event.datatakes_completeness
                 : [];
 
-            console.log("[DATATAKES DEBUG]", event.id, dtList);
+            //console.log("[DATATAKES DEBUG]", event.id, dtList);
 
             /* const validDtList = dtList.filter(dt =>
                  dt.id.startsWith("S1") || dt.id.startsWith("S2") || dt.id.startsWith("S3") || dt.id.startsWith("S5")

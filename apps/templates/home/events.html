@@ -277,7 +277,7 @@
     } else {
       window.currentMonth = defaultMonth -1;
     }
-    console.log("[INIT PARAMS]", {year: window.currentYear, month0: window.currentMonth});
+    console.log("[INIT PARAMS]", {year: window.currentYear, month0: window.currentMonth+1});
   </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
@@ -291,8 +291,6 @@
         
         const fetchMonth = window.currentMonth + 1;
         const fetchYear = window.currentYear;
-
-        console.log(`[FETCH INIT ] /events_data?year=${fetchYear}&month=${fetchMonth}`); 
 
         const res = await fetch(`/events_data?year=${fetchYear}&month=${fetchMonth}`);
 

@@ -13,9 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 VALID_PREFIXES = ("S1", "S2", "S3", "S5P")
-THRESHOLD_FULL = 90
-THRESHOLD_OK = 80
-THRESHOLD_PARTIAL = 10
+THRESHOLD_RECOVERED = 90.0
+THRESHOLD_PARTIAL = 10.0
 
 
 # --- Date helpers ---
@@ -70,9 +69,6 @@ def to_utc_iso(dt):
     return dt.isoformat()
 
 
-# --- Satellite & datatake helpers ---
-
-
 def get_impacted_satellite(a):
     """
     Determine impacted satellite from provided field or environment.
@@ -92,7 +88,7 @@ def get_impacted_satellite(a):
             prefix_part = candidate.split("-")[0].strip()
             if any(prefix_part.startswith(p) for p in VALID_PREFIXES):
                 return prefix_part
-    return ""  # fallback if nothing valid
+    return ""
 
 
 def parse_datatakes_completeness(raw_field):
@@ -122,9 +118,6 @@ def calc_completeness(values):
     return sum(numeric_values) / len(numeric_values) if numeric_values else 0
 
 
-# --- Core event builder ---
-
-
 def build_event_instance(a, logger=None):
 
     # Parse start/end time from publicationDate
@@ -135,207 +128,177 @@ def build_event_instance(a, logger=None):
     else:
         start_date = datetime.now(timezone.utc)
 
-    end_date = start_date + timedelta(minutes=1)
+    end_str = a.get("end")
+    end_date = None
+
+    if end_str:
+        end_date = to_utc(end_str)
+    else:
+        end_date = start_date + timedelta(minutes=1)
 
     # Impacted satellite: prefer provided, otherwise derive from environment
     impacted_satellite = get_impacted_satellite(a)
 
     category = a.get("category", "Unknown")
 
-    datatakes = parse_datatakes_completeness(a.get("datatakes_completeness"))
-    current_app.logger.info(f"[PARSE DATATAKES COMPLETENESS]: {datatakes}")
+    datatakes_raw = parse_datatakes_completeness(a.get("datatakes_completeness"))
+    # current_app.logger.info(f"[PARSE DATATAKES COMPLETENESS]: {datatakes_raw}")
 
     datatake_ids = []
-    valid_datatakes = []
-    any_ok = False
-    any_failed = False
+    datatake_records = []
+    all_recovered = True
     any_partial = False
+    any_failed = False
 
-    for dtObj in datatakes:
-        parsed = dtObj
-        if isinstance(parsed, str):
-            parsed = parsed.strip()
-            parsed_obj = None
-            try:
-                parsed_obj = json.loads(parsed.replace("'", '"'))
-                if logger:
-                    logger.info(f"[PARSED DATATAKE STRING] {parsed}")
-            except Exception:
+    for dt_entry in datatakes_raw:
+        try:
+            # If the entry is a string, try to parse it (sometimes elements are stringified)
+            if isinstance(dt_entry, str):
                 try:
-                    parsed_obj = ast.literal_eval(parsed)
+                    parsed_candidate = json.loads(dt_entry.replace("'", '"'))
                 except Exception:
-                    parsed_obj = None
-            parsed = parsed_obj if parsed_obj is not None else parsed
+                    try:
+                        parsed_candidate = ast.literal_eval(dt_entry)
+                    except Exception:
+                        parsed_candidate = None
+                if parsed_candidate is not None:
+                    dt_entry = parsed_candidate
 
-        if isinstance(parsed, list):
-            for item in parsed:
-                if not isinstance(item, dict):
+            # If now it's a dict with a 'datatakeID' field (Shape A)
+            if isinstance(dt_entry, dict) and "datatakeID" in dt_entry:
+                dtid = dt_entry.get("datatakeID")
+                if not dtid or not isinstance(dtid, str):
                     continue
-                inner = item
+                # enforce prefix filter
+                if not any(dtid.startswith(p) for p in VALID_PREFIXES):
+                    continue
+                if dtid not in datatake_ids:
+                    datatake_ids.append(dtid)
 
-                datatake_id = inner.get("datatakeID")
-                values = []
-                if datatake_id:
-                    if not any(datatake_id.startswith(p) for p in VALID_PREFIXES):
-                        continue
-                    if datatake_id not in datatake_ids:
-                        datatake_ids.append(datatake_id)
-                    values = [inner.get("L0_"), inner.get("L1_"), inner.get("L2_")]
-                    values = [v for v in values() if isinstance(v, (int, float))]
-                    if not values:
-                        continue
-                    completeness = calc_completeness(values)
-                    if completeness >= THRESHOLD_FULL:
-                        continue
-                    if THRESHOLD_OK <= completeness < THRESHOLD_FULL:
-                        status = "ok"
-                        any_ok = True
-                    elif THRESHOLD_PARTIAL <= completeness < THRESHOLD_OK:
-                        status = "partial"
-                        any_partial = True
-                        any_failed = any_failed or False
-                    elif 0 <= completeness < THRESHOLD_PARTIAL:
-                        status = "failed"
-                        any_failed = True
-                    else:
-                        continue
+                # collect numeric L* values
+                values = [dt_entry.get("L0_"), dt_entry.get("L1_"), dt_entry.get("L2_")]
+                values = [v for v in values if isinstance(v, (int, float))]
 
-                    valid_datatakes.append(
-                        {
-                            "datatake_id": datatake_id,
-                            "values": values,
-                            "completeness": completeness,
-                            "status": status,
-                        }
-                    )
-                else:
-                    for key, val in inner.items():
-                        candidate_id = key
-                        if not any(candidate_id.startswith(p) for p in VALID_PREFIXES):
-                            pass
-
-                        if candidate_id not in datatake_ids and isinstance(
-                            candidate_id, str
-                        ):
-                            datatake_ids.append(candidate_id)
-
-                        values2 = []
-                        if isinstance(val, dict):
-                            for v in val.values():
-                                if instance(v, (int, float)):
-                                    values2.append(v)
-                        elif isinstance(val, (int, float)):
-                            values2.append(val)
-                        if not values2:
-                            continue
-                        completeness = calc_completeness(values2)
-                    if completeness >= THRESHOLD_FULL:
-                        continue
-                    if THRESHOLD_OK <= completeness < THRESHOLD_FULL:
-                        status = "ok"
-                        any_ok = True
-                    elif THRESHOLD_PARTIAL <= completeness < THRESHOLD_OK:
-                        status = "partial"
-                        any_partial = True
-                        any_failed = any_failed or False
-                    elif 0 <= completeness < THRESHOLD_PARTIAL:
-                        status = "failed"
-                        any_failed = True
-                    else:
-                        continue
-
-                    valid_datatakes.append(
-                        {
-                            "datatake_id": candidate_id,
-                            "values": values2,
-                            "completeness": completeness,
-                            "status": status,
-                        }
-                    )
-
-            continue
-        if not isinstance(parsed, dict):
-            continue
-
-        # --- parsed is a dict: determine old vs new format ---
-        # new format has datatakeID field
-        dtid = parsed.get("datatakeID")
-        if dtid:
-            if not any(dtid.startswith(p) for p in VALID_PREFIXES):
-                # skip irrelevant prefixes
-                continue
-            if dtid not in datatake_ids:
-                datatake_ids.append(dtid)
-            values = [parsed.get("L0_"), parsed.get("L1_"), parsed.get("L2_")]
-            values = [v for v in values if isinstance(v, (int, float))]
-
-            if not values:
-                continue
-            completeness = calc_completeness(values)
-
-            if completeness >= THRESHOLD_FULL:
-                continue
-            if THRESHOLD_OK <= completeness < THRESHOLD_FULL:
-                status = "ok"
-                any_ok = True
-            elif THRESHOLD_PARTIAL <= completeness < THRESHOLD_OK:
-                status = "partial"
-                any_partial = True
-                any_failed = any_failed or False
-            elif 0 <= completeness < THRESHOLD_PARTIAL:
-                status = "failed"
-                any_failed = True
-            else:
-                continue
-
-            valid_datatakes.append(
-                {
-                    "datatake_id": dtid,
-                    "values": values,
-                    "completeness": completeness,
-                    "status": status,
-                }
-            )
-        else:
-            # old format: keys -> values
-            for key, val in parsed.items():
-                candidate_id = key
-                if candidate_id not in datatake_ids and isinstance(candidate_id, str):
-                    datatake_ids.append(candidate_id)
-                values = []
-                if isinstance(val, dict):
-                    for v in val.values():
-                        if isinstance(v, (int, float)):
-                            values.append(v)
-                elif isinstance(val, (int, float)):
-                    values.append(val)
-                # compute completeness
+                # no numeric values -> skip
                 if not values:
                     continue
+
                 completeness = calc_completeness(values)
 
-                if completeness >= THRESHOLD_FULL:
+                # Skip datatakes with completeness == 100 (no need to report)
+                if completeness == 100:
+                    # do NOT mark as recovered/partial/failed, simply omit
+                    # current_app.logger.debug(f"[SKIP DT 100%] {dtid}")
                     continue
-                if THRESHOLD_OK <= completeness < THRESHOLD_FULL:
+
+                # classify
+                if completeness >= THRESHOLD_RECOVERED:
                     status = "ok"
-                    any_ok = True
-                elif THRESHOLD_PARTIAL <= completeness < THRESHOLD_OK:
+                    # ok datatakes do not change all_recovered (they confirm recovered)
+                elif completeness >= THRESHOLD_PARTIAL:
                     status = "partial"
                     any_partial = True
-                    any_failed = any_failed or False
-                elif 0 <= completeness < THRESHOLD_PARTIAL:
+                    all_recovered = False
+                else:
                     status = "failed"
                     any_failed = True
-                else:
-                    continue
-                valid_datatakes.append(
+                    all_recovered = False
+
+                datatake_records.append(
                     {
-                        "datatake_id": candidate_id,
+                        "datatake_id": dtid,
                         "values": values,
                         "completeness": completeness,
                         "status": status,
                     }
                 )
+
+            # If it's a dict that maps id -> values (Shape B)
+            elif isinstance(dt_entry, dict):
+                for candidate_id, candidate_val in dt_entry.items():
+                    # candidate_id might be the datatake id (old format)
+                    if not isinstance(candidate_id, str):
+                        continue
+                    if not any(candidate_id.startswith(p) for p in VALID_PREFIXES):
+                        # skip irrelevant prefixes
+                        continue
+                    if candidate_id not in datatake_ids:
+                        datatake_ids.append(candidate_id)
+
+                    # extract numeric values from candidate_val
+                    values = []
+                    if isinstance(candidate_val, dict):
+                        for v in candidate_val.values():
+                            if isinstance(v, (int, float)):
+                                values.append(v)
+                    elif isinstance(candidate_val, (int, float)):
+                        values.append(candidate_val)
+                    else:
+                        # if candidate_val is a list/tuple, try extract numeric
+                        if isinstance(candidate_val, (list, tuple)):
+                            for v in candidate_val:
+                                if isinstance(v, (int, float)):
+                                    values.append(v)
+
+                    if not values:
+                        continue
+
+                    completeness = calc_completeness(values)
+
+                    # Skip datatakes with completeness == 100
+                    if completeness == 100:
+                        # current_app.logger.debug(f"[SKIP DT 100%] {candidate_id}")
+                        continue
+
+                    if completeness >= THRESHOLD_RECOVERED:
+                        status = "ok"
+                    elif completeness >= THRESHOLD_PARTIAL:
+                        status = "partial"
+                        any_partial = True
+                        all_recovered = False
+                    else:
+                        status = "failed"
+                        any_failed = True
+                        all_recovered = False
+
+                    datatake_records.append(
+                        {
+                            "datatake_id": candidate_id,
+                            "values": values,
+                            "completeness": completeness,
+                            "status": status,
+                        }
+                    )
+
+            else:
+                # unknown entry type: skip but mark not all recovered to be safe
+                current_app.logger.debug(
+                    f"[build_event_instance] Unknown datatake entry: {dt_entry}"
+                )
+                all_recovered = False
+
+        except Exception as exc:
+            current_app.logger.warning(
+                f"[build_event_instance] Parse error for entry {dt_entry}: {exc}"
+            )
+            all_recovered = False
+            continue
+
+    # If there were datatake IDs but none produced valid completeness records -> skip event
+    if datatake_ids and not datatake_records:
+        #  if logger:
+        #      logger.info(
+        #          f"[SKIP EVENT] {a.get('key')} - has datatake id's but not completeness data (or all were 100%)."
+        #      )
+        return None
+
+    # If no datatake info at all -> skip
+    if not datatake_ids and not datatake_records:
+        # if logger:
+        #     logger.info(
+        #         f"[SKIP EVENT] {a.get('key')} - no datatake id's information available"
+        #     )
+        return None
 
     # overall_status: failed > partial > ok (JS-like semantics)
     overall_status = "unknown"
@@ -343,7 +306,7 @@ def build_event_instance(a, logger=None):
         overall_status = "failed"
     elif any_partial:
         overall_status = "partial"
-    elif any_ok:
+    elif all_recovered:
         overall_status = "ok"
 
     full_recover = overall_status == "ok"
@@ -351,20 +314,6 @@ def build_event_instance(a, logger=None):
 
     # color mapping (you can tune hexes)
     color = "#31ce36" if full_recover else ("#F9A825" if partial_recover else "#D32F2F")
-
-    if datatake_ids and not valid_datatakes:
-        if logger:
-            logger.info(
-                f"[SKIP EVENT] {a.get('key')} - has datatake id's but not completeness data"
-            )
-        return None
-
-    if not datatake_ids and not valid_datatakes:
-        if logger:
-            logger.info(
-                f"[SKIP EVENT] {a.get('key')} - no datatake id's information available"
-            )
-        return None
 
     instance = {
         "id": a.get("key"),
@@ -383,11 +332,11 @@ def build_event_instance(a, logger=None):
         "partialRecover": partial_recover,
         "overall_status": overall_status,
         "datatake_ids": datatake_ids,
-        "datatakes_completeness": valid_datatakes,
+        "datatakes_completeness": datatake_records,
     }
 
-    if logger:
-        logger.info(f"[EVENT INSTANCE BUILT] {json.dumps(instance, indent=2)}")
+    # if logger:
+    #     logger.info(f"[EVENT INSTANCE BUILT] {json.dumps(instance, indent=2)}")
 
     return instance
 

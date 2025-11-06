@@ -176,6 +176,7 @@ def events_data():
             "ecuser",
             "esauser",
         )
+
         if quarter_authorized:
             events_cache.load_anomalies_cache_previous_quarter()
             cache_key = events_cache.anomalies_cache_key.format("previous", "quarter")
@@ -186,10 +187,16 @@ def events_data():
         cache_entry = events_cache.flask_cache.get(cache_key)
         raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
 
-        if raw_anomalies:
-            current_app.logger.info(
-                f"[RAW] First anomaly: {json.dumps(raw_anomalies[0], indent=2)}"
-            )
+        # if raw_anomalies:
+        #     current_app.logger.info(
+        #         f"[RAW] First anomaly: {json.dumps(raw_anomalies[0], indent=2)}"
+        #     )
+        #     for a in raw_anomalies:
+        #         srcTest = a.get("_source", a)
+        #         if srcTest.get("key") == "GSANOM-19977":
+        #             current_app.logger.warning(
+        #                 f"[DEBUG GSANOM-19977] Full anomaly:\n{json.dumps(srcTest, indent=2)}"
+        #             )
 
         if not raw_anomalies:
             current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
@@ -203,6 +210,7 @@ def events_data():
                 or src.get("publicationDate")
                 or src.get("created")
             )
+
             if isinstance(date_str, datetime):
                 date_str = to_utc_iso(date_str)
 
@@ -241,21 +249,30 @@ def events_data():
                 anomalies.append(serialized)
             else:
                 current_app.logger.info("[SKIPPED] anomaly filtered by prefix")
+
         events = []
         anomalies_by_date = {}
+        skipped_full = 0
+        kept_partial = 0
 
         for a in anomalies:
             instance = build_event_instance(a, current_app.logger)
             if not instance:
                 continue
-            current_app.logger.info(
-                f"[EVENT INSTANCE] {json.dumps(instance, indent=2)}"
-            )
+            if instance.get("fullRecover"):
+                skipped_full += 1
+                # current_app.logger.info(
+                #     f"[SKIP] Fully recovered anomaly:  {a.get('key')}"
+                # )
+                continue
+            else:
+                kept_partial += 1
 
             date_str = instance.get("from") or instance.get("publicationDate")
             if not date_str:
                 current_app.logger.info(f"Skipping instance without 'from': {instance}")
                 continue
+
             try:
                 dt = datetime.fromisoformat(date_str)
             except Exception:
@@ -272,47 +289,31 @@ def events_data():
                 anomalies_by_date.setdefault(date_key, []).append(instance)
                 events.append(instance)
 
-        current_app.logger.info(
-            f"[FILTERED] Total events for {month}/{year}: {len(events)}"
-        )
-        current_app.logger.info(
-            f"[FILTERED] Anomalies by date keys: {list(anomalies_by_date.keys())}"
-        )
+        # --- Summary logs ---
+        total_events = len(events)
+        # current_app.logger.info(
+        #     f"[SUMMARY] Total anomalies processed: {len(anomalies)} | "
+        #     f"Kept active: {kept_partial} | Skipped full-recovered: {skipped_full}"
+        # )
+        # current_app.logger.info(
+        #     f"[SUMMARY] Total events for {month}/{year}: {total_events}"
+        # )
+        # current_app.logger.info(
+        #     f"[SUMMARY] Anomalies by date keys: {list(anomalies_by_date.keys())}"
+        # )
 
-        # Print full content per date for debugging
-        for k, v in anomalies_by_date.items():
-            if not isinstance(v, list):
-                current_app.logger.info(f"Anomalies for {k} is not a list: {v}")
-            else:
-                current_app.logger.info(
-                    f"Anomalies for {k} is a list with {len(v)} items:"
-                )
-                for i, item in enumerate(v):
-                    current_app.logger.info(f"  [{i}] {json.dumps(item, indent=2)}")
+        # --- Return clean JSON response ---
+        response = {
+            "year": year,
+            "month": month,
+            "anomalies": anomalies,
+            "anomalies_by_date": anomalies_by_date,
+            "count": sum(len(v) for v in anomalies_by_date.values()),
+            "events": events,
+        }
 
-        current_app.logger.info(
-            "[FINAL RESPONSE] "
-            + json.dumps(
-                {
-                    "year": year,
-                    "month": month,
-                    "anomalies_by_date": anomalies_by_date,
-                    "count": sum(len(v) for v in anomalies_by_date.values()),
-                    "events": events,
-                },
-                indent=2,
-            )
-        )
-        return jsonify(
-            {
-                "year": year,
-                "month": month,
-                "anomalies": anomalies,
-                "anomalies_by_date": anomalies_by_date,
-                "count": sum(len(v) for v in anomalies_by_date.values()),
-                "events": events,
-            }
-        )
+        # current_app.logger.info(f"[FINAL RESPONSE] {json.dumps(response, indent=2)}")
+        return jsonify(response)
 
     except Exception as e:
         current_app.logger.error(f"Error in /events_data: {e}", exc_info=True)
