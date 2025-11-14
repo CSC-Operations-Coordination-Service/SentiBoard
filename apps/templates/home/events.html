@@ -3,9 +3,9 @@
 
 {% block head_meta %}
   {{ seo_meta(
-    title="Sentinel Event Viewer | Copernicus Dashboard by ESA",
-    description="Browse Sentinel event logs including anomalies, calibrations, and manoeuvres. See how real-time mission events affect satellite data availability.",
-    keywords=get_keywords('events'),
+    title=title,
+    description=description,
+    keywords=page_keywords,
     image_url=request.host_url ~ 'static/assets/img/favicon.png',
     page_url=page_url
   ) }}

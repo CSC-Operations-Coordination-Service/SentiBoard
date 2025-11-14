@@ -3,9 +3,9 @@
 
 {% block head_meta %}
   {{ seo_meta(
-    title="Processor Releases Timeline – Copernicus Dashboard",
-    description="Browse the release history of Copernicus Sentinel processors using an interactive timeline. Click for details on each processor version.",
-    keywords=get_keywords('processors'),
+    title=title,
+    description=description,
+    keywords=page_keywords,
     image_url=request.host_url ~ 'static/assets/img/favicon.png',
     page_url=page_url
   ) }}

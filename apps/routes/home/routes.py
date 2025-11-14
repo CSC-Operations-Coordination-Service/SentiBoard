@@ -36,6 +36,119 @@ from apps.utils.events_utils import (
     safe_get,
 )
 
+PAGE_METADATA = {
+    "index.html": {
+        "title": "Copernicus Sentinel Operations Dashboard",
+        "description": "Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. Stay informed with the comprehensive Sentiboard.",
+        "page_keywords": [
+            "Copernicus Sentinel Dashboard",
+            "Sentiboard",
+            "real-time satellite data",
+            "ESA operations dashboard",
+            "Sentinel mission monitoring",
+            "Copernicus events",
+            "data availability",
+            "acquisition status",
+            "Earth observation platform",
+            "satellite event tracker",
+            "Copernicus Sentinel missions",
+        ],
+    },
+    "about.html": {
+        "title": "About Copernicus | ESA Sentinel Dashboard | Earth Data",
+        "description": "Discover how the Sentiboard enables real-time monitoring of Sentinel satellite missions, data delivery, and Earth observation event tracking.",
+        "page_keywords": [
+            "About Copernicus Dashboard",
+            "Sentiboard",
+            "Copernicus Sentinel missions",
+            "ESA Earth observation",
+            "satellite data services",
+            "real-time satellite monitoring",
+            "Sentinel data availability",
+            "acquisition status",
+            "Earth observation platform",
+            "satellite event tracker",
+        ],
+    },
+    "acquisitions-status.html": {
+        "title": "Sentinel Acquisitions Map | Copernicus Dashboard - ESA",
+        "description": "Explore Sentinel satellite acquisition plans on the Sentiboard's real-time 3D globe. Filter by satellite, date, or datatake and view sensing timelines and coverage.",
+        "page_keywords": [
+            "Sentinels Acquisition Status",
+            "Sentiboard",
+            "satellite acquisition planning",
+            "Copernicus sensing scenarios",
+            "Sentinel-1 orbit data",
+            "Sentinel-2 acquisition map",
+            "real-time satellite tracking",
+            "Copernicus observation schedule",
+        ],
+    },
+    "events.html": {
+        "title": "Sentinel Event Viewer | Copernicus Dashboard by ESA",
+        "description": "Browse Sentinel event logs including anomalies, calibrations, and manoeuvres on the Sentiboard. See how real-time mission events affect satellite data availability.",
+        "page_keywords": [
+            "Sentinel events",
+            "Sentiboard",
+            "Sentinels Events/real-time events",
+            "satellite anomalies",
+            "calibration activities",
+            "mission manoeuvres",
+            "Copernicus event log",
+            "Sentinel data production impacts",
+            "real-time satellite operations",
+        ],
+    },
+    "data-availability.html": {
+        "title": "Copernicus Sentinel Data Availability",
+        "description": "Explore real-time data availability and completeness for Copernicus Sentinel satellite missions using the Sentiboard. Monitor delivery status, publication percentages, and filter by satellite or mission.",
+        "page_keywords": [
+            "Sentinels Data Availability",
+            "Sentiboard",
+            "Copernicus data availability",
+            "Sentinel data access",
+            "satellite data products",
+            "real-time Earth observation data",
+            "Copernicus collections",
+            "Sentinel data quality monitoring",
+        ],
+    },
+    "processors-viewer.html": {
+        "title": "Processor Releases Timeline - Copernicus Dashboard",
+        "description": "Use the Sentiboard to browse the release history of Copernicus Sentinel processors using an interactive timeline. Click for details on each processor version.",
+        "page_keywords": [
+            "Sentinels Processors",
+            "Copernicus processing chain",
+            "Sentiboard",
+            "data release timeline",
+            "ESA processor versions",
+            "satellite data processing updates",
+        ],
+    },
+}
+# Default fallback metadata for any page not listed above:
+DEFAULT_PAGE_METADATA = {
+    "title": "Copernicus Sentinel Operations Dashboard",
+    "description": "Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. Stay informed with the comprehensive Sentiboard.",
+    "page_keywords": [
+        "Copernicus Sentinel Dashboard",
+        "Sentiboard",
+        "real-time satellite data",
+        "ESA operations dashboard",
+        "Sentinel mission monitoring",
+        "Copernicus events",
+        "data availability",
+        "acquisition status",
+        "Earth observation platform",
+        "satellite event tracker",
+        "Copernicus Sentinel missions",
+    ],
+}
+
+
+def get_metadata(template):
+    return PAGE_METADATA.get(template, DEFAULT_PAGE_METADATA)
+
 
 def admin_required(f):
     @wraps(f)
@@ -50,6 +163,9 @@ def admin_required(f):
 
 @blueprint.route("/index")
 def index():
+
+    metadata = get_metadata("index.html")
+    metadata["page_url"] = request.url
     segment = "index"
     period_id = "24h"
 
@@ -103,7 +219,10 @@ def index():
         )
 
     return render_template(
-        "home/index.html", segment=segment, anomalies_details=anomalies_details
+        "home/index.html",
+        segment=segment,
+        anomalies_details=anomalies_details,
+        **metadata,
     )
 
 
@@ -111,6 +230,9 @@ def index():
 def events():
 
     try:
+        metadata = get_metadata("events.html")
+        metadata["page_url"] = request.url
+
         today = datetime.today()
         year = request.args.get("year", type=int, default=today.year)
         month = request.args.get("month", type=int, default=today.month)
@@ -157,6 +279,7 @@ def events():
             icon_map=icon_map,
             event_type_map=event_type_map,
             missing_datatakes_info=[],
+            **metadata,
         )
     except Exception as e:
         current_app.logger.error(f"Error rendering / events: {e}", exc_info=True)
@@ -324,7 +447,7 @@ def events_data():
 def route_template(template):
     try:
         if not template.endswith(".html"):
-            template += ".html"
+            abort(404)
 
         # Detect the current page
         segment = get_segment(request)
@@ -332,9 +455,13 @@ def route_template(template):
         # List of admin pages
         admin_pages = ["users.html", "roles.html", "news.html", "anomalies.html"]
 
+        # Get metadata safely
+        metadata = get_metadata(template)
+        metadata["page_url"] = request.url
+
         # Handle admin pages
         if template in admin_pages:
-            return render_template("admin/" + template, segment=segment)
+            return render_template("admin/" + template, segment=segment, **metadata)
 
         # Special case: events page
         if template in ["events", "events.html"]:
@@ -342,7 +469,7 @@ def route_template(template):
             return events()
 
         # Default: serve page from home
-        return render_template("home/" + template, segment=segment)
+        return render_template("home/" + template, segment=segment, **metadata)
 
     except TemplateNotFound:
         return render_template("home/page-404.html"), 404

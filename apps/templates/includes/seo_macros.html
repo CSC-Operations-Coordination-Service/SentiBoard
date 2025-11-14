@@ -1,7 +1,7 @@
 {# includes/seo_macros.html #}
 {% macro seo_meta(
     title='', 
-    description=None, 
+    description='', 
     keywords=None, 
     image_url='', 
     image_width='1200',
@@ -20,20 +20,19 @@
 
     {# --- Use passed description if available, otherwise use SEO description --- #}
     <title>{{ title }} | Copernicus Dashboard</title>
-    {% if description %}
-      <meta name="description" content="{{ description }}">
-    {% elif seo_description is defined %}
-      <meta name="description" content="{{ seo_description() }}">
-    {% endif %}
+    <meta name="description" content="{{ description }}">
 
     {# Keywords can be a string or a callable that returns a string #}
-    {% if keywords %}
-      <meta name="keywords" content="{{ keywords }}">
-    {% elif seo_keywords is defined %}
-      <meta name="keywords" content="{{ seo_keywords() }}">
+    {% set safe_keywords = keywords | default([]) %}
+    {% if safe_keywords %}
+      {% if safe_keywords is iterable and safe_keywords is not string %}
+        <meta name="keywords" content="{{ safe_keywords | join(', ') }}">
+      {% else %}
+        <meta name="keywords" content="{{ safe_keywords }}">
+      {% endif %}
     {% endif %}
     
-    <link rel="canonical" href="{{ page_url() }}">
+    <link rel="canonical" href="{{ page_url | default('') }}">
 
     {# --- Favicon / Icons / Manifest --- #}
     <link rel="icon" href="/static/assets/img/icons/favicon.ico" sizes="any">
@@ -41,7 +40,6 @@
     <link rel="icon" type="image/png" sizes="96x96" href="/static/assets/img/icons/favicon-96.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/static/assets/img/icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/static/assets/img/icons/icon-512.png">
-
     <link rel="apple-touch-icon" href="/static/assets/img/icons/apple-touch-icon.png" sizes="180x180">
 
     <link rel="manifest" href="{{ manifest_url }}">
@@ -52,7 +50,7 @@
     <meta property="og:title" content="{{ title }}">
     <meta property="og:description" content="{{ description }}">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ page_url() }}">
+    <meta property="og:url" content="{{ page_url }}">
     <meta property="og:locale" content="en_GB">
     {% if image_url %}
       <meta property="og:image" content="{{ image_url }}">
@@ -66,7 +64,7 @@
     <meta name="twitter:creator" content="@{{ twitter_handle }}">
     <meta name="twitter:title" content="{{ title }}">
     <meta name="twitter:description" content="{{ description }}">
-    <meta name="twitter:url" content="{{ page_url() }}">
+    <meta name="twitter:url" content="{{ page_url }}">
     {% if image_url %}
       <meta name="twitter:image" content="{{ image_url }}">
       <meta name="twitter:image:alt" content="{{ description }}">
@@ -81,14 +79,17 @@
     {% endif %}
 
     {# --- JSON-LD Structured Data --- #}
+    {% set safe_keywords_json = keywords | default([]) %}
     <script type="application/ld+json">
     {
         "@context": "https://schema.org",
         "@graph": [
           {
             "@type": "WebSite",
-            "url": {{ "https://operations.dashboard.copernicus.eu/" | tojson }},
+            "url": "https://operations.dashboard.copernicus.eu/",
             "name": "Copernicus Dashboard",
+            "description": {{ description | tojson }},
+            "keywords": {{ safe_keywords_json | tojson }},
             "publisher": {
               "@type": "Organization",
               "name": {{ publisher_name | tojson }},
@@ -108,9 +109,10 @@
           },
           {
             "@type": "WebPage",
-            "url": {{ page_url() | tojson }},
+            "url": {{ page_url | default('') | tojson }},
             "name": {{ title | tojson }},
-            "description": {{ description | tojson }},
+            "description": {{ description | default('') | tojson }},
+            "keywords": {{ safe_keywords_json | tojson }},
             {% if image_url %}
               "image": {{ image_url | tojson }},
             {% endif %}
@@ -120,11 +122,11 @@
           {
             "@type": "VideoObject",
             "name": {{ title | tojson }},
-            "description": {{ description | tojson }},
+            "description": {{ description | default('') | tojson }},
             "thumbnailUrl": [ {{ video_thumbnail | tojson }} ],
             "uploadDate": "2025-06-18T00:00:00Z",
-            "contentUrl": {{ video_url | tojson }},
-            "embedUrl": {{ page_url() | tojson }},
+            "contentUrl": {{ video_url | default('') | tojson }},
+            "embedUrl": {{ page_url | default('') | tojson }},
             "publisher": {
               "@type": "Organization",
               "name": {{ publisher_name | tojson }},
