@@ -55,7 +55,7 @@ PAGE_METADATA = {
         ],
     },
     "about.html": {
-        "title": "About Copernicus | ESA Sentinel Dashboard | Earth Data",
+        "title": "About Copernicus",
         "description": "Discover how the Sentiboard enables real-time monitoring of Sentinel satellite missions, data delivery, and Earth observation event tracking.",
         "page_keywords": [
             "About Copernicus Dashboard",
@@ -71,7 +71,7 @@ PAGE_METADATA = {
         ],
     },
     "acquisitions-status.html": {
-        "title": "Sentinel Acquisitions Map | Copernicus Dashboard - ESA",
+        "title": "Sentinel Acquisitions Map",
         "description": "Explore Sentinel satellite acquisition plans on the Sentiboard's real-time 3D globe. Filter by satellite, date, or datatake and view sensing timelines and coverage.",
         "page_keywords": [
             "Sentinels Acquisition Status",
@@ -85,7 +85,7 @@ PAGE_METADATA = {
         ],
     },
     "events.html": {
-        "title": "Sentinel Event Viewer | Copernicus Dashboard by ESA",
+        "title": "Sentinel Event Viewer",
         "description": "Browse Sentinel event logs including anomalies, calibrations, and manoeuvres on the Sentiboard. See how real-time mission events affect satellite data availability.",
         "page_keywords": [
             "Sentinel events",
@@ -114,7 +114,7 @@ PAGE_METADATA = {
         ],
     },
     "processors-viewer.html": {
-        "title": "Processor Releases Timeline - Copernicus Dashboard",
+        "title": "Processor Releases Timeline",
         "description": "Use the Sentiboard to browse the release history of Copernicus Sentinel processors using an interactive timeline. Click for details on each processor version.",
         "page_keywords": [
             "Sentinels Processors",
