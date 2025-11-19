@@ -10,7 +10,7 @@
     page_url=page_url
   ) }}
 
-  <!-- Preload custom font -->
+<!-- Preload custom font -->
   <link
     rel="preload"
     href="/static/assets/fonts/esa/NotesEsa.woff2"
@@ -129,7 +129,7 @@
       </video>
     </div>
 
-    <!-- Real-time events box for large screens -->
+<!-- Real-time events box for large screens -->
 <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
      style="top: 60px; right: 16px; width: 347px; z-index: 2;">
   <h4 class="card-title mb-3">Real-time events</h4>
@@ -140,7 +140,7 @@
         <i class="flaticon-alarm-1 feed-item-icon"></i>
         <time class="date">{{ detail.time_ago }}</time>
         <div class="text" style="word-wrap: break-word; max-width: 250px;">
-          {{ detail.content }}
+          {{ detail.content | safe }}
         </div>
       </li>
       {% endfor %}
@@ -168,7 +168,7 @@
             <i class="flaticon-alarm-1 feed-item-icon"></i>
             <time class="date">{{ detail.time_ago }}</time>
             <div class="text" style="word-wrap: break-word; max-width: 250px;">
-              {{ detail.content }}
+              {{ detail.content | safe}}
             </div>
           </li>
           {% endfor %}
@@ -344,4 +344,3 @@
 </script>
 
 {% endblock javascripts %}
-

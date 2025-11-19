@@ -8,6 +8,8 @@ import logging
 from apps.models.anomalies import Anomalies
 from jinja2 import Undefined
 from flask import current_app
+from apps import flask_cache
+
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,69 @@ def safe_get(val, default=""):
     if val is None or isinstance(val, Undefined):
         return default
     return val
+
+
+def safe_value(val, default="N/A"):
+    if isinstance(val, Undefined) or val is None:
+        return default
+    return val
+
+
+def safe_json_value(v, default="N/A"):
+    """Ensure v is JSON serializable, replacing Undefined or other non-serializables"""
+    if v is None:
+        return default
+    try:
+        json.dumps(v)
+        return v
+    except (TypeError, OverflowError):
+        return str(v)
+
+
+def replace_undefined(o):
+    if isinstance(o, dict):
+        return {k: replace_undefined(v) for k, v in o.items()}
+    elif isinstance(o, list):
+        return [replace_undefined(v) for v in o]
+    elif isinstance(o, Undefined):
+        return None
+    return o
+
+
+def datatake_sort_key(dt):
+    """
+    Sort order:
+    1. ACQUIRED first
+    2. Other statuses (PROCESSING, DELAYED, PARTIAL, UNAVAILABLE)
+    3. PLANNED last
+    Inside each group → oldest (lowest timestamp) first (ASCENDING order)
+    Full datetime considered (hours, minutes, seconds)
+    """
+    status = (dt.get("acquisition_status") or "").upper()
+
+    # Status priority
+    if status == "ACQUIRED":
+        status_priority = 0
+    elif status == "PLANNED":
+        status_priority = 2
+    else:
+        status_priority = 1
+
+    # --- Timestamp (ascending, full datetime) ---
+    start_time = dt.get("start_time")
+    if start_time:
+        try:
+            # Use fromisoformat or parse with fallback
+            ts = datetime.fromisoformat(start_time).timestamp()
+        except Exception:
+            try:
+                ts = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%S").timestamp()
+            except Exception:
+                ts = float("inf")  # Invalid format → end
+    else:
+        ts = float("inf")  # Missing dates → end
+
+    return (status_priority, ts)
 
 
 def to_utc_iso(dt):
@@ -378,3 +443,63 @@ def serialize_anomalie(anomalie):
         "newsTitle": anomalie.newsTitle,
         "modifyDate": anomalie.modifyDate.isoformat() if anomalie.modifyDate else None,
     }
+
+
+def load_cache_as_list(cache_uri: str, name: str) -> list:
+    """
+    Safely load a cached value from flask_cache and always return a list.
+    Works with Response, JSON string, bytes, or list.
+    """
+    raw_cache = flask_cache.get(cache_uri)
+
+    if raw_cache is None:
+        current_app.logger.warning(f"[DATA-AVAILABILITY] No {name} cache found")
+        return []
+
+    try:
+        # Flask Response
+        if hasattr(raw_cache, "get_json"):
+            return raw_cache.get_json() or []
+
+        # Flask Response object
+        elif hasattr(raw_cache, "get_data"):
+            return json.loads(raw_cache.get_data(as_text=True)) or []
+
+        # String or bytes
+        elif isinstance(raw_cache, (str, bytes)):
+            return json.loads(raw_cache) or []
+
+        # Already a list
+        elif isinstance(raw_cache, list):
+            return raw_cache
+
+        else:
+            current_app.logger.warning(
+                f"[DATA-AVAILABILITY] Unknown cache type for {name}: {type(raw_cache)}"
+            )
+            return []
+
+    except Exception as e:
+        current_app.logger.warning(f"[DATA-AVAILABILITY] Failed to parse {name}: {e}")
+        return []
+
+
+def generate_completeness_cache():
+    """
+    Generate summary of all datatakes completeness, store in Redis.
+    """
+    datatakes_data = datatakes_cache.load_all_datatakes()  # or your cached list
+    summary = {}
+
+    for d in datatakes_data:
+        src = d.get("_source", {}) or {}
+        datatake_id = src.get("datatake_id") or src.get("id")
+        completeness_list = [
+            {"productType": k.replace("_local_percentage", ""), "status": round(v, 2)}
+            for k, v in src.items()
+            if isinstance(v, (int, float)) and k.endswith("_local_percentage")
+        ]
+        summary[datatake_id] = completeness_list
+
+    # Store JSON in Redis (or any persistent cache)
+    redis_client.set("datatakes_completeness_summary", json.dumps(summary))

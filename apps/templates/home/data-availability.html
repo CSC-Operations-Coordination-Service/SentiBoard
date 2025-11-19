@@ -23,7 +23,7 @@
 
 {% block content %}
 
-	<!-- Define page content -->
+		<!-- Define page content -->
 	<div class="content" style="min-height: calc(100% - 130px);">
 		<div class="page-inner">
 			<h1 class="sr-only">Copernicus Sentinel Data Availability</h1>
@@ -48,7 +48,7 @@
 			<!-- Datatake details panel -->
 			<div class="modal fade" id="showDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
 				<div class="modal-dialog" role="document">
-					<div class="modal-content" style="background: #202940">
+					<div class="modal-content" style="background: #006B7C">
 						<div class="modal-header no-bd">
 							<h5 class="modal-title">
 								<span class="fw-mediumbold">View</span>
@@ -70,7 +70,43 @@
 					</div>
 				</div>
 			</div>
+			<!-- Completeness Table Modal -->
+			<div class="modal fade" id="completenessTableModal" tabindex="-1" role="dialog">
+				<div class="modal-dialog modal-md" role="document">
+					<div class="modal-content" style="background: #006B7C; color: #fff;">
+						<div class="modal-header no-bd">
+							<h5 class="modal-title">
+							<span class="fw-mediumbold">Datatake</span>
+							<span class="fw-light">Details</span>
+							</h5>
+							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true" style="color: white">&times;</span>
+							</button>
+						</div>
 
+						<div class="modal-body">
+							<div class="d-flex justify-content-center">
+								<div class="table-responsive" style="max-width: 80%;">
+									<table class="custom-box-table-sm table-m text-center">
+										<thead style="border-bottom: 2px solid #fff;">
+										<tr>
+											<th>Product type</th>
+											<th>Status(%)</th>
+										</tr>
+										</thead>
+										<tbody id="modalInfoTableBody"></tbody>
+									</table>
+									<div id="modalPaginationControls" class="pagination-row"></div>
+								</div>
+							</div>
+						</div>
+
+						<div class="modal-footer no-bd">
+							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
+						</div>
+					</div>
+				</div>
+			</div>
 			<!-- Collapsible description panel -->
 			<div class="row">
 				<div class="card-body" style="padding-bottom: 0.0rem !important">
@@ -155,55 +191,85 @@
 													</div>
 													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
 											</div>
-											<!-- Filter by Ground Station -->
+											<!-- Sidebar for datatakes -->
+											 <form id="detailsForm" method="POST" style="display:none;">
+												<input type="hidden" name="datatake_id" id="datatake_id">
+											</form>
 											<div class="form-group">
-												<input type="text" id="searchInput" class="form-control mb-3"
-												placeholder="Search by id..." oninput="datatakes.filterSidebarItems()">
-													<ul class="list-unstyled" id="dataList">
-															<!-- Items will be injected here by JavaScript -->
-													</ul>
-													<button class="loadMore" id="loadMoreBtn">Load More</button>
+												<input
+													type="text"
+													id="searchInput"
+													class="form-control mb-3"
+													placeholder="Search by id..."
+													oninput="datatakes.filterSidebarItems()"
+												>
+												<ul class="list-unstyled" id="dataList">
+													{% if datatakes %}
+														{% for dt in datatakes %}
+														<li>
+															<div class="container-border {% if loop.first %}selected{% endif %}"
+																style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;cursor:pointer;">
+															<a
+																href="#"
+																class="filter-link {% if loop.first %}selected{% endif %}"
+																data-filter-type="groundStation"
+																data-id="{{ dt.id }}"
+																data-filter-value="{{ dt.platform }}"
+																onclick="event.preventDefault();"
+															>
+																{{ dt.id }}
+															</a>
+															{% set status = dt.acquisition_status|default('unknown')|lower %}
+															<div class="status-circle-dt-{{ status }}"></div>
+															</div>
+														</li>
+														{% endfor %}
+													{% else %}
+														<li><em>No datatakes found</em></li>
+													{% endif %}
+												</ul>
+												<button class="loadMore" id="loadMoreBtn">Load More</button>
+												<script>
+													window.initialDatatakes = {{ datatakes_for_ssr | tojson }};
+												</script>
 											</div>
 									</div>
 								</div>
 								<!-- Main Content -->
 								<div class="col-12 col-md-9 d-flex flex-column">
-									
 									<div class="datatakes-container flex-grow-1">
+										<!-- Loading Spinner -->
 										<div class="chart-container" style="position: relative;">
 											<div id="spinner" class="spinner-overlay">
-												<div class="spinner-bar"></div>
+												<div class="spinner-bar"> </div>
 											</div>
-												<h4 class="mb-0">
-													<span class="title-text">S</span> 
-												</h4>
-												<p class="text-left">Sentinel-</p>
-												<div class="d-flex align-items-start" style="gap: 8px;">
-														<!-- Donut Chart -->
-														<div style="flex: 1; max-width: 70%;">
-																<div id="missionDonutChart"></div>
-														</div>
-														<!-- Hidden Table -->
-														<div id="infoTableContainer" style="display: none;">
-																<table class="custom-box-table-sm table-m">
-																		<thead>
-																				<tr>
-																						<th>Product type</th>
-																						<th>Status(%)</th>
-																				</tr>
-																		</thead>
-																		<tbody id="infoTableBody">
-																				<!-- Dynamically filled -->
-																		</tbody>
-																</table>
-																<div id="paginationControls" class="pagination-row">
-																</div>
-														</div>
+											<!-- Charts Section -->
+											<h4><span class="title-text"></span></h4>
+											<p class="text-left"></p>
+
+											<div class="row donut-charts-wrapper justify-content-center text-center">
+												<!-- Donut Chart 1: Acquisition -->
+												<div class="col-md-6 mb-3 d-flex flex-column align-items-center">
+													<div id="acquisitionDonutChart" class="donut-chart"></div>
 												</div>
+
+												<!-- Donut Chart 2: Publication -->
+												<div class="col-md-6 mb-3 d-flex flex-column align-items-center">
+													<div id="publicationDonutChart" class="donut-chart"></div>
+												</div>
+											</div>
 										</div>
-										<div class="mt-4 d-flex flex-md-row table-legend-wrapper gap-3 align-items-start">
+										
+										<!-- Table and Legend Section -->
+										 {% if datatake_details %}
+											<div class="alert alert-info mt-3">
+												<h5>Datatake {{ datatake_details['_source'].datatake_id }}</h5>
+												<pre>{{ datatake_details | tojson(indent=2) }}</pre>
+											</div>
+										{% endif %}
+										<div class="table-legend-wrapper mt-3">
 											<!-- Datatake Details Section -->
-											<div id="tableSection" class="mt-4" style="display: none;">
+											<div id="tableSection" class="mt-2" style="display: none;">
 													<div id="table-container">
 															<div class="custom-box-table-container table-responsive" style="position: relative;">
 																<button class="close-btn" id="closeTableButton" aria-label="Close table">✖</button>
@@ -339,8 +405,43 @@
 																							<th>Actions</th>
 																					</tr>
 																			</thead>
-																			<tbody id="dataTableBody"></tbody>
-																			<!-- Populated dynamically -->
+																			<tbody id="dataTableBody">
+																				{% if datatakes %}
+																					{% for dt in datatakes %}
+																					<tr>
+																					<td>{{ dt.id }}</td>
+																					<td>{{ dt.platform or 'N/A' }}</td>
+																					<td>
+																						{{ dt.start_time[:16].replace('T', ' ') }}
+																					</td>
+																					<td>
+																						{{ dt.stop_time[:16].replace('T', ' ') }}
+																					</td>
+																					<td>
+																						<span class="status-circle status-{{ dt.acquisition_status|lower }}"></span>
+																						{{ dt.acquisition_status or 'N/A' }}
+																					</td>
+																					<td>
+																						<span class="status-circle status-{{ dt.publication_status|lower }}"></span>
+																						{{ dt.publication_status or 'N/A' }}
+																						{% if dt.publication_percent is defined %}
+																						({{ dt.publication_percent }}%)
+																						{% endif %}
+																					</td>
+																					<td>
+																						<button class="btn btn-outline-info btn-sm"
+																								onclick="openDataTake('{{ dt.id }}')">
+																						Details
+																						</button>
+																					</td>
+																					</tr>
+																					{% endfor %}
+																				{% else %}
+																					<tr>
+																					<td colspan="7" class="text-center text-muted">No datatakes available for the selected period.</td>
+																					</tr>
+																				{% endif %}
+																			</tbody>
 																	</table>
 															</div>
 													</div>
@@ -397,7 +498,55 @@
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
-	 <script defer type="text/javascript">datatakes.init();</script>
+	<script id="server-data" type="application/json">
+		{{ {
+			"anomalies": anomalies,
+			"datatakes": datatakes,
+			"quarter_authorized": quarter_authorized,
+			"selected_period": selected_period,
+			"generated_at": generated_at
+		} | tojson }}
+	</script>
+	
+	<script>
+		document.addEventListener("DOMContentLoaded", () => {
+			const el = document.getElementById("server-data");
+			if (!el) {
+				console.warn("[DATA-AVAILABILITY] No server-data element found in DOM");
+				return;
+			}
+
+			let serverData = {};
+			try {
+				serverData = JSON.parse(el.textContent);
+			} catch (err) {
+				console.error("[DATA-AVAILABILITY] Failed to parse server data:", err);
+				return;
+			}
+
+			// Fallbacks
+			serverData.datatakes = serverData.datatakes || [];
+			serverData.anomalies = serverData.anomalies || [];
+
+			// Initialize JS controller
+			try {
+				console.info("[DATA-AVAILABILITY] Initializing Datatakes controller...");
+				window.datatakes = new Datatakes(serverData);
+				window.datatakes.init();
+
+				window.datatakes.initializeDefaultView?.();
+
+			} catch (err) {
+				console.error("[DATA-AVAILABILITY] Error initializing Datatakes:", err);
+			}
+		});
+	</script>
+	<script>
+		function openDatatake(id) {
+			document.getElementById("datatake_id").value = id;
+			document.getElementById("detailsForm").submit();
+		}
+	</script>
 	<script>
 		$(function () {
 				$('[data-toggle="tooltip"]').tooltip();

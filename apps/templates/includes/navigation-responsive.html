@@ -150,13 +150,17 @@
                         <!-- Time range filter -->
                         <li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<div class="form-group form-floating-label" id="time-period-select-container">
-								<select name="time-period-select" id="time-period-select"
-										class="form-control input-solid">
-									<option value="day">Last 24 Hours</option>
-									<option value="week">Last 7 Days</option>
-									<option value="month">Last 30 Days</option>
-									<option selected="selected" value="last-quarter">Last 3 Months</option>
+								<select name="time-period-select" id="time-period-select" class="form-control input-solid">
+									<option value="day"
+										{% if segment == "data-availability" and selected_period == "day" %}selected{% endif %}>Last 24 Hours</option>
+									<option value="week"
+										{% if segment == "data-availability" and selected_period == "week" %}selected{% endif %}>Last 7 Days</option>
+									<option value="month"
+										{% if segment == "data-availability" and selected_period == "month" %}selected{% endif %}>Last 30 Days</option>
+									<option value="prev-quarter"
+										{% if segment == "data-availability" and selected_period == "prev-quarter" %}selected{% endif %}>Last 3 Months</option>
 								</select>
+
 							</div>
 						</li>
 

@@ -19,7 +19,9 @@ from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
 import apps.cache.modules.events as events_cache
+import apps.cache.modules.datatakes as datatakes_cache
 from datetime import datetime, date, timezone
+from dateutil import parser as date_parser
 from calendar import monthrange
 from apps import flask_cache
 import json
@@ -32,8 +34,14 @@ logger = logging.getLogger(__name__)
 from apps.utils.events_utils import (
     build_event_instance,
     get_impacted_satellite,
+    to_utc,
     to_utc_iso,
     safe_get,
+    load_cache_as_list,
+    safe_value,
+    safe_json_value,
+    replace_undefined,
+    datatake_sort_key,
 )
 
 PAGE_METADATA = {
@@ -169,39 +177,110 @@ def index():
     segment = "index"
     period_id = "24h"
 
+    # Build the cache key
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
-    anomalies_data = flask_cache.get(anomalies_api_uri)
+    current_app.logger.info(f"[INDEX] starting here")
+    current_app.logger.info(f"[INDEX] using cache key: {anomalies_api_uri}")
 
-    # Ensure anomalies_data is a list
-    if hasattr(anomalies_data, "get_json"):  # if it's a Response
+    # Get and inspect cache content
+    raw_cache = flask_cache.get(anomalies_api_uri)
+    current_app.logger.info(f"[INDEX] Cache content raw type: {type(raw_cache)}")
+    current_app.logger.info(
+        f"[INDEX] Cache raw content preview: {str(raw_cache)[:400]}"
+    )
+
+    # if not raw_cache:
+    #    current_app.logger.warning("[INDEX] No 24h cache found, falling back to 7d")
+    #    anomalies_api_uri = events_cache.anomalies_cache_key.format("last", "7d")
+    #    raw_cache = flask_cache.get(anomalies_api_uri)
+
+    # ---- SAFE CACHE HANDLING ----
+    anomalies_data = []
+
+    if raw_cache is None:
+        current_app.logger.warning(
+            "[INDEX] Cache empty or missing for %s", anomalies_api_uri
+        )
+
+    elif hasattr(raw_cache, "get_json"):  # Flask Response
         try:
-            anomalies_data = anomalies_data.get_json() or []
-        except Exception as e:
-            current_app.logger.warning(
-                "Failed to parse JSON from cached Response: %s", e
+            anomalies_data = raw_cache.get_json() or []
+            current_app.logger.info(
+                f"[INDEX] Parsed JSON from Response: {len(anomalies_data)} items"
             )
-            anomalies_data = []
-    elif not isinstance(anomalies_data, list):
-        anomalies_data = []
+        except Exception as e:
+            current_app.logger.warning(f"[INDEX] Failed to parse Response JSON: {e}")
+
+    elif isinstance(raw_cache, (bytes, str)):
+        import json
+
+        try:
+            anomalies_data = json.loads(raw_cache) or []
+            current_app.logger.info(
+                f"[INDEX] Parsed raw JSON string: {len(anomalies_data)} items"
+            )
+        except Exception as e:
+            current_app.logger.warning(f"[INDEX] Failed to decode JSON string: {e}")
+
+    elif isinstance(raw_cache, list):
+        anomalies_data = raw_cache
+        current_app.logger.info(
+            f"[INDEX] Using cached list: {len(anomalies_data)} items"
+        )
+
+    else:
+        current_app.logger.warning(f"[INDEX] Unknown cache type {type(raw_cache)}")
+
+    current_app.logger.info(f"[INDEX] Total anomalies read: {len(anomalies_data)}")
 
     now = datetime.now(timezone.utc)
     anomalies_details = []
 
-    for item in anomalies_data:
+    for idx, item in enumerate(anomalies_data):
         if not isinstance(item, dict):
-            continue  # skip invalid entries
+            current_app.logger.warning(
+                f"[INDEX] Skipping invalid anomaly at index {idx}: {item}"
+            )
+            continue
 
-        event_time_str = item.get("time")
+        time_candidates = (
+            item.get("time"),
+            item.get("start"),
+            item.get("publicationDate"),
+            item.get("timestamp"),
+        )
+
+        event_time_str = None
+
+        for cand in time_candidates:
+            if cand:
+                event_time_str = cand
+                break
         if not event_time_str:
+            current_app.logger.warning(f"[INDEX] Missing 'time' field in item {idx}")
             continue
 
         try:
-            event_time = datetime.fromisoformat(event_time_str)
+            if isinstance(event_time_str, str):
+                try:
+                    # try ISO format first (e.g. "2025-11-06T16:41:41")
+                    event_time = datetime.fromisoformat(event_time_str)
+                except ValueError:
+                    # fallback to European style: "06/11/2025 16:41:41"
+                    event_time = datetime.strptime(event_time_str, "%d/%m/%Y %H:%M:%S")
+            elif isinstance(event_time_str, (int, float)):
+                event_time = datetime.fromtimestamp(event_time_str, timezone.utc)
+            else:
+                event_time = event_time_str
         except Exception as e:
             current_app.logger.warning(
-                "Invalid datetime format in event: %s (%s)", item, e
+                f"[INDEX] Invalid datetime in item {idx}: {event_time_str} ({e})"
             )
             continue
+
+        # Ensure event_time is timezone-aware
+        if event_time.tzinfo is None:
+            event_time = event_time.replace(tzinfo=timezone.utc)
 
         diff = now - event_time
         if diff.days >= 1:
@@ -211,12 +290,46 @@ def index():
         else:
             time_ago = f"{diff.seconds // 60} minute(s) ago"
 
-        anomalies_details.append(
+        category = item.get("category", "Unknown")
+
+        impacted_sat = item.get("impactedSatellite", "Unknown")
+
+        # Default title
+        title = None
+        if category == "Platform":
+            title = f"Satellite issue, affecting {impacted_sat} data."
+        elif category == "Acquisition":
+            title = f"Acquisition issue, affecting {impacted_sat} data."
+        elif category == "Production":
+            title = f"Production issue, affecting {impacted_sat} data."
+        elif category == "Manoeuvre":
+            title = f"Manoeuvre issue, affecting {impacted_sat} data."
+        elif category == "Calibration":
+            title = f"Calibration issue, affecting {impacted_sat} data."
+        else:
+            title = f"{category} issue, affecting {impacted_sat} data."
+
+        # Add “Read More” link
+        pub_date = item.get("publicationDate", "")[:10]
+        title += f' <a href="/events.html?showDayEvents={pub_date}">Read More</a>'
+
+        # Append to list
+        anomalies_details.append({"time_ago": time_ago, "content": title})
+
+    if not anomalies_details:
+        current_app.logger.info("[INDEX] No anomalies found, using mock test data")
+        anomalies_details = [
             {
-                "time_ago": time_ago,
-                "content": item.get("content", "No details available"),
-            }
-        )
+                "time_ago": "15 minute(s) ago",
+                "content": "Acquisition issue, affecting Sentinel-1A data. "
+                '<a href="/events.html?showDayEvents=2025-11-07">Read More</a>',
+            },
+            {
+                "time_ago": "2 hour(s) ago",
+                "content": "Production issue, affecting Sentinel-2B data. "
+                '<a href="/events.html?showDayEvents=2025-11-07">Read More</a>',
+            },
+        ]
 
     return render_template(
         "home/index.html",
@@ -443,6 +556,232 @@ def events_data():
         return jsonify({"error": str(e)}), 500
 
 
+@blueprint.app_template_filter("to_utc_dt")
+def to_utc_dt(value):
+    """
+    Jinja filter to ensure ISO strings or datetimes render properly in templates.
+    Converts to a UTC-aware datetime using existing to_utc().
+    """
+    try:
+        return to_utc(value)
+    except Exception:
+        return None
+
+
+@blueprint.route("/data-availability", methods=["GET", "POST"])
+def data_availability():
+    metadata = get_metadata("data-availability.html")
+    metadata["page_url"] = request.url
+    segment = "data-availability"
+
+    try:
+        current_app.logger.info("[DATA-AVAILABILITY] Starting route")
+
+        # ----------------------------------------------------------------------
+        # POST HANDLING: user clicked on a row and requested full details
+        # ----------------------------------------------------------------------
+        datatake_details = None
+        if request.method == "POST":
+            selected_id = request.form.get("datatake_id")
+            if selected_id:
+                datatake_details = (
+                    datatakes_cache.load_datatake_details(selected_id) or {}
+                )
+
+        # ----------------------------------------------------------------------
+        # --- Authorization ---
+        # ----------------------------------------------------------------------
+        quarter_authorized = current_user.is_authenticated and current_user.role in (
+            "admin",
+            "ecuser",
+            "esauser",
+        )
+        selected_period = request.args.get("period", "week")
+
+        # --- Cache key map ---
+        datatakes_cache_key_map = {
+            "day": "last-24h",
+            "week": "last-7d",
+            "month": "last-30d",
+            "prev-quarter": "previous-quarter",
+            "default": "last-7d",
+        }
+        datatakes_key = datatakes_cache_key_map.get(
+            selected_period, datatakes_cache_key_map["default"]
+        )
+
+        anomalies_cache_uri = events_cache.anomalies_cache_key.format(
+            (
+                "previous"
+                if selected_period == "prev-quarter" and quarter_authorized
+                else "last"
+            ),
+            "quarter" if selected_period == "prev-quarter" else "7d",
+        )
+        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
+            "previous" if selected_period == "prev-quarter" else "last",
+            datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
+        )
+
+        # ----------------------------------------------------------------------
+        # Load cached data
+        # ----------------------------------------------------------------------
+        anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
+        datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
+
+        # ----------------------------------------------------------------------
+        # Normalize datatakes
+        # ----------------------------------------------------------------------
+        normalized_datatakes = []
+        for d in datatakes_data:
+            src = d.get("_source", {}) or {}
+            datatake_id = src.get("datatake_id") or src.get("id")
+
+            start_raw = src.get("observation_time_start")
+            stop_raw = src.get("observation_time_stop")
+
+            try:
+                start_time = date_parser.parse(start_raw) if start_raw else None
+            except Exception:
+                start_time = None
+
+            try:
+                stop_time = date_parser.parse(stop_raw) if stop_raw else None
+            except Exception:
+                stop_time = None
+
+            normalized_datatakes.append(
+                {
+                    "id": datatake_id,
+                    "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
+                    "start_time": to_utc_iso(start_time) if start_time else None,
+                    "stop_time": to_utc_iso(stop_time) if stop_time else None,
+                    "acquisition_status": src.get("completeness_status", {})
+                    .get("ACQ", {})
+                    .get("status", "unknown"),
+                    "publication_status": src.get("completeness_status", {})
+                    .get("PUB", {})
+                    .get("status", "unknown"),
+                    "raw": src,
+                }
+            )
+
+        # ----------------------------------------------------------------------
+        # Normalize anomalies
+        # ----------------------------------------------------------------------
+        normalized_anomalies = []
+        for a in anomalies_data:
+            src = a.get("_source", {}) or {}
+            normalized_anomalies.append(
+                {
+                    "key": safe_json_value(src.get("key") or src.get("id"), "unknown"),
+                    "category": safe_json_value(
+                        src.get("category") or src.get("type"), "Unknown"
+                    ),
+                    "publicationDate": safe_json_value(
+                        src.get("occurence_date")
+                        or src.get("occurrence_date")
+                        or src.get("publicationDate")
+                        or src.get("created")
+                        or ""
+                    ),
+                    "impactedSatellite": safe_json_value(
+                        src.get("impactedSatellite"), "Unknown"
+                    ),
+                    "description": safe_json_value(src.get("description"), ""),
+                    "datatakes_completeness": src.get("datatakes_completeness", []),
+                    "start": src.get("start"),
+                    "end": src.get("end"),
+                    "title": src.get("title"),
+                    "text": src.get("text"),
+                }
+            )
+
+        # Cleanup undefined
+        normalized_datatakes = replace_undefined(normalized_datatakes)
+        normalized_anomalies = replace_undefined(normalized_anomalies)
+
+        normalized_datatakes = [
+            dt for dt in normalized_datatakes if dt.get("start_time") and dt.get("id")
+        ]
+        normalized_datatakes.sort(key=datatake_sort_key)
+
+        datatakes_cache.generate_completeness_cache(normalized_datatakes)
+
+        datatakes_for_ssr = []
+
+        for dt in normalized_datatakes[:50]:
+            dt_copy = dt.copy()
+            dt_id = dt_copy["id"]
+
+            # Load full details from cache
+            full_details = datatakes_cache.load_datatake_details(dt_id) or {}
+            raw = full_details.get("_source", full_details)
+
+            # ------------------------------------------------------------------
+            # Build completeness_list for products (used in your modal table)
+            # ------------------------------------------------------------------
+            completeness_list = [
+                {"productType": k, "status": round(v, 2)}
+                for k, v in raw.items()
+                if k.endswith("_local_percentage") and isinstance(v, (int, float))
+            ]
+            dt_copy["completeness_list"] = completeness_list
+
+            # ------------------------------------------------------------------
+            # Ensure ACQ and PUB completeness_status have both status and percentage
+            # ------------------------------------------------------------------
+            comp = raw.get("completeness_status", {}) or {}
+
+            acq = comp.get("ACQ", {})
+            acq_status = acq.get("status") or "ACQUIRED"
+            acq_percentage = acq.get("percentage") or 100
+
+            pub = comp.get("PUB", {})
+            pub_status = pub.get("status") or "PUBLISHED"
+            pub_percentage = pub.get("percentage") or 100
+
+            dt_copy["acquisition_status"] = acq_status
+            dt_copy["publication_status"] = pub_status
+
+            # Update raw completeness_status
+            raw["completeness_status"] = {
+                "ACQ": {"status": acq_status, "percentage": acq_percentage},
+                "PUB": {"status": pub_status, "percentage": pub_percentage},
+            }
+
+            dt_copy["raw"] = raw
+
+            datatakes_for_ssr.append(dt_copy)
+
+        # ----------------------------------------------------------------------
+        # Final payload
+        # ----------------------------------------------------------------------
+        payload = {
+            "anomalies": normalized_anomalies,
+            "datatakes": datatakes_for_ssr,
+            "quarter_authorized": quarter_authorized,
+            "selected_period": selected_period,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "datatake_details": datatake_details,  # exposing selected detail to template
+        }
+
+        return render_template(
+            "home/data-availability.html",
+            **payload,
+            normalized_datatakes=normalized_datatakes,
+            segment=segment,
+            **metadata,
+            datatakes_for_ssr=replace_undefined(datatakes_for_ssr),
+        )
+
+    except Exception as e:
+        current_app.logger.error(
+            f"[DATA-AVAILABILITY] Error rendering template: {e}", exc_info=True
+        )
+        abort(500)
+
+
 @blueprint.route("/<template>")
 def route_template(template):
     try:
@@ -467,6 +806,10 @@ def route_template(template):
         if template in ["events", "events.html"]:
             # Determine if the user is quarter authorized
             return events()
+
+        # data-availability
+        if template in ["data-availability", "data-availability.html"]:
+            return data_availability()
 
         # Default: serve page from home
         return render_template("home/" + template, segment=segment, **metadata)
