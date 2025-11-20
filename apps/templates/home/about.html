@@ -3,9 +3,9 @@
 
 {% block head_meta %}
   {{ seo_meta(
-    title="About Copernicus | ESA Sentinel Dashboard | Earth Data",
-    description="Discover how ESA's Copernicus Dashboard enables real-time monitoring of Sentinel satellite missions, data delivery, and Earth observation event tracking.",
-    keywords=get_keywords('about'),
+    title=title,
+    description=description,
+    keywords=page_keywords,
     image_url=request.host_url ~ 'static/assets/img/favicon.png',
     page_url=page_url
   ) }}

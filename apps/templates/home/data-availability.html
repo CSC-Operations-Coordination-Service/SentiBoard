@@ -3,9 +3,9 @@
 
 {% block head_meta %}
   {{ seo_meta(
-    title="Copernicus Sentinel Data Availability",
-    description="Explore real-time data availability and completeness for Copernicus Sentinel satellite missions. Monitor delivery status, publication percentages, and filter by satellite or mission.",
-    keywords=get_keywords('data_availability'),
+    title=title,
+    description=description,
+    keywords=page_keywords,
     image_url=request.host_url ~ 'static/assets/img/favicon.png',
     page_url=page_url
   ) }}
