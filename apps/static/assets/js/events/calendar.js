@@ -511,9 +511,14 @@ class CalendarWidget {
     }
 
     arrangeDatatakesList(anomaly, dtList) {
+        const uniqueDtList = dtList.filter(
+            (dt, idx, self) =>
+                idx === self.findIndex(t => t.datatake_id === dt.datatake_id)
+        );
+
         const validPrefixes = ["S1", "S2", "S3", "S5"];
 
-        const content = dtList
+        const content = uniqueDtList
             .filter(dt => dt?.datatake_id && validPrefixes.some(prefix => dt.datatake_id.startsWith(prefix)))
             .map(dt => {
                 const { datatake_id, status, completeness } = dt;
@@ -539,7 +544,9 @@ class CalendarWidget {
             .filter(html => html.trim() !== '')
             .join('');
 
-        return content ? `<ul style="padding-left: 0; margin: 0;">${content}</ul>` : '<p>No valid datatakes</p>';
+        return content
+            ? `<ul style="padding-left: 0; margin: 0;">${content}</ul>`
+            : '<p>No valid datatakes</p>';
     }
 
     calcDatatakeStatus(anomaly, datatake_id) {
@@ -905,6 +912,17 @@ class CalendarWidget {
             if (event.category === 'Archive' || event.category === 'Data access') {
                 return;
             }
+
+            const satellites = this.getSatellitesString(event.environment || '');
+            const dataTakeCandidates = (event.environment || '')
+                .split(";")
+                .map(v => v.trim())
+                .filter(v => /^S\d/.test(v));
+
+
+            if (!satellites && dataTakeCandidates.length === 0) {
+                return;
+            }
             const listItem = document.createElement('li');
             listItem.style.marginBottom = '1em';
             listItem.style.padding = '10px';
@@ -917,14 +935,14 @@ class CalendarWidget {
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
 
 
-            const satellites = this.getSatellitesString(event.environment || '');
-            //console.log("[EVENT DEBUG]", event);
+            //const satellites = this.getSatellitesString(event.environment || '');
+            console.log("[EVENT DEBUG]", event);
 
             const dtList = Array.isArray(event.datatakes_completeness)
                 ? event.datatakes_completeness
                 : [];
 
-            //console.log("[DATATAKES DEBUG]", event.id, dtList);
+            console.log("[DATATAKES DEBUG]", event.id, dtList);
 
             /* const validDtList = dtList.filter(dt =>
                  dt.id.startsWith("S1") || dt.id.startsWith("S2") || dt.id.startsWith("S3") || dt.id.startsWith("S5")
