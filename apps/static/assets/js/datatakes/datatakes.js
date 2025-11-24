@@ -19,17 +19,14 @@ class Datatakes {
     constructor(dataInput = {}) {
         // Always keep SSR block + global full list
         this.serverData = dataInput || {};
-        this.fullDataTakes = Array.isArray(window.initialDatatakes)
+        this.fullDataTakes = Array.isArray(window.initialDatatakes) && window.initialDatatakes.length
             ? window.initialDatatakes
-            : [];
-        this.ssrDataTakes = Array.isArray(dataInput.datatakes)
-            ? dataInput.datatakes
-            : [];
+            : Array.isArray(this.serverData.datatakes)
+                ? this.serverData.datatakes
+                : [];
 
-        // Use the full list always
-        this.mockDataTakes = this.fullDataTakes.length
-            ? this.fullDataTakes
-            : this.ssrDataTakes;
+        this.filteredDataTakes = [...this.fullDataTakes];
+        this.mockDataTakes = [...this.fullDataTakes];
 
         this.anomalies = Array.isArray(dataInput.anomalies)
             ? dataInput.anomalies
@@ -53,6 +50,10 @@ class Datatakes {
             generatedAt: this.generatedAt
         });
         console.groupEnd();
+        console.log("[datatakes init]", {
+            serverdata: this.serverData,
+            fullDataTakes: this.fullDataTakes.length
+        })
     }
 
 
@@ -67,8 +68,6 @@ class Datatakes {
 
         // Determine how many SSR items are already visible
         this.displayedCount = dataList.querySelectorAll("li").length || 0;
-        console.log("displaycount", this.displayedCount);
-
         // Attach event listeners to SSR items
         this.attachItemListeners(dataList.querySelectorAll("li"));
 
@@ -797,7 +796,7 @@ class Datatakes {
 
 
         try {
-            this.filteredDataTakes = this.mockDataTakes.filter((take, index) => {
+            this.filteredDataTakes = this.fullDataTakes.filter((take, index) => {
                 const id = (take.id || "").toUpperCase();
                 const satellite = (take.satellite || take.raw?.satellite || take.raw?.satellite_unit || "").toUpperCase();
 

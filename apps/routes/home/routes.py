@@ -12,7 +12,16 @@ behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 """
 
-from flask import render_template, request, current_app, abort
+from flask import (
+    render_template,
+    request,
+    current_app,
+    abort,
+    jsonify,
+    session,
+    redirect,
+    url_for,
+)
 from flask_login import current_user, login_required
 from jinja2 import TemplateNotFound
 from urllib.parse import urlparse, urljoin
@@ -25,7 +34,6 @@ from dateutil import parser as date_parser
 from calendar import monthrange
 from apps import flask_cache
 import json
-from flask import jsonify
 import traceback
 import logging
 
@@ -152,6 +160,8 @@ DEFAULT_PAGE_METADATA = {
         "Copernicus Sentinel missions",
     ],
 }
+
+BATCH_SIZE = 10
 
 
 def get_metadata(template):
@@ -577,9 +587,17 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
-        # ----------------------------------------------------------------------
         # POST HANDLING: user clicked on a row and requested full details
-        # ----------------------------------------------------------------------
+        if "period" in request.args:
+            session["selected_period"] = request.args["period"]
+            return redirect(url_for("home_blueprint.data_availability"))
+
+        selected_period = session.get("selected_period", "week")
+
+        page = int(request.args.get("page", 1))
+        start_idx = (page - 1) * BATCH_SIZE
+        end_idx = start_idx + BATCH_SIZE
+
         datatake_details = None
         if request.method == "POST":
             selected_id = request.form.get("datatake_id")
@@ -588,15 +606,12 @@ def data_availability():
                     datatakes_cache.load_datatake_details(selected_id) or {}
                 )
 
-        # ----------------------------------------------------------------------
         # --- Authorization ---
-        # ----------------------------------------------------------------------
         quarter_authorized = current_user.is_authenticated and current_user.role in (
             "admin",
             "ecuser",
             "esauser",
         )
-        selected_period = request.args.get("period", "week")
 
         # --- Cache key map ---
         datatakes_cache_key_map = {
@@ -623,15 +638,11 @@ def data_availability():
             datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
         )
 
-        # ----------------------------------------------------------------------
         # Load cached data
-        # ----------------------------------------------------------------------
         anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
         datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
 
-        # ----------------------------------------------------------------------
         # Normalize datatakes
-        # ----------------------------------------------------------------------
         normalized_datatakes = []
         for d in datatakes_data:
             src = d.get("_source", {}) or {}
@@ -666,9 +677,7 @@ def data_availability():
                 }
             )
 
-        # ----------------------------------------------------------------------
         # Normalize anomalies
-        # ----------------------------------------------------------------------
         normalized_anomalies = []
         for a in anomalies_data:
             src = a.get("_source", {}) or {}
@@ -708,9 +717,10 @@ def data_availability():
 
         datatakes_cache.generate_completeness_cache(normalized_datatakes)
 
+        paged_datatakes = normalized_datatakes[start_idx:end_idx]
         datatakes_for_ssr = []
 
-        for dt in normalized_datatakes[:50]:
+        for dt in paged_datatakes:
             dt_copy = dt.copy()
             dt_id = dt_copy["id"]
 
@@ -718,9 +728,7 @@ def data_availability():
             full_details = datatakes_cache.load_datatake_details(dt_id) or {}
             raw = full_details.get("_source", full_details)
 
-            # ------------------------------------------------------------------
             # Build completeness_list for products (used in your modal table)
-            # ------------------------------------------------------------------
             completeness_list = [
                 {"productType": k, "status": round(v, 2)}
                 for k, v in raw.items()
@@ -728,9 +736,7 @@ def data_availability():
             ]
             dt_copy["completeness_list"] = completeness_list
 
-            # ------------------------------------------------------------------
             # Ensure ACQ and PUB completeness_status have both status and percentage
-            # ------------------------------------------------------------------
             comp = raw.get("completeness_status", {}) or {}
 
             acq = comp.get("ACQ", {})
@@ -754,16 +760,16 @@ def data_availability():
 
             datatakes_for_ssr.append(dt_copy)
 
-        # ----------------------------------------------------------------------
         # Final payload
-        # ----------------------------------------------------------------------
         payload = {
             "anomalies": normalized_anomalies,
             "datatakes": datatakes_for_ssr,
             "quarter_authorized": quarter_authorized,
             "selected_period": selected_period,
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "datatake_details": datatake_details,  # exposing selected detail to template
+            "datatake_details": datatake_details,
+            "current_page": page,
+            "total_pages": (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE,
         }
 
         return render_template(

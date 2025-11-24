@@ -150,7 +150,7 @@
                         <!-- Time range filter -->
                         <li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<div class="form-group form-floating-label" id="time-period-select-container">
-								<select name="time-period-select" id="time-period-select" class="form-control input-solid">
+								<select name="time-period-select" id="time-period-select" class="form-control input-solid" onchange="this.form.submit()">
 									<option value="day"
 										{% if segment == "data-availability" and selected_period == "day" %}selected{% endif %}>Last 24 Hours</option>
 									<option value="week"
