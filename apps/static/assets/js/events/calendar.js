@@ -545,7 +545,7 @@ class CalendarWidget {
             .join('');
 
         return content
-            ? `<ul style="padding-left: 0; margin: 0;">${content}</ul>`
+            ? `<ul style="padding-right: 0; margin: 0;">${content}</ul>`
             : '<p>No valid datatakes</p>';
     }
 
