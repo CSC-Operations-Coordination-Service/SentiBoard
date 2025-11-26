@@ -177,20 +177,21 @@
 												<option value="S3B" {{ 'selected' if satellite=='S3B' }}>S3B</option>
 											</select>
 		
-											<!-- Inline Date Range -->
-											<!-- Dates -->
-											<div>
-												<label>From</label>
-												<input type="datetime-local" name="fromdate" class="form-control"
-													value="{{ from_date }}">
-											</div>
+											 <div class="d-flex flex-column gap-2">
+												<div class="d-flex align-items-center gap-2">
+													<label for="from-date"  class="inline-label" style="min-width: 40px;">From</label>
+													<input type="datetime-local" id="from-date" name="fromdate" class="form-control"
+														onchange="datatakes.filterSidebarItems()">
+												</div>
 
-											<div>
-												<label>To</label>
-												<input type="datetime-local" name="todate" class="form-control"
-													value="{{ to_date }}">
-											</div>
-											<button type="submit" class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
+												<div class="d-flex align-items-center gap-2">
+													<label for="to-date"  class="inline-label" style="min-width: 40px;">To</label>
+													<input type="datetime-local" id="to-date" name="todate" class="form-control"
+														onchange="datatakes.filterSidebarItems()">
+												</div>
+											 </div>
+											
+											<button type="button" class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
 											<input
 												type="text"
 												id="searchInput"

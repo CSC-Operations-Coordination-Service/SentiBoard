@@ -383,11 +383,15 @@ ul#dataList {
 }
 
 .container-border {
-  display: inline-flex;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   border: 1.5px solid #FFC107;
-  padding: 2px 18px;
+  padding: 4px 10px;
   border-radius: 6px;
+  width: 100%;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
 .container-border:hover {

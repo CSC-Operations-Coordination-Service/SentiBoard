@@ -40,6 +40,7 @@ class Datatakes {
         this.itemsPerPage = 10;
         this.infoItemsPerPage = 10;
         this.displayedCount = 0;
+        this.activeRequestsCount = 0;
 
     }
 
@@ -249,15 +250,11 @@ class Datatakes {
             const li = document.createElement("li");
             const containerDiv = document.createElement("div");
             containerDiv.className = "container-border";
-            Object.assign(containerDiv.style, {
-                width: `${inputWidth}px`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0.5rem 0.75rem",
-                boxSizing: "border-box",
-                cursor: "pointer"
-            });
+            containerDiv.style.cursor = "pointer";
+            /*            Object.assign(containerDiv.style, {
+                            boxSizing: "border-box",
+                            cursor: "pointer"
+                        });*/
 
             const a = document.createElement("a");
             a.href = "#";
@@ -474,7 +471,6 @@ class Datatakes {
             return;
         }
 
-        // If completeness_list missing → call enrich endpoint
         const needsEnrichment =
             !datatake.completeness_list ||
             datatake.completeness_list.length === 0;
@@ -497,10 +493,8 @@ class Datatakes {
                     const enriched = await response.json();
                     console.log("[AJAX] Enriched response:", enriched);
 
-                    // Merge enriched data
                     Object.assign(datatake, enriched);
 
-                    // Store enriched version for next time
                     const idx = this.fullDataTakes.findIndex(dt => dt.id === dataInput);
                     if (idx > -1) this.fullDataTakes[idx] = datatake;
 
@@ -515,7 +509,6 @@ class Datatakes {
             }
         }
 
-        //  BUILD dataArray PROPERLY
         let dataArray = null;
 
         if (datatake.completeness_list && datatake.completeness_list.length > 0) {
@@ -523,7 +516,6 @@ class Datatakes {
 
         } else {
 
-            // 2. Collect *_local_percentage keys from ROOT + RAW
             const allKeys = [
                 ...Object.keys(datatake),
                 ...Object.keys(datatake.raw || {})
@@ -535,13 +527,12 @@ class Datatakes {
                 console.log("Building table from percentage keys:", pctKeys);
 
                 dataArray = pctKeys.map(k => ({
-                    productType: k,
+                    productType: k.replace("local_percentage", ""),
                     status: datatake[k] ?? datatake.raw?.[k] ?? "-"
                 }));
             }
         }
 
-        // 3. Last fallback: old completeness object
         if (!dataArray || dataArray.length === 0) {
             const completeness = datatake.completeness || {};
             const compKeys = Object.keys(completeness).filter(k =>
@@ -549,7 +540,7 @@ class Datatakes {
             );
 
             dataArray = compKeys.map(k => ({
-                productType: k,
+                productType: k.replace("local_percentage", ""),
                 status: completeness[k]
             }));
         }
@@ -595,9 +586,12 @@ class Datatakes {
 
         pageItems.forEach(item => {
             const row = document.createElement("tr");
+            const displayValue = typeof item.status === "number"
+                ? Number(item.status).toFixed(2)
+                : item.status;
             row.innerHTML = `
             <td>${item.productType || "-"}</td>
-            <td>${item.status ?? "-"}</td>
+            <td>${displayValue}</td>
         `;
             tableBody.appendChild(row);
         });
@@ -623,7 +617,6 @@ class Datatakes {
             paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
         }
 
-        console.log("==== renderInfoTable END ====");
     }
 
 
@@ -853,32 +846,45 @@ class Datatakes {
 
         // Read and store from/to date values
 
-        this.fromDate = document.getElementById("from-date").value;
-        this.toDate = document.getElementById("to-date").value;
+        this.fromDate = document.getElementById("from-date")?.value || null;
+        this.toDate = document.getElementById("to-date")?.value || null;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
 
         try {
-            this.filteredDataTakes = this.fullDataTakes.filter((take, index) => {
+            this.filteredDataTakes = this.fullDataTakes.filter(take => {
                 const id = (take.id || "").toUpperCase();
+                const mission = (take.mission || "").toUpperCase();
                 const satellite = (take.satellite || take.raw?.satellite || take.raw?.satellite_unit || "").toUpperCase();
 
-                let acquisitionDateRaw = take.raw?.observation_time_start || take.start || "";
-                let acquisitionDate = (new Date(acquisitionDateRaw)).toISOString();
 
-                if (acquisitionDateRaw instanceof Date) {
+                let acquisitionDateRaw = take.raw?.observation_time_start || take.start || "";
+                let acquisitionDate = null;
+                if (acquisitionDateRaw) {
+                    const d = new Date(acquisitionDateRaw);
+                    if (!isNaN(d)) acquisitionDate = d.toISOString();
+                }
+
+                /*if (acquisitionDateRaw instanceof Date) {
                     acquisitionDate = acquisitionDateRaw.toISOString();
                 } else if (typeof acquisitionDateRaw === "string") {
                     acquisitionDate = new Date(acquisitionDateRaw).toISOString();
-                }
+                }*/
                 const matchesMission = !selectedMission || id.startsWith(selectedMission);
                 const matchesSatellite = !selectedSatellite || satellite.startsWith(selectedSatellite);
-
                 const matchesSearch = !searchTerms.length || searchTerms.every(term => id.includes(term));
-
                 return matchesMission && matchesSearch && matchesSatellite && this.isWithinDateRange(acquisitionDate);
             });
+
+            this.displayedCount = 0;
+            this.renderSidebarList(false);
+
+            const first = this.filteredDataTakes?.[0];
+            if (first) {
+                this.handleInitialSelection(first);
+                this.renderTableWithoutPagination(this.filteredDataTakes, first.id);
+            }
 
         } catch (err) {
             console.error("Error during filtering:", err);
