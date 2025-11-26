@@ -50,6 +50,8 @@ from apps.utils.events_utils import (
     safe_json_value,
     replace_undefined,
     datatake_sort_key,
+    enrich_datatake,
+    make_json_safe,
 )
 
 PAGE_METADATA = {
@@ -587,17 +589,28 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
-        # POST HANDLING: user clicked on a row and requested full details
+        # Detect AJAX
+        is_ajax = request.args.get("ajax") == "1"
+
+        # --- Selected period ---
         if "period" in request.args:
             session["selected_period"] = request.args["period"]
-            return redirect(url_for("home_blueprint.data_availability"))
-
+            if not is_ajax:
+                # Only redirect for normal page load
+                return redirect(url_for("home_blueprint.data_availability"))
         selected_period = session.get("selected_period", "week")
 
-        page = int(request.args.get("page", 1))
+        # --- Pagination ---
+        try:
+            page = int(request.args.get("page", 1))
+            if page < 1:
+                page = 1
+        except Exception:
+            page = 1
         start_idx = (page - 1) * BATCH_SIZE
         end_idx = start_idx + BATCH_SIZE
 
+        # --- POST: datatake details ---
         datatake_details = None
         if request.method == "POST":
             selected_id = request.form.get("datatake_id")
@@ -613,7 +626,7 @@ def data_availability():
             "esauser",
         )
 
-        # --- Cache key map ---
+        # --- Cache keys ---
         datatakes_cache_key_map = {
             "day": "last-24h",
             "week": "last-7d",
@@ -638,32 +651,29 @@ def data_availability():
             datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
         )
 
-        # Load cached data
+        # --- Load caches ---
         anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
         datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
 
-        # Normalize datatakes
+        # --- Normalize datatakes ---
         normalized_datatakes = []
         for d in datatakes_data:
             src = d.get("_source", {}) or {}
-            datatake_id = src.get("datatake_id") or src.get("id")
-
-            start_raw = src.get("observation_time_start")
-            stop_raw = src.get("observation_time_stop")
-
-            try:
-                start_time = date_parser.parse(start_raw) if start_raw else None
-            except Exception:
-                start_time = None
-
-            try:
-                stop_time = date_parser.parse(stop_raw) if stop_raw else None
-            except Exception:
-                stop_time = None
+            dt_id = src.get("datatake_id") or src.get("id")
+            start_time = (
+                to_utc(src.get("observation_time_start"))
+                if src.get("observation_time_start")
+                else None
+            )
+            stop_time = (
+                to_utc(src.get("observation_time_stop"))
+                if src.get("observation_time_stop")
+                else None
+            )
 
             normalized_datatakes.append(
                 {
-                    "id": datatake_id,
+                    "id": dt_id,
                     "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
                     "start_time": to_utc_iso(start_time) if start_time else None,
                     "stop_time": to_utc_iso(stop_time) if stop_time else None,
@@ -677,7 +687,7 @@ def data_availability():
                 }
             )
 
-        # Normalize anomalies
+        # --- Normalize anomalies ---
         normalized_anomalies = []
         for a in anomalies_data:
             src = a.get("_source", {}) or {}
@@ -706,61 +716,29 @@ def data_availability():
                 }
             )
 
-        # Cleanup undefined
         normalized_datatakes = replace_undefined(normalized_datatakes)
         normalized_anomalies = replace_undefined(normalized_anomalies)
 
+        current_app.logger.info(
+            f"[DATA_AVAILABILITY] total normalized datatakes = {len(normalized_datatakes)}"
+        )
+
+        # --- Filter & sort ---
         normalized_datatakes = [
             dt for dt in normalized_datatakes if dt.get("start_time") and dt.get("id")
         ]
         normalized_datatakes.sort(key=datatake_sort_key)
-
         datatakes_cache.generate_completeness_cache(normalized_datatakes)
 
+        # --- Paginate SSR ---
         paged_datatakes = normalized_datatakes[start_idx:end_idx]
-        datatakes_for_ssr = []
+        datatakes_for_ssr = [enrich_datatake(dt) for dt in paged_datatakes]
+        total_pages = (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE
 
-        for dt in paged_datatakes:
-            dt_copy = dt.copy()
-            dt_id = dt_copy["id"]
+        current_app.logger.info(
+            f"[DATA_AVAILABILITY] page = {page} slice = {start_idx}:{end_idx}"
+        )
 
-            # Load full details from cache
-            full_details = datatakes_cache.load_datatake_details(dt_id) or {}
-            raw = full_details.get("_source", full_details)
-
-            # Build completeness_list for products (used in your modal table)
-            completeness_list = [
-                {"productType": k, "status": round(v, 2)}
-                for k, v in raw.items()
-                if k.endswith("_local_percentage") and isinstance(v, (int, float))
-            ]
-            dt_copy["completeness_list"] = completeness_list
-
-            # Ensure ACQ and PUB completeness_status have both status and percentage
-            comp = raw.get("completeness_status", {}) or {}
-
-            acq = comp.get("ACQ", {})
-            acq_status = acq.get("status") or "ACQUIRED"
-            acq_percentage = acq.get("percentage") or 100
-
-            pub = comp.get("PUB", {})
-            pub_status = pub.get("status") or "PUBLISHED"
-            pub_percentage = pub.get("percentage") or 100
-
-            dt_copy["acquisition_status"] = acq_status
-            dt_copy["publication_status"] = pub_status
-
-            # Update raw completeness_status
-            raw["completeness_status"] = {
-                "ACQ": {"status": acq_status, "percentage": acq_percentage},
-                "PUB": {"status": pub_status, "percentage": pub_percentage},
-            }
-
-            dt_copy["raw"] = raw
-
-            datatakes_for_ssr.append(dt_copy)
-
-        # Final payload
         payload = {
             "anomalies": normalized_anomalies,
             "datatakes": datatakes_for_ssr,
@@ -772,6 +750,16 @@ def data_availability():
             "total_pages": (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE,
         }
 
+        # --- Return JSON for AJAX ---
+        if is_ajax:
+            safe_payload = {
+                "datatakes": make_json_safe(datatakes_for_ssr),
+                "current_page": page,
+                "total_pages": total_pages,
+            }
+            return jsonify(safe_payload), 200
+
+        # --- Otherwise render template ---
         return render_template(
             "home/data-availability.html",
             **payload,
@@ -779,13 +767,32 @@ def data_availability():
             segment=segment,
             **metadata,
             datatakes_for_ssr=replace_undefined(datatakes_for_ssr),
+            BATCH_SIZE=BATCH_SIZE,
         )
 
     except Exception as e:
         current_app.logger.error(
             f"[DATA-AVAILABILITY] Error rendering template: {e}", exc_info=True
         )
+        if request.args.get("ajax") == "1":
+            return jsonify({"error": "internal_server_error"}), 500
         abort(500)
+
+
+@blueprint.route("/data-availability/enrich", methods=["POST"])
+def enrich_datatake_modal():
+    datatake_id = request.form.get("datatake_id")
+    if not datatake_id:
+        return jsonify({"error": "missing_id"}), 400
+
+    dt = datatakes_cache.load_datatake_details(datatake_id)
+    if not dt:
+        return jsonify({"error": "not_found"}), 404
+
+    enriched = enrich_datatake(dt)
+
+    safe_enriched = make_json_safe(enriched)
+    return jsonify(safe_enriched), 200
 
 
 @blueprint.route("/<template>")

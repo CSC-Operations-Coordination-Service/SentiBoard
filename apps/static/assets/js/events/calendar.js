@@ -936,13 +936,13 @@ class CalendarWidget {
 
 
             //const satellites = this.getSatellitesString(event.environment || '');
-            console.log("[EVENT DEBUG]", event);
+            //console.log("[EVENT DEBUG]", event);
 
             const dtList = Array.isArray(event.datatakes_completeness)
                 ? event.datatakes_completeness
                 : [];
 
-            console.log("[DATATAKES DEBUG]", event.id, dtList);
+            //console.log("[DATATAKES DEBUG]", event.id, dtList);
 
             /* const validDtList = dtList.filter(dt =>
                  dt.id.startsWith("S1") || dt.id.startsWith("S2") || dt.id.startsWith("S3") || dt.id.startsWith("S5")

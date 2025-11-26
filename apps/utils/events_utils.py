@@ -6,6 +6,7 @@ from apps.utils import date_utils
 from dateutil.relativedelta import relativedelta
 import logging
 from apps.models.anomalies import Anomalies
+import apps.cache.modules.datatakes as datatakes_cache
 from jinja2 import Undefined
 from flask import current_app
 from apps import flask_cache
@@ -17,9 +18,6 @@ logger = logging.getLogger(__name__)
 VALID_PREFIXES = ("S1", "S2", "S3", "S5P")
 THRESHOLD_RECOVERED = 90.0
 THRESHOLD_PARTIAL = 10.0
-
-
-# --- Date helpers ---
 
 
 def to_utc(dt):
@@ -66,14 +64,23 @@ def safe_json_value(v, default="N/A"):
         return str(v)
 
 
-def replace_undefined(o):
-    if isinstance(o, dict):
-        return {k: replace_undefined(v) for k, v in o.items()}
-    elif isinstance(o, list):
-        return [replace_undefined(v) for v in o]
-    elif isinstance(o, Undefined):
+def replace_undefined(value):
+    if isinstance(value, Undefined):
         return None
-    return o
+
+    if isinstance(value, dict):
+        return {key: replace_undefined(val) for key, val in value.items()}
+
+    if isinstance(value, list):
+        return [replace_undefined(item) for item in value]
+
+    if isinstance(value, tuple):
+        return tuple(replace_undefined(item) for item in value)
+
+    if isinstance(value, set):
+        return {replace_undefined(item) for item in value}
+
+    return value
 
 
 def datatake_sort_key(dt):
@@ -503,3 +510,56 @@ def generate_completeness_cache():
 
     # Store JSON in Redis (or any persistent cache)
     redis_client.set("datatakes_completeness_summary", json.dumps(summary))
+
+
+def enrich_datatake(dt):
+    dt_copy = dt.copy()
+    dt_id = dt_copy.get("id") or dt_copy.get("datatake_id")
+    if not dt_id:
+        return dt_copy
+
+    full_details = datatakes_cache.load_datatake_details(dt_id) or {}
+    raw = full_details.get("_source", full_details)
+
+    completeness_list = [
+        {"productType": k, "status": round(v, 2)}
+        for k, v in raw.items()
+        if k.endswith("_local_percentage") and isinstance(v, (int, float))
+    ]
+    dt_copy["completeness_list"] = completeness_list
+
+    comp = raw.get("completeness_status", {}) or {}
+    acq = comp.get("ACQ", {})
+    pub = comp.get("PUB", {})
+    dt_copy["acquisition_status"] = acq.get("status") or "ACQUIRED"
+    dt_copy["publication_status"] = pub.get("status") or "PUBLISHED"
+
+    raw["completeness_status"] = {
+        "ACQ": {
+            "status": dt_copy["acquisition_status"],
+            "percentage": acq.get("percentage") or 100,
+        },
+        "PUB": {
+            "status": dt_copy["publication_status"],
+            "percentage": pub.get("percentage") or 100,
+        },
+    }
+    dt_copy["raw"] = raw
+    return dt_copy
+
+
+def make_json_safe(o):
+    if isinstance(o, dict):
+        return {k: make_json_safe(v) for k, v in o.items()}
+    elif isinstance(o, list):
+        return [make_json_safe(x) for x in o]
+    elif isinstance(o, datetime):
+        return o.isoformat()
+    elif isinstance(o, Undefined):
+        return None
+    else:
+        try:
+            json.dumps(o)
+            return o
+        except:
+            return str(o)

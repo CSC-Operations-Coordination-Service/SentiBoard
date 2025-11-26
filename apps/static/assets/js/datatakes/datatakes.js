@@ -19,14 +19,14 @@ class Datatakes {
     constructor(dataInput = {}) {
         // Always keep SSR block + global full list
         this.serverData = dataInput || {};
-        this.fullDataTakes = Array.isArray(window.initialDatatakes) && window.initialDatatakes.length
-            ? window.initialDatatakes
-            : Array.isArray(this.serverData.datatakes)
-                ? this.serverData.datatakes
-                : [];
+        this.fullDataTakes = Array.isArray(this.serverData.datatakes)
+            ? this.serverData.datatakes
+            : [];
 
         this.filteredDataTakes = [...this.fullDataTakes];
-        this.mockDataTakes = [...this.fullDataTakes];
+        this.mockDataTakes = Array.isArray(this.serverData.datatakes_for_ssr)
+            ? this.serverData.datatakes_for_ssr
+            : [];
 
         this.anomalies = Array.isArray(dataInput.anomalies)
             ? dataInput.anomalies
@@ -37,23 +37,10 @@ class Datatakes {
         this.selectedPeriod = dataInput.selected_period || "week";
         this.generatedAt = this.serverData.generated_at || null;
 
-        this.itemsPerPage = 5;
+        this.itemsPerPage = 10;
         this.infoItemsPerPage = 10;
         this.displayedCount = 0;
 
-        console.groupCollapsed("%c[DATATAKES] Initialization", "color:#8bc34a;font-weight:bold");
-        console.log("Loaded via SSR:", {
-            datatakesCount: this.mockDataTakes.length,
-            anomaliesCount: this.anomalies.length,
-            quarterAuthorized: this.quarterAuthorized,
-            selectedPeriod: this.selectedPeriod,
-            generatedAt: this.generatedAt
-        });
-        console.groupEnd();
-        console.log("[datatakes init]", {
-            serverdata: this.serverData,
-            fullDataTakes: this.fullDataTakes.length
-        })
     }
 
 
@@ -64,19 +51,20 @@ class Datatakes {
 
         const dataList = document.getElementById("dataList");
         const loadMoreBtn = document.getElementById("loadMoreBtn");
+
         if (!dataList) return console.error("[DATATAKES] Missing #dataList element");
 
-        // Determine how many SSR items are already visible
-        this.displayedCount = dataList.querySelectorAll("li").length || 0;
-        // Attach event listeners to SSR items
+        /*if (!Array.isArray(this.filteredDataTakes)) {
+            this.filteredDataTakes = [...this.mockDataTakes];
+        }*/
+
+
+        this.displayedCount = 0;
+
+        this.populateDataList(false);
+
         this.attachItemListeners(dataList.querySelectorAll("li"));
 
-        // Render the rest of the page if SSR < first page
-        if (this.displayedCount < this.itemsPerPage) {
-            this.populateDataList(true);
-        }
-
-        // Bind Load More once
         if (loadMoreBtn && !loadMoreBtn.dataset.bound) {
             loadMoreBtn.dataset.bound = "true";
             loadMoreBtn.addEventListener("click", () => this.populateDataList(true));
@@ -85,6 +73,7 @@ class Datatakes {
         this.renderTablePage?.(1);
         this.initCharts?.();
         this.attachEventListeners();
+
 
         console.log("[DATATAKES] Initialization complete");
     }
@@ -234,20 +223,23 @@ class Datatakes {
             ? this.filteredDataTakes
             : this.mockDataTakes;
 
-        if (data.length === 0) {
-            const li = document.createElement("li");
-            li.textContent = " ";
-            li.style.color = "#aaa";
-            dataList.appendChild(li);
-            if (loadMoreBtn) loadMoreBtn.style.display = "none";
-            return;
-        }
-
-        this.itemsPerPage = 5;
+        //this.displayedCount = 0;
 
         if (!append) {
             dataList.innerHTML = "";
             this.displayedCount = 0;
+        }
+
+        if (data.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = " ";
+            li.style.color = "#aaa";
+            //dataList.appendChild(li);
+            if (loadMoreBtn) {
+                loadMoreBtn.disabled = true;
+                loadMoreBtn.style.display = "block"
+            }
+            return;
         }
 
         const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
@@ -289,15 +281,15 @@ class Datatakes {
             containerDiv.addEventListener("click", () => {
                 this.handleItemClick(take, containerDiv, a);
             });
-
-
         });
 
         dataList.appendChild(fragment);
+
         this.displayedCount += nextItems.length;
 
         if (loadMoreBtn) {
-            loadMoreBtn.style.display = this.displayedCount >= data.length ? "none" : "block";
+            loadMoreBtn.style.display = "block";
+            loadMoreBtn.disabled = this.displayedCount >= data.length;
         }
 
         if (!append && nextItems.length > 0) {
@@ -352,7 +344,7 @@ class Datatakes {
         })();
 
         if (typeof this.renderTableWithoutPagination === "function") {
-            this.renderTableWithoutPagination(this.mockDataTakes, take.id);
+            this.renderTableWithoutPagination(this.fullDataTakes, take.id);
         } else {
             console.warn("[DATATAKES] renderTableWithoutPagination function not available");
         }
@@ -462,40 +454,111 @@ class Datatakes {
     }
 
     async renderInfoTable(dataInput, page = 1) {
+
+        console.log("==== renderInfoTable START ====");
+        console.log("Requested datatake ID:", dataInput);
+
         const tableBody = document.getElementById("modalInfoTableBody");
         const paginationControls = document.getElementById("modalPaginationControls");
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
         // Find datatake from SSR list
-        const datatake = this.mockDataTakes.find(dt => dt.id === dataInput);
+        let datatake = this.fullDataTakes.find(dt => dt.id === dataInput);
+
+        console.log("Found datatake:", datatake);
+
         if (!datatake) {
+            console.error("Datatake NOT FOUND in fullDataTakes");
             tableBody.innerHTML = `<tr><td colspan="2">Datatake not found</td></tr>`;
             return;
         }
 
+        // If completeness_list missing → call enrich endpoint
+        const needsEnrichment =
+            !datatake.completeness_list ||
+            datatake.completeness_list.length === 0;
 
-        let dataArray = datatake.completeness_list;
+        console.log("Needs enrichment?", needsEnrichment);
 
-        if (!dataArray) {
-            const completeness = datatake.completeness || {};
-            dataArray = Object.keys(completeness)
-                .filter(k => k.endsWith("_local_percentage"))
-                .map(k => ({
-                    productType: k.replace("_local_percentage", ""),
-                    status: completeness[k],
-                }));
+        if (needsEnrichment && datatake.id) {
+            try {
+                const formData = new FormData();
+                formData.append("datatake_id", dataInput);
+
+                console.log("[AJAX] Calling /data-availability/enrich for", dataInput);
+
+                const response = await fetch("/data-availability/enrich", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const enriched = await response.json();
+                    console.log("[AJAX] Enriched response:", enriched);
+
+                    // Merge enriched data
+                    Object.assign(datatake, enriched);
+
+                    // Store enriched version for next time
+                    const idx = this.fullDataTakes.findIndex(dt => dt.id === dataInput);
+                    if (idx > -1) this.fullDataTakes[idx] = datatake;
+
+                    console.log("[AJAX] Datatake after merge:", datatake);
+
+                } else {
+                    console.error("[AJAX] Enrichment failed:", response.status);
+                }
+
+            } catch (err) {
+                console.error("[AJAX] ERROR enriching datatake:", err);
+            }
         }
 
-        console.log("datatake id input:", dataInput);
-        console.log("full datatake object:", datatake);
-        console.log("completeness list:", datatake?.completeness_list);
+        //  BUILD dataArray PROPERLY
+        let dataArray = null;
 
-        const key =
-            datatake.details?.key ||
-            datatake.id ||
-            "-";
+        if (datatake.completeness_list && datatake.completeness_list.length > 0) {
+            dataArray = datatake.completeness_list;
 
+        } else {
+
+            // 2. Collect *_local_percentage keys from ROOT + RAW
+            const allKeys = [
+                ...Object.keys(datatake),
+                ...Object.keys(datatake.raw || {})
+            ];
+
+            const pctKeys = allKeys.filter(k => k.endsWith("_local_percentage"));
+
+            if (pctKeys.length > 0) {
+                console.log("Building table from percentage keys:", pctKeys);
+
+                dataArray = pctKeys.map(k => ({
+                    productType: k,
+                    status: datatake[k] ?? datatake.raw?.[k] ?? "-"
+                }));
+            }
+        }
+
+        // 3. Last fallback: old completeness object
+        if (!dataArray || dataArray.length === 0) {
+            const completeness = datatake.completeness || {};
+            const compKeys = Object.keys(completeness).filter(k =>
+                k.endsWith("_local_percentage")
+            );
+
+            dataArray = compKeys.map(k => ({
+                productType: k,
+                status: completeness[k]
+            }));
+        }
+
+        console.log("FINAL dataArray used to render table:", dataArray);
+
+
+        // Header
+        const key = datatake.details?.key || datatake.id || "-";
         const timeliness =
             datatake.details?.timeliness ||
             datatake.raw?.timeliness ||
@@ -503,25 +566,23 @@ class Datatakes {
             "-";
 
         $('#datatake-details').empty().append(`
-            <div class="form-group">
-                <label>Datatake ID: ${key}</label>
-                <label style="margin-left: 20px;">Timeliness: ${timeliness}</label>
-            </div>
-        `);
+        <div class="form-group">
+            <label>Datatake ID: ${key}</label>
+            <label style="margin-left: 20px;">Timeliness: ${timeliness}</label>
+        </div>
+    `);
 
-
-        // Proceed with rendering the table
+        // Render table rows
         if (!dataArray || dataArray.length === 0) {
+            console.warn("No completeness data available.");
             const row = document.createElement("tr");
-            const cell = document.createElement("td");
-            cell.colSpan = 2;
-            cell.textContent = "No data available.";
-            row.appendChild(cell);
+            row.innerHTML = `<td colspan="2">No data available.</td>`;
             tableBody.appendChild(row);
             return;
         }
 
         this.currentDataArray = dataArray;
+
         const totalItems = dataArray.length;
         const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
         this.currentPage = page;
@@ -530,43 +591,46 @@ class Datatakes {
         const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
         const pageItems = dataArray.slice(startIndex, endIndex);
 
+        console.log(`Rendering items ${startIndex} → ${endIndex}`, pageItems);
+
         pageItems.forEach(item => {
             const row = document.createElement("tr");
-
-            const productTypeCell = document.createElement("td");
-            productTypeCell.textContent = item.productType || "-";
-
-            const statusCell = document.createElement("td");
-            statusCell.textContent = item.status ?? "-";
-
-            row.appendChild(productTypeCell);
-            row.appendChild(statusCell);
+            row.innerHTML = `
+            <td>${item.productType || "-"}</td>
+            <td>${item.status ?? "-"}</td>
+        `;
             tableBody.appendChild(row);
         });
 
+        // Pagination
         if (totalPages > 1) {
-            const createButton = (text, pageNum, disabled = false, isActive = false) => {
+            const makeButton = (text, pageNum, disabled = false, active = false) => {
                 const btn = document.createElement("button");
                 btn.textContent = text;
                 btn.disabled = disabled;
                 btn.classList.add("pagination-btn");
-                if (isActive) btn.classList.add("active");
+                if (active) btn.classList.add("active");
                 btn.addEventListener("click", () => this.renderInfoTable(dataInput, pageNum));
                 return btn;
             };
 
-            paginationControls.appendChild(createButton("« Prev", this.currentPage - 1, this.currentPage === 1));
+            paginationControls.appendChild(makeButton("« Prev", this.currentPage - 1, this.currentPage === 1));
+
             for (let i = 1; i <= totalPages; i++) {
-                paginationControls.appendChild(createButton(i, i, false, i === this.currentPage));
+                paginationControls.appendChild(makeButton(i, i, false, i === this.currentPage));
             }
-            paginationControls.appendChild(createButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
+
+            paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
         }
+
+        console.log("==== renderInfoTable END ====");
     }
+
 
     initCharts() {
         // Use first datatake for initial charts
-        if (!this.mockDataTakes.length) return;
-        const first = this.mockDataTakes[0];
+        if (!this.fullDataTakes.length) return;
+        const first = this.fullDataTakes[0];
         this.updateCharts("publication", first);
         this.updateCharts("acquisition", first);
     }
@@ -603,7 +667,7 @@ class Datatakes {
 
         if (!normalizedLinkKey) return;
 
-        const relevantData = this.mockDataTakes.filter(dt =>
+        const relevantData = this.fullDataTakes.filter(dt =>
             (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
         );
 
@@ -789,8 +853,8 @@ class Datatakes {
 
         // Read and store from/to date values
 
-        this.fromDate = document.getElementById("from-date").value;;
-        this.toDate = document.getElementById("to-date").value;;
+        this.fromDate = document.getElementById("from-date").value;
+        this.toDate = document.getElementById("to-date").value;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
@@ -1061,12 +1125,13 @@ class Datatakes {
     }
 
     updateTitleAndDate(selectedKey) {
-        if (!selectedKey || !this.mockDataTakes?.length) {
+        if (!selectedKey || !this.fullDataTakes?.length) {
             return;
         }
 
+
         // Find datatake
-        const dataTake = this.mockDataTakes.find(item => item.id === selectedKey);
+        const dataTake = this.fullDataTakes.find(item => item.id === selectedKey);
 
         if (!dataTake) {
             console.warn(`Datatake not found for key: ${selectedKey}`);
@@ -1269,7 +1334,7 @@ class Datatakes {
             } catch (err) {
                 console.error("Error rendering charts:", err);
             }
-            this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
+            this.renderTableWithoutPagination(this.fullDataTakes, selectedKey);
             this.hideInfoTable();
         });
     }

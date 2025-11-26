@@ -157,92 +157,72 @@
 									<!-- Left Panel -->
 								<div class="col-12 col-md-3 left-panel d-flex flex-column mb-3 mb-md-0">
 									<div class="filter-panel p-3 flex-grow-1">
-											<!-- Filter by Mission -->
-											<div class="form-group d-flex flex-column gap-2">
-												<select id="mission-select" class="form-control" onchange="datatakes.filterSidebarItems()">
-															<option value="">All Missions</option>
-															<option value="S1">Sentinel 1</option>
-															<option value="S2">Sentinel 2</option>
-															<option value="S3">Sentinel 3</option>
-															<option value="S5">Sentinel 5P</option>
-													</select>
-													<select id="satellite-select" class="form-control" onchange="datatakes.filterSidebarItems()">
-														<option value="">All Satellites</option>
-														<option value="S1a">S1A</option>
-														<option value="S1c">S1C</option>
-														<option value="S2a">S2A</option>
-														<option value="S2b">S2B</option>
-														<option value="S2c">S2C</option>
-														<option value="S3a">S3A</option>
-														<option value="S3b">S3B</option>
-													</select>
-			
-													<!-- Inline Date Range -->
-													<div class="d-flex flex-column gap-2">
-														<div class="d-flex align-items-center gap-2">
-															<label for="from-date"  class="inline-label" style="min-width: 40px;">From</label>
-															<input type="datetime-local" id="from-date" class="form-control" onchange="datatakes.filterSidebarItems()">
-														</div>
-													
-														<div class="d-flex align-items-center gap-2">
-															<label for="to-date"  class="inline-label" style="min-width: 40px;">To</label>
-															<input type="datetime-local" id="to-date" class="form-control" onchange="datatakes.filterSidebarItems()">
-														</div>
+										<!-- Filter by Mission -->
+										<form method="GET" class="d-flex flex-column gap-2">
+											<select id="mission-select" class="form-control" onchange="datatakes.filterSidebarItems()">
+												<option value="">All Missions</option>
+												<option value="S1"  {{ 'selected' if mission=='S1' }}>Sentinel 1</option>
+												<option value="S2"  {{ 'selected' if mission=='S2' }}>Sentinel 2</option>
+												<option value="S3"  {{ 'selected' if mission=='S3' }}>Sentinel 3</option>
+												<option value="S5"  {{ 'selected' if mission=='S5' }}>Sentinel 5P</option>
+											</select>
+											<select id="satellite-select" class="form-control" onchange="datatakes.filterSidebarItems()">
+												<option value="">All Satellites</option>
+												<option value="S1A" {{ 'selected' if satellite=='S1A' }}>S1A</option>
+												<option value="S1C" {{ 'selected' if satellite=='S1C' }}>S1C</option>
+												<option value="S2A" {{ 'selected' if satellite=='S2A' }}>S2A</option>
+												<option value="S2B" {{ 'selected' if satellite=='S2B' }}>S2B</option>
+												<option value="S2C" {{ 'selected' if satellite=='S2C' }}>S2C</option>
+												<option value="S3A" {{ 'selected' if satellite=='S3A' }}>S3A</option>
+												<option value="S3B" {{ 'selected' if satellite=='S3B' }}>S3B</option>
+											</select>
+		
+											<!-- Inline Date Range -->
+											<!-- Dates -->
+											<div>
+												<label>From</label>
+												<input type="datetime-local" name="fromdate" class="form-control"
+													value="{{ from_date }}">
+											</div>
+
+											<div>
+												<label>To</label>
+												<input type="datetime-local" name="todate" class="form-control"
+													value="{{ to_date }}">
+											</div>
+											<button type="submit" class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
+											<input
+												type="text"
+												id="searchInput"
+												class="form-control mb-3"
+												placeholder="Search by id..."
+												oninput="datatakes.filterSidebarItems()"
+											>
+										</form>
+										<!-- Sidebar for datatakes -->												
+										<ul class="list-unstyled" id="dataList">
+										{% if normalized_datatakes %}
+											{% set firstPageDatatakes = normalized_datatakes[:BATCH_SIZE] %}
+											{% for dt in firstPageDatatakes %}
+												{% set status = dt.acquisition_status|default("unknown")|lower %}
+												<li>
+													<div class="container-border {{ loop.first and 'selected' or '' }}"
+														style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;cursor:pointer;"
+														data-id="{{ dt.id }}">
+														<a href="#" class="filter-link {{ loop.first and 'selected' or '' }}" onclick="event.preventDefault();">
+															{{ dt.id }}
+														</a>
+														<div class="status-circle-dt-{{ status }}"></div>
 													</div>
-													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
-											</div>
-											<!-- Sidebar for datatakes -->
-											 <form id="detailsForm" method="POST" style="display:none;">
-												<input type="hidden" name="datatake_id" id="datatake_id">
-											</form>
-											<div class="form-group">
-												<input
-													type="text"
-													id="searchInput"
-													class="form-control mb-3"
-													placeholder="Search by id..."
-													oninput="datatakes.filterSidebarItems()"
-												>
-												<ul class="list-unstyled" id="dataList">
-													{% if datatakes %}
-														{% for dt in datatakes %}
-														<li>
-															<div class="container-border {% if loop.first %}selected{% endif %}"
-																style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;cursor:pointer;">
-															<a
-																href="#"
-																class="filter-link {% if loop.first %}selected{% endif %}"
-																data-filter-type="groundStation"
-																data-id="{{ dt.id }}"
-																data-filter-value="{{ dt.platform }}"
-																onclick="event.preventDefault();"
-															>
-																{{ dt.id }}
-															</a>
-															{% set status = dt.acquisition_status|default('unknown')|lower %}
-															<div class="status-circle-dt-{{ status }}"></div>
-															</div>
-														</li>
-														{% endfor %}
-													{% else %}
-														<li><em>No datatakes found</em></li>
-													{% endif %}
-												</ul>
-												<form id="loadMoreForm" method="GET" style="display:none;">
-													<input type="hidden" name="page" id="nextPage" value="{{ current_page + 1 }}">
-													<input type="hidden" name="period" value="{{ selected_period }}">
-												</form>
-												<button class="loadMore" id="loadMoreBtn" {% if current_page >= total_pages %}style="display:none"{% endif %}>
-													Load More
-												</button>
-												<script>
-													document.getElementById("loadMoreBtn").addEventListener("click", () => {
-														const nextPageInput = document.getElementById("nextPage");
-														nextPageInput.value = parseInt(nextPageInput.value);
-														document.getElementById("loadMoreForm").submit();
-													});
-												</script>
-											</div>
+												</li>
+											{% endfor %}
+										{% else %}
+											<li><em>No datatakes found</em></li>
+										{% endif %}
+										</ul>
+										<button class="loadMore" id="loadMoreBtn">
+											Load More
+										</button>
 									</div>
 								</div>
 								<!-- Main Content -->
@@ -510,14 +490,14 @@
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
 	<script id="server-data" type="application/json">
 		{{ {
-			"anomalies": anomalies,
-			"datatakes": datatakes,
-			"quarter_authorized": quarter_authorized,
-			"selected_period": selected_period,
-			"generated_at": generated_at
-		} | tojson }}
-	</script>
-	
+				"anomalies": anomalies | default([]),
+				"datatakes": normalized_datatakes | default([]),
+				"datatakes_for_ssr": datatakes_for_ssr | default([]),
+				"quarter_authorized": quarter_authorized | default(false),
+				"selected_period": selected_period | default(""),
+				"generated_at": generated_at | default("")
+			} | tojson }}
+	</script>	
 	<script>
 		document.addEventListener("DOMContentLoaded", () => {
 			const el = document.getElementById("server-data");
