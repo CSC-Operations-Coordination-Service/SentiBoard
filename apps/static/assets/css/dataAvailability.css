@@ -920,17 +920,18 @@ th:nth-of-type(6) .tooltip-text::after {
 #spinner {
   display: none;
   position: absolute;
-  top: 0;
+  /*top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: 0;*/
+  inset: 0;
   background: rgba(255, 255, 255, 0.7);
   z-index: 10;
   justify-content: center;
   align-items: center;
 }
 
-.spinner-overlay {
+/*.spinner-overlay {
   display: none;
   position: absolute;
   top: 0;
@@ -945,7 +946,7 @@ th:nth-of-type(6) .tooltip-text::after {
 
 .spinner-overlay.active {
   display: flex;
-}
+}*/
 
 #spinner.active {
   display: flex;
@@ -959,7 +960,7 @@ th:nth-of-type(6) .tooltip-text::after {
   background: #eee;
   overflow: hidden;
   position: relative;
-  margin: auto;
+  /*margin: auto;*/
   border-radius: 4px;
 }
 
