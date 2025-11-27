@@ -531,6 +531,10 @@
 				console.error("[DATA-AVAILABILITY] Error initializing Datatakes:", err);
 			}
 		});
+		function openDataTake(id){
+			document.getElementById("datatake_id").value = id;
+			document.getElementById("detailsForm").submit();
+		}
 	</script>
 	<script>
 		function openDatatake(id) {

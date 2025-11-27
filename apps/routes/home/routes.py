@@ -634,10 +634,7 @@ def data_availability():
             "prev-quarter": "previous-quarter",
             "default": "last-7d",
         }
-        datatakes_key = datatakes_cache_key_map.get(
-            selected_period, datatakes_cache_key_map["default"]
-        )
-
+        datatakes_key = datatakes_cache_key_map.get(selected_period, "last-7d")
         anomalies_cache_uri = events_cache.anomalies_cache_key.format(
             (
                 "previous"
@@ -731,8 +728,14 @@ def data_availability():
         datatakes_cache.generate_completeness_cache(normalized_datatakes)
 
         # --- Paginate SSR ---
-        paged_datatakes = normalized_datatakes[start_idx:end_idx]
-        datatakes_for_ssr = [enrich_datatake(dt) for dt in paged_datatakes]
+        search_query = request.args.get("search", "").strip()
+        has_search = bool(search_query)
+        if has_search:
+            datatakes_for_ssr = normalized_datatakes
+        else:
+            paged_datatakes = normalized_datatakes[start_idx:end_idx]
+            datatakes_for_ssr = [enrich_datatake(dt) for dt in paged_datatakes]
+
         total_pages = (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE
 
         current_app.logger.info(
@@ -740,7 +743,7 @@ def data_availability():
         )
 
         payload = {
-            "anomalies": normalized_anomalies,
+            "anomalies": replace_undefined(normalized_anomalies),
             "datatakes": datatakes_for_ssr,
             "quarter_authorized": quarter_authorized,
             "selected_period": selected_period,
@@ -748,6 +751,8 @@ def data_availability():
             "datatake_details": datatake_details,
             "current_page": page,
             "total_pages": (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE,
+            "has_search": has_search,
+            "search_query": search_query,
         }
 
         # --- Return JSON for AJAX ---

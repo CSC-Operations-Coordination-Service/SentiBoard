@@ -55,12 +55,29 @@ class Datatakes {
 
         if (!dataList) return console.error("[DATATAKES] Missing #dataList element");
 
-        /*if (!Array.isArray(this.filteredDataTakes)) {
-            this.filteredDataTakes = [...this.mockDataTakes];
-        }*/
-
-
         this.displayedCount = 0;
+
+        const hasSearchFilter = this.filterDatatakesOnPageLoad();
+
+        if (hasSearchFilter) {
+            this.populateDataList(false);
+
+            if (Array.isArray(this.filteredDataTakes) && this.filteredDataTakes.length > 0) {
+                const first = this.filteredDataTakes[0];
+
+                this.handleInitialSelection(first);
+
+                // Render full table (no pagination needed for filtered results)
+                this.renderTableWithoutPagination(
+                    this.filteredDataTakes,
+                    first.id
+                );
+            }
+
+            // No pagination, no listeners, no charts needed in search mode  
+            console.log("[DATATAKES] Initialization complete (search mode)");
+            return;
+        }
 
         this.populateDataList(false);
 
@@ -176,16 +193,13 @@ class Datatakes {
         const urlParams = new URLSearchParams(queryString);
         const searchFilter = urlParams.get('search');
 
-        if (searchFilter) {
-            this.filteredDataTakes = this.mockDataTakes.filter(take =>
-                take.id.toLowerCase().includes(searchFilter.toLowerCase())
-            );
+        if (!searchFilter) return false;
 
-            return true;
-        } else {
-            this.filteredDataTakes = null;
-            return false;
-        }
+        this.filteredDataTakes = this.fullDataTakes.filter(take =>
+            take.id.toLowerCase().includes(searchFilter.toLowerCase())
+        );
+
+        return true;
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
