@@ -52,6 +52,7 @@ class Datatakes {
         try {
             const urlParams = new URLSearchParams(window.location.search);
             const searchQuery = urlParams.get("search");
+            this.setupPeriodSelector();
 
             if (searchQuery) {
                 this.selectedPeriod = "prev-quarter";
@@ -63,7 +64,7 @@ class Datatakes {
                 this.setDateRangeLimits(this.selectedPeriod);
             }
 
-            //this.setupPeriodSelector?.();
+            console.log("[LIMITS] Applying date range limits for period:", this.selectedPeriod);
 
             const dataList = document.getElementById("dataList");
             const loadMoreBtn = document.getElementById("loadMoreBtn");
@@ -504,8 +505,11 @@ class Datatakes {
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
+        const cleanDataInput = dataInput.split(" ")[0]; // take only the first part before space
+        console.log("Cleaned datatake ID for search:", cleanDataInput);
+
         // Find datatake from SSR list
-        let datatake = this.fullDataTakes.find(dt => dt.id === dataInput);
+        let datatake = this.fullDataTakes.find(dt => dt.id === cleanDataInput);
 
         console.log("Found datatake:", datatake);
 
@@ -524,9 +528,9 @@ class Datatakes {
         if (needsEnrichment && datatake.id) {
             try {
                 const formData = new FormData();
-                formData.append("datatake_id", dataInput);
+                formData.append("datatake_id", cleanDataInput);
 
-                console.log("[AJAX] Calling /data-availability/enrich for", dataInput);
+                console.log("[AJAX] Calling /data-availability/enrich for", cleanDataInput);
 
                 const response = await fetch("/data-availability/enrich", {
                     method: "POST",
@@ -539,7 +543,7 @@ class Datatakes {
 
                     Object.assign(datatake, enriched);
 
-                    const idx = this.fullDataTakes.findIndex(dt => dt.id === dataInput);
+                    const idx = this.fullDataTakes.findIndex(dt => dt.id === cleanDataInput);
                     if (idx > -1) this.fullDataTakes[idx] = datatake;
 
                     console.log("[AJAX] Datatake after merge:", datatake);
@@ -648,7 +652,7 @@ class Datatakes {
                 btn.disabled = disabled;
                 btn.classList.add("pagination-btn");
                 if (active) btn.classList.add("active");
-                btn.addEventListener("click", () => this.renderInfoTable(dataInput, pageNum));
+                btn.addEventListener("click", () => this.renderInfoTable(cleanDataInput, pageNum));
                 return btn;
             };
 
@@ -882,35 +886,34 @@ class Datatakes {
         $('#completenessTableModal').modal('hide');
     }
 
+    toUtcStringNoShift(localDateTime) {
+        return localDateTime + ":00Z";
+    }
+
     filterSidebarItems() {
         const selectedMission = document.getElementById("mission-select").value.toUpperCase();
         const selectedSatellite = document.getElementById("satellite-select").value.toUpperCase();
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
 
         // Read and store from/to date values
+        const fromInput = document.getElementById("from-date")?.value;
+        const toInput = document.getElementById("to-date")?.value;
 
-        this.fromDate = document.getElementById("from-date")?.value || null;
-        this.toDate = document.getElementById("to-date")?.value || null;
+        this.fromDate = fromInput ? new Date(fromInput) : null;
+        this.toDate = toInput ? new Date(toInput) : null;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
-
 
         try {
             this.filteredDataTakes = this.fullDataTakes.filter(take => {
                 const id = (take.id || "").toUpperCase();
                 const satellite = (take.satellite || take.raw?.satellite || take.raw?.satellite_unit || "").toUpperCase();
 
+                let acquisitionDateStr = take.raw?.observation_time_start || take.start_time || take.start;
+                if (!acquisitionDateStr) return false;
 
-                let acquisitionDate = null;
-
-                if (take.raw?.observation_time_start) {
-                    acquisitionDate = take.raw.observation_time_start;
-                } else if (take.start_time) {
-                    acquisitionDate = take.start_time;
-                } else if (take.start) {
-                    acquisitionDate = take.start;
-                }
-
+                const acquisitionDate = new Date(acquisitionDateStr);
+                if (isNaN(acquisitionDate)) return false;
 
                 const matchesMission = !selectedMission || id.startsWith(selectedMission);
                 const matchesSatellite = !selectedSatellite || satellite.startsWith(selectedSatellite);
@@ -936,9 +939,7 @@ class Datatakes {
         }
 
         this.renderSidebarList();
-
         this.displayedCount = 0;
-
         this.populateDataList(false);
         const first = this.filteredDataTakes?.[0];
         if (first) {
@@ -1001,29 +1002,21 @@ class Datatakes {
         satelliteSelect.disabled = mission === "S5"; // Keep S5 disabled if needed
     }
 
-    isWithinDateRange(dateString) {
-        if (!dateString) return false;
+    isWithinDateRange(acquisitionDate) {
+        if (!acquisitionDate) return false;
 
-        const date = new Date(dateString);
-        if (isNaN(date)) return false;
+        const fromTime = this.fromDate ? this.fromDate.getTime() : null;
+        const toTime = this.toDate ? this.toDate.getTime() : null;
+        const dtTime = acquisitionDate.getTime();
 
-        const from = document.getElementById("from-date")?.value;
-        const to = document.getElementById("to-date")?.value;
+        const reasons = [];
+        if (fromTime && dtTime < fromTime) reasons.push(`start < from`);
+        if (toTime && dtTime > toTime) reasons.push(`start > to`);
 
-        if (!from && !to) return true;
-
-
-        let fromDate = from ? new Date(from) : null;
-        let toDate = to ? new Date(to) : null;
-
-        // If toDate exists → include entire minute
-        if (toDate) {
-            toDate = new Date(toDate.getTime() + 59 * 1000);
+        if (reasons.length > 0) {
+            console.log(`[DATE-FILTER] Excluding datatake ${acquisitionDate.toISOString()}:`, reasons);
+            return false;
         }
-
-        // Apply range logic
-        if (fromDate && date < fromDate) return false;
-        if (toDate && date > toDate) return false;
 
         return true;
     }
@@ -1036,9 +1029,9 @@ class Datatakes {
         const urlParams = new URLSearchParams(window.location.search);
         const hasSearch = urlParams.has('search');
 
-        // Skip setting values if search is present
-        if (hasSearch && !force) {
-            console.log("[Date Range Limits] Skipping setting date inputs due to search param.");
+        // Skip if coming from search or user already selected dates
+        if ((hasSearch && !force) || (!force && fromInput.value && toInput.value)) {
+            console.log("[Date Range Limits] Skipping due to search or user input.");
             return;
         }
 
@@ -1068,6 +1061,7 @@ class Datatakes {
             }
         }
 
+        // --- Format for input[type="datetime-local"] ---
         const formatDateTimeLocal = (d) => {
             const pad = (n) => n.toString().padStart(2, '0');
             return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -1076,15 +1070,20 @@ class Datatakes {
         const min = formatDateTimeLocal(fromDate);
         const max = formatDateTimeLocal(maxDate);
 
+        // Assign min/max to inputs
         fromInput.min = min;
         fromInput.max = max;
         toInput.min = min;
         toInput.max = max;
 
+        // If the current from/to are invalid, fix them
         if (fromInput.value && toInput.value && fromInput.value > toInput.value) {
             toInput.value = fromInput.value;
         }
-        console.log(`[Date Range Limits] Period: ${period}, Min: ${min}, Max: ${max}`);
+
+        console.log("[LIMITS] Min date (UTC):", fromDate.toISOString());
+        console.log("[LIMITS] Max date (UTC):", maxDate.toISOString());
+        console.log(`[Date Range Limits] Applied period="${period}" -- min=${min}, max=${max}`);
     }
 
 
@@ -1113,19 +1112,19 @@ class Datatakes {
             return;
         }
 
-        tableSection.style.display = "none";
         tableBody.innerHTML = "";
+        tableSection.style.display = "block";
 
         const selectedData = dataset.find(item => item.id === selectedId);
-        if (!selectedData) {
+        /*if (!selectedData) {
             console.warn(`No data found for: ${selectedId}`);
             tableBody.innerHTML = "";
-            tableSection.style.display = "none";
+            //tableSection.style.display = "none";
             return;
         }
-        //console.log("completeness_status", selectedData.raw.completeness_status);
+        //console.log("completeness_status", selectedData.raw.completeness_status);*/
 
-        let data = [selectedData];
+        let data = selectedData ? [selectedData] : [];
 
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
@@ -1139,7 +1138,7 @@ class Datatakes {
             console.warn("No data matched the search query.");
 
             tableBody.innerHTML = "";
-            tableSection.style.display = "none";
+            //tableSection.style.display = "none";
             return;
         }
 
@@ -1185,7 +1184,7 @@ class Datatakes {
 
             tableBody.appendChild(tr);
         });
-        tableSection.style.display = "block";
+        //tableSection.style.display = "block";
     }
 
     updateTitleAndDate(selectedKey) {
@@ -1265,35 +1264,38 @@ class Datatakes {
 
         dataList.innerHTML = "";
         this.mockDataTakes = this.fullDataTakes.length ? this.fullDataTakes : this.ssrDataTakes;
+        if (dataList) {
+            dataList.innerHTML = "";
+            this.populateDataList(false);
 
-        this.populateDataList(false);
-
-        document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
-        document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
-
-        this.preselectedTake = this.mockDataTakes[0];
-        this.populateDataList(false);
-
-        //const firsTake = this.mockDataTakes[0];
-        //if (firsTake) {
-        const firsContainer = dataList.querySelector(".container-border");
-        const firstA = firsContainer?.querySelector("a.filter-link");
-        if (firsContainer && firstA) {
-            this.handleItemClick(this.preselectedTake, firsContainer, firstA);
         }
-        //}
-
+        const firsTake = this.mockDataTakes[0];
+        if (firsTake && dataList) {
+            const firsContainer = dataList.querySelector(".container-border");
+            const firstA = firsContainer?.querySelector("a.filter-link");
+            if (firsContainer && firstA) {
+                this.handleItemClick(this.preselectedTake, firsContainer, firstA);
+            }
+        }
 
         if (window.history.replaceState) {
             const cleanUrl = window.location.origin + window.location.pathname;
             window.history.replaceState(null, '', cleanUrl);
         }
 
-        this.filterSidebarItems();
         this.hideInfoTable?.();
+
+        document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
+        document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
+
+        //this.preselectedTake = this.mockDataTakes[0];
+        //this.filterSidebarItems();
         console.log("[RESET] done.");
     }
 
+    applyAllFilters() {
+        this.filterSidebarItems();
+    }
     attachEventListeners() {
         const searchInput = document.getElementById("searchInput");
         const dataList = document.getElementById("dataList");
@@ -1304,21 +1306,8 @@ class Datatakes {
         const fromDate = document.getElementById("from-date");
         const toDate = document.getElementById("to-date");
 
-
-        fromDate.addEventListener("change", () => {
-            if (fromDate.value > toDate.value) {
-                toDate.value = fromDate.value;
-            }
-        });
-
-        toDate.addEventListener("change", () => {
-            if (toDate.value < fromDate.value) {
-                fromDate.value = toDate.value;
-            }
-        });
-
-        fromDate.addEventListener("change", () => fetchAndRefresh());
-        toDate.addEventListener("change", () => fetchAndRefresh());
+        fromDate.addEventListener("change", () => this.applyAllFilters());
+        toDate.addEventListener("change", () => this.applyAllFilters());
 
         this.allSatelliteOptions = Array.from(satelliteSelect.options).map(opt => opt.cloneNode(true));
 
@@ -1327,7 +1316,7 @@ class Datatakes {
             return;
         }
 
-        tableSection.style.display = "none";
+        //tableSection.style.display = "none";
 
         if (searchInput) {
             searchInput.addEventListener("input", () => {
@@ -1421,6 +1410,7 @@ class Datatakes {
         });
     }
 
+
     async initializeDefaultView() {
         const sidebarItems = document.querySelectorAll(".filter-link");
         if (!sidebarItems.length) return;
@@ -1454,51 +1444,44 @@ class Datatakes {
         this.showTableSection(firstDataTake.id);
     }
 
-    async handleInitialSelection(first) {
-        const sidebarItems = document.querySelectorAll(".filter-link");
-
-        if (!sidebarItems || sidebarItems.length === 0) {
-            if (retryCount < 5) { // retry up to 5 times
-                console.warn("Sidebar not ready, retrying setDefaultView...");
-                return;
-            }
-        }
-
-        const firstLink = sidebarItems[0];
-        const defaultKey = firstLink.textContent.trim();
-
-        if (!defaultKey) {
-            console.warn("Sidebar first link has no valid text, cannot update title/date.");
+    async handleInitialSelection(first = null, dataset = this.filteredDataTakes) {
+        if (!dataset || !dataset.length) {
+            this.hideTable();
             return;
         }
 
-        firstLink.classList.add("active");
-        if (!first) return;
-        const parentDiv = firstLink.closest(".container-border");
-        if (parentDiv) parentDiv.classList.add("selected");
+        // Determine the first datatake to select
+        const selectedTake = first || dataset[0];
 
-        const firstDataTake = this.mockDataTakes.find(dt => dt.id === defaultKey);
-        if (!firstDataTake) {
-            console.warn("first datatakes not found in mockDataTakes");
-            return;
+        // Highlight sidebar
+        document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
+        document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
+
+        const sidebarLink = document.querySelector(`.filter-link[data-id="${selectedTake.id}"]`);
+        if (sidebarLink) {
+            sidebarLink.classList.add("active");
+            const parentDiv = sidebarLink.closest(".container-border");
+            if (parentDiv) parentDiv.classList.add("selected");
         }
-        this.updateTitleAndDate(firstDataTake.id);
 
-        // Ensure the DOM elements are ready
+        // Update title and date
+        this.updateTitleAndDate(selectedTake.id);
 
+        // Render charts
         try {
             await Promise.all([
-                this.updateCharts("publication", firstDataTake.id),
-                this.updateCharts("acquisition", firstDataTake.id)
+                this.updateCharts("publication", selectedTake.id),
+                this.updateCharts("acquisition", selectedTake.id),
             ]);
         } catch (err) {
-            console.error("Error rendering charts for initial selection:", err);
+            console.error("Chart update error:", err);
         }
 
-        this.renderTableWithoutPagination([firstDataTake], firstDataTake.id);
-
-        this.showTableSection(first.id);
+        // Render table and show section
+        this.renderTableWithoutPagination(dataset, selectedTake.id);
+        this.showTableSection(selectedTake.id);
     }
+
 
     showSpinner() {
         const spinner = document.getElementById('spinner');

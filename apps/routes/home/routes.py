@@ -29,10 +29,11 @@ from apps.routes.home import blueprint
 from functools import wraps
 import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
-from datetime import datetime, date, timezone
-from dateutil import parser as date_parser
+from datetime import datetime, date, timezone, timedelta
+from dateutil import parser
 from calendar import monthrange
 from apps import flask_cache
+from collections import Counter
 import json
 import traceback
 import logging
@@ -589,8 +590,22 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
+        # This will populate 'quarter' and sub-period caches: 24h, 7d, 30d
+        datatakes_cache.load_datatakes_cache_last_quarter()
+        current_app.logger.info("[DATA-AVAILABILITY] Last 3 months cache loaded")
+
         # Detect AJAX
         is_ajax = request.args.get("ajax") == "1"
+
+        search_query = request.args.get("search", "").strip()
+        has_search = bool(search_query)
+
+        if has_search:
+            search_query_clean = search_query.split(" ")[0].split("(")[0].strip()
+        else:
+            search_query_clean = ""
+
+        selected_period = session.get("selected_period")
 
         # --- Selected period ---
         if "period" in request.args:
@@ -598,17 +613,33 @@ def data_availability():
             if not is_ajax:
                 # Only redirect for normal page load
                 return redirect(url_for("home_blueprint.data_availability"))
-        selected_period = session.get("selected_period", "week")
 
-        # --- Pagination ---
-        try:
-            page = int(request.args.get("page", 1))
-            if page < 1:
-                page = 1
-        except Exception:
-            page = 1
-        start_idx = (page - 1) * BATCH_SIZE
-        end_idx = start_idx + BATCH_SIZE
+        if has_search:
+            selected_period = "prev-quarter"
+            session["selected_period"] = selected_period
+
+        # --- Cache keys ---
+        datatakes_cache_key_map = {
+            "day": "last-24h",
+            "week": "last-7d",
+            "month": "last-30d",
+            "prev-quarter": "previous-quarter",
+            "default": "last-7d",
+        }
+
+        datatakes_key = datatakes_cache_key_map.get(selected_period, "last-7d")
+        anomalies_cache_uri = events_cache.anomalies_cache_key.format(
+            "last",
+            "quarter" if selected_period == "prev-quarter" else "7d",
+        )
+        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
+            "last",
+            datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
+        )
+
+        # --- Load caches ---
+        anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
+        datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
 
         # --- POST: datatake details ---
         datatake_details = None
@@ -626,31 +657,35 @@ def data_availability():
             "esauser",
         )
 
-        # --- Cache keys ---
-        datatakes_cache_key_map = {
-            "day": "last-24h",
-            "week": "last-7d",
-            "month": "last-30d",
-            "prev-quarter": "previous-quarter",
-            "default": "last-7d",
-        }
-        datatakes_key = datatakes_cache_key_map.get(selected_period, "last-7d")
-        anomalies_cache_uri = events_cache.anomalies_cache_key.format(
-            (
-                "previous"
-                if selected_period == "prev-quarter" and quarter_authorized
-                else "last"
-            ),
-            "quarter" if selected_period == "prev-quarter" else "7d",
-        )
-        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
-            "previous" if selected_period == "prev-quarter" else "last",
-            datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
-        )
+        if selected_period == "prev-quarter":
+            now = datetime.now(timezone.utc)
+            cutoff = now - timedelta(days=90)
 
-        # --- Load caches ---
-        anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
-        datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
+            filtered = []
+            for item in datatakes_data:
+                src = item.get("_source", {})
+                raw = src.get("observation_time_start")
+                try:
+                    dt = parser.isoparse(raw)
+                    if dt >= cutoff:
+                        filtered.append(item)
+                except Exception:
+                    continue
+
+            datatakes_data = filtered
+            current_app.logger.info(
+                f"[PREV-QUARTER OVERRIDE] Filtered to last 90 days → {len(datatakes_data)} items"
+            )
+
+        # --- Pagination ---
+        try:
+            page = int(request.args.get("page", 1))
+            if page < 1:
+                page = 1
+        except Exception:
+            page = 1
+        start_idx = (page - 1) * BATCH_SIZE
+        end_idx = start_idx + BATCH_SIZE
 
         # --- Normalize datatakes ---
         normalized_datatakes = []
@@ -684,6 +719,13 @@ def data_availability():
                 }
             )
 
+            if has_search:
+                normalized_datatakes = [
+                    dt
+                    for dt in normalized_datatakes
+                    if dt.get("id", "").startswith(search_query_clean)
+                ]
+
         # --- Normalize anomalies ---
         normalized_anomalies = []
         for a in anomalies_data:
@@ -716,20 +758,14 @@ def data_availability():
         normalized_datatakes = replace_undefined(normalized_datatakes)
         normalized_anomalies = replace_undefined(normalized_anomalies)
 
-        current_app.logger.info(
-            f"[DATA_AVAILABILITY] total normalized datatakes = {len(normalized_datatakes)}"
-        )
-
         # --- Filter & sort ---
         normalized_datatakes = [
             dt for dt in normalized_datatakes if dt.get("start_time") and dt.get("id")
         ]
+
         normalized_datatakes.sort(key=datatake_sort_key)
         datatakes_cache.generate_completeness_cache(normalized_datatakes)
 
-        # --- Paginate SSR ---
-        search_query = request.args.get("search", "").strip()
-        has_search = bool(search_query)
         if has_search:
             datatakes_for_ssr = normalized_datatakes
         else:
@@ -739,7 +775,7 @@ def data_availability():
         total_pages = (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE
 
         current_app.logger.info(
-            f"[DATA_AVAILABILITY] page = {page} slice = {start_idx}:{end_idx}"
+            f"[DATA-AVAILABILITY] pagination slice for period '{selected_period}': {start_idx} → {end_idx}"
         )
 
         payload = {
@@ -765,6 +801,9 @@ def data_availability():
             return jsonify(safe_payload), 200
 
         # --- Otherwise render template ---
+        current_app.logger.info(
+            f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} datatakes to frontend (search={has_search})"
+        )
         return render_template(
             "home/data-availability.html",
             **payload,

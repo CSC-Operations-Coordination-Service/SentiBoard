@@ -209,9 +209,9 @@ def generate_completeness_cache(datatakes_data):
 
     with _cache_lock:
         _completeness_cache = temp_cache.copy()
-        current_app.logger.info(
-            f"[CACHE] completeness cache keys: {_completeness_cache.keys()}"
-        )
+        # current_app.logger.info(
+        #    f"[CACHE] completeness cache keys: {_completeness_cache.keys()}"
+        # )
 
 
 def get_completeness_list(datatake_id):
