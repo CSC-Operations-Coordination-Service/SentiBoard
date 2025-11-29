@@ -590,8 +590,8 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
-        datatakes_cache.load_datatakes_cache_last_quarter()
-        current_app.logger.info("[DATA-AVAILABILITY] Last 3 months cache loaded")
+        # datatakes_cache.load_datatakes_cache_last_quarter()
+        # current_app.logger.info("[DATA-AVAILABILITY] Last 3 months cache loaded")
 
         # Detect AJAX
         is_ajax = request.args.get("ajax") == "1"

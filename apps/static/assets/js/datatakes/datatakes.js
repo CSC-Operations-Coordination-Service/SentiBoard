@@ -1024,7 +1024,7 @@ class Datatakes {
         if (toTime && dtTime > toTime) reasons.push(`start > to`);
 
         if (reasons.length > 0) {
-            console.log(`[DATE-FILTER] Excluding datatake ${acquisitionDate.toISOString()}:`, reasons);
+            //console.log(`[DATE-FILTER] Excluding datatake ${acquisitionDate.toISOString()}:`, reasons);
             return false;
         }
 
