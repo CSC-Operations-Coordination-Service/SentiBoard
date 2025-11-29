@@ -590,33 +590,32 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
-        # This will populate 'quarter' and sub-period caches: 24h, 7d, 30d
         datatakes_cache.load_datatakes_cache_last_quarter()
         current_app.logger.info("[DATA-AVAILABILITY] Last 3 months cache loaded")
 
         # Detect AJAX
         is_ajax = request.args.get("ajax") == "1"
-
         search_query = request.args.get("search", "").strip()
         has_search = bool(search_query)
 
-        if has_search:
-            search_query_clean = search_query.split(" ")[0].split("(")[0].strip()
-        else:
-            search_query_clean = ""
-
-        selected_period = session.get("selected_period")
-
-        # --- Selected period ---
-        if "period" in request.args:
-            session["selected_period"] = request.args["period"]
-            if not is_ajax:
-                # Only redirect for normal page load
-                return redirect(url_for("home_blueprint.data_availability"))
-
+        # --- Determine selected period ---
         if has_search:
             selected_period = "prev-quarter"
+            session.pop("selected_period", None)  # remove old user period
+        else:
+            selected_period = request.args.get("period") or session.get(
+                "selected_period", "week"
+            )
+
+        # Save user-selected period in session only if not search
+        if not has_search and "period" in request.args:
             session["selected_period"] = selected_period
+            if not is_ajax:
+                return redirect(url_for("home_blueprint.data_availability"))
+
+        current_app.logger.info(
+            f"[DATA-AVAILABILITY] selected_period={selected_period}, has_search={has_search}, session={dict(session)}"
+        )
 
         # --- Cache keys ---
         datatakes_cache_key_map = {
@@ -630,7 +629,7 @@ def data_availability():
         datatakes_key = datatakes_cache_key_map.get(selected_period, "last-7d")
         anomalies_cache_uri = events_cache.anomalies_cache_key.format(
             "last",
-            "quarter" if selected_period == "prev-quarter" else "7d",
+            "last" if selected_period == "prev-quarter" else "7d",
         )
         datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
             "last",
@@ -677,16 +676,6 @@ def data_availability():
                 f"[PREV-QUARTER OVERRIDE] Filtered to last 90 days → {len(datatakes_data)} items"
             )
 
-        # --- Pagination ---
-        try:
-            page = int(request.args.get("page", 1))
-            if page < 1:
-                page = 1
-        except Exception:
-            page = 1
-        start_idx = (page - 1) * BATCH_SIZE
-        end_idx = start_idx + BATCH_SIZE
-
         # --- Normalize datatakes ---
         normalized_datatakes = []
         for d in datatakes_data:
@@ -718,13 +707,6 @@ def data_availability():
                     "raw": src,
                 }
             )
-
-            if has_search:
-                normalized_datatakes = [
-                    dt
-                    for dt in normalized_datatakes
-                    if dt.get("id", "").startswith(search_query_clean)
-                ]
 
         # --- Normalize anomalies ---
         normalized_anomalies = []
@@ -766,11 +748,18 @@ def data_availability():
         normalized_datatakes.sort(key=datatake_sort_key)
         datatakes_cache.generate_completeness_cache(normalized_datatakes)
 
-        if has_search:
-            datatakes_for_ssr = normalized_datatakes
-        else:
-            paged_datatakes = normalized_datatakes[start_idx:end_idx]
-            datatakes_for_ssr = [enrich_datatake(dt) for dt in paged_datatakes]
+        # --- Pagination ---
+        try:
+            page = int(request.args.get("page", 1))
+            if page < 1:
+                page = 1
+        except Exception:
+            page = 1
+        start_idx = (page - 1) * BATCH_SIZE
+        end_idx = start_idx + BATCH_SIZE
+
+        paged_datatakes = normalized_datatakes[start_idx:end_idx]
+        datatakes_for_ssr = [enrich_datatake(dt) for dt in paged_datatakes]
 
         total_pages = (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE
 

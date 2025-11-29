@@ -18,11 +18,15 @@ const formatDataDetail = [];
 class Datatakes {
     constructor(dataInput = {}) {
         this.serverData = dataInput || {};
+        // fullDataTakes = full normalized datatakes (server sends normalized_datatakes)
         this.fullDataTakes = Array.isArray(this.serverData.datatakes)
             ? this.serverData.datatakes
             : [];
 
+        // filteredDataTakes is the current filtered set (client-side)
         this.filteredDataTakes = [...this.fullDataTakes];
+
+        // mockDataTakes is the paged/enriched SSR slice the server gave us (faster to render sidebar)
         this.mockDataTakes = Array.isArray(this.serverData.datatakes_for_ssr)
             ? this.serverData.datatakes_for_ssr
             : [];
@@ -32,8 +36,15 @@ class Datatakes {
             : [];
 
 
+
         this.quarterAuthorized = !!dataInput.quarter_authorized;
         this.selectedPeriod = dataInput.selected_period || "week";
+
+
+        // --- Search queries ---
+        this.searchQuery = this.serverData.search_query || "";
+        this.searchQueryClean = this.serverData.search_query_clean || "";
+
         this.generatedAt = this.serverData.generated_at || null;
 
         this.itemsPerPage = 10;
@@ -51,19 +62,34 @@ class Datatakes {
         this.showSpinner();
         try {
             const urlParams = new URLSearchParams(window.location.search);
-            const searchQuery = urlParams.get("search");
-            this.setupPeriodSelector();
+            const rawSearchQuery = urlParams.get("search") || "";
+            let hasSearchFilter = false;
 
-            if (searchQuery) {
+            if (rawSearchQuery) {
+                // clean the query locally
+                this.searchQueryClean = rawSearchQuery.split(" ")[0].split("(")[0].trim();
+                console.log("[DATATAKES] Cleaned search query for filtering:", this.searchQueryClean);
+
+                // filter datatakes on client-side
+                hasSearchFilter = this.filterDatatakesOnPageLoad(this.searchQueryClean);
+
+                if (hasSearchFilter) {
+                    this.populateDataList(false);
+                    if (this.filteredDataTakes.length > 0) {
+                        this.renderTableWithoutPagination(this.filteredDataTakes, this.filteredDataTakes[0].id);
+                    }
+                }
+
+                // force period to prev-quarter for search
                 this.selectedPeriod = "prev-quarter";
-                const periodSelect = document.getElementById('time-period-select');
-                if (periodSelect) periodSelect.value = this.selectedPeriod;
-
-                this.setDateRangeLimits(this.selectedPeriod, true);
-            } else {
-                this.setDateRangeLimits(this.selectedPeriod);
             }
 
+            // Set period dropdown and date limits
+            const periodSelect = document.getElementById('time-period-select');
+            if (periodSelect) periodSelect.value = this.selectedPeriod;
+            this.setDateRangeLimits(this.selectedPeriod, hasSearchFilter);
+
+            this.setupPeriodSelector();
             console.log("[LIMITS] Applying date range limits for period:", this.selectedPeriod);
 
             const dataList = document.getElementById("dataList");
@@ -76,34 +102,17 @@ class Datatakes {
             }
 
             this.displayedCount = 0;
-
-            const hasSearchFilter = this.filterDatatakesOnPageLoad();
-
             this.attachEventListeners();
 
             if (hasSearchFilter) {
-                this.populateDataList(false);
-
-                if (Array.isArray(this.filteredDataTakes) && this.filteredDataTakes.length > 0) {
-                    const first = this.filteredDataTakes[0];
-
-                    //this.handleInitialSelection(first);
-
-                    // Render full table (no pagination needed for filtered results)
-                    this.renderTableWithoutPagination(
-                        this.filteredDataTakes,
-                        first.id
-                    );
-                }
-
-                // No pagination, no listeners, no charts needed in search mode  
+                // Already filtered and rendered above; skip normal SSR initialization
                 console.log("[DATATAKES] Initialization complete (search mode)");
                 this.hideSpinner();
                 return;
             }
 
+            // Normal startup: show SSR-provided paged items as sidebar
             await this.populateDataList(false);
-
             this.attachItemListeners(dataList.querySelectorAll("li"));
 
             if (loadMoreBtn && !loadMoreBtn.dataset.bound) {
@@ -126,13 +135,15 @@ class Datatakes {
         const selector = document.getElementById('time-period-select');
         if (!selector) return;
 
+        // Use backend-provided selectedPeriod, default to 'week'
         selector.value = this.selectedPeriod || 'week';
 
-        selector.addEventListener('change', (e) => {
-            const period = e.target.value;
-            // Just reload the page with the new period as query param
-            window.location = `/data-availability?period=${period}`;
-        });
+        if (this.selectedPeriod !== 'prev-quarter') {
+            selector.addEventListener('change', (e) => {
+                const period = e.target.value;
+                window.location = `/data-availability?period=${period}`;
+            });
+        }
     }
 
     renderTablePage(page = 1) {
@@ -222,18 +233,15 @@ class Datatakes {
         return isNaN(d) ? "N/A" : d.toISOString().replace("T", " ").split(".")[0];
     }
 
-    filterDatatakesOnPageLoad() {
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const searchFilter = urlParams.get('search');
-
-        if (!searchFilter) return false;
+    filterDatatakesOnPageLoad(cleanQuery = "") {
+        if (!cleanQuery) return false;
 
         this.filteredDataTakes = this.fullDataTakes.filter(take =>
-            take.id.toLowerCase().includes(searchFilter.toLowerCase())
+            take.id.toLowerCase().includes(cleanQuery.toLowerCase())
         );
 
-        return true;
+        console.log("[LOAD] filteredDataTakes after page load filter:", this.filteredDataTakes.map(t => t.id));
+        return this.filteredDataTakes.length > 0;
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
@@ -261,6 +269,7 @@ class Datatakes {
     }
 
     populateDataList(append = false) {
+        console.log("[POPULATE] Starting populateDataList, append:", append);
         const spinner = document.getElementById("spinner");
         if (spinner) spinner.style.display = "block";
 
@@ -273,7 +282,7 @@ class Datatakes {
             ? this.filteredDataTakes
             : this.mockDataTakes;
 
-        //this.displayedCount = 0;
+        //console.log("[POPULATE] data used for sidebar:", data.map(t => t.id));
 
         if (!append) {
             dataList.innerHTML = "";
@@ -285,7 +294,6 @@ class Datatakes {
             li.textContent = " ";
             li.style.color = "#aaa";
             if (loadMoreBtn) {
-                //loadMoreBtn.disabled = true;
                 loadMoreBtn.style.display = "none"
             }
             return;
@@ -904,6 +912,8 @@ class Datatakes {
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
+        console.log("[FILTER] Selected mission:", selectedMission, "Satellite:", selectedSatellite, "Search terms:", searchTerms);
+        console.log("[FILTER] filteredDataTakes after filter:", this.filteredDataTakes.map(t => t.id));
         try {
             this.filteredDataTakes = this.fullDataTakes.filter(take => {
                 const id = (take.id || "").toUpperCase();
@@ -1086,7 +1096,6 @@ class Datatakes {
         console.log(`[Date Range Limits] Applied period="${period}" -- min=${min}, max=${max}`);
     }
 
-
     showTableSection(firstId) {
         const tableSection = document.getElementById("tableSection");
         if (!tableSection) return;
@@ -1229,7 +1238,8 @@ class Datatakes {
     }
 
     resetFilters() {
-        // Reset filter form inputs
+        console.log("[RESET] Starting resetFilters");
+
         const missionSelect = document.getElementById("mission-select");
         const satelliteSelect = document.getElementById("satellite-select");
         const searchInput = document.getElementById("searchInput");
@@ -1259,23 +1269,33 @@ class Datatakes {
         this.toDate = null;
         this.currentMission = "";
         this.currentSearchTerm = "";
-
         this.displayedCount = 0;
 
-        dataList.innerHTML = "";
-        this.mockDataTakes = this.fullDataTakes.length ? this.fullDataTakes : this.ssrDataTakes;
-        if (dataList) {
-            dataList.innerHTML = "";
-            this.populateDataList(false);
+        console.log("[RESET] filteredDataTakes after clear:", this.filteredDataTakes);
 
-        }
-        const firsTake = this.mockDataTakes[0];
-        if (firsTake && dataList) {
-            const firsContainer = dataList.querySelector(".container-border");
-            const firstA = firsContainer?.querySelector("a.filter-link");
-            if (firsContainer && firstA) {
-                this.handleItemClick(this.preselectedTake, firsContainer, firstA);
-            }
+        if (!dataList) return;
+
+        this.mockDataTakes = this.fullDataTakes.length ? this.fullDataTakes : this.ssrDataTakes;
+
+        this.filteredDataTakes = [...this.mockDataTakes];
+
+        console.log("[RESET] mockDataTakes for reset:", this.mockDataTakes.map(t => t.id));
+
+        dataList.innerHTML = "";
+
+        this.populateDataList(false);
+
+        const firstTake = this.mockDataTakes[0];
+        if (firstTake) {
+            console.log("[RESET] selecting first datatake:", firstTake.id);
+            requestAnimationFrame(() => {
+                const firstContainer = dataList.querySelector(".container-border");
+                const firstA = firstContainer?.querySelector("a.filter-link");
+                console.log("[RESET] firstContainer / firstA found:", !!firstContainer, !!firstA);
+                if (firstContainer && firstA) {
+                    this.handleItemClick(firstTake, firstContainer, firstA);
+                }
+            });
         }
 
         if (window.history.replaceState) {
@@ -1288,8 +1308,6 @@ class Datatakes {
         document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
         document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
 
-        //this.preselectedTake = this.mockDataTakes[0];
-        //this.filterSidebarItems();
         console.log("[RESET] done.");
     }
 
