@@ -138,12 +138,10 @@ class Datatakes {
         // Use backend-provided selectedPeriod, default to 'week'
         selector.value = this.selectedPeriod || 'week';
 
-        if (this.selectedPeriod !== 'prev-quarter') {
-            selector.addEventListener('change', (e) => {
-                const period = e.target.value;
-                window.location = `/data-availability?period=${period}`;
-            });
-        }
+        selector.addEventListener('change', (e) => {
+            const period = e.target.value;
+            window.location = `/data-availability?period=${period}`;
+        });
     }
 
     renderTablePage(page = 1) {
