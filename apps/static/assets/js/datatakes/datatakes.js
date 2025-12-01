@@ -52,9 +52,24 @@ class Datatakes {
         this.infoItemsPerPage = 10;
         this.displayedCount = 0;
         this.activeRequestsCount = 0;
+        this.spinnerVisible = false;
 
     }
 
+    // --- Spinner-aware async wrapper ---
+    async withSpinner(promiseFn) {
+        try {
+            this.activeRequestsCount++;
+            this.showSpinner();
+            return await promiseFn();
+        } catch (err) {
+            console.error(err);
+            throw err;
+        } finally {
+            this.activeRequestsCount--;
+            if (this.activeRequestsCount <= 0) this.hideSpinner();
+        }
+    }
 
     async init() {
         $('#ec-logo-header, #esa-logo-header').hide();
@@ -68,7 +83,7 @@ class Datatakes {
             if (rawSearchQuery) {
                 // clean the query locally
                 this.searchQueryClean = rawSearchQuery.split(" ")[0].split("(")[0].trim();
-                console.log("[DATATAKES] Cleaned search query for filtering:", this.searchQueryClean);
+                //console.log("[DATATAKES] Cleaned search query for filtering:", this.searchQueryClean);
 
                 // filter datatakes on client-side
                 hasSearchFilter = this.filterDatatakesOnPageLoad(this.searchQueryClean);
@@ -97,7 +112,6 @@ class Datatakes {
 
             if (!dataList) {
                 console.error("[DATATAKES] Missing #dataList element");
-                this.hideSpinner();
                 return;
             }
 
@@ -111,23 +125,25 @@ class Datatakes {
                 return;
             }
 
-            // Normal startup: show SSR-provided paged items as sidebar
+
+            // --- Spinner-aware async calls ---
             await this.populateDataList(false);
             this.attachItemListeners(dataList.querySelectorAll("li"));
 
             if (loadMoreBtn && !loadMoreBtn.dataset.bound) {
                 loadMoreBtn.dataset.bound = "true";
-                loadMoreBtn.addEventListener("click", () => this.populateDataList(true));
+                loadMoreBtn.addEventListener("click", () => this.withSpinner(() => this.populateDataList(true)));
             }
 
-            await this.renderTablePage?.(1);
-            await this.initCharts?.();
+            await this.renderTablePage(1);
+
+            await this.initCharts();
 
             console.log("[DATATAKES] Initialization complete");
         } catch (err) {
             console.error(err);
         } finally {
-            this.hideSpinner();
+            setTimeout(() => this.hideSpinner(), 0);
         }
     }
 
@@ -145,35 +161,34 @@ class Datatakes {
     }
 
     renderTablePage(page = 1) {
-        const spinner = document.getElementById("spinner");
-        if (spinner) spinner.style.display = "block";
+        this.showSpinner();
+        try {
+            if (!Array.isArray(this.currentDataArray)) {
+                this.currentDataArray = [];
+            }
+            const tbody = document.getElementById('dataTableBody');
+            if (!tbody) return;
 
-        if (!Array.isArray(this.currentDataArray)) {
-            this.currentDataArray = [];
-        }
-        const tbody = document.getElementById('dataTableBody');
-        if (!tbody) return;
+            this.currentPage = page;
+            const dataset = this.filteredDataTakes || this.currentDataArray;
+            const start = (page - 1) * this.rowsPerPage;
+            const end = start + this.rowsPerPage;
+            const current = this.currentDataArray.slice(start, end);
 
-        this.currentPage = page;
-        const dataset = this.filteredDataTakes || this.currentDataArray;
-        const start = (page - 1) * this.rowsPerPage;
-        const end = start + this.rowsPerPage;
-        const current = this.currentDataArray.slice(start, end);
+            tbody.innerHTML = "";
 
-        tbody.innerHTML = "";
-
-        if (current.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">
+            if (current.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">
                 No datatakes available for the selected period.
             </td></tr>`;
 
-            if (spinner) spinner.style.display = "none";
-            return;
-        }
+                if (spinner) spinner.style.display = "none";
+                return;
+            }
 
-        current.forEach(dt => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
+            current.forEach(dt => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
                 <td>${dt.id}</td>
                 <td>${dt.platform || 'N/A'}</td>
                 <td>${this.formatDate(dt.start_time)}</td>
@@ -194,12 +209,13 @@ class Datatakes {
                     </button>
                 </td>
             `;
-            tbody.appendChild(row);
-        });
+                tbody.appendChild(row);
+            });
 
-        this.renderPaginationControls();
-
-        if (spinner) spinner.style.display = "none";
+            this.renderPaginationControls();
+        } finally {
+            setTimeout(() => this.hideSpinner(), 0);
+        }
 
     }
 
@@ -238,7 +254,7 @@ class Datatakes {
             take.id.toLowerCase().includes(cleanQuery.toLowerCase())
         );
 
-        console.log("[LOAD] filteredDataTakes after page load filter:", this.filteredDataTakes.map(t => t.id));
+        //console.log("[LOAD] filteredDataTakes after page load filter:", this.filteredDataTakes.map(t => t.id));
         return this.filteredDataTakes.length > 0;
     }
 
@@ -267,79 +283,78 @@ class Datatakes {
     }
 
     populateDataList(append = false) {
-        console.log("[POPULATE] Starting populateDataList, append:", append);
-        const spinner = document.getElementById("spinner");
-        if (spinner) spinner.style.display = "block";
+        this.showSpinner();
+        try {
+            const dataList = document.getElementById("dataList");
+            const loadMoreBtn = document.getElementById("loadMoreBtn");
 
-        const dataList = document.getElementById("dataList");
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
+            if (!dataList) return;
 
-        if (!dataList) return;
+            const data = this.filteredDataTakes && this.filteredDataTakes.length
+                ? this.filteredDataTakes
+                : this.mockDataTakes;
 
-        const data = this.filteredDataTakes && this.filteredDataTakes.length
-            ? this.filteredDataTakes
-            : this.mockDataTakes;
+            //console.log("[POPULATE] data used for sidebar:", data.map(t => t.id));
 
-        //console.log("[POPULATE] data used for sidebar:", data.map(t => t.id));
-
-        if (!append) {
-            dataList.innerHTML = "";
-            this.displayedCount = 0;
-        }
-
-        if (data.length === 0) {
-            const li = document.createElement("li");
-            li.textContent = " ";
-            li.style.color = "#aaa";
-            if (loadMoreBtn) {
-                loadMoreBtn.style.display = "none"
+            if (!append) {
+                dataList.innerHTML = "";
+                this.displayedCount = 0;
             }
-            return;
+
+            if (data.length === 0) {
+                const li = document.createElement("li");
+                li.textContent = " ";
+                li.style.color = "#aaa";
+                if (loadMoreBtn) {
+                    loadMoreBtn.style.display = "none"
+                }
+                return;
+            }
+
+            const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
+            const fragment = document.createDocumentFragment();
+
+            nextItems.forEach(take => {
+                const li = document.createElement("li");
+                const containerDiv = document.createElement("div");
+                containerDiv.className = "container-border";
+
+                const a = document.createElement("a");
+                a.href = "#";
+                a.className = "filter-link";
+                a.dataset.filterType = "groundStation";
+                a.dataset.filterValue = this.getGroundStation(take.id);
+                a.textContent = take.id;
+
+                a.addEventListener("click", e => e.preventDefault());
+
+
+                const status = (take.acquisition_status || "unknown").toLowerCase();
+                const statusCircle = document.createElement("div");
+                statusCircle.className = `status-circle-dt-${status}`;
+
+                containerDiv.appendChild(a);
+                containerDiv.appendChild(statusCircle);
+                li.appendChild(containerDiv);
+                fragment.appendChild(li);
+            });
+
+            dataList.appendChild(fragment);
+            this.displayedCount += nextItems.length;
+
+            if (loadMoreBtn) {
+                loadMoreBtn.style.display = "block";
+                loadMoreBtn.disabled = this.displayedCount >= data.length;
+            }
+
+            if (!append && nextItems.length > 0) {
+                const first = dataList.querySelector(".container-border");
+                const a = first?.querySelector("a.filter-link");
+                if (first && a) this.handleItemClick(nextItems[0], first, a);
+            }
+        } finally {
+            setTimeout(() => this.hideSpinner(), 0);
         }
-
-        const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
-        const fragment = document.createDocumentFragment();
-
-        nextItems.forEach(take => {
-            const li = document.createElement("li");
-            const containerDiv = document.createElement("div");
-            containerDiv.className = "container-border";
-
-            const a = document.createElement("a");
-            a.href = "#";
-            a.className = "filter-link";
-            a.dataset.filterType = "groundStation";
-            a.dataset.filterValue = this.getGroundStation(take.id);
-            a.textContent = take.id;
-
-            a.addEventListener("click", e => e.preventDefault());
-
-
-            const status = (take.acquisition_status || "unknown").toLowerCase();
-            const statusCircle = document.createElement("div");
-            statusCircle.className = `status-circle-dt-${status}`;
-
-            containerDiv.appendChild(a);
-            containerDiv.appendChild(statusCircle);
-            li.appendChild(containerDiv);
-            fragment.appendChild(li);
-        });
-
-        dataList.appendChild(fragment);
-        this.displayedCount += nextItems.length;
-
-        if (loadMoreBtn) {
-            loadMoreBtn.style.display = "block";
-            loadMoreBtn.disabled = this.displayedCount >= data.length;
-        }
-
-        if (!append && nextItems.length > 0) {
-            const first = dataList.querySelector(".container-border");
-            const a = first?.querySelector("a.filter-link");
-            if (first && a) this.handleItemClick(nextItems[0], first, a);
-        }
-        if (spinner) spinner.style.display = "none";
-
     }
 
     attachItemListeners(listItems) {
@@ -451,234 +466,247 @@ class Datatakes {
     }
 
     async toggleInfoTable(passedId = null) {
-        this.fromInfoIcon = true;
-
-        const modalEl = document.getElementById("completenessTableModal");
-        const paragraph = document.querySelector(".datatakes-container h4");
-
-        if (!modalEl || !paragraph) {
-            console.error("Modal container or paragraph not found!");
-            return;
-        }
-
-        let selectedId = passedId;
-
-        // fallback to chart header text if no ID was passed
-        if (!selectedId && paragraph) {
-            const fullText = paragraph.textContent.trim().replace(/_/g, "-");
-            const parts = fullText.split("-");
-            selectedId = parts.slice(0, 3).join("-");
-        }
-
-        if (!selectedId) {
-            console.error("No valid datatake ID to use for info table.");
-            return;
-        }
-
-        console.log("Looking for datatake ID:", selectedId);
-
-        const $modal = $('#completenessTableModal');
-
-        // Ensure this is attached only once
-        $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
-            // Remove focus from anything inside the modal before hiding
-            document.activeElement.blur();
-        });
-
+        this.showSpinner();
         try {
-            await this.renderInfoTable(selectedId);
+            this.fromInfoIcon = true;
 
-            // Show the modal
-            $modal.modal('show');
+            const modalEl = document.getElementById("completenessTableModal");
+            const paragraph = document.querySelector(".datatakes-container h4");
 
-            // Ensure scroll reset
-            $modal.find('.modal-body').scrollTop(0);
+            if (!modalEl || !paragraph) {
+                console.error("Modal container or paragraph not found!");
+                return;
+            }
 
-        } catch (err) {
-            console.error("Failed to render info table for datatake:", selectedId, err);
+            let selectedId = passedId;
+
+            // fallback to chart header text if no ID was passed
+            if (!selectedId && paragraph) {
+                const fullText = paragraph.textContent.trim().replace(/_/g, "-");
+                const parts = fullText.split("-");
+                selectedId = parts.slice(0, 3).join("-");
+            }
+
+            if (!selectedId) {
+                console.error("No valid datatake ID to use for info table.");
+                return;
+            }
+
+            console.log("Looking for datatake ID:", selectedId);
+
+            const $modal = $('#completenessTableModal');
+
+            // Ensure this is attached only once
+            $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
+                // Remove focus from anything inside the modal before hiding
+                document.activeElement.blur();
+            });
+
+            try {
+                await this.renderInfoTable(selectedId);
+
+                // Show the modal
+                $modal.modal('show');
+
+                // Ensure scroll reset
+                $modal.find('.modal-body').scrollTop(0);
+
+            } catch (err) {
+                console.error("Failed to render info table for datatake:", selectedId, err);
+            } finally {
+                this.fromInfoIcon = false;
+            }
         } finally {
-            this.fromInfoIcon = false;
+            setTimeout(() => this.hideSpinner(), 0);
         }
+
     }
 
     async renderInfoTable(dataInput, page = 1) {
 
-        console.log("==== renderInfoTable START ====");
+        //console.log("==== renderInfoTable START ====");
         console.log("Requested datatake ID:", dataInput);
+        this.showSpinner();
+        try {
+            const tableBody = document.getElementById("modalInfoTableBody");
+            const paginationControls = document.getElementById("modalPaginationControls");
+            tableBody.innerHTML = "";
+            paginationControls.innerHTML = "";
 
-        const tableBody = document.getElementById("modalInfoTableBody");
-        const paginationControls = document.getElementById("modalPaginationControls");
-        tableBody.innerHTML = "";
-        paginationControls.innerHTML = "";
+            const cleanDataInput = dataInput.split(" ")[0]; // take only the first part before space
+            //console.log("Cleaned datatake ID for search:", cleanDataInput);
 
-        const cleanDataInput = dataInput.split(" ")[0]; // take only the first part before space
-        console.log("Cleaned datatake ID for search:", cleanDataInput);
+            // Find datatake from SSR list
+            let datatake = this.fullDataTakes.find(dt => dt.id === cleanDataInput);
 
-        // Find datatake from SSR list
-        let datatake = this.fullDataTakes.find(dt => dt.id === cleanDataInput);
+            //console.log("Found datatake:", datatake);
 
-        console.log("Found datatake:", datatake);
-
-        if (!datatake) {
-            console.error("Datatake NOT FOUND in fullDataTakes");
-            tableBody.innerHTML = `<tr><td colspan="2">Datatake not found</td></tr>`;
-            return;
-        }
-
-        const needsEnrichment =
-            !datatake.completeness_list ||
-            datatake.completeness_list.length === 0;
-
-        console.log("Needs enrichment?", needsEnrichment);
-
-        if (needsEnrichment && datatake.id) {
-            try {
-                const formData = new FormData();
-                formData.append("datatake_id", cleanDataInput);
-
-                console.log("[AJAX] Calling /data-availability/enrich for", cleanDataInput);
-
-                const response = await fetch("/data-availability/enrich", {
-                    method: "POST",
-                    body: formData
-                });
-
-                if (response.ok) {
-                    const enriched = await response.json();
-                    console.log("[AJAX] Enriched response:", enriched);
-
-                    Object.assign(datatake, enriched);
-
-                    const idx = this.fullDataTakes.findIndex(dt => dt.id === cleanDataInput);
-                    if (idx > -1) this.fullDataTakes[idx] = datatake;
-
-                    console.log("[AJAX] Datatake after merge:", datatake);
-
-                } else {
-                    console.error("[AJAX] Enrichment failed:", response.status);
-                }
-
-            } catch (err) {
-                console.error("[AJAX] ERROR enriching datatake:", err);
+            if (!datatake) {
+                console.error("Datatake NOT FOUND in fullDataTakes");
+                tableBody.innerHTML = `<tr><td colspan="2">Datatake not found</td></tr>`;
+                return;
             }
-        }
 
-        let dataArray = null;
+            const needsEnrichment =
+                !datatake.completeness_list ||
+                datatake.completeness_list.length === 0;
 
-        if (datatake.completeness_list && datatake.completeness_list.length > 0) {
-            dataArray = datatake.completeness_list;
+            //console.log("Needs enrichment?", needsEnrichment);
 
-        } else {
+            if (needsEnrichment && datatake.id) {
+                try {
+                    const formData = new FormData();
+                    formData.append("datatake_id", cleanDataInput);
 
-            const allKeys = [
-                ...Object.keys(datatake),
-                ...Object.keys(datatake.raw || {})
-            ];
+                    //console.log("[AJAX] Calling /data-availability/enrich for", cleanDataInput);
 
-            const pctKeys = allKeys.filter(k => k.endsWith("_local_percentage"));
+                    const response = await fetch("/data-availability/enrich", {
+                        method: "POST",
+                        body: formData
+                    });
 
-            if (pctKeys.length > 0) {
-                console.log("Building table from percentage keys:", pctKeys);
+                    if (response.ok) {
+                        const enriched = await response.json();
+                        //console.log("[AJAX] Enriched response:", enriched);
 
-                dataArray = pctKeys.map(k => ({
+                        Object.assign(datatake, enriched);
+
+                        const idx = this.fullDataTakes.findIndex(dt => dt.id === cleanDataInput);
+                        if (idx > -1) this.fullDataTakes[idx] = datatake;
+
+                        //console.log("[AJAX] Datatake after merge:", datatake);
+
+                    } else {
+                        console.error("[AJAX] Enrichment failed:", response.status);
+                    }
+
+                } catch (err) {
+                    console.error("[AJAX] ERROR enriching datatake:", err);
+                }
+            }
+
+            let dataArray = null;
+
+            if (datatake.completeness_list && datatake.completeness_list.length > 0) {
+                dataArray = datatake.completeness_list;
+
+            } else {
+
+                const allKeys = [
+                    ...Object.keys(datatake),
+                    ...Object.keys(datatake.raw || {})
+                ];
+
+                const pctKeys = allKeys.filter(k => k.endsWith("_local_percentage"));
+
+                if (pctKeys.length > 0) {
+                    //console.log("Building table from percentage keys:", pctKeys);
+
+                    dataArray = pctKeys.map(k => ({
+                        productType: k.replace("local_percentage", ""),
+                        status: datatake[k] ?? datatake.raw?.[k] ?? "-"
+                    }));
+                }
+            }
+
+            if (!dataArray || dataArray.length === 0) {
+                const completeness = datatake.completeness || {};
+                const compKeys = Object.keys(completeness).filter(k =>
+                    k.endsWith("_local_percentage")
+                );
+
+                dataArray = compKeys.map(k => ({
                     productType: k.replace("local_percentage", ""),
-                    status: datatake[k] ?? datatake.raw?.[k] ?? "-"
+                    status: completeness[k]
                 }));
             }
-        }
 
-        if (!dataArray || dataArray.length === 0) {
-            const completeness = datatake.completeness || {};
-            const compKeys = Object.keys(completeness).filter(k =>
-                k.endsWith("_local_percentage")
-            );
-
-            dataArray = compKeys.map(k => ({
-                productType: k.replace("local_percentage", ""),
-                status: completeness[k]
-            }));
-        }
-
-        console.log("FINAL dataArray used to render table:", dataArray);
+            //console.log("FINAL dataArray used to render table:", dataArray);
 
 
-        // Header
-        const key = datatake.details?.key || datatake.id || "-";
-        const timeliness =
-            datatake.details?.timeliness ||
-            datatake.raw?.timeliness ||
-            datatake.raw?.timeliness_status ||
-            "-";
+            // Header
+            const key = datatake.details?.key || datatake.id || "-";
+            const timeliness =
+                datatake.details?.timeliness ||
+                datatake.raw?.timeliness ||
+                datatake.raw?.timeliness_status ||
+                "-";
 
-        $('#datatake-details').empty().append(`
-        <div class="form-group">
-            <label>Datatake ID: ${key}</label>
-            <label style="margin-left: 20px;">Timeliness: ${timeliness}</label>
-        </div>
-    `);
+            $('#datatake-details').empty().append(`
+                <div class="form-group">
+                    <label>Datatake ID: ${key}</label>
+                    <label style="margin-left: 20px;">Timeliness: ${timeliness}</label>
+                </div>
+            `);
 
-        // Render table rows
-        if (!dataArray || dataArray.length === 0) {
-            console.warn("No completeness data available.");
-            const row = document.createElement("tr");
-            row.innerHTML = `<td colspan="2">No data available.</td>`;
-            tableBody.appendChild(row);
-            return;
-        }
+            // Render table rows
+            if (!dataArray || dataArray.length === 0) {
+                console.warn("No completeness data available.");
+                const row = document.createElement("tr");
+                row.innerHTML = `<td colspan="2">No data available.</td>`;
+                tableBody.appendChild(row);
+                return;
+            }
 
-        this.currentDataArray = dataArray;
+            this.currentDataArray = dataArray;
 
-        const totalItems = dataArray.length;
-        const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
-        this.currentPage = page;
+            const totalItems = dataArray.length;
+            const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
+            this.currentPage = page;
 
-        const startIndex = (page - 1) * this.infoItemsPerPage;
-        const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
-        const pageItems = dataArray.slice(startIndex, endIndex);
+            const startIndex = (page - 1) * this.infoItemsPerPage;
+            const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
+            const pageItems = dataArray.slice(startIndex, endIndex);
 
-        console.log(`Rendering items ${startIndex} → ${endIndex}`, pageItems);
+            //console.log(`Rendering items ${startIndex} → ${endIndex}`, pageItems);
 
-        pageItems.forEach(item => {
-            const row = document.createElement("tr");
-            const displayValue = typeof item.status === "number"
-                ? Number(item.status).toFixed(2)
-                : item.status;
-            row.innerHTML = `
+            pageItems.forEach(item => {
+                const row = document.createElement("tr");
+                const displayValue = typeof item.status === "number"
+                    ? Number(item.status).toFixed(2)
+                    : item.status;
+                row.innerHTML = `
             <td>${item.productType || "-"}</td>
             <td>${displayValue}</td>
         `;
-            tableBody.appendChild(row);
-        });
+                tableBody.appendChild(row);
+            });
 
-        // Pagination
-        if (totalPages > 1) {
-            const makeButton = (text, pageNum, disabled = false, active = false) => {
-                const btn = document.createElement("button");
-                btn.textContent = text;
-                btn.disabled = disabled;
-                btn.classList.add("pagination-btn");
-                if (active) btn.classList.add("active");
-                btn.addEventListener("click", () => this.renderInfoTable(cleanDataInput, pageNum));
-                return btn;
-            };
+            // Pagination
+            if (totalPages > 1) {
+                const makeButton = (text, pageNum, disabled = false, active = false) => {
+                    const btn = document.createElement("button");
+                    btn.textContent = text;
+                    btn.disabled = disabled;
+                    btn.classList.add("pagination-btn");
+                    if (active) btn.classList.add("active");
+                    btn.addEventListener("click", () => this.renderInfoTable(cleanDataInput, pageNum));
+                    return btn;
+                };
 
-            paginationControls.appendChild(makeButton("« Prev", this.currentPage - 1, this.currentPage === 1));
+                paginationControls.appendChild(makeButton("« Prev", this.currentPage - 1, this.currentPage === 1));
 
-            for (let i = 1; i <= totalPages; i++) {
-                paginationControls.appendChild(makeButton(i, i, false, i === this.currentPage));
+                for (let i = 1; i <= totalPages; i++) {
+                    paginationControls.appendChild(makeButton(i, i, false, i === this.currentPage));
+                }
+
+                paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
             }
-
-            paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
+        } finally {
+            setTimeout(() => this.hideSpinner(), 0);
         }
+
+
 
     }
 
-    initCharts() {
+    async initCharts() {
         // Use first datatake for initial charts
         if (!this.fullDataTakes.length) return;
         const first = this.fullDataTakes[0];
-        this.updateCharts("publication", first);
-        this.updateCharts("acquisition", first);
+        // auto spinner for initial load
+        await this.withSpinner(() => this.updateCharts("publication", first));
+        await this.withSpinner(() => this.updateCharts("acquisition", first));
     }
 
     updateCharts(type, linkKey) {
@@ -910,8 +938,8 @@ class Datatakes {
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
-        console.log("[FILTER] Selected mission:", selectedMission, "Satellite:", selectedSatellite, "Search terms:", searchTerms);
-        console.log("[FILTER] filteredDataTakes after filter:", this.filteredDataTakes.map(t => t.id));
+        /* console.log("[FILTER] Selected mission:", selectedMission, "Satellite:", selectedSatellite, "Search terms:", searchTerms);
+         console.log("[FILTER] filteredDataTakes after filter:", this.filteredDataTakes.map(t => t.id));*/
         try {
             this.filteredDataTakes = this.fullDataTakes.filter(take => {
                 const id = (take.id || "").toUpperCase();
@@ -1089,8 +1117,8 @@ class Datatakes {
             toInput.value = fromInput.value;
         }
 
-        console.log("[LIMITS] Min date (UTC):", fromDate.toISOString());
-        console.log("[LIMITS] Max date (UTC):", maxDate.toISOString());
+        /*console.log("[LIMITS] Min date (UTC):", fromDate.toISOString());
+        console.log("[LIMITS] Max date (UTC):", maxDate.toISOString());*/
         console.log(`[Date Range Limits] Applied period="${period}" -- min=${min}, max=${max}`);
     }
 
@@ -1269,7 +1297,7 @@ class Datatakes {
         this.currentSearchTerm = "";
         this.displayedCount = 0;
 
-        console.log("[RESET] filteredDataTakes after clear:", this.filteredDataTakes);
+        //console.log("[RESET] filteredDataTakes after clear:", this.filteredDataTakes);
 
         if (!dataList) return;
 
@@ -1277,7 +1305,7 @@ class Datatakes {
 
         this.filteredDataTakes = [...this.mockDataTakes];
 
-        console.log("[RESET] mockDataTakes for reset:", this.mockDataTakes.map(t => t.id));
+        //console.log("[RESET] mockDataTakes for reset:", this.mockDataTakes.map(t => t.id));
 
         dataList.innerHTML = "";
 
@@ -1285,11 +1313,11 @@ class Datatakes {
 
         const firstTake = this.mockDataTakes[0];
         if (firstTake) {
-            console.log("[RESET] selecting first datatake:", firstTake.id);
+            //console.log("[RESET] selecting first datatake:", firstTake.id);
             requestAnimationFrame(() => {
                 const firstContainer = dataList.querySelector(".container-border");
                 const firstA = firstContainer?.querySelector("a.filter-link");
-                console.log("[RESET] firstContainer / firstA found:", !!firstContainer, !!firstA);
+                //console.log("[RESET] firstContainer / firstA found:", !!firstContainer, !!firstA);
                 if (firstContainer && firstA) {
                     this.handleItemClick(firstTake, firstContainer, firstA);
                 }
@@ -1428,95 +1456,100 @@ class Datatakes {
 
 
     async initializeDefaultView() {
-        const sidebarItems = document.querySelectorAll(".filter-link");
-        if (!sidebarItems.length) return;
+        this.showSpinner();
+        try {
+            const sidebarItems = document.querySelectorAll(".filter-link");
+            if (!sidebarItems.length) return;
 
-        const firstLink = sidebarItems[0];
-        firstLink.classList.add("active");
+            const firstLink = sidebarItems[0];
+            firstLink.classList.add("active");
 
-        const parentDiv = firstLink.closest(".container-border");
-        if (parentDiv) parentDiv.classList.add("selected");
+            const parentDiv = firstLink.closest(".container-border");
+            if (parentDiv) parentDiv.classList.add("selected");
 
-        const firstKey = firstLink.textContent.trim();
-        const firstDataTake = this.mockDataTakes.find(dt => dt.id === firstKey);
-        if (!firstDataTake) {
-            console.warn("First datatake not found in mockDataTakes");
-            return;
+            const firstKey = firstLink.textContent.trim();
+            const firstDataTake = this.mockDataTakes.find(dt => dt.id === firstKey);
+            if (!firstDataTake) {
+                console.warn("First datatake not found in mockDataTakes");
+                return;
+            }
+
+            // Update title/date
+            this.updateTitleAndDate(firstDataTake.id);
+
+            // Update charts
+            await Promise.all([
+                this.updateCharts("publication", firstDataTake.id),
+                this.updateCharts("acquisition", firstDataTake.id)
+            ]);
+
+            // Populate info table
+            this.renderTableWithoutPagination([firstDataTake], firstDataTake.id);
+
+            // Show table section
+            this.showTableSection(firstDataTake.id);
+        } finally {
+            setTimeout(() => this.hideSpinner(), 0);
         }
 
-        // Update title/date
-        this.updateTitleAndDate(firstDataTake.id);
-
-        // Update charts
-        await Promise.all([
-            this.updateCharts("publication", firstDataTake.id),
-            this.updateCharts("acquisition", firstDataTake.id)
-        ]);
-
-        // Populate info table
-        this.renderTableWithoutPagination([firstDataTake], firstDataTake.id);
-
-        // Show table section
-        this.showTableSection(firstDataTake.id);
     }
 
     async handleInitialSelection(first = null, dataset = this.filteredDataTakes) {
-        if (!dataset || !dataset.length) {
-            this.hideTable();
-            return;
-        }
-
-        // Determine the first datatake to select
-        const selectedTake = first || dataset[0];
-
-        // Highlight sidebar
-        document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
-        document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
-
-        const sidebarLink = document.querySelector(`.filter-link[data-id="${selectedTake.id}"]`);
-        if (sidebarLink) {
-            sidebarLink.classList.add("active");
-            const parentDiv = sidebarLink.closest(".container-border");
-            if (parentDiv) parentDiv.classList.add("selected");
-        }
-
-        // Update title and date
-        this.updateTitleAndDate(selectedTake.id);
-
-        // Render charts
+        this.showSpinner();
         try {
-            await Promise.all([
-                this.updateCharts("publication", selectedTake.id),
-                this.updateCharts("acquisition", selectedTake.id),
-            ]);
-        } catch (err) {
-            console.error("Chart update error:", err);
+            if (!dataset || !dataset.length) {
+                this.hideTable();
+                return;
+            }
+
+            // Determine the first datatake to select
+            const selectedTake = first || dataset[0];
+
+            // Highlight sidebar
+            document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
+            document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
+
+            const sidebarLink = document.querySelector(`.filter-link[data-id="${selectedTake.id}"]`);
+            if (sidebarLink) {
+                sidebarLink.classList.add("active");
+                const parentDiv = sidebarLink.closest(".container-border");
+                if (parentDiv) parentDiv.classList.add("selected");
+            }
+
+            // Update title and date
+            this.updateTitleAndDate(selectedTake.id);
+
+            // Render charts
+            try {
+                await Promise.all([
+                    this.updateCharts("publication", selectedTake.id),
+                    this.updateCharts("acquisition", selectedTake.id),
+                ]);
+            } catch (err) {
+                console.error("Chart update error:", err);
+            }
+
+            // Render table and show section
+            this.renderTableWithoutPagination(dataset, selectedTake.id);
+            this.showTableSection(selectedTake.id);
+        } finally {
+            setTimeout(() => this.hideSpinner(), 0);
         }
 
-        // Render table and show section
-        this.renderTableWithoutPagination(dataset, selectedTake.id);
-        this.showTableSection(selectedTake.id);
     }
 
 
     showSpinner() {
-        const spinner = document.getElementById('spinner');
-        console.log("Active requests count before showSpinner:", this.activeRequestsCount);
-        if (spinner && this.activeRequestsCount === 0) {
-            console.log("Showing spinner...");
-            spinner.classList.add('active');
+        if (!this.spinnerVisible) {
+            $('#spinner').show();
+            this.spinnerVisible = true;
         }
-        this.activeRequestsCount++;
     }
 
     hideSpinner() {
-        if (this.activeRequestsCount > 0) this.activeRequestsCount--;
-        if (this.activeRequestsCount === 0) {
-            const spinner = document.getElementById('spinner');
-            if (spinner) {
-                console.log("Hiding spinner...");
-                spinner.classList.remove('active');
-            }
+        if (this.spinnerVisible && this.activeRequestsCount <= 0) {
+            $('#spinner').hide();
+            this.spinnerVisible = false;
         }
     }
 }
