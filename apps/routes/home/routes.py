@@ -193,7 +193,7 @@ def index():
     # Build the cache key
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
     current_app.logger.info(f"[INDEX] starting here")
-    current_app.logger.info(f"[INDEX] using cache key: {anomalies_api_uri}")
+    # current_app.logger.info(f"[INDEX] using cache key: {anomalies_api_uri}")
 
     # Get and inspect cache content
     raw_cache = flask_cache.get(anomalies_api_uri)
@@ -306,6 +306,12 @@ def index():
         category = item.get("category", "Unknown")
 
         impacted_sat = item.get("impactedSatellite", "Unknown")
+
+        if not impacted_sat:
+            current_app.logger.info(
+                f"[INDEX] skipping anomaly without impactedSatellie at index {idx}"
+            )
+            continue
 
         # Default title
         title = None
@@ -613,9 +619,9 @@ def data_availability():
             if not is_ajax:
                 return redirect(url_for("home_blueprint.data_availability"))
 
-        current_app.logger.info(
-            f"[DATA-AVAILABILITY] selected_period={selected_period}, has_search={has_search}, session={dict(session)}"
-        )
+        # current_app.logger.info(
+        #    f"[DATA-AVAILABILITY] selected_period={selected_period}, has_search={has_search}, session={dict(session)}"
+        # )
 
         # --- Cache keys ---
         datatakes_cache_key_map = {

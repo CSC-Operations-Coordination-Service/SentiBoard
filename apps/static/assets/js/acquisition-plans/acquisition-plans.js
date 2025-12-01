@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 // List of missions for which KML of acquistion plans is generated
@@ -28,10 +28,12 @@ missionDatatakeId = {
     'S5': "datatake_id"
 }
 
-satelliteNoradId = {'S1A': 39634, 'S1B': 41456, 'S1C': 62261,
-                    'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
-                    'S3A': 41335, 'S3B': 43437,
-                    'S5P': 42969};
+satelliteNoradId = {
+    'S1A': 39634, 'S1B': 41456, 'S1C': 62261,
+    'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
+    'S3A': 41335, 'S3B': 43437,
+    'S5P': 42969
+};
 
 useDatePicker = false;
 
@@ -52,15 +54,15 @@ class MissionAcquisitionDates extends EventTarget {
         super();
 
         this.acqplansDates = {
-                    'S1A': {label: 'Sentinel-1A', mission: 'S1', dates: null},
-                    'S1B': {label: 'Sentinel-1B', mission: 'S1', dates: null},
-                    'S1C': {label: 'Sentinel-1C', mission: 'S1', dates: null},
-                    'S2A': {label: 'Sentinel-2A', mission: 'S2', dates: null},
-                    'S2B': {label: 'Sentinel-2B', mission: 'S2', dates: null},
-                    'S2C': {label: 'Sentinel-2C', mission: 'S2', dates: null},
-                    'S3A': {label: 'Sentinel-3A', mission: 'S3', dates: null},
-                    'S3B': {label: 'Sentinel-3B', mission: 'S3', dates: null},
-                    'S5P': {label: 'Sentinel-5P', mission: 'S5', dates: null},
+            'S1A': { label: 'Sentinel-1A', mission: 'S1', dates: null },
+            'S1B': { label: 'Sentinel-1B', mission: 'S1', dates: null },
+            'S1C': { label: 'Sentinel-1C', mission: 'S1', dates: null },
+            'S2A': { label: 'Sentinel-2A', mission: 'S2', dates: null },
+            'S2B': { label: 'Sentinel-2B', mission: 'S2', dates: null },
+            'S2C': { label: 'Sentinel-2C', mission: 'S2', dates: null },
+            'S3A': { label: 'Sentinel-3A', mission: 'S3', dates: null },
+            'S3B': { label: 'Sentinel-3B', mission: 'S3', dates: null },
+            'S5P': { label: 'Sentinel-5P', mission: 'S5', dates: null },
         };
 
         this.selectedParams = {
@@ -91,12 +93,12 @@ class MissionAcquisitionDates extends EventTarget {
 
         if (useDatePicker) {
             $('#datepicker').datepicker({
-               format: 'dd/mm/yyyy',
-               //startDate: '-15d',
-               todayHighlight: true,
-               todayBtn: true,
-               autoclose: true,
-               beforeShowDay: this.isDateInKml.bind(this)
+                format: 'dd/mm/yyyy',
+                //startDate: '-15d',
+                todayHighlight: true,
+                todayBtn: true,
+                autoclose: true,
+                beforeShowDay: this.isDateInKml.bind(this)
             });
             $('#datepicker').show();
             $('#acquisition-plans-day-select').remove(); // hide();
@@ -127,7 +129,7 @@ class MissionAcquisitionDates extends EventTarget {
         // Return dayList.indexOf(dt_ddmmyyyy) != -1
         return true;
     }
-    
+
     loadAcquisitionPlansAvailability() {
 
         // Acknowledge the invocation of rest APIs
@@ -140,13 +142,13 @@ class MissionAcquisitionDates extends EventTarget {
             that.successAcquisitionPlansAvailability.bind(that), that.failureAcquisitionPlansAvailability);
 
         // Execute asynchronous AJAX call
-        ajaxPromises.then(function() {
+        ajaxPromises.then(function () {
             console.log("Received all results!");
             var dialog = document.getElementById('window');
             if (dialog !== null) {
                 // TODO: REMOVE SPINNER
                 dialog.show();
-                document.getElementById('exit').onclick = function() {
+                document.getElementById('exit').onclick = function () {
                     console.log("Click");
                     dialog.close();
                 };
@@ -159,7 +161,7 @@ class MissionAcquisitionDates extends EventTarget {
         console.debug("Acquisition Plans Availability - Received response:", json_resp);
         // load response
         // set initial values for Select Controls
-        for (const  [mission, missionData] of  Object.entries(json_resp)) {
+        for (const [mission, missionData] of Object.entries(json_resp)) {
             //console.log("From response, extracting mission ", mission);
             for (const [satellite, dayList] of Object.entries(missionData)) {
                 //console.log("From response, extracting satellite ", satellite, ", days: ", dayList);
@@ -167,14 +169,14 @@ class MissionAcquisitionDates extends EventTarget {
                 this.acqplansDates[satellite].dates.push.apply(this.acqplansDates[satellite].dates, dayList);
             }
         }
-        
+
         // Fill Satellite Select
         var response_satellites = [].concat.apply([],
-            Object.values(json_resp).map(function(mission_data) {return Object.keys(mission_data);}));
+            Object.values(json_resp).map(function (mission_data) { return Object.keys(mission_data); }));
         console.log("Satellites in response: ", response_satellites);
         var satellite_sel = document.getElementById('acquisition-plans-satellite-select');
         var that = this;
-        var satellite_labels = response_satellites.map(function (satellite) { 
+        var satellite_labels = response_satellites.map(function (satellite) {
             return [satellite, that.acqplansDates[satellite].label];
         });
         this._fill_select_element(satellite_sel, satellite_labels);
@@ -182,7 +184,7 @@ class MissionAcquisitionDates extends EventTarget {
     }
 
     _select_element(sel_elem, sel_option) {
-                    // Select First item
+        // Select First item
         sel_elem.value = sel_option;
         //sel_elem.selectedIndex = 0;
         // Activate Event Handlers
@@ -195,15 +197,15 @@ class MissionAcquisitionDates extends EventTarget {
         // Clear Select Element
         sel_elem.options.length = 0;
         // Load value/Labels on Select Element
-        value_labels.forEach(function([value, label]) {
+        value_labels.forEach(function ([value, label]) {
             sel_elem.add(new Option(label, value));
         });
     }
 
-    failureAcquisitionPlansAvailability(response){
+    failureAcquisitionPlansAvailability(response) {
         console.error(response);
         return;
-    } 
+    }
 
     onSatelliteSelectChange(ev) {
         var satellite = ev.target.value;
@@ -213,7 +215,7 @@ class MissionAcquisitionDates extends EventTarget {
 
         // Fill Date Select with label/values from configuration for this satellite value
         var day_list = this.acqplansDates[satellite].dates;
-        var day_select_items = day_list.map(function(day_str) {
+        var day_select_items = day_list.map(function (day_str) {
             var item_date = moment(day_str, 'yyyy-MM-DD').format("DD MMM yyyy");
             return [day_str, item_date];
         });
@@ -223,7 +225,7 @@ class MissionAcquisitionDates extends EventTarget {
         //console.log("List of dates for selected satellite: ", day_list);
         this.setAvailableDays(day_select_items);
     }
-    
+
     /**
      * Fills the control to select Acquisition Day
      * with a list of available Day dates
@@ -254,7 +256,7 @@ class MissionAcquisitionDates extends EventTarget {
         var today = new Date();
         // Format using the value format
         var today_item = moment(today).format('YYYY-MM-DD');
-        var exists = $('#'+this._daySelectionId + ' > option').filter(function(){ return $(this).val() == today_item; }).length;
+        var exists = $('#' + this._daySelectionId + ' > option').filter(function () { return $(this).val() == today_item; }).length;
         if (exists) {
             this._select_element(date_sel, today_item);
         } else {
@@ -277,9 +279,10 @@ class MissionAcquisitionDates extends EventTarget {
         console.log("Current selection: ", this.selectedParams);
 
         // Dispatch event for the Acquisition Plan Viewer class
-        var planDayEvent = new CustomEvent('changeDate',{
-                detail: this.selectedParams,
-                cancelable: true });
+        var planDayEvent = new CustomEvent('changeDate', {
+            detail: this.selectedParams,
+            cancelable: true
+        });
         this.dispatchEvent(planDayEvent);
     }
 }
@@ -309,7 +312,7 @@ class AcquisitionPlansViewer {
         // Hide the drop-down menu to select the time range
         $('#time-period-select-container').hide();
 
-        
+
         // Instantiate and activate PlansCoverage Class
         this.currentMission = null;
         this.parametersSelection.init();
@@ -335,7 +338,7 @@ class AcquisitionPlansViewer {
             animation: true,
 
             // Prevent data sources from overriding clock settings
-            automaticallyTrackDataSourceClocks : false,
+            automaticallyTrackDataSourceClocks: false,
 
             // Disable baseLayer Picker and geocoder, as they use external services
             baseLayerPicker: false,
@@ -397,9 +400,9 @@ class AcquisitionPlansViewer {
         var daySel = selectionEv.detail.day;
         // this.reset_camera_view();
         console.debug("Activated EventHanlder; mission: ", this.currentMission,
-                ",satellite: ", satelliteSel, ", date: ", daySel);
+            ",satellite: ", satelliteSel, ", date: ", daySel);
         // this.updateDateInterval(time_period_sel.value);
-        if (acquisitionKmlMissions.includes(this.currentMission) ) {
+        if (acquisitionKmlMissions.includes(this.currentMission)) {
             this.loadAcquisitionPlan(this.currentMission, satelliteSel, daySel);
         } else {
             // Use a different function to retrieve acquisition Plans
@@ -412,15 +415,15 @@ class AcquisitionPlansViewer {
     successLoadSatellitesOrbits(response) {
         this.viewer_widget.dataSources.add(
             Cesium.CzmlDataSource.load(response));
-    /*
-        var that = this;
-        var orbitDsPromise = Cesium.CzmlDataSource.load(response);
-        orbitDsPromise.then(function (orbitDS) {
-            that.viewer_widget.dataSources.add(orbitDS);
-            console.log("Completed loading CZML Orbits on Viewr");
-            orbitDS.name = "SatelliteOrbits";
-                });
-        */
+        /*
+            var that = this;
+            var orbitDsPromise = Cesium.CzmlDataSource.load(response);
+            orbitDsPromise.then(function (orbitDS) {
+                that.viewer_widget.dataSources.add(orbitDS);
+                console.log("Completed loading CZML Orbits on Viewr");
+                orbitDS.name = "SatelliteOrbits";
+                    });
+            */
     }
 
     failureLoadSatellitesOrbits(response) {
@@ -445,17 +448,17 @@ class AcquisitionPlansViewer {
         var acq_plans_api_name = 'acquisitions/acquisition-datatakes';
         console.log("Loading Acquisition Plans for satellite " + satellite + ", day " + plan_day);
         var urlParamString = `${mission}/${satellite}/${plan_day}`;
-        console.log("Parameters for API URL: "+urlParamString);
+        console.log("Parameters for API URL: " + urlParamString);
         var that = this;
         // accept = 'application/xml'
-        var ajaxPromises = asyncAjaxCall('/api/' + acq_plans_api_name + '/'+urlParamString, 'GET', {},
+        var ajaxPromises = asyncAjaxCall('/api/' + acq_plans_api_name + '/' + urlParamString, 'GET', {},
             that.successLoadAcquisitionDatatakes.bind(that), that.errorLoadAcquisitionPlan);
 
         // Execute asynchronous AJAX call
-        ajaxPromises.then(function() {
-             console.log("Received all results!");
-             that.removeSpinner();
-            }
+        ajaxPromises.then(function () {
+            console.log("Received all results!");
+            that.removeSpinner();
+        }
         );
     }
 
@@ -474,39 +477,39 @@ class AcquisitionPlansViewer {
         // Add class Busy to charts
         // var mission = 'S1';
         var urlParamString = `${mission}/${satellite}/${plan_day}`;
-        console.log("Parameters for API URL: "+urlParamString);
+        console.log("Parameters for API URL: " + urlParamString);
         var that = this;
         // accept = 'application/xml'
-        var ajaxPromises = asyncAjaxDownloadXml('/api/' + acq_plans_api_name + '/'+urlParamString, 'GET', {},
+        var ajaxPromises = asyncAjaxDownloadXml('/api/' + acq_plans_api_name + '/' + urlParamString, 'GET', {},
             that.successLoadAcquisitionPlan.bind(that), that.errorLoadAcquisitionPlan);
 
         // Execute asynchronous AJAX call
-        ajaxPromises.then(function() {
-             console.log("Received all results!");
-             that.removeSpinner();
-            }
+        ajaxPromises.then(function () {
+            console.log("Received all results!");
+            that.removeSpinner();
+        }
         );
     }
 
     showSpinner() {
         console.log("Show Spinner");
         $('.card', document.getElementById('acquisition-plans-container')).eq(0).html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
-       $('.spinner-border')[0].hidden = false;
+            '<div class="spinner">' +
+            '<div class="bounce1"></div>' +
+            '<div class="bounce2"></div>' +
+            '<div class="bounce3"></div>' +
+            '</div>');
+        $('.spinner-border')[0].hidden = false;
 
-       //$('#acquisition-plans-spinner').hidden = false;
-       $('#acquisition-plans-spinner').show();
+        //$('#acquisition-plans-spinner').hidden = false;
+        $('#acquisition-plans-spinner').show();
 
-       // var a = document.getElementsByClassName('spinner-border');
-       // a[0].style.display='block' ;
-       // show spinner, disable page
+        // var a = document.getElementsByClassName('spinner-border');
+        // a[0].style.display='block' ;
+        // show spinner, disable page
     }
 
-    removeSpinner(){
+    removeSpinner() {
         console.log("Hide Spinner");
         //$('#acquisition-plans-spinner').hidden = true;
         $('#acquisition-plans-spinner').hide();
@@ -514,13 +517,13 @@ class AcquisitionPlansViewer {
     }
 
     successLoadAcquisitionDatatakes(response) {
-        console.log("Acquisition Datatakes Response: ",response);
+        console.log("Acquisition Datatakes Response: ", response);
         var datatakes = format_response(response);
         var dtList = this.extractAcquisitionDatatakeIdList(datatakes);
         this.writeDatatakesList(dtList); // (dtListAttrs)
     }
 
-    successLoadAcquisitionPlan(response){
+    successLoadAcquisitionPlan(response) {
 
         // TODO: Modify response, to include parameters: Mission, satellite, day
         // Acknowledge the successful retrieval of downlink operations
@@ -532,10 +535,10 @@ class AcquisitionPlansViewer {
         // Parse response
         // mission (just for check)
         // Update the KML on World view
-        this.drawAcquisitionPlan(kml_result); 
+        this.drawAcquisitionPlan(kml_result);
     }
 
-    errorLoadAcquisitionPlan(response){
+    errorLoadAcquisitionPlan(response) {
         console.error(response);
         var from = 'top';
         var align = 'center';
@@ -543,10 +546,10 @@ class AcquisitionPlansViewer {
 
         // Read from response: error, errorText
         var content = {
-                title: 'Request Error',
-                message: 'Error '+ response.status +
-                    '<p>' + response.statusText + '</p>',
-                icon: 'flaticon-round'
+            title: 'Request Error',
+            message: 'Error ' + response.status +
+                '<p>' + response.statusText + '</p>',
+            icon: 'flaticon-round'
         };
 
         // Display notification message
@@ -590,7 +593,7 @@ class AcquisitionPlansViewer {
                 kmlEntity.show = true;
             });
             kmlDS.entities.show = true;
-            if (that.currentKMLDatasources.length > 0 ) {
+            if (that.currentKMLDatasources.length > 0) {
                 that.viewer_widget.dataSources.remove(that.currentKMLDatasources[0], true);
                 that.currentKMLDatasources.pop();
             }
@@ -599,7 +602,7 @@ class AcquisitionPlansViewer {
             that.viewer_widget.clock.shouldAnimate = true;
             console.log("Adding KML Source to Viewer");
             that.viewer_widget.dataSources.add(kmlDS).then(
-                function(data) {
+                function (data) {
                     //data.clock.shouldAnimate = true;
                     console.log("Completed loading KML Source on Viewr");
                     // var dtListAttrs =
@@ -622,14 +625,14 @@ class AcquisitionPlansViewer {
 
         // Map on Entities on KML Source (i.e. Placemark elements,
         // loaded with metadata (extendedData) )
-        var dtIdValues = kmlSource.entities.values.map(function(val) {
+        var dtIdValues = kmlSource.entities.values.map(function (val) {
             if (val.kml.extendedData) {
                 var dtId = val.kml.extendedData[dtIdProperty].value;
                 var dtLabel = dtId;
                 if (that.currentMission === 'S2') {
 
                     // Extract Mode and append to label
-                    dtLabel = dtLabel + " ("+ val.kml.extendedData['Mode'].value+")";
+                    dtLabel = dtLabel + " (" + val.kml.extendedData['Mode'].value + ")";
                 }
 
                 // Datatakes: map Datatake ID to Datatake Entity
@@ -646,9 +649,9 @@ class AcquisitionPlansViewer {
             }
         });
 
-       // this.datatakes_list = new Map(dtIdValues.filter(n=> n));
-       // Return list without None elements!
-       return dtIdValues.filter(n=> n);
+        // this.datatakes_list = new Map(dtIdValues.filter(n=> n));
+        // Return list without None elements!
+        return dtIdValues.filter(n => n);
     }
 
     extractAcquisitionDatatakeIdList(acq_datatakes) {
@@ -656,19 +659,19 @@ class AcquisitionPlansViewer {
         var dtIdProperty = missionDatatakeId[this.currentMission];
         var that = this;
         this.datatakes_list = new Map();
-        var dtIdValues = acq_datatakes.map(function(acq_dt) {
-                var dtId = acq_dt[dtIdProperty];
-                var dtLabel = dtId;
-                that.datatakes_list.set(dtId, acq_dt);
-                // TODO: Decode only PUB STATUS
-                var pubDatatakeStatus = acq_dt.completeness_status.PUB.status;
-                console.debug("Acquisition Datatake pub status: ", pubDatatakeStatus);
-                var dt_status = that.decodeDatatakeCompletenessStatus(pubDatatakeStatus);
-                console.debug("Decoded status: ", dt_status);
-                return [dtLabel, dtId, dt_status];
+        var dtIdValues = acq_datatakes.map(function (acq_dt) {
+            var dtId = acq_dt[dtIdProperty];
+            var dtLabel = dtId;
+            that.datatakes_list.set(dtId, acq_dt);
+            // TODO: Decode only PUB STATUS
+            var pubDatatakeStatus = acq_dt.completeness_status.PUB.status;
+            console.debug("Acquisition Datatake pub status: ", pubDatatakeStatus);
+            var dt_status = that.decodeDatatakeCompletenessStatus(pubDatatakeStatus);
+            console.debug("Decoded status: ", dt_status);
+            return [dtLabel, dtId, dt_status];
         });
-       // Return list without None elements!
-       return dtIdValues.filter(n=> n);
+        // Return list without None elements!
+        return dtIdValues.filter(n => n);
     }
 
     writeDatatakesList(datatakesList) {
@@ -682,7 +685,7 @@ class AcquisitionPlansViewer {
         console.debug("Datatakes table on class: ", this.datatakes_list);
 
         // Loop over each data take and append the corresponding entry
-        datatakesList.forEach(function(value) {
+        datatakesList.forEach(function (value) {
             // TODO: CHange: pass directly the DT Entity as value to the option
             var [dt_label, dt_id, dt_status] = value;
             var escape_circle_status = '&#9899';
@@ -691,14 +694,14 @@ class AcquisitionPlansViewer {
             if (dt_status === 'failed') escape_circle_status = '&#128308';
             $('#acq-datatakes-select').append(
                 '<option value="' + dt_id + '">' + dt_label + '&nbsp;&nbsp;' +
-                    escape_circle_status +
+                escape_circle_status +
                 '</option>'
             );
         });
 
         // Manage selection changes
         var that = this;
-        $('#acq-datatakes-select').change(function() {
+        $('#acq-datatakes-select').change(function () {
             // Read current selected value of select element
             var dt = $(this).val();
             that.stopKmlAnimation();
@@ -740,11 +743,11 @@ class AcquisitionPlansViewer {
         var dt_entity = this.datatakes_list.get(datatake_id);
         var dt_name = dt_entity.name; // this.datatakes_list.get(datatake_id); // dt_entity.name;
         if (acquisitionKmlMissions.some(word => datatake_id.startsWith(word))) {
-        //if (datatake_id.startsWith('S1') || datatake_id.startsWith('S2') || datatake_id.startsWith('S3')) {
+            //if (datatake_id.startsWith('S1') || datatake_id.startsWith('S2') || datatake_id.startsWith('S3')) {
 
             // TODO : handle non existing entity
             // Find entity in KML Source Collection with specified name
-            console.log("Entity with id ", datatake_id,", name ", dt_name, ":", dt_entity);
+            console.log("Entity with id ", datatake_id, ", name ", dt_name, ":", dt_entity);
             this.selectViewerTarget(dt_entity);
             this.viewer_widget.clock.currentTime = dt_entity.availability.start;
             var flyPromise = this.viewer_widget.flyTo(dt_entity);
@@ -754,10 +757,10 @@ class AcquisitionPlansViewer {
                     console.log("Displaying details");
                     that.viewer_widget.scene.requestRender();
                 }
-                else  {
+                else {
                     console.log('Flyto was canceled or entity not in scene: ', result);
                 }
-            }).catch(function(error) {
+            }).catch(function (error) {
                 console.log(error);
             });
 
@@ -765,26 +768,26 @@ class AcquisitionPlansViewer {
 
             // TEMPORARY: For S3/S5: set time,
             // Satellite is defined by first 3 chars in datatake id
-            var dt_satellite = datatake_id.substring(0,2);
+            var dt_satellite = datatake_id.substring(0, 2);
             this.flyToSatellite(dt_satellite, dt_entity.observation_time_start)
         }
     }
 
     flyToSatellite(satellite_id, satellite_timestamp) {
-            // TODO: Find another way to select Orbit Datasource
-            var czmlDs =  this.viewer_widget.dataSources.get(1);
-            var satNoradId = satelliteNoradId[satellite_id];
-            var dt_sat_entity = czmlDs.entities.getById(satNoradId);
+        // TODO: Find another way to select Orbit Datasource
+        var czmlDs = this.viewer_widget.dataSources.get(1);
+        var satNoradId = satelliteNoradId[satellite_id];
+        var dt_sat_entity = czmlDs.entities.getById(satNoradId);
 
-            // Find Satellite for this Datatake
-            // select CZML orbit for S3/S5, rotate to center the satellite,
-            // Keep view Height
-            // 2023-10-10T00:21:00.331Z
-            var dt_start_julian = Cesium.JulianDate.fromIso8601(satellite_timestamp);
+        // Find Satellite for this Datatake
+        // select CZML orbit for S3/S5, rotate to center the satellite,
+        // Keep view Height
+        // 2023-10-10T00:21:00.331Z
+        var dt_start_julian = Cesium.JulianDate.fromIso8601(satellite_timestamp);
 
-            // Convert time string to current Time object
-            this.viewer_widget.clock.currentTime = dt_start_julian;
-            this.selectViewerTarget(dt_sat_entity);
+        // Convert time string to current Time object
+        this.viewer_widget.clock.currentTime = dt_start_julian;
+        this.selectViewerTarget(dt_sat_entity);
     }
 
     selectViewerTarget(entity) {
@@ -794,7 +797,7 @@ class AcquisitionPlansViewer {
 
     // Remove from viewer all currently loaded Datasources
     clearAcquisitionPlans() {
-        this.currentKMLDatasources.forEach(function(item) {
+        this.currentKMLDatasources.forEach(function (item) {
             acquisitionPlanViewer.viewer_widget.dataSources.remove(item);
         });
         this.currentKMLDatasources = [];
@@ -840,10 +843,10 @@ class AcquisitionPlansViewer {
         $('#globe-datatake-details').empty();
         $('#globe-datatake-details').html(
             '<div class="spinner">' +
-                '<div class="bounce1"></div>' +
-                '<div class="bounce2"></div>' +
-                '<div class="bounce3"></div>' +
-             '</div>');
+            '<div class="bounce1"></div>' +
+            '<div class="bounce2"></div>' +
+            '<div class="bounce3"></div>' +
+            '</div>');
 
         // Acknowledge the visualization of the online help
         console.info('Showing details of datatake: ' + dt_id);
@@ -860,25 +863,25 @@ class AcquisitionPlansViewer {
             '<label>Datatake ID: ' + datatake['key'] + '</label>' +
             '<label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</label>' +
             '<label>Timeliness: ' + datatake['timeliness'] + '</label>' +
-        '</div>');
+            '</div>');
         $('#globe-datatake-details').append('<div class="card">' +
             '<div class="card-body">' +
-                '<div class="table-responsive"><div class="table-responsive">' +
-                    '<table id="globe-basic-datatables-product-level-completeness" class="display table table-striped table-hover">' +
-                        '<thead>' +
-                            '<tr>' +
-                                '<th>Product type</th>' +
-                                '<th style="text-align: center">Status [%]</th>' +
-                            '</tr>' +
-                            '<tbody></tbody>' +
-                        '</thead>' +
-                    '</table>' +
-                '</div>' +
+            '<div class="table-responsive"><div class="table-responsive">' +
+            '<table id="globe-basic-datatables-product-level-completeness" class="display table table-striped table-hover">' +
+            '<thead>' +
+            '<tr>' +
+            '<th>Product type</th>' +
+            '<th style="text-align: center">Status [%]</th>' +
+            '</tr>' +
+            '<tbody></tbody>' +
+            '</thead>' +
+            '</table>' +
             '</div>' +
-        '</div>');
+            '</div>' +
+            '</div>');
         var dataTakeDetailsTable = $('#globe-basic-datatables-product-level-completeness').DataTable({
             "sDom": "frtp",
-            "createdRow": function(row, data, dataIndex) {
+            "createdRow": function (row, data, dataIndex) {
                 $(row).find('td').eq(0).height(25);
                 $(row).find('td').eq(1).height(25);
                 $(row).find('td').eq(1).css('text-align', 'center');
@@ -891,7 +894,7 @@ class AcquisitionPlansViewer {
         });
         for (var key of Object.keys(datatake)) {
             if (key.includes('local_percentage')) {
-                dataTakeDetailsTable.row.add([key.replace('_local_percentage',''), datatake[key].toFixed(2)]).draw();
+                dataTakeDetailsTable.row.add([key.replace('_local_percentage', ''), datatake[key].toFixed(2)]).draw();
             }
         }
     }
@@ -899,7 +902,7 @@ class AcquisitionPlansViewer {
     errorShowDatatakeDetails(response) {
         $('#datatake-details').append(
             '<div class="form-group">' +
-                '<label>An error occurred, while retrieving the datatake details</label>' +
+            '<label>An error occurred, while retrieving the datatake details</label>' +
             '</div>');
     }
 
