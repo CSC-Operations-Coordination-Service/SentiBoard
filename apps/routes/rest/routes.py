@@ -218,7 +218,8 @@ def add_instant_message():
             )
 
         try:
-            publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
+            # publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
+            date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
         except ValueError:
             return Response(
                 json.dumps(
@@ -227,6 +228,11 @@ def add_instant_message():
                 mimetype="application/json",
                 status=400,
             )
+
+        now_utc = datetime.now(timezone.utc)
+        publication_date = datetime.combine(
+            date_only, now_utc.time(), tzinfo=timezone.utc
+        )
 
         modify_date = datetime.now(timezone.utc)
 
@@ -947,3 +953,20 @@ def get_cds_product_publication_volume_trend_statistics_previous_quarter():
     # if not flask_cache.has(publication_api_uri):
     #    publication_cache.load_publication_cache_previous_quarter(publication_cache.PUBLICATION_VOLUME_TREND)
     return flask_cache.get(publication_api_uri)
+
+
+# SSR
+@blueprint.route("/acquisitions/acquisition-plan-days")
+def acquisition_plan_days_ssr():
+    """
+    Server-side acquisition plan coverage.
+    Injects data into a template instead of exposing API directly.
+    """
+    logger.info("[BEG] SSR: Acquisition Plan Days")
+    plans_coverage = acquisition_plans_cache.get_acquisition_plans_coverage()
+    logger.info("[END] SSR: Acquisition Plan Days")
+
+    # Render template with preloaded JSON
+    return render_template(
+        "acquisitions-status.html", plans_coverage_json=json.dumps(plans_coverage)
+    )

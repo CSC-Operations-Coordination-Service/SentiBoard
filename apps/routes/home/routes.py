@@ -29,6 +29,7 @@ from apps.routes.home import blueprint
 from functools import wraps
 import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
+import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
 from calendar import monthrange
@@ -53,6 +54,7 @@ from apps.utils.events_utils import (
     datatake_sort_key,
     enrich_datatake,
     make_json_safe,
+    find_undefined_paths,
 )
 
 PAGE_METADATA = {
@@ -442,17 +444,6 @@ def events_data():
         cache_entry = events_cache.flask_cache.get(cache_key)
         raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
 
-        # if raw_anomalies:
-        #     current_app.logger.info(
-        #         f"[RAW] First anomaly: {json.dumps(raw_anomalies[0], indent=2)}"
-        #     )
-        #     for a in raw_anomalies:
-        #         srcTest = a.get("_source", a)
-        #         if srcTest.get("key") == "GSANOM-19977":
-        #             current_app.logger.warning(
-        #                 f"[DEBUG GSANOM-19977] Full anomaly:\n{json.dumps(srcTest, indent=2)}"
-        #             )
-
         if not raw_anomalies:
             current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
             return jsonify({"anomalies": [], "anomalies_by_date": {}, "events": []})
@@ -516,9 +507,6 @@ def events_data():
                 continue
             if instance.get("fullRecover"):
                 skipped_full += 1
-                # current_app.logger.info(
-                #     f"[SKIP] Fully recovered anomaly:  {a.get('key')}"
-                # )
                 continue
             else:
                 kept_partial += 1
@@ -544,19 +532,6 @@ def events_data():
                 anomalies_by_date.setdefault(date_key, []).append(instance)
                 events.append(instance)
 
-        # --- Summary logs ---
-        # total_events = len(events)
-        # current_app.logger.info(
-        #     f"[SUMMARY] Total anomalies processed: {len(anomalies)} | "
-        #     f"Kept active: {kept_partial} | Skipped full-recovered: {skipped_full}"
-        # )
-        # current_app.logger.info(
-        #     f"[SUMMARY] Total events for {month}/{year}: {total_events}"
-        # )
-        # current_app.logger.info(
-        #     f"[SUMMARY] Anomalies by date keys: {list(anomalies_by_date.keys())}"
-        # )
-
         # --- Return clean JSON response ---
         response = {
             "year": year,
@@ -567,7 +542,6 @@ def events_data():
             "events": events,
         }
 
-        # current_app.logger.info(f"[FINAL RESPONSE] {json.dumps(response, indent=2)}")
         return jsonify(response)
 
     except Exception as e:
@@ -596,9 +570,6 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
-        # datatakes_cache.load_datatakes_cache_last_quarter()
-        # current_app.logger.info("[DATA-AVAILABILITY] Last 3 months cache loaded")
-
         # Detect AJAX
         is_ajax = request.args.get("ajax") == "1"
         search_query = request.args.get("search", "").strip()
@@ -618,10 +589,6 @@ def data_availability():
             session["selected_period"] = selected_period
             if not is_ajax:
                 return redirect(url_for("home_blueprint.data_availability"))
-
-        # current_app.logger.info(
-        #    f"[DATA-AVAILABILITY] selected_period={selected_period}, has_search={has_search}, session={dict(session)}"
-        # )
 
         # --- Cache keys ---
         datatakes_cache_key_map = {
@@ -834,6 +801,51 @@ def enrich_datatake_modal():
     return jsonify(safe_enriched), 200
 
 
+@blueprint.route("/acquisitions/acquisitions-status")
+def acquisitions_status():
+    metadata = get_metadata("acquisitions-status.html")
+    metadata["page_url"] = request.url
+    segment = "acquisitions-status"
+
+    try:
+        logger.info("[BEG] SSR: Acquisitions Status")
+
+        plans_raw = acquisition_plans_cache.get_acquisition_plans_coverage()
+
+        logger.info("[DEBUG] Raw acquisition plan coverage loaded")
+        logger.info(f"[DEBUG] Type: {type(plans_raw)}")
+        logger.info(f"[DEBUG] Sample: {str(plans_raw)[:800]}")
+
+        logger.info("[DEBUG] Scanning for Undefined values recursively...")
+        has_undefined = find_undefined_paths(plans_raw)
+
+        if has_undefined:
+            logger.error(
+                "[CRITICAL] Undefined values detected in plans_raw BEFORE cleaning!"
+            )
+
+        plans_coverage = make_json_safe(plans_raw)
+
+        logger.info(f"[DEBUG] After make_json_safe type: {type(plans_coverage)}")
+        logger.info(f"[DEBUG] Sample (safe): {str(plans_coverage)[:800]}")
+
+        logger.info(f"[INFO] Retrieved {len(plans_coverage)} plans coverage items")
+
+        return render_template(
+            "home/acquisitions-status.html",
+            plans_coverage_json=plans_coverage,
+            segment=segment,
+            **metadata,
+        )
+
+    except Exception:
+        logger.exception("[ERR] SSR: Acquisitions Status")
+        return render_template("home/page-500.html"), 500
+
+    finally:
+        logger.info("[END] SSR: Acquisitions Status")
+
+
 @blueprint.route("/<template>")
 def route_template(template):
     try:
@@ -862,6 +874,10 @@ def route_template(template):
         # data-availability
         if template in ["data-availability", "data-availability.html"]:
             return data_availability()
+
+        # acquisitions-status
+        if template in ["acquisitions-status", "acquisitions-status.html"]:
+            return acquisitions_status()
 
         # Default: serve page from home
         return render_template("home/" + template, segment=segment, **metadata)

@@ -131,29 +131,16 @@ class MissionAcquisitionDates extends EventTarget {
     }
 
     loadAcquisitionPlansAvailability() {
+        console.info("Starting retrieval of Acquisition Plan Availability...");
 
-        // Acknowledge the invocation of rest APIs
-        console.info("Starting retrieval of Acquisition Plan Availablity...");
-
-        // Add class Busy to charts
-        var that = this;
-        var acq_plans_api_name = 'acquisitions/acquisition-plan-days';
-        var ajaxPromises = asyncAjaxCall('/api/' + acq_plans_api_name, 'GET', {},
-            that.successAcquisitionPlansAvailability.bind(that), that.failureAcquisitionPlansAvailability);
-
-        // Execute asynchronous AJAX call
-        ajaxPromises.then(function () {
-            console.log("Received all results!");
-            var dialog = document.getElementById('window');
-            if (dialog !== null) {
-                // TODO: REMOVE SPINNER
-                dialog.show();
-                document.getElementById('exit').onclick = function () {
-                    console.log("Click");
-                    dialog.close();
-                };
-            }
-        });
+        // Since SSR injects the data into the page, we no longer call the API
+        // Assume SSR template defines a global variable `SSR_ACQ_PLAN_DAYS`
+        if (typeof SSR_ACQ_PLAN_DAYS !== 'undefined') {
+            console.log("Using SSR-injected acquisition plan days");
+            this.successAcquisitionPlansAvailability(SSR_ACQ_PLAN_DAYS);
+        } else {
+            console.warn("SSR acquisition plan days not found, falling back to API call");
+        }
     }
 
     successAcquisitionPlansAvailability(response) {
@@ -162,9 +149,10 @@ class MissionAcquisitionDates extends EventTarget {
         // load response
         // set initial values for Select Controls
         for (const [mission, missionData] of Object.entries(json_resp)) {
-            //console.log("From response, extracting mission ", mission);
+            console.log("mission:", mission);
+            console.log("From response, extracting mission ", mission);
             for (const [satellite, dayList] of Object.entries(missionData)) {
-                //console.log("From response, extracting satellite ", satellite, ", days: ", dayList);
+                console.log("From response, extracting satellite ", satellite, ", days: ", dayList);
                 // Check if Mission/satellite are present in Availabilities table
                 this.acqplansDates[satellite].dates.push.apply(this.acqplansDates[satellite].dates, dayList);
             }

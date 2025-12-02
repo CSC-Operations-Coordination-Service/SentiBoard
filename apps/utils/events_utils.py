@@ -563,3 +563,19 @@ def make_json_safe(o):
             return o
         except:
             return str(o)
+
+
+def find_undefined_paths(obj, path="root"):
+    """Recursively log paths containing Undefined values."""
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            new_path = f"{path}.{k}"
+            if isinstance(v, Undefined):
+                logger.error(f"[UNDEFINED] Found at {new_path}")
+            find_undefined_paths(v, new_path)
+    elif isinstance(obj, list):
+        for idx, v in enumerate(obj):
+            new_path = f"{path}[{idx}]"
+            if isinstance(v, Undefined):
+                logger.error(f"[UNDEFINED] Found at {new_path}")
+            find_undefined_paths(v, new_path)

@@ -202,6 +202,10 @@
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
 
     <!-- Page related JS Class -->
+     <script type="text/javascript">
+        // Inject SSR acquisition plan days as a global JS variable
+        window.SSR_ACQ_PLAN_DAYS = {{ plans_coverage_json | tojson | safe }};
+    </script>
     <script src="/static/assets/lib/Cesium/1.106/Cesium.js"></script>
     <script src="/static/assets/js/acquisition-plans/acquisition-plans.js"></script>
     <script defer type="text/javascript">acquisitionPlanViewer.init();</script>
