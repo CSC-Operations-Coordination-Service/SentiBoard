@@ -217,7 +217,8 @@ def add_instant_message():
             )
 
         try:
-            publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
+            # publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
+            date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
         except ValueError:
             return Response(
                 json.dumps(
@@ -226,6 +227,11 @@ def add_instant_message():
                 mimetype="application/json",
                 status=400,
             )
+
+        now_utc = datetime.now(timezone.utc)
+        publication_date = datetime.combine(
+            date_only, now_utc.time(), tzinfo=timezone.utc
+        )
 
         modify_date = datetime.now(timezone.utc)
 
