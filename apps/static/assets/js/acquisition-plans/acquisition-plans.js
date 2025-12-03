@@ -124,7 +124,7 @@ class MissionAcquisitionDates extends EventTarget {
         if (!sel_sat || !this.acqplansDates[sel_sat]) {
             return false;
         }
-        const day_item = moment(selDate).format('yyyy-MM-DD');
+        const day_item = moment(selDate).format('YYYY-MM-DD');
 
         return this.acqplansDates[sel_sat].dates.includes(day_item);
     }
@@ -158,6 +158,13 @@ class MissionAcquisitionDates extends EventTarget {
         if (satelliteLabels.length > 0) {
             this._select_element(satelliteSel, satelliteLabels[0][0]);
         }
+        setTimeout(() => {
+            const dateSel = document.getElementById(this._daySelectionId);
+            if (dateSel && dateSel.value) {
+                console.info("[SSR] Forcing initial plan load for day: ", dateSel.value);
+                dateSel.dispatchEvent(new Event('change'));
+            }
+        }, 0);
     }
 
     onSatelliteSelectChange(ev) {
@@ -230,6 +237,7 @@ class AcquisitionPlansViewer {
         this.parametersSelection = new MissionAcquisitionDates();
         this.currentKMLDatasources = Array();
         this.datatakes_list = Array();
+        this._isInitialLoad = true;
     }
 
     init() {
@@ -549,6 +557,7 @@ class AcquisitionPlansViewer {
                     // var dtListAttrs =
                     var dtList = that.extractDatatakeIdList(data);
                     that.writeDatatakesList(dtList); // (dtListAttrs)
+                    that._isInitialLoad = false;
                 });
         });
     }
@@ -620,6 +629,11 @@ class AcquisitionPlansViewer {
         // Acknowledge the creation of the panel with the datatakes list
         console.debug("Building dropdown menu with the Datatakes List");
 
+        const $select = $('#acq-datatakes-select');
+
+        //Clear old options
+        $select.find('option').remove();
+
         // Write on the proper panel a list of links, with label the Datatake Id
         // and associated a reference (or the name) of the datatake Entity
         // An event is registered on the list, that flies to the selected entity
@@ -628,12 +642,12 @@ class AcquisitionPlansViewer {
         // Loop over each data take and append the corresponding entry
         datatakesList.forEach(function (value) {
             // TODO: CHange: pass directly the DT Entity as value to the option
-            var [dt_label, dt_id, dt_status] = value;
-            var escape_circle_status = '&#9899';
+            const [dt_label, dt_id, dt_status] = value;
+            let escape_circle_status = '&#9899';
             if (dt_status === 'ok') escape_circle_status = '&#128994';
             if (dt_status === 'partial') escape_circle_status = '&#128992';
             if (dt_status === 'failed') escape_circle_status = '&#128308';
-            $('#acq-datatakes-select').append(
+            $select.append(
                 '<option value="' + dt_id + '">' + dt_label + '&nbsp;&nbsp;' +
                 escape_circle_status +
                 '</option>'
@@ -641,16 +655,21 @@ class AcquisitionPlansViewer {
         });
 
         // Manage selection changes
-        var that = this;
-        $('#acq-datatakes-select').change(function () {
+        const that = this;
+        $select.off('change').on('change', function () {
             // Read current selected value of select element
-            var dt = $(this).val();
+            const dt = $(this).val();
+            if (!dt) return;
             that.stopKmlAnimation();
             that.flyToDatatake(dt);
         });
 
         // Trigger change manually after populating the list
-        $('#acq-datatakes-select').trigger('change');
+        if ($select[0].options.length > 0) {
+            const firstValue = $select[0].options[0].value;
+            //console.info("[AUTO] Triggering change to first datatake: ", firstValue);
+            $select.val(firstValue).trigger('change');
+        }
 
         // Acknowledge the completion of the drop-down datatake list
         console.debug("Completed building dropdown menu with Datatakes List");
@@ -738,6 +757,10 @@ class AcquisitionPlansViewer {
 
     // Remove from viewer all currently loaded Datasources
     clearAcquisitionPlans() {
+        if (this._isInitialLoad) {
+            console.warn("[SSR] Skipping clearAcquisitionPlans on initial load.");
+            return;
+        }
         this.currentKMLDatasources.forEach(function (item) {
             acquisitionPlanViewer.viewer_widget.dataSources.remove(item);
         }, this);
