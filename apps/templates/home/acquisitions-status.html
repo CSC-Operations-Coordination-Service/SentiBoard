@@ -202,9 +202,36 @@
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
 
     <!-- Page related JS Class -->
-     <script type="text/javascript">
+    <script type="text/javascript">
         // Inject SSR acquisition plan days as a global JS variable
         window.SSR_ACQ_PLAN_DAYS = {{ plans_coverage_json | tojson | safe }};
+
+        // DEBUG: Log first few missions and satellites to verify structure
+        (function() {
+            if (typeof SSR_ACQ_PLAN_DAYS !== 'undefined') {
+                console.info("[DEBUG] SSR_ACQ_PLAN_DAYS loaded, type:", typeof SSR_ACQ_PLAN_DAYS);
+
+                const missions = Object.keys(SSR_ACQ_PLAN_DAYS);
+                console.info("[DEBUG] Missions available:", missions.slice(0, 5));
+
+                missions.slice(0, 5).forEach(mission => {
+                    const satellites = Object.keys(SSR_ACQ_PLAN_DAYS[mission] || {});
+                    console.info(`[DEBUG] Mission: ${mission}, Satellites:`, satellites.slice(0, 5));
+                });
+
+                // Optionally, log a sample of the days array for the first satellite
+                if (missions.length > 0) {
+                    const firstMission = missions[0];
+                    const firstSatellite = Object.keys(SSR_ACQ_PLAN_DAYS[firstMission] || {})[0];
+                    if (firstSatellite) {
+                        console.info(`[DEBUG] Sample days for ${firstMission} / ${firstSatellite}:`,
+                            SSR_ACQ_PLAN_DAYS[firstMission][firstSatellite].slice(0, 10));
+                    }
+                }
+            } else {
+                console.warn("[DEBUG] SSR_ACQ_PLAN_DAYS is undefined");
+            }
+        })();
     </script>
     <script src="/static/assets/lib/Cesium/1.106/Cesium.js"></script>
     <script src="/static/assets/js/acquisition-plans/acquisition-plans.js"></script>

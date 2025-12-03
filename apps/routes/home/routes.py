@@ -21,6 +21,7 @@ from flask import (
     session,
     redirect,
     url_for,
+    Response,
 )
 from flask_login import current_user, login_required
 from jinja2 import TemplateNotFound
@@ -801,8 +802,12 @@ def enrich_datatake_modal():
     return jsonify(safe_enriched), 200
 
 
-@blueprint.route("/acquisitions/acquisitions-status")
+@blueprint.route("/acquisitions-status")
 def acquisitions_status():
+    """
+    SSR: Render the Acquisitions Status page with SSR-injected acquisition plan coverage.
+    Ensures the frontend JS receives a clean JSON object.
+    """
     metadata = get_metadata("acquisitions-status.html")
     metadata["page_url"] = request.url
     segment = "acquisitions-status"
@@ -810,27 +815,31 @@ def acquisitions_status():
     try:
         logger.info("[BEG] SSR: Acquisitions Status")
 
+        # Step 1 — Retrieve acquisition plan coverage
+        logger.info("[BEG] Retrieve Acquisition Plans Coverage")
         plans_raw = acquisition_plans_cache.get_acquisition_plans_coverage()
+        logger.info("[END] Retrieve Acquisition Plans Coverage")
 
         logger.info("[DEBUG] Raw acquisition plan coverage loaded")
         logger.info(f"[DEBUG] Type: {type(plans_raw)}")
         logger.info(f"[DEBUG] Sample: {str(plans_raw)[:800]}")
 
-        logger.info("[DEBUG] Scanning for Undefined values recursively...")
-        has_undefined = find_undefined_paths(plans_raw)
+        # Step 2 — If the cache returned a Flask Response, extract the JSON
+        if isinstance(plans_raw, Response):
+            try:
+                plans_raw = plans_raw.get_json(force=True)
+                logger.info("[DEBUG] Extracted JSON from Response object")
+            except Exception as e:
+                logger.exception("[ERR] Failed to parse Response JSON")
+                plans_raw = {}  # fallback to empty dict
 
-        if has_undefined:
-            logger.error(
-                "[CRITICAL] Undefined values detected in plans_raw BEFORE cleaning!"
-            )
-
+        # Step 3 — Recursively clean Undefined/None and convert dates
         plans_coverage = make_json_safe(plans_raw)
-
         logger.info(f"[DEBUG] After make_json_safe type: {type(plans_coverage)}")
         logger.info(f"[DEBUG] Sample (safe): {str(plans_coverage)[:800]}")
-
         logger.info(f"[INFO] Retrieved {len(plans_coverage)} plans coverage items")
 
+        # Step 4 — Render the template with SSR-injected JSON
         return render_template(
             "home/acquisitions-status.html",
             plans_coverage_json=plans_coverage,
