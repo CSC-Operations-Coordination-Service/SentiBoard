@@ -31,6 +31,7 @@ from functools import wraps
 import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
+import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
 from calendar import monthrange
@@ -805,8 +806,10 @@ def enrich_datatake_modal():
 @blueprint.route("/acquisitions-status")
 def acquisitions_status():
     """
-    SSR: Render the Acquisitions Status page with SSR-injected acquisition plan coverage.
-    Ensures the frontend JS receives a clean JSON object.
+    SSR: Render the Acquisitions Status page with:
+    - Acquisition Plan Coverage
+    - Satellite Orbits
+    - Acquisition Stations (SSR)
     """
     metadata = get_metadata("acquisitions-status.html")
     metadata["page_url"] = request.url
@@ -820,11 +823,6 @@ def acquisitions_status():
         plans_raw = acquisition_plans_cache.get_acquisition_plans_coverage()
         logger.info("[END] Retrieve Acquisition Plans Coverage")
 
-        logger.info("[DEBUG] Raw acquisition plan coverage loaded")
-        logger.info(f"[DEBUG] Type: {type(plans_raw)}")
-        logger.info(f"[DEBUG] Sample: {str(plans_raw)[:800]}")
-
-        # Step 2 — If the cache returned a Flask Response, extract the JSON
         if isinstance(plans_raw, Response):
             try:
                 plans_raw = plans_raw.get_json(force=True)
@@ -833,16 +831,49 @@ def acquisitions_status():
                 logger.exception("[ERR] Failed to parse Response JSON")
                 plans_raw = {}  # fallback to empty dict
 
-        # Step 3 — Recursively clean Undefined/None and convert dates
         plans_coverage = make_json_safe(plans_raw)
-        logger.info(f"[DEBUG] After make_json_safe type: {type(plans_coverage)}")
-        logger.info(f"[DEBUG] Sample (safe): {str(plans_coverage)[:800]}")
         logger.info(f"[INFO] Retrieved {len(plans_coverage)} plans coverage items")
+
+        # Step 2 -  SATELLITE ORBITS (SSR)
+        logger.info("[BEG] Retrieve Satellite Orbits (SSR)")
+        orbits_api_key = acquisition_assets_cache.orbits_cache_key
+        orbits_raw = flask_cache.get(orbits_api_key)
+        logger.info("[END] Retrieve Satellite Orbits (SSR)")
+
+        if isinstance(orbits_raw, Response):
+            try:
+                orbits_raw = orbits_raw.get_json(force=True)
+                logger.info("[DEBUG] Extracted JSON from orbits Response")
+            except Exception:
+                logger.exception("[ERR] Failed to parse orbits Response JSON")
+                orbits_raw = {}
+
+        orbits_safe = make_json_safe(orbits_raw)
+        logger.info("[INFO] SSR satellite orbits loaded")
+
+        # Step 3 - ACQUISITION STATIONS (SSR)
+        logger.info("[BEG] Retrieve Acquisition Stations (SSR)")
+        stations_api_key = acquisition_assets_cache.stations_cache_key
+        stations_raw = flask_cache.get(stations_api_key)
+        logger.info("[END] Retrieve Acquisition Stations (SSR)")
+
+        if isinstance(stations_raw, Response):
+            try:
+                stations_raw = stations_raw.get_json(force=True)
+                logger.info("[DEBUG] Extracted JSON from stations Response")
+            except Exception:
+                logger.exception("[ERR] Failed to parse stations Response JSON")
+                stations_raw = {}
+
+        stations_safe = make_json_safe(stations_raw)
+        logger.info("[INFO] SSR acquisition stations loaded")
 
         # Step 4 — Render the template with SSR-injected JSON
         return render_template(
             "home/acquisitions-status.html",
             plans_coverage_json=plans_coverage,
+            satellite_orbits_json=orbits_safe,
+            acquisition_stations_json=stations_safe,
             segment=segment,
             **metadata,
         )

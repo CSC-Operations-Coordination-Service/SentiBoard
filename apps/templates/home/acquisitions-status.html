@@ -204,33 +204,12 @@
     <script type="text/javascript">
         // Inject SSR acquisition plan days as a global JS variable
         window.SSR_ACQ_PLAN_DAYS = {{ plans_coverage_json | tojson | safe }};
+        window.SSR_SATELLITE_ORBITS = {{ satellite_orbits_json | tojson | safe }};
+        window.SSR_ACQUISITION_STATIONS = {{ acquisition_stations_json | tojson | safe }};
 
-        // DEBUG: Log first few missions and satellites to verify structure
-        (function() {
-            if (typeof SSR_ACQ_PLAN_DAYS !== 'undefined') {
-                console.info("[DEBUG] SSR_ACQ_PLAN_DAYS loaded, type:", typeof SSR_ACQ_PLAN_DAYS);
-
-                const missions = Object.keys(SSR_ACQ_PLAN_DAYS);
-                console.info("[DEBUG] Missions available:", missions.slice(0, 5));
-
-                missions.slice(0, 5).forEach(mission => {
-                    const satellites = Object.keys(SSR_ACQ_PLAN_DAYS[mission] || {});
-                    console.info(`[DEBUG] Mission: ${mission}, Satellites:`, satellites.slice(0, 5));
-                });
-
-                // Optionally, log a sample of the days array for the first satellite
-                if (missions.length > 0) {
-                    const firstMission = missions[0];
-                    const firstSatellite = Object.keys(SSR_ACQ_PLAN_DAYS[firstMission] || {})[0];
-                    if (firstSatellite) {
-                        console.info(`[DEBUG] Sample days for ${firstMission} / ${firstSatellite}:`,
-                            SSR_ACQ_PLAN_DAYS[firstMission][firstSatellite].slice(0, 10));
-                    }
-                }
-            } else {
-                console.warn("[DEBUG] SSR_ACQ_PLAN_DAYS is undefined");
-            }
-        })();
+        console.log("[SSR] Plans missions:", Object.keys(SSR_ACQ_PLAN_DAYS || {}).slice(0, 3));
+        console.log("[SSR] Orbits payload type:", typeof SSR_SATELLITE_ORBITS);
+        console.log("[SSR] Acquisition Stations payload type:", typeof SSR_ACQUISITION_STATIONS);
     </script>
     <script src="/static/assets/lib/markdown-it/markdown-it.min.js"></script>
     <script src="/static/assets/lib/markdown-it/markdown-it-sanitizer.min.js"></script>

@@ -161,7 +161,7 @@ class MissionAcquisitionDates extends EventTarget {
         setTimeout(() => {
             const dateSel = document.getElementById(this._daySelectionId);
             if (dateSel && dateSel.value) {
-                console.info("[SSR] Forcing initial plan load for day: ", dateSel.value);
+                //console.info("[SSR] Forcing initial plan load for day: ", dateSel.value);
                 dateSel.dispatchEvent(new Event('change'));
             }
         }, 0);
@@ -319,12 +319,20 @@ class AcquisitionPlansViewer {
         this.resizeWindow();
 
         // Display satellite orbits
-        asyncAjaxCall('/api/acquisitions/satellite/orbits', 'GET', {},
-            this.successLoadSatellitesOrbits.bind(this), this.failureLoadSatellitesOrbits);
+        if (typeof SSR_SATELLITE_ORBITS !== 'undefined') {
+            console.info("[SSR] Loading satellite orbits from SSR");
+            this.successLoadSatellitesOrbits(SSR_SATELLITE_ORBITS);
+        } else {
+            console.error("[SSR] Missing SSR_SATELLITE_ORBITS payload!");
+        }
 
         // Display acquisition stations
-        asyncAjaxCall('/api/acquisitions/stations', 'GET', {},
-            this.successLoadAcquisitionStations.bind(this), this.failureLoadAcquisitionStations);
+        if (typeof SSR_ACQUISITION_STATIONS !== 'undefined') {
+            console.info("[SSR] Loading acquisition stations from SSR");
+            this.successLoadAcquisitionStations(SSR_ACQUISITION_STATIONS);
+        } else {
+            console.error("[SSR] Missing SSR_ACQUISITION_STATIONS payload!");
+        }
     }
 
     waitForCesiumToolbar(viewer, callback, attempt = 0) {
@@ -370,9 +378,15 @@ class AcquisitionPlansViewer {
     }
 
     successLoadSatellitesOrbits(response) {
-        this.viewer_widget.dataSources.add(
-            Cesium.CzmlDataSource.load(response));
+        console.info("[SSR] Injecting satellite orbits into Cesium");
 
+        try {
+            const czml = typeof response === 'string' ? JSON.parse(response) : response;
+            this.viewer_widget.dataSources.add(
+                Cesium.CzmlDataSource.load(czml));
+        } catch (err) {
+            console.error("[SSR] Failed to load satellite orbits into Cesium", err);
+        }
     }
 
     failureLoadSatellitesOrbits(response) {
