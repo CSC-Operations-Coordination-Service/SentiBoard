@@ -194,6 +194,17 @@ def index():
     segment = "index"
     period_id = "24h"
 
+    ALLOWED_SATELLITES = {
+        "S1A",
+        "S1C",
+        "S2A",
+        "S2B",
+        "S2C",
+        "S3A",
+        "S3B",
+        "S5P",
+    }
+
     # Build the cache key
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
     current_app.logger.info(f"[INDEX] starting here")
@@ -309,11 +320,26 @@ def index():
 
         category = item.get("category", "Unknown")
 
-        impacted_sat = item.get("impactedSatellite", "Unknown")
+        raw_impacted_sat = item.get("impactedSatellite")
 
-        if not impacted_sat:
+        # Skip missing or empty
+        if not raw_impacted_sat:
             current_app.logger.info(
-                f"[INDEX] skipping anomaly without impactedSatellie at index {idx}"
+                f"[INDEX] Skipping anomaly without impactedSatellite at index {idx}"
+            )
+            continue
+
+        impacted_sat = (
+            raw_impacted_sat.replace("Sentinel-", "S")
+            .replace("Sentinel ", "S")
+            .replace(" ", "")
+            .upper()
+        )
+
+        # Filter only allowed satellites
+        if impacted_sat not in ALLOWED_SATELLITES:
+            current_app.logger.info(
+                f"[INDEX] Skipping non-allowed satellite {impacted_sat} at index {idx}"
             )
             continue
 
@@ -338,21 +364,6 @@ def index():
 
         # Append to list
         anomalies_details.append({"time_ago": time_ago, "content": title})
-
-    if not anomalies_details:
-        current_app.logger.info("[INDEX] No anomalies found, using mock test data")
-        anomalies_details = [
-            {
-                "time_ago": "15 minute(s) ago",
-                "content": "Acquisition issue, affecting Sentinel-1A data. "
-                '<a href="/events.html?showDayEvents=2025-11-07">Read More</a>',
-            },
-            {
-                "time_ago": "2 hour(s) ago",
-                "content": "Production issue, affecting Sentinel-2B data. "
-                '<a href="/events.html?showDayEvents=2025-11-07">Read More</a>',
-            },
-        ]
 
     return render_template(
         "home/index.html",
