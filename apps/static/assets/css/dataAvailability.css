@@ -16,6 +16,22 @@
   display: inline-block;
 }
 
+
+.title-text {
+  align-self: flex-start;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #FFFFFF;
+  text-align: left;
+  margin-bottom: 0.5rem;
+  padding-left: 16px;
+}
+
+.text-left {
+  align-self: flex-start;
+  padding-left: 16px;
+}
+
 .faq-section {
   margin-left: 21px !important;
   margin-right: 33px !important;
@@ -88,15 +104,18 @@
 }
 
 .chart-container {
-  padding: 20px;
+  position: relative;
   border-radius: 12px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
-  text-align: center;
-  margin-bottom: 40px;
-  width: 100%;
-  margin-left: auto;
-  margin-right: auto;
   background-color: #006B7C !important;
+  text-align: center;
+  width: 100%;
+  margin: 0 auto;
+  padding: 16px 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 #infoTableContainer {
@@ -523,7 +542,7 @@ ul#dataList {
 
 .completeness-status {
   background-color: #575962;
-  margin-top: 43px;
+  margin-top: 28px;
   padding: 4px 15px;
   font-size: 14px;
   color: white;
@@ -895,17 +914,38 @@ th:nth-of-type(6) .tooltip-text::after {
 /*spinner container */
 
 #spinner {
-  display: none;  
-  position: absolute; 
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.7);
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
   z-index: 10;
   justify-content: center;
   align-items: center;
 }
 
+.spinner-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: -1;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-overlay.active {
+  display: flex;
+}
+
 #spinner.active {
-  display: flex;  /* show when active */
+  display: flex;
+  /* show when active */
 }
 
 /*spinner bar*/
@@ -930,13 +970,123 @@ th:nth-of-type(6) .tooltip-text::after {
 }
 
 @keyframes rolling-bar {
-  0% { left: -40px; }
-  100% { left: 80px; }
+  0% {
+    left: -40px;
+  }
+
+  100% {
+    left: 80px;
+  }
+}
+
+.donut-chart {
+  width: 100%;
+  max-width: 420px;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+}
+
+.col-md-6 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* --- Donut Charts Responsive Layout --- */
+.donut-charts-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.donut-charts-wrapper>div {
+  flex: 1 1 45%;
+  max-width: 45%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+#acquisitionDonutChart,
+#publicationDonutChart {
+  width: 100% !important;
+  max-width: 400px !important;
+  margin-top: 10px;
+}
+
+.chart-title {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.chart-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 400px;
+  width: 100%;
+}
+
+.apexcharts-canvas {
+  display: flex !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
 }
 
 
-/**/
 /* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .donut-chart {
+    max-width: 320px;
+    height: 320px;
+  }
+
+  .donut-charts-wrapper {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 12px;
+  }
+
+  .donut-charts-wrapper .col-md-6 {
+    margin-bottom: 0.5rem !important;
+  }
+
+  .donut-charts-wrapper>div {
+    width: 100% !important;
+    max-width: 320px !important;
+  }
+
+  #acquisitionDonutChart,
+  #publicationDonutChart {
+    margin: 0 auto;
+  }
+
+  .apexcharts-canvas {
+    overflow: visible !important;
+  }
+
+  .chart-title {
+    margin-bottom: 12px;
+    font-size: 1rem;
+  }
+
+  .apexcharts-legend {
+    margin-top: 115px !important;
+    text-align: center !important;
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 767.98px) {
   .container-fluid {
     padding: 10px;
@@ -947,7 +1097,7 @@ th:nth-of-type(6) .tooltip-text::after {
   }
 
   .chart-container canvas {
-    max-height: 300px;
+    max-height: 260px;
   }
 
   #timeRangeFilter {
@@ -1186,6 +1336,10 @@ th:nth-of-type(6) .tooltip-text::after {
     border-bottom: 1px solid #ddd;
   }
 
+  .donut-chart {
+    max-width: 260px;
+    height: 260px;
+  }
 
   #missionDonutChart {
     max-width: 100% !important;
@@ -1326,5 +1480,5 @@ th:nth-of-type(6) .tooltip-text::after {
     font-size: 12px;
     padding: 4px 8px;
   }
-  
+
 }

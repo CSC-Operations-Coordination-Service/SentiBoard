@@ -448,6 +448,7 @@ class CalendarWidget {
                 if (value.includes('S1')) {
                     hexaVal = this.overrideS1DatatakesId(value)
                 }
+
                 if (dtStatus) {
                     content +=
                         '<li class="ml-5">' +
@@ -459,6 +460,7 @@ class CalendarWidget {
                 } else {
                     console.debug('Skipping datatake with no status', value);
                 }
+
             }
         }.bind(this));
         content += '</ul></div></p><p></p></div>';
@@ -479,6 +481,8 @@ class CalendarWidget {
                         if (completeness >= 90) { return 'ok'; }
                         if (completeness >= 10 && completeness < 90) { return 'partial'; }
                         if (completeness < 10) { return 'failed'; }
+
+                        return null;
                     }
                 }
             } catch (ex) {
@@ -792,7 +796,6 @@ class CalendarWidget {
             if (event.category === 'Archive' || event.category === 'Data access') {
                 return;
             }
-
             const satellites = this.getSatellitesString(event.environment || '');
             const dataTakeCandidates = (event.environment || '')
                 .split(";")
@@ -815,9 +818,8 @@ class CalendarWidget {
             const iconClass = this.iconMap[categoryKey] || 'fas fa-info-circle';
             const mappedType = this.eventTypeMap[categoryKey] || categoryKey;
 
-            //const satellites = this.getSatellitesString(event.environment || '');
-            const datatakeHtml = event.environment
-                ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, event.environment.split(";"))}</p>`
+            const datatakeHtml = dataTakeCandidates.length
+                ? `<p style="color: white; font-size: 14px">List of impacted datatakes:<br>${this.arrangeDatatakesList(event, dataTakeCandidates)}</p>`
                 : '';
 
             const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');

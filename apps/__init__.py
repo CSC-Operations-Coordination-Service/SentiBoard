@@ -437,7 +437,7 @@ def create_app(config):
     register_extensions(app)
     register_blueprints(app)
 
-    # context processor
+    # Add this context processor
     @app.context_processor
     def inject_page_url_and_keywords():
         def page_url():
@@ -449,8 +449,40 @@ def create_app(config):
             except RuntimeError:
                 return ""
 
+        def seo_keywords():
+            return "Sentinels Data Availability, Sentinels Acquisition Status, Sentinels Events/real-time events, Real-Time Sentinel Events, Copernicus Real-Time Data, Copernicus, ESA, \
+              Copernicus Sentinel Dashboard, Sentinel data availability, Sentinel acquisition status, Sentinel event monitoring, Sentinel, Earth Observation, Satellite Dashboard,\
+              Data Availability, Events, Sentinel-1, Sentinel-2, Sentinel-3, Sentinel-5P, ESA Earth Observation Data, Sentinel mission status, Sentinel satellite operations,\
+              Copernicus Sentinels, Earth Observation Satellites, Satellite Data Dashboard, Copernicus satellite events, Earth Observation Dashboard, Sentinel imagery updates,\
+              Real-Time Satellite Data, Earth Observation Missions, Sentinel imagery access, Satellite data availability, Satellite acquisition schedule, Earth observation data service,\
+              EO data real time, Satellite data monitoring, Copernicus data access, Geospatial data dashboard, Satellite mission insights, Atmospheric composition monitoring,\
+              Air quality monitoring, Earth surface change detection, Environmental monitoring platform, Climate & environment dashboard, Space data operations, Copernicus ground segment,\
+              Data ingestion & anomalies, Mission operations & status, Sentinel-1 operations, Sentinel-2 operations, Sentinel-3 mission status, Sentinel-5P monitoring, \
+              Multi-sensor satellite data, SAR(synthetic aperture radar) data, Optical satellite imagery, Copernicus Dashboard operations, ESA Sentinel dashboard, \
+              monitoring satellite data in real time, live satellite event tracking, data availability satellite imagery, real-time acquisition, in-orbit satellite event alerts, \
+              satellite anomaly monitoring"
+
+        def get_keywords(page_name=""):
+            """ " Return page-specific keywords, fallback to global keywords"""
+            page_specific = {
+                "index": "Copernicus Sentinel Dashboard, real-time satellite data, ESA operations dashboard, Sentinel mission monitoring, Copernicus events, data availability,acquisition status, Earth observation platform, satellite event tracker, Copernicus Sentinel missions",
+                "about": "About Copernicus Dashboard, Copernicus Sentinel missions, ESA Earth observation, satellite data services, real-time satellite monitoring,Sentinel data availability, acquisition status, Earth observation platform, satellite event tracker",
+                "events": "Sentinel events, Sentinels Events/real-time events, satellite anomalies, calibration activities, mission manoeuvres, Copernicus event log, Sentinel data production impacts, real-time satellite operations",
+                "data_availability": "Sentinels Data Availability, Copernicus data availability, Sentinel data access, satellite data products, real-time Earth observation data, Copernicus collections, Sentinel data quality monitoring",
+                "acquisitions_status": "Sentinels Acquisition Status, satellite acquisition planning, Copernicus sensing scenarios, Sentinel-1 orbit data, Sentinel-2 acquisition map, real-time satellite tracking, Copernicus observation schedule",
+                "processors": "Sentinels Processors, Copernicus processing chain, data release timeline, ESA processor versions, satellite data processing updates",
+            }
+            return page_specific.get(page_name, seo_keywords())
+
+        def seo_description():
+            return "Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. \
+                    Stay informed with the Operations Dashboard."
+
         return dict(
             page_url=page_url,
+            seo_keywords=seo_keywords,
+            seo_description=seo_description,
+            get_keywords=get_keywords,
         )
 
     print("Starting Cache ...")

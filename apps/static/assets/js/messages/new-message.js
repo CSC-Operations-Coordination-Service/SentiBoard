@@ -12,6 +12,7 @@ class NewsMessages {
     }
 
     initEventHandlers() {
+         $('#time-period-select-container').hide();
         // Toggle chevron icon when collapse is shown or hidden
         this.$container.on('show.bs.collapse', '.collapse', (e) => {
             const $collapse = $(e.target);
