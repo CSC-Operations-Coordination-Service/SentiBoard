@@ -1,6 +1,9 @@
 
 	<!--   Core JS Files   -->
 	<script src="/static/assets/js/core/jquery.3.2.1.min.js"></script>
+	<script>
+		$.ajaxSetup({ headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+	</script>
 	<script src="/static/assets/js/core/popper.min.js"></script>
 	<script src="/static/assets/js/core/bootstrap.min.js"></script>
 

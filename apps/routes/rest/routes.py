@@ -15,7 +15,9 @@ delivered to him.
 import json
 import logging
 from datetime import datetime, timezone, timedelta
+from os import abort
 
+from apps.utils.events_utils import make_json_safe
 from flask import request, Response
 from flask_login import login_required
 
@@ -45,32 +47,26 @@ logger = logging.getLogger(__name__)
 
 
 # TEMPORARY ENDPOINT UNTIL ORBIT ACQUISITION PLANS ARE IMPLEMENTED
-# TEMPORARY ENDPOINT UNTIL ORBIT ACQUISITION PLANS ARE IMPLEMENTED
 @blueprint.route(
     "/api/acquisitions/acquisition-datatakes/<mission>/<satellite>/<day>",
     methods=["GET"],
 )
 def get_acquisition_datatakes(mission, satellite, day):
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        logger.warning("[BLOCKED] Direct access attempt to  Acquisition Datatakes API")
+        abort(403)
     logger.info(
-        "[BEG] API Acquisition Datatakes for Mission %s, Satellite %s, Day %s",
-        mission,
-        satellite,
-        day,
+        "[BEG] INTERNAL Acquisition Datatakes for %s %s %s", mission, satellite, day
     )
-    logger.debug("Called API Acquisition Datatakes for Mission/Satellite/Day")
+
     satellite_day_datatakes = datatakes_cache.get_satellite_day_datatakes(
         satellite, day
     )
-    logger.info(
-        "[END] API Acquisition Datatakes for Mission %s, Satellite %s, Day %s",
-        mission,
-        satellite,
-        day,
-    )
-    # Handle  error in requt (either day or satellite not present in daily datatke)
-    # To be understood if we need to use flask_cache
+
     return Response(
-        json.dumps(satellite_day_datatakes), mimetype="application/json", status=200
+        json.dumps(make_json_safe(satellite_day_datatakes)),
+        mimetype="application/json",
+        status=200,
     )
 
 
@@ -78,12 +74,8 @@ def get_acquisition_datatakes(mission, satellite, day):
     "/api/acquisitions/acquisition-plans/<mission>/<satellite>/<day>", methods=["GET"]
 )
 def get_acquisition_plans(mission, satellite, day):
-    logger.debug("Called API Acquisition Plan for Mission/Satellite/Day")
-    # acq_plans_api_key = acquisition_plans_cache.get_acquisition_plan_key(mission)
-    # if not flask_cache.has(acq_plans_api_key):
-    #    logger.debug("Loading Cache from API Get Acquisition Plan KML")
-    #    acquisition_plans_cache.load_all_acquisition_plans()
-    # To be understood if we need to use flask_cache
+    logger.debug("Called INTERNAL Acquisition Plan KML")
+
     return acquisition_plans_cache.get_acquisition_plan(mission, satellite, day)
 
 
@@ -472,8 +464,16 @@ def delete_instant_message():
 
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])
 def get_cds_datatake(datatake_id):
-    logger.info("Called API GET Datatake info")
-    return datatakes_cache.load_datatake_details(datatake_id)
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        logger.warning("[BLOCKED] Direct access attempt to  CDS Datatakes API")
+        abort(403)
+    logger.info("[BEG] INTERNAL API GET Datatake info %s ", datatake_id)
+
+    data = datatakes_cache.load_datatake_details(datatake_id)
+
+    return Response(
+        json.dumps(make_json_safe(data)), mimetype="application/json", status=200
+    )
 
 
 @blueprint.route("/api/worker/cds-datatakes/last-<period_id>", methods=["GET"])

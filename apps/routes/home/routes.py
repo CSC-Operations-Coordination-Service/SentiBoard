@@ -973,3 +973,23 @@ def admin_home_message():
             "Exception in admin_home_message: %s", traceback.format_exc()
         )
         return f"An error occurred: {e}", 500
+
+
+@blueprint.before_request
+def protect_internal_apis():
+    internal_prefixes = (
+        "/api/worker/",
+        "/api/acquisitions/",
+    )
+
+    if request.path.startswith(internal_prefixes):
+        # 1. Must be same-origin browser request
+        fetch_header = request.headers.get("X-Requested-With")
+        referer = request.headers.get("Referer", "")
+        host = request.host_url.rstrip("/")
+
+        if fetch_header != "XMLHttpRequest":
+            abort(403)
+
+        if not referer.startswith(host):
+            abort(403)
