@@ -403,8 +403,6 @@ def index():
     instant_messages_safe = make_json_safe(instant_messages)
 
     # Serialize to JSON string
-    import json  # ensure this is imported at the top of the file
-
     instant_messages_json = json.dumps(instant_messages_safe)
 
     return render_template(
