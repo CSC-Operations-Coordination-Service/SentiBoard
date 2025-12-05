@@ -210,8 +210,7 @@ def add_instant_message():
             )
 
         try:
-            # publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
-            date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
+            publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
         except ValueError:
             return Response(
                 json.dumps(
@@ -220,11 +219,6 @@ def add_instant_message():
                 mimetype="application/json",
                 status=400,
             )
-
-        now_utc = datetime.now(timezone.utc)
-        publication_date = datetime.combine(
-            date_only, now_utc.time(), tzinfo=timezone.utc
-        )
 
         modify_date = datetime.now(timezone.utc)
 
@@ -252,13 +246,19 @@ def add_instant_message():
 
 @blueprint.route("/api/instant-messages/all", methods=["GET"])
 def get_all_instant_messages():
+
+    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+        return Response(
+            json.dumps({"error": "Forbidden"}), status=403, mimetype="application/json"
+        )
+
     logger.info("Called API Home News with pagination")
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("pageSize", 20))
 
         query = db.session.query(instant_messages_model.InstantMessages).order_by(
-            instant_messages_model.InstantMessages.modifyDate.desc()
+            instant_messages_model.InstantMessages.publicationDate.desc()
         )
 
         total_count = query.count()

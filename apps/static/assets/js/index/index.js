@@ -38,14 +38,16 @@ class Home {
         $('#copernicus-logo-header').show();
         $('#ec-logo-header').show();
 
-        // Load the events from local db
-        console.info('Loading events...');
-        //asyncAjaxCall('/api/events/anomalies/last-24h', 'GET', {}, this.succesLoadAnomalies, this.errorLoadAnomalies);
-
         // Load the custom message from the JSON file
         console.info('Loading custom message...');
 
-        this.fetchInstantMessages();
+        //this.fetchInstantMessages();
+        if (window.SSR_INSTANT_MESSAGES) {
+            this.renderInstantMessageCards(
+                window.SSR_INSTANT_MESSAGES,
+                window.SSR_TOTAL_MESSAGES
+            );
+        }
 
         // Remove Home video controls
         $('#home-video').hover(function toggleControls() {
@@ -332,22 +334,18 @@ class Home {
     formatDate(dateString) {
         if (!dateString) return 'No date provided';
 
-        // Expecting format: "DD/MM/YYYY HH:mm:ss"
-        const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(dateString);
-        if (match) {
-            const [_, day, month, year] = match;
-            const date = new Date(Number(year), Number(month) - 1, Number(day));
-            return date.toLocaleDateString('en-GB', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
+        const date = new Date(dateString);
+        if (isNaN(date)) return 'Invalid date';
 
-        return 'Invalid date';
+        return date.toLocaleDateString('en-GB', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
     }
 
-    fetchInstantMessages() {
+
+    /*fetchInstantMessages() {
         $.getJSON('/api/instant-messages/all', (data) => {
             const firstThree = data.messages.slice(0, 3);
             this.renderInstantMessageCards(firstThree, data.messages.length);
@@ -355,7 +353,7 @@ class Home {
             console.error("Failed to load instant messages:", xhr.responseText);
             $('#custom-banner-placeholder').html('<div class="bg-dark text-white text-center p-4 rounded">Failed to load instant messages.</div>');
         });
-    }
+    }*/
 
     renderInstantMessageCards(instantMessages, totalMessages) {
         const allowedRoles = ['admin', 'esauser', 'ecuser'];
@@ -391,7 +389,7 @@ class Home {
             desktopHtml += `
                 <div class="news-card p-2 rounded shadow mb-2" style="color: white;">
                 <div class="d-flex align-items-start">
-                    <i class="fa ${icon}" 
+                    <i class="fas ${icon}" 
                     style="color: ${borderColor}; font-size: 1.2rem; margin-right: 8px; margin-top: 2px;"></i>
                     <div>
                     <div class="fw-bold">${item.title}</div>

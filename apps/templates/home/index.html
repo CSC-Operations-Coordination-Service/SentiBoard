@@ -184,9 +184,46 @@
 </div>
   <!-- News banner overlay (instant messages placeholder) -->
   <div id="custom-banner-placeholder"
-      class="position-absolute text-white"
-      style="top: 125px; left: 15px; width: 350px; z-index: 3;">
+     class="position-absolute text-white"
+     style="top: 125px; left: 15px; width: 350px; z-index: 3;">
+
+  <div class="bg-dark p-3 rounded">
+    <h4 class="card-title text-white text-center mb-3">News</h4>
+
+    {% if instant_messages and instant_messages|length > 0 %}
+        {% for item in instant_messages %}
+          <div class="news-card p-2 rounded shadow mb-2 text-white">
+            <div class="fw-bold">{{ item.title }}</div>
+            <div class="text-muted small">{{ item.publicationDate }}</div>
+            <div>{{ item.text }}</div>
+
+            {% if item.link %}
+              <div>
+                <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">
+                  Read more
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+        {% if total_messages > 3 %}
+          <div class="text-center mt-2">
+            <a href="/newsList.html"
+               class="btn btn-outline-light"
+               style="background-color:#FFC107;color:#212529;">
+              View all news
+            </a>
+          </div>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-4">
+          There are no news at the moment.
+        </div>
+    {% endif %}
   </div>
+</div>
   <!-- News banner for mobile -->
   <div class="d-block d-lg-none mt-3">
     <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#customBannerMobile">
@@ -268,6 +305,13 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+  <script>
+    window.SSR_INSTANT_MESSAGES = {{ instant_messages_json | safe }};
+    window.SSR_TOTAL_MESSAGES = {{ total_messages}};
+    window.useRole = {{ user_role | tojson}};
+  </script>
+
+
   <!-- Inline tiny script for faster mobile interactivity -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -334,7 +378,7 @@
         .then(() => console.log("datatakes.js loaded"))
         .catch(err => console.error("Failed to load datatakes.js", err));
     }
-
+   
     // Initialize Home (from index.js, already loaded with defer)
     if (typeof Home !== "undefined") {
       const home = new Home();

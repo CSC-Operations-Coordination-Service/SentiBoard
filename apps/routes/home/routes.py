@@ -32,10 +32,11 @@ import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
+import apps.models.instant_messages as instant_messages_model
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
 from calendar import monthrange
-from apps import flask_cache
+from apps import flask_cache, db
 from collections import Counter
 import json
 import traceback
@@ -186,6 +187,11 @@ def admin_required(f):
     return decorated
 
 
+@blueprint.route("/index.html")
+def index_html_redirect():
+    return redirect(url_for("home_blueprint.index"))
+
+
 @blueprint.route("/index")
 def index():
 
@@ -217,11 +223,6 @@ def index():
         f"[INDEX] Cache raw content preview: {str(raw_cache)[:400]}"
     )
 
-    # if not raw_cache:
-    #    current_app.logger.warning("[INDEX] No 24h cache found, falling back to 7d")
-    #    anomalies_api_uri = events_cache.anomalies_cache_key.format("last", "7d")
-    #    raw_cache = flask_cache.get(anomalies_api_uri)
-
     # ---- SAFE CACHE HANDLING ----
     anomalies_data = []
 
@@ -240,8 +241,6 @@ def index():
             current_app.logger.warning(f"[INDEX] Failed to parse Response JSON: {e}")
 
     elif isinstance(raw_cache, (bytes, str)):
-        import json
-
         try:
             anomalies_data = json.loads(raw_cache) or []
             current_app.logger.info(
@@ -365,10 +364,56 @@ def index():
         # Append to list
         anomalies_details.append({"time_ago": time_ago, "content": title})
 
+    # ---- SSR: Load Instant Messages for Home ----
+    try:
+        page_size = 3  # number of messages to show on home page
+
+        # sorting publicationDate descending
+        query = db.session.query(instant_messages_model.InstantMessages).order_by(
+            instant_messages_model.InstantMessages.publicationDate.desc()
+        )
+
+        total_messages = query.count()
+        instant_messages_raw = query.limit(page_size).all()
+
+        # Serialize messages to JSON-friendly format
+        instant_messages = [
+            {
+                "id": msg.id,
+                "title": msg.title,
+                "text": msg.text,
+                "messageType": msg.messageType,
+                "publicationDate": (
+                    msg.publicationDate.isoformat() if msg.publicationDate else None
+                ),
+                "link": msg.link,
+            }
+            for msg in instant_messages_raw
+        ]
+
+    except Exception:
+        logger.exception("Failed to load SSR Home News")
+        instant_messages = []
+        total_messages = 0
+
+    # Include user role
+    user_role = getattr(current_user, "role", None)
+
+    # Ensure JSON-safe values
+    instant_messages_safe = make_json_safe(instant_messages)
+
+    # Serialize to JSON string
+    import json  # ensure this is imported at the top of the file
+
+    instant_messages_json = json.dumps(instant_messages_safe)
+
     return render_template(
         "home/index.html",
         segment=segment,
         anomalies_details=anomalies_details,
+        instant_messages_json=instant_messages_json,
+        total_messages=total_messages,
+        user_role=user_role,
         **metadata,
     )
 
