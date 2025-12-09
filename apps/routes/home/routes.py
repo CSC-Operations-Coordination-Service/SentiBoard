@@ -22,6 +22,7 @@ from flask import (
     redirect,
     url_for,
     Response,
+    flash,
 )
 from flask_login import current_user, login_required
 from jinja2 import TemplateNotFound
@@ -33,6 +34,7 @@ import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.models.instant_messages as instant_messages_model
+import apps.utils.auth_utils as auth_utils
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
 from calendar import monthrange
@@ -41,6 +43,7 @@ from collections import Counter
 import json
 import traceback
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -940,6 +943,269 @@ def acquisitions_status():
         logger.info("[END] SSR: Acquisitions Status")
 
 
+@blueprint.route("/newsList.html")
+def news_list_ssr():
+    try:
+        page = int(request.args.get("page", 1))
+        page_size = 6
+        offset = (page - 1) * page_size
+
+        query = db.session.query(instant_messages_model.InstantMessages).order_by(
+            instant_messages_model.InstantMessages.publicationDate.desc()
+        )
+
+        total_messages = query.count()
+        messages_raw = query.offset(offset).limit(page_size).all()
+
+        messages = [
+            {
+                "id": m.id,
+                "title": m.title,
+                "text": m.text,
+                "link": m.link,
+                "messageType": m.messageType,
+                "publicationDate": (
+                    m.publicationDate.isoformat() if m.publicationDate else None
+                ),
+            }
+            for m in messages_raw
+        ]
+
+        total_pages = math.ceil(total_messages / page_size)
+
+        user_role = getattr(current_user, "role", "guest")
+
+        return render_template(
+            "home/newsList.html",
+            messages=make_json_safe(messages),
+            total_pages=total_pages,
+            current_page=page,
+            user_role=user_role,
+        )
+
+    except Exception:
+        logger.exception("Failed to render SSR News List")
+        abort(500)
+
+
+@blueprint.route("/admin/message", methods=["GET"])
+@login_required
+def message_form_ssr():
+    try:
+        # Role protection
+        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+            abort(403)
+
+        message_id = request.args.get("id")
+        next_url = request.args.get("next", "/newsList.html")
+
+        message_data = None
+
+        if message_id:
+            message = (
+                db.session.query(instant_messages_model.InstantMessages)
+                .filter_by(id=message_id)
+                .first()
+            )
+
+            if not message:
+                abort(404)
+
+            message_data = {
+                "id": message.id,
+                "title": message.title,
+                "text": message.text,
+                "link": message.link,
+                "messageType": message.messageType,
+                "publicationDate": (
+                    message.publicationDate.strftime("%Y-%m-%d")
+                    if message.publicationDate
+                    else ""
+                ),
+            }
+
+        return render_template(
+            "admin/newMessages.html",
+            message=message_data,
+            next_url=next_url,
+        )
+
+    except Exception:
+        logger.exception("Failed to render SSR Message Form")
+        abort(500)
+
+
+@blueprint.route("/admin/instant-messages/add", methods=["POST"])
+@login_required
+def add_instant_message_ssr():
+    # logger.info("SSR Add route called")
+
+    try:
+        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+            abort(403)
+
+        next_url = request.form.get("next", "/newsList.html")
+
+        title = request.form.get("title", "").strip()
+        text = request.form.get("text", "").strip()
+        link = request.form.get("link", "").strip()
+        message_type = request.form.get("messageType", "").strip()
+        publication_date_str = request.form.get("publicationDate", "").strip()
+
+        if not title or not text or not publication_date_str:
+            flash("Missing required fields", "danger")
+            return redirect(next_url)
+
+        try:
+            date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            flash("Invalid publication date format", "danger")
+            return redirect(next_url)
+        now_utc = datetime.now(timezone.utc)
+        publication_date = datetime.combine(
+            date_only, now_utc.time(), tzinfo=timezone.utc
+        )
+        modify_date = datetime.now(timezone.utc)
+
+        # Save the message
+        instant_messages_model.save_instant_messages(
+            title=title,
+            text=text,
+            link=link,
+            publication_date=publication_date,
+            message_type=message_type,
+            modify_date=modify_date,
+        )
+
+        flash("News added successfully!", "success")
+        return redirect(next_url)
+
+    except Exception:
+        logger.exception("SSR Add failed")
+        flash("Failed to add news", "danger")
+        return redirect(next_url)
+
+
+@blueprint.route("/admin/instant-messages/delete", methods=["POST"])
+@login_required
+def delete_instant_message_modal():
+    # logger.info("Delete route called")
+    try:
+        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+            logger.warning(f"Unauthorized user: {current_user}")
+            abort(403)
+
+        message_id = request.form.get("id", "").strip()
+        next_url = request.form.get("next", "/newsList.html")
+        # logger.info(f"Message ID to delete: {message_id}, next: {next_url}")
+
+        if not message_id:
+            flash("Missing news ID", "danger")
+            logger.warning("Missing news ID")
+            return redirect(next_url)
+
+        message = (
+            db.session.query(instant_messages_model.InstantMessages)
+            .filter_by(id=message_id)
+            .first()
+        )
+
+        if not message:
+            flash("News not found", "danger")
+            logger.warning(f"News not found: {message_id}")
+            return redirect(next_url)
+
+        db.session.delete(message)
+        db.session.commit()
+        # logger.info(f"News deleted: {message_id}")
+
+        flash("News successfully deleted", "success")
+        return redirect(next_url)
+
+    except Exception as ex:
+        logger.exception("Error deleting News post")
+        db.session.rollback()
+        flash("Delete failed", "danger")
+        return redirect("/newsList.html")
+
+
+@blueprint.route("/admin/instant-messages/update", methods=["POST"])
+@login_required
+def update_instant_message_ssr():
+    # logger.info("SSR Update route called")
+
+    try:
+        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+            abort(403)
+
+        message_id = request.form.get("id", "").strip()
+        next_url = request.form.get("next", "/newsList.html")
+
+        if not message_id:
+            flash("Missing news ID", "danger")
+            return redirect(next_url)
+
+        title = request.form.get("title", "").strip()
+        text = request.form.get("text", "").strip()
+        link = request.form.get("link", "").strip()
+        message_type = request.form.get("messageType", "").strip()
+        publication_date_str = request.form.get("publicationDate", "").strip()
+
+        if not publication_date_str:
+            flash("Missing publication date", "danger")
+            return redirect(next_url)
+
+        try:
+            new_date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            flash("Invalid publication date format", "danger")
+            return redirect(next_url)
+
+        message = (
+            db.session.query(instant_messages_model.InstantMessages)
+            .filter_by(id=message_id)
+            .first()
+        )
+
+        if not message:
+            flash("News post not found", "danger")
+            return redirect(next_url)
+
+        old_publication_dt = message.publicationDate
+        if old_publication_dt:
+            old_date_only = old_publication_dt.date()
+        else:
+            old_date_only = None
+
+        if old_date_only == new_date_only:
+            publication_date = old_publication_dt
+            # logger.info(f"publication date unchanged")
+        else:
+            now_utc = datetime.now(timezone.utc)
+            publication_date = datetime.combine(
+                new_date_only, now_utc.time(), tzinfo=timezone.utc
+            )
+            # logger.info(f"publication date set to new date with current time")
+
+        message.title = title
+        message.text = text
+        message.link = link
+        message.messageType = message_type
+        message.publicationDate = publication_date
+        message.modifyDate = datetime.now(timezone.utc)
+
+        db.session.commit()
+
+        flash("News updated successfully", "success")
+        return redirect(next_url)
+
+    except Exception:
+        logger.exception("SSR Update failed")
+        db.session.rollback()
+        flash("Update failed", "danger")
+        return redirect("/newsList.html")
+
+
 @blueprint.route("/<template>")
 def route_template(template):
     try:
@@ -949,12 +1215,15 @@ def route_template(template):
         # Detect the current page
         segment = get_segment(request)
 
-        # List of admin pages
-        admin_pages = ["users.html", "roles.html", "news.html", "anomalies.html"]
-
         # Get metadata safely
         metadata = get_metadata(template)
         metadata["page_url"] = request.url
+
+        if template in ["newsList", "newsList.html"]:
+            return news_list_ssr()
+
+        # List of admin pages
+        admin_pages = ["users.html", "roles.html", "news.html", "anomalies.html"]
 
         # Handle admin pages
         if template in admin_pages:
@@ -1004,29 +1273,6 @@ def is_safe_url(target):
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
-
-
-@blueprint.route("/admin/message", methods=["GET"])
-def admin_home_message():
-    try:
-        # This empty object is used to populate the form initially
-        empty_message = {
-            "title": "",
-            "text": "",
-            "link": "",
-            "messageType": "info",
-            "publicationDate": "",
-        }
-
-        return render_template(
-            "admin/newMessages.html", message=empty_message, segment="admin-message"
-        )
-
-    except Exception as e:
-        current_app.logger.error(
-            "Exception in admin_home_message: %s", traceback.format_exc()
-        )
-        return f"An error occurred: {e}", 500
 
 
 @blueprint.before_request

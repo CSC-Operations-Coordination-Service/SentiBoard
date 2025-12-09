@@ -20,56 +20,62 @@
                 <i class="flaticon-right-arrow"></i>
             </li>
             <li class="nav-item">
-                <a href="#">Create News</a>
+                <a href="#">{{ 'Edit News' if message else 'Create News' }}</a>
             </li>
             </ul>
         </div>
-    <form id="new-message-form">
-        <input type="hidden" id="messageId" name="messageId">
-        {% with messages = get_flashed_messages(with_categories=true) %}
+         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, msg in messages %}
                 <div class="alert alert-{{ category }}">{{ msg }}</div>
             {% endfor %}
         {% endwith %}
 
-        <div class="mb-3">
-            <label for="title" class="form-label">News Title</label>
-            <input type="text" class="form-control" id="title" name="title" required>
-        </div>
+        <form id="new-message-form" method="POST"
+          action="{{ '/admin/instant-messages/update' if message else '/admin/instant-messages/add' }}">
+            <input type="hidden" id="id" name="id" value="{{ message.id if message }}">
+            <input type="hidden" name="next" value="/newsList.html">
+            <div class="mb-3">
+                <label for="title" class="form-label">News Title</label>
+                <input type="text" class="form-control" id="title" name="title" required
+                    value="{{ message.title if message }}">
+            </div>
 
-        <div class="mb-3">
-            <label for="text" class="form-label">News Text</label>
-            <textarea class="form-control" id="text" name="text" rows="3" required></textarea>
-        </div>
+            <div class="mb-3">
+                <label for="text" class="form-label">News Text</label>
+                <textarea class="form-control" id="text" name="text" rows="3" required>{{ message.text if message }}</textarea>
+            </div>
 
-        <div class="mb-3">
-            <label for="link" class="form-label">Optional Link</label>
-            <input type="url" class="form-control" id="link" name="link">
-        </div>
+            <div class="mb-3">
+                <label for="link" class="form-label">Optional Link</label>
+                <input type="url" class="form-control" id="link" name="link" value="{{ message.link if message }}">
+            </div>
 
-        <div class="mb-3">
-            <label for="messageType" class="form-label">News Type</label>
-            <select class="form-control" id="messageType" name="messageType" required>
-                <option value="">-- Select Type --</option>
-                <option value="info">Info (Blue)</option>
-                <option value="warning">Warning (Yellow)</option>
-                <option value="danger">Danger (Red)</option>
-                <option value="success">Success (Green)</option>
-            </select>
-        </div>
+            <div class="mb-3">
+                <label for="messageType" class="form-label">News Type</label>
+                <select class="form-control" id="messageType" name="messageType" required>
+                    <option value="">-- Select Type --</option>
+                    <option value="info"    {% if message and message.messageType == "info" %}selected{% endif %}>Info</option>
+                    <option value="warning" {% if message and message.messageType == "warning" %}selected{% endif %}>Warning</option>
+                    <option value="danger"  {% if message and message.messageType == "danger" %}selected{% endif %}>Danger</option>
+                    <option value="success" {% if message and message.messageType == "success" %}selected{% endif %}>Success</option>
+                </select>
+            </div>
 
-        <div class="mb-3">
-            <label for="publicationDate" class="form-label">Publication Date</label>
-            <input type="date" class="form-control" id="publicationDate" name="publicationDate" required>
-        </div>
-        <button type="submit" class="btn btn-success">Save</button>
-        <a href="/newsList.html" class="btn btn-secondary">Cancel</a>
-    </form>
+            <div class="mb-3">
+                <label for="publicationDate" class="form-label">Publication Date</label>
+                <input type="date" class="form-control" id="publicationDate" name="publicationDate" required
+                    value="{{ message.publicationDate if message }}">
+            </div>
+            <button type="submit" class="btn btn-success">Save</button>
+            <a href="/newsList.html" class="btn btn-secondary">Cancel</a>
+        </form>
 
 </div>
 {% endblock %}
 {% block javascripts %}
-	
+	<script>
+        const IS_EDIT = {{ 'true' if message else 'false' }};
+    </script>
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/messages/new-message.js"></script>
     

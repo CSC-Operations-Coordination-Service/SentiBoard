@@ -42,7 +42,13 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button id="confirmDeleteBtn" type="button" class="btn btn-danger">Delete</button>
+
+        <!-- HIDDEN FORM -->
+        <form id="deleteMessageForm" method="POST" action="/admin/instant-messages/delete" style="display:inline;">
+          <input type="hidden" name="id" value="">
+          <input type="hidden" name="next" value="/newsList.html">
+          <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
       </div>
     </div>
   </div>
@@ -64,12 +70,105 @@
   <div id="alert-container"></div>
 
   <div class="row" id="news-card-container">
-    <!-- News list will be injected here -->
-  </div>
+  {% if messages %}
+    {% for msg in messages %}
+      {% set icon_map = {
+        'success': 'fa-check-circle',
+        'info': 'fa-info-circle',
+        'warning': 'fa-exclamation-circle',
+        'danger': 'fa-exclamation-triangle'
+      } %}
+      {% set color_map = {
+        'success': '#28a745',
+        'info': '#17a2b8',
+        'warning': '#ffc107',
+        'danger': '#dc3545'
+      } %}
+
+      {% set icon = icon_map.get(msg.messageType|lower, 'fa-bullhorn') %}
+      {% set color = color_map.get(msg.messageType|lower, '#006B7C') %}
+      {% set collapse_id = "msg-details-" ~ loop.index %}
+      {% set heading_id = "heading-" ~ loop.index %}
+
+      <div class="col-12">
+        <div class="card card-admin text-white" style="background-color: #006B7C;">
+         
+          <!-- HEADER -->
+          <div class="card-header d-flex justify-content-between align-items-center" id="{{ heading_id }}">
+            <div class="d-flex align-items-center">
+              <div style="font-size: 1.8rem; color: {{ color }}; margin-right: 1.2rem;">
+                <i class="fa {{ icon }}"></i>
+              </div>
+
+              <div style="font-size: 1.05rem;">
+                {% if msg.title %}
+                  <strong>{{ msg.title }}</strong><br>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center">
+              {% if current_user.role in ['admin', 'ecuser', 'esauser'] %}
+                <a href="/admin/message?id={{ msg.id }}&next=/newsList.html"
+                   class="text-white"
+                   title="Edit">
+                  <i class="fa fa-pen edit-icon" style="font-size: 1.2rem; cursor: pointer;"></i>
+                </a>
+
+                <button
+                  class="btn btn-link text-white delete-btn"
+                  data-id="{{ msg.id }}"
+                  data-title="{{ msg.title }}"
+                  title="Delete"
+                  type="button">
+                  <i class="fa fa-trash delete-icon" style="font-size: 1.2rem; cursor: pointer; color: white !important;"></i>
+                </button>
+              {% endif %}
+
+              <i class="fa fa-chevron-down toggle-icon"
+                 style="font-size: 1.2rem; cursor: pointer;"
+                 data-toggle="collapse"
+                 data-target="#{{ collapse_id }}"
+                 aria-controls="{{ collapse_id }}"
+                 aria-expanded="false"></i>
+            </div>
+          </div>
+
+          <!-- BODY -->
+          <div id="{{ collapse_id }}" class="collapse" aria-labelledby="{{ heading_id }}">
+            <div class="card-body" style="color: #eee;">
+              <p>{{ msg.text }}</p>
+
+              {% if msg.link %}
+                <a href="{{ msg.link }}" target="_blank" class="read-more">Read more</a>
+              {% endif %}
+
+              <br>
+              <small>
+                Published:
+                {{ msg.publicationDate[:10] if msg.publicationDate else 'N/A' }}
+              </small>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <p class="text-white text-center">No news available.</p>
+  {% endif %}
+</div>
+
 
   <!-- Pagination controls -->
   <nav aria-label="News pagination">
-    <ul class="pagination justify-content-center mt-4" id="pagination-controls"></ul>
+    <ul class="pagination justify-content-center mt-4" id="pagination-controls">
+      {% for p in range(1, total_pages + 1) %}
+      <li class="page-item {% if p == current_page %}active{% endif %}">
+        <a class="page-link" href="/newsList.html?page={{ p }}">{{ p }}</a>
+      </li>
+    {% endfor %}
+    </ul>
   </nav>
 </div>
 {% endblock %}
