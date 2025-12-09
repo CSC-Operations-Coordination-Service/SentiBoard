@@ -344,17 +344,6 @@ class Home {
         });
     }
 
-
-    /*fetchInstantMessages() {
-        $.getJSON('/api/instant-messages/all', (data) => {
-            const firstThree = data.messages.slice(0, 3);
-            this.renderInstantMessageCards(firstThree, data.messages.length);
-        }).fail((xhr) => {
-            console.error("Failed to load instant messages:", xhr.responseText);
-            $('#custom-banner-placeholder').html('<div class="bg-dark text-white text-center p-4 rounded">Failed to load instant messages.</div>');
-        });
-    }*/
-
     renderInstantMessageCards(instantMessages, totalMessages) {
         const allowedRoles = ['admin', 'esauser', 'ecuser'];
         const isPrivilegedUser = allowedRoles.includes(window.userRole);

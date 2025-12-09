@@ -320,7 +320,7 @@ class AcquisitionPlansViewer {
 
         // Display satellite orbits
         if (typeof SSR_SATELLITE_ORBITS !== 'undefined') {
-            console.info("[SSR] Loading satellite orbits from SSR");
+            //console.info("[SSR] Loading satellite orbits from SSR");
             this.successLoadSatellitesOrbits(SSR_SATELLITE_ORBITS);
         } else {
             console.error("[SSR] Missing SSR_SATELLITE_ORBITS payload!");
@@ -328,7 +328,7 @@ class AcquisitionPlansViewer {
 
         // Display acquisition stations
         if (typeof SSR_ACQUISITION_STATIONS !== 'undefined') {
-            console.info("[SSR] Loading acquisition stations from SSR");
+            //console.info("[SSR] Loading acquisition stations from SSR");
             this.successLoadAcquisitionStations(SSR_ACQUISITION_STATIONS);
         } else {
             console.error("[SSR] Missing SSR_ACQUISITION_STATIONS payload!");
@@ -363,22 +363,19 @@ class AcquisitionPlansViewer {
         this.currentMission = selectionEv.detail.mission;
         var satelliteSel = selectionEv.detail.satellite;
         var daySel = selectionEv.detail.day;
-        // this.reset_camera_view();
-        console.debug("Activated EventHanlder; mission: ", this.currentMission,
-            ",satellite: ", satelliteSel, ", date: ", daySel);
-        // this.updateDateInterval(time_period_sel.value);
         if (acquisitionKmlMissions.includes(this.currentMission)) {
             this.loadAcquisitionPlan(this.currentMission, satelliteSel, daySel);
         } else {
             // Use a different function to retrieve acquisition Plans
             // that are not generated in KML format
+            console.info("[SSR] On plan date change, loading acquisition datatakes for mission " + this.currentMission);
             this.loadAcquisitionDatatakes(this.currentMission, satelliteSel, daySel);
         }
         this.reset_camera_view();
     }
 
     successLoadSatellitesOrbits(response) {
-        console.info("[SSR] Injecting satellite orbits into Cesium");
+        //console.info("[SSR] Injecting satellite orbits into Cesium");
 
         try {
             const czml = typeof response === 'string' ? JSON.parse(response) : response;
@@ -409,9 +406,9 @@ class AcquisitionPlansViewer {
         this.clearAcquisitionPlans();
         this.showSpinner();
         var acq_plans_api_name = 'acquisitions/acquisition-datatakes';
-        console.log("Loading Acquisition Plans for satellite " + satellite + ", day " + plan_day);
+        console.log("Loading Acquisition Datatakes for satellite " + satellite + ", day " + plan_day);
         var urlParamString = `${mission}/${satellite}/${plan_day}`;
-        console.log("Parameters for API URL: " + urlParamString);
+        console.log("Parameters for API URL - DATATAKES: " + urlParamString);
         var that = this;
         // accept = 'application/xml'
         var ajaxPromises = asyncAjaxCall('/api/' + acq_plans_api_name + '/' + urlParamString, 'GET', {},
@@ -455,7 +452,7 @@ class AcquisitionPlansViewer {
     }
 
     showSpinner() {
-        console.log("Show Spinner");
+        //console.log("Show Spinner");
         $('.card', document.getElementById('acquisition-plans-container')).eq(0).html(
             '<div class="spinner">' +
             '<div class="bounce1"></div>' +
@@ -473,14 +470,14 @@ class AcquisitionPlansViewer {
     }
 
     removeSpinner() {
-        console.log("Hide Spinner");
+        //console.log("Hide Spinner");
         //$('#acquisition-plans-spinner').hidden = true;
         $('#acquisition-plans-spinner').hide();
         //back to normal!
     }
 
     successLoadAcquisitionDatatakes(response) {
-        console.log("Acquisition Datatakes Response: ", response);
+        console.info("Acquisition Datatakes Response: ", response);
         var datatakes = format_response(response);
         var dtList = this.extractAcquisitionDatatakeIdList(datatakes);
         this.writeDatatakesList(dtList); // (dtListAttrs)
@@ -721,14 +718,14 @@ class AcquisitionPlansViewer {
 
             // TODO : handle non existing entity
             // Find entity in KML Source Collection with specified name
-            console.log("Entity with id ", datatake_id, ", name ", dt_name, ":", dt_entity);
+            //console.log("Entity with id ", datatake_id, ", name ", dt_name, ":", dt_entity);
             this.selectViewerTarget(dt_entity);
             this.viewer_widget.clock.currentTime = dt_entity.availability.start;
             var flyPromise = this.viewer_widget.flyTo(dt_entity);
             var that = this;
             flyPromise.then(function (result) {
                 if (result) {
-                    console.log("Displaying details");
+                    // console.log("Displaying details");
                     that.viewer_widget.scene.requestRender();
                 }
                 else {

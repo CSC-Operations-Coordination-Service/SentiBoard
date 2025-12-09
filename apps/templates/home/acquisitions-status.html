@@ -207,9 +207,9 @@
         window.SSR_SATELLITE_ORBITS = {{ satellite_orbits_json | tojson | safe }};
         window.SSR_ACQUISITION_STATIONS = {{ acquisition_stations_json | tojson | safe }};
 
-        console.log("[SSR] Plans missions:", Object.keys(SSR_ACQ_PLAN_DAYS || {}).slice(0, 3));
+        /*console.log("[SSR] Plans missions:", Object.keys(SSR_ACQ_PLAN_DAYS || {}).slice(0, 3));
         console.log("[SSR] Orbits payload type:", typeof SSR_SATELLITE_ORBITS);
-        console.log("[SSR] Acquisition Stations payload type:", typeof SSR_ACQUISITION_STATIONS);
+        console.log("[SSR] Acquisition Stations payload type:", typeof SSR_ACQUISITION_STATIONS);*/
     </script>
     <script src="/static/assets/lib/markdown-it/markdown-it.min.js"></script>
     <script src="/static/assets/lib/markdown-it/markdown-it-sanitizer.min.js"></script>

@@ -184,7 +184,7 @@ def get_news_previous_quarter():
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])
 def get_cds_datatake(datatake_id):
     if request.headers.get("X-Requested-With") != "XMLHttpRequest":
-        logger.warning("[BLOCKED] Direct access attempt to  CDS Datatakes API")
+        logger.warning("[BLOCKED] Direct access attempt to CDS Datatakes API")
         abort(403)
     logger.info("[BEG] INTERNAL API GET Datatake info %s ", datatake_id)
 
