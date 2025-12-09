@@ -399,7 +399,7 @@ def update_instant_message():
         existing_pub_dt = message.publicationDate
         existing_date_only = existing_pub_dt.date() if existing_pub_dt else None
 
-        # ✅ Only update time if DATE actually changed
+        # Only update time if DATE actually changed
         if new_date_only != existing_date_only:
             now_utc = datetime.now(timezone.utc)
             new_publication_dt = datetime.combine(
