@@ -372,20 +372,7 @@ def update_instant_message():
                 status=400,
             )
 
-        try:
-            publication_date = datetime.strptime(publication_date_str, "%Y-%m-%d")
-        except ValueError:
-            return Response(
-                json.dumps(
-                    {"error": "Invalid publication date format, use yyyy-mm-dd"}
-                ),
-                mimetype="application/json",
-                status=400,
-            )
-
-        modify_date = datetime.now(timezone.utc)
-
-        # Fetch the existing message
+        # Fetch the existing message FIRST
         message = (
             db.session.query(instant_messages_model.InstantMessages)
             .filter_by(id=message_id)
@@ -398,16 +385,40 @@ def update_instant_message():
                 status=404,
             )
 
+        # Parse frontend date (yyyy-mm-dd)
+        try:
+            new_date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                json.dumps(
+                    {"error": "Invalid publication date format, use yyyy-mm-dd"}
+                ),
+                mimetype="application/json",
+                status=400,
+            )
+
+        existing_pub_dt = message.publicationDate
+        existing_date_only = existing_pub_dt.date() if existing_pub_dt else None
+
+        # Only update time if DATE actually changed
+        if new_date_only != existing_date_only:
+            now_utc = datetime.now(timezone.utc)
+            new_publication_dt = datetime.combine(
+                new_date_only, now_utc.time(), tzinfo=timezone.utc
+            )
+            message.publicationDate = new_publication_dt
+            logger.info("Publication date changed → new time applied")
+        else:
+            logger.info("Publication date unchanged → keeping existing time")
+
+        # Always update modify date
+        message.modifyDate = datetime.now(timezone.utc)
+
         # Update fields
         message.title = title
         message.text = text
         message.link = link
         message.messageType = message_type
-        message.modifyDate = modify_date
-
-        old_pub_date = message.publicationDate
-        if old_pub_date != publication_date:
-            message.publicationDate = publication_date
 
         db.session.commit()
 
