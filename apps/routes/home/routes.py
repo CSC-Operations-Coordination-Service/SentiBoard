@@ -332,9 +332,22 @@ def index():
             )
             continue
 
+        SATELLITE_DISPLAY_NAMES = {
+            "S1A": "Copernicus Sentinel-1A",
+            "S1C": "Copernicus Sentinel-1C",
+            "S2A": "Copernicus Sentinel-2A",
+            "S2B": "Copernicus Sentinel-2B",
+            "S2C": "Copernicus Sentinel-2C",
+            "S3A": "Copernicus Sentinel-3A",
+            "S3B": "Copernicus Sentinel-3B",
+            "S5P": "Copernicus Sentinel-5P",
+        }
+
         impacted_sat = (
-            raw_impacted_sat.replace("Sentinel-", "S")
+            raw_impacted_sat.replace("Copernicus", "")
+            .replace("Sentinel-", "S")
             .replace("Sentinel ", "S")
+            .replace("-", "")
             .replace(" ", "")
             .upper()
         )
@@ -346,21 +359,21 @@ def index():
             )
             continue
 
+        display_satellite = SATELLITE_DISPLAY_NAMES.get(impacted_sat, raw_impacted_sat)
         # Default title
         title = None
         if category == "Platform":
-            title = f"Satellite issue, affecting {impacted_sat} data."
+            title = f"Satellite issue, affecting {display_satellite} data."
         elif category == "Acquisition":
-            title = f"Acquisition issue, affecting {impacted_sat} data."
+            title = f"Acquisition issue, affecting {display_satellite} data."
         elif category == "Production":
-            title = f"Production issue, affecting {impacted_sat} data."
+            title = f"Production issue, affecting {display_satellite} data."
         elif category == "Manoeuvre":
-            title = f"Manoeuvre issue, affecting {impacted_sat} data."
+            title = f"Manoeuvre issue, affecting {display_satellite} data."
         elif category == "Calibration":
-            title = f"Calibration issue, affecting {impacted_sat} data."
+            title = f"Calibration issue, affecting {display_satellite} data."
         else:
-            title = f"{category} issue, affecting {impacted_sat} data."
-
+            title = f"{category} issue, affecting {display_satellite} data."
         # Add “Read More” link
         pub_date = item.get("publicationDate", "")[:10]
         title += f' <a href="/events.html?showDayEvents={pub_date}">Read More</a>'
