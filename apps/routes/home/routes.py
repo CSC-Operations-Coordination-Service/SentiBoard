@@ -45,9 +45,11 @@ import requests
 import time
 import logging
 import math
+from zoneinfo import ZoneInfo
 
 logger = logging.getLogger(__name__)
 
+LOCAL_TZ = ZoneInfo("Europe/Rome")
 from apps.utils.events_utils import (
     build_event_instance,
     get_impacted_satellite,
@@ -274,23 +276,13 @@ def index():
             )
             continue
 
-        time_candidates = (
-            item.get("time"),
-            item.get("start"),
-            item.get("publicationDate"),
-            item.get("timestamp"),
-        )
+        event_time_str = item.get("start")
 
-        event_time_str = None
-
-        for cand in time_candidates:
-            if cand:
-                event_time_str = cand
-                break
         if not event_time_str:
-            current_app.logger.warning(f"[INDEX] Missing 'time' field in item {idx}")
+            current_app.logger.warning(
+                f"[INDEX] Missing 'time' field in item {idx}: {item} "
+            )
             continue
-
         try:
             if isinstance(event_time_str, str):
                 try:
@@ -311,7 +303,9 @@ def index():
 
         # Ensure event_time is timezone-aware
         if event_time.tzinfo is None:
-            event_time = event_time.replace(tzinfo=timezone.utc)
+            event_time = event_time.replace(tzinfo=LOCAL_TZ)
+
+        event_time = event_time.astimezone(timezone.utc)
 
         diff = now - event_time
         if diff.days >= 1:
