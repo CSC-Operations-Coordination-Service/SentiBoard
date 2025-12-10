@@ -41,7 +41,8 @@ from calendar import monthrange
 from apps import flask_cache, db
 from collections import Counter
 import json
-import traceback
+import requests
+import time
 import logging
 import math
 
@@ -1206,6 +1207,51 @@ def update_instant_message_ssr():
         return redirect("/newsList.html")
 
 
+@blueprint.route("/processors-viewer.html")
+def processors_page():
+    metadata = get_metadata("processors-viewer.html")
+    metadata["page_url"] = request.url
+    segment = "processors-viewer"
+    COPERNICUS_URL = (
+        "https://configuration.copernicus.eu/rest/api/baseline/processors-releases"
+    )
+    CACHE_TTL = 3600
+    now = time.time()
+
+    if not hasattr(processors_page, "_cache"):
+        processors_page._cache = {}
+
+    cache = processors_page._cache.get("processors")
+
+    if cache and now - cache["ts"] < CACHE_TTL:
+        processors_releases = cache["data"]
+    else:
+        try:
+            r = requests.get(COPERNICUS_URL, timeout=20)
+            r.raise_for_status()
+            raw = r.json()
+
+            graph_raw = raw.get("graph")
+            graph = json.loads(graph_raw) if isinstance(graph_raw, str) else graph_raw
+            processors_releases = graph.get("processors_releases", [])
+
+            processors_page._cache["processors"] = {
+                "data": processors_releases,
+                "ts": now,
+            }
+
+        except Exception:
+            logging.exception("Copernicus processors fetch failed")
+            processors_releases = cache["data"] if cache else []
+
+    return render_template(
+        "home/processors-viewer.html",
+        processors_releases=processors_releases,
+        segment=segment,
+        **metadata,
+    )
+
+
 @blueprint.route("/<template>")
 def route_template(template):
     try:
@@ -1218,6 +1264,9 @@ def route_template(template):
         # Get metadata safely
         metadata = get_metadata(template)
         metadata["page_url"] = request.url
+
+        if template in ["processors-viewer", "processors-viewer.html"]:
+            return processors_page()
 
         if template in ["newsList", "newsList.html"]:
             return news_list_ssr()

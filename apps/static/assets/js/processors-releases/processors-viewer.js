@@ -180,18 +180,28 @@ class ProcessorsViewer {
     }
 
     loadProcessorsReleases() {
-        procViewer.successLoadConfiguration($.ajax({
-            url: 'https://configuration.copernicus.eu/rest/api/baseline/processors-releases',
-            async: false
-        }));
+        if (!window.PROCESSORS_RELEASES || !Array.isArray(window.PROCESSORS_RELEASES)) {
+            console.error("No SSR processors data available");
+            this.errorLoadConfiguration("Missing SSR data");
+            return;
+        }
+
+        this.successLoadConfiguration({
+            graph: {
+                processors_releases: window.PROCESSORS_RELEASES
+            }
+        });
     }
 
     successLoadConfiguration(response) {
         // Store the Interface Configuration as a class member
         console.info("Processors releases configuration loaded.");
-        var graph = JSON.parse(format_response(response)[0].responseJSON.graph);
-        if (graph['processors_releases']) {
-            procViewer.processorsReleases = graph['processors_releases'];
+        var graph = typeof response.graph === "string"
+            ? JSON.parse(response.graph)
+            : response.graph;
+
+        if (graph && graph.processors_releases) {
+            procViewer.processorsReleases = graph.processors_releases;
         } else {
             procViewer.processorsReleases = [];
         }
@@ -230,11 +240,21 @@ class ProcessorsViewer {
         let ipfs = procViewer.IPFsMap[selectedMission];
         var count = 0;
         procViewer.groups = new vis.DataSet([]);
+        procViewer.timeline.setGroups(new vis.DataSet([]));
+
         ipfs.forEach(ipf => {
             if (Object.values(this.IPFsMap).some(y => y.includes(ipf))) {
+
                 let ipfMapped = this.IPFsGroupsMap[ipf];
+                if (!ipfMapped) {
+                    console.warn("Unmapped IPF:", ipf);
+                    return;
+                }
                 // using update because its like add but doesnt crash on duplicate ids, instead it updates them (in this case with the same data)
-                procViewer.groups.update({ id: ipfMapped, content: ipfMapped.substring(ipfMapped.indexOf('_') + 1, ipfMapped.length) });
+                procViewer.groups.update({
+                    id: ipfMapped,
+                    content: ipfMapped.substring(ipfMapped.indexOf('_') + 1)
+                });
             }
         });
 

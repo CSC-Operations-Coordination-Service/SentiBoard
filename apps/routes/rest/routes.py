@@ -689,3 +689,12 @@ def acquisition_plan_days_ssr():
     return render_template(
         "acquisitions-status.html", plans_coverage_json=json.dumps(plans_coverage)
     )
+
+
+@blueprint.route("/api/processors-releases")
+def processors_releases_proxy():
+    import requests
+
+    url = "https://configuration.copernicus.eu/rest/api/baseline/processors-releases"
+    r = requests.get(url)
+    return r.json()
