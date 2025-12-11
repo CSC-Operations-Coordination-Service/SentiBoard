@@ -204,7 +204,7 @@ def index():
     metadata = get_metadata("index.html")
     metadata["page_url"] = request.url
     segment = "index"
-    period_id = "24h"
+    period_id = "7d"
 
     ALLOWED_SATELLITES = {
         "S1A",
@@ -269,6 +269,17 @@ def index():
     now = datetime.now(timezone.utc)
     anomalies_details = []
 
+    SATELLITE_DISPLAY_NAMES = {
+        "S1A": "Copernicus Sentinel-1A",
+        "S1C": "Copernicus Sentinel-1C",
+        "S2A": "Copernicus Sentinel-2A",
+        "S2B": "Copernicus Sentinel-2B",
+        "S2C": "Copernicus Sentinel-2C",
+        "S3A": "Copernicus Sentinel-3A",
+        "S3B": "Copernicus Sentinel-3B",
+        "S5P": "Copernicus Sentinel-5P",
+    }
+
     for idx, item in enumerate(anomalies_data):
         if not isinstance(item, dict):
             current_app.logger.warning(
@@ -283,6 +294,7 @@ def index():
                 f"[INDEX] Missing 'time' field in item {idx}: {item} "
             )
             continue
+
         try:
             if isinstance(event_time_str, str):
                 try:
@@ -308,12 +320,19 @@ def index():
         event_time = event_time.astimezone(timezone.utc)
 
         diff = now - event_time
-        if diff.days >= 1:
-            time_ago = f"{diff.days} day(s) ago"
-        elif diff.seconds >= 3600:
-            time_ago = f"{diff.seconds // 3600} hour(s) ago"
+        total_hours = diff.total_seconds() / 3600
+        days = int(total_hours // 24)
+        hours = int(total_hours % 24)
+        minutes = int((diff.total_seconds() % 3600) // 60)
+
+        if days >= 1:
+            time_ago = f"{days} day(s)"
+            if hours > 0:
+                time_ago += f", {hours} hour(s)"
+        elif total_hours >= 1:
+            time_ago = f"{round(total_hours)} hour(s)"
         else:
-            time_ago = f"{diff.seconds // 60} minute(s) ago"
+            time_ago = f"{minutes} minute(s)"
 
         category = item.get("category", "Unknown")
 
@@ -325,17 +344,6 @@ def index():
                 f"[INDEX] Skipping anomaly without impactedSatellite at index {idx}"
             )
             continue
-
-        SATELLITE_DISPLAY_NAMES = {
-            "S1A": "Copernicus Sentinel-1A",
-            "S1C": "Copernicus Sentinel-1C",
-            "S2A": "Copernicus Sentinel-2A",
-            "S2B": "Copernicus Sentinel-2B",
-            "S2C": "Copernicus Sentinel-2C",
-            "S3A": "Copernicus Sentinel-3A",
-            "S3B": "Copernicus Sentinel-3B",
-            "S5P": "Copernicus Sentinel-5P",
-        }
 
         impacted_sat = (
             raw_impacted_sat.replace("Copernicus", "")
@@ -373,7 +381,8 @@ def index():
         title += f' <a href="/events.html?showDayEvents={pub_date}">Read More</a>'
 
         # Append to list
-        anomalies_details.append({"time_ago": time_ago, "content": title})
+        if now - event_time <= timedelta(hours=48):
+            anomalies_details.append({"time_ago": time_ago, "content": title})
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
