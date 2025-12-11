@@ -108,7 +108,7 @@ class CalendarWidget {
         this.addEventListeners();
     }
 
-    navigateMonth(delta) {
+    async navigateMonth(delta) {
         let newMonth = this.currentMonth + delta;
         let newYear = this.currentYear;
 
@@ -122,30 +122,6 @@ class CalendarWidget {
 
         this.currentMonth = newMonth;
         this.currentYear = newYear;
-
-        const params = new URLSearchParams({ year: newYear, month: newMonth + 1 });
-        history.replaceState(null, "", `?${params.toString()}`)
-
-        const spinner = document.getElementById('spinnerOverlay');
-        if (spinner) spinner.style.display = "flex";
-
-
-
-        fetch(`/events_data?${params.toString()}`)
-            .then(res => res.json())
-            .then(data => {
-                window.anomaliesByDate = data.anomalies_by_date || {};
-                this.anomaliesByDate = data.anomalies_by_date || {};
-
-                this.anomalies = Object.values(this.anomaliesByDate).flat();
-
-                this.generateCalendar(this.currentMonth, this.currentYear);
-
-            })
-            .catch(err => console.error('Error fetching new month', err))
-            .finally(() => {
-                if (spinner) spinner.style.display = "none";
-            });
     }
 
     buildAnomaliesByDate(anomaliesArray) {
@@ -697,7 +673,6 @@ class CalendarWidget {
         }
 
         this.isGenerating = true;
-        document.getElementById('calendarLoadingSpinner').style.display = 'block';
 
         try {
             this.currentMonth = month;
@@ -824,7 +799,6 @@ class CalendarWidget {
             console.error('Error in generateCalendar:', error);
         } finally {
             this.isGenerating = false;
-            document.getElementById('calendarLoadingSpinner').style.display = 'none';
             this.checkNoEventsBeforeDateMsgDisplay();
         }
     }
@@ -1052,22 +1026,59 @@ class CalendarWidget {
     }
 
     showDayEventsOnPageLoad() {
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const showDayEvents = urlParams.get('showDayEvents');
-        if (showDayEvents) {
-            for (const [key, anomaly] of Object.entries(this.anomalies)) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const showDayEvents = urlParams.get("showDayEvents");
+        let targetDate = null;
 
-                // Parse showDayEvents and publicationDate as Date for comparison
-                const parts = showDayEvents.split('/');
-                const showDateStr = this.normalizeDateString(showDayEvents);
-                const anomalyDateStr = this.normalizeDateString(anomaly.publicationDate);
-                if (showDateStr && showDateStr === anomalyDateStr) {
-                    this.showEventDetails(anomalyDateStr);
+        if (showDayEvents) {
+            // Parse showDayEvents in format dd/mm/yyyy
+            const parts = showDayEvents.split("/");
+            if (parts.length === 3) {
+                const [dd, mm, yyyy] = parts.map(Number);
+                targetDate = new Date(yyyy, mm - 1, dd);
+            }
+        } else {
+            // fallback to year/month in URL
+            const year = parseInt(urlParams.get("year"));
+            const month = parseInt(urlParams.get("month")) - 1;
+            if (!isNaN(year) && !isNaN(month)) {
+                targetDate = new Date(year, month, 1);
+            } else {
+                targetDate = new Date(); // default today
+            }
+        }
+
+        if (targetDate) {
+            // Set calendar month/year to target date
+            calendar.gotoMonth(targetDate.getFullYear(), targetDate.getMonth());
+
+            // If we have a specific day, show it
+            if (showDayEvents) {
+                const formatted = calendar.formatDate(targetDate); // yyyy-mm-dd
+                if (calendar.anomaliesByDate[formatted]) {
+                    calendar.lastSelectedDate = formatted;
+                    calendar.showEventDetails(formatted);
+                    calendar.highlightCalendarDay(formatted);
                 }
             }
         }
-        //this.generateCalendar(this.currentMonth, this.currentYear);
+    }
+
+
+    // Utility to highlight the selected day in the calendar
+    highlightCalendarDay(dateStr) {
+        const dayParts = dateStr.split('-');
+        if (dayParts.length !== 3) return;
+
+        const dayNumber = parseInt(dayParts[2], 10);
+
+        document.querySelectorAll('.calendar-day.selected').forEach(d => d.classList.remove('selected'));
+        document.querySelectorAll('.calendar-day').forEach(div => {
+            const span = div.querySelector('span');
+            if (span && parseInt(span.textContent, 10) === dayNumber) {
+                div.classList.add('selected');
+            }
+        });
     }
 
 }

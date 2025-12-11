@@ -86,7 +86,6 @@
 
       <!-- Calendar container -->
       <div class="row align-items-stretch">
-        <div id="calendarLoadingSpinner" style="display:none;">Loading...</div>
         <!-- Main timeline control -->
         <div class="col-12 calendar-window">
           <div class="card calendar-card" >
@@ -258,35 +257,86 @@
     window.iconMap = {{ icon_map | tojson | safe}};
     window.eventTypeMap = {{ event_type_map | tojson | safe}};
     window.anomaliesByDate = {{anomalies_by_date | tojson | safe}};
-    const defaultYear = Number({{ current_year | int }}) || new Date().getFullYear();
-    const defaultMonth = Number ({{ current_month | int }}) || (new Date().getMonth() + 1);
 
     const urlParams = new URLSearchParams(window.location.search);
-    
+
+    const showDayEvents = urlParams.get('showDayEvents');
     const yearParam = Number(urlParams.get('year'));
     const monthParam = Number(urlParams.get('month'));
 
-    if(!isNaN(yearParam) && yearParam > 1970){
-      window.currentYear = yearParam;
+     // ---- PARSE showDayEvents (if provided) ----
+    let forcedYear  = null;
+    let forcedMonth = null; // 0-based
+    let forcedDateISO = null;
+
+    if(showDayEvents){
+      const [dd, mm, yyyy] = showDayEvents.split("/");
+        forcedYear  = Number(yyyy);
+        forcedMonth = Number(mm) - 1;
+        forcedDateISO = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+    }
+    // ---- PRIORITY FOR INITIAL MONTH/YEAR ----
+    if (forcedYear !== null && forcedMonth !== null) {
+        window.currentYear  = forcedYear;
+        window.currentMonth = forcedMonth;
     } else {
-      window.currentYear = defaultYear;
+        const defaultYear = Number({{ current_year | int }}) || new Date().getFullYear();
+        const defaultMonth = Number({{ current_month | int }}) || (new Date().getMonth() + 1);
+
+        window.currentYear  = (!isNaN(yearParam) && yearParam > 1970) ? yearParam : defaultYear;
+        window.currentMonth = (!isNaN(monthParam) && monthParam >= 1 && monthParam <= 12)
+            ? (monthParam - 1)
+            : (defaultMonth - 1);
     }
 
-    if(!isNaN(monthParam) && monthParam >=1 && monthParam <= 12){
-      window.currentMonth = monthParam - 1;
-    } else {
-      window.currentMonth = defaultMonth -1;
-    }
-    console.log("[INIT PARAMS]", {year: window.currentYear, month0: window.currentMonth+1});
+    console.log("[INIT PARAMS FIX]",
+        {year: window.currentYear, month: window.currentMonth+1, showDayEvents});
+  </script>
+  <script>
+    function showDayFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const showDayEvents = urlParams.get("showDayEvents");
+
+        if (!showDayEvents) return;
+        if (!calendar.anomaliesByDate) return;
+
+        const [dd, mm, yyyy] = showDayEvents.split("/");
+        const iso = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+
+        if (!calendar.anomaliesByDate[iso]) {
+            console.warn("[SHOWDAY] No events on that date");
+            return;
+        }
+
+        // Set selected date
+        calendar.lastSelectedDate = iso;
+
+        // Open the details panel
+        calendar.showEventDetails(iso);
+        calendar.highlightCalendarDay(iso);
+
+        console.log("[SHOWDAY] Event auto-open:", iso);
+      }
+  </script>
+  <script>
+    function updateURL(year, month0, dropShowDayEvents=false) {
+        const params = new URLSearchParams(window.location.search);
+
+        params.set("year", year);
+        params.set("month", month0 + 1);
+
+        if (dropShowDayEvents) {
+            params.delete("showDayEvents");
+        }
+
+        history.replaceState(null, "", `?${params.toString()}`);
+      }
   </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
   <script type="text/javascript">
     document.addEventListener("DOMContentLoaded", async function() {
-      const spinner = document.getElementById('spinnerOverlay');
-      if (spinner) spinner.style.display ="flex";
-
-      try{
+    try{
         await calendar.init();
         
         const fetchMonth = window.currentMonth + 1;
@@ -308,38 +358,13 @@
         calendar.generateCalendar(calendar.currentMonth, calendar.currentYear); // JS months are 0-based
         
         updateURL(window.currentYear, window.currentMonth);
+        showDayFromURL();
       }
       catch(err){
         console.error("Error fetching initial events:", err);
-      } finally {
-        if (spinner) spinner.style.display = "none";
-      }
-
-      function updateURL(year, month0){
-        const month = month0 + 1;
-        const params =  new URLSearchParams({year: year, month: month});
-        history.replaceState(null, "", `?${params.toString()}`);
-      }
-      
-      calendar.prevMonthButton.addEventListener("click", async () => {
-        calendar.navigateMonth(-1)
-        window.currentMonth = calendar.currentMonth;
-        window.currentYear = calendar.currentYear;
-        updateURL(window.currentYear, window.currentMonth);
-        await reloadEvents();
-      });
-
-      calendar.nextMonthButton.addEventListener("click", async () => {
-        calendar.navigateMonth(1)
-        window.currentMonth = calendar.currentMonth;
-        window.currentYear = calendar.currentYear;
-        updateURL(window.currentYear, window.currentMonth);
-        await reloadEvents();
-      
-      });
+      } 
 
       async function reloadEvents(){
-        if (spinner) spinner.style.display ="flex";
         try{
           const fetchMonth = window.currentMonth + 1;
           const fetchYear = window.currentYear;
@@ -351,13 +376,34 @@
           calendar.anomalies = Object.values(calendar.anomaliesByDate).flat();
 
           calendar.generateCalendar(calendar.currentMonth, calendar.currentYear);
-
-          calendar.clearEventDetails();
+          showDayFromURL();
         } catch(err){
           console.error("Error reloading events:", err);
-        } finally{
-          if(spinner) spinner.style.display = "none";
+        } 
+      }
+      calendar.prevMonthButton.addEventListener("click", async () => {
+        calendar.navigateMonth(-1)
+        window.currentMonth = calendar.currentMonth;
+        window.currentYear = calendar.currentYear;
+        updateURL(window.currentYear, window.currentMonth, true);
+        await reloadEvents();
+      });
+
+      calendar.nextMonthButton.addEventListener("click", async () => {
+        calendar.navigateMonth(1)
+        window.currentMonth = calendar.currentMonth;
+        window.currentYear = calendar.currentYear;
+        updateURL(window.currentYear, window.currentMonth, true);
+        await reloadEvents();
+      
+      });
+      function normalizeDateString(dateStr) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const [d, m, y] = parts;
+          return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
         }
+        return dateStr;
       }
     });
 </script>
