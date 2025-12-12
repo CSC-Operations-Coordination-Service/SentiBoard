@@ -248,17 +248,17 @@ def get_instant_message():
                 status=404,
             )
 
-        publication_dt = None
-        if message.publicationDate:
-            publication_dt = message.publicationDate.astimezone(ROME_TZ)
-            publication_dt = publication_dt.strftime("%Y-%m-%d %H:%M")
         result = {
             "id": message.id,
             "title": message.title,
             "text": message.text,
             "link": message.link,
             "messageType": message.messageType,
-            "publicationDate": publication_dt or "",
+            "publicationDate": (
+                message.publicationDate.strftime("%Y-%m-%dT%H:%M")
+                if message.publicationDate
+                else ""
+            ),
         }
 
         return Response(json.dumps(result), mimetype="application/json", status=200)
@@ -384,7 +384,7 @@ def update_instant_message():
         # Parse frontend date (yyyy-mm-dd)
         try:
             naive_dt = datetime.fromisoformat(publication_date_str)
-            new_publication_dt = naive_dt.replace(tzinfo=ROME_TZ)
+            new_publication_dt = naive_dt
         except ValueError:
             return Response(
                 json.dumps(
@@ -395,8 +395,7 @@ def update_instant_message():
             )
 
         message.publicationDate = new_publication_dt
-        # Always update modify date
-        message.modifyDate = datetime.now(ROME_TZ)
+        message.modifyDate = datetime.now()
 
         # Update fields
         message.title = title
