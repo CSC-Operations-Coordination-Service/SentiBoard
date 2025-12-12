@@ -118,6 +118,8 @@ class ProcessorsViewer {
     }
 
     init() {
+        $('#time-period-select-container').hide();
+        $('#esa-logo-header').hide();
 
         this.initProcessorsTimeline();
 
