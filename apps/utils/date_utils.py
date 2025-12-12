@@ -17,6 +17,9 @@ from copy import copy
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
+import pytz
+
+tz_rome = pytz.timezone("Europe/Rome")
 
 logger = logging.getLogger(__name__)
 
@@ -24,57 +27,65 @@ logger = logging.getLogger(__name__)
 def extract_dates_from_text(text):
     list_date_format = []
     try:
-        dates = re.findall(r'\d{2}[-]\d{2}[-]\d{4}[T]\d{2}[:]\d{2}[:]\d{2}', text.replace('/', '-'))
+        dates = re.findall(
+            r"\d{2}[-]\d{2}[-]\d{4}[T]\d{2}[:]\d{2}[:]\d{2}", text.replace("/", "-")
+        )
         for date in dates:
             try:
-                list_date_format.append(datetime.strptime(date, '%d-%m-%YT%H:%M:%S'))
+                list_date_format.append(datetime.strptime(date, "%d-%m-%YT%H:%M:%S"))
             except Exception as ex:
                 continue
         dates = re.findall(
-            r'(?:\d{1,2}:\d{1,2} UTC on \d{1,2} )(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* (?:\d{1,2}, )?\d{2,4}',
-            text)
+            r"(?:\d{1,2}:\d{1,2} UTC on \d{1,2} )(?:Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* (?:\d{1,2}, )?\d{2,4}",
+            text,
+        )
         for date in dates:
             try:
-                date = date.replace('on', '')
-                lower = date.find('UTC ') + 4
+                date = date.replace("on", "")
+                lower = date.find("UTC ") + 4
                 upper = 0
-                if date.find(' Jan') > -1:
-                    upper = date.find(' Jan')
-                elif date.find(' Feb') > -1:
-                    upper = date.find(' Feb')
-                elif date.find(' Mar') > -1:
-                    upper = date.find(' Mar')
-                elif date.find(' Apr') > -1:
-                    upper = date.find(' Apr')
-                elif date.find(' Jun') > -1:
-                    upper = date.find(' Jun')
-                elif date.find(' Jul') > -1:
-                    upper = date.find(' Jul')
-                elif date.find(' Aug') > -1:
-                    upper = date.find(' Aug')
-                elif date.find(' Sep') > -1:
-                    upper = date.find(' Sep')
-                elif date.find(' Oct') > -1:
-                    upper = date.find(' Oct')
-                elif date.find(' Nov') > -1:
-                    upper = date.find(' Nov')
-                elif date.find(' Dec') > -1:
-                    upper = date.find(' Dec')
-                if len(date[lower + 1:upper]) < 2:
-                    date = date[:lower] + '0' + date[upper - 1:]
-                list_date_format.append(datetime.strptime(date, '%H:%M %Z %d %B %Y'))
+                if date.find(" Jan") > -1:
+                    upper = date.find(" Jan")
+                elif date.find(" Feb") > -1:
+                    upper = date.find(" Feb")
+                elif date.find(" Mar") > -1:
+                    upper = date.find(" Mar")
+                elif date.find(" Apr") > -1:
+                    upper = date.find(" Apr")
+                elif date.find(" Jun") > -1:
+                    upper = date.find(" Jun")
+                elif date.find(" Jul") > -1:
+                    upper = date.find(" Jul")
+                elif date.find(" Aug") > -1:
+                    upper = date.find(" Aug")
+                elif date.find(" Sep") > -1:
+                    upper = date.find(" Sep")
+                elif date.find(" Oct") > -1:
+                    upper = date.find(" Oct")
+                elif date.find(" Nov") > -1:
+                    upper = date.find(" Nov")
+                elif date.find(" Dec") > -1:
+                    upper = date.find(" Dec")
+                if len(date[lower + 1 : upper]) < 2:
+                    date = date[:lower] + "0" + date[upper - 1 :]
+                list_date_format.append(datetime.strptime(date, "%H:%M %Z %d %B %Y"))
             except Exception as ex:
                 continue
-        dates = re.findall(r'\d{2}[-]\d{2}[-]\d{4}[ ]\d{2}[:]\d{2}[ ][U][T][C]', text.replace('/', '-'))
+        dates = re.findall(
+            r"\d{2}[-]\d{2}[-]\d{4}[ ]\d{2}[:]\d{2}[ ][U][T][C]", text.replace("/", "-")
+        )
         for date in dates:
             try:
-                list_date_format.append(datetime.strptime(date, '%d-%m-%Y %H:%M %Z'))
+                list_date_format.append(datetime.strptime(date, "%d-%m-%Y %H:%M %Z"))
             except Exception as ex:
                 continue
-        dates = re.findall(r'\d{2}[-]\d{2}[-]\d{4}[ ]\d{2}[:]\d{2}[:]\d{2}[ ][U][T][C]', text.replace('/', '-'))
+        dates = re.findall(
+            r"\d{2}[-]\d{2}[-]\d{4}[ ]\d{2}[:]\d{2}[:]\d{2}[ ][U][T][C]",
+            text.replace("/", "-"),
+        )
         for date in dates:
             try:
-                list_date_format.append(datetime.strptime(date, '%d-%m-%Y %H:%M:%S %Z'))
+                list_date_format.append(datetime.strptime(date, "%d-%m-%Y %H:%M:%S %Z"))
             except Exception as ex:
                 continue
 
@@ -94,7 +105,7 @@ def format_date_to_str(string_date, string_format):
 
 
 def last_quarter_interval_from_date(enddate):
-    end_date = datetime.strptime(enddate, '%d-%m-%YT%H:%M:%S')
+    end_date = datetime.strptime(enddate, "%d-%m-%YT%H:%M:%S")
     end_date = end_date.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     start_date = end_date + relativedelta(months=-3) + relativedelta(seconds=+1)
 
@@ -125,8 +136,8 @@ def prev_quarter_interval_from_date(date):
 
 def get_interval_subperiods(start_date: datetime, end_date: datetime, num_periods: int):
     """
-        Split a Date/Time interval in num_periods subintervals of same duration.
-        Return a list of intervals : dictionaries with (from_date and end_date
+    Split a Date/Time interval in num_periods subintervals of same duration.
+    Return a list of intervals : dictionaries with (from_date and end_date
 
     """
     # 1. compute interval duration
@@ -139,19 +150,18 @@ def get_interval_subperiods(start_date: datetime, end_date: datetime, num_period
     # next sub-interval start -time
 
     subintervals = []
-    subintervals.append({'start_date': start_date})
+    subintervals.append({"start_date": start_date})
     # Final check: last sub-interval end time shall be the same as interval end time
     for i in range(1, num_periods):
-        start_time = (start_date + sub_interval_len * i)
+        start_time = start_date + sub_interval_len * i
         # logger.debug("Sub-period time: %s", start_time)
-        subintervals[i - 1].update({'end_date': start_time})
-        subintervals.append({'start_date': start_time})
-    subintervals[num_periods - 1].update({'end_date': end_date})
+        subintervals[i - 1].update({"end_date": start_time})
+        subintervals.append({"start_date": start_time})
+    subintervals[num_periods - 1].update({"end_date": end_date})
     return subintervals
 
 
-def get_date_before(end_date, border_date,
-                    num_days, pass_border=True):
+def get_date_before(end_date, border_date, num_days, pass_border=True):
     """
     Look for the first date before border_date, starting from end_date
     going backwards for steps of period_length.
@@ -172,9 +182,10 @@ def get_date_before(end_date, border_date,
     if pass_border:
         num_periods += 1
     # 4. compute the start date by subtracting num_periods * num_days from end_date
-    start_date = end_date - relativedelta(days= num_periods * num_days)
+    start_date = end_date - relativedelta(days=num_periods * num_days)
     # 5. return start_date
     return start_date
+
 
 # Week Starts at Monday
 FIRST_WEEK_DAY = 0
@@ -208,8 +219,11 @@ def get_week_start_after(start_date: datetime, first_week_day):
     # If start date is on Sunday, next
     days_to_next_week_start = (WEEK_DAYS - week_day + first_week_day) % WEEK_DAYS
     week_start_date += relativedelta(days=days_to_next_week_start)
-    logger.debug("Found Start of next week: %s (ISO), %s (non iso)", week_start_date.isoformat(),
-                 week_start_date)
+    logger.debug(
+        "Found Start of next week: %s (ISO), %s (non iso)",
+        week_start_date.isoformat(),
+        week_start_date,
+    )
     return week_start_date
 
 
@@ -233,7 +247,9 @@ def get_week_end_before(end_date: datetime, last_week_day):
     week_end_date = copy(end_date)
     logger.debug("Searching End of week before date %s", week_end_date.isoformat())
     week_end_week_day = week_end_date.weekday()
-    days_from_prev_week_end = (WEEK_DAYS - last_week_day + week_end_week_day) % WEEK_DAYS
+    days_from_prev_week_end = (
+        WEEK_DAYS - last_week_day + week_end_week_day
+    ) % WEEK_DAYS
     week_end_date -= relativedelta(days=days_from_prev_week_end)
     logger.debug("Found End of week: %s", week_end_date.isoformat())
     return week_end_date
@@ -245,9 +261,13 @@ def get_whole_weeks_interval(start_date, end_date):
     start_week_first_day = get_week_start_after(start_date, first_week_day)
     end_week_last_day = get_week_end_before(end_date, last_week_day)
     # TODO: assign hour of end_date to both computed dates
-    logger.debug("Interval from %s to %s - restricted to include only full weeks: from %s to %s",
-                 start_date, end_date,
-                 start_week_first_day, end_week_last_day)
+    logger.debug(
+        "Interval from %s to %s - restricted to include only full weeks: from %s to %s",
+        start_date,
+        end_date,
+        start_week_first_day,
+        end_week_last_day,
+    )
     return start_week_first_day, end_week_last_day
 
 
@@ -260,11 +280,11 @@ class Quarter:
     # the end of the interval is 3 months later at 23:59,
     # Only one method is needed!
     def __int__(self, year):
-        self.__date = datetime.strptime(year, '%Y')
+        self.__date = datetime.strptime(year, "%Y")
         return
 
     def set_year(self, year):
-        self.__date = datetime.strptime(year, '%Y')
+        self.__date = datetime.strptime(year, "%Y")
         return
 
     def get(self, index):
@@ -278,32 +298,40 @@ class Quarter:
             return self.fourth()
 
     def first(self):
-        start_date = self.__date.replace(month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = self.__date.replace(
+            month=1, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         end_date = start_date + relativedelta(months=+3)
         end_date += relativedelta(minutes=-1)
         end_date = end_date.replace(second=59, microsecond=999999)
-        return {'start': start_date, 'end': end_date}
+        return {"start": start_date, "end": end_date}
 
     def second(self):
-        start_date = self.__date.replace(month=4, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = self.__date.replace(
+            month=4, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         end_date = start_date + relativedelta(months=+3)
         end_date += relativedelta(minutes=-1)
         end_date = end_date.replace(second=59, microsecond=999999)
-        return {'start': start_date, 'end': end_date}
+        return {"start": start_date, "end": end_date}
 
     def third(self):
-        start_date = self.__date.replace(month=7, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = self.__date.replace(
+            month=7, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         end_date = start_date + relativedelta(months=+3)
         end_date += relativedelta(minutes=-1)
         end_date = end_date.replace(second=59, microsecond=999999)
-        return {'start': start_date, 'end': end_date}
+        return {"start": start_date, "end": end_date}
 
     def fourth(self):
-        start_date = self.__date.replace(month=10, day=1, hour=0, minute=0, second=0, microsecond=0)
+        start_date = self.__date.replace(
+            month=10, day=1, hour=0, minute=0, second=0, microsecond=0
+        )
         end_date = start_date + relativedelta(months=+3)
         end_date += relativedelta(minutes=-1)
         end_date = end_date.replace(second=59, microsecond=999999)
-        return {'start': start_date, 'end': end_date}
+        return {"start": start_date, "end": end_date}
 
 
 """
@@ -318,10 +346,10 @@ class Quarter:
 
 # TODO: define consnatts for Period identifiers
 class PeriodID:
-    DAY = '24h'
-    WEEK = '7d'
-    MONTH = '30d'
-    QUARTER = 'quarter'
+    DAY = "24h"
+    WEEK = "7d"
+    MONTH = "30d"
+    QUARTER = "quarter"
 
 
 #    PREV_QUARTER = 'previous-quarter'
@@ -331,12 +359,14 @@ interval_length = {
     PeriodID.DAY: relativedelta(hours=24),
     PeriodID.WEEK: relativedelta(days=7),
     PeriodID.MONTH: relativedelta(days=30),
-    PeriodID.QUARTER: relativedelta(months=3)
+    PeriodID.QUARTER: relativedelta(months=3),
 }
+
 
 def get_now_hour_start():
     now_date = datetime.utcnow()
     return now_date.replace(minute=0, second=0, microsecond=0)
+
 
 def get_last_period_interval(period_id):
     """
@@ -382,19 +412,19 @@ def _split_month_interval(start_date: datetime, end_date: datetime, num_days: in
 
 def _month_time_intervals(start_date: datetime, end_date: datetime, num_days: int):
     """
-        splits the interval in subperiods, that start and/or
-        end at month limits:
-            each subperiod is fully included in a  month:
-        The algorithm:
-            start from start_date:
-                the first subperiod ends either at the
-                    start_date month end (next day 00:00)
-                    or or at start_date + num_days
-                if the start of the month is included, it
-        return a list of tuples; each tuple is a subperiod of
-        the specified interval.
-        subperiods are adjacent (each end is the same as next
-        subperiod start)
+    splits the interval in subperiods, that start and/or
+    end at month limits:
+        each subperiod is fully included in a  month:
+    The algorithm:
+        start from start_date:
+            the first subperiod ends either at the
+                start_date month end (next day 00:00)
+                or or at start_date + num_days
+            if the start of the month is included, it
+    return a list of tuples; each tuple is a subperiod of
+    the specified interval.
+    subperiods are adjacent (each end is the same as next
+    subperiod start)
     """
     subperiod_start = start_date
     subperiod_list = []
@@ -425,10 +455,10 @@ def _month_time_intervals(start_date: datetime, end_date: datetime, num_days: in
 
 
 def _date_interval_month_intersection(start_date, end_date, year, month):
-    logger.debug("Retrieving interval intersection with month (%s, %s)",
-                 year, month)
-    month_start = datetime(year=int(year), month=int(month), day=1,
-                           hour=0, minute=0, second=0)
+    logger.debug("Retrieving interval intersection with month (%s, %s)", year, month)
+    month_start = datetime(
+        year=int(year), month=int(month), day=1, hour=0, minute=0, second=0
+    )
     month_end = month_start + relativedelta(months=1)
     # logger.debug("Month: start %s, end %s", month_start, month_end)
 
@@ -436,8 +466,7 @@ def _date_interval_month_intersection(start_date, end_date, year, month):
     end_interval_date = month_end if end_date > month_end else end_date
     # logger.debug("End Interval: %s, end Month: %s, intersection end: %s",
     #             end_date, month_end, end_interval_date)
-    logger.debug("Intersection: %s, %s",
-                 start_interval_date, end_interval_date)
+    logger.debug("Intersection: %s, %s", start_interval_date, end_interval_date)
     return start_interval_date, end_interval_date
 
 
@@ -447,3 +476,12 @@ def get_past_day_str(past_num_days, day_format):
     earliest_day = today_day - relativedelta(days=past_num_days)
     earliest_day_str = earliest_day.strftime(day_format)
     return earliest_day_str
+
+
+def format_pub_date(dt):
+    if not dt:
+        return ""
+    # convert to Europe/Rome
+    dt_rome = dt.astimezone(tz_rome)
+    # format as "YYYY-MM-DD HH:MM"
+    return dt_rome.strftime("%Y-%m-%d %H:%M")

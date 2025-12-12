@@ -63,8 +63,8 @@
 
             <div class="mb-3">
                 <label for="publicationDate" class="form-label">Publication Date</label>
-                <input type="date" class="form-control" id="publicationDate" name="publicationDate" required
-                    value="{{ message.publicationDate if message }}">
+                <input type="datetime-local" class="form-control" id="publicationDate" name="publicationDate" required
+                    value="{{ message.publicationDate if message else '' }}">
             </div>
             <button type="submit" class="btn btn-success">Save</button>
             <a href="/newsList.html" class="btn btn-secondary">Cancel</a>

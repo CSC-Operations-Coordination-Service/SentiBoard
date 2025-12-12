@@ -96,7 +96,7 @@ class NewsMessages {
             <div class="card-body" style="color: #eee;">
               <p>${msg.text}</p>
               ${msg.link ? `<a href="${msg.link}" target="_blank" class="read-more">Read more</a>` : ''}
-              <br><small>Published: ${msg.publicationDate ? msg.publicationDate.substring(0, 10) : 'N/A'}</small>
+              <br><small>Published: ${this.formatDateRome(msg.publicationDate)}</small>
             </div>
           </div>
         </div>
@@ -117,6 +117,28 @@ class NewsMessages {
             });
         }
     }
+
+    formatDateRome(utcString) {
+        if (!utcString) return 'N/A';
+
+        try {
+            const dateUtc = new Date(utcString); // stored UTC time
+            const dateRome = new Intl.DateTimeFormat('en-GB', {
+                timeZone: 'Europe/Rome',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(dateUtc);
+
+            return dateRome.replace(',', '');
+        } catch (e) {
+            console.error("[DateFormat] Error:", e, utcString);
+            return utcString;
+        }
+    }
+
 }
 
 $(document).ready(() => {

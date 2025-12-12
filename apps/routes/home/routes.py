@@ -35,6 +35,7 @@ import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
+from apps.utils.date_utils import format_pub_date
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
 from calendar import monthrange
@@ -50,6 +51,7 @@ from zoneinfo import ZoneInfo
 logger = logging.getLogger(__name__)
 
 LOCAL_TZ = ZoneInfo("Europe/Rome")
+
 from apps.utils.events_utils import (
     build_event_instance,
     get_impacted_satellite,
@@ -403,9 +405,7 @@ def index():
                 "title": msg.title,
                 "text": msg.text,
                 "messageType": msg.messageType,
-                "publicationDate": (
-                    msg.publicationDate.isoformat() if msg.publicationDate else None
-                ),
+                "publicationDate": format_pub_date(msg.publicationDate),
                 "link": msg.link,
             }
             for msg in instant_messages_raw
@@ -974,19 +974,28 @@ def news_list_ssr():
         total_messages = query.count()
         messages_raw = query.offset(offset).limit(page_size).all()
 
-        messages = [
-            {
-                "id": m.id,
-                "title": m.title,
-                "text": m.text,
-                "link": m.link,
-                "messageType": m.messageType,
-                "publicationDate": (
-                    m.publicationDate.isoformat() if m.publicationDate else None
-                ),
-            }
-            for m in messages_raw
-        ]
+        messages = []
+        for m in messages_raw:
+            if m.publicationDate:
+                pub_dt_rome = m.publicationDate.replace(tzinfo=timezone.utc).astimezone(
+                    LOCAL_TZ
+                )
+                pub_str = pub_dt_rome.strftime("%Y-%m-%d %H:%M")
+            else:
+                pub_str = None
+            messages.append(
+                {
+                    "id": m.id,
+                    "title": m.title,
+                    "text": m.text,
+                    "link": m.link,
+                    "messageType": m.messageType,
+                    "publicationDate": pub_str,
+                    "publicationDateUtc": (
+                        m.publicationDate.isoformat() if m.publicationDate else None
+                    ),
+                }
+            )
 
         total_pages = math.ceil(total_messages / page_size)
 
@@ -1028,17 +1037,21 @@ def message_form_ssr():
             if not message:
                 abort(404)
 
+            if message.publicationDate:
+                pub_dt_rome = message.publicationDate.replace(
+                    tzinfo=timezone.utc
+                ).astimezone(LOCAL_TZ)
+                pub_str = pub_dt_rome.strftime("%Y-%m-%dT%H:%M")
+            else:
+                pub_str = ""
+
             message_data = {
                 "id": message.id,
                 "title": message.title,
                 "text": message.text,
                 "link": message.link,
                 "messageType": message.messageType,
-                "publicationDate": (
-                    message.publicationDate.strftime("%Y-%m-%d")
-                    if message.publicationDate
-                    else ""
-                ),
+                "publicationDate": pub_str,
             }
 
         return render_template(
@@ -1073,15 +1086,12 @@ def add_instant_message_ssr():
             flash("Missing required fields", "danger")
             return redirect(next_url)
 
-        try:
-            date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            flash("Invalid publication date format", "danger")
-            return redirect(next_url)
-        now_utc = datetime.now(timezone.utc)
-        publication_date = datetime.combine(
-            date_only, now_utc.time(), tzinfo=timezone.utc
+        local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
+            tzinfo=LOCAL_TZ
         )
+
+        publication_date = local_dt.astimezone(timezone.utc)
+
         modify_date = datetime.now(timezone.utc)
 
         # Save the message
@@ -1101,6 +1111,63 @@ def add_instant_message_ssr():
         logger.exception("SSR Add failed")
         flash("Failed to add news", "danger")
         return redirect(next_url)
+
+
+@blueprint.route("/admin/instant-messages/update", methods=["POST"])
+@login_required
+def update_instant_message_ssr():
+    # logger.info("SSR Update route called")
+
+    try:
+        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+            abort(403)
+
+        message_id = request.form.get("id", "").strip()
+        next_url = request.form.get("next", "/newsList.html")
+
+        if not message_id:
+            flash("Missing news ID", "danger")
+            return redirect(next_url)
+
+        title = request.form.get("title", "").strip()
+        text = request.form.get("text", "").strip()
+        link = request.form.get("link", "").strip()
+        message_type = request.form.get("messageType", "").strip()
+        publication_date_str = request.form.get("publicationDate", "").strip()
+
+        local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
+            tzinfo=LOCAL_TZ
+        )
+
+        new_pub_dt_utc = local_dt.astimezone(timezone.utc)
+
+        message = (
+            db.session.query(instant_messages_model.InstantMessages)
+            .filter_by(id=message_id)
+            .first()
+        )
+
+        if not message:
+            flash("News post not found", "danger")
+            return redirect(next_url)
+
+        message.title = title
+        message.text = text
+        message.link = link
+        message.messageType = message_type
+        message.publicationDate = new_pub_dt_utc
+        message.modifyDate = datetime.now(timezone.utc)
+
+        db.session.commit()
+
+        flash("News updated successfully", "success")
+        return redirect(next_url)
+
+    except Exception:
+        logger.exception("SSR Update failed")
+        db.session.rollback()
+        flash("Update failed", "danger")
+        return redirect("/newsList.html")
 
 
 @blueprint.route("/admin/instant-messages/delete", methods=["POST"])
@@ -1143,83 +1210,6 @@ def delete_instant_message_modal():
         logger.exception("Error deleting News post")
         db.session.rollback()
         flash("Delete failed", "danger")
-        return redirect("/newsList.html")
-
-
-@blueprint.route("/admin/instant-messages/update", methods=["POST"])
-@login_required
-def update_instant_message_ssr():
-    # logger.info("SSR Update route called")
-
-    try:
-        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
-            abort(403)
-
-        message_id = request.form.get("id", "").strip()
-        next_url = request.form.get("next", "/newsList.html")
-
-        if not message_id:
-            flash("Missing news ID", "danger")
-            return redirect(next_url)
-
-        title = request.form.get("title", "").strip()
-        text = request.form.get("text", "").strip()
-        link = request.form.get("link", "").strip()
-        message_type = request.form.get("messageType", "").strip()
-        publication_date_str = request.form.get("publicationDate", "").strip()
-
-        if not publication_date_str:
-            flash("Missing publication date", "danger")
-            return redirect(next_url)
-
-        try:
-            new_date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            flash("Invalid publication date format", "danger")
-            return redirect(next_url)
-
-        message = (
-            db.session.query(instant_messages_model.InstantMessages)
-            .filter_by(id=message_id)
-            .first()
-        )
-
-        if not message:
-            flash("News post not found", "danger")
-            return redirect(next_url)
-
-        old_publication_dt = message.publicationDate
-        if old_publication_dt:
-            old_date_only = old_publication_dt.date()
-        else:
-            old_date_only = None
-
-        if old_date_only == new_date_only:
-            publication_date = old_publication_dt
-            # logger.info(f"publication date unchanged")
-        else:
-            now_utc = datetime.now(timezone.utc)
-            publication_date = datetime.combine(
-                new_date_only, now_utc.time(), tzinfo=timezone.utc
-            )
-            # logger.info(f"publication date set to new date with current time")
-
-        message.title = title
-        message.text = text
-        message.link = link
-        message.messageType = message_type
-        message.publicationDate = publication_date
-        message.modifyDate = datetime.now(timezone.utc)
-
-        db.session.commit()
-
-        flash("News updated successfully", "success")
-        return redirect(next_url)
-
-    except Exception:
-        logger.exception("SSR Update failed")
-        db.session.rollback()
-        flash("Update failed", "danger")
         return redirect("/newsList.html")
 
 
