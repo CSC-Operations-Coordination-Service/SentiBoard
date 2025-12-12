@@ -105,7 +105,7 @@ class NewsMessages {
             <div class="card-body" style="color: #eee;">
               <p>${msg.text}</p>
               ${msg.link ? `<a href="${msg.link}" target="_blank" class="read-more">Read more</a>` : ''}
-              <br><small>Published: ${msg.publicationDate ? msg.publicationDate.substring(0, 10) : 'N/A'}</small>
+              <br><small>Published: ${msg.publicationDate ? msg.publicationDate.substring(0, 16) : 'N/A'}</small>
             </div>
           </div>
         </div>
@@ -263,7 +263,7 @@ $(document).ready(() => {
                 $('#text').val(msg.text);
                 $('#link').val(msg.link);
                 $('#messageType').val(msg.messageType);
-                $('#publicationDate').val(msg.publicationDate);  // formatted as yyyy-mm-dd
+                $('#publicationDate').val(msg.publicationDate);
             })
             .fail((jqXHR) => {
                 console.error('[NewMessage] Failed to fetch message:', jqXHR.responseText);
