@@ -3,9 +3,9 @@
 
 {% block head_meta %}
   {{ seo_meta(
-    title="Real-Time Copernicus Sentinel Data | ESA Operations Dashboard",
-    description="Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. Stay informed with the Operations Dashboard.",
-    keywords=get_keywords('index'),
+    title=title,
+    description=description,
+    keywords=page_keywords,
     image_url=request.host_url ~ 'static/assets/img/favicon.png',
     page_url=page_url
   ) }}

@@ -442,7 +442,7 @@ def create_app(config):
     def inject_page_url_and_keywords():
         def page_url():
             try:
-                # Always enforce https and production hostname
+                # enforce https and production hostname
                 return request.url.replace(
                     request.host, "operations.dashboard.copernicus.eu"
                 ).replace("http://", "https://")
