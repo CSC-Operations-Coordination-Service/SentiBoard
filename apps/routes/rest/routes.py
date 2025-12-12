@@ -383,7 +383,8 @@ def update_instant_message():
 
         # Parse frontend date (yyyy-mm-dd)
         try:
-            new_publication_dt = parse_dt(publication_date_str).replace(tzinfo=ROME_TZ)
+            naive_dt = datetime.fromisoformat(publication_date_str)
+            new_publication_dt = naive_dt.replace(tzinfo=ROME_TZ)
         except ValueError:
             return Response(
                 json.dumps(
