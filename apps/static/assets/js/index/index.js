@@ -332,19 +332,19 @@ class Home {
     formatDate(dateString) {
         if (!dateString) return 'No date provided';
 
-        // Expecting format: "DD/MM/YYYY HH:mm:ss"
-        const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(dateString);
-        if (match) {
-            const [_, day, month, year] = match;
-            const date = new Date(Number(year), Number(month) - 1, Number(day));
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
             return date.toLocaleDateString('en-GB', {
                 year: 'numeric',
                 month: 'long',
-                day: 'numeric'
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZone: 'Europe/Rome'
             });
         }
 
-        return 'Invalid date';
     }
 
     fetchInstantMessages() {

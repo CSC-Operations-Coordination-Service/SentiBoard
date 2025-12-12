@@ -15,6 +15,7 @@ delivered to him.
 import json
 import logging
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 from flask import request, Response
 from flask_login import login_required
@@ -34,13 +35,14 @@ import apps.ingestion.news_ingestor as news_ingestor
 import apps.models.anomalies as anomalies_model
 import apps.models.news as news_model
 import apps.models.instant_messages as instant_messages_model
+from apps.utils.date_utils import parse_dt
 from apps import flask_cache, db
 from . import blueprint
 from ...utils import auth_utils, db_utils
 
 logger = logging.getLogger(__name__)
 
-
+ROME_TZ = ZoneInfo("Europe/Rome")
 # Public functions - login not required
 
 
@@ -188,74 +190,6 @@ def get_news_previous_quarter():
     return flask_cache.get(news_api_uri)
 
 
-@blueprint.route("/api/instant-messages/add", methods=["POST"])
-@login_required
-def add_instant_message():
-    logger.info("Called API Add Home News")
-    try:
-        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
-            return Response(
-                json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
-                mimetype="application/json",
-                status=401,
-            )
-
-        data = json.loads(request.data.decode("utf8"))
-        logger.info(f"Received data: {data}")
-
-        title = data.get("title", "")
-        text = data.get("text", "")
-        link = data.get("link", "")
-        message_type = data.get("messageType", "").strip()
-        publication_date_str = data.get("publicationDate", "").strip()
-
-        if not title or not text or not publication_date_str:
-            return Response(
-                json.dumps({"error": "Missing required fields"}),
-                mimetype="application/json",
-                status=400,
-            )
-
-        try:
-            date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
-        except ValueError:
-            return Response(
-                json.dumps(
-                    {"error": "Invalid publication date format, use yyyy-mm-dd"}
-                ),
-                mimetype="application/json",
-                status=400,
-            )
-
-        now_utc = datetime.now(timezone.utc)
-        publication_date = datetime.combine(
-            date_only, now_utc.time(), tzinfo=timezone.utc
-        )
-
-        modify_date = datetime.now(timezone.utc)
-
-        instant_messages_model.save_instant_messages(
-            title=title,
-            text=text,
-            link=link,
-            publication_date=publication_date,
-            message_type=message_type,
-            modify_date=modify_date,
-        )
-
-        return Response(
-            json.dumps({"OK": "News post added"}),
-            mimetype="application/json",
-            status=200,
-        )
-
-    except Exception as ex:
-        logger.exception("Error while adding Home News")
-        return Response(
-            json.dumps({"error": str(ex)}), mimetype="application/json", status=500
-        )
-
-
 @blueprint.route("/api/instant-messages/all", methods=["GET"])
 def get_all_instant_messages():
     logger.info("Called API Home News with pagination")
@@ -314,22 +248,85 @@ def get_instant_message():
                 status=404,
             )
 
+        publication_dt = None
+        if message.publicationDate:
+            publication_dt = message.publicationDate.astimezone(ROME_TZ)
+            publication_dt = publication_dt.strftime("%Y-%m-%d %H:%M")
         result = {
             "id": message.id,
             "title": message.title,
             "text": message.text,
             "link": message.link,
             "messageType": message.messageType,
-            "publicationDate": (
-                message.publicationDate.strftime("%Y-%m-%d")
-                if message.publicationDate
-                else ""
-            ),
+            "publicationDate": publication_dt or "",
         }
 
         return Response(json.dumps(result), mimetype="application/json", status=200)
     except Exception as ex:
         logger.exception("Error retrieving Home News")
+        return Response(
+            json.dumps({"error": str(ex)}), mimetype="application/json", status=500
+        )
+
+
+@blueprint.route("/api/instant-messages/add", methods=["POST"])
+@login_required
+def add_instant_message():
+    logger.info("Called API Add Home News")
+    try:
+        if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+            return Response(
+                json.dumps("Not authorized", cls=db_utils.AlchemyEncoder),
+                mimetype="application/json",
+                status=401,
+            )
+
+        data = json.loads(request.data.decode("utf8"))
+        logger.info(f"Received data: {data}")
+
+        title = data.get("title", "")
+        text = data.get("text", "")
+        link = data.get("link", "")
+        message_type = data.get("messageType", "").strip()
+        publication_date_str = data.get("publicationDate", "").strip()
+
+        if not title or not text or not publication_date_str:
+            return Response(
+                json.dumps({"error": "Missing required fields"}),
+                mimetype="application/json",
+                status=400,
+            )
+
+        try:
+            publication_date = parse_dt(publication_date_str).replace(tzinfo=ROME_TZ)
+        except ValueError:
+            return Response(
+                json.dumps(
+                    {"error": "Invalid publication date format, use yyyy-mm-dd"}
+                ),
+                mimetype="application/json",
+                status=400,
+            )
+
+        modify_date = datetime.now(ROME_TZ)
+
+        instant_messages_model.save_instant_messages(
+            title=title,
+            text=text,
+            link=link,
+            publication_date=publication_date,
+            message_type=message_type,
+            modify_date=modify_date,
+        )
+
+        return Response(
+            json.dumps({"OK": "News post added"}),
+            mimetype="application/json",
+            status=200,
+        )
+
+    except Exception as ex:
+        logger.exception("Error while adding Home News")
         return Response(
             json.dumps({"error": str(ex)}), mimetype="application/json", status=500
         )
@@ -386,7 +383,7 @@ def update_instant_message():
 
         # Parse frontend date (yyyy-mm-dd)
         try:
-            new_date_only = datetime.strptime(publication_date_str, "%Y-%m-%d").date()
+            new_publication_dt = parse_dt(publication_date_str).replace(tzinfo=ROME_TZ)
         except ValueError:
             return Response(
                 json.dumps(
@@ -396,22 +393,9 @@ def update_instant_message():
                 status=400,
             )
 
-        existing_pub_dt = message.publicationDate
-        existing_date_only = existing_pub_dt.date() if existing_pub_dt else None
-
-        # Only update time if DATE actually changed
-        if new_date_only != existing_date_only:
-            now_utc = datetime.now(timezone.utc)
-            new_publication_dt = datetime.combine(
-                new_date_only, now_utc.time(), tzinfo=timezone.utc
-            )
-            message.publicationDate = new_publication_dt
-            logger.info("Publication date changed → new time applied")
-        else:
-            logger.info("Publication date unchanged → keeping existing time")
-
+        message.publicationDate = new_publication_dt
         # Always update modify date
-        message.modifyDate = datetime.now(timezone.utc)
+        message.modifyDate = datetime.now(ROME_TZ)
 
         # Update fields
         message.title = title
