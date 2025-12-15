@@ -106,11 +106,7 @@
 								<div class="numbers">
 									<p class="card-category">Total planned acquisitions</p>
 									<h4 class="card-title" id="planned-acquisitions-global-box-mod">
-										<div class="spinner">
-											<div class="bounce1"></div>
-											<div class="bounce2"></div>
-											<div class="bounce3"></div>
-										</div>
+										{{ payload.global.planned }}
 									</h4>
 								</div>
 							</div>
@@ -131,11 +127,7 @@
 								<div class="numbers">
 									<p class="card-category">Successful acquisitions</p>
 									<h4 class="card-title" id="successful-acquisitions-global-box-mod">
-										<div class="spinner">
-											<div class="bounce1"></div>
-											<div class="bounce2"></div>
-											<div class="bounce3"></div>
-										</div>
+										{{ payload.global.successful }}
 									</h4>
 								</div>
 							</div>
@@ -156,11 +148,7 @@
 								<div class="numbers">
 									<p class="card-category">Failures due to Satellite issues</p>
 									<h4 class="card-title" id="satellite-failures-global-box-mod">
-										<div class="spinner">
-											<div class="bounce1"></div>
-											<div class="bounce2"></div>
-											<div class="bounce3"></div>
-										</div>
+										{{ payload.global.fail_sat }}
 									</h4>
 								</div>
 							</div>
@@ -181,11 +169,7 @@
 								<div class="numbers">
 									<p class="card-category">Failures due to Acquisition Service issues</p>
 									<h4 class="card-title" id="acquisition-failures-global-box-mod">
-										<div class="spinner">
-											<div class="bounce1"></div>
-											<div class="bounce2"></div>
-											<div class="bounce3"></div>
-										</div>
+										{{ payload.global.fail_acq }}
 									</h4>
 								</div>
 							</div>
@@ -206,11 +190,7 @@
 								<div class="numbers">
 									<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
 									<h4 class="card-title" id="other-failures-global-box-mod">
-										<div class="spinner">
-											<div class="bounce1"></div>
-											<div class="bounce2"></div>
-											<div class="bounce3"></div>
-										</div>
+										{{ payload.global.fail_other }}
 									</h4>
 								</div>
 							</div>
@@ -228,20 +208,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="svalbard-station-box-mod">
-							<div class="spinner">
-								<div class="bounce1"></div>
-								<div class="bounce2"></div>
-								<div class="bounce3"></div>
-							</div>
+							{{ payload.stations.svalbard.passes }}
 						</h1>
 						<h5 class="op-8">Successful passes over Svalbard</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="svalbard-station-box-perc-mod">
-								<div class="spinner">
-									<div class="bounce1"></div>
-									<div class="bounce2"></div>
-									<div class="bounce3"></div>
-								</div>
+								{{ payload.stations.svalbard.passes_percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -253,20 +225,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="inuvik-station-box-mod">
-							<div class="spinner">
-								<div class="bounce1"></div>
-								<div class="bounce2"></div>
-								<div class="bounce3"></div>
-							</div>
+							{{ payload.stations.inuvik.passes }}
 						</h1>
 						<h5 class="op-8">Successful passes over Inuvik</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="inuvik-station-box-perc-mod">
-								<div class="spinner">
-									<div class="bounce1"></div>
-									<div class="bounce2"></div>
-									<div class="bounce3"></div>
-								</div>
+								{{ payload.stations.inuvik.passes_percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -278,20 +242,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="matera-station-box-mod">
-							<div class="spinner">
-								<div class="bounce1"></div>
-								<div class="bounce2"></div>
-								<div class="bounce3"></div>
-							</div>
+							{{ payload.stations.matera.passes }}
 						</h1>
 						<h5 class="op-8">Successful passes over Matera</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="matera-station-box-perc-mod">
-								<div class="spinner">
-									<div class="bounce1"></div>
-									<div class="bounce2"></div>
-									<div class="bounce3"></div>
-								</div>
+								{{ payload.stations.matera.passes_percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -303,20 +259,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="maspalomas-station-box-mod">
-							<div class="spinner">
-								<div class="bounce1"></div>
-								<div class="bounce2"></div>
-								<div class="bounce3"></div>
-							</div>
+							{{ payload.stations.maspalomas.passes }}
 						</h1>
 						<h5 class="op-8">Successful passes over Maspalomas</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="maspalomas-station-box-perc-mod">
-								<div class="spinner">
-									<div class="bounce1"></div>
-									<div class="bounce2"></div>
-									<div class="bounce3"></div>
-								</div>
+								{{ payload.stations.maspalomas.passes_percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -328,20 +276,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="neustrelitz-station-box-mod">
-							<div class="spinner">
-								<div class="bounce1"></div>
-								<div class="bounce2"></div>
-								<div class="bounce3"></div>
-							</div>
+							{{ payload.stations.neustrelitz.passes }}
 						</h1>
 						<h5 class="op-8">Successful passes over Neustrelitz</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="neustrelitz-station-box-perc-mod">
-								<div class="spinner">
-									<div class="bounce1"></div>
-									<div class="bounce2"></div>
-									<div class="bounce3"></div>
-								</div>
+								{{ payload.stations.neustrelitz.passes_percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -353,20 +293,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="edrs-box-mod">
-							<div class="spinner">
-								<div class="bounce1"></div>
-								<div class="bounce2"></div>
-								<div class="bounce3"></div>
-							</div>
+							{{ payload.stations.edrs.passes }}
 						</h1>
 						<h5 class="op-8">Successful passes using EDRS</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="edrs-box-perc-mod">
-								<div class="spinner">
-									<div class="bounce1"></div>
-									<div class="bounce2"></div>
-									<div class="bounce3"></div>
-								</div>
+								{{ payload.stations.edrs.passes_percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -501,7 +433,9 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
-
+	<script>
+		window.ACQUISITION_DATA = {{ payload|tojson }};
+	</script>
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
 	<script src="/static/assets/js/quarterly-reports/acquisition-service-mod.js"></script>
 	<script defer type="text/javascript">acquisitionServiceMod.init();</script>

@@ -29,12 +29,14 @@ from jinja2 import TemplateNotFound
 from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
+import apps.cache.modules.acquisitions as acquisitions_cache
 import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
+import apps.utils.acquisitions_utils as acquisitions_utils
 from apps.utils.date_utils import format_pub_date
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
@@ -1258,6 +1260,38 @@ def processors_page():
     )
 
 
+@blueprint.route("/acquisition-service")
+@login_required
+def acquisition_service_page():
+    if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+        abort(403)
+
+    period_id = request.args.get("period", "prev-quarter")
+
+    acquisitions_key = acquisitions_cache.acquisitions_cache_key.format(
+        "previous" if period_id == "prev-quarter" else "last",
+        "quarter" if period_id == "prev-quarter" else period_id,
+    )
+
+    edrs_key = acquisitions_cache.edrs_acquisitions_cache_key.format(
+        "previous" if period_id == "prev-quarter" else "last",
+        "quarter" if period_id == "prev-quarter" else period_id,
+    )
+
+    acquisitions = flask_cache.get(acquisitions_key) or []
+    edrs_acquisitions = flask_cache.get(edrs_key) or []
+
+    payload = acquisitions_utils.build_acquisition_payload(
+        acquisitions, edrs_acquisitions
+    )
+
+    return render_template(
+        "home/acquisition_service.html",
+        payload=payload,
+        period_id=period_id,
+    )
+
+
 @blueprint.route("/<template>")
 def route_template(template):
     try:
@@ -1284,7 +1318,14 @@ def route_template(template):
         if template in admin_pages:
             return render_template("admin/" + template, segment=segment, **metadata)
 
-        # Special case: events page
+        # acquisition page
+        if template == "acquisition-service.html":
+            # Determine if the user is quarter authorized
+            return redirect(
+                url_for("home_blueprint.acquisition_service_page"), code=301
+            )
+
+        # events page
         if template in ["events", "events.html"]:
             # Determine if the user is quarter authorized
             return events()

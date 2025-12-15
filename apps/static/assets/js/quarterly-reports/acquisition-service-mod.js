@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -33,28 +33,36 @@ class AcquisitionServiceMod {
 
         // Set of downlink passes, grouped by Station and Satellite
         this.downlinkPasses = {
-            'svalbard': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': []},
-            'inuvik': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'maspalomas': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'matera': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'neustrelitz': {'s1a': [], 's1c': []},
-            'dlr': {'s5p': []}
+            'svalbard': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': [] },
+            'inuvik': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [] },
+            'maspalomas': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [] },
+            'matera': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [] },
+            'neustrelitz': { 's1a': [], 's1c': [] },
+            'dlr': { 's5p': [] }
         };
 
         // Set of anomalies, grouped by Station, and divided by "Ground Segment" and "Space Segment"
         this.downlinkAnomalies = {
-            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                         's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []},
-                         's3a': {'acq': [], 'sat': [], 'other': []}, 's3b': {'acq': [], 'sat': [], 'other': []}},
-            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                           's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'dlr': {'s5p': {'acq': [], 'sat': [], 'other': []}}
+            'svalbard': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] },
+                's3a': { 'acq': [], 'sat': [], 'other': [] }, 's3b': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'inuvik': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'maspalomas': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'matera': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'neustrelitz': { 's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] } },
+            'edrs': { 's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] } },
+            'dlr': { 's5p': { 'acq': [], 'sat': [], 'other': [] } }
         };
 
         // Set of EDRS passes, grouped by Satellite
@@ -68,11 +76,11 @@ class AcquisitionServiceMod {
 
         // Set of EDRS operations, grouped by Satellite
         this.EDRSAnomalies = {
-            's1a': {'acq': [], 'sat': [], 'other': []},
-            's1c': {'acq': [], 'sat': [], 'other': []},
-            's2a': {'acq': [], 'sat': [], 'other': []},
-            's2b': {'acq': [], 'sat': [], 'other': []},
-            's2c': {'acq': [], 'sat': [], 'other': []},
+            's1a': { 'acq': [], 'sat': [], 'other': [] },
+            's1c': { 'acq': [], 'sat': [], 'other': [] },
+            's2a': { 'acq': [], 'sat': [], 'other': [] },
+            's2b': { 'acq': [], 'sat': [], 'other': [] },
+            's2c': { 'acq': [], 'sat': [], 'other': [] },
         };
 
         // Set of colors used in the pie charts
@@ -122,7 +130,7 @@ class AcquisitionServiceMod {
     on_timeperiod_change() {
         var time_period_sel = document.getElementById('time-period-select');
         var selected_time_period = time_period_sel.value;
-        console.log("Time period changed to "+ selected_time_period);
+        console.log("Time period changed to " + selected_time_period);
         this.loadDatatakesInPeriod(selected_time_period);
     }
 
@@ -175,7 +183,7 @@ class AcquisitionServiceMod {
         console.info("Number of records: " + rows.length);
 
         // Parse response
-        for (var i = 0 ; i < rows.length ; ++i){
+        for (var i = 0; i < rows.length; ++i) {
 
             // Auxiliary variables
             var element = rows[i]['_source'];
@@ -211,27 +219,35 @@ class AcquisitionServiceMod {
 
         // Clear previous data, if any
         this.downlinkPasses = {
-            'svalbard': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': []},
-            'inuvik': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'maspalomas': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'matera': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'neustrelitz': {'s1a': [], 's1c': []},
-            'dlr': {'s5p': []}
+            'svalbard': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': [] },
+            'inuvik': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [] },
+            'maspalomas': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [] },
+            'matera': { 's1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [] },
+            'neustrelitz': { 's1a': [], 's1c': [] },
+            'dlr': { 's5p': [] }
         };
 
         this.downlinkAnomalies = {
-            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                         's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []},
-                         's3a': {'acq': [], 'sat': [], 'other': []}, 's3b': {'acq': [], 'sat': [], 'other': []}},
-            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                           's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'dlr': {'s5p': {'acq': [], 'sat': [], 'other': []}}
+            'svalbard': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] },
+                's3a': { 'acq': [], 'sat': [], 'other': [] }, 's3b': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'inuvik': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'maspalomas': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'matera': {
+                's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] },
+                's2a': { 'acq': [], 'sat': [], 'other': [] }, 's2b': { 'acq': [], 'sat': [], 'other': [] }, 's2c': { 'acq': [], 'sat': [], 'other': [] }
+            },
+            'neustrelitz': { 's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] } },
+            'edrs': { 's1a': { 'acq': [], 'sat': [], 'other': [] }, 's1c': { 'acq': [], 'sat': [], 'other': [] } },
+            'dlr': { 's5p': { 'acq': [], 'sat': [], 'other': [] } }
         };
 
         // Clear pie charts and boxes
@@ -264,19 +280,19 @@ class AcquisitionServiceMod {
 
     clearGlobalBoxes() {
         ['planned-acquisitions', 'successful-acquisitions', 'satellite-failures', 'acquisition-failures',
-                'other-failures'].forEach(function(item) {
-            var boxId = item.toLowerCase() + '-global-box';
-            $('#' + boxId + '-mod').html(
-                '<div class="spinner">' +
+            'other-failures'].forEach(function (item) {
+                var boxId = item.toLowerCase() + '-global-box';
+                $('#' + boxId + '-mod').html(
+                    '<div class="spinner">' +
                     '<div class="bounce1"></div>' +
                     '<div class="bounce2"></div>' +
                     '<div class="bounce3"></div>' +
-                '</div>');
-        })
+                    '</div>');
+            })
     }
 
     clearPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
+        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function (station) {
             var pieId = station.toLowerCase() + '-station-pie-chart-mod';
             var boxId = station.toLowerCase() + '-station-box-mod';
             acquisitionServiceMod.clearPieChart(pieId);
@@ -292,13 +308,13 @@ class AcquisitionServiceMod {
         console.info("Number of acquisitions: " + rows.length);
 
         // Parse response
-        for (var i = 0 ; i < rows.length ; ++i) {
+        for (var i = 0; i < rows.length; ++i) {
 
             // Auxiliary variables
             var element = rows[i]['_source'];
 
             // Skip S5P passes, not managed in the framework of Coord Desk
-            if (element['satellite_id'] === 'S5P') continue ;
+            if (element['satellite_id'] === 'S5P') continue;
 
             // Parse the downlink operation
             var downlink = {};
@@ -338,7 +354,7 @@ class AcquisitionServiceMod {
 
             // Store the reference to the anomaly (if present) in the member class state vector
             if (downlink['origin'] && downlink['origin'].trim() != null &&
-                    acquisitionServiceMod.hasImpactOnDatatakes(downlink['last_attached_ticket'], downlink['satellite_id'].toLowerCase())) {
+                acquisitionServiceMod.hasImpactOnDatatakes(downlink['last_attached_ticket'], downlink['satellite_id'].toLowerCase())) {
                 if (downlink['origin'].includes('Acquis')) {
                     this.downlinkAnomalies[downlink['station'].toLowerCase()][downlink['satellite_id'].toLowerCase()]['acq'].push(downlink['notes']);
                 } else if (downlink['origin'].includes('Sat') || downlink['origin'].includes('CAM')) {
@@ -381,7 +397,7 @@ class AcquisitionServiceMod {
         }
         return name;
     }
-    
+
     loadEDRSAcquisitionsInPeriod(selected_time_period) {
 
         // Wait until the impacted datatakes have been loaded
@@ -397,11 +413,11 @@ class AcquisitionServiceMod {
         };
 
         this.EDRSAnomalies = {
-            's1a': {'acq': [], 'sat': [], 'other': []},
-            's1c': {'acq': [], 'sat': [], 'other': []},
-            's2a': {'acq': [], 'sat': [], 'other': []},
-            's2b': {'acq': [], 'sat': [], 'other': []},
-            's2c': {'acq': [], 'sat': [], 'other': []},
+            's1a': { 'acq': [], 'sat': [], 'other': [] },
+            's1c': { 'acq': [], 'sat': [], 'other': [] },
+            's2a': { 'acq': [], 'sat': [], 'other': [] },
+            's2b': { 'acq': [], 'sat': [], 'other': [] },
+            's2c': { 'acq': [], 'sat': [], 'other': [] },
         };
 
         // Clear pie charts and boxes
@@ -446,7 +462,7 @@ class AcquisitionServiceMod {
         console.info("Number of EDRS operations: " + rows.length);
 
         // Parse response
-        for (var i = 0 ; i < rows.length ; ++i) {
+        for (var i = 0; i < rows.length; ++i) {
 
             // Auxiliary variables
             var element = rows[i]['_source'];
@@ -480,7 +496,7 @@ class AcquisitionServiceMod {
 
             // Store the reference to the anomaly (if present) in the member class state vector
             if (edrs['origin'] && edrs['origin'].trim() != ''
-                    && acquisitionServiceMod.hasImpactOnDatatakes(edrs['last_attached_ticket'], edrs['satellite'].toLowerCase())) {
+                && acquisitionServiceMod.hasImpactOnDatatakes(edrs['last_attached_ticket'], edrs['satellite'].toLowerCase())) {
                 if (edrs['origin'].includes('Acquis')) {
                     this.EDRSAnomalies[edrs['satellite'].toLowerCase()]['acq'].push(edrs['description']);
                 } else if (edrs['origin'].includes('Sat')) {
@@ -501,7 +517,7 @@ class AcquisitionServiceMod {
         console.error(response)
         return;
     }
-    
+
     refreshGlobalBoxes() {
         var data = acquisitionServiceMod.calcGlobalDownlinkStatistics();
         var ok = 0, sat = 0, acq = 0, other = 0, tot = 0;
@@ -530,12 +546,12 @@ class AcquisitionServiceMod {
         var othPerc = other * 100.0 / tot;
         $('#other-failures-global-box-mod').text(other + ' (' + othPerc.toFixed(2) + '%)');
     }
-    
+
     calcGlobalDownlinkStatistics() {
         var data = {};
         var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
         for (const station of Object.keys(acquisitionServiceMod.downlinkPasses)) {
-            if (station.toUpperCase().includes('DLR')) continue ;
+            if (station.toUpperCase().includes('DLR')) continue;
             for (const [satellite, passes] of Object.entries(acquisitionServiceMod.downlinkPasses[station])) {
                 totPasses += acquisitionServiceMod.downlinkPasses[station][satellite].length;
                 failedPassesAcq += acquisitionServiceMod.downlinkAnomalies[station][satellite]['acq'].length;
@@ -552,7 +568,7 @@ class AcquisitionServiceMod {
     }
 
     refreshPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
+        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function (station) {
             var pieId = station.toLowerCase() + '-station-pie-chart-mod';
             var boxId = station.toLowerCase() + '-station-box';
             var data = acquisitionServiceMod.calcDownlinkStatistics(station);
@@ -560,7 +576,7 @@ class AcquisitionServiceMod {
             acquisitionServiceMod.refreshBox(boxId, data);
         })
     }
-    
+
     calcDownlinkStatistics(station) {
         var data = {};
         var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
@@ -619,43 +635,43 @@ class AcquisitionServiceMod {
             chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
         }
         new Chart($('#' + pieId), {
-			type: 'pie',
-			data: {
-				datasets: [{
-					data: Object.values(data),
-					backgroundColor : acquisitionServiceMod.colorsPool,
-					borderWidth: 0
-				}],
-				labels: Object.keys(data)
-			},
-			options : {
-				responsive: true,
-				maintainAspectRatio: false,
-				legend: {
-					position : 'bottom',
-					labels : {
-						fontColor: 'rgb(154, 154, 154)',
-						fontSize: 11,
-						usePointStyle : true,
-						padding: 20
-					}
-				},
-				pieceLabel: {
-					render: 'percentage',
-					fontColor: 'white',
-					fontSize: 14,
-				},
-				showTooltips: true,
-				layout: {
-					padding: {
-						left: 20,
-						right: 20,
-						top: 20,
-						bottom: 20
-					}
-				}
-			}
-		})
+            type: 'pie',
+            data: {
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: acquisitionServiceMod.colorsPool,
+                    borderWidth: 0
+                }],
+                labels: Object.keys(data)
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        fontColor: 'rgb(154, 154, 154)',
+                        fontSize: 11,
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                pieceLabel: {
+                    render: 'percentage',
+                    fontColor: 'white',
+                    fontSize: 14,
+                },
+                showTooltips: true,
+                layout: {
+                    padding: {
+                        left: 20,
+                        right: 20,
+                        top: 20,
+                        bottom: 20
+                    }
+                }
+            }
+        })
     }
 
     refreshBox(boxId, data) {
@@ -680,19 +696,19 @@ class AcquisitionServiceMod {
 
     clearBox(boxId) {
         $('#' + boxId + '-mod').html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
+            '<div class="spinner">' +
+            '<div class="bounce1"></div>' +
+            '<div class="bounce2"></div>' +
+            '<div class="bounce3"></div>' +
+            '</div>');
         $('#' + boxId + '-perc-mod').html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
+            '<div class="spinner">' +
+            '<div class="bounce1"></div>' +
+            '<div class="bounce2"></div>' +
+            '<div class="bounce3"></div>' +
+            '</div>');
     }
-    
+
     showAcquisitionStatistics(station) {
 
         // Auxiliary Variable Declaration
@@ -775,7 +791,7 @@ class AcquisitionServiceMod {
         var state = "danger";
         var style = "withicon";
 
-        $.notify(content,{
+        $.notify(content, {
             type: state,
             placement: {
                 from: placementFrom,
@@ -800,16 +816,16 @@ class AcquisitionServiceMod {
         content.message = 'This view summarizes the global status of the Acquisition Service. The page is divided into two sections: <br>' +
             ' - Global acquisitions statistics, per Ground Station (the violet boxes);<br>' +
             ' - Details on acquisition failures (the pie charts);<br>' +
-        'Click on a pie chart to display the anomalies causing the discontinuity in the system availability. By default, ' +
-        'results are referred to the previous completed quarter.'
+            'Click on a pie chart to display the anomalies causing the discontinuity in the system availability. By default, ' +
+            'results are referred to the previous completed quarter.'
         content.icon = 'flaticon-round';
 
         // Display notification message
         msgNotification(from, align, state, content);
 
-        return ;
+        return;
     }
-    
+
 }
 
 let acquisitionServiceMod = new AcquisitionServiceMod();
