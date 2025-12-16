@@ -204,32 +204,6 @@ class Home {
         return !allRecovered;
     }
 
-    /*displaySensingTimeMinutes() {
-        datatakes.calcSensingTime24H();
-        (async () => {
-            while (datatakes.sensingTime24H == 0)
-                await new Promise(resolve => setTimeout(resolve, 250));
-            console.info('Minutes of sensing: ' + datatakes.sensingTime24H * 60);
-            $('#sensing-time-minutes').html(Math.round(datatakes.sensingTime24H * 60));
-        })();
-    }*/
-
-    /* displayPublishedProductsVolumeCount() {
-         publicdata.get_published_count_size_last_24h();
-         (async () => {
-             while (!publicdata.published_last24h['NUM'])
-                 await new Promise(resolve => setTimeout(resolve, 250));
-             console.info('Number of published products: ' + publicdata.published_last24h['NUM']);
-             $('#published-products-count').html(new Intl.NumberFormat().format(publicdata.published_last24h['NUM']));
-         })();
-         (async () => {
-             while (!publicdata.published_last24h['VOL'])
-                 await new Promise(resolve => setTimeout(resolve, 250));
-             var vol = publicdata.published_last24h['VOL'] / (1024 * 1024 * 1024 * 1024);
-             console.info('Volume of published products: ' + vol);
-             $('#published-products-volume').html(new Intl.NumberFormat().format(vol.toFixed(2)));
-         })();
-     }*/
     //AD vertical slider
     handleResponsiveSliderLayout() {
         const leftSlide = document.querySelector(".left-slide");
@@ -332,20 +306,14 @@ class Home {
     formatDate(dateString) {
         if (!dateString) return 'No date provided';
 
-        // Expecting format: "DD/MM/YYYY HH:mm:ss"
-        const match = /^(\d{2})\/(\d{2})\/(\d{4})/.exec(dateString);
-        if (match) {
-            const [_, day, month, year] = match;
-            const date = new Date(Number(year), Number(month) - 1, Number(day));
-            return date.toLocaleDateString('en-GB', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
-        }
+        // If the string has seconds, remove them
+        // Expect formats like: "2025-12-15T11:44:00" or "2025-12-15 11:44:00"
+        const trimmed = dateString.replace('T', ' ').substring(0, 16); // keeps YYYY-MM-DD HH:MM
 
-        return 'Invalid date';
+        return trimmed;
     }
+
+
 
     fetchInstantMessages() {
         $.getJSON('/api/instant-messages/all', (data) => {
