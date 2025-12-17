@@ -1278,17 +1278,17 @@ def acquisition_service_page():
         "quarter" if period_id == "prev-quarter" else period_id,
     )
 
-    acquisitions = flask_cache.get(acquisitions_key) or []
-    edrs_acquisitions = flask_cache.get(edrs_key) or []
+    acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(acquisitions_key))
+    edrs_acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(edrs_key))
 
     payload = acquisitions_utils.build_acquisition_payload(
-        acquisitions, edrs_acquisitions
+        acquisitions, edrs_acquisitions, period_id=period_id
     )
-
     return render_template(
-        "home/acquisition_service.html",
+        "home/acquisition-service.html",
         payload=payload,
         period_id=period_id,
+        segment="acquisition-service",
     )
 
 
@@ -1321,9 +1321,7 @@ def route_template(template):
         # acquisition page
         if template == "acquisition-service.html":
             # Determine if the user is quarter authorized
-            return redirect(
-                url_for("home_blueprint.acquisition_service_page"), code=301
-            )
+            return acquisition_service_page()
 
         # events page
         if template in ["events", "events.html"]:

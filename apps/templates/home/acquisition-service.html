@@ -128,6 +128,9 @@
 									<p class="card-category">Successful acquisitions</p>
 									<h4 class="card-title" id="successful-acquisitions-global-box-mod">
 										{{ payload.global.successful }}
+										<span>
+											({{ payload.global.successful_percentage }}%)
+										</span>
 									</h4>
 								</div>
 							</div>
@@ -149,6 +152,9 @@
 									<p class="card-category">Failures due to Satellite issues</p>
 									<h4 class="card-title" id="satellite-failures-global-box-mod">
 										{{ payload.global.fail_sat }}
+										<span>
+											({{ payload.global.fail_sat_percentage }}%)
+										</span>	
 									</h4>
 								</div>
 							</div>
@@ -170,6 +176,9 @@
 									<p class="card-category">Failures due to Acquisition Service issues</p>
 									<h4 class="card-title" id="acquisition-failures-global-box-mod">
 										{{ payload.global.fail_acq }}
+										<span>
+											({{ payload.global.fail_acq_percentage }}%)
+										</span>	
 									</h4>
 								</div>
 							</div>
@@ -191,6 +200,9 @@
 									<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
 									<h4 class="card-title" id="other-failures-global-box-mod">
 										{{ payload.global.fail_other }}
+										<span>
+											({{ payload.global.fail_other_percentage }}%)
+										</span>	
 									</h4>
 								</div>
 							</div>
@@ -293,12 +305,12 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="edrs-box-mod">
-							{{ payload.stations.edrs.passes }}
+							{{ payload.edrs.successful }}
 						</h1>
 						<h5 class="op-8">Successful passes using EDRS</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="edrs-box-perc-mod">
-								{{ payload.stations.edrs.passes_percentage }}%
+								{{ payload.edrs.percentage }}%
 							</h3>
 						</div>
 					</div>
@@ -433,11 +445,18 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
-	<script>
-		window.ACQUISITION_DATA = {{ payload|tojson }};
-	</script>
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
 	<script src="/static/assets/js/quarterly-reports/acquisition-service-mod.js"></script>
-	<script defer type="text/javascript">acquisitionServiceMod.init();</script>
+	<script id="acquisition-payload" type="application/json">
+		{{ payload | tojson}}
+	</script>
+	<script>
+		document.addEventListener('DOMContentLoaded', function(){
+			const payloadEl = document.getElementById('acquisition-payload');
+			window.ACQUISITION_PAYLOAD = JSON.parse(payloadEl.textContent);
 
+			window.acquisitionServiceMod = new AcquisitionServiceMod();
+			window.acquisitionServiceMod.init();
+		})
+	</script>
 {% endblock javascripts %}
