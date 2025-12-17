@@ -181,6 +181,13 @@ DEFAULT_PAGE_METADATA = {
 
 BATCH_SIZE = 10
 
+PERIOD_TO_CACHE = {
+    "day": "24h",
+    "week": "7d",
+    "month": "30d",
+    "prev-quarter": "previous-quarter",
+}
+
 
 def get_metadata(template):
     return PAGE_METADATA.get(template, DEFAULT_PAGE_METADATA)
@@ -1268,27 +1275,62 @@ def acquisition_service_page():
 
     period_id = request.args.get("period", "prev-quarter")
 
-    acquisitions_key = acquisitions_cache.acquisitions_cache_key.format(
-        "previous" if period_id == "prev-quarter" else "last",
-        "quarter" if period_id == "prev-quarter" else period_id,
-    )
+    current_app.logger.info("[ACQUISITION SERVICE] Requested period: %s", period_id)
 
-    edrs_key = acquisitions_cache.edrs_acquisitions_cache_key.format(
-        "previous" if period_id == "prev-quarter" else "last",
-        "quarter" if period_id == "prev-quarter" else period_id,
+    cache_period = PERIOD_TO_CACHE.get(period_id, "previous-quarter")
+
+    if cache_period == "previous-quarter":
+        acquisitions_key = acquisitions_cache.acquisitions_cache_key.format(
+            "previous", "quarter"
+        )
+        edrs_key = acquisitions_cache.edrs_acquisitions_cache_key.format(
+            "previous", "quarter"
+        )
+    else:
+        acquisitions_key = acquisitions_cache.acquisitions_cache_key.format(
+            "last", cache_period
+        )
+        edrs_key = acquisitions_cache.edrs_acquisitions_cache_key.format(
+            "last", cache_period
+        )
+
+    # edrs_key = acquisitions_cache.edrs_acquisitions_cache_key.format(
+    #    "previous" if period_id == "prev-quarter" else "last",
+    #    "quarter" if period_id == "prev-quarter" else period_id,
+    # )
+
+    current_app.logger.info(
+        "[ACQUISITION SERVICE] Cache keys-> acquisitions=%s edrs=%s",
+        acquisitions_key,
+        edrs_key,
     )
 
     acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(acquisitions_key))
     edrs_acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(edrs_key))
 
+    current_app.logger.info(
+        "[ACQUISITION SERVICE] loaded rows-> acquisitions=%d edrs=%d",
+        len(acquisitions),
+        len(edrs_acquisitions),
+    )
+
     payload = acquisitions_utils.build_acquisition_payload(
         acquisitions, edrs_acquisitions, period_id=period_id
     )
+
+    current_app.logger.info(
+        "[ACQUISITION SERVICE] Paylod global-> %s",
+        payload["global"],
+    )
+
+    prev_quarter_label = acquisitions_utils.previous_quarter_label()
+
     return render_template(
         "home/acquisition-service.html",
         payload=payload,
         period_id=period_id,
         segment="acquisition-service",
+        prev_quarter_label=prev_quarter_label,
     )
 
 

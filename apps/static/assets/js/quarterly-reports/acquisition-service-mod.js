@@ -19,14 +19,15 @@ class AcquisitionServiceMod {
 
         this.downlinkPasses = payload.downlink_passes || {};
         this.downlinkAnomalies = payload.downlink_anomalies || {};
-        /*this.impactedDatatakesBySatellite = payload.impacted_datatakes_by_satellite || {};
-        this.EDRSPasses = payload.edrs_passes || {};
-        this.EDRSAnomalies = payload.edrs_anomalies || {};*/
+
         this.globalStats = payload.global || {};
         this.stationsStats = payload.stations || {};
         this.edrsStats = payload.edrs || {};
 
-        this.refreshEDRSPieChartsAndBoxes();
+        this.EDRSPasses = (payload.edrs && payload.edrs.passes) || {};
+        this.EDRSAnomalies = (payload.edrs && payload.edrs.anomalies) || {};
+
+        this.charts = {};
 
         // Set of colors used in the pie charts
         this.colorsPool = [
@@ -39,17 +40,15 @@ class AcquisitionServiceMod {
     }
 
     init() {
-
-
-        const payload = window.ACQUISITION_PAYLOAD;
-
         //  Register event callback for Time period select
         const time_period_sel = document.getElementById('time-period-select');
-        if (payload.quarter_authorized == true && time_period_sel) {
-            time_period_sel.value = 'prev-quarter';
+        if (time_period_sel) {
+            time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
         }
+
         this.downlinkPasses = window.ACQUISITION_PAYLOAD.downlink_passes || {};
         this.downlinkAnomalies = window.ACQUISITION_PAYLOAD.downlink_anomalies || {};
+
         this.prepareGlobalStats();
         this.refreshStationBoxesFromPayload();
         this.refreshPieChartsAndBoxes();
@@ -57,30 +56,11 @@ class AcquisitionServiceMod {
     }
 
     on_timeperiod_change() {
-        const period = document.getElementById('time-period-select').value;
-        window.location.href = `/acquisition-service.html?period=${period}`;
-    }
+        const select = document.getElementById('time-period-select');
+        const period = select.value;
 
-    clearGlobalBoxes() {
-        ['planned-acquisitions', 'successful-acquisitions', 'satellite-failures', 'acquisition-failures',
-            'other-failures'].forEach(function (item) {
-                var boxId = item.toLowerCase() + '-global-box';
-                $('#' + boxId + '-mod').html(
-                    '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                    '</div>');
-            })
-    }
-
-    clearPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function (station) {
-            var pieId = station.toLowerCase() + '-station-pie-chart-mod';
-            var boxId = station.toLowerCase() + '-station-box-mod';
-            this.clearPieChart(pieId);
-            this.clearBox(boxId);
-        })
+        console.log('[ACQUISITION SERVICE] period change->', period);
+        window.location.href = `/acquisition-service?period=${period}`;
     }
 
     prepareGlobalStats() {
@@ -96,26 +76,6 @@ class AcquisitionServiceMod {
         };
     }
 
-
-    calcGlobalDownlinkStatistics() {
-        var data = {};
-        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const station of Object.keys(this.downlinkPasses)) {
-            if (station.toUpperCase().includes('DLR')) continue;
-            for (const [satellite, passes] of Object.entries(this.downlinkPasses[station])) {
-                totPasses += this.downlinkPasses[station][satellite].length;
-                failedPassesAcq += this.downlinkAnomalies[station][satellite]['acq'].length;
-                failedPassesSat += this.downlinkAnomalies[station][satellite]['sat'].length;
-                failedPassesOther += this.downlinkAnomalies[station][satellite]['other'].length;
-            }
-        }
-        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
-        data['Successful passes'] = successfulPasses;
-        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
-        data['Impaired passes (Satellite issues)'] = failedPassesSat;
-        data['Impaired passes (Other issues)'] = failedPassesOther;
-        return data;
-    }
 
     refreshPieChartsAndBoxes() {
         ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach((station) => {
@@ -138,8 +98,6 @@ class AcquisitionServiceMod {
             );
         });
     }
-
-
 
     calcDownlinkStatistics(station) {
         var data = {};
@@ -173,44 +131,63 @@ class AcquisitionServiceMod {
     }
 
     refreshEDRSPieChartsAndBoxes() {
-        if (!this.edrsStats || Object.keys(this.edrsStats).length === 0) return;
+        const pieId = 'edrs-pie-chart-mod';
+        const boxId = 'edrs-box';
 
+        // Compute the data using the updated function
+        const data = this.calcEDRStatistics();
+
+        // Labels for the pie chart
+        const labels = ['Successful passes', 'Acquisition issues', 'Satellite issues', 'Other issues'];
+
+        // Refresh the pie chart
+        this.refreshPieChart(pieId, data, labels);
+
+        // Refresh the success box with proper float percentages
+        this.refreshBox(boxId, data, labels);
+    }
+
+
+    calcEDRStatistics() {
         const data = {
-            'Successful passes': this.edrsStats.successful,
-            'Other issues': Math.max(
-                0,
-                (this.edrsStats.total || 0) - this.edrsStats.successful
-            )
+            'Successful passes': 0,
+            'Acquisition issues': 0,
+            'Satellite issues': 0,
+            'Other issues': 0
         };
 
-        this.refreshPieChart('edrs-pie-chart-mod', data);
-    }
+        let totPasses = 0;
 
+        // If EDRSPasses is a number (no satellite breakdown)
+        if (typeof this.EDRSPasses === 'number') {
+            totPasses = this.EDRSPasses;
+            const edrsPercentage = this.edrsStats.percentage || 0;
+            data['Successful passes'] = +(totPasses * edrsPercentage / 100).toFixed(2);
 
-    calcEDRSStatistics() {
-        var data = {};
-        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
+            const failedTotal = totPasses - data['Successful passes'];
+            // Split failed passes proportionally (or leave zeros)
+            data['Acquisition issues'] = 0;
+            data['Satellite issues'] = 0;
+            data['Other issues'] = failedTotal;
+            return data;
+        }
+
+        // Otherwise, normal satellite breakdown
         for (const [satellite, passes] of Object.entries(this.EDRSPasses)) {
-            totPasses += this.EDRSPasses[satellite.toLowerCase()].length;
-            failedPassesAcq += this.EDRSAnomalies[satellite.toLowerCase()]['acq'].length;
-            failedPassesSat += this.EDRSAnomalies[satellite.toLowerCase()]['sat'].length;
-            failedPassesOther += this.EDRSAnomalies[satellite.toLowerCase()]['other'].length;
-        }
-        let successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
-        data['Successful passes'] = successfulPasses;
-        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
-        data['Impaired passes (Satellite issues)'] = failedPassesSat;
-        data['Impaired passes (Other issues)'] = failedPassesOther;
-        return data;
-    }
+            const satKey = satellite.toLowerCase();
+            const anomalies = this.EDRSAnomalies[satKey] || { acq: [], sat: [], other: [] };
+            const satTot = Array.isArray(passes) ? passes.length : passes;
 
-    hasImpactOnDatatakes(anomalyId, sat_unit) {
-        for (const datatake of this.impactedDatatakesBySatellite[sat_unit]) {
-            if (datatake['last_attached_ticket'].includes(anomalyId)) {
-                return true;
-            }
+            totPasses += satTot;
+            data['Acquisition issues'] += anomalies.acq.length;
+            data['Satellite issues'] += anomalies.sat.length;
+            data['Other issues'] += anomalies.other.length;
         }
-        return false;
+
+        const edrsPercentage = this.edrsStats.percentage || 0; // e.g., 95.95
+        data['Successful passes'] = +(totPasses * edrsPercentage / 100).toFixed(2);
+
+        return data;
     }
 
     refreshPieChart(pieId, data) {
@@ -258,39 +235,21 @@ class AcquisitionServiceMod {
         })
     }
 
-    refreshBox(boxId, data) {
-        var ok = 0, tot = 0;
+    refreshBox(boxId, data, labels = null) {
+        let ok = 0, tot = 0;
+
         for (const [label, num] of Object.entries(data)) {
             tot += num;
-            if (label.toUpperCase().includes('SUCCESS')) {
+            if (labels && labels.includes(label) && label.toUpperCase().includes('SUCCESS')) {
+                ok += num;
+            } else if (!labels && label.toUpperCase().includes('SUCCESS')) {
                 ok += num;
             }
         }
-        var okPerc = ok * 100.0 / tot;
-        $('#' + boxId + '-mod').text(ok + ' / ' + tot);
+
+        const okPerc = tot ? ok * 100.0 / tot : 0;
+        $('#' + boxId + '-mod').text(ok.toFixed(2) + ' / ' + tot.toFixed(2));
         $('#' + boxId + '-perc-mod').text(okPerc.toFixed(2) + '%');
-    }
-
-    clearPieChart(pieId) {
-        var chartCanvas = document.getElementById(pieId);
-        if (chartCanvas !== null) {
-            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-        }
-    }
-
-    clearBox(boxId) {
-        $('#' + boxId + '-mod').html(
-            '<div class="spinner">' +
-            '<div class="bounce1"></div>' +
-            '<div class="bounce2"></div>' +
-            '<div class="bounce3"></div>' +
-            '</div>');
-        $('#' + boxId + '-perc-mod').html(
-            '<div class="spinner">' +
-            '<div class="bounce1"></div>' +
-            '<div class="bounce2"></div>' +
-            '<div class="bounce3"></div>' +
-            '</div>');
     }
 
     showAcquisitionStatistics(station) {
@@ -303,16 +262,73 @@ class AcquisitionServiceMod {
 
         // Retrieve statistics based on the selected station
         if (station === 'edrs') {
-            target = 'EDRS';
+            const data = this.calcEDRStatistics();
+
+            const totPasses = Object.values(data).reduce((a, b) => a + b, 0);
+            const successfulPasses = data['Successful passes'] || 0;
+            const failedAcq = data['Acquisition issues'] || 0;
+            const failedSat = data['Satellite issues'] || 0;
+            const failedOther = data['Other issues'] || 0;
+
+            const successPerc = totPasses ? ((successfulPasses * 100) / totPasses).toFixed(2) : 0;
+            const failAcqPerc = totPasses ? ((failedAcq * 100) / totPasses).toFixed(2) : 0;
+            const failSatPerc = totPasses ? ((failedSat * 100) / totPasses).toFixed(2) : 0;
+            const failOtherPerc = totPasses ? ((failedOther * 100) / totPasses).toFixed(2) : 0;
+
             content.title = 'Details on EDRS acquisitions';
-            passes = this.EDRSPasses;
-            anomalies = this.EDRSAnomalies;
-        } else {
-            target = station.charAt(0).toUpperCase();
-            content.title = 'Details on ' + station.charAt(0).toUpperCase() + station.slice(1) + ' acquisitions';
-            passes = this.downlinkPasses[station];
-            anomalies = this.downlinkAnomalies[station];
+            content.message =
+                `Planned passes: ${totPasses}; Successful passes: ${successfulPasses} (${successPerc}%).<br/>` +
+                `Acquisition Service issues: ${failedAcq} (${failAcqPerc}%); ` +
+                `Satellite issues: ${failedSat} (${failSatPerc}%); ` +
+                `Other issues: ${failedOther} (${failOtherPerc}%).`;
+
+            // Show per-satellite details only if EDRSPasses is an object
+            if (typeof this.EDRSPasses === 'object' && this.EDRSPasses !== null) {
+                content.message += '<br/>Details per satellite:<br/><ul>';
+                for (const [satellite, passesList] of Object.entries(this.EDRSPasses)) {
+                    const satTot = Array.isArray(passesList) ? passesList.length : passesList;
+                    const satAnomalies = this.EDRSAnomalies[satellite.toLowerCase()] || { acq: [], sat: [], other: [] };
+                    const satSuccess = satTot - (satAnomalies.acq.length + satAnomalies.sat.length + satAnomalies.other.length);
+
+                    const satSuccessPerc = satTot ? ((satSuccess * 100) / satTot).toFixed(2) : 0;
+                    const satAcqPerc = satTot ? ((satAnomalies.acq.length * 100) / satTot).toFixed(2) : 0;
+                    const satSatPerc = satTot ? ((satAnomalies.sat.length * 100) / satTot).toFixed(2) : 0;
+                    const satOtherPerc = satTot ? ((satAnomalies.other.length * 100) / satTot).toFixed(2) : 0;
+
+                    content.message += `<li>${satellite.toUpperCase()}: Planned passes: ${satTot}; ` +
+                        `Successful passes: ${satSuccess} (${satSuccessPerc}%).`;
+
+                    if (satTot - satSuccess > 0) {
+                        content.message += ` Acquisition: ${satAnomalies.acq.length} (${satAcqPerc}%), ` +
+                            `Satellite: ${satAnomalies.sat.length} (${satSatPerc}%), ` +
+                            `Other: ${satAnomalies.other.length} (${satOtherPerc}%)`;
+                    }
+                    content.message += `</li>`;
+                }
+                content.message += '</ul>';
+            }
+
+            content.icon = 'fa fa-bell';
+            content.url = '';
+            content.target = '_blank';
+
+            // Show popup
+            $.notify(content, {
+                type: 'danger',
+                placement: { from: 'top', align: 'right' },
+                time: 1000,
+                delay: 0,
+            });
+
+            // Refresh the pie chart (function untouched)
+            this.refreshPieChart('edrs-pie-chart-mod', data);
+
+            return;
         }
+        target = station.charAt(0).toUpperCase();
+        content.title = 'Details on ' + station.charAt(0).toUpperCase() + station.slice(1) + ' acquisitions';
+        passes = this.downlinkPasses[station];
+        anomalies = this.downlinkAnomalies[station];
 
         // Append global statistics
         var totPasses = 0;
@@ -384,30 +400,6 @@ class AcquisitionServiceMod {
             time: 1000,
             delay: 0,
         });
-    }
-
-    showAcquisitionServiceModOnlineHelp() {
-
-        // Acknowledge the visualization of the online help
-        console.info('Showing acquisitions online help message...');
-
-        // Auxiliary variable declaration
-        var from = 'top';
-        var align = 'center';
-        var state = 'info';
-        var content = {};
-        content.title = 'Acquisition Service';
-        content.message = 'This view summarizes the global status of the Acquisition Service. The page is divided into two sections: <br>' +
-            ' - Global acquisitions statistics, per Ground Station (the violet boxes);<br>' +
-            ' - Details on acquisition failures (the pie charts);<br>' +
-            'Click on a pie chart to display the anomalies causing the discontinuity in the system availability. By default, ' +
-            'results are referred to the previous completed quarter.'
-        content.icon = 'flaticon-round';
-
-        // Display notification message
-        msgNotification(from, align, state, content);
-
-        return;
     }
 
 }

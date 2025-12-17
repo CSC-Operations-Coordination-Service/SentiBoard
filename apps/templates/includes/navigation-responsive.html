@@ -152,13 +152,25 @@
 							<div class="form-group form-floating-label" id="time-period-select-container">
 								<select name="time-period-select" id="time-period-select" class="form-control input-solid">
 									<option value="day"
-										{% if segment == "data-availability" and selected_period == "day" %}selected{% endif %}>Last 24 Hours</option>
+										{% if (segment == "data-availability" and selected_period == "day")
+      										or (segment == "acquisition-service" and period_id == "day") %}selected{% endif %}>Last 24 Hours</option>
 									<option value="week"
-										{% if segment == "data-availability" and selected_period == "week" %}selected{% endif %}>Last 7 Days</option>
+										{% if (segment == "data-availability" and selected_period == "week")
+      										or (segment == "acquisition-service" and period_id == "week") %}selected{% endif %}>Last 7 Days</option>
 									<option value="month"
-										{% if segment == "data-availability" and selected_period == "month" %}selected{% endif %}>Last 30 Days</option>
+										{% if (segment == "data-availability" and selected_period == "month")
+      										or (segment == "acquisition-service" and period_id == "month") %}selected{% endif %}>Last 30 Days</option>
 									<option value="prev-quarter"
-										{% if segment == "data-availability" and selected_period == "prev-quarter" %}selected{% endif %}>Last 3 Months</option>
+										{% if (segment == "data-availability" and selected_period == "prev-quarter")
+      										or (segment == "acquisition-service" and period_id == "prev-quarter") %}selected{% endif %}>Last 3 Months</option>
+
+									<!-- Fixed previous quarter (optional) -->
+									{% if prev_quarter_label is defined %}
+									<option value="prev-quarter"
+									{% if period_id == "prev-quarter" %}selected{% endif %}>
+										{{ prev_quarter_label }}
+									</option>
+									{% endif %}
 								</select>
 
 							</div>

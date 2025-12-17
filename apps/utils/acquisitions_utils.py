@@ -1,6 +1,8 @@
 import json
 from flask import Response, current_app
 from collections import defaultdict
+from datetime import date
+from flask_login import current_user
 
 STATIONS = ["svalbard", "inuvik", "matera", "maspalomas", "neustrelitz"]
 
@@ -43,7 +45,9 @@ def build_acquisition_payload(acquisitions, edrs_acquisitions, period_id=""):
         "edrs": {
             "planned": 0,
             "successful": 0,
+            "passes": 0,
             "percentage": 0.0,
+            "passes_percentage": 0.0,
         },
     }
 
@@ -121,6 +125,9 @@ def build_acquisition_payload(acquisitions, edrs_acquisitions, period_id=""):
         if payload["edrs"]["planned"] > 0
         else 0.0
     )
+
+    payload["edrs"]["passes"] = payload["edrs"]["successful"]
+    payload["edrs"]["passes_percentage"] = payload["edrs"]["percentage"]
 
     return payload
 
@@ -254,3 +261,25 @@ def compute_global_from_downlinks(payload):
         "fail_other": other,
         "fail_other_percentage": round(100 * other / tot, 2) if tot else 0.0,
     }
+
+
+def is_quarter_authorized():
+    return current_user.is_authenticated and current_user.role in ("admin", "esauser")
+
+
+def previous_quarter_label(today=None):
+    today = today or date.today()
+    q = (today.month - 1) // 3
+    year = today.year
+
+    if q == 0:
+        q = 4
+        year -= 1
+
+    start_month = (q - 1) * 3 + 1
+    end_month = start_month + 2
+
+    start = date(year, start_month, 1)
+    end = date(year, end_month, 1)
+
+    return f"{start.strftime('%b')} – {end.strftime('%b %Y')}"

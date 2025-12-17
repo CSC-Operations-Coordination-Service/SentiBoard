@@ -305,7 +305,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="edrs-box-mod">
-							{{ payload.edrs.successful }}
+							{{ payload.edrs.successful }} / {{ payload.edrs.planned }}
 						</h1>
 						<h5 class="op-8">Successful passes using EDRS</h5>
 						<div class="pull-right">
@@ -452,6 +452,7 @@
 	</script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function(){
+			console.log('[ACQUISITION SERVICE] SSR payload period:', window.ACQUISITION_PAYLOAD?.meta?.period_id);
 			const payloadEl = document.getElementById('acquisition-payload');
 			window.ACQUISITION_PAYLOAD = JSON.parse(payloadEl.textContent);
 
