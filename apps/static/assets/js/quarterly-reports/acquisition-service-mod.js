@@ -247,8 +247,8 @@ class AcquisitionServiceMod {
             }
         }
 
-        const okPerc = tot ? ok * 100.0 / tot : 0;
-        $('#' + boxId + '-mod').text(ok.toFixed(2) + ' / ' + tot.toFixed(2));
+        const okPerc = tot ? Math.round((ok * 100) / tot) : 0;
+        $('#' + boxId + '-mod').text(`${Math.round(ok)}  /  ${Math.round(tot)}`);
         $('#' + boxId + '-perc-mod').text(okPerc.toFixed(2) + '%');
     }
 

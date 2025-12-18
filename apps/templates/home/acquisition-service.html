@@ -220,7 +220,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="svalbard-station-box-mod">
-							{{ payload.stations.svalbard.passes }}
+							{{ payload.stations.svalbard.passes | int }}
 						</h1>
 						<h5 class="op-8">Successful passes over Svalbard</h5>
 						<div class="pull-right">
@@ -237,7 +237,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="inuvik-station-box-mod">
-							{{ payload.stations.inuvik.passes }}
+							{{ payload.stations.inuvik.passes | int }}
 						</h1>
 						<h5 class="op-8">Successful passes over Inuvik</h5>
 						<div class="pull-right">
@@ -254,7 +254,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="matera-station-box-mod">
-							{{ payload.stations.matera.passes }}
+							{{ payload.stations.matera.passes | int }}
 						</h1>
 						<h5 class="op-8">Successful passes over Matera</h5>
 						<div class="pull-right">
@@ -271,7 +271,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="maspalomas-station-box-mod">
-							{{ payload.stations.maspalomas.passes }}
+							{{ payload.stations.maspalomas.passes | int }}
 						</h1>
 						<h5 class="op-8">Successful passes over Maspalomas</h5>
 						<div class="pull-right">
@@ -288,7 +288,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="neustrelitz-station-box-mod">
-							{{ payload.stations.neustrelitz.passes }}
+							{{ payload.stations.neustrelitz.passes | int }}
 						</h1>
 						<h5 class="op-8">Successful passes over Neustrelitz</h5>
 						<div class="pull-right">
@@ -305,7 +305,7 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="edrs-box-mod">
-							{{ payload.edrs.successful }} / {{ payload.edrs.planned }}
+							{{ payload.edrs.successful | int }} / {{ payload.edrs.planned | int }}
 						</h1>
 						<h5 class="op-8">Successful passes using EDRS</h5>
 						<div class="pull-right">
