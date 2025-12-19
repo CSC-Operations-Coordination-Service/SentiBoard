@@ -283,3 +283,185 @@ def previous_quarter_label(today=None):
     end = date(year, end_month, 1)
 
     return f"{start.strftime('%b')} – {end.strftime('%b %Y')}"
+
+
+def build_space_segment_payload(unavailability, datatakes):
+    satellites = {
+        "S1A": {"name": "Copernicus Sentinel-1A", "class": "info"},
+        "S1C": {"name": "Copernicus Sentinel-1C", "class": "info"},
+        "S2A": {"name": "Copernicus Sentinel-2A", "class": "success"},
+        "S2B": {"name": "Copernicus Sentinel-2B", "class": "success"},
+        "S2C": {"name": "Copernicus Sentinel-2C", "class": "success"},
+        "S3A": {"name": "Copernicus Sentinel-3A", "class": "warning"},
+        "S3B": {"name": "Copernicus Sentinel-3B", "class": "warning"},
+        "S5P": {"name": "Copernicus Sentinel-5P", "class": "secondary"},
+    }
+
+    result = {}
+
+    for sat, meta in satellites.items():
+        sat_datatakes = datatakes.get(sat, [])
+
+        # ── Satellite base structure
+        result[sat] = {
+            "label": meta["name"],
+            "class": meta["class"],
+            "overall": unavailability.get(sat, {}).get("overall", 100),
+            "instruments": [
+                {"name": instr, "availability": round(value, 2)}
+                for instr, value in unavailability.get(sat, {})
+                .get("instruments", {})
+                .items()
+            ],
+            "impacted_datatakes": [
+                {
+                    "id": dt.get("datatake_id"),
+                    "date": dt.get("observation_time_start").date().isoformat(),
+                    "issue_type": dt.get("cams_origin", "Unknown"),
+                    "issue_link": dt.get("last_attached_ticket", ""),
+                    "completeness": recalc_completeness(dt),
+                    "actions": build_actions_html(dt.get("datatake_id")),
+                }
+                for dt in sat_datatakes
+                if dt.get("last_attached_ticket")
+            ],
+            # ── Add sensing statistics even if empty
+            "sensing": build_sensing_statistics(sat_datatakes),
+        }
+
+    return result
+
+
+def build_sensing_statistics(datatakes):
+    total = success = sat = acq = other = 0.0
+    anomalies = {"satellite": [], "acquisition": [], "other": []}
+
+    for dt in datatakes:
+        hours = (
+            dt.get("l0_sensing_duration", 0) / 3_600_000_000
+            if dt.get("l0_sensing_duration")
+            else (
+                dt["observation_time_stop"] - dt["observation_time_start"]
+            ).total_seconds()
+            / 3600
+        )
+        total += hours
+
+        compl = recalc_completeness(dt) / 100 if dt.get("last_attached_ticket") else 1
+
+        if compl >= 0.9999:
+            success += hours
+        else:
+            lost = hours * (1 - compl)
+            origin = dt.get("cams_origin", "")
+
+            if "Acquis" in origin:
+                acq += lost
+                anomalies["acquisition"].append(...)
+            elif "CAM" in origin or "Sat" in origin:
+                sat += lost
+                anomalies["satellite"].append(...)
+            else:
+                other += lost
+                anomalies["other"].append(...)
+
+    success = total - (sat + acq + other)
+
+    return {
+        "hours": {
+            "total": round(total, 2),
+            "success": round(success, 2),
+            "satellite": round(sat, 2),
+            "acquisition": round(acq, 2),
+            "other": round(other, 2),
+        },
+        "percent": {
+            "success": round(success / total * 100, 2) if total else 0,
+            "satellite": round(sat / total * 100, 2) if total else 0,
+            "acquisition": round(acq / total * 100, 2) if total else 0,
+            "other": round(other / total * 100, 2) if total else 0,
+        },
+        "pie": [
+            {"label": "Successful sensing", "value": round(success, 2)},
+            {"label": "Satellite issues", "value": round(sat, 2)},
+            {"label": "Acquisition issues", "value": round(acq, 2)},
+            {"label": "Other issues", "value": round(other, 2)},
+        ],
+        "anomalies": anomalies,
+    }
+
+
+def recalc_completeness(datatake: dict) -> float:
+    """
+    Recalculate acquisition completeness using the same logic as the JS client.
+
+    Priority:
+    1. L0_
+    2. L1_
+    3. L2_
+    4. default 0.0
+
+    Returns:
+        float: completeness percentage (0–100)
+    """
+
+    for key in ("L0_", "L1_", "L2_"):
+        value = datatake.get(key)
+        if value is not None:
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                pass
+
+    return 0.0
+
+
+def build_actions_html(datatake_id: str) -> str:
+    clean_id = datatake_id.split("(")[0].strip()
+    return (
+        '<button type="button" '
+        'class="btn-link" '
+        'style="color:#8c90a0" '
+        'data-toggle="modal" '
+        'data-target="#showDatatakeDetailsModal" '
+        f"onclick=\"showDatatakeDetails('{clean_id}')\">"
+        '<i class="la flaticon-search-1"></i>'
+        "</button>"
+    )
+
+
+def normalize_unavailability(unavailability):
+    """
+    Convert unavailability from list → dict keyed by satellite.
+    """
+    if isinstance(unavailability, list):
+        return {
+            item.get("satellite"): item
+            for item in unavailability
+            if isinstance(item, dict) and "satellite" in item
+        }
+
+    return unavailability or {}
+
+
+def normalize_datatakes(datatakes):
+    """
+    Convert datatakes from list → dict keyed by satellite.
+    """
+    result = {}
+
+    if isinstance(datatakes, list):
+        for dt in datatakes:
+            if not isinstance(dt, dict):
+                continue
+
+            sat = dt.get("satellite")
+            if not sat:
+                continue
+
+            result.setdefault(sat, []).append(dt)
+
+        return result
+
+    # already normalized or empty
+    return datatakes or {}

@@ -37,6 +37,7 @@ import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
+import apps.cache.modules.unavailability as unavailability_cache
 from apps.utils.date_utils import format_pub_date
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
@@ -1268,6 +1269,7 @@ def processors_page():
 
 
 @blueprint.route("/acquisition-service")
+@blueprint.route("/acquisition-service.html")
 @login_required
 def acquisition_service_page():
     if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
@@ -1294,34 +1296,29 @@ def acquisition_service_page():
             "last", cache_period
         )
 
-    # edrs_key = acquisitions_cache.edrs_acquisitions_cache_key.format(
-    #    "previous" if period_id == "prev-quarter" else "last",
-    #    "quarter" if period_id == "prev-quarter" else period_id,
+    # current_app.logger.info(
+    #     "[ACQUISITION SERVICE] Cache keys-> acquisitions=%s edrs=%s",
+    #     acquisitions_key,
+    #     edrs_key,
     # )
-
-    current_app.logger.info(
-        "[ACQUISITION SERVICE] Cache keys-> acquisitions=%s edrs=%s",
-        acquisitions_key,
-        edrs_key,
-    )
 
     acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(acquisitions_key))
     edrs_acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(edrs_key))
 
-    current_app.logger.info(
-        "[ACQUISITION SERVICE] loaded rows-> acquisitions=%d edrs=%d",
-        len(acquisitions),
-        len(edrs_acquisitions),
-    )
+    # current_app.logger.info(
+    #    "[ACQUISITION SERVICE] loaded rows-> acquisitions=%d edrs=%d",
+    #    len(acquisitions),
+    #    len(edrs_acquisitions),
+    # )
 
     payload = acquisitions_utils.build_acquisition_payload(
         acquisitions, edrs_acquisitions, period_id=period_id
     )
 
-    current_app.logger.info(
-        "[ACQUISITION SERVICE] Paylod global-> %s",
-        payload["global"],
-    )
+    # current_app.logger.info(
+    #    "[ACQUISITION SERVICE] Paylod global-> %s",
+    #    payload["global"],
+    # )
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
@@ -1334,10 +1331,57 @@ def acquisition_service_page():
     )
 
 
+@blueprint.route("/space-segment")
+@blueprint.route("/space-segment.html")
+@login_required
+def admin_space_segment():
+
+    if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+        abort(403)
+
+    period = request.args.get("period", "previous-quarter")
+
+    if period == "previous-quarter":
+        unavailability = flask_cache.get(
+            unavailability_cache.unavailability_cache_key.format("previous", "quarter")
+        )
+        datatakes = flask_cache.get(
+            datatakes_cache.datatakes_cache_key.format("previous", "quarter")
+        )
+    else:
+        unavailability = flask_cache.get(
+            unavailability_cache.unavailability_cache_key.format("last", period)
+        )
+        datatakes = flask_cache.get(
+            datatakes_cache.datatakes_cache_key.format("last", period)
+        )
+
+    if isinstance(unavailability, Response):
+        unavailability = unavailability.get_json(silent=True) or {}
+
+    if isinstance(datatakes, Response):
+        datatakes = datatakes.get_json(silent=True) or {}
+
+    unavailability = acquisitions_utils.normalize_unavailability(unavailability)
+    datatakes = acquisitions_utils.normalize_datatakes(datatakes)
+
+    current_app.logger.info(
+        "Datatakes keys: %s",
+        list(datatakes.keys()) if isinstance(datatakes, dict) else type(datatakes),
+    )
+    payload = acquisitions_utils.build_space_segment_payload(unavailability, datatakes)
+
+    return render_template(
+        "home/space-segment.html",
+        payload=payload,
+        period=period,
+    )
+
+
 @blueprint.route("/<template>")
 def route_template(template):
     try:
-        if not template.endswith(".html"):
+        if template in ("space-segment", "acquisition-service"):
             abort(404)
 
         # Detect the current page
@@ -1362,12 +1406,14 @@ def route_template(template):
 
         # acquisition page
         if template == "acquisition-service.html":
-            # Determine if the user is quarter authorized
             return acquisition_service_page()
+
+        # space segment
+        if template in ["space-segment", "space-segment.html"]:
+            return admin_space_segment()
 
         # events page
         if template in ["events", "events.html"]:
-            # Determine if the user is quarter authorized
             return events()
 
         # data-availability
