@@ -1267,17 +1267,6 @@
 
 	<!-- Page related JS classes -->
 	<script>
-		async function debugCompare() {
-			let ajax1 = await fetch('/api/reporting/cds-sat-unavailability/previous-quarter').then(r=>r.json());
-			let ajax2 = await fetch('/api/worker/cds-datatakes/previous-quarter').then(r=>r.json());
-
-			console.log("=== AJAX Unavailability ===", ajax1);
-			console.log("=== AJAX Datatakes ===", ajax2);
-			console.log("=== SSR ===", {{ satellites|tojson }});
-		}
-		setTimeout(debugCompare, 2000);
-	</script>
-	<script>
 		window.SENSING_DATA = {
 			datatakes: {{ datatakes|tojson|safe }},
 			unavailability: {{ unavailability|tojson|safe }},
