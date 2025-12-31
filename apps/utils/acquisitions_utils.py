@@ -393,7 +393,11 @@ def compute_availability_single_sat(
                 if inst in availability and inst in comment:
                     availability[inst] -= impact
 
-    display_name_map = {"STR-1": "STR", "STR-2": "STR"}  # map star trackers
+    display_name_map = {
+        "STR-1": "STAR TRACKER",
+        "STR-2": "STAR TRACKER",
+        "STR": "STAR TRACKER",
+    }  # map star trackers
     ui_availability = []
 
     for inst, val in availability.items():
