@@ -163,11 +163,11 @@ class SpaceSegment {
                 this.impactedDatatakesBySatellite[sat].push(dt);
             }
 
-            console.log('[SSR] Loaded datatake:', dt, 'Impacted?', isImpacted);
+            //console.log('[SSR] Loaded datatake:', dt, 'Impacted?', isImpacted);
         });
 
-        console.info('[SSR] Datatakes loaded per satellite:', this.datatakesBySatellite);
-        console.info('[SSR] Impacted datatakes per satellite:', this.impactedDatatakesBySatellite);
+        // console.info('[SSR] Datatakes loaded per satellite:', this.datatakesBySatellite);
+        //console.info('[SSR] Impacted datatakes per satellite:', this.impactedDatatakesBySatellite);
     }
 
 
@@ -838,26 +838,6 @@ class SpaceSegment {
             time: 1000,
             delay: 0,
         });
-    }
-
-    refreshDatatakesTables() {
-        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (satellite) {
-
-            // Initialize the existing tables
-            var tableId = satellite.toLowerCase() + '-impacted-datatakes-table';
-            satellite = satellite.toUpperCase();
-
-            // Build datatakes rows
-            var data = spaceSegment.buildDatatakesTableRows(satellite);
-
-            // Update the corresponding table
-            if (!spaceSegment.impactedDatatakesTablesBySatellite[satellite]) {
-                spaceSegment.initializeDatatakesTable(satellite, tableId);
-            }
-            if (spaceSegment.impactedDatatakesTablesBySatellite[satellite]) {
-                spaceSegment.impactedDatatakesTablesBySatellite[satellite].clear().rows.add(data).draw();
-            }
-        })
     }
 
     refreshDatatakesTablesSSR() {
