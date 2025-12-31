@@ -102,33 +102,98 @@ class SpaceSegment {
 
         // Set the completeness threshold for displaying the anomaly in the list
         this.completenessThreshold = 0.9999;
+
+        this.isSSR = true;
     }
 
     init() {
 
-        // Retrieve the user profile. In case of "ecuser" or "esauser" role, allow
-        // the visualization of events up to the beginning of the previous quarter
-        /*ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.quarterAuthorizedError);
+        if (!window.SENSING_DATA) {
+            console.warn('[SSR] Missing SENSING_DATA');
+            return;
+        }
 
-        // Retrieve the user profile. In case of "esauser" role, allow the visualization
-        // of datatakes details
-        ajaxCall('/api/auth/datatakes-details-authorized', 'GET', {}, this.datatakesDetailsAuthorizedProcess, this.datatakesDetailsAuthorizedError);*/
+        console.info('[SSR] Initializing SpaceSegment from SSR');
 
-        // Register event callback for Time period select
-        var time_period_sel = document.getElementById('time-period-select');
-        time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+        const datatakes = Array.isArray(SENSING_DATA.datatakes) ? SENSING_DATA.datatakes : [];
+        const unavailability = Array.isArray(SENSING_DATA.unavailability) ? SENSING_DATA.unavailability : [];
 
-        // Save the new time boundaries
-        // this.updateDateInterval('prev-quarter')
+        this.loadDatatakesFromSSR(datatakes);
+        this.loadUnavailabilityFromSSR(unavailability);
 
-        // Retrieve the anomalies, the satellite unavailabilities and the datatakes
-        /*this.loadSatUnavailabilityInPeriod('prev-quarter');
-        this.loadDatatakesInPeriod('prev-quarter');*/
+        // Apply stats and colors dynamically
+        for (const [sat, satObj] of Object.entries(SENSING_DATA.stats)) {
+            const colorClass = window.SPACE_SEGMENT_COLORS[sat] || 'info';
 
-        return;
+            // Update satellite main availability
+            const satEl = document.querySelector(`#${sat.toLowerCase()}-avail-perc`);
+            if (satEl) satEl.innerHTML = `${satObj.success}%`;
+
+            // Update instrument bars
+            satObj.instruments.forEach(i => {
+                const id = `${sat.toLowerCase()}-${i.name.toLowerCase()}`;
+                const bar = document.querySelector(`#${id}-avail-bar`);
+                const perc = document.querySelector(`#${id}-avail-perc`);
+                if (bar) {
+                    bar.style.width = i.availability + "%";
+                    // Apply color class
+                    bar.className = `progress-bar bg-${colorClass}`;
+                }
+                if (perc) {
+                    perc.innerHTML = i.availability + "%";
+                    perc.style.display = 'block';
+                }
+            });
+        }
+
+        console.log("[SSR] Stats rendered to DOM with correct colors");
+
+        this.refreshDatatakesTables();
+
     }
 
-    quarterAuthorizedProcess(response) {
+    loadDatatakesFromSSR(datatakes) {
+
+        if (!Array.isArray(datatakes)) {
+            console.warn('[SSR] datatakes is not an array:', datatakes);
+            return;
+        }
+
+        datatakes.forEach(dt => {
+
+            if (!dt || !dt.satellite_unit) return;
+
+            dt.observation_time_start = new Date(dt.observation_time_start);
+            dt.observation_time_stop = new Date(dt.observation_time_stop);
+
+            const sat = dt.satellite_unit.toUpperCase();
+
+            if (!this.datatakesBySatellite[sat]) {
+                this.datatakesBySatellite[sat] = [];
+            }
+
+            this.datatakesBySatellite[sat].push(dt);
+        });
+
+        console.info('[SSR] Datatakes loaded per satellite:', this.datatakesBySatellite);
+    }
+
+    loadUnavailabilityFromSSR(unavailability) {
+        if (!unavailability) return;
+        unavailability.forEach(u => {
+            this.satUnavailabilities[u.key] = {
+                satellite: u.satellite_unit,
+                item: u.subsystem,
+                duration: u.unavailability_duration / 1_000_000,
+                comment: u.comment,
+                start: u.start_time,
+                type: u.type,
+                reference: u.unavailability_reference
+            };
+        });
+    }
+
+    /*quarterAuthorizedProcess(response) {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
             if (time_period_sel.options.length == 4) {
@@ -139,39 +204,39 @@ class SpaceSegment {
             console.info('Programmatically set the time period to previous quarter')
             time_period_sel.value = 'prev-quarter';
         }
-    }
+    }*/
 
-    quarterAuthorizedError(response) {
+    /*quarterAuthorizedError(response) {
         console.error(response)
         return;
-    }
+    }*/
 
-    datatakesDetailsAuthorizedProcess(response) {
+    /*datatakesDetailsAuthorizedProcess(response) {
         if (response['authorized'] === true) {
             ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (sat) {
                 $('#' + sat + '-table-container').show();
                 $('#' + sat + '-boxes-container').hide();
             });
         }
-    }
+    }*/
 
-    datatakesDetailsAuthorizedError(response) {
+    /*datatakesDetailsAuthorizedError(response) {
         ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (sat) {
             $('#' + sat + '-table-container').hide();
             $('#' + sat + '-boxes-container').show();
         });
-    }
+    }*/
 
-    on_timeperiod_change() {
+    /*on_timeperiod_change() {
         var time_period_sel = document.getElementById('time-period-select')
         var selected_time_period = time_period_sel.value
         console.log("Time period changed to " + selected_time_period)
         this.updateDateInterval(selected_time_period)
         this.loadSatUnavailabilityInPeriod(selected_time_period);
         this.loadDatatakesInPeriod(selected_time_period);
-    }
+    }*/
 
-    updateDateInterval(period_type) {
+    /*updateDateInterval(period_type) {
 
         // Update start date depending on value of period type
         // one of: day, week, month, quarter
@@ -181,9 +246,9 @@ class SpaceSegment {
         this.start_date = dates[0];
         this.end_date = dates[1];
         return;
-    }
+    }*/
 
-    loadSatUnavailabilityInPeriod(selected_time_period) {
+    /*loadSatUnavailabilityInPeriod(selected_time_period) {
 
         // Clear previous data, if any
         this.satUnavailabilities = {};
@@ -210,7 +275,7 @@ class SpaceSegment {
         }
 
         return;
-    }
+    }*/
 
     successLoadSatUnavailability(response) {
 
@@ -258,12 +323,16 @@ class SpaceSegment {
         return;
     }
 
-    errorLoadSatUnavailability(response) {
+    /*errorLoadSatUnavailability(response) {
         console.error(response)
         return;
-    }
+    }*/
 
     refreshAvailabilityStatus() {
+        if (this.isSSR) {
+            console.info("[SSR] Skipping availability recomputation");
+            return;
+        }
         var periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
         var availabilityStatus = {
             'S1A': { 'SAR': 100, 'EDDS': 100, 'PDHT': 100, 'OCP': 100 },
@@ -375,7 +444,7 @@ class SpaceSegment {
         });
     }
 
-    loadDatatakesInPeriod(selected_time_period) {
+    /*loadDatatakesInPeriod(selected_time_period) {
 
         // Clear previous data, if any - datatakes
         this.datatakesBySatellite = {
@@ -426,9 +495,9 @@ class SpaceSegment {
         }
 
         return;
-    }
+    }*/
 
-    successLoadDatatakes(response) {
+    /*successLoadDatatakes(response) {
 
         // Acknowledge the successful retrieval of S1/S2 data takes
         var rows = format_response(response);
@@ -465,9 +534,13 @@ class SpaceSegment {
         this.refreshDatatakesTables();
 
         return;
-    }
+    }*/
 
     refreshPieChartsAndBoxes() {
+        if (this.isSSR) {
+            console.info('[SSR] Skipping sensing recomputation in JS');
+            return;
+        }
         ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (satellite) {
 
             // Remove existing data from the pie charts
@@ -475,18 +548,20 @@ class SpaceSegment {
             spaceSegment.clearPieChart(pieId);
 
             // Recalculate statistics
-            var data = spaceSegment.calcSensingStatistics(satellite);
-
+            var data = {};
+            SSR_PIE_DATA[satellite.toUpperCase()].forEach(e => {
+                data[e.label] = e.value;
+            });
             // Update the corresponding pie chart
             spaceSegment.refreshPieChart(pieId, data);
             spaceSegment.refreshBoxes(satellite, data);
         })
     }
 
-    errorLoadDatatake(response) {
+    /*errorLoadDatatake(response) {
         console.error(response)
         return;
-    }
+    }*/
 
     clearPieChart(pieId) {
         var chartCanvas = document.getElementById(pieId);
@@ -638,6 +713,10 @@ class SpaceSegment {
     }
 
     showSensingStatistics(satellite) {
+        if (this.isSSR) {
+            console.info("[SSR] Skipping availability recomputation");
+            return;
+        }
 
         // Auxiliary Variable Declaration
         var content = { title: satellite + ' Sensing Statistics' };

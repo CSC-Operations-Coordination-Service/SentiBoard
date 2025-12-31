@@ -41,6 +41,7 @@ import apps.cache.modules.unavailability as unavailability_cache
 from apps.utils.date_utils import format_pub_date
 from datetime import datetime, date, timezone, timedelta
 from dateutil import parser
+from dateutil.relativedelta import relativedelta
 from calendar import monthrange
 from apps import flask_cache, db
 from collections import Counter
@@ -50,6 +51,7 @@ import time
 import logging
 import math
 from zoneinfo import ZoneInfo
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -1335,46 +1337,89 @@ def acquisition_service_page():
 @blueprint.route("/space-segment.html")
 @login_required
 def admin_space_segment():
-
+    # ---- check user authorization
     if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
         abort(403)
 
-    period = request.args.get("period", "previous-quarter")
+    current_app.logger.info("[SPACE SEGMENT] SSR route START")
 
-    if period == "previous-quarter":
-        unavailability = flask_cache.get(
-            unavailability_cache.unavailability_cache_key.format("previous", "quarter")
-        )
-        datatakes = flask_cache.get(
-            datatakes_cache.datatakes_cache_key.format("previous", "quarter")
-        )
-    else:
-        unavailability = flask_cache.get(
-            unavailability_cache.unavailability_cache_key.format("last", period)
-        )
-        datatakes = flask_cache.get(
-            datatakes_cache.datatakes_cache_key.format("last", period)
-        )
-
-    if isinstance(unavailability, Response):
-        unavailability = unavailability.get_json(silent=True) or {}
-
-    if isinstance(datatakes, Response):
-        datatakes = datatakes.get_json(silent=True) or {}
-
-    unavailability = acquisitions_utils.normalize_unavailability(unavailability)
-    datatakes = acquisitions_utils.normalize_datatakes(datatakes)
-
-    current_app.logger.info(
-        "Datatakes keys: %s",
-        list(datatakes.keys()) if isinstance(datatakes, dict) else type(datatakes),
+    # ---- cache keys
+    datatakes_key = datatakes_cache.datatakes_cache_key.format("last", "quarter")
+    unavailability_key = unavailability_cache.unavailability_cache_key.format(
+        "last", "quarter"
     )
-    payload = acquisitions_utils.build_space_segment_payload(unavailability, datatakes)
+
+    # ---- read cache
+    def parse_cache(raw):
+        if raw is None:
+            return []
+        if isinstance(raw, Response):
+            return raw.get_json(silent=True) or []
+        return raw
+
+    datatakes_json = parse_cache(flask_cache.get(datatakes_key))
+    unavailability_json = parse_cache(flask_cache.get(unavailability_key))
+
+    datatakes_sources = [it["_source"] for it in datatakes_json if "_source" in it]
+    unavailability_sources = [
+        it["_source"] for it in unavailability_json if "_source" in it
+    ]
+
+    # ---- period: previous quarter
+    period_end = datetime.now(timezone.utc)
+    period_start = period_end - relativedelta(months=3)
+
+    # ---- build SSR object
+    satellites = acquisitions_utils.build_space_segment_ssr(
+        datatakes_sources,
+        unavailability_sources,
+        period_start,
+        period_end,
+    )
+
+    # ---- debug logging
+    for sat in satellites:
+        current_app.logger.info(
+            "[SPACE SEGMENT] %s: fullname=%s, datatakes=%d, unavailability=%d, instruments=%s",
+            sat,
+            satellites[sat].get("fullname"),
+            len(satellites[sat].get("datatakes", [])),
+            len(satellites[sat].get("unavailability", [])),
+            satellites[sat].get("instruments"),
+        )
+
+    # ---- build sensing stats
+    stats = {
+        sat: {
+            "success": satellites[sat]["success"],
+            "class": satellites[sat]["class"],
+            "instruments": satellites[sat]["instruments"],
+            "datatakes": satellites[sat]["datatakes"],
+            "unavailability": satellites[sat]["unavailability"],
+        }
+        for sat in satellites
+    }
+
+    space_segment_colors = {
+        "S1A": "info",
+        "S1C": "info",
+        "S2A": "success",
+        "S2B": "success",
+        "S2C": "success",
+        "S3A": "warning",
+        "S3B": "warning",
+        "S5P": "secondary",
+    }
 
     return render_template(
         "home/space-segment.html",
-        payload=payload,
-        period=period,
+        period="previous-quarter",
+        satellites=satellites,
+        segment="space-segment",
+        sensing_stats=acquisitions_utils.safe_serialize(stats),
+        datatakes=acquisitions_utils.safe_serialize(datatakes_sources),
+        unavailability=acquisitions_utils.safe_serialize(unavailability_sources),
+        space_segment_colors=space_segment_colors,
     )
 
 
