@@ -121,46 +121,28 @@ class SpaceSegment {
         this.loadDatatakesFromSSR(datatakes);
         this.loadUnavailabilityFromSSR(unavailability);
 
-        // Apply stats and colors dynamically
-        for (const [sat, satObj] of Object.entries(SENSING_DATA.stats)) {
-            const colorClass = window.SPACE_SEGMENT_COLORS[sat] || 'info';
+        //const allowed = !!SENSING_DATA.detailsAllowed;
 
-            // Update satellite main availability
-            const satEl = document.querySelector(`#${sat.toLowerCase()}-avail-perc`);
-            if (satEl) satEl.innerHTML = `${satObj.success}%`;
-
-            // Update instrument bars
-            satObj.instruments.forEach(i => {
-                const id = `${sat.toLowerCase()}-${i.name.toLowerCase()}`;
-                const bar = document.querySelector(`#${id}-avail-bar`);
-                const perc = document.querySelector(`#${id}-avail-perc`);
-                if (bar) {
-                    bar.style.width = i.availability + "%";
-                    // Apply color class
-                    bar.className = `progress-bar bg-${colorClass}`;
-                }
-                if (perc) {
-                    perc.innerHTML = i.availability + "%";
-                    perc.style.display = 'block';
-                }
-            });
-        }
+        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(sat => {
+            //document.getElementById(`${sat}-table-container`).style.display = allowed ? "block" : "none";
+            document.getElementById(`${sat}-table-container`).style.display = "block";
+            //document.getElementById(`${sat}-boxes-container`).style.display = allowed ? "none" : "flex";
+            document.getElementById(`${sat}-boxes-container`).style.display = "none";
+        });
 
         console.log("[SSR] Stats rendered to DOM with correct colors");
-
-        this.refreshDatatakesTables();
+        this.refreshPieChartsAndBoxesSSR();
+        this.refreshDatatakesTablesSSR();
 
     }
 
     loadDatatakesFromSSR(datatakes) {
-
         if (!Array.isArray(datatakes)) {
             console.warn('[SSR] datatakes is not an array:', datatakes);
             return;
         }
 
         datatakes.forEach(dt => {
-
             if (!dt || !dt.satellite_unit) return;
 
             dt.observation_time_start = new Date(dt.observation_time_start);
@@ -173,10 +155,21 @@ class SpaceSegment {
             }
 
             this.datatakesBySatellite[sat].push(dt);
+
+            // Check if this datatake would be considered "impacted"
+            const isImpacted = dt.last_attached_ticket && dt.completeness_status?.ACQ?.percentage < 100;
+            if (isImpacted) {
+                if (!this.impactedDatatakesBySatellite[sat]) this.impactedDatatakesBySatellite[sat] = [];
+                this.impactedDatatakesBySatellite[sat].push(dt);
+            }
+
+            console.log('[SSR] Loaded datatake:', dt, 'Impacted?', isImpacted);
         });
 
         console.info('[SSR] Datatakes loaded per satellite:', this.datatakesBySatellite);
+        console.info('[SSR] Impacted datatakes per satellite:', this.impactedDatatakesBySatellite);
     }
+
 
     loadUnavailabilityFromSSR(unavailability) {
         if (!unavailability) return;
@@ -536,7 +529,7 @@ class SpaceSegment {
         return;
     }*/
 
-    refreshPieChartsAndBoxes() {
+    /*refreshPieChartsAndBoxes() {
         if (this.isSSR) {
             console.info('[SSR] Skipping sensing recomputation in JS');
             return;
@@ -556,6 +549,41 @@ class SpaceSegment {
             spaceSegment.refreshPieChart(pieId, data);
             spaceSegment.refreshBoxes(satellite, data);
         })
+    }*/
+
+    refreshPieChartsAndBoxesSSR() {
+
+        console.log("[SSR] Rendering L0 sensing pie charts & summary boxes");
+
+        for (const sat of ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p']) {
+
+            const key = sat.toUpperCase();
+
+            if (!SENSING_DATA.stats[key]) continue;
+
+            const d = SENSING_DATA.stats[key];
+
+            // --- 1. PIE CHART DATA FORMAT ---
+            const chartData = {
+                "Successful": d.success,
+                "Satellite Issue": d.sat_fail || 0,
+                "Acquisition Issue": d.acq_fail || 0,
+                "Other": d.other_fail || 0,
+            };
+
+            // draw pie
+            spaceSegment.clearPieChart(`${sat}-sensing-statistics-pie-chart`);
+            spaceSegment.refreshPieChart(`${sat}-sensing-statistics-pie-chart`, chartData);
+
+            // --- 2. UPDATE BOXES ---
+            document.querySelector(`#${sat}-successful-datatakes-box`).innerHTML = d.success + "h";
+            document.querySelector(`#${sat}-satellite-failures-box`).innerHTML = (d.sat_fail || 0) + "h";
+            document.querySelector(`#${sat}-acquisition-failures-box`).innerHTML = (d.acq_fail || 0) + "h";
+            document.querySelector(`#${sat}-other-failures-box`).innerHTML = (d.other_fail || 0) + "h";
+
+            // Show the box container
+            document.querySelector(`#${sat}-boxes-container`).style.display = "flex";
+        }
     }
 
     /*errorLoadDatatake(response) {
@@ -831,6 +859,75 @@ class SpaceSegment {
             }
         })
     }
+
+    refreshDatatakesTablesSSR() {
+        console.log("[SSR] Rendering impacted datatakes tables using DataTables");
+
+        const sats = ['S1A', 'S1C', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+
+        sats.forEach(sat => {
+            const tableId = `${sat.toLowerCase()}-impacted-datatakes-table`;
+            const tableEl = $(`#${tableId}`);
+
+            if (!tableEl.length) return;
+
+            // Build datatakes rows
+            const rows = this.impactedDatatakesBySatellite[sat] || [];
+            const data = rows.map(dt => {
+                const key = dt.datatake_id;
+                const issueDate = dt.observation_time_start
+                    ? moment(dt.observation_time_start).format("YYYY-MM-DD")
+                    : "-";
+                let issueType = "Other";
+                if (dt.cams_origin) {
+                    if (dt.cams_origin.includes("Acquis")) issueType = "Acquisition";
+                    else if (dt.cams_origin.includes("CAM") || dt.cams_origin.includes("Sat")) issueType = "Satellite";
+                }
+                const issueLink = dt.last_attached_ticket
+                    ? `<a href="https://cams.esa.int/browse/${dt.last_attached_ticket}" target="_blank">${dt.last_attached_ticket}</a>`
+                    : "-";
+                const completeness = dt.completeness !== undefined ? dt.completeness.toFixed(2) : "-";
+                return [key, issueDate, issueType, issueLink, completeness];
+            });
+
+            // Initialize DataTable if not already
+            if (!this.impactedDatatakesTablesBySatellite[sat]) {
+                this.impactedDatatakesTablesBySatellite[sat] = tableEl.DataTable({
+                    data: data,
+                    columns: [
+                        { title: "Data Take ID" },
+                        { title: "Date" },
+                        { title: "Issue type" },
+                        { title: "Issue link" },
+                        { title: "L0 Completeness" },
+                        {
+                            title: "Actions",
+                            data: null,
+                            render: function (data, type, row) {
+                                if (type === 'display') {
+                                    return `<button type="button" style="color: #8c90a0" class="btn-link" data-toggle="modal" data-target="#showDatatakeDetailsModal"
+                                onclick="spaceSegment.showDatatakeDetails('${row[0]}')"><i class="la flaticon-search-1"></i></button>`;
+                                }
+                                return data;
+                            }
+                        }
+                    ],
+                    language: { emptyTable: "No impacted datatake found" },
+                    responsive: true,
+                    paging: true,
+                    searching: true,
+                    info: true,
+                    autoWidth: false,
+                });
+            } else {
+                // Table exists: just clear and add new data
+                this.impactedDatatakesTablesBySatellite[sat].clear().rows.add(data).draw();
+            }
+        });
+
+        console.log("[SSR] Impacted datatake tables updated with DataTables");
+    }
+
 
     initializeDatatakesTable(satellite, tableId) {
         try {
