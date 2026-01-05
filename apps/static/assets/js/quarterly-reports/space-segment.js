@@ -121,18 +121,24 @@ class SpaceSegment {
         this.loadDatatakesFromSSR(datatakes);
         this.loadUnavailabilityFromSSR(unavailability);
 
-        //const allowed = !!SENSING_DATA.detailsAllowed;
+        if (SENSING_DATA.detailsAllowed) {
+            this.toggleDatatakesUI(true);
+        } else {
+            this.toggleDatatakesUI(false);
+        }
 
-        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(sat => {
-            //document.getElementById(`${sat}-table-container`).style.display = allowed ? "block" : "none";
-            document.getElementById(`${sat}-table-container`).style.display = "block";
-            //document.getElementById(`${sat}-boxes-container`).style.display = allowed ? "none" : "flex";
-            document.getElementById(`${sat}-boxes-container`).style.display = "none";
-        });
 
-        console.log("[SSR] Stats rendered to DOM with correct colors");
+        console.log("[SSR] Stats rendered to DOM with correct colors", SENSING_DATA.detailsAllowed);
         this.refreshPieChartsAndBoxesSSR();
         this.refreshDatatakesTablesSSR();
+
+        const sel = document.getElementById('time-period-select');
+        if (sel) {
+            sel.addEventListener('change', () => {
+                const period = sel.value;
+                window.location.href = `/space-segment?period=${period}`;
+            });
+        }
 
     }
 
@@ -186,6 +192,21 @@ class SpaceSegment {
         });
     }
 
+    toggleDatatakesUI(showTables) {
+        const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
+
+        sats.forEach(sat => {
+            const table = document.getElementById(`${sat}-table-container`);
+            const boxes = document.getElementById(`${sat}-boxes-container`);
+
+            if (!table || !boxes) return;
+
+            table.style.display = showTables ? "block" : "none";
+            boxes.style.display = showTables ? "none" : "flex";
+        });
+    }
+
+
     /*quarterAuthorizedProcess(response) {
         if (response['authorized'] === true) {
             var time_period_sel = document.getElementById('time-period-select');
@@ -204,21 +225,13 @@ class SpaceSegment {
         return;
     }*/
 
-    /*datatakesDetailsAuthorizedProcess(response) {
-        if (response['authorized'] === true) {
-            ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (sat) {
-                $('#' + sat + '-table-container').show();
-                $('#' + sat + '-boxes-container').hide();
-            });
-        }
-    }*/
+    datatakesDetailsAuthorizedProcess(response) {
+        this.toggleDatatakesUI(true);
+    }
 
-    /*datatakesDetailsAuthorizedError(response) {
-        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (sat) {
-            $('#' + sat + '-table-container').hide();
-            $('#' + sat + '-boxes-container').show();
-        });
-    }*/
+    datatakesDetailsAuthorizedError(response) {
+        this.toggleDatatakesUI(false);
+    }
 
     /*on_timeperiod_change() {
         var time_period_sel = document.getElementById('time-period-select')
@@ -582,7 +595,10 @@ class SpaceSegment {
             document.querySelector(`#${sat}-other-failures-box`).innerHTML = (d.other_fail || 0) + "h";
 
             // Show the box container
-            document.querySelector(`#${sat}-boxes-container`).style.display = "flex";
+            if (!SENSING_DATA.detailsAllowed) {
+                document.querySelector(`#${sat}-boxes-container`).style.display = "flex";
+
+            }
         }
     }
 
@@ -598,7 +614,7 @@ class SpaceSegment {
         }
     }
 
-    calcSensingStatistics(satellite) {
+    /*calcSensingStatistics(satellite) {
 
         // Auxiliary variable declaration
         var data = {};
@@ -661,7 +677,7 @@ class SpaceSegment {
         data['Sensing failed due to Satellite issues: ' + failedSensingSatPerc + '%'] = failedSensingSat.toFixed(2);
         data['Sensing failed due to Other issues: ' + failedSensingOtherPerc + '%'] = failedSensingOther.toFixed(2);
         return data;
-    }
+    }*/
 
     refreshPieChart(pieId, data) {
         var chartCanvas = document.getElementById(pieId);

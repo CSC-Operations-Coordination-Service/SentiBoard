@@ -1338,10 +1338,30 @@ def acquisition_service_page():
 @login_required
 def admin_space_segment():
     # ---- check user authorization
-    if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+    authorized = auth_utils.is_user_authorized(["admin", "ecuser", "esauser"])
+    if not authorized:
         abort(403)
 
     current_app.logger.info("[SPACE SEGMENT] SSR route START")
+
+    # ---- period selection (SSR)
+    period = request.args.get("period", "prev-quarter")
+
+    now = datetime.now(timezone.utc)
+
+    if period == "day":
+        period_start = now - relativedelta(days=1)
+        period_end = now
+    elif period == "week":
+        period_start = now - relativedelta(days=7)
+        period_end = now
+    elif period == "month":
+        period_start = now - relativedelta(days=30)
+        period_end = now
+    else:  # prev-quarter (default)
+        period = "prev-quarter"
+        period_end = now
+        period_start = period_end - relativedelta(months=3)
 
     # ---- cache keys
     datatakes_key = datatakes_cache.datatakes_cache_key.format("last", "quarter")
@@ -1360,14 +1380,13 @@ def admin_space_segment():
     datatakes_json = parse_cache(flask_cache.get(datatakes_key))
     unavailability_json = parse_cache(flask_cache.get(unavailability_key))
 
-    datatakes_sources = [it["_source"] for it in datatakes_json if "_source" in it]
+    raw_sources = [it["_source"] for it in datatakes_json if "_source" in it]
+    datatakes_sources = acquisitions_utils.filter_by_period(
+        raw_sources, period_start, period_end
+    )
     unavailability_sources = [
         it["_source"] for it in unavailability_json if "_source" in it
     ]
-
-    # ---- period: previous quarter
-    period_end = datetime.now(timezone.utc)
-    period_start = period_end - relativedelta(months=3)
 
     # ---- build SSR object
     satellites = acquisitions_utils.build_space_segment_ssr(
@@ -1377,16 +1396,11 @@ def admin_space_segment():
         period_end,
     )
 
-    # ---- debug logging
-    for sat in satellites:
-        current_app.logger.info(
-            "[SPACE SEGMENT] %s: fullname=%s, datatakes=%d, unavailability=%d, instruments=%s",
-            sat,
-            satellites[sat].get("fullname"),
-            len(satellites[sat].get("datatakes", [])),
-            len(satellites[sat].get("unavailability", [])),
-            satellites[sat].get("instruments"),
-        )
+    # ---- compute L0/L1/L2 completeness for SSR tables
+
+    for sat in satellites.values():
+        for dt in sat.get("datatakes", []):
+            dt["completeness"] = acquisitions_utils.recalc_completeness(dt)
 
     # ---- build sensing stats
     stats = {
@@ -1411,15 +1425,21 @@ def admin_space_segment():
         "S5P": "secondary",
     }
 
+    prev_quarter_label = (
+        period_start.strftime("%b %Y") + " - " + period_end.strftime("%b %Y")
+    )
+
     return render_template(
         "home/space-segment.html",
-        period="previous-quarter",
         satellites=satellites,
-        segment="space-segment",
+        segment="acquisition-service",
+        period_id=period,
+        prev_quarter_label=prev_quarter_label,
         sensing_stats=acquisitions_utils.safe_serialize(stats),
         datatakes=acquisitions_utils.safe_serialize(datatakes_sources),
         unavailability=acquisitions_utils.safe_serialize(unavailability_sources),
         space_segment_colors=space_segment_colors,
+        details_allowed=authorized,
     )
 
 

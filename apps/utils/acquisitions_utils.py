@@ -343,7 +343,7 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             "instruments": inst_data,
         }
 
-        current_app.logger.info(f"[SSR] {sat} availability computed = {success}%")
+        # current_app.logger.info(f"[SSR] {sat} availability computed = {success}%")
 
     return satellites
 
@@ -588,3 +588,24 @@ def safe_serialize(obj):
     elif "Undefined" in str(type(obj)):
         return None
     return obj
+
+
+def filter_by_period(datatakes, start, end):
+    out = []
+
+    for d in datatakes:
+        t_raw = d.get("observation_time_start")
+        if not t_raw:
+            continue
+
+        try:
+            # Handle ISO strings like "2025-10-14T03:21:44.123Z"
+            t = dt.fromisoformat(t_raw.replace("Z", "")).replace(tzinfo=timezone.utc)
+        except Exception:
+            # Skip malformed timestamps safely
+            continue
+
+        if start <= t <= end:
+            out.append(d)
+
+    return out
