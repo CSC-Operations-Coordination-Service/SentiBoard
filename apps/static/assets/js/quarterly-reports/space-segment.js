@@ -176,7 +176,6 @@ class SpaceSegment {
         //console.info('[SSR] Impacted datatakes per satellite:', this.impactedDatatakesBySatellite);
     }
 
-
     loadUnavailabilityFromSSR(unavailability) {
         if (!unavailability) return;
         unavailability.forEach(u => {
@@ -206,25 +205,6 @@ class SpaceSegment {
         });
     }
 
-
-    /*quarterAuthorizedProcess(response) {
-        if (response['authorized'] === true) {
-            var time_period_sel = document.getElementById('time-period-select');
-            if (time_period_sel.options.length == 4) {
-                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
-            }
-
-            // Programmatically select the previous quarter as the default time range
-            console.info('Programmatically set the time period to previous quarter')
-            time_period_sel.value = 'prev-quarter';
-        }
-    }*/
-
-    /*quarterAuthorizedError(response) {
-        console.error(response)
-        return;
-    }*/
-
     datatakesDetailsAuthorizedProcess(response) {
         this.toggleDatatakesUI(true);
     }
@@ -232,56 +212,6 @@ class SpaceSegment {
     datatakesDetailsAuthorizedError(response) {
         this.toggleDatatakesUI(false);
     }
-
-    /*on_timeperiod_change() {
-        var time_period_sel = document.getElementById('time-period-select')
-        var selected_time_period = time_period_sel.value
-        console.log("Time period changed to " + selected_time_period)
-        this.updateDateInterval(selected_time_period)
-        this.loadSatUnavailabilityInPeriod(selected_time_period);
-        this.loadDatatakesInPeriod(selected_time_period);
-    }*/
-
-    /*updateDateInterval(period_type) {
-
-        // Update start date depending on value of period type
-        // one of: day, week, month, quarter
-        // take delta to be applied from configuration
-        console.info('Updating time interval: ' + period_type);
-        let dates = new ObservationTimePeriod().getIntervalDates(period_type);
-        this.start_date = dates[0];
-        this.end_date = dates[1];
-        return;
-    }*/
-
-    /*loadSatUnavailabilityInPeriod(selected_time_period) {
-
-        // Clear previous data, if any
-        this.satUnavailabilities = {};
-
-        // Acknowledge the invocation of rest APIs
-        console.info("Invoking Sat unavailabilities retrieval...");
-
-        // Execute asynchrounous AJAX call
-        if (selected_time_period === 'day') {
-            asyncAjaxCall('/api/reporting/cds-sat-unavailability/last-24h', 'GET', {},
-                this.successLoadSatUnavailability.bind(this), this.errorLoadSatUnavailability);
-        } else if (selected_time_period === 'week') {
-            asyncAjaxCall('/api/reporting/cds-sat-unavailability/last-7d', 'GET', {},
-                this.successLoadSatUnavailability.bind(this), this.errorLoadSatUnavailability);
-        } else if (selected_time_period === 'month') {
-            asyncAjaxCall('/api/reporting/cds-sat-unavailability/last-30d', 'GET', {},
-                this.successLoadSatUnavailability.bind(this), this.errorLoadSatUnavailability);
-        } else if (selected_time_period === 'prev-quarter') {
-            asyncAjaxCall('/api/reporting/cds-sat-unavailability/previous-quarter', 'GET', {},
-                this.successLoadSatUnavailability.bind(this), this.errorLoadSatUnavailability);
-        } else {
-            asyncAjaxCall('/api/reporting/cds-sat-unavailability/last-quarter', 'GET', {},
-                this.successLoadSatUnavailability.bind(this), this.errorLoadSatUnavailability);
-        }
-
-        return;
-    }*/
 
     successLoadSatUnavailability(response) {
 
@@ -328,11 +258,6 @@ class SpaceSegment {
 
         return;
     }
-
-    /*errorLoadSatUnavailability(response) {
-        console.error(response)
-        return;
-    }*/
 
     refreshAvailabilityStatus() {
         if (this.isSSR) {
@@ -450,120 +375,6 @@ class SpaceSegment {
         });
     }
 
-    /*loadDatatakesInPeriod(selected_time_period) {
-
-        // Clear previous data, if any - datatakes
-        this.datatakesBySatellite = {
-            'S1A': [],
-            'S1C': [],
-            'S2A': [],
-            'S2B': [],
-            'S2C': [],
-            'S3A': [],
-            'S3B': [],
-            'S5P': []
-        };
-
-        // Clear previous data, if any - impacted datatakes
-        this.impactedDatatakesBySatellite = {
-            'S1A': [],
-            'S1C': [],
-            'S2A': [],
-            'S2B': [],
-            'S2C': [],
-            'S3A': [],
-            'S3B': [],
-            'S5P': []
-        };
-
-        // Clear previous data, if any - categorized events
-        this.categorizedAnomalies = {};
-
-        // Acknowledge the invocation of rest APIs
-        console.info("Invoking Datatakes retrieval...");
-
-        // Execute asynchronous AJAX call
-        if (selected_time_period === 'day') {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'week') {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-7d', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'month') {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-30d', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'prev-quarter') {
-            asyncAjaxCall('/api/worker/cds-datatakes/previous-quarter', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else {
-            asyncAjaxCall('/api/worker/cds-datatakes/last-quarter', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        }
-
-        return;
-    }*/
-
-    /*successLoadDatatakes(response) {
-
-        // Acknowledge the successful retrieval of S1/S2 data takes
-        var rows = format_response(response);
-        console.info('Datatakes successfully retrieved');
-        console.info("Number of records: " + rows.length);
-
-        // Parse response
-        for (var i = 0; i < rows.length; ++i) {
-
-            // Auxiliary variables
-            var element = rows[i]['_source'];
-
-            // Satellite unit
-            var sat_unit = element['satellite_unit'];
-
-            // Sensing start and stop time
-            element['observation_time_start'] = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
-            element['observation_time_stop'] = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
-
-            // Push the datatake in the proper array
-            this.datatakesBySatellite[sat_unit].push(element);
-
-            // Check the presence of any related ticket: in case of anomalies,
-            // store the datatake in a dedicated structure
-            if (element['last_attached_ticket'] && element['completeness_status'].ACQ.percentage < 100) {
-                this.impactedDatatakesBySatellite[sat_unit].push(element);
-            }
-        }
-
-        // Refresh the datatakes statistics displayed in the pie charts and boxes
-        this.refreshPieChartsAndBoxes();
-
-        // Refresh the datatakes tables and boxes
-        this.refreshDatatakesTables();
-
-        return;
-    }*/
-
-    /*refreshPieChartsAndBoxes() {
-        if (this.isSSR) {
-            console.info('[SSR] Skipping sensing recomputation in JS');
-            return;
-        }
-        ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'].forEach(function (satellite) {
-
-            // Remove existing data from the pie charts
-            var pieId = satellite.toLowerCase() + '-sensing-statistics-pie-chart';
-            spaceSegment.clearPieChart(pieId);
-
-            // Recalculate statistics
-            var data = {};
-            SSR_PIE_DATA[satellite.toUpperCase()].forEach(e => {
-                data[e.label] = e.value;
-            });
-            // Update the corresponding pie chart
-            spaceSegment.refreshPieChart(pieId, data);
-            spaceSegment.refreshBoxes(satellite, data);
-        })
-    }*/
-
     refreshPieChartsAndBoxesSSR() {
 
         console.log("[SSR] Rendering L0 sensing pie charts & summary boxes");
@@ -602,82 +413,12 @@ class SpaceSegment {
         }
     }
 
-    /*errorLoadDatatake(response) {
-        console.error(response)
-        return;
-    }*/
-
     clearPieChart(pieId) {
         var chartCanvas = document.getElementById(pieId);
         if (chartCanvas !== null) {
             chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
         }
     }
-
-    /*calcSensingStatistics(satellite) {
-
-        // Auxiliary variable declaration
-        var data = {};
-        satellite = satellite.toUpperCase();
-        var hours = 0, totSensing = 0, failedSensingAcq = 0, failedSensingSat = 0, failedSensingOther = 0;
-
-        // Compute statistics and collect unavailability events
-        spaceSegment.categorizedAnomalies[satellite] = { 'sat_events': {}, 'acq_events': {}, 'other_events': {} };
-        spaceSegment.datatakesBySatellite[satellite].forEach(function (datatake) {
-            if (datatake['l0_sensing_duration']) {
-                hours = datatake['l0_sensing_duration'] / 3600000000;
-            } else {
-                hours = (datatake['observation_time_stop'].getTime() - datatake['observation_time_start'].getTime()) / 3600000;
-            }
-            totSensing += hours;
-            if (datatake['last_attached_ticket'] && datatake['cams_origin']) {
-                let ticket_id = datatake['last_attached_ticket'];
-                let compl = spaceSegment.recalcDatatakeAcqCompleteness(datatake) / 100;
-                if (datatake['cams_origin'].includes('Acquis') && compl < spaceSegment.completenessThreshold) {
-                    failedSensingAcq += hours * (1 - compl);
-                    spaceSegment.categorizedAnomalies[satellite]['acq_events'][ticket_id] =
-                    {
-                        'reference': ticket_id, 'type': datatake['cams_origin'], 'description': datatake['cams_description'],
-                        'date': datatake['observation_time_start'].toISOString().split('T')[0]
-                    };
-                } else if (datatake['cams_origin'].includes('CAM') || datatake['cams_origin'].includes('Sat')
-                    && compl < spaceSegment.completenessThreshold) {
-                    failedSensingSat += hours * (1 - compl);
-                    spaceSegment.categorizedAnomalies[satellite]['sat_events'][ticket_id] =
-                    {
-                        'reference': ticket_id, 'type': datatake['cams_origin'], 'description': datatake['cams_description'],
-                        'date': datatake['observation_time_start'].toISOString().split('T')[0]
-                    };
-                } else {
-                    failedSensingOther += hours * (1 - compl);
-                    if (compl <= spaceSegment.completenessThreshold) {
-                        spaceSegment.categorizedAnomalies[satellite]['other_events'][ticket_id] =
-                        {
-                            'reference': ticket_id, 'type': datatake['cams_origin'], 'description': datatake['cams_description'],
-                            'date': datatake['observation_time_start'].toISOString().split('T')[0]
-                        };
-                    }
-                }
-            }
-        });
-
-        // Sort anomalies
-        Object.keys(spaceSegment.categorizedAnomalies[satellite]['sat_events']).sort();
-        Object.keys(spaceSegment.categorizedAnomalies[satellite]['acq_events']).sort();
-        Object.keys(spaceSegment.categorizedAnomalies[satellite]['other_events']).sort();
-
-        // Compute percentages and return
-        let successfulSensing = totSensing - (failedSensingAcq + failedSensingSat + failedSensingOther);
-        let successfulSensingPerc = (successfulSensing / totSensing).toFixed(2) * 100;
-        let failedSensingAcqPerc = (failedSensingAcq / totSensing).toFixed(2) * 100;
-        let failedSensingSatPerc = (failedSensingSat / totSensing).toFixed(2) * 100;
-        let failedSensingOtherPerc = (failedSensingOther / totSensing).toFixed(2) * 100;
-        data['Successful sensing: ' + successfulSensingPerc + '%'] = successfulSensing.toFixed(2);
-        data['Sensing failed due to Acquisition issues: ' + failedSensingAcqPerc + '%'] = failedSensingAcq.toFixed(2);
-        data['Sensing failed due to Satellite issues: ' + failedSensingSatPerc + '%'] = failedSensingSat.toFixed(2);
-        data['Sensing failed due to Other issues: ' + failedSensingOtherPerc + '%'] = failedSensingOther.toFixed(2);
-        return data;
-    }*/
 
     refreshPieChart(pieId, data) {
         var chartCanvas = document.getElementById(pieId);
@@ -923,7 +664,6 @@ class SpaceSegment {
 
         console.log("[SSR] Impacted datatake tables updated with DataTables");
     }
-
 
     initializeDatatakesTable(satellite, tableId) {
         try {
