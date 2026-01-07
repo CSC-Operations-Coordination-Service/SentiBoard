@@ -169,11 +169,8 @@ class SpaceSegment {
                 this.impactedDatatakesBySatellite[sat].push(dt);
             }
 
-            //console.log('[SSR] Loaded datatake:', dt, 'Impacted?', isImpacted);
         });
 
-        // console.info('[SSR] Datatakes loaded per satellite:', this.datatakesBySatellite);
-        //console.info('[SSR] Impacted datatakes per satellite:', this.impactedDatatakesBySatellite);
     }
 
     loadUnavailabilityFromSSR(unavailability) {
@@ -665,7 +662,7 @@ class SpaceSegment {
         console.log("[SSR] Impacted datatake tables updated with DataTables");
     }
 
-    initializeDatatakesTable(satellite, tableId) {
+    /*initializeDatatakesTable(satellite, tableId) {
         try {
             console.info('Initialiazing ' + satellite + ' table...');
             this.impactedDatatakesTablesBySatellite[satellite] = $('#' + tableId).DataTable({
@@ -690,7 +687,7 @@ class SpaceSegment {
             console.warn(err);
             console.info('Initializing space segment class - skipping table creation.')
         }
-    }
+    }*/
 
     buildDatatakesTableRows(satellite) {
 
@@ -830,7 +827,7 @@ class SpaceSegment {
             '</div>');
     }
 
-    showSpaceSegmentOnlineHelp() {
+    /*showSpaceSegmentOnlineHelp() {
 
         // Acknowledge the visualization of the online help
         console.info('Showing system availability online help message...');
@@ -850,7 +847,7 @@ class SpaceSegment {
         msgNotification(from, align, state, content);
 
         return;
-    }
+    }*/
 }
 
 let spaceSegment = new SpaceSegment();

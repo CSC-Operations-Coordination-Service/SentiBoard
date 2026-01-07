@@ -343,8 +343,6 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             "instruments": inst_data,
         }
 
-        # current_app.logger.info(f"[SSR] {sat} availability computed = {success}%")
-
     return satellites
 
 
