@@ -75,8 +75,13 @@ from apps.utils.events_utils import (
 
 PAGE_METADATA = {
     "index.html": {
-        "title": "Copernicus Sentinel Operations Dashboard",
-        "description": "Explore real-time satellite events, data availability, and acquisition status from ESA's Copernicus Sentinels. Stay informed with the comprehensive Sentiboard.",
+        "title": "Copernicus Sentinel Operations Dashboard | Real-Time Satellite Data & Events",
+        "description": (
+            "The Copernicus Sentinel Operations Dashboard (Sentiboard) provides real-time satellite data, "
+            "mission events, data availability, and acquisition status for ESA's Copernicus Sentinel missions. "
+            "Monitor Earth observation activities, satellite events, and mission performance through the official "
+            "ESA operations dashboard."
+        ),
         "page_keywords": [
             "Copernicus Sentinel Dashboard",
             "Sentiboard",
@@ -92,8 +97,12 @@ PAGE_METADATA = {
         ],
     },
     "about.html": {
-        "title": "About Copernicus",
-        "description": "Discover how the Sentiboard enables real-time monitoring of Sentinel satellite missions, data delivery, and Earth observation event tracking.",
+        "title": "About the Copernicus Sentinel Dashboard | ESA Earth Observation Missions",
+        "description": (
+            "Learn about the Copernicus Sentinel Dashboard (Sentiboard) and how it supports real-time monitoring "
+            "of ESA Earth observation missions. Discover how Sentinel satellite data availability, acquisition status, "
+            "and mission events are tracked to provide reliable satellite data services."
+        ),
         "page_keywords": [
             "About Copernicus Dashboard",
             "Sentiboard",
@@ -108,8 +117,12 @@ PAGE_METADATA = {
         ],
     },
     "acquisitions-status.html": {
-        "title": "Sentinel Acquisitions Map",
-        "description": "Explore Sentinel satellite acquisition plans on the Sentiboard's real-time 3D globe. Filter by satellite, date, or datatake and view sensing timelines and coverage.",
+        "title": "Sentinel Acquisition Status Map | Copernicus Satellite Observation Schedule",
+        "description": (
+            "Explore the Sentinel acquisition status map on the Copernicus Sentinel Dashboard. "
+            "Visualize real-time satellite acquisition planning, sensing scenarios, orbit data, and "
+            "observation schedules for Sentinel missions using an interactive 3D globe."
+        ),
         "page_keywords": [
             "Sentinels Acquisition Status",
             "Sentiboard",
@@ -122,8 +135,12 @@ PAGE_METADATA = {
         ],
     },
     "events.html": {
-        "title": "Sentinel Event Viewer",
-        "description": "Browse Sentinel event logs including anomalies, calibrations, and manoeuvres on the Sentiboard. See how real-time mission events affect satellite data availability.",
+        "title": "Sentinel Events & Anomalies | Real-Time Copernicus Mission Operations",
+        "description": (
+            "Browse Sentinel mission events on the Copernicus Sentinel Dashboard, including real-time events, "
+            "satellite anomalies, calibration activities, and mission manoeuvres. "
+            "Understand how operational events impact Sentinel data production and availability."
+        ),
         "page_keywords": [
             "Sentinel events",
             "Sentiboard",
@@ -137,8 +154,12 @@ PAGE_METADATA = {
         ],
     },
     "data-availability.html": {
-        "title": "Copernicus Sentinel Data Availability",
-        "description": "Explore real-time data availability and completeness for Copernicus Sentinel satellite missions using the Sentiboard. Monitor delivery status, publication percentages, and filter by satellite or mission.",
+        "title": "Copernicus Sentinel Data Availability | Real-Time Earth Observation Data",
+        "description": (
+            "Monitor Copernicus Sentinel data availability in real time using the Sentiboard. "
+            "Track satellite data access, publication completeness, data quality, and delivery status "
+            "across Sentinel missions and Earth observation collections."
+        ),
         "page_keywords": [
             "Sentinels Data Availability",
             "Sentiboard",
@@ -151,8 +172,12 @@ PAGE_METADATA = {
         ],
     },
     "processors-viewer.html": {
-        "title": "Processor Releases Timeline",
-        "description": "Use the Sentiboard to browse the release history of Copernicus Sentinel processors using an interactive timeline. Click for details on each processor version.",
+        "title": "Copernicus Sentinel Processor Releases | ESA Data Processing Timeline",
+        "description": (
+            "Explore the Copernicus Sentinel processor releases timeline on the Sentiboard. "
+            "Track ESA processor versions, data processing updates, and changes across the "
+            "Copernicus processing chain using an interactive release history."
+        ),
         "page_keywords": [
             "Sentinels Processors",
             "Copernicus processing chain",
