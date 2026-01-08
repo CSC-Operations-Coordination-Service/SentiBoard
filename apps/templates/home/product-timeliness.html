@@ -77,62 +77,46 @@
 		<!-- Restricted Data Timeliness-->
 		<!-- Mission Timeliness by Timeliness Type (Gauge charts) -->
 		<!-- Row with S1 and S2 Charts -->
-		<div class="row">
-
-			<!-- col-12 col-sm-6  -->
-			<div class="col-md-8">
-				<div class="card-header">
-						<div class="card-title">Sentinel-1</div>
-				</div>
+		 <!-- <pre> {{ missions | tojson(indent=2) }} </pre>
+		 <pre> {{ timeliness | tojson(indent=2) }} </pre> -->
+		 {% if timeliness%}
+			{% for mission_code, mission in missions.items() %}
 				<div class="row">
-					<div class="col-md-6">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-1 Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s1-ntc-gauge-chart" class="canvasBox"></canvas>
-								</div>
-							</div>
+					<div class="col-md-8">
+						<div class="card-header">
+								<div class="card-title">{{ mission.title }}</div>
 						</div>
-					</div>
-					<div class="col-md-6">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-1 NRT</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container" >
-									<canvas id="s1-nrt-gauge-chart" class="canvasBox"></canvas>
+						<div class="row">
+							{% for chart in mission.charts %}
+								<div class="col-md-6">
+									<div class="card">
+										<div class="card-header">
+											<div class="card-title">{{ chart.title }}</div>
+										</div>
+										<div class="card-body">
+											<div class="chart-container">
+												<canvas id="{{ chart.id }}-gauge-chart" class="canvasBox" 
+													data-value="{{ timeliness[mission_code][chart.id].value }}"
+													data-threshold="{{ timeliness[mission_code][chart.id].threshold }}"
+												></canvas>
+											</div>
+										</div>
+									</div>
 								</div>
-							</div>
+							{% endfor%}
 						</div>
 					</div>
 				</div>
-			<!--
-			-->
-			</div>
-			<div class="col-md-4">
-				<div class="card-header">
-					<div class="card-title">Sentinel-2</div>
-				</div>
-				<div class="row">
-					<div class="col-md-12">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-2 Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-    									<canvas id="s2-ntc-gauge-chart" class="canvasBox"></canvas>
-								</div>
-							</div>
-						</div>
+			{% endfor %}
+		 {% else %}
+			<div class="row">
+				<div class="col-md-12">
+					<div class="alert alert-warning" role="alert">
+						<strong>Warning!</strong> Product Timeliness data is currently unavailable.
 					</div>
 				</div>
 			</div>
-		</div>
+		 {% endif %}
 
 		<!-- Row with S3 NRT Charts-->
 		<div class="row">
@@ -331,6 +315,9 @@
 {% block javascripts %}
 
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+	<script>
+		window.PRODUCT_TIMELINESS_DATA = {{ timeliness | tojson }};
+	</script>
 	<script src="/static/assets/js/quarterly-reports/product-timeliness.js"></script>
 	<script defer type="text/javascript">productTimeliness.init();</script>
 

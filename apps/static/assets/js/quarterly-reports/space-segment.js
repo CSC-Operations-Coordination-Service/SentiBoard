@@ -662,32 +662,7 @@ class SpaceSegment {
         console.log("[SSR] Impacted datatake tables updated with DataTables");
     }
 
-    /*initializeDatatakesTable(satellite, tableId) {
-        try {
-            console.info('Initialiazing ' + satellite + ' table...');
-            this.impactedDatatakesTablesBySatellite[satellite] = $('#' + tableId).DataTable({
-                "language": {
-                    "emptyTable": "No impacted datatake found"
-                },
-                columnDefs: [{
-                    targets: -1,
-                    data: null,
-                    render: function (data, type, row) {
-                        if (type === 'display') {
-                            let actions = '<button type="button" style="color: #8c90a0" class="btn-link" data-toggle="modal" data-target="#showDatatakeDetailsModal" ' +
-                                'onclick="spaceSegment.showDatatakeDetails(\'' + data[0] + '\')"><i class="la flaticon-search-1"></i></button>';
-                            return actions;
-                        } else {
-                            return data;
-                        }
-                    }
-                }]
-            });
-        } catch (err) {
-            console.warn(err);
-            console.info('Initializing space segment class - skipping table creation.')
-        }
-    }*/
+
 
     buildDatatakesTableRows(satellite) {
 

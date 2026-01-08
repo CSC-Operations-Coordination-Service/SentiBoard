@@ -30,6 +30,7 @@ from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
 import apps.cache.modules.acquisitions as acquisitions_cache
+import apps.cache.modules.timeliness as timeliness_cache
 import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
@@ -214,6 +215,44 @@ PERIOD_TO_CACHE = {
     "week": "7d",
     "month": "30d",
     "prev-quarter": "previous-quarter",
+}
+
+MISSIONS = {
+    "S1": {
+        "title": "Sentinel-1",
+        "charts": [
+            {"id": "ntc", "title": "Default Timeliness"},
+            {"id": "nrt", "title": "NRT"},
+        ],
+    },
+    "S2": {
+        "title": "Sentinel-2",
+        "charts": [
+            {"id": "ntc", "title": "Default Timeliness"},
+        ],
+    },
+    "S3": {
+        "title": "Sentinel-3",
+        "charts": [
+            {"id": "nrt-olci", "title": "OLCI NRT"},
+            {"id": "nrt-slstr", "title": "SLSTR NRT"},
+            {"id": "nrt-sral", "title": "SRAL NRT"},
+            {"id": "stc-sral", "title": "SRAL STC"},
+            {"id": "stc-syn", "title": "SYN STC"},
+            {"id": "ntc-olci", "title": "OLCI Default"},
+            {"id": "ntc-slstr", "title": "SLSTR Default"},
+            {"id": "ntc-sral", "title": "SRAL Default"},
+            {"id": "ntc-syn", "title": "SYN Default"},
+        ],
+    },
+    "S5": {
+        "title": "Sentinel-5",
+        "charts": [
+            {"id": "ntc-l1", "title": "L1 Default"},
+            {"id": "ntc-l2", "title": "L2 Default"},
+            {"id": "nrt-l2", "title": "L2 NRT"},
+        ],
+    },
 }
 
 
@@ -1465,6 +1504,106 @@ def admin_space_segment():
         unavailability=acquisitions_utils.safe_serialize(unavailability_sources),
         space_segment_colors=space_segment_colors,
         details_allowed=authorized,
+    )
+
+
+@blueprint.route("/product-timeliness")
+@blueprint.route("/product-timeliness.html")
+@login_required
+def product_timeliness_page():
+    # ---- check user authorization
+    authorized = auth_utils.is_user_authorized(["admin", "ecuser", "esauser"])
+    if not authorized:
+        abort(403)
+
+    current_app.logger.info("[PRODUCT TIMELINESS] SSR route START")
+
+    # ---- period selection (SSR)
+    period = request.args.get("period", "prev-quarter")
+
+    # ---- cache key (same as API)
+    cache_key = timeliness_cache.timeliness_cache_key_format.format(
+        "previous", "quarter"
+    )
+
+    # ---- get from cache (may be Response, dict, or None)
+    timeliness_data = flask_cache.get(cache_key)
+
+    # ---- normalize Response early (important)
+    if hasattr(timeliness_data, "get_json"):
+        current_app.logger.info(
+            "[PRODUCT TIMELINESS] Cache returned Response, extracting JSON"
+        )
+        timeliness_data = timeliness_data.get_json()
+
+    # ---- decide if cache must be recomputed
+    needs_reload = (
+        not isinstance(timeliness_data, dict)
+        or not isinstance(timeliness_data.get("data"), list)
+        or len(timeliness_data.get("data", [])) == 0
+    )
+
+    if needs_reload:
+        current_app.logger.warning(
+            "[PRODUCT TIMELINESS] Cache empty or invalid → forcing reload"
+        )
+
+        # ---- trigger expensive computation
+        timeliness_cache.load_timeliness_cache_previous_quarter()
+
+        # ---- re-read cache
+        timeliness_data = flask_cache.get(cache_key)
+
+        if hasattr(timeliness_data, "get_json"):
+            timeliness_data = timeliness_data.get_json()
+
+    # ---- final validation
+    if not isinstance(timeliness_data, dict):
+        current_app.logger.error(
+            "[PRODUCT TIMELINESS] Unexpected cache payload after reload: %r",
+            timeliness_data,
+        )
+        abort(500)
+
+    # ---- extract list payload (THIS is the real data)
+    raw_items = timeliness_data.get("data", [])
+
+    if not isinstance(raw_items, list):
+        current_app.logger.error(
+            "[PRODUCT TIMELINESS] 'data' is not a list: %r",
+            raw_items,
+        )
+        abort(500)
+
+    # ---- build SSR view model
+    view_model = {}
+
+    for item in raw_items:
+        if not isinstance(item, dict):
+            continue
+
+        mission = item.get("mission")
+        chart_id = item.get("chart")
+
+        if not mission or not chart_id:
+            continue
+
+        view_model.setdefault(mission, {})[chart_id] = {
+            "value": item.get("value"),
+            "threshold": item.get("threshold"),
+        }
+
+    current_app.logger.info(
+        "[PRODUCT TIMELINESS] View model missions: %s",
+        list(view_model.keys()),
+    )
+
+    # ---- render SSR page
+    return render_template(
+        "home/product-timeliness.html",
+        timeliness=view_model,
+        missions=MISSIONS,
+        period_type=period,
     )
 
 
