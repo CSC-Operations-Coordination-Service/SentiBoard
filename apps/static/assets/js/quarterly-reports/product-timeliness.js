@@ -121,7 +121,7 @@ class ProductTimeliness {
         return;
     }
 
-    loadTimelinessStatistics(period_type) {
+    /*loadTimelinessStatistics(period_type) {
         var timeliness_api_name = 'reports/cds-product-timeliness';
         console.log("Loading statistics for period " + period_type);
         // Clear previous data, if any
@@ -153,7 +153,7 @@ class ProductTimeliness {
             }
         });
         return;
-    }
+    }*/
 
     successLoadTimeliness(response) {
 

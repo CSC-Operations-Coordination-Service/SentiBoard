@@ -1536,6 +1536,10 @@ def product_timeliness_page():
         )
         timeliness_data = timeliness_data.get_json()
 
+    current_app.logger.info(
+        "[PRODUCT TIMELINESS] RAW CACHE payload: %r", timeliness_data
+    )
+
     # ---- decide if cache must be recomputed
     needs_reload = (
         not isinstance(timeliness_data, dict)
@@ -1583,13 +1587,28 @@ def product_timeliness_page():
             continue
 
         mission = item.get("mission")
-        chart_id = item.get("chart")
+        timeliness = item.get("timeliness")
 
-        if not mission or not chart_id:
+        if not mission or not timeliness:
             continue
 
+        # ---- base chart id
+        chart_id = timeliness.lower()
+
+        # ---- Sentinel-3 needs product_group
+        if mission == "S3":
+            product_group = item.get("product_group")
+            if not product_group:
+                continue
+            chart_id = f"{chart_id}-{product_group.lower()}"
+
+        total = item.get("total_count", 0)
+        on_time = item.get("on_time", 0)
+
+        value = round((on_time / total) * 100, 2) if total else 0.0
+
         view_model.setdefault(mission, {})[chart_id] = {
-            "value": item.get("value"),
+            "value": value,
             "threshold": item.get("threshold"),
         }
 
