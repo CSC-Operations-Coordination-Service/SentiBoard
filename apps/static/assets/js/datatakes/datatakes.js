@@ -639,7 +639,8 @@ class Datatakes {
                     if (key.includes('local_percentage')) {
                         dataArray.push({
                             productType: key.replace('_local_percentage', ''),
-                            status: datatake[key].toFixed(2)
+                            status: datatake[key].toFixed(2),
+                            timeliness: datatake.timeliness
                         });
                     }
                 }
@@ -692,8 +693,12 @@ class Datatakes {
             const statusCell = document.createElement("td");
             statusCell.textContent = item.status ?? "-";
 
+            const timelinessCell = document.createElement("td");
+            timelinessCell.textContent = item.timeliness ?? "-";
+
             row.appendChild(productTypeCell);
             row.appendChild(statusCell);
+            row.appendChild(timelinessCell);
             tableBody.appendChild(row);
         });
 
