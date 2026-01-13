@@ -632,17 +632,21 @@ class Datatakes {
                 const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
                 if (!response.ok) throw new Error("Failed to fetch datatake details");
                 const json = await response.json();
+                //console.log("[INFO TABLE] Raw API response:", json);
                 const datatake = format_response(json)[0];
+                //console.log("[INFO TABLE] formated datatake:", datatake);
 
                 // Format data from API to match table structure
                 for (let key of Object.keys(datatake)) {
                     if (key.includes('local_percentage')) {
+                        //console.log("[INFO TABLE] found local percentage:", "key:", key, "value:", datatake[key]);
                         dataArray.push({
                             productType: key.replace('_local_percentage', ''),
                             status: datatake[key].toFixed(2)
                         });
                     }
                 }
+                //console.log("[INFO TABLE] final dataArray:", dataArray);
 
                 $('#datatake-details').empty().append(`
                     <div class="form-group">
@@ -684,6 +688,7 @@ class Datatakes {
         const pageItems = dataArray.slice(startIndex, endIndex);
 
         pageItems.forEach(item => {
+            //console.log("[INFO TABLE] rendering row:", item);
             const row = document.createElement("tr");
 
             const productTypeCell = document.createElement("td");
@@ -752,7 +757,7 @@ class Datatakes {
             (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
         );
 
-        //console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
+        //console.log(`Relevant data for ${type}`, relevantData);
 
         if (relevantData.length === 0) {
             console.warn(`No data found for key: ${normalizedLinkKey}`);
@@ -788,6 +793,8 @@ class Datatakes {
             labels = ["Published", "Missing"];
             colors = [completeColor, missingColor];
             avgPercentage = percentage;
+            //console.warn("[CHART][PUB] Raw completeness status:", entry.raw?.completeness_status);
+            //console.warn("[CHART][PUB] Percentage:", percentage, "Status:", status);
         }
         else if (type === "acquisition") {
             const entry = relevantData[0];
@@ -801,6 +808,8 @@ class Datatakes {
             labels = ["Acquired", "Missing"];
             colors = [completeColor, missingColor];
             avgPercentage = percentage;
+            //console.warn("[CHART][ACQ] Raw completeness status:", entry.raw?.completeness_status);
+            //console.warn("[CHART][ACQ] Percentage:", percentage, "Status:", status);
         }
 
         // Destroy existing instance if any
@@ -809,6 +818,9 @@ class Datatakes {
         }
 
         // Chart configuration
+        //console.log("[CHART] series:", series);
+        //console.log("[CHART] labels:", labels);
+        //console.log("[CHART] colors:", colors);
         const options = {
             chart: { type: 'donut', height: 350, toolbar: { show: false }, offsetX: 0, offsetY: 0 },
             title: {
@@ -1113,8 +1125,8 @@ class Datatakes {
             const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
 
             const platform = row.satellite || raw.satellite_unit || "N/A";
-            const startTime = row.start ? moment(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
-            const stopTime = row.stop ? moment(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
+            const startTime = row.start ? moment.utc(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
+            const stopTime = row.stop ? moment.utc(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
 
             // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
