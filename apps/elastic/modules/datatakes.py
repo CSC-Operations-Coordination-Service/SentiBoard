@@ -49,13 +49,6 @@ mission_time_thresholds = {"S1": 8, "S2": 10, "S3": 696, "S5": 48}
 
 ELASTIC_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
-CDS_MISSIONS = {
-    "s1": ["s1a", "s1c", "s1d"],
-    "s2": ["s2a", "s2b", "s2c"],
-    "s3": ["s3a", "s3b"],
-    "s5": ["s5p"],
-}
-
 
 def fetch_anomalies_datatakes_last_quarter():
     """
@@ -110,14 +103,6 @@ def fetch_datatake_details(datatake_id):
         return "Unrecongnized datatake ID: " + datatake_id
 
 
-def _build_cds_completeness_indices(mission, satellites, splitted=False):
-    """
-    Build CDS completeness index names dynamically
-    """
-    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
-    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
-
-
 def _get_cds_datatakes(start_date: datetime, end_date: datetime):
     end_date_str = end_date.strftime("%d-%m-%Y")
     start_date_str = start_date.strftime("%d-%m-%Y")
@@ -142,18 +127,12 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # Auxiliary variable declaration
-        # indices = ["cds-datatake"]
-        indices = _build_cds_completeness_indices(
-            "s1", CDS_MISSIONS["s1"]
-        ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
+        indices = ["cds-datatake"]
         elastic = elastic_client.ElasticClient()
-
-        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
 
         # Fetch results from Elastic database
         for index in indices:
             try:
-                logger.debug("[CDS][S1S2] Query index=%s", index)
                 result = elastic.query_date_range_selected_fields(
                     index=index,
                     date_key="observation_time_start",
@@ -187,7 +166,9 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
                 raise cex
 
             except Exception as ex:
-                logger.warning("[CDS][S1S2] Error querying index=%s", index)
+                logger.warning(
+                    "(cds_s1s2_datatakes) Received Elastic error for index: %s", index
+                )
                 logger.error(ex)
 
     except Exception as ex:
@@ -237,8 +218,6 @@ def _get_cds_s3_datatakes(start_date, end_date):
         # Auxiliary variable declaration
         indices = ["cds-s3-completeness"]
         elastic = elastic_client.ElasticClient()
-
-        logger.info("[CDS][S3] Querying indexes:%s", indices)
 
         # Fetch results (products) from Elastic database
         # Mission-Completeness Index
@@ -357,7 +336,6 @@ def _get_cds_s5_datatakes(start_date, end_date):
         # Auxiliary variable declaration
         indices = ["cds-s5-completeness"]
         elastic = elastic_client.ElasticClient()
-        logger.info("[CDS][S5] Querying indexes:%s", indices)
 
         # Fetch results (products) from Elastic database
         for index in indices:
