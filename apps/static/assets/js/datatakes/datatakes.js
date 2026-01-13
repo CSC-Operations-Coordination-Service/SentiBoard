@@ -1118,8 +1118,8 @@ class Datatakes {
             const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
 
             const platform = row.satellite || raw.satellite_unit || "N/A";
-            const startTime = row.start ? moment(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
-            const stopTime = row.stop ? moment(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
+            const startTime = row.start ? moment.utc(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
+            const stopTime = row.stop ? moment.utc(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
 
             // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
