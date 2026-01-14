@@ -9,6 +9,10 @@ This document discloses subject matter in which  has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
 behalf of  to fulfill the purpose for which the document was
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -990,8 +994,11 @@ def _get_cds_s5_datatake_details(datatake_id):
     try:
 
         # Auxiliary variable declaration
-        indices = ["cds-s5-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
 
         # Fetch results from Elastic database
         for index in indices:
@@ -1022,10 +1029,24 @@ def _get_cds_s5_datatake_details(datatake_id):
     datatake["observation_time_stop"] = observation_window["observation_time_stop"]
     for prod in results:
         if "percentage" in prod["_source"]:
-            prod_key = prod["_source"]["key"].replace(datatake_id + "-", "")
+            logger.info(
+                "[CDS][S5][DETAILS][MAP] product=%s → %s%% | timeliness=%s",
+                prod["_source"]["product_type"],
+                prod["_source"]["percentage"],
+                prod["_source"]["timeliness"],
+            )
+            # prod_key = prod["_source"]["key"].replace(datatake_id + "-", "")
+            product = prod["_source"]["product_type"]
+            timeliness = prod["_source"]["timeliness"]
+            key = f"{product}_{timeliness}"
+            datatake[key + "_timeliness"] = timeliness
+            datatake[key + "_local_percentage"] = prod["_source"]["percentage"]
+
+            # prod_key = prod["_source"]["product_type"]
             datatake["instrument_mode"] = prod["_source"]["product_type"][5:8]
-            datatake["timeliness"] = prod["_source"]["timeliness"]
-            datatake[prod_key + "_local_percentage"] = prod["_source"]["percentage"]
+            # datatake["timeliness"] = prod["_source"]["timeliness"]
+            # datatake[prod_key + "_timeliness"] = prod["_source"]["timeliness"]
+            # datatake[prod_key + "_local_percentage"] = prod["_source"]["percentage"]
         if "cams_tickets" in prod["_source"]:
             datatake["cams_tickets"] = prod["_source"]["cams_tickets"]
         if "cams_origin" in prod["_source"]:

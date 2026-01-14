@@ -638,16 +638,18 @@ class Datatakes {
 
                 // Format data from API to match table structure
                 for (let key of Object.keys(datatake)) {
-                    if (key.includes('local_percentage')) {
-                        //console.log("[INFO TABLE] found local percentage:", "key:", key, "value:", datatake[key]);
+                    if (key.endsWith('local_percentage')) {
+                        const basekey = key.replace('_local_percentage', '');
+                        const parts = basekey.split('_');
+                        const timeliness = parts.pop();
+                        const productType = parts.join('_');
                         dataArray.push({
-                            productType: key.replace('_local_percentage', ''),
-                            status: datatake[key].toFixed(2)
+                            timeliness,
+                            productType,
+                            status: datatake[key].toFixed(2),
                         });
                     }
                 }
-                //console.log("[INFO TABLE] final dataArray:", dataArray);
-
                 $('#datatake-details').empty().append(`
                     <div class="form-group">
                         <label>Datatake ID: ${datatake.key}</label>
@@ -666,6 +668,25 @@ class Datatakes {
         } else {
             dataArray = dataInput;
         }
+
+        // --------------------------
+        // Sort dataArray by custom logic
+        // --------------------------
+        dataArray.sort((a, b) => {
+            // Custom timeliness order: NRTI > OFFL
+            const timelinessOrder = { "NRTI": 1, "OFFL": 2 };
+
+            const tA = timelinessOrder[a.timeliness] ?? 99;
+            const tB = timelinessOrder[b.timeliness] ?? 99;
+
+            if (tA !== tB) return tA - tB; // timeliness first
+
+            // Then productType alphabetical
+            if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
+
+            // Then by status descending
+            return b.status - a.status;
+        });
 
         // Proceed with rendering the table
         if (!dataArray || dataArray.length === 0) {
@@ -691,12 +712,16 @@ class Datatakes {
             //console.log("[INFO TABLE] rendering row:", item);
             const row = document.createElement("tr");
 
+            const timelinessCell = document.createElement("td");
+            timelinessCell.textContent = item.timeliness ?? "-";
+
             const productTypeCell = document.createElement("td");
             productTypeCell.textContent = item.productType || "-";
 
             const statusCell = document.createElement("td");
             statusCell.textContent = item.status ?? "-";
 
+            row.appendChild(timelinessCell);
             row.appendChild(productTypeCell);
             row.appendChild(statusCell);
             tableBody.appendChild(row);
