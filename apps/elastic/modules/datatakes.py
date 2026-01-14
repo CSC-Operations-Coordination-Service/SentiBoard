@@ -194,31 +194,40 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         logger.error(ex)
 
     # Calculate completeness for every datatake
+    clean_results = []
     for dt in results:
+        src = dt.get("_source")
         dt_id = dt["_id"]
+        if not src or not dt_id:
+            logger.warning("[CDS][S1S2] Skipping invalid datatake hit: %s", dt)
+            continue
         completeness = {}
         if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C"]):
             completeness = _calc_s1_datatake_completeness(dt)
         elif any(s2_sat in dt_id for s2_sat in ["S2A", "S2B", "S2C"]):
             completeness = _calc_s2_datatake_completeness(dt)
-        for key in list(dt["_source"]):
+        else:
+            logger.warning("[CDS][S1S2] Unknown mission for datatake_id=%s", dt_id)
+            continue
+
+        for key in list(src.keys()):
             if key.endswith("local_percentage"):
-                dt["_source"].pop(key)
-        dt["_source"]["datatake_id"] = dt_id
+                src.pop(key)
+        src["datatake_id"] = dt_id
         if "L0_" in completeness:
-            dt["_source"]["L0_"] = completeness["L0_"]
+            src["L0_"] = completeness["L0_"]
         if "L1_" in completeness:
-            dt["_source"]["L1_"] = completeness["L1_"]
+            src["L1_"] = completeness["L1_"]
         if "L2_" in completeness:
-            dt["_source"]["L2_"] = completeness["L2_"]
+            src["L2_"] = completeness["L2_"]
 
         # Calculate and append the completeness status
-        dt["_source"]["completeness_status"] = _calc_datatake_completeness_status(
-            dt["_source"]
-        )
+        src["completeness_status"] = _calc_datatake_completeness_status(src)
+
+        clean_results.append(dt)
 
     # Return the response
-    return results
+    return clean_results
 
 
 def _get_cds_s3_datatakes(start_date, end_date):
