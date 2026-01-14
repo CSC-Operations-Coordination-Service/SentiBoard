@@ -32,11 +32,6 @@ from . import blueprint
 
 logger = logging.getLogger(__name__)
 
-CDS_S1S2_MISSIONS = {
-    "s1": ["s1a", "s1c", "s1d"],
-    "s2": ["s2a", "s2b", "s2c"],
-}
-
 
 @blueprint.route("/api/repository/news", methods=["GET"])
 @login_required
@@ -208,18 +203,6 @@ def get_cds_sat_unavailability(start_date, end_date):
         )
 
 
-def _build_cds_completeness_indices(mission, satellites, splitted=False):
-    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
-    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
-
-
-def _build_s1s2_indices():
-    indices = []
-    for mission, sats in CDS_S1S2_MISSIONS.items():
-        indices.extend([f"cds-completeness-{mission}-{sat}-dd-das" for sat in sats])
-    return indices
-
-
 @blueprint.route(
     "/api/repository/cds-datatake/<start_date>/<end_date>", methods=["GET"]
 )
@@ -237,22 +220,12 @@ def get_cds_datatake(start_date, end_date):
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
-        # indices = ["cds-datatake"]
-        indices = _build_s1s2_indices()
-        indices += ["cds-s3-completeness", "cds-s5-completeness"]
-
-        logger.info(
-            "[CDS] Querying indices=%s from=%s to=%s",
-            indices,
-            start_date.strftime("%Y-%m-%d"),
-            end_date.strftime("%Y-%m-%d"),
-        )
+        indices = ["cds-datatake"]
 
         elastic = elastic_client.ElasticClient()
         results = []
         for index in indices:
             try:
-                logger.info("[CDS] Query index=%s", index)
                 result = elastic.query_date_range(
                     index=index,
                     date_key="observation_time_start",
@@ -268,8 +241,7 @@ def get_cds_datatake(start_date, end_date):
                 logger.error(ex)
 
         return Response(json.dumps(results), mimetype="application/json", status=200)
-    except Exception as ex:
-        logger.exception(ex)
+    except:
         return Response(
             json.dumps({"error": "500"}), mimetype="application/json", status=500
         )
@@ -302,16 +274,12 @@ def get_cds_datatake_selected_fields(start_date, end_date):
         if s1s2_datatakes:
             return s1s2_datatakes
 
-        # indices = ["cds-datatake"]
-        indices = _build_s1s2_indices() + ["cds-s3-completeness", "cds-s5-completeness"]
-        logger.info("[CDS] Querying selected fields from indices=%s", indices)
+        indices = ["cds-datatake"]
 
         elastic = elastic_client.ElasticClient()
         results = []
-
         for index in indices:
             try:
-                logger.debug("[CDS] Query index=%s", index)
                 result = elastic.query_date_range_selected_fields(
                     index=index,
                     date_key="observation_time_start",
@@ -333,7 +301,6 @@ def get_cds_datatake_selected_fields(start_date, end_date):
                 logger.error("Connection Error: %s", cex)
                 raise cex
             except Exception as ex:
-                logger.error("[CDS] Error querying index=%s", index)
                 logger.error(ex)
 
         response = Response(
@@ -348,8 +315,7 @@ def get_cds_datatake_selected_fields(start_date, end_date):
             seconds_validity,
         )
         return response
-    except Exception as ex:
-        logger.exception(ex)
+    except:
         return Response(
             json.dumps({"error": "500"}), mimetype="application/json", status=500
         )
