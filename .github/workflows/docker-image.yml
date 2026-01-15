@@ -43,6 +43,6 @@ jobs:
         push: true
         file: ./Dockerfile
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/${REPO@L}:${ VERSION }
+          ${{ secrets.DOCKERHUB_USERNAME }}/${{env.REPO}}:${ env.VERSION }
         build-args: |
           NO_CACHE=true
