@@ -33,20 +33,14 @@ jobs:
         elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
           echo "VERSION=${{ github.ref_name }}" >> $GITHUB_ENV
         fi
-
-    - name: Convert repository name to lowercase
-      run: |
-        echo "REPO_NAME_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
-          
+        
     - name: Build and push image
       uses: docker/build-push-action@v6
-      env:
-        REPO: ${{ github.repository }}
       with:
         platforms: linux/amd64
         push: true
         file: ./Dockerfile
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.REPO_NAME_LOWER }}:${{ env.VERSION }}
+          cscocs/sentiboard:${{ env.VERSION }}
         build-args: |
           NO_CACHE=true
