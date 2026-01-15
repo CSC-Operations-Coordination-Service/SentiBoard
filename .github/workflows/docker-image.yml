@@ -41,7 +41,6 @@ jobs:
       with:
         platforms: linux/amd64
         push: true
-        context: ./modules
         file: ./Dockerfile
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/${REPO@L}:${ VERSION }
