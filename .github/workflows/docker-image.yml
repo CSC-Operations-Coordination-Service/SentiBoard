@@ -2,9 +2,14 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - '**'  # Triggers on push to any branch
+    tags:
+      - '*'  # Triggers on push to any tag
   pull_request:
-    branches: [ "main" ]
+    branches:
+      - '**'  # Triggers on pull request to any branch
+  workflow_dispatch:
 
 jobs:
 
