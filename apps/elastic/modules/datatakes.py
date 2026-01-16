@@ -9,6 +9,10 @@ This document discloses subject matter in which  has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
 behalf of  to fulfill the purpose for which the document was
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -48,6 +52,13 @@ satellites_mission_map = {
 mission_time_thresholds = {"S1": 8, "S2": 10, "S3": 696, "S5": 48}
 
 ELASTIC_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+CDS_MISSIONS = {
+    "s1": ["s1a", "s1c", "s1d"],
+    "s2": ["s2a", "s2b", "s2c"],
+    "s3": ["s3a", "s3b"],
+    "s5": ["s5p"],
+}
 
 
 def fetch_anomalies_datatakes_last_quarter():
@@ -103,6 +114,14 @@ def fetch_datatake_details(datatake_id):
         return "Unrecongnized datatake ID: " + datatake_id
 
 
+def _build_cds_completeness_indices(mission, satellites, splitted=False):
+    """
+    Build CDS completeness index names dynamically
+    """
+    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
+    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
+
+
 def _get_cds_datatakes(start_date: datetime, end_date: datetime):
     end_date_str = end_date.strftime("%d-%m-%Y")
     start_date_str = start_date.strftime("%d-%m-%Y")
@@ -127,12 +146,18 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # Auxiliary variable declaration
-        indices = ["cds-datatake"]
+        # indices = ["cds-datatake"]
+        indices = _build_cds_completeness_indices(
+            "s1", CDS_MISSIONS["s1"]
+        ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
 
         # Fetch results from Elastic database
         for index in indices:
             try:
+                logger.debug("[CDS][S1S2] Query index=%s", index)
                 result = elastic.query_date_range_selected_fields(
                     index=index,
                     date_key="observation_time_start",
@@ -166,40 +191,47 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
                 raise cex
 
             except Exception as ex:
-                logger.warning(
-                    "(cds_s1s2_datatakes) Received Elastic error for index: %s", index
-                )
+                logger.warning("[CDS][S1S2] Error querying index=%s", index)
                 logger.error(ex)
 
     except Exception as ex:
         logger.error(ex)
 
     # Calculate completeness for every datatake
+    clean_results = []
     for dt in results:
+        src = dt.get("_source")
         dt_id = dt["_id"]
+        if not src or not dt_id:
+            logger.warning("[CDS][S1S2] Skipping invalid datatake hit: %s", dt)
+            continue
         completeness = {}
         if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C"]):
             completeness = _calc_s1_datatake_completeness(dt)
         elif any(s2_sat in dt_id for s2_sat in ["S2A", "S2B", "S2C"]):
             completeness = _calc_s2_datatake_completeness(dt)
-        for key in list(dt["_source"]):
+        else:
+            logger.debug("[CDS][S1S2] Unknown mission for datatake_id=%s", dt_id)
+            continue
+
+        for key in list(src.keys()):
             if key.endswith("local_percentage"):
-                dt["_source"].pop(key)
-        dt["_source"]["datatake_id"] = dt_id
+                src.pop(key)
+        src["datatake_id"] = dt_id
         if "L0_" in completeness:
-            dt["_source"]["L0_"] = completeness["L0_"]
+            src["L0_"] = completeness["L0_"]
         if "L1_" in completeness:
-            dt["_source"]["L1_"] = completeness["L1_"]
+            src["L1_"] = completeness["L1_"]
         if "L2_" in completeness:
-            dt["_source"]["L2_"] = completeness["L2_"]
+            src["L2_"] = completeness["L2_"]
 
         # Calculate and append the completeness status
-        dt["_source"]["completeness_status"] = _calc_datatake_completeness_status(
-            dt["_source"]
-        )
+        src["completeness_status"] = _calc_datatake_completeness_status(src)
+
+        clean_results.append(dt)
 
     # Return the response
-    return results
+    return clean_results
 
 
 def _get_cds_s3_datatakes(start_date, end_date):
@@ -217,7 +249,12 @@ def _get_cds_s3_datatakes(start_date, end_date):
 
         # Auxiliary variable declaration
         indices = ["cds-s3-completeness"]
+        # indices = _build_cds_completeness_indices(
+        #    "s3", CDS_MISSIONS["s3"], splitted=True
+        # )
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S3] Querying indexes:%s", indices)
 
         # Fetch results (products) from Elastic database
         # Mission-Completeness Index
@@ -335,7 +372,11 @@ def _get_cds_s5_datatakes(start_date, end_date):
 
         # Auxiliary variable declaration
         indices = ["cds-s5-completeness"]
+        # indices = _build_cds_completeness_indices(
+        #    "s5", CDS_MISSIONS["s5"], splitted=True
+        # )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
 
         # Fetch results (products) from Elastic database
         for index in indices:
@@ -523,24 +564,29 @@ def _calc_s3_datatake_completeness(prod_list):
     l2_perc = 0
     mission = "S3"
     for prod in prod_list:
-        if (
-            "L0_" in prod["_source"]["product_level"]
-            and "percentage" in prod["_source"]
-        ):
+        src = prod.get("_source", {})
+        level = src.get("product_level")
+        perc = src.get("percentage")
+
+        if not level or perc is None:
+            logger.warning(
+                "[CDS][S3] Missing product_level or percentage "
+                "datatake=%s sat=%s source=%s",
+                src.get("datatake_id"),
+                src.get("satellite_unit"),
+                src,
+            )
+            continue
+
+        if "L0_" in level:
             l0_count += 1
-            l0_perc += prod["_source"]["percentage"]
-        elif (
-            "L1_" in prod["_source"]["product_level"]
-            and "percentage" in prod["_source"]
-        ):
+            l0_perc += perc
+        elif "L1_" in level:
             l1_count += 1
-            l1_perc += prod["_source"]["percentage"]
-        elif (
-            "L2_" in prod["_source"]["product_level"]
-            and "percentage" in prod["_source"]
-        ):
+            l1_perc += perc
+        elif "L2_" in level:
             l2_count += 1
-            l2_perc += prod["_source"]["percentage"]
+            l2_perc += perc
     if l0_count != 0:
         completeness["L0_"] = l0_perc / l0_count
     if l1_count != 0:
@@ -566,24 +612,29 @@ def _calc_s5_datatake_completeness(prod_list):
     l2_count = 0
     l2_perc = 0
     for prod in prod_list:
-        if (
-            mission_level_ids["L0_"] in prod["_source"]["product_level"]
-            and "percentage" in prod["_source"]
-        ):
+        src = prod.get("_source", {})
+        level = src.get("product_level")
+        perc = src.get("percentage")
+
+        if not level or perc is None:
+            logger.warning(
+                "[CDS][S5] Missing product_level or percentage "
+                "datatake=%s sat=%s source=%s",
+                src.get("datatake_id"),
+                src.get("satellite_unit"),
+                src,
+            )
+            continue
+
+        if mission_level_ids["L0_"] in level:
             l0_count += 1
-            l0_perc += prod["_source"]["percentage"]
-        elif (
-            mission_level_ids["L1_"] in prod["_source"]["product_level"]
-            and "percentage" in prod["_source"]
-        ):
+            l0_perc += perc
+        elif mission_level_ids["L1_"] in level:
             l1_count += 1
-            l1_perc += prod["_source"]["percentage"]
-        elif (
-            mission_level_ids["L2_"] in prod["_source"]["product_level"]
-            and "percentage" in prod["_source"]
-        ):
+            l1_perc += perc
+        elif mission_level_ids["L2_"] in level:
             l2_count += 1
-            l2_perc += prod["_source"]["percentage"]
+            l2_perc += perc
     if l0_count != 0:
         completeness["L0_"] = l0_perc / l0_count
     if l1_count != 0:
@@ -815,58 +866,95 @@ def _refresh_anomalies_status(dt_last_quarter):
 
 def _get_cds_s1s2_datatake_details(datatake_id):
     """
-    Fetch the datatake information given the datatake ID.
+    Fetch S1/S2 datatake details with per-product completeness.
+    Only returns instrument-level products (no L0/L1 aggregates).
+    All keys end with '_local_percentage' for frontend table.
     """
-
-    datatake = {}
+    results = []
     try:
+        # Build all relevant indices for S1 and S2
+        indices = _build_cds_completeness_indices(
+            "s1", CDS_MISSIONS["s1"]
+        ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
 
-        # Auxiliary variable declaration
-        indices = ["cds-datatake"]
         elastic = elastic_client.ElasticClient()
-        sel_keys = [
-            "key",
-            "timeliness",
-            "satellite_unit",
-            "absolute_orbit",
-            "polarization",
-            "instrument_mode",
-            "sensing_global_percentage",
-            "cams_tickets",
-            "cams_origin",
-            "cams_description",
-            "last_attached_ticket",
-            "observation_time_start",
-            "observation_time_stop",
-            "final_completeness_percentage",
-        ]
+        logger.info("[CDS][S1S2] Querying indexes: %s", indices)
 
-        # Fetch results from Elastic database
         for index in indices:
             try:
-                results = []
-                result = elastic.query_scan(
+                result_gen = elastic.query_scan(
                     index, {"query": {"match": {"key": datatake_id}}}
                 )
-                results += result
-                datatake = {
-                    k: v
-                    for k, v in results[0]["_source"].items()
-                    if k in sel_keys or "_local_percentage" in k
-                }
-
-            except ConnectionError as cex:
-                logger.error("Connection Error: %s", cex)
-                raise cex
-
+                result_list = list(result_gen)
+                logger.info(
+                    "[CDS][S1S2][DETAILS] index=%s hits=%d", index, len(result_list)
+                )
+                results += result_list
             except Exception as ex:
-                logger.warning("Received Elastic error for index: %s", index)
+                logger.warning("[CDS][S1S2][DETAILS] Elastic error on index %s", index)
                 logger.error(ex)
-
     except Exception as ex:
-        logger.error(ex)
+        logger.error(
+            "[CDS][S1S2][DETAILS] Error building indices or querying Elastic",
+            exc_info=True,
+        )
 
-        # Return the response
+    # Base datatake object
+    datatake = {"key": datatake_id, "satellite_unit": datatake_id[0:3]}
+
+    if not results:
+        logger.warning("[CDS][S1S2][DETAILS] no result for datatake_id=%s", datatake_id)
+        return datatake
+
+    # Copy common metadata from first hit
+    base_fields = [
+        "absolute_orbit",
+        "polarization",
+        "instrument_mode",
+        "observation_time_start",
+        "observation_time_stop",
+        "final_completeness_percentage",
+        "sensing_global_percentage",
+    ]
+    src0 = results[0]["_source"]
+    for field in base_fields:
+        if field in src0:
+            datatake[field] = src0[field]
+
+    # Extract per-product completeness
+    for prod in results:
+        src = prod["_source"]
+        logger.debug(
+            "[CDS][S1S2][DETAILS] Processing source keys: %s", list(src.keys())
+        )
+        for key, value in src.items():
+            if not key.endswith("_local_percentage"):
+                continue
+
+            product = key.replace("_local_percentage", "")
+            # Skip aggregates
+            if any(
+                product.startswith(prefix)
+                for prefix in ["L0__", "L1B_", "L1C_", "L2A_"]
+            ):
+                logger.debug(
+                    "[CDS][S1S2][DETAILS] Skipping aggregate product: %s", product
+                )
+                continue
+
+            # Map to datatake with '_local_percentage'
+            datatake[f"{product}_local_percentage"] = value
+            logger.debug(
+                "[CDS][S1S2][DETAILS] Added product: %s = %s",
+                f"{product}_local_percentage",
+                value,
+            )
+
+    logger.info(
+        "[CDS][S1S2][DETAILS] Finished mapping datatake_id=%s, total products=%d",
+        datatake_id,
+        len([k for k in datatake.keys() if k.endswith("_local_percentage")]),
+    )
     return datatake
 
 
@@ -944,7 +1032,11 @@ def _get_cds_s5_datatake_details(datatake_id):
 
         # Auxiliary variable declaration
         indices = ["cds-s5-completeness"]
+        # indices = _build_cds_completeness_indices(
+        #    "s5", CDS_MISSIONS["s5"], splitted=True
+        # )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
 
         # Fetch results from Elastic database
         for index in indices:
@@ -975,7 +1067,7 @@ def _get_cds_s5_datatake_details(datatake_id):
     datatake["observation_time_stop"] = observation_window["observation_time_stop"]
     for prod in results:
         if "percentage" in prod["_source"]:
-            logger.debug(
+            logger.info(
                 "[CDS][S5][DETAILS][MAP] product=%s → %s%% | timeliness=%s",
                 prod["_source"]["product_type"],
                 prod["_source"]["percentage"],

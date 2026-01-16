@@ -611,119 +611,135 @@ class Datatakes {
         }
     }
 
-    async renderInfoTable(dataInput, page = 1) {
+    async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
+        console.log("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
+
         const tableBody = document.getElementById("modalInfoTableBody");
+        const tableHead = document.querySelector(".custom-box-table-sm thead tr");
         const paginationControls = document.getElementById("modalPaginationControls");
+
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
         let dataArray = [];
 
+        // Determine mission code only if showTimeliness is not passed
+        if (showTimeliness === null) {
+            const missionCode = typeof dataInput === "string"
+                ? dataInput.split("-")[0].trim()  // e.g., S1, S2, S3, S5
+                : dataInput[0]?.key?.split("-")[0] ?? "";
+            console.log("[INFO TABLE] Detected missionCode:", missionCode);
+            showTimeliness = missionCode.startsWith("S3") || missionCode.startsWith("S5");
+        }
+        console.log("[INFO TABLE] showTimeliness column?", showTimeliness);
+
+        // Toggle timeliness column visibility
+        const timelinessTh = tableHead.querySelector("th:first-child");
+        if (timelinessTh) timelinessTh.style.display = showTimeliness ? "" : "none";
+
+        // Fetch datatake if string
         if (typeof dataInput === "string") {
             const datatake_id = dataInput.split('(')[0].trim();
-            $('#datatake-details').empty().html(`
-                <div class="spinner">
-                    <div class="bounce1"></div>
-                    <div class="bounce2"></div>
-                    <div class="bounce3"></div>
-                </div>`);
-
+            console.log("[INFO TABLE] Fetching datatake ID:", datatake_id);
             try {
                 const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
                 if (!response.ok) throw new Error("Failed to fetch datatake details");
-                const json = await response.json();
-                const datatake = format_response(json)[0];
 
-                // Format data from API to match table structure
+                const datatake = await response.json();
+                console.debug("[INFO TABLE] Raw datatake object keys:", Object.keys(datatake));
+
+                // Iterate all keys
                 for (let key of Object.keys(datatake)) {
-                    if (key.endsWith('local_percentage')) {
-                        const basekey = key.replace('_local_percentage', '');
-                        const parts = basekey.split('_');
-                        const timeliness = parts.pop();
-                        const productType = parts.join('_');
-                        dataArray.push({
-                            timeliness,
-                            productType,
-                            status: datatake[key].toFixed(2),
-                        });
+                    if (!key.endsWith("_local_percentage")) continue;
+
+                    let baseKey = key.replace("_local_percentage", "");
+                    if (["L0__", "L1B_", "L1C_", "L2A_"].some(prefix => baseKey.startsWith(prefix))) {
+                        console.log("[INFO TABLE] Skipping aggregate key:", baseKey);
+                        continue;
                     }
+
+                    let timelinessVal = "-";
+                    let productType = baseKey;
+
+                    if (showTimeliness) {
+                        const parts = baseKey.split("_");
+                        timelinessVal = parts.pop();
+                        productType = parts.join("_");
+                    }
+
+                    console.debug("[INFO TABLE] Mapping product:", productType, "timeliness:", timelinessVal, "status:", datatake[key]);
+
+                    dataArray.push({
+                        timeliness: timelinessVal,
+                        productType,
+                        status: typeof datatake[key] === "number"
+                            ? datatake[key].toFixed(2)
+                            : datatake[key],
+                    });
                 }
-                $('#datatake-details').empty().append(`
-                    <div class="form-group">
-                        <label>Datatake ID: ${datatake.key}</label>
-                        <label style="margin-left: 20px;">Timeliness: ${datatake.timeliness}</label>
-                    </div>
-                `);
             } catch (err) {
-                $('#datatake-details').append(`
-                    <div class="form-group">
-                        <label>An error occurred while retrieving the datatake details</label>
-                    </div>
-                `);
-                console.error(err);
+                console.error("[INFO TABLE] Error fetching datatake:", err);
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = showTimeliness ? 3 : 2;
+                cell.textContent = "Error retrieving data.";
+                row.appendChild(cell);
+                tableBody.appendChild(row);
                 return;
             }
         } else {
             dataArray = dataInput;
+            console.debug("[INFO TABLE] Using passed data array:", dataArray);
         }
 
-        // --------------------------
-        // Sort dataArray by custom logic
-        // --------------------------
+        console.debug("[INFO TABLE] Before sort:", dataArray);
+
+        // Sort
         dataArray.sort((a, b) => {
-            // Custom timeliness order: NRTI > OFFL
-            const timelinessOrder = { "NRTI": 1, "OFFL": 2 };
-
-            const tA = timelinessOrder[a.timeliness] ?? 99;
-            const tB = timelinessOrder[b.timeliness] ?? 99;
-
-            if (tA !== tB) return tA - tB; // timeliness first
-
-            // Then productType alphabetical
+            if (showTimeliness) {
+                const timelinessOrder = { "NRTI": 1, "OFFL": 2, "NOMINAL": 3 };
+                const tA = timelinessOrder[a.timeliness] ?? 99;
+                const tB = timelinessOrder[b.timeliness] ?? 99;
+                if (tA !== tB) return tA - tB;
+            }
             if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
-
-            // Then by status descending
-            return b.status - a.status;
+            return (b.status || 0) - (a.status || 0);
         });
 
-        // Proceed with rendering the table
-        if (!dataArray || dataArray.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
-            cell.colSpan = 2;
-            cell.textContent = "No data available.";
-            row.appendChild(cell);
-            tableBody.appendChild(row);
-            return;
-        }
+        console.debug("[INFO TABLE] After sort:", dataArray);
 
-        this.currentDataArray = dataArray;
-        const totalItems = dataArray.length;
-        const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
-        this.currentPage = page;
-
+        // Pagination
         const startIndex = (page - 1) * this.infoItemsPerPage;
-        const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
+        const endIndex = Math.min(startIndex + this.infoItemsPerPage, dataArray.length);
         const pageItems = dataArray.slice(startIndex, endIndex);
 
-        pageItems.forEach(item => {
+        console.debug("[INFO TABLE] Rendering page items:", pageItems);
+
+        // Render table rows
+        for (let item of pageItems) {
             const row = document.createElement("tr");
 
             const timelinessCell = document.createElement("td");
-            timelinessCell.textContent = item.timeliness ?? "-";
+            timelinessCell.textContent = item.timeliness;
+            timelinessCell.style.display = showTimeliness ? "" : "none";
 
-            const productTypeCell = document.createElement("td");
-            productTypeCell.textContent = item.productType || "-";
+            const productCell = document.createElement("td");
+            productCell.textContent = item.productType;
 
             const statusCell = document.createElement("td");
-            statusCell.textContent = item.status ?? "-";
+            statusCell.textContent = item.status;
 
-            row.appendChild(timelinessCell);
-            row.appendChild(productTypeCell);
+            if (showTimeliness) row.appendChild(timelinessCell);
+            row.appendChild(productCell);
             row.appendChild(statusCell);
-            tableBody.appendChild(row);
-        });
 
+            tableBody.appendChild(row);
+        }
+
+        console.log("[INFO TABLE] Table rendered with", pageItems.length, "rows");
+
+        // Pagination controls
+        const totalPages = Math.ceil(dataArray.length / this.infoItemsPerPage);
         if (totalPages > 1) {
             const createButton = (text, pageNum, disabled = false, isActive = false) => {
                 const btn = document.createElement("button");
@@ -731,17 +747,25 @@ class Datatakes {
                 btn.disabled = disabled;
                 btn.classList.add("pagination-btn");
                 if (isActive) btn.classList.add("active");
-                btn.addEventListener("click", () => this.renderInfoTable(this.currentDataArray, pageNum));
+                // Pass showTimeliness explicitly for next page renders
+                btn.addEventListener("click", () => this.renderInfoTable(this.currentDataArray, pageNum, showTimeliness));
                 return btn;
             };
 
-            paginationControls.appendChild(createButton("« Prev", this.currentPage - 1, this.currentPage === 1));
+            paginationControls.appendChild(createButton("« Prev", page - 1, page === 1));
             for (let i = 1; i <= totalPages; i++) {
-                paginationControls.appendChild(createButton(i, i, false, i === this.currentPage));
+                paginationControls.appendChild(createButton(i, i, false, i === page));
             }
-            paginationControls.appendChild(createButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
+            paginationControls.appendChild(createButton("Next »", page + 1, page === totalPages));
         }
+
+        this.currentDataArray = dataArray;
+        this.currentPage = page;
+
+        console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
+
+
 
     updateCharts(type, linkKey) {
         // Select the right container & chart instance name
