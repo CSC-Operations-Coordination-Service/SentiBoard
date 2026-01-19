@@ -626,9 +626,11 @@ class Datatakes {
         // Determine mission code only if showTimeliness is not passed
         if (showTimeliness === null) {
             const missionCode = typeof dataInput === "string"
-                ? dataInput.split("-")[0].trim()  // e.g., S1, S2, S3, S5
+                ? dataInput.split("-")[0].trim()
                 : dataInput[0]?.key?.split("-")[0] ?? "";
             console.log("[INFO TABLE] Detected missionCode:", missionCode);
+
+            // Only S3/S5 use timeliness column
             showTimeliness = missionCode.startsWith("S3") || missionCode.startsWith("S5");
         }
         console.log("[INFO TABLE] showTimeliness column?", showTimeliness);
@@ -648,36 +650,37 @@ class Datatakes {
                 const datatake = await response.json();
                 console.debug("[INFO TABLE] Raw datatake object keys:", Object.keys(datatake));
 
-                // Iterate all keys
+                // Map all _local_percentage products
                 for (let key of Object.keys(datatake)) {
                     if (!key.endsWith("_local_percentage")) continue;
 
-                    let baseKey = key.replace("_local_percentage", "");
-                    if (["L0__", "L1B_", "L1C_", "L2A_"].some(prefix => baseKey.startsWith(prefix))) {
-                        console.log("[INFO TABLE] Skipping aggregate key:", baseKey);
+                    let productType = key.replace("_local_percentage", "");
+
+                    // Skip aggregates only
+                    if (["L0__", "L1B_", "L1C_", "L2A_"].some(prefix => productType.startsWith(prefix))) {
+                        console.log("[INFO TABLE] Skipping aggregate key:", productType);
                         continue;
                     }
 
+                    // For S3/S5: parse timeliness
                     let timelinessVal = "-";
-                    let productType = baseKey;
-
                     if (showTimeliness) {
-                        const parts = baseKey.split("_");
+                        const parts = productType.split("_");
+                        // S5 timeliness at start/end
+                        const keywords = ["OFFL", "NRTI", "NOMINAL", "OPER"];
+                        if (keywords.includes(parts[0])) timelinessVal = parts.shift();
+                        if (keywords.includes(parts[parts.length - 1])) timelinessVal = parts.pop();
+                        productType = parts.join("_");
 
-                        // S5 → timeliness prefix (OFFL_*)
-                        if (parts[0] === "OFFL" || parts[0] === "NRTI" || parts[0] === "NOMINAL") {
-                            timelinessVal = parts.shift();     // REMOVE FIRST
-                            productType = parts.join("_");
-                        }
-                        // S3 → timeliness suffix (*_OFFL)
-                        else {
-                            timelinessVal = parts.pop();       // REMOVE LAST
-                            productType = parts.join("_");
+                        // S3 suffix like #NR, #NT, #ST, #AL
+                        const s3Match = productType.match(/(#NR|#NT|#ST|#AL)$/);
+                        if (s3Match) {
+                            timelinessVal = s3Match[1];
+                            productType = productType.replace(/(#NR|#NT|#ST|#AL)$/, "");
                         }
                     }
 
-                    console.debug("[INFO TABLE] Mapping product:", productType, "timeliness:", timelinessVal, "status:", datatake[key]);
-
+                    // Push product
                     dataArray.push({
                         timeliness: timelinessVal,
                         productType,
@@ -703,31 +706,24 @@ class Datatakes {
 
         console.debug("[INFO TABLE] Before sort:", dataArray);
 
-        // Sort
+        // Sort: only S3/S5 by timeliness, all by product name, then status
         dataArray.sort((a, b) => {
-            // Timeliness order (if applicable)
             if (showTimeliness) {
-                const timelinessOrder = { NRTI: 1, OFFL: 2, NOMINAL: 3 };
+                const timelinessOrder = { NRTI: 1, OFFL: 2, NOMINAL: 3, OPER: 4, "#NR": 5, "#NT": 6, "#ST": 7, "#AL": 8 };
                 const tA = timelinessOrder[a.timeliness] ?? 99;
                 const tB = timelinessOrder[b.timeliness] ?? 99;
                 if (tA !== tB) return tA - tB;
             }
 
-            // Product type (A → Z)
-            if (a.productType !== b.productType) {
-                return a.productType.localeCompare(b.productType);
-            }
+            if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
 
-            // Status (DESC, numeric, safe)
             const sA = parseFloat(a.status);
             const sB = parseFloat(b.status);
-
             if (!isNaN(sA) && !isNaN(sB)) return sB - sA;
             if (!isNaN(sA)) return -1;
             if (!isNaN(sB)) return 1;
             return 0;
         });
-
 
         console.debug("[INFO TABLE] After sort:", dataArray);
 
@@ -738,22 +734,22 @@ class Datatakes {
 
         console.debug("[INFO TABLE] Rendering page items:", pageItems);
 
-        // Render table rows
+        // Render rows
         for (let item of pageItems) {
             const row = document.createElement("tr");
 
-            const timelinessCell = document.createElement("td");
-            timelinessCell.textContent = item.timeliness;
-            timelinessCell.style.display = showTimeliness ? "" : "none";
+            if (showTimeliness) {
+                const timelinessCell = document.createElement("td");
+                timelinessCell.textContent = item.timeliness;
+                row.appendChild(timelinessCell);
+            }
 
             const productCell = document.createElement("td");
             productCell.textContent = item.productType;
+            row.appendChild(productCell);
 
             const statusCell = document.createElement("td");
             statusCell.textContent = item.status;
-
-            if (showTimeliness) row.appendChild(timelinessCell);
-            row.appendChild(productCell);
             row.appendChild(statusCell);
 
             tableBody.appendChild(row);
@@ -770,7 +766,6 @@ class Datatakes {
                 btn.disabled = disabled;
                 btn.classList.add("pagination-btn");
                 if (isActive) btn.classList.add("active");
-                // Pass showTimeliness explicitly for next page renders
                 btn.addEventListener("click", () => this.renderInfoTable(this.currentDataArray, pageNum, showTimeliness));
                 return btn;
             };
@@ -787,6 +782,7 @@ class Datatakes {
 
         console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
+
 
 
 
