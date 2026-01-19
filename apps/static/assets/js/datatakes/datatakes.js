@@ -610,7 +610,6 @@ class Datatakes {
             this.fromInfoIcon = false;
         }
     }
-
     async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
         console.log("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
 
@@ -618,77 +617,47 @@ class Datatakes {
         const tableHead = document.querySelector(".custom-box-table-sm thead tr");
         const paginationControls = document.getElementById("modalPaginationControls");
 
+        // Clear table and pagination
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
         let dataArray = [];
 
-        // Determine mission code only if showTimeliness is not passed
-        if (showTimeliness === null) {
-            const missionCode = typeof dataInput === "string"
-                ? dataInput.split("-")[0].trim()
-                : dataInput[0]?.key?.split("-")[0] ?? "";
-            console.log("[INFO TABLE] Detected missionCode:", missionCode);
+        // Detect mission
+        let missionCode = "";
+        if (typeof dataInput === "string") {
+            missionCode = dataInput.split("-")[0].trim();
+        }
 
-            // Only S3/S5 use timeliness column
+        if (showTimeliness === null) {
             showTimeliness = missionCode.startsWith("S3") || missionCode.startsWith("S5");
         }
-        console.log("[INFO TABLE] showTimeliness column?", showTimeliness);
 
-        // Toggle timeliness column visibility
+        console.log("[INFO TABLE] mission:", missionCode, "showTimeliness:", showTimeliness);
+
+        // Toggle timeliness column
         const timelinessTh = tableHead.querySelector("th:first-child");
         if (timelinessTh) timelinessTh.style.display = showTimeliness ? "" : "none";
 
-        // Fetch datatake if string
+        // Fetch datatake if input is string
         if (typeof dataInput === "string") {
-            const datatake_id = dataInput.split('(')[0].trim();
-            console.log("[INFO TABLE] Fetching datatake ID:", datatake_id);
+            const datatake_id = dataInput.split("(")[0].trim();
+
             try {
                 const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
                 if (!response.ok) throw new Error("Failed to fetch datatake details");
 
                 const datatake = await response.json();
-                console.debug("[INFO TABLE] Raw datatake object keys:", Object.keys(datatake));
 
-                // Map all _local_percentage products
-                for (let key of Object.keys(datatake)) {
-                    if (!key.endsWith("_local_percentage")) continue;
-
-                    let productType = key.replace("_local_percentage", "");
-
-                    // Skip aggregates only
-                    if (["L0__", "L1B_", "L1C_", "L2A_"].some(prefix => productType.startsWith(prefix))) {
-                        console.log("[INFO TABLE] Skipping aggregate key:", productType);
-                        continue;
-                    }
-
-                    // For S3/S5: parse timeliness
-                    let timelinessVal = "-";
-                    if (showTimeliness) {
-                        const parts = productType.split("_");
-                        // S5 timeliness at start/end
-                        const keywords = ["OFFL", "NRTI", "NOMINAL", "OPER"];
-                        if (keywords.includes(parts[0])) timelinessVal = parts.shift();
-                        if (keywords.includes(parts[parts.length - 1])) timelinessVal = parts.pop();
-                        productType = parts.join("_");
-
-                        // S3 suffix like #NR, #NT, #ST, #AL
-                        const s3Match = productType.match(/(#NR|#NT|#ST|#AL)$/);
-                        if (s3Match) {
-                            timelinessVal = s3Match[1];
-                            productType = productType.replace(/(#NR|#NT|#ST|#AL)$/, "");
-                        }
-                    }
-
-                    // Push product
-                    dataArray.push({
-                        timeliness: timelinessVal,
-                        productType,
-                        status: typeof datatake[key] === "number"
-                            ? datatake[key].toFixed(2)
-                            : datatake[key],
-                    });
+                // Map data based on mission
+                if (missionCode.startsWith("S5")) {
+                    dataArray = this.mapS5Data(datatake);
+                } else if (missionCode.startsWith("S3")) {
+                    dataArray = this.mapS3Data(datatake);
+                } else {
+                    dataArray = this.mapS1S2Data(datatake);
                 }
+
             } catch (err) {
                 console.error("[INFO TABLE] Error fetching datatake:", err);
                 const row = document.createElement("tr");
@@ -701,41 +670,30 @@ class Datatakes {
             }
         } else {
             dataArray = dataInput;
-            console.debug("[INFO TABLE] Using passed data array:", dataArray);
         }
 
-        console.debug("[INFO TABLE] Before sort:", dataArray);
-
-        // Sort: only S3/S5 by timeliness, all by product name, then status
+        // Sorting
         dataArray.sort((a, b) => {
             if (showTimeliness) {
-                const timelinessOrder = { NRTI: 1, OFFL: 2, NOMINAL: 3, OPER: 4, "#NR": 5, "#NT": 6, "#ST": 7, "#AL": 8 };
-                const tA = timelinessOrder[a.timeliness] ?? 99;
-                const tB = timelinessOrder[b.timeliness] ?? 99;
+                const order = { NRTI: 1, OFFL: 2, "#NR": 3, "#NT": 4, "#ST": 5, "#AL": 6 };
+                const tA = order[a.timeliness] ?? 99;
+                const tB = order[b.timeliness] ?? 99;
                 if (tA !== tB) return tA - tB;
             }
-
             if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
-
-            const sA = parseFloat(a.status);
-            const sB = parseFloat(b.status);
-            if (!isNaN(sA) && !isNaN(sB)) return sB - sA;
-            if (!isNaN(sA)) return -1;
-            if (!isNaN(sB)) return 1;
-            return 0;
+            return parseFloat(b.status) - parseFloat(a.status);
         });
 
-        console.debug("[INFO TABLE] After sort:", dataArray);
-
-        // Pagination
+        // Pagination calculation
+        const totalPages = Math.ceil(dataArray.length / this.infoItemsPerPage);
         const startIndex = (page - 1) * this.infoItemsPerPage;
         const endIndex = Math.min(startIndex + this.infoItemsPerPage, dataArray.length);
         const pageItems = dataArray.slice(startIndex, endIndex);
 
         console.debug("[INFO TABLE] Rendering page items:", pageItems);
 
-        // Render rows
-        for (let item of pageItems) {
+        // Render table rows
+        for (const item of pageItems) {
             const row = document.createElement("tr");
 
             if (showTimeliness) {
@@ -757,8 +715,7 @@ class Datatakes {
 
         console.log("[INFO TABLE] Table rendered with", pageItems.length, "rows");
 
-        // Pagination controls
-        const totalPages = Math.ceil(dataArray.length / this.infoItemsPerPage);
+        // Render pagination buttons
         if (totalPages > 1) {
             const createButton = (text, pageNum, disabled = false, isActive = false) => {
                 const btn = document.createElement("button");
@@ -771,9 +728,11 @@ class Datatakes {
             };
 
             paginationControls.appendChild(createButton("« Prev", page - 1, page === 1));
+
             for (let i = 1; i <= totalPages; i++) {
                 paginationControls.appendChild(createButton(i, i, false, i === page));
             }
+
             paginationControls.appendChild(createButton("Next »", page + 1, page === totalPages));
         }
 
@@ -783,7 +742,39 @@ class Datatakes {
         console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
 
+    // Mapping functions
+    mapS1S2Data(datatake) {
+        const rows = [];
+        for (const key of Object.keys(datatake)) {
+            if (!key.endsWith("_local_percentage")) continue;
+            const productType = key.replace("_local_percentage", "");
+            rows.push({ timeliness: "-", productType, status: datatake[key].toFixed(2) });
+        }
+        return rows;
+    }
 
+    mapS3Data(datatake) {
+        const rows = [];
+        for (const key of Object.keys(datatake)) {
+            if (!key.endsWith("_local_percentage")) continue;
+            const productType = key.replace("_local_percentage", "");
+            const tKey = productType + "_timeliness";
+            rows.push({ timeliness: datatake[tKey] ?? "-", productType, status: datatake[key].toFixed(2) });
+        }
+        return rows;
+    }
+
+    mapS5Data(datatake) {
+        if (!Array.isArray(datatake)) {
+            console.error("[S5] Expected array, got:", datatake);
+            return [];
+        }
+        return datatake.map(row => ({
+            timeliness: row.timeliness,
+            productType: row.product,
+            status: row.percentage.toFixed(2)
+        }));
+    }
 
 
     updateCharts(type, linkKey) {

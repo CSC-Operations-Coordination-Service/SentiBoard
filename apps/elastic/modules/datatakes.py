@@ -248,10 +248,10 @@ def _get_cds_s3_datatakes(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # Auxiliary variable declaration
-        indices = ["cds-s3-completeness"]
-        # indices = _build_cds_completeness_indices(
-        #    "s3", CDS_MISSIONS["s3"], splitted=True
-        # )
+        # indices = ["cds-s3-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
 
         logger.info("[CDS][S3] Querying indexes:%s", indices)
@@ -371,10 +371,10 @@ def _get_cds_s5_datatakes(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # Auxiliary variable declaration
-        indices = ["cds-s5-completeness"]
-        # indices = _build_cds_completeness_indices(
-        #    "s5", CDS_MISSIONS["s5"], splitted=True
-        # )
+        # indices = ["cds-s5-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S5] Querying indexes:%s", indices)
 
@@ -986,139 +986,126 @@ def _get_cds_s1s2_datatake_details(datatake_id):
 
 def _get_cds_s3_datatake_details(datatake_id):
     """
-    Fetch the datatakes completeness information from the published products.
+    Fetch S3 datatake completeness info from published products.
+    Returns an object suitable for frontend mapS3Data().
     """
-
     results = []
     try:
-
-        # Auxiliary variable declaration
-        indices = ["cds-s3-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S3] Querying indexes details:%s", indices)
 
-        # Fetch results (products) from Elastic database
         for index in indices:
             try:
                 result = elastic.query_scan(
                     index, {"query": {"match": {"datatake_id": datatake_id}}}
                 )
-
-                # Convert result into array
-                logger.debug("Adding result from cds_s3_datatakes query")
                 results += result
-
             except ConnectionError as cex:
                 logger.error("Connection Error: %s", cex)
                 raise cex
-
             except Exception as ex:
-                logger.warning(
-                    "(cds_s3_datatakes) Received Elastic error for index: %s", index
-                )
+                logger.warning("(cds_s3_datatakes) Elastic error for index: %s", index)
                 logger.error(ex)
-
     except Exception as ex:
         logger.error(ex)
 
-    # Build and collect datatake instances
-    datatake = {
-        "key": datatake_id,
-        "satellite_unit": datatake_id[0:3],
-    }
-    observation_window = _calc_s3_s5_datatake_observation_window(results)
-    datatake["observation_time_start"] = observation_window["observation_time_start"]
-    datatake["observation_time_stop"] = observation_window["observation_time_stop"]
-    for prod in results:
-        prod_info = prod["_source"]
-        if "percentage" in prod_info:
-            prod_key = prod_info["key"].replace(datatake_id + "#", "")
-            datatake["instrument_mode"] = prod_info["product_type"][5:8]
-            datatake["timeliness"] = prod_info["timeliness"]
-            datatake[prod_key + "_local_percentage"] = prod_info["percentage"]
-        if "cams_tickets" in prod_info:
-            datatake["cams_tickets"] = prod_info["cams_tickets"]
-        if "cams_origin" in prod_info:
-            datatake["cams_origin"] = prod_info["cams_origin"]
-        if "cams_description" in prod_info:
-            datatake["cams_description"] = prod_info["cams_description"]
-        if "last_attached_ticket" in prod_info:
-            datatake["last_attached_ticket"] = prod_info["last_attached_ticket"]
+    datatake = {"key": datatake_id, "satellite_unit": datatake_id[0:3]}
+    obs_window = _calc_s3_s5_datatake_observation_window(results)
+    datatake["observation_time_start"] = obs_window["observation_time_start"]
+    datatake["observation_time_stop"] = obs_window["observation_time_stop"]
 
-    # Return the datatakes list
+    for prod in results:
+        src = prod["_source"]
+        if "percentage" not in src:
+            continue
+
+        product = src["product_type"]
+        timeliness = src["timeliness"]
+
+        # Map keys without appending timeliness to productType
+        datatake[product + "_local_percentage"] = src["percentage"]
+        datatake[product + "_timeliness"] = timeliness
+
+        datatake["instrument_mode"] = product[5:8]
+        if "cams_tickets" in src:
+            datatake["cams_tickets"] = src["cams_tickets"]
+        if "cams_origin" in src:
+            datatake["cams_origin"] = src["cams_origin"]
+        if "cams_description" in src:
+            datatake["cams_description"] = src["cams_description"]
+        if "last_attached_ticket" in src:
+            datatake["last_attached_ticket"] = src["last_attached_ticket"]
+
+        logger.info(
+            "[CDS][S3][DETAILS][MAP] product=%s timeliness=%s → %s%%",
+            product,
+            timeliness,
+            src["percentage"],
+        )
+
     return datatake
 
 
 def _get_cds_s5_datatake_details(datatake_id):
     """
-    Fetch the datatake information given the datatake ID.
+    Fetch S5 datatake completeness info from published products.
+    Returns a list of dictionaries suitable for frontend mapS5Data().
     """
-
     results = []
     try:
-
-        # Auxiliary variable declaration
-        indices = ["cds-s5-completeness"]
-        # indices = _build_cds_completeness_indices(
-        #    "s5", CDS_MISSIONS["s5"], splitted=True
-        # )
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S5] Querying indexes:%s", indices)
 
-        # Fetch results from Elastic database
         for index in indices:
             try:
                 result = elastic.query_scan(
                     index, {"query": {"match": {"datatake_id": datatake_id}}}
                 )
-
-                # Convert result into array
-                logger.debug("Adding result from cds_s5_datatakes query")
                 results += result
-
             except ConnectionError as cex:
                 logger.error("Connection Error: %s", cex)
                 raise cex
-
             except Exception as ex:
                 logger.warning("Received Elastic error for index: %s", index)
                 logger.error(ex)
-
     except Exception as ex:
         logger.error(ex)
 
-    # Build and collect datatake instances
-    datatake = {"key": datatake_id, "satellite_unit": datatake_id[0:3]}
-    observation_window = _calc_s3_s5_datatake_observation_window(results)
-    datatake["observation_time_start"] = observation_window["observation_time_start"]
-    datatake["observation_time_stop"] = observation_window["observation_time_stop"]
+    datatake_list = []
+    obs_window = _calc_s3_s5_datatake_observation_window(results)
+
     for prod in results:
-        if "percentage" in prod["_source"]:
-            logger.info(
-                "[CDS][S5][DETAILS][MAP] product=%s → %s%% | timeliness=%s",
-                prod["_source"]["product_type"],
-                prod["_source"]["percentage"],
-                prod["_source"]["timeliness"],
-            )
-            # prod_key = prod["_source"]["key"].replace(datatake_id + "-", "")
-            product = prod["_source"]["product_type"]
-            timeliness = prod["_source"]["timeliness"]
-            key = f"{product}_{timeliness}"
-            datatake[key + "_timeliness"] = timeliness
-            datatake[key + "_local_percentage"] = prod["_source"]["percentage"]
+        src = prod["_source"]
+        if "percentage" not in src:
+            continue
 
-            # prod_key = prod["_source"]["product_type"]
-            datatake["instrument_mode"] = prod["_source"]["product_type"][5:8]
-            # datatake["timeliness"] = prod["_source"]["timeliness"]
-            # datatake[prod_key + "_timeliness"] = prod["_source"]["timeliness"]
-            # datatake[prod_key + "_local_percentage"] = prod["_source"]["percentage"]
-        if "cams_tickets" in prod["_source"]:
-            datatake["cams_tickets"] = prod["_source"]["cams_tickets"]
-        if "cams_origin" in prod["_source"]:
-            datatake["cams_origin"] = prod["_source"]["cams_origin"]
-        if "cams_description" in prod["_source"]:
-            datatake["cams_description"] = prod["_source"]["cams_description"]
-        if "last_attached_ticket" in prod["_source"]:
-            datatake["last_attached_ticket"] = prod["_source"]["last_attached_ticket"]
+        datatake_list.append(
+            {
+                "product": src["product_type"],
+                "timeliness": src["timeliness"],
+                "percentage": src["percentage"],
+                # optional: include extra fields if needed
+                "instrument_mode": src["product_type"][5:8],
+                "cams_tickets": src.get("cams_tickets"),
+                "cams_origin": src.get("cams_origin"),
+                "cams_description": src.get("cams_description"),
+                "last_attached_ticket": src.get("last_attached_ticket"),
+                "observation_time_start": obs_window["observation_time_start"],
+                "observation_time_stop": obs_window["observation_time_stop"],
+            }
+        )
 
-    # Return the datatakes list
-    return datatake
+        logger.info(
+            "[CDS][S5][DETAILS][MAP] product=%s timeliness=%s → %s%%",
+            src["product_type"],
+            src["timeliness"],
+            src["percentage"],
+        )
+
+    return datatake_list
