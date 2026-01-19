@@ -867,43 +867,60 @@ def _refresh_anomalies_status(dt_last_quarter):
 def _get_cds_s1s2_datatake_details(datatake_id):
     """
     Fetch S1/S2 datatake details with per-product completeness.
-    Only returns instrument-level products (no L0/L1 aggregates).
+    Returns instrument-level products (no L0/L1/L2 aggregates).
     All keys end with '_local_percentage' for frontend table.
     """
     results = []
+    datatake = {"key": datatake_id, "satellite_unit": datatake_id[:3]}
+
     try:
-        # Build all relevant indices for S1 and S2
+        # Build indices for S1 and S2 missions
         indices = _build_cds_completeness_indices(
             "s1", CDS_MISSIONS["s1"]
         ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
-
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S1S2] Querying indexes: %s", indices)
 
+        # Fetch hits from all indices
         for index in indices:
             try:
-                result_gen = elastic.query_scan(
+                hits_gen = elastic.query_scan(
                     index, {"query": {"match": {"key": datatake_id}}}
                 )
-                result_list = list(result_gen)
-                logger.info(
-                    "[CDS][S1S2][DETAILS] index=%s hits=%d", index, len(result_list)
+                hits = list(hits_gen)
+
+                logger.warning(
+                    "[CDS][DEBUG][DETAILS] index=%s returned %d hits", index, len(hits)
                 )
-                results += result_list
+
+                if hits:
+                    sample_keys = sorted(
+                        [
+                            k
+                            for k in hits[0]["_source"].keys()
+                            if k.endswith("_local_percentage")
+                        ]
+                    )
+                    logger.warning(
+                        "[CDS][DEBUG][DETAILS] index=%s product keys=%s",
+                        index,
+                        sample_keys,
+                    )
+
+                results.extend(hits)
             except Exception as ex:
-                logger.warning("[CDS][S1S2][DETAILS] Elastic error on index %s", index)
+                logger.warning("[CDS][S1S2][DETAILS] Error scanning index %s", index)
                 logger.error(ex)
+
     except Exception as ex:
         logger.error(
-            "[CDS][S1S2][DETAILS] Error building indices or querying Elastic",
-            exc_info=True,
+            "[CDS][S1S2][DETAILS] Error querying Elastic indices", exc_info=True
         )
 
-    # Base datatake object
-    datatake = {"key": datatake_id, "satellite_unit": datatake_id[0:3]}
-
     if not results:
-        logger.warning("[CDS][S1S2][DETAILS] no result for datatake_id=%s", datatake_id)
+        logger.warning(
+            "[CDS][S1S2][DETAILS] No results for datatake_id=%s", datatake_id
+        )
         return datatake
 
     # Copy common metadata from first hit
@@ -921,40 +938,49 @@ def _get_cds_s1s2_datatake_details(datatake_id):
         if field in src0:
             datatake[field] = src0[field]
 
-    # Extract per-product completeness
-    for prod in results:
-        src = prod["_source"]
-        logger.debug(
-            "[CDS][S1S2][DETAILS] Processing source keys: %s", list(src.keys())
-        )
+    # Extract all per-product completeness values
+    for hit in results:
+        src = hit["_source"]
         for key, value in src.items():
             if not key.endswith("_local_percentage"):
                 continue
 
             product = key.replace("_local_percentage", "")
-            # Skip aggregates
-            if any(
-                product.startswith(prefix)
-                for prefix in ["L0__", "L1B_", "L1C_", "L2A_"]
-            ):
+
+            if any(product.startswith(prefix) for prefix in ["L1B_", "L1C_", "L2A_"]):
                 logger.debug(
                     "[CDS][S1S2][DETAILS] Skipping aggregate product: %s", product
                 )
                 continue
 
-            # Map to datatake with '_local_percentage'
-            datatake[f"{product}_local_percentage"] = value
+            key_name = f"{product}_local_percentage"
+
+            if key_name in datatake:
+                logger.warning(
+                    "[CDS][S1S2][DETAILS] Overwriting product %s old=%s new=%s",
+                    key_name,
+                    datatake[key_name],
+                    value,
+                )
+
+            datatake[key_name] = value
+
+            # Include all other products
             logger.debug(
                 "[CDS][S1S2][DETAILS] Added product: %s = %s",
-                f"{product}_local_percentage",
+                key_name,
                 value,
             )
 
+    total_products = len(
+        [k for k in datatake.keys() if k.endswith("_local_percentage")]
+    )
     logger.info(
         "[CDS][S1S2][DETAILS] Finished mapping datatake_id=%s, total products=%d",
         datatake_id,
-        len([k for k in datatake.keys() if k.endswith("_local_percentage")]),
+        total_products,
     )
+
     return datatake
 
 
