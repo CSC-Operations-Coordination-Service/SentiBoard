@@ -663,8 +663,17 @@ class Datatakes {
 
                     if (showTimeliness) {
                         const parts = baseKey.split("_");
-                        timelinessVal = parts.pop();
-                        productType = parts.join("_");
+
+                        // S5 → timeliness prefix (OFFL_*)
+                        if (parts[0] === "OFFL" || parts[0] === "NRTI" || parts[0] === "NOMINAL") {
+                            timelinessVal = parts.shift();     // REMOVE FIRST
+                            productType = parts.join("_");
+                        }
+                        // S3 → timeliness suffix (*_OFFL)
+                        else {
+                            timelinessVal = parts.pop();       // REMOVE LAST
+                            productType = parts.join("_");
+                        }
                     }
 
                     console.debug("[INFO TABLE] Mapping product:", productType, "timeliness:", timelinessVal, "status:", datatake[key]);
@@ -696,15 +705,29 @@ class Datatakes {
 
         // Sort
         dataArray.sort((a, b) => {
+            // Timeliness order (if applicable)
             if (showTimeliness) {
-                const timelinessOrder = { "NRTI": 1, "OFFL": 2, "NOMINAL": 3 };
+                const timelinessOrder = { NRTI: 1, OFFL: 2, NOMINAL: 3 };
                 const tA = timelinessOrder[a.timeliness] ?? 99;
                 const tB = timelinessOrder[b.timeliness] ?? 99;
                 if (tA !== tB) return tA - tB;
             }
-            if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
-            return (b.status || 0) - (a.status || 0);
+
+            // Product type (A → Z)
+            if (a.productType !== b.productType) {
+                return a.productType.localeCompare(b.productType);
+            }
+
+            // Status (DESC, numeric, safe)
+            const sA = parseFloat(a.status);
+            const sB = parseFloat(b.status);
+
+            if (!isNaN(sA) && !isNaN(sB)) return sB - sA;
+            if (!isNaN(sA)) return -1;
+            if (!isNaN(sB)) return 1;
+            return 0;
         });
+
 
         console.debug("[INFO TABLE] After sort:", dataArray);
 
