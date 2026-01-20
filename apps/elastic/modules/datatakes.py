@@ -235,8 +235,13 @@ def _get_cds_s3_datatakes(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # Auxiliary variable declaration
-        indices = ["cds-s3-completeness"]
+        # indices = ["cds-s3-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S3] Querying indexes:%s", indices)
 
         # Fetch results (products) from Elastic database
         # Mission-Completeness Index
@@ -353,10 +358,10 @@ def _get_cds_s5_datatakes(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # Auxiliary variable declaration
-        indices = ["cds-s5-completeness"]
-        # indices = _build_cds_completeness_indices(
-        #    "s5", CDS_MISSIONS["s5"], splitted=True
-        # )
+        # indices = ["cds-s5-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S5] Querying indexes:%s", indices)
 
@@ -939,8 +944,11 @@ def _get_cds_s3_datatake_details(datatake_id):
     try:
 
         # Auxiliary variable declaration
-        indices = ["cds-s3-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S3] Querying indexes details:%s", indices)
 
         # Fetch results (products) from Elastic database
         for index in indices:
@@ -1003,10 +1011,10 @@ def _get_cds_s5_datatake_details(datatake_id):
     try:
 
         # Auxiliary variable declaration
-        indices = ["cds-s5-completeness"]
-        # indices = _build_cds_completeness_indices(
-        #    "s5", CDS_MISSIONS["s5"], splitted=True
-        # )
+        # indices = ["cds-s5-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S5] Querying indexes:%s", indices)
 
