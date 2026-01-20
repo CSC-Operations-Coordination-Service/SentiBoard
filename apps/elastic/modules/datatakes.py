@@ -975,7 +975,7 @@ def _get_cds_s1s2_datatake_details(datatake_id):
     total_products = len(
         [k for k in datatake.keys() if k.endswith("_local_percentage")]
     )
-    logger.info(
+    logger.debug(
         "[CDS][S1S2][DETAILS] Finished mapping datatake_id=%s, total products=%d",
         datatake_id,
         total_products,
@@ -1039,7 +1039,7 @@ def _get_cds_s3_datatake_details(datatake_id):
         if "last_attached_ticket" in src:
             datatake["last_attached_ticket"] = src["last_attached_ticket"]
 
-        logger.info(
+        logger.debug(
             "[CDS][S3][DETAILS][MAP] product=%s timeliness=%s → %s%%",
             product,
             timeliness,
@@ -1101,7 +1101,7 @@ def _get_cds_s5_datatake_details(datatake_id):
             }
         )
 
-        logger.info(
+        logger.debug(
             "[CDS][S5][DETAILS][MAP] product=%s timeliness=%s → %s%%",
             src["product_type"],
             src["timeliness"],

@@ -611,7 +611,7 @@ class Datatakes {
         }
     }
     async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
-        console.log("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
+        //console.debug("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
 
         const tableBody = document.getElementById("modalInfoTableBody");
         const tableHead = document.querySelector(".custom-box-table-sm thead tr");
@@ -633,7 +633,7 @@ class Datatakes {
             showTimeliness = missionCode.startsWith("S3") || missionCode.startsWith("S5");
         }
 
-        console.log("[INFO TABLE] mission:", missionCode, "showTimeliness:", showTimeliness);
+        //console.debug("[INFO TABLE] mission:", missionCode, "showTimeliness:", showTimeliness);
 
         // Toggle timeliness column
         const timelinessTh = tableHead.querySelector("th:first-child");
@@ -690,7 +690,7 @@ class Datatakes {
         const endIndex = Math.min(startIndex + this.infoItemsPerPage, dataArray.length);
         const pageItems = dataArray.slice(startIndex, endIndex);
 
-        console.debug("[INFO TABLE] Rendering page items:", pageItems);
+        //console.debug("[INFO TABLE] Rendering page items:", pageItems);
 
         // Render table rows
         for (const item of pageItems) {
@@ -713,7 +713,7 @@ class Datatakes {
             tableBody.appendChild(row);
         }
 
-        console.log("[INFO TABLE] Table rendered with", pageItems.length, "rows");
+        //console.debug("[INFO TABLE] Table rendered with", pageItems.length, "rows");
 
         // Render pagination buttons
         if (totalPages > 1) {
