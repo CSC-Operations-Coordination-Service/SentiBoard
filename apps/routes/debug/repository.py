@@ -32,6 +32,13 @@ from . import blueprint
 
 logger = logging.getLogger(__name__)
 
+CDS_MISSIONS = {
+    "s1": ["s1a", "s1c", "s1d"],
+    "s2": ["s2a", "s2b", "s2c"],
+    "s3": ["s3a", "s3b"],
+    "s5": ["s5p"],
+}
+
 
 @blueprint.route("/api/repository/news", methods=["GET"])
 @login_required
@@ -220,9 +227,13 @@ def get_cds_datatake(start_date, end_date):
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
-        indices = ["cds-datatake"]
-
+        # indices = ["cds-datatake"]
+        indices = _build_cds_completeness_indices(
+            "s1", CDS_MISSIONS["s1"]
+        ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
         results = []
         for index in indices:
             try:
@@ -274,9 +285,14 @@ def get_cds_datatake_selected_fields(start_date, end_date):
         if s1s2_datatakes:
             return s1s2_datatakes
 
-        indices = ["cds-datatake"]
-
+        # indices = ["cds-datatake"]
+        indices = _build_cds_completeness_indices(
+            "s1", CDS_MISSIONS["s1"]
+        ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
+
         results = []
         for index in indices:
             try:
@@ -387,9 +403,14 @@ def get_cds_s3_completeness(start_date, end_date):
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
-        indices = ["cds-s3-completeness"]
+        # indices = ["cds-s3-completeness"]
 
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S3][DEBUG] Querying indexes:%s", indices)
         results = []
         for index in indices:
             logger.info("On index %s", index)
@@ -438,9 +459,12 @@ def get_cds_s3_completeness_selected_fields(start_date, end_date):
         if response:
             return response
 
-        indices = ["cds-s3-completeness"]
-
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S3] Querying indexes:%s", indices)
         results = []
         for index in indices:
             logger.info("On index %s", index)
@@ -502,8 +526,13 @@ def get_cds_s5_completeness(start_date, end_date):
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
 
         # indices = utils.get_index_name_from_interval_date('cds-s5-completeness', start_date, end_date)
-        indices = ["cds-s5-completeness"]
+        # indices = ["cds-s5-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
+
         results = []
         for index in indices:
             try:
@@ -553,8 +582,12 @@ def get_cds_s5_completeness_selected_fields(start_date, end_date):
             return response
 
         # indices = utils.get_index_name_from_interval_date('cds-s5-completeness', start_date, end_date)
-        indices = ["cds-s5-completeness"]
+        # indices = ["cds-s5-completeness"]
+        indices = _build_cds_completeness_indices(
+            "s5", CDS_MISSIONS["s5"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
         results = []
         for index in indices:
             try:
@@ -905,3 +938,11 @@ def get_cds_publication_size_complex_quarter(
         return Response(
             json.dumps({"error": "500"}), mimetype="application/json", status=500
         )
+
+
+def _build_cds_completeness_indices(mission, satellites, splitted=False):
+    """
+    Build CDS completeness index names dynamically
+    """
+    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
+    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
