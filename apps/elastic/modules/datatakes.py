@@ -978,9 +978,9 @@ def _get_cds_s1s2_datatake_details(datatake_id):
                     index, {"query": {"match": {"key": datatake_id}}}
                 )
                 result_list = list(result_gen)
-                logger.info(
-                    "[CDS][S1S2][DETAILS] index=%s hits=%d", index, len(result_list)
-                )
+                # logger.info(
+                #    "[CDS][S1S2][DETAILS] index=%s hits=%d", index, len(result_list)
+                # )
                 results += result_list
             except Exception as ex:
                 logger.warning("[CDS][S1S2][DETAILS] Elastic error on index %s", index)
@@ -1050,11 +1050,11 @@ def _get_cds_s1s2_datatake_details(datatake_id):
 
             # Map to datatake with '_local_percentage'
             datatake[f"{product}_local_percentage"] = value
-            logger.info(
-                "[CDS][S1S2][DETAILS] Added product: %s = %s",
-                f"{product}_local_percentage",
-                value,
-            )
+            # logger.info(
+            #    "[CDS][S1S2][DETAILS] Added product: %s = %s",
+            #    f"{product}_local_percentage",
+            #    value,
+            # )
         datatake["completeness_list"] = sorted(
             completeness_list,
             key=lambda x: x["productType"],
@@ -1115,10 +1115,18 @@ def _get_cds_s3_datatake_details(datatake_id):
     for prod in results:
         prod_info = prod["_source"]
         if "percentage" in prod_info:
+            # logger.info(
+            #    "[CDS][S3][DETAILS][MAP] product=%s → %s%% | timeliness=%s",
+            #    prod["_source"]["product_type"],
+            #    prod["_source"]["percentage"],
+            #    prod["_source"]["timeliness"],
+            # )
             prod_key = prod_info["key"].replace(datatake_id + "-", "")
             datatake[prod_key + "_local_percentage"] = prod_info["percentage"]
+            datatake[prod_key + "_timeliness"] = prod_info.get(
+                "timeliness"
+            )  # store per product
             datatake["instrument_mode"] = prod_info["product_type"][5:8]
-            datatake["timeliness"] = prod_info.get("timeliness")
         for key in [
             "cams_tickets",
             "cams_origin",
@@ -1128,15 +1136,15 @@ def _get_cds_s3_datatake_details(datatake_id):
             if key in prod_info:
                 datatake[key] = prod_info[key]
 
-    datatake["completeness_list"] = [
-        {
-            "productType": k.replace("_local_percentage", ""),
-            "status": v,
-            "timeliness": k.split("-")[0] if "-" in k else "-",
-        }
-        for k, v in datatake.items()
-        if k.endswith("_local_percentage")
-    ]
+    datatake["completeness_list"] = []
+
+    for k, v in datatake.items():
+        if k.endswith("_local_percentage"):
+            base = k.replace("_local_percentage", "")
+            timeliness = datatake.get(base + "_timeliness", "-")
+            datatake["completeness_list"].append(
+                {"productType": base, "status": v, "timeliness": timeliness}
+            )
 
     datatake["mission"] = "S3"
     datatake["satellite"] = datatake["satellite_unit"]
@@ -1189,13 +1197,12 @@ def _get_cds_s5_datatake_details(datatake_id):
     datatake["observation_time_stop"] = observation_window["observation_time_stop"]
     for prod in results:
         if "percentage" in prod["_source"]:
-            logger.info(
-                "[CDS][S5][DETAILS][MAP] product=%s → %s%% | timeliness=%s",
-                prod["_source"]["product_type"],
-                prod["_source"]["percentage"],
-                prod["_source"]["timeliness"],
-            )
-            # prod_key = prod["_source"]["key"].replace(datatake_id + "-", "")
+            # logger.info(
+            #    "[CDS][S5][DETAILS][MAP] product=%s → %s%% | timeliness=%s",
+            #    prod["_source"]["product_type"],
+            #    prod["_source"]["percentage"],
+            #    prod["_source"]["timeliness"],
+            # )
             product = prod["_source"]["product_type"]
             timeliness = prod["_source"]["timeliness"]
             key = f"{product}_{timeliness}"
@@ -1212,11 +1219,15 @@ def _get_cds_s5_datatake_details(datatake_id):
             if key in prod["_source"]:
                 datatake[key] = prod["_source"][key]
     # Build completeness_list for modal
-    datatake["completeness_list"] = [
-        {"productType": k.replace("_local_percentage", ""), "status": v}
-        for k, v in datatake.items()
-        if k.endswith("_local_percentage")
-    ]
+    datatake["completeness_list"] = []
+
+    for k, v in datatake.items():
+        if k.endswith("_local_percentage"):
+            base = k.replace("_local_percentage", "")
+            timeliness = datatake.get(base + "_timeliness", None)
+            datatake["completeness_list"].append(
+                {"productType": base, "status": v, "timeliness": timeliness}
+            )
 
     datatake["mission"] = "S5"
     datatake["satellite"] = datatake["satellite_unit"]

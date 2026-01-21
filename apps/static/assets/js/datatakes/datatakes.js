@@ -597,12 +597,7 @@ class Datatakes {
                     console.error("[AJAX] ERROR enriching datatake:", err);
                 }
             }
-            console.group("[renderInfoTable] DEBUG");
-            console.log("Mission:", mission);
-            console.log("Show timeliness:", showTimeliness);
-            console.log("Datatake timeliness:", datatake.timeliness);
-            console.log("Completeness list (raw):", datatake.completeness_list);
-            console.groupEnd();
+
 
             // ----------------------------------
             // Normalize data
@@ -616,21 +611,21 @@ class Datatakes {
 
                     if (showTimeliness && row.productType) {
                         if (mission === "S3") {
-                            // S3: timeliness is before the first dash
-                            const parts = row.productType.split("-");
-                            if (parts.length > 1) {
-                                rowTimeliness = parts[0];
-                                productType = parts.slice(1).join("-");
-                            }
+                            rowTimeliness = row.timeliness || "-";
+                            // Remove prefix if it exists in productType
+                            productType = productType.replace(/^([A-Z]{2,3})-/, "").replace(/_+$/, "");
                         } else if (mission === "S5") {
-                            // S5: timeliness at the end (NRTI/OFFL)
-                            const match = row.productType.match(/(NRTI|OFFL)$/);
-                            if (match) rowTimeliness = match[1];
+                            // S5: take timeliness directly from field, remove suffix from productType
+                            rowTimeliness = row.timeliness || "-";
+                            productType = productType.replace(/_(NRTI|OFFL)$/, "").replace(/_+$/, "");
                         }
+                    } else {
+                        // If timeliness not shown
+                        productType = productType.replace(/_+$/, "");
                     }
 
                     return {
-                        productType: productType,
+                        productType,
                         status: typeof row.status === "number" ? row.status : row.status,
                         timeliness: showTimeliness ? rowTimeliness : undefined
                     };
