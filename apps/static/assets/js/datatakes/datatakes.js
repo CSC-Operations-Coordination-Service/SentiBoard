@@ -529,7 +529,9 @@ class Datatakes {
         this.showSpinner();
         try {
             const tableBody = document.getElementById("modalInfoTableBody");
+            const tableHead = document.querySelector(".custom-box-table-sm thead tr");
             const paginationControls = document.getElementById("modalPaginationControls");
+
             tableBody.innerHTML = "";
             paginationControls.innerHTML = "";
 
@@ -546,6 +548,17 @@ class Datatakes {
                 tableBody.innerHTML = `<tr><td colspan="2">Datatake not found</td></tr>`;
                 return;
             }
+
+            const mission = datatake.mission || cleanDataInput.substring(0, 2);
+            const showTimeliness = mission === "S3" || mission === "S5";
+
+            this.renderInfoTableHeader(showTimeliness);
+
+            // Toggle header column
+            //const timelinessTh = tableHead.querySelector("th:first-child");
+            //if (timelinessTh) {
+            //    timelinessTh.style.display = showTimeliness ? "" : "none";
+            //}
 
             const needsEnrichment =
                 !datatake.completeness_list ||
@@ -584,14 +597,45 @@ class Datatakes {
                     console.error("[AJAX] ERROR enriching datatake:", err);
                 }
             }
+            console.group("[renderInfoTable] DEBUG");
+            console.log("Mission:", mission);
+            console.log("Show timeliness:", showTimeliness);
+            console.log("Datatake timeliness:", datatake.timeliness);
+            console.log("Completeness list (raw):", datatake.completeness_list);
+            console.groupEnd();
 
+            // ----------------------------------
+            // Normalize data
+            // ----------------------------------
             let dataArray = null;
 
             if (datatake.completeness_list && datatake.completeness_list.length > 0) {
-                dataArray = datatake.completeness_list;
+                dataArray = datatake.completeness_list.map(row => {
+                    let rowTimeliness = "-";
+                    let productType = row.productType;
 
+                    if (showTimeliness && row.productType) {
+                        if (mission === "S3") {
+                            // S3: timeliness is before the first dash
+                            const parts = row.productType.split("-");
+                            if (parts.length > 1) {
+                                rowTimeliness = parts[0];
+                                productType = parts.slice(1).join("-");
+                            }
+                        } else if (mission === "S5") {
+                            // S5: timeliness at the end (NRTI/OFFL)
+                            const match = row.productType.match(/(NRTI|OFFL)$/);
+                            if (match) rowTimeliness = match[1];
+                        }
+                    }
+
+                    return {
+                        productType: productType,
+                        status: typeof row.status === "number" ? row.status : row.status,
+                        timeliness: showTimeliness ? rowTimeliness : undefined
+                    };
+                });
             } else {
-
                 const allKeys = [
                     ...Object.keys(datatake),
                     ...Object.keys(datatake.raw || {})
@@ -601,10 +645,10 @@ class Datatakes {
 
                 if (pctKeys.length > 0) {
                     //console.log("Building table from percentage keys:", pctKeys);
-
                     dataArray = pctKeys.map(k => ({
                         productType: k.replace("local_percentage", ""),
-                        status: datatake[k] ?? datatake.raw?.[k] ?? "-"
+                        status: datatake[k] ?? datatake.raw?.[k] ?? "-",
+                        timeliness: showTimeliness ? "-" : undefined
                     }));
                 }
             }
@@ -622,7 +666,21 @@ class Datatakes {
             }
 
             //console.log("FINAL dataArray used to render table:", dataArray);
-
+            // ----------------------------------
+            // Sorting 
+            // ----------------------------------
+            dataArray.sort((a, b) => {
+                if (showTimeliness) {
+                    const order = { NRTI: 1, OFFL: 2, "#NR": 3, "#NT": 4, "#ST": 5, "#AL": 6 };
+                    const ta = order[a.timeliness] ?? 99;
+                    const tb = order[b.timeliness] ?? 99;
+                    if (ta !== tb) return ta - tb;
+                }
+                if (a.productType !== b.productType) {
+                    return a.productType.localeCompare(b.productType);
+                }
+                return parseFloat(b.status) - parseFloat(a.status);
+            });
 
             // Header
             const key = datatake.details?.key || datatake.id || "-";
@@ -662,13 +720,24 @@ class Datatakes {
 
             pageItems.forEach(item => {
                 const row = document.createElement("tr");
-                const displayValue = typeof item.status === "number"
-                    ? Number(item.status).toFixed(2)
-                    : item.status;
-                row.innerHTML = `
-            <td>${item.productType || "-"}</td>
-            <td>${displayValue}</td>
-        `;
+
+                if (showTimeliness) {
+                    const td = document.createElement("td");
+                    td.textContent = item.timeliness;
+                    row.appendChild(td);
+                }
+
+                const productTd = document.createElement("td");
+                productTd.textContent = item.productType;
+                row.appendChild(productTd);
+
+                const statusTd = document.createElement("td");
+                statusTd.textContent =
+                    typeof item.status === "number"
+                        ? item.status.toFixed(2)
+                        : item.status;
+                row.appendChild(statusTd);
+
                 tableBody.appendChild(row);
             });
 
@@ -695,9 +764,19 @@ class Datatakes {
         } finally {
             setTimeout(() => this.hideSpinner(), 0);
         }
+    }
 
+    renderInfoTableHeader(showTimeliness) {
+        const tableHead = document.querySelector(".custom-box-table-sm thead");
+        if (!tableHead) return;
 
-
+        tableHead.innerHTML = `
+        <tr>
+            ${showTimeliness ? "<th>Timeliness</th>" : ""}
+            <th>Product type</th>
+            <th>Status (%)</th>
+        </tr>
+    `;
     }
 
     async initCharts() {
