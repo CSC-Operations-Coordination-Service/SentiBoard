@@ -642,6 +642,10 @@ class Datatakes {
         // Fetch datatake if input is string
         if (typeof dataInput === "string") {
             const datatake_id = dataInput.split("(")[0].trim();
+            const datatakeLabel = document.getElementById("modalDatatakeId");
+            if (datatakeLabel) {
+                datatakeLabel.textContent = `(${datatake_id})`;
+            }
 
             try {
                 const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
@@ -655,7 +659,7 @@ class Datatakes {
                 } else if (missionCode.startsWith("S3")) {
                     dataArray = this.mapS3Data(datatake);
                 } else {
-                    dataArray = this.mapS1S2Data(datatake);
+                    dataArray = this.mapS1S2Data(datatake, missionCode);
                 }
 
             } catch (err) {
@@ -674,13 +678,36 @@ class Datatakes {
 
         // Sorting
         dataArray.sort((a, b) => {
+
+            // S3 / S5 timeliness ordering (unchanged)
             if (showTimeliness) {
                 const order = { NRTI: 1, OFFL: 2, "#NR": 3, "#NT": 4, "#ST": 5, "#AL": 6 };
                 const tA = order[a.timeliness] ?? 99;
                 const tB = order[b.timeliness] ?? 99;
                 if (tA !== tB) return tA - tB;
             }
-            if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
+
+            // S1: order by product level (L0 → L1 → L2)
+            if (missionCode.startsWith("S1")) {
+                const lA = this.getProductLevel(a.productType);
+                const lB = this.getProductLevel(b.productType);
+
+                console.debug(
+                    "[S1 SORT]",
+                    a.productType, "→ L", lA,
+                    "|",
+                    b.productType, "→ L", lB
+                );
+
+                if (lA !== lB) return lA - lB;
+            }
+
+            // Default: product name
+            if (a.productType !== b.productType) {
+                return a.productType.localeCompare(b.productType);
+            }
+
+            // Status descending
             return parseFloat(b.status) - parseFloat(a.status);
         });
 
@@ -743,14 +770,40 @@ class Datatakes {
     }
 
     // Mapping functions
-    mapS1S2Data(datatake) {
+    mapS1S2Data(datatake, missionCode) {
         const rows = [];
+
         for (const key of Object.keys(datatake)) {
             if (!key.endsWith("_local_percentage")) continue;
+
             const productType = key.replace("_local_percentage", "");
-            rows.push({ timeliness: "-", productType, status: datatake[key].toFixed(2) });
+
+            // S2: keep ONLY MSI products
+            if (missionCode.startsWith("S2") && !productType.startsWith("MSI_")) {
+                continue;
+            }
+
+            rows.push({
+                timeliness: "-",
+                productType,
+                status: datatake[key].toFixed(2)
+            });
         }
+
         return rows;
+    }
+
+
+    getProductLevel(productType) {
+        // OUT_OF_MONITORING always last
+        if (productType === "OUT_OF_MONITORING") return 99;
+
+        // S1 encoding: __0 = L0, __1 = L1, __2 = L2
+        if (productType.includes("__0")) return 0;
+        if (productType.includes("__1")) return 1;
+        if (productType.includes("__2")) return 2;
+
+        return 98; // unknown but before OUT_OF_MONITORING
     }
 
     mapS3Data(datatake) {
