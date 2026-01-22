@@ -34,6 +34,7 @@ class Datatakes {
         this.currentSearchTerm = "";
         this.fromDate = "";
         this.toDate = "";
+        this.currentDatatakeId = null;
 
         // Threshold used to state the completeness
         this.completeness_threshold = 90;
@@ -450,12 +451,6 @@ class Datatakes {
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
 
-            // Preselect the first item on a full load
-            /*if (!append && this.displayedCount === 0 && index === 0) {
-                containerDiv.classList.add("selected");
-                a.classList.add("selected");
-            }*/
-
             a.addEventListener("click", e => e.preventDefault());
 
             containerDiv.addEventListener("click", () => {
@@ -587,22 +582,33 @@ class Datatakes {
 
         console.log("Looking for datatake ID:", selectedId);
 
-        const $modal = $('#completenessTableModal');
-
-        // Ensure this is attached only once
-        $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
-            // Remove focus from anything inside the modal before hiding
-            document.activeElement.blur();
-        });
-
         try {
+            // Render the table
             await this.renderInfoTable(selectedId);
+            const $modal = $('#completenessTableModal');
+            // Remove old listeners
+            $modal.off('hide.bs.modal shown.bs.modal');
 
-            // Show the modal
+            // Show modal
+
+            // Use a tiny timeout to ensure modal is fully visible
+            const label = document.getElementById("modalDatatakeId");
+            if (label) {
+                label.textContent = `(${selectedId})`;
+                label.style.color = "white";
+                label.style.fontWeight = "bold";
+                //console.log("[LABEL SET]", label.textContent);
+            }
+
             $modal.modal('show');
 
-            // Ensure scroll reset
+            await this.renderInfoTable(selectedId);
+
+            const loadingRow = document.getElementById("tableLoadingRow");
+            if (loadingRow) loadingRow.remove();
+
             $modal.find('.modal-body').scrollTop(0);
+
 
         } catch (err) {
             console.error("Failed to render info table for datatake:", selectedId, err);
@@ -610,8 +616,10 @@ class Datatakes {
             this.fromInfoIcon = false;
         }
     }
+
     async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
         //console.debug("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
+        console.log("Render", this === window.datatakes, "datainput", dataInput);
 
         const tableBody = document.getElementById("modalInfoTableBody");
         const tableHead = document.querySelector(".custom-box-table-sm thead tr");
@@ -642,10 +650,22 @@ class Datatakes {
         // Fetch datatake if input is string
         if (typeof dataInput === "string") {
             const datatake_id = dataInput.split("(")[0].trim();
-            const datatakeLabel = document.getElementById("modalDatatakeId");
-            if (datatakeLabel) {
-                datatakeLabel.textContent = `(${datatake_id})`;
+            this.currentDatatakeId = datatake_id;
+
+            // Set the label immediately
+            const label = document.getElementById("modalDatatakeId");
+            if (label) {
+                label.textContent = `(${datatake_id})`;
+                label.style.color = "white";
+                label.style.fontWeight = "bold";
+                label.offsetHeight;
+                //console.log("[LABEL SET]", label.textContent);
             }
+
+            const $modal = $('#completenessTableModal');
+            //$modal.modal('show');
+            $modal.find('.modal-body').scrollTop(0);
+            this.fromInfoIcon = false;
 
             try {
                 const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
@@ -692,12 +712,12 @@ class Datatakes {
                 const lA = this.getProductLevel(a.productType);
                 const lB = this.getProductLevel(b.productType);
 
-                console.debug(
+                /*console.debug(
                     "[S1 SORT]",
                     a.productType, "→ L", lA,
                     "|",
                     b.productType, "→ L", lB
-                );
+                );*/
 
                 if (lA !== lB) return lA - lB;
             }
@@ -766,7 +786,7 @@ class Datatakes {
         this.currentDataArray = dataArray;
         this.currentPage = page;
 
-        console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
+        //console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
 
     // Mapping functions
