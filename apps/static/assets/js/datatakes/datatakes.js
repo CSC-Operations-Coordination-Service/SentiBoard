@@ -503,6 +503,10 @@ class Datatakes {
             });
 
             try {
+                const datatakeLabel = document.getElementById("modalDatatakeId");
+                if (datatakeLabel) {
+                    datatakeLabel.textContent = selectedId;
+                }
                 await this.renderInfoTable(selectedId);
 
                 // Show the modal
@@ -529,7 +533,6 @@ class Datatakes {
         this.showSpinner();
         try {
             const tableBody = document.getElementById("modalInfoTableBody");
-            const tableHead = document.querySelector(".custom-box-table-sm thead tr");
             const paginationControls = document.getElementById("modalPaginationControls");
 
             tableBody.innerHTML = "";
@@ -660,13 +663,36 @@ class Datatakes {
                 }));
             }
 
-            //console.log("FINAL dataArray used to render table:", dataArray);
+            if (mission === "S2" || dataArray.length === 0) {
+                //console.log("Filtering S2 for MSI products");
+                dataArray = dataArray.filter(item => item.productType.includes("MSI"));
+            }
+
             // ----------------------------------
             // Sorting 
             // ----------------------------------
+            const S1_LEVEL_ORDER = {
+                "0": 1,
+                "1": 2,
+                "2": 3,
+                "A": 4
+            };
             dataArray.sort((a, b) => {
+                // ----------------------------------
+                // S1 custom product level sorting
+                // ----------------------------------
+                if (mission === "S1") {
+                    const la = this.extractS1ProductLevel(a.productType);
+                    const lb = this.extractS1ProductLevel(b.productType);
+
+                    const oa = S1_LEVEL_ORDER[la] ?? 99;
+                    const ob = S1_LEVEL_ORDER[lb] ?? 99;
+
+                    if (oa !== ob) return oa - ob;
+                }
+
                 if (showTimeliness) {
-                    const order = { NRTI: 1, OFFL: 2, "#NR": 3, "#NT": 4, "#ST": 5, "#AL": 6 };
+                    const order = { NRTI: 1, OFFL: 2, "NR": 3, "NT": 4, "ST": 5, "AL": 6 };
                     const ta = order[a.timeliness] ?? 99;
                     const tb = order[b.timeliness] ?? 99;
                     if (ta !== tb) return ta - tb;
@@ -772,6 +798,12 @@ class Datatakes {
             <th>Status (%)</th>
         </tr>
     `;
+    }
+
+    extractS1ProductLevel(productType) {
+        // Matches RAW__0A, RAW__1A, RAW__2A, RAW__A?, SLC__1A, etc.
+        const match = productType.match(/__(\w)/);
+        return match ? match[1] : null;
     }
 
     async initCharts() {

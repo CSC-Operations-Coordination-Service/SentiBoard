@@ -1022,12 +1022,12 @@ def _get_cds_s1s2_datatake_details(datatake_id):
     # Extract per-product completeness
     for prod in results:
         src = prod["_source"]
-        logger.info("[CDS][S1S2][DETAILS] Processing source keys: %s", list(src.keys()))
-        logger.info(
-            "[CDS][S1S2][DETAILS][SRC] datatake_id=%s keys=%s",
-            datatake_id,
-            sorted(src.keys()),
-        )
+        # logger.info("[CDS][S1S2][DETAILS] Processing source keys: %s", list(src.keys()))
+        # logger.info(
+        #    "[CDS][S1S2][DETAILS][SRC] datatake_id=%s keys=%s",
+        #    datatake_id,
+        #    sorted(src.keys()),
+        # )
         for key, value in src.items():
             if not key.endswith("_local_percentage"):
                 continue
@@ -1069,10 +1069,10 @@ def _get_cds_s1s2_datatake_details(datatake_id):
         datatake_id,
         len([k for k in datatake.keys() if k.endswith("_local_percentage")]),
     )
-    logger.info(
-        "[CDS][S1S2][DETAILS][FINAL] products=%s",
-        sorted(k for k in datatake if k.endswith("_local_percentage")),
-    )
+    # logger.info(
+    #    "[CDS][S1S2][DETAILS][FINAL] products=%s",
+    #    sorted(k for k in datatake if k.endswith("_local_percentage")),
+    # )
     return datatake
 
 
