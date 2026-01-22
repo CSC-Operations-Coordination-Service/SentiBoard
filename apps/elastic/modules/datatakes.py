@@ -894,6 +894,11 @@ def _get_cds_s1s2_datatake_details(datatake_id):
                 )
 
                 if hits:
+                    # logger.warning(
+                    #    "[CDS][RAW][DETAILS] index=%s raw_source_sample=%s",
+                    #    index,
+                    #    hits[0]["_source"],
+                    # )
                     sample_keys = sorted(
                         [
                             k
@@ -901,11 +906,11 @@ def _get_cds_s1s2_datatake_details(datatake_id):
                             if k.endswith("_local_percentage")
                         ]
                     )
-                    logger.warning(
-                        "[CDS][DEBUG][DETAILS] index=%s product keys=%s",
-                        index,
-                        sample_keys,
-                    )
+                    # logger.warning(
+                    #    "[CDS][DEBUG][DETAILS] index=%s product keys=%s",
+                    #    index,
+                    #    sample_keys,
+                    # )
 
                 results.extend(hits)
             except Exception as ex:
