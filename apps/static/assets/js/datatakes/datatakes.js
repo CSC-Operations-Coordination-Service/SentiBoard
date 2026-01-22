@@ -701,7 +701,7 @@ class Datatakes {
 
             // S3 / S5 timeliness ordering (unchanged)
             if (showTimeliness) {
-                const order = { NRTI: 1, OFFL: 2, "#NR": 3, "#NT": 4, "#ST": 5, "#AL": 6 };
+                const order = { NRTI: 1, OFFL: 2, "NR": 3, "NT": 4, "ST": 5, "AL": 6 };
                 const tA = order[a.timeliness] ?? 99;
                 const tB = order[b.timeliness] ?? 99;
                 if (tA !== tB) return tA - tB;
