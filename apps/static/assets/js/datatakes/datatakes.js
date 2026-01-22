@@ -619,7 +619,7 @@ class Datatakes {
 
     async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
         //console.debug("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
-        console.log("Render", this === window.datatakes, "datainput", dataInput);
+        //console.log("Render", this === window.datatakes, "datainput", dataInput);
 
         const tableBody = document.getElementById("modalInfoTableBody");
         const tableHead = document.querySelector(".custom-box-table-sm thead tr");
@@ -712,12 +712,10 @@ class Datatakes {
                 const lA = this.getProductLevel(a.productType);
                 const lB = this.getProductLevel(b.productType);
 
-                /*console.debug(
-                    "[S1 SORT]",
-                    a.productType, "→ L", lA,
-                    "|",
-                    b.productType, "→ L", lB
-                );*/
+                /*console.group("[S1 LEVEL CHECK]");
+                console.log("A productType:", a.productType, "→ level:", lA);
+                console.log("B productType:", b.productType, "→ level:", lB);
+                console.groupEnd();*/
 
                 if (lA !== lB) return lA - lB;
             }
@@ -815,16 +813,25 @@ class Datatakes {
 
 
     getProductLevel(productType) {
-        // OUT_OF_MONITORING always last
         if (productType === "OUT_OF_MONITORING") return 99;
 
-        // S1 encoding: __0 = L0, __1 = L1, __2 = L2
-        if (productType.includes("__0")) return 0;
-        if (productType.includes("__1")) return 1;
-        if (productType.includes("__2")) return 2;
+        const match = productType.match(/__([0-9A-Z])/);
+        if (match) {
+            const lvl = match[1];
+            if (!isNaN(lvl)) return parseInt(lvl, 10); // 0,1,2
+            if (lvl === "A") return 3; // optional: map letters to numbers
+            return 98; // unknown letters
+        }
 
-        return 98; // unknown but before OUT_OF_MONITORING
+        // GRDH, ETA, OCN → maybe treat as level 2 by default
+        if (productType.startsWith("IW_GRDH")) return 2;
+        if (productType.startsWith("IW_ETA")) return 2;
+        if (productType.startsWith("IW_OCN")) return 2;
+
+        return 98;
     }
+
+
 
     mapS3Data(datatake) {
         const rows = [];
