@@ -137,9 +137,45 @@ def get_anomalies_previous_quarter():
     logger.info("Called API Anomalies previous quarter")
     anomalies_api_uri = events_cache.anomalies_cache_key.format("previous", "quarter")
     logger.debug("URI cache key: %s", anomalies_api_uri)
-    # if not flask_cache.has(anomalies_api_uri):
-    #     logger.info("Loading Anomalies Cache from API Anomalies previous quarter")
-    #     events_cache.load_anomalies_cache_previous_quarter()
+
+    cached_data = flask_cache.get(anomalies_api_uri)
+    # --- LOGGING ONLY: first 10 cached anomalies, most recent first ---
+    if cached_data:
+        sorted_cached = sorted(
+            cached_data,
+            key=lambda a: (
+                a.get("publicationDate")
+                if isinstance(a, dict)
+                else getattr(a, "publicationDate", datetime.min)
+            ),
+            reverse=True,
+        )
+        logger.info("[API] Returning anomalies from cache | count=%d", len(cached_data))
+        for idx, a in enumerate(sorted_cached[:10]):
+            try:
+                if isinstance(a, dict):
+                    key = a.get("key")
+                    category = a.get("category")
+                    env = a.get("environment")
+                    pub_date = a.get("publicationDate")
+                else:
+                    key = getattr(a, "key", None)
+                    category = getattr(a, "category", None)
+                    env = getattr(a, "environment", None)
+                    pub_date = getattr(a, "publicationDate", None)
+
+                logger.info(
+                    "[API SAMPLE %d] key=%s | env=%s | category=%s | pubDate=%s",
+                    idx,
+                    key,
+                    env,
+                    category,
+                    pub_date,
+                )
+            except Exception as ex:
+                logger.warning("[API SAMPLE %d] Failed to log anomaly: %s", idx, ex)
+
+    # --- END LOGGING ---
     return flask_cache.get(anomalies_api_uri)
 
 

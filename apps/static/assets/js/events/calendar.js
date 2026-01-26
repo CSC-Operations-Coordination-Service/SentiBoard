@@ -140,16 +140,34 @@ class CalendarWidget {
         var rows = format_response(response);
 
         var datatakeList = [];
+        console.group("[ANOMALY DEBUG] All anomalies received from backend");
+        rows.forEach((anomaly, idx) => {
+            console.log(
+                `#${idx} | key=${anomaly['key']} | environment=${anomaly['environment']} | category=${anomaly['category']} | publicationDate=${anomaly['publicationDate']}`
+            );
+        });
+        console.groupEnd();
 
         for (let i = 0; i < rows.length; ++i) {
             let anomaly = rows[i];
             if (datatakeList.includes(anomaly['environment'])) {
+                console.warn(
+                    `[SKIPPED] Anomaly key=${anomaly['key']} | environment=${anomaly['environment']} | category=${anomaly['category']}`
+                );
                 continue;
             } else {
                 datatakeList.push(anomaly['environment']);
+                console.info(
+                    `[KEPT] Anomaly key=${anomaly['key']} | environment=${anomaly['environment']} | category=${anomaly['category']}`
+                );
             }
             // Append the calendar event instance only if the event has an impact on datatakes (not fully recovered)
             let instance = this.buildEventInstanceFromAnomaly(anomaly);
+            if (instance.fullRecover) {
+                console.warn(
+                    `[FILTERED - FULL RECOVERY] Anomaly key=${anomaly.key} | environment=${anomaly.environment}`
+                );
+            }
             if (!instance.fullRecover) {
 
                 // Store the anomalies in the class member
@@ -346,6 +364,12 @@ class CalendarWidget {
 
 
     buildEventInstanceFromAnomaly(anomaly) {
+        console.info(
+            "[FE DISPLAY]",
+            anomaly.key,
+            "CATEGORY SHOWN:",
+            anomaly.category,
+        );
         // Build the event instance from the anomaly.
         var start_time = moment(anomaly['publicationDate'], 'DD/MM/YYYY HH:mm:ss').toDate();
         var end_time = moment(anomaly['end'], 'DD/MM/YYYY HH:mm:ss').toDate();
