@@ -38,10 +38,6 @@ class AnomaliesIngestor:
     def __int__(self):
         return
 
-    def normalize_env(self, env_str):
-        # Remove anything in parentheses and strip spaces
-        return re.sub(r"\s*\(.*?\)", "", env_str).strip()
-
     def get_anomalies_elastic(self, start=None):
         anomalies = []
         records = anomalies_elastic_client.fetch_anomalies_last_quarter()
