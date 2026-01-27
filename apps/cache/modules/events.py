@@ -104,18 +104,18 @@ def load_anomalies_cache_previous_quarter():
             key=lambda x: getattr(x, "publicationDate", datetime.min),
             reverse=True,  # most recent first
         )
-        for idx, a in enumerate(sorted_anomalies[:10]):  # first 10 only
-            try:
-                logger.info(
-                    "[CACHE SAMPLE %d] key=%s | env=%s | category=%s | pubDate=%s",
-                    idx,
-                    getattr(a, "key", None),
-                    getattr(a, "environment", None),
-                    getattr(a, "category", None),
-                    getattr(a, "publicationDate", None),
-                )
-            except Exception as ex:
-                logger.warning("[CACHE SAMPLE %d] Failed to log anomaly: %s", idx, ex)
+        # for idx, a in enumerate(sorted_anomalies[:10]):  # first 10 only
+        # try:
+        # logger.info(
+        #    "[CACHE SAMPLE %d] key=%s | env=%s | category=%s | pubDate=%s",
+        #    idx,
+        #    getattr(a, "key", None),
+        #    getattr(a, "environment", None),
+        #    getattr(a, "category", None),
+        #    getattr(a, "publicationDate", None),
+        # )
+        # except Exception as ex:
+        #    logger.warning("[CACHE SAMPLE %d] Failed to log anomaly: %s", idx, ex)
 
     # Populate cache: results for sub-periods can be deduced from results in the last quarter
     now = datetime.now()

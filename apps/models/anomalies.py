@@ -107,6 +107,7 @@ def update_anomaly(
 ):
     try:
         anomaly = db.session.query(Anomalies).filter(Anomalies.key == key).first()
+
         if anomaly is not None:
             anomaly.title = title
             anomaly.text = text
@@ -115,6 +116,7 @@ def update_anomaly(
             anomaly.end = end
             anomaly.environment = environment
             anomaly.modify_date = modify_date
+            anomaly.category = category  # TO REMOVE IT WAS JUST TO PROVE THE SOLUTION
         else:
             datatakes_completeness = []
             if environment is not None and len(environment) > 0:
@@ -210,18 +212,18 @@ def get_anomalies(start_date=None, end_date=None):
             key=lambda x: getattr(x, "publicationDate", datetime.min),
             reverse=True,
         )
-        for idx, a in enumerate(sorted_anomalies[:10]):
-            try:
-                logger.info(
-                    "[DB SAMPLE %d] key=%s | env=%s | category=%s | pubDate=%s",
-                    idx,
-                    getattr(a, "key", None),
-                    getattr(a, "environment", None),
-                    getattr(a, "category", None),
-                    getattr(a, "publicationDate", None),
-                )
-            except Exception as ex:
-                logger.warning("[DB SAMPLE %d] Failed to log anomaly: %s", idx, ex)
+        # for idx, a in enumerate(sorted_anomalies[:10]):
+        # --- try:
+        #    logger.info(
+        #        "[DB SAMPLE %d] key=%s | env=%s | category=%s | pubDate=%s",
+        #        idx,
+        #        getattr(a, "key", None),
+        #        getattr(a, "environment", None),
+        #        getattr(a, "category", None),
+        #        getattr(a, "publicationDate", None),
+        #    )
+        # except Exception as ex:
+        #    logger.warning("[DB SAMPLE %d] Failed to log anomaly: %s", idx, ex)
         # --- END LOGGING ---
         return anomalies
     except Exception as ex:

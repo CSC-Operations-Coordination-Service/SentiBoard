@@ -13,6 +13,7 @@ delivered to him.
 """
 
 import logging
+import re
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
@@ -26,6 +27,10 @@ from apps.models import impacted_item as impacted_item_model
 from apps.models import impacted_satellite as impacted_satellite_model
 from apps.utils import date_utils
 
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,10 +38,20 @@ class AnomaliesIngestor:
     def __int__(self):
         return
 
+    def normalize_env(self, env_str):
+        # Remove anything in parentheses and strip spaces
+        return re.sub(r"\s*\(.*?\)", "", env_str).strip()
+
     def get_anomalies_elastic(self, start=None):
         anomalies = []
         records = anomalies_elastic_client.fetch_anomalies_last_quarter()
-        for extract in records:
+        interesting_keys = {
+            "GSANOM-21154",
+            "GSANOM-21162",
+            "GSANOM-21160",
+        }
+
+        for idx, extract in enumerate(records):
             # Create the anomaly record with baseline properties
             public_date = date_utils.format_date_to_str(
                 extract["_source"]["occurence_date"], "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -63,6 +78,15 @@ class AnomaliesIngestor:
             # Parse the environment field from datatake_ids
             environment = ";".join(extract["_source"]["datatake_ids"])
             anomaly["environment"] = environment
+
+            if anomaly["key"] in interesting_keys:
+                logger.info(
+                    f"[ANOMALY DEBUG][RAW] "
+                    f"key={anomaly['key']} | "
+                    f"origin={getattr(extract['_source'], 'origin', None)} | "
+                    f"title={anomaly['title']} | "
+                    f"text={anomaly['text']}"
+                )
 
             # From tha anomaly title and description, try to retrieve the impacted satellite, item and the category
             title_tokenized = (
@@ -136,6 +160,12 @@ class AnomaliesIngestor:
             # nothing mapping directly to Calibration
             # in case of Other, keep as '', let the rest of the code handle it
 
+            if anomaly["key"] in interesting_keys:
+                logger.info(
+                    f"[ANOMALY DEBUG][ORIGIN MAP] "
+                    f"key={anomaly['key']} | origin={origin} | category_after_origin={anomaly['category']}"
+                )
+
             if anomaly["category"] is None or len(anomaly["category"]) == 0:
                 for token in title_tokenized:
                     token = str(token)
@@ -144,6 +174,11 @@ class AnomaliesIngestor:
                     category = categories_model.get_category_by_synonymous(token)
                     if category is not None:
                         anomaly["category"] = category.name
+                        if anomaly["key"] in interesting_keys:
+                            logger.info(
+                                f"[ANOMALY DEBUG][TITLE KEYWORD] "
+                                f"key={anomaly['key']} | token='{token}' | category={category.name}"
+                            )
                         break
 
             if anomaly["category"] is None or len(anomaly["category"]) == 0:
@@ -154,6 +189,10 @@ class AnomaliesIngestor:
                     category = categories_model.get_category_by_synonymous(token)
                     if category is not None:
                         anomaly["category"] = category.name
+                        logger.info(
+                            f"[ANOMALY DEBUG][TEXT KEYWORD] "
+                            f"key={anomaly['key']} | token='{token}' | category={category.name}"
+                        )
                         break
                     else:
                         anomaly["category"] = "Acquisition"
@@ -182,12 +221,17 @@ class AnomaliesIngestor:
                     if impacted_item is not None:
                         anomaly["impactedItem"] = impacted_item.name
                         break
-
+            if anomaly["key"] in interesting_keys:
+                logger.info(
+                    f"[ANOMALY DEBUG][FINAL] "
+                    f"key={anomaly['key']} | FINAL CATEGORY={anomaly['category']}"
+                )
             anomalies.append(anomaly)
 
         return anomalies
 
     def ingest_anomalies(self, start=None):
+        logger.info("[ENTRY] INGEST ANOMALIES")
         list_anomalies = self.get_anomalies_elastic()
 
         # Loop over all retrieved anomalies, and save or update them
