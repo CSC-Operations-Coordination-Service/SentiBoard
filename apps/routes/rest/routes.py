@@ -73,6 +73,7 @@ def get_acquisition_datatakes(mission, satellite, day):
 @blueprint.route(
     "/api/acquisitions/acquisition-plans/<mission>/<satellite>/<day>", methods=["GET"]
 )
+@login_required
 def get_acquisition_plans(mission, satellite, day):
     logger.debug("Called INTERNAL Acquisition Plan KML")
 
@@ -80,12 +81,14 @@ def get_acquisition_plans(mission, satellite, day):
 
 
 @blueprint.route("/api/acquisitions/acquisition-plan-days", methods=["GET"])
+@login_required
 def get_acquisition_plan_days():
     logger.info("[BEG] API Get Acquisition Plan Coverage")
     return acquisition_plans_cache.get_acquisition_plans_coverage()
 
 
 @blueprint.route("/api/acquisitions/satellite/orbits", methods=["GET"])
+@login_required
 def get_satellites_orbits():
     logger.debug("Called API Satellites Orbits")
     orbits_api_key = acquisition_assets_cache.orbits_cache_key
@@ -96,6 +99,7 @@ def get_satellites_orbits():
 
 
 @blueprint.route("/api/acquisitions/stations", methods=["GET"])
+@login_required
 def get_acquisitions_stations():
     logger.debug("Called API Acquisition Stations")
     stations_api_key = acquisition_assets_cache.stations_cache_key
@@ -106,6 +110,7 @@ def get_acquisitions_stations():
 
 
 @blueprint.route("/api/events/anomalies/update", methods=["GET"])
+@login_required
 def update_anomalies():
     logger.info("Called API Update Anomalies")
     anomalies_ingestor.AnomaliesIngestor().ingest_anomalies()
@@ -113,6 +118,7 @@ def update_anomalies():
 
 
 @blueprint.route("/api/events/anomalies/last-<period_id>", methods=["GET"])
+@login_required
 def get_anomalies_last(period_id):
     logger.info("Called API Anomalies last %s", period_id)
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
@@ -124,6 +130,7 @@ def get_anomalies_last(period_id):
 
 
 @blueprint.route("/api/events/anomalies/previous-quarter", methods=["GET"])
+@login_required
 def get_anomalies_previous_quarter():
     logger.info("Called API Anomalies previous quarter")
     anomalies_api_uri = events_cache.anomalies_cache_key.format("previous", "quarter")
@@ -135,6 +142,7 @@ def get_anomalies_previous_quarter():
 
 
 @blueprint.route("/api/events/anomalies/<date_from>/<date_to>", methods=["GET"])
+@login_required
 def get_anomalies_in_range(date_from, date_to):
     logger.info("Called API Anomalies in date range")
     start_date = datetime.strptime(date_from, "%Y-%m-%d")
@@ -153,6 +161,7 @@ def get_anomalies_in_range(date_from, date_to):
 
 
 @blueprint.route("/api/events/news/update", methods=["GET"])
+@login_required
 def update_news():
     logger.info("Called API Update News")
     news_ingestor.NewsIngestor().ingest_news()
@@ -160,6 +169,7 @@ def update_news():
 
 
 @blueprint.route("/api/events/news/last-<period_id>", methods=["GET"])
+@login_required
 def get_news_last(period_id):
     logger.info("Called API News last %s", period_id)
     news_api_uri = events_cache.news_cache_key.format("last", period_id)
@@ -171,6 +181,7 @@ def get_news_last(period_id):
 
 
 @blueprint.route("/api/events/news/previous-quarter", methods=["GET"])
+@login_required
 def get_news_previous_quarter():
     logger.info("Called API News previous quarter")
     news_api_uri = events_cache.news_cache_key.format("previous", "quarter")
@@ -196,6 +207,7 @@ def get_cds_datatake(datatake_id):
 
 
 @blueprint.route("/api/worker/cds-datatakes/last-<period_id>", methods=["GET"])
+@login_required
 def get_cds_datatakes_last(period_id):
     logger.info("Called API CDS Datatakes last %s", period_id)
     datatakes_api_uri = datatakes_cache.datatakes_cache_key.format("last", period_id)
@@ -207,6 +219,7 @@ def get_cds_datatakes_last(period_id):
 
 
 @blueprint.route("/api/worker/cds-datatakes/previous-quarter", methods=["GET"])
+@login_required
 def get_cds_datatakes_previous_quarter():
     logger.info("Called API CDS Datatakes previous quarter")
     datatakes_api_uri = datatakes_cache.datatakes_cache_key.format(
@@ -222,6 +235,7 @@ def get_cds_datatakes_previous_quarter():
 @blueprint.route(
     "/api/statistics/cds-product-publication-volume/last-<period_id>", methods=["GET"]
 )
+@login_required
 def get_cds_product_publication_size_statistics_last(period_id):
     logger.debug("Called API Publication Volume Statistics Last %s", period_id)
     publication_api_uri = publication_cache.publication_size_api_format.format(
@@ -239,6 +253,7 @@ def get_cds_product_publication_size_statistics_last(period_id):
 @blueprint.route(
     "/api/statistics/cds-product-publication-volume/previous-quarter", methods=["GET"]
 )
+@login_required
 def get_cds_product_publication_size_statistics_previous_quarter():
     logger.debug("Called API Publication Volume Stastistics Previous Quarter")
     publication_api_uri = publication_cache.publication_size_api_format.format(
@@ -254,6 +269,7 @@ def get_cds_product_publication_size_statistics_previous_quarter():
 @blueprint.route(
     "/api/statistics/cds-product-publication-count/last-<period_id>", methods=["GET"]
 )
+@login_required
 def get_cds_product_publication_count_statistics_last(period_id):
     logger.debug("Called API Publication Statistics Last %s", period_id)
     publication_api_uri = publication_cache.publication_count_api_format.format(
@@ -269,6 +285,7 @@ def get_cds_product_publication_count_statistics_last(period_id):
 @blueprint.route(
     "/api/statistics/cds-product-publication-count/previous-quarter", methods=["GET"]
 )
+@login_required
 def get_cds_product_publication_count_statistics_previous_quarter():
     logger.debug("Called API Publication Stastistics Previous Quarter")
     publication_api_uri = publication_cache.publication_count_api_format.format(
