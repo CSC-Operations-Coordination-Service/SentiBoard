@@ -45,7 +45,7 @@
 				</ul>
 			</div>
 
-			<!-- Datatake details panel -->
+			<!-- Datatake details panel 
 			<div class="modal fade" id="showDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
 				<div class="modal-dialog" role="document">
 					<div class="modal-content" style="background: #006B7C">
@@ -53,6 +53,7 @@
 							<h5 class="modal-title">
 								<span class="fw-mediumbold">View</span>
 								<span class="fw-light">Datatake details</span>
+								
 							</h5>
 							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 								<span aria-hidden="true" style="color: white">&times;</span>
@@ -69,7 +70,7 @@
 						</div>
 					</div>
 				</div>
-			</div>
+			</div>-->
 			<!-- Completeness Table Modal -->
 			<div class="modal fade" id="completenessTableModal" tabindex="-1" role="dialog">
 				<div class="modal-dialog modal-md" role="document">
@@ -78,6 +79,10 @@
 							<h5 class="modal-title">
 							<span class="fw-mediumbold">Datatake</span>
 							<span class="fw-light">Details</span>
+							<span id="modalDatatakeId"
+								class="fw-light ml-2"
+								style="font-size: 0.9em; color: yellow; font-weight: bold;">
+							</span>
 							</h5>
 							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 							<span aria-hidden="true" style="color: white">&times;</span>
@@ -425,7 +430,10 @@
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
-	 <script defer type="text/javascript">datatakes.init();</script>
+	<script>
+		datatakes.init();
+	</script>
+
 	<script>
 		$(function () {
 				$('[data-toggle="tooltip"]').tooltip();

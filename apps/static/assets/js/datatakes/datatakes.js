@@ -34,6 +34,7 @@ class Datatakes {
         this.currentSearchTerm = "";
         this.fromDate = "";
         this.toDate = "";
+        this.currentDatatakeId = null;
 
         // Threshold used to state the completeness
         this.completeness_threshold = 90;
@@ -450,12 +451,6 @@ class Datatakes {
             a.dataset.filterValue = this.getGroundStation(take.id);
             a.textContent = take.id;
 
-            // Preselect the first item on a full load
-            /*if (!append && this.displayedCount === 0 && index === 0) {
-                containerDiv.classList.add("selected");
-                a.classList.add("selected");
-            }*/
-
             a.addEventListener("click", e => e.preventDefault());
 
             containerDiv.addEventListener("click", () => {
@@ -587,22 +582,33 @@ class Datatakes {
 
         console.log("Looking for datatake ID:", selectedId);
 
-        const $modal = $('#completenessTableModal');
-
-        // Ensure this is attached only once
-        $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
-            // Remove focus from anything inside the modal before hiding
-            document.activeElement.blur();
-        });
-
         try {
+            // Render the table
             await this.renderInfoTable(selectedId);
+            const $modal = $('#completenessTableModal');
+            // Remove old listeners
+            $modal.off('hide.bs.modal shown.bs.modal');
 
-            // Show the modal
+            // Show modal
+
+            // Use a tiny timeout to ensure modal is fully visible
+            const label = document.getElementById("modalDatatakeId");
+            if (label) {
+                label.textContent = `(${selectedId})`;
+                label.style.color = "white";
+                label.style.fontWeight = "bold";
+                //console.log("[LABEL SET]", label.textContent);
+            }
+
             $modal.modal('show');
 
-            // Ensure scroll reset
+            await this.renderInfoTable(selectedId);
+
+            const loadingRow = document.getElementById("tableLoadingRow");
+            if (loadingRow) loadingRow.remove();
+
             $modal.find('.modal-body').scrollTop(0);
+
 
         } catch (err) {
             console.error("Failed to render info table for datatake:", selectedId, err);
@@ -611,119 +617,150 @@ class Datatakes {
         }
     }
 
-    async renderInfoTable(dataInput, page = 1) {
+    async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
+        //console.debug("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
+        //console.log("Render", this === window.datatakes, "datainput", dataInput);
+
         const tableBody = document.getElementById("modalInfoTableBody");
+        const tableHead = document.querySelector(".custom-box-table-sm thead tr");
         const paginationControls = document.getElementById("modalPaginationControls");
+
+        // Clear table and pagination
         tableBody.innerHTML = "";
         paginationControls.innerHTML = "";
 
         let dataArray = [];
 
+        // Detect mission
+        let missionCode = "";
         if (typeof dataInput === "string") {
-            const datatake_id = dataInput.split('(')[0].trim();
-            $('#datatake-details').empty().html(`
-                <div class="spinner">
-                    <div class="bounce1"></div>
-                    <div class="bounce2"></div>
-                    <div class="bounce3"></div>
-                </div>`);
+            missionCode = dataInput.split("-")[0].trim();
+        }
+
+        if (showTimeliness === null) {
+            showTimeliness = missionCode.startsWith("S3") || missionCode.startsWith("S5");
+        }
+
+        //console.debug("[INFO TABLE] mission:", missionCode, "showTimeliness:", showTimeliness);
+
+        // Toggle timeliness column
+        const timelinessTh = tableHead.querySelector("th:first-child");
+        if (timelinessTh) timelinessTh.style.display = showTimeliness ? "" : "none";
+
+        // Fetch datatake if input is string
+        if (typeof dataInput === "string") {
+            const datatake_id = dataInput.split("(")[0].trim();
+            this.currentDatatakeId = datatake_id;
+
+            // Set the label immediately
+            const label = document.getElementById("modalDatatakeId");
+            if (label) {
+                label.textContent = `(${datatake_id})`;
+                label.style.color = "white";
+                label.style.fontWeight = "bold";
+                label.offsetHeight;
+                //console.log("[LABEL SET]", label.textContent);
+            }
+
+            const $modal = $('#completenessTableModal');
+            //$modal.modal('show');
+            $modal.find('.modal-body').scrollTop(0);
+            this.fromInfoIcon = false;
 
             try {
                 const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
                 if (!response.ok) throw new Error("Failed to fetch datatake details");
-                const json = await response.json();
-                const datatake = format_response(json)[0];
 
-                // Format data from API to match table structure
-                for (let key of Object.keys(datatake)) {
-                    if (key.endsWith('local_percentage')) {
-                        const basekey = key.replace('_local_percentage', '');
-                        const parts = basekey.split('_');
-                        const timeliness = parts.pop();
-                        const productType = parts.join('_');
-                        dataArray.push({
-                            timeliness,
-                            productType,
-                            status: datatake[key].toFixed(2),
-                        });
-                    }
+                const datatake = await response.json();
+
+                // Map data based on mission
+                if (missionCode.startsWith("S5")) {
+                    dataArray = this.mapS5Data(datatake);
+                } else if (missionCode.startsWith("S3")) {
+                    dataArray = this.mapS3Data(datatake);
+                } else {
+                    dataArray = this.mapS1S2Data(datatake, missionCode);
                 }
-                $('#datatake-details').empty().append(`
-                    <div class="form-group">
-                        <label>Datatake ID: ${datatake.key}</label>
-                        <label style="margin-left: 20px;">Timeliness: ${datatake.timeliness}</label>
-                    </div>
-                `);
+
             } catch (err) {
-                $('#datatake-details').append(`
-                    <div class="form-group">
-                        <label>An error occurred while retrieving the datatake details</label>
-                    </div>
-                `);
-                console.error(err);
+                console.error("[INFO TABLE] Error fetching datatake:", err);
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = showTimeliness ? 3 : 2;
+                cell.textContent = "Error retrieving data.";
+                row.appendChild(cell);
+                tableBody.appendChild(row);
                 return;
             }
         } else {
             dataArray = dataInput;
         }
 
-        // --------------------------
-        // Sort dataArray by custom logic
-        // --------------------------
+        // Sorting
         dataArray.sort((a, b) => {
-            // Custom timeliness order: NRTI > OFFL
-            const timelinessOrder = { "NRTI": 1, "OFFL": 2 };
 
-            const tA = timelinessOrder[a.timeliness] ?? 99;
-            const tB = timelinessOrder[b.timeliness] ?? 99;
+            // S3 / S5 timeliness ordering (unchanged)
+            if (showTimeliness) {
+                const order = { NRTI: 1, OFFL: 2, "NR": 3, "NT": 4, "ST": 5, "AL": 6 };
+                const tA = order[a.timeliness] ?? 99;
+                const tB = order[b.timeliness] ?? 99;
+                if (tA !== tB) return tA - tB;
+            }
 
-            if (tA !== tB) return tA - tB; // timeliness first
+            // S1: order by product level (L0 → L1 → L2)
+            if (missionCode.startsWith("S1")) {
+                const lA = this.getProductLevel(a.productType);
+                const lB = this.getProductLevel(b.productType);
 
-            // Then productType alphabetical
-            if (a.productType !== b.productType) return a.productType.localeCompare(b.productType);
+                /*console.group("[S1 LEVEL CHECK]");
+                console.log("A productType:", a.productType, "→ level:", lA);
+                console.log("B productType:", b.productType, "→ level:", lB);
+                console.groupEnd();*/
 
-            // Then by status descending
-            return b.status - a.status;
+                if (lA !== lB) return lA - lB;
+            }
+
+            // Default: product name
+            if (a.productType !== b.productType) {
+                return a.productType.localeCompare(b.productType);
+            }
+
+            // Status descending
+            return parseFloat(b.status) - parseFloat(a.status);
         });
 
-        // Proceed with rendering the table
-        if (!dataArray || dataArray.length === 0) {
-            const row = document.createElement("tr");
-            const cell = document.createElement("td");
-            cell.colSpan = 2;
-            cell.textContent = "No data available.";
-            row.appendChild(cell);
-            tableBody.appendChild(row);
-            return;
-        }
-
-        this.currentDataArray = dataArray;
-        const totalItems = dataArray.length;
-        const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
-        this.currentPage = page;
-
+        // Pagination calculation
+        const totalPages = Math.ceil(dataArray.length / this.infoItemsPerPage);
         const startIndex = (page - 1) * this.infoItemsPerPage;
-        const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
+        const endIndex = Math.min(startIndex + this.infoItemsPerPage, dataArray.length);
         const pageItems = dataArray.slice(startIndex, endIndex);
 
-        pageItems.forEach(item => {
+        //console.debug("[INFO TABLE] Rendering page items:", pageItems);
+
+        // Render table rows
+        for (const item of pageItems) {
             const row = document.createElement("tr");
 
-            const timelinessCell = document.createElement("td");
-            timelinessCell.textContent = item.timeliness ?? "-";
+            if (showTimeliness) {
+                const timelinessCell = document.createElement("td");
+                timelinessCell.textContent = item.timeliness;
+                row.appendChild(timelinessCell);
+            }
 
-            const productTypeCell = document.createElement("td");
-            productTypeCell.textContent = item.productType || "-";
+            const productCell = document.createElement("td");
+            productCell.textContent = item.productType;
+            row.appendChild(productCell);
 
             const statusCell = document.createElement("td");
-            statusCell.textContent = item.status ?? "-";
-
-            row.appendChild(timelinessCell);
-            row.appendChild(productTypeCell);
+            statusCell.textContent = item.status;
             row.appendChild(statusCell);
-            tableBody.appendChild(row);
-        });
 
+            tableBody.appendChild(row);
+        }
+
+        //console.debug("[INFO TABLE] Table rendered with", pageItems.length, "rows");
+
+        // Render pagination buttons
         if (totalPages > 1) {
             const createButton = (text, pageNum, disabled = false, isActive = false) => {
                 const btn = document.createElement("button");
@@ -731,17 +768,94 @@ class Datatakes {
                 btn.disabled = disabled;
                 btn.classList.add("pagination-btn");
                 if (isActive) btn.classList.add("active");
-                btn.addEventListener("click", () => this.renderInfoTable(this.currentDataArray, pageNum));
+                btn.addEventListener("click", () => this.renderInfoTable(this.currentDataArray, pageNum, showTimeliness));
                 return btn;
             };
 
-            paginationControls.appendChild(createButton("« Prev", this.currentPage - 1, this.currentPage === 1));
+            paginationControls.appendChild(createButton("« Prev", page - 1, page === 1));
+
             for (let i = 1; i <= totalPages; i++) {
-                paginationControls.appendChild(createButton(i, i, false, i === this.currentPage));
+                paginationControls.appendChild(createButton(i, i, false, i === page));
             }
-            paginationControls.appendChild(createButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
+
+            paginationControls.appendChild(createButton("Next »", page + 1, page === totalPages));
         }
+
+        this.currentDataArray = dataArray;
+        this.currentPage = page;
+
+        //console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
+
+    // Mapping functions
+    mapS1S2Data(datatake, missionCode) {
+        const rows = [];
+
+        for (const key of Object.keys(datatake)) {
+            if (!key.endsWith("_local_percentage")) continue;
+
+            const productType = key.replace("_local_percentage", "");
+
+            // S2: keep ONLY MSI products
+            if (missionCode.startsWith("S2") && !productType.startsWith("MSI_")) {
+                continue;
+            }
+
+            rows.push({
+                timeliness: "-",
+                productType,
+                status: datatake[key].toFixed(2)
+            });
+        }
+
+        return rows;
+    }
+
+
+    getProductLevel(productType) {
+        if (productType === "OUT_OF_MONITORING") return 99;
+
+        const match = productType.match(/__([0-9A-Z])/);
+        if (match) {
+            const lvl = match[1];
+            if (!isNaN(lvl)) return parseInt(lvl, 10); // 0,1,2
+            if (lvl === "A") return 3; // optional: map letters to numbers
+            return 98; // unknown letters
+        }
+
+        // GRDH, ETA, OCN → maybe treat as level 2 by default
+        if (productType.startsWith("IW_GRDH")) return 2;
+        if (productType.startsWith("IW_ETA")) return 2;
+        if (productType.startsWith("IW_OCN")) return 2;
+
+        return 98;
+    }
+
+
+
+    mapS3Data(datatake) {
+        const rows = [];
+        for (const key of Object.keys(datatake)) {
+            if (!key.endsWith("_local_percentage")) continue;
+            const productType = key.replace("_local_percentage", "");
+            const tKey = productType + "_timeliness";
+            rows.push({ timeliness: datatake[tKey] ?? "-", productType, status: datatake[key].toFixed(2) });
+        }
+        return rows;
+    }
+
+    mapS5Data(datatake) {
+        if (!Array.isArray(datatake)) {
+            console.error("[S5] Expected array, got:", datatake);
+            return [];
+        }
+        return datatake.map(row => ({
+            timeliness: row.timeliness,
+            productType: row.product,
+            status: row.percentage.toFixed(2)
+        }));
+    }
+
 
     updateCharts(type, linkKey) {
         // Select the right container & chart instance name
