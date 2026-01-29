@@ -33,81 +33,56 @@ class ProductTimeliness {
      */
     constructor() {
 
+        // Start - stop time range
+        this.end_date = new Date();
+        this.end_date.setUTCHours(23, 59, 59, 0);
+        this.start_date = new Date();
+        this.start_date.setMonth(this.end_date.getMonth() - 3);
+        this.start_date.setUTCHours(0, 0, 0, 0);
+
+        // Set Charts
         this.gaugeCharts = new Map();
     }
 
     init() {
 
-        console.info("[ProductTimeliness] init");
+        // Retrieve the user profile. In case of "ecuser" role, allow
+        // the visualization of events up to the beginning of the previous quarter
+        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
 
-        // Render SSR gauges immediately
-        this.renderFromDOM();
+        //  Register event callback for Time period select
+        var time_period_sel = document.getElementById('time-period-select');
+        time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+        // this.updateDateInterval(time_period_sel.value);
 
-        // Hook time period selector
-        const timePeriodSel = document.getElementById('time-period-select');
-        if (timePeriodSel) {
-            timePeriodSel.addEventListener(
-                'change',
-                this.onTimePeriodChange.bind(this)
-            );
+        // Retrieve the timeliness of each type for each mission
+        this.loadTimelinessStatistics('prev-quarter');
+        return;
+    }
+
+    quarterAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            var time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel.options.length === 4) {
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
+            }
+
+            // Programmatically select the previous quarter as the default time range
+            console.info('Programmatically set the time period to previous quarter')
+            time_period_sel.value = 'prev-quarter';
         }
     }
 
-    renderFromDOM() {
-        console.info("[ProductTimeliness] Rendering gauges from SSR DOM");
-
-        document.querySelectorAll('canvas.canvasBox').forEach(canvas => {
-            const value = Number(canvas.dataset.value);
-            const threshold = Number(canvas.dataset.threshold);
-
-            if (isNaN(value) || isNaN(threshold)) {
-                console.warn(
-                    "[ProductTimeliness] Missing data for",
-                    canvas.id
-                );
-                return;
-            }
-
-            this.createGauge(canvas, value, threshold);
-        });
+    errorLoadAuthorized(response) {
+        console.error(response)
+        return;
     }
 
-    createGauge(canvas, value, threshold) {
-        const ctx = canvas.getContext('2d');
-
-        const chart = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [value, Math.max(threshold - value, 0)],
-                    backgroundColor: [
-                        value <= threshold ? '#28a745' : '#dc3545',
-                        '#e9ecef'
-                    ],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                cutout: '75%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { enabled: false }
-                }
-            }
-        });
-
-        this.gaugeCharts.set(canvas.id, chart);
-    }
-
-    onTimePeriodChange(event) {
-        const period = event.target.value;
-
-        console.info("[ProductTimeliness] Reload via SSR:", period);
-
-        const url = new URL(window.location.href);
-        url.searchParams.set('period', period);
-
-        window.location.href = url.toString();
+    on_timeperiod_change() {
+        var time_period_sel = document.getElementById('time-period-select');
+        console.log("Time period changed to " + time_period_sel.value);
+        // this.updateDateInterval(time_period_sel.value);
+        this.loadTimelinessStatistics(time_period_sel.value);
     }
 
     updateDateInterval(period_type) {
@@ -121,7 +96,7 @@ class ProductTimeliness {
         return;
     }
 
-    /*loadTimelinessStatistics(period_type) {
+    loadTimelinessStatistics(period_type) {
         var timeliness_api_name = 'reports/cds-product-timeliness';
         console.log("Loading statistics for period " + period_type);
         // Clear previous data, if any
@@ -153,7 +128,7 @@ class ProductTimeliness {
             }
         });
         return;
-    }*/
+    }
 
     successLoadTimeliness(response) {
 

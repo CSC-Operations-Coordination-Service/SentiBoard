@@ -1498,7 +1498,7 @@ def admin_space_segment():
     )
 
 
-@blueprint.route("/product-timeliness")
+""" @blueprint.route("/product-timeliness")
 @blueprint.route("/product-timeliness.html")
 @login_required
 def product_timeliness_page():
@@ -1615,6 +1615,7 @@ def product_timeliness_page():
         missions=MISSIONS,
         period_type=period,
     )
+ """
 
 
 @blueprint.route("/<template>")
