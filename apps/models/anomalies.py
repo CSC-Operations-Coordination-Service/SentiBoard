@@ -116,7 +116,6 @@ def update_anomaly(
             anomaly.end = end
             anomaly.environment = environment
             anomaly.modify_date = modify_date
-            anomaly.category = category  # TO REMOVE IT WAS JUST TO PROVE THE SOLUTION
         else:
             datatakes_completeness = []
             if environment is not None and len(environment) > 0:
