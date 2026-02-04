@@ -17,6 +17,7 @@ COPY . .
 
 COPY site-packages/czml/czml.py /usr/local/lib/python3.10/site-packages/czml/czml.py
 COPY site-packages/satellite_czml/czml.py /usr/local/lib/python3.10/site-packages/satellite_czml/czml.py
+RUN mkdir -p /apps/logs
 
 # gunicorn
 CMD ["gunicorn", "--config", "gunicorn-cfg.py", "run:app"]
