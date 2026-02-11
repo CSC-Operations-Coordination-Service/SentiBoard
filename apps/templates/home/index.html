@@ -33,6 +33,12 @@
     .main-panel > .content {
       margin-top: 65px !important;
     }
+     @media (min-width: 992px) {
+      .hero-section {
+        padding-bottom: 420px;
+      }
+    }
+
     @media (min-width: 1600px) {
       #tutorial > div {
         right: 40px;
@@ -72,7 +78,12 @@
       height: auto;
       display: block;
     }
-  </style>
+
+    .hero-section {
+      position: relative;
+      padding-bottom: 420px;
+    }
+</style>
 
 {% endblock head_meta %}
 
@@ -90,7 +101,7 @@
 </a>
 
 <!-- Hero section -->
-<div class="content page-inner" style="background-color: #006B7C">
+<div class="content page-inner hero-section" style="background-color: #006B7C">
   <div style="width: 100%; position: relative;">
     <h1 class="sr-only">Copernicus Sentinel Operations Dashboard</h1>
 
@@ -150,10 +161,13 @@
     </div>
   </div>
   <!-- News banner overlay (instant messages placeholder) -->
-  <div id="custom-banner-placeholder"
-      class="position-absolute text-white"
-      style="top: 125px; left: 15px; width: 350px; z-index: 3;">
-  </div>
+   <div class="hero-overlays d-none d-lg-block">
+    <div id="custom-banner-placeholder"
+      class="bg-dark text-white p-3 rounded"
+      style="position: absolute; top: 60px; left: 15px; width: 350px; z-index: 3;">
+    </div>
+   </div>
+  
   <!-- News banner for mobile -->
   <div class="d-block d-lg-none mt-3">
     <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#customBannerMobile">

@@ -317,7 +317,7 @@ class Home {
 
     fetchInstantMessages() {
         $.getJSON('/api/instant-messages/all', (data) => {
-            const firstThree = data.messages.slice(0, 3);
+            const firstThree = data.messages.slice(0, 5);
             this.renderInstantMessageCards(firstThree, data.messages.length);
         }).fail((xhr) => {
             console.error("Failed to load instant messages:", xhr.responseText);
@@ -371,7 +371,7 @@ class Home {
                 </div>`;
         });
 
-        if (totalMessages > 3) {
+        if (totalMessages > 5) {
             desktopHtml += `
             <div class="text-center mt-2">
                 <a href="/newsList.html" class="btn btn-outline-light" style="border-color: #ffc107; font-weight: 500;  background-color: #FFC107 !important; color: #212529 !important;">View all news</a>
@@ -394,7 +394,7 @@ class Home {
             </div>`;
         });
 
-        if (totalMessages > 3) {
+        if (totalMessages > 5) {
             mobileHtml += `
             <div class="text-center mt-2">
                 <a href="/newsList.html" class="btn btn-outline-light" style="border-color: #ffc107; background-color: #FFC107; color: #212529 !important;">View all news</a>
