@@ -8,7 +8,7 @@ COPY requirements.txt .
 
 # install python dependencies
 RUN pip install --upgrade pip
-RUN pip install -U pip setuptools wheel
+RUN pip install -U pip 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update
 RUN apt-get upgrade -y
