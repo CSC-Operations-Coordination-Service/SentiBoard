@@ -12,6 +12,7 @@ RUN pip install -U pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 RUN apt-get update
 RUN apt-get upgrade -y
+RUN apt-get install sqlite3
 
 COPY . .
 
