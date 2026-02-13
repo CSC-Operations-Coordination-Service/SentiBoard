@@ -78,250 +78,40 @@
 		<!-- Mission Timeliness by Timeliness Type (Gauge charts) -->
 		<!-- Row with S1 and S2 Charts -->
 		<div class="row">
-
-			<!-- col-12 col-sm-6  -->
-			<div class="col-md-8">
-				<div class="card-header">
-						<div class="card-title">Sentinel-1</div>
-				</div>
-				<div class="row">
-					<div class="col-md-6">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-1 Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s1-ntc-gauge-chart" class="canvasBox"></canvas>
-								</div>
-							</div>
-						</div>
+			{% for mission, timeliness_map in timeliness.items() %}
+				<div class="col-md-8">
+					<div class="card-header">
+							<div class="card-title">{{ mission }}</div>							 
 					</div>
-					<div class="col-md-6">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-1 NRT</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container" >
-									<canvas id="s1-nrt-gauge-chart" class="canvasBox"></canvas>
-								</div>
-							</div>
+					{% for timeliness_type, charts in timeliness_map.items() %}
+  						<h4>{{ timeliness_type }}</h4>
+						<div class="row">
+							{% for key, chart in charts.items() %}
+								{# Split chartId to extract timeliness type and optional category #}                            
+								<div class="col-md-6">
+									<div class="card">
+										<div class="card-header">
+											<div class="card-title">
+												{% if key == "_mission" %}
+													{{ mission }} {{ timeliness_type }}
+												{% else %}
+													{{ key }} {{ timeliness_type }}
+												{% endif %}
+											</div>
+										</div>
+										<div class="card-body">
+											<div class="chart-container">
+												<canvas id="{{ chart.pieId }}" style="height:200px"></canvas>
+											</div>
+										</div>
+									</div>
+							{% endfor %}
 						</div>
-					</div>
+					{% endfor %}
+					</div>				
 				</div>
-			<!--
-			-->
-			</div>
-			<div class="col-md-4">
-				<div class="card-header">
-					<div class="card-title">Sentinel-2</div>
-				</div>
-				<div class="row">
-					<div class="col-md-12">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-2 Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-    									<canvas id="s2-ntc-gauge-chart" class="canvasBox"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
+			{% endfor %}				
 		</div>
-
-		<!-- Row with S3 NRT Charts-->
-		<div class="row">
-			<div class="col-md-12">
-				<div class="card-header">
-					<div class="card-title">Sentinel-3 NRT</div>
-				</div>
-				<div class="row">
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">OLCI NRT</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-nrt-olci-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SLSTR NRT</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-nrt-slstr-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SRAL NRT</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-nrt-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Row with S3 STC Charts-->
-		<div class="row" >
-			<div class="col-md-12">
-				<div class="card-header">
-					<div class="card-title">Sentinel-3 STC</div>
-				</div>
-				<div class="row">
-					<div class="col-md-4 col-md-offset-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SRAL STC</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-stc-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4 col-md-offset-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SYN STC</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-stc-syn-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Row with S3 NTC Charts-->
-		<div class="row">
-			<div class="col-md-12">
-				<div class="card-header">
-					<div class="card-title">Sentinel-3 Default Timeliness</div>
-				</div>
-				<div class="row">
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">OLCI Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-ntc-olci-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SLSTR Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-ntc-slstr-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SRAL Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-ntc-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">SYN Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s3-ntc-syn-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<!-- Row with S5 Levels Charts -->
-		<div class="row">
-			<div class="col-md-12">
-				<div class="card-header">
-					<div class="card-title">Sentinel-5</div>
-				</div>
-				<div class="row">
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-5 L1 Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s5-ntc-l1-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-5 L2 Default Timeliness</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s5-ntc-l2-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="card">
-							<div class="card-header">
-								<div class="card-title">Sentinel-5 L2 NRT</div>
-							</div>
-							<div class="card-body">
-								<div class="chart-container">
-									<canvas id="s5-nrt-l2-gauge-chart" style="width: 50%; height: 50%"></canvas>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
 	</div>
 </div>
 
@@ -331,6 +121,9 @@
 {% block javascripts %}
 
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+	<script type="text/javascript">
+    	window.ssrTimelinessData = {{ timeliness | tojson }};
+	</script>
 	<script src="/static/assets/js/quarterly-reports/product-timeliness.js"></script>
 	<script defer type="text/javascript">productTimeliness.init();</script>
 

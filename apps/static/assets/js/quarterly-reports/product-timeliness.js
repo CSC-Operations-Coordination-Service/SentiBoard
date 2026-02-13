@@ -48,15 +48,16 @@ class ProductTimeliness {
 
         // Retrieve the user profile. In case of "ecuser" role, allow
         // the visualization of events up to the beginning of the previous quarter
-        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
+        //ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
 
         //  Register event callback for Time period select
-        var time_period_sel = document.getElementById('time-period-select');
-        time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+        //var time_period_sel = document.getElementById('time-period-select');
+        //time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
         // this.updateDateInterval(time_period_sel.value);
 
         // Retrieve the timeliness of each type for each mission
-        this.loadTimelinessStatistics('prev-quarter');
+        //this.loadTimelinessStatistics('prev-quarter');
+        this.successLoadTimeliness();
         return;
     }
 
@@ -130,38 +131,37 @@ class ProductTimeliness {
         return;
     }
 
-    successLoadTimeliness(response) {
+    successLoadTimeliness() {
 
-        // Acknowledge the successful retrieval of downlink operations
-        var json_resp = format_response(response);
-        console.log("received response:", json_resp);
-        var rows = json_resp[0].data;
-        console.info('Timeliness Statistics successfully retrieved');
-        console.info("Number of results: " + rows.length);
+        for (const mission in window.ssrTimelinessData) {
+            const timelinessMap = window.ssrTimelinessData[mission];
 
-        // Parse response
-        // Each result in response shall specify:
-        // mission (just for check)
-        // timeliness Type (one of NRT, NTC, STC, or tohers configured
-        // and extra parameter for category: either level or product_group (to be used to compute the gauge id)
-        // total_count (total of products generated with this timeliness type)
-        // num_ontime (number of products that matched the expected timeliness)
-        for (const record of rows) {
-            // Auxiliary variables
-            var timelinessType = record.timeliness;
-            var mission = record.mission;
-            // var total = element.total;
-            // var on_time_count = element.on_time;
-            var category = (record.level !== undefined) ? record.level : (record.product_group !== undefined) ? record.product_group : ""
-            var pieId = this.gaugeChartId(mission, category, timelinessType);
-            var threshold = record.threshold;
-            // Update the proper chart
-            // We are passing the record object, that contains the data to be fed in the Gauge
-            this.drawGaugeChart(pieId, threshold, record);
+            for (const timelinessType in timelinessMap) {
+                const charts = timelinessMap[timelinessType];
+
+                for (const key in charts) {
+                    const data = charts[key];
+
+                    if (!data || typeof data.value !== "number") {
+                        console.warn("Skipping invalid chart", mission, timelinessType, key);
+                        continue;
+                    }
+
+                    const record = {
+                        mission: mission,
+                        timeliness: timelinessType,
+                        product_group: key === "_mission" ? "" : key,
+                        total_count: 100,
+                        on_time: Math.round((data.value / 100) * 100),
+                        threshold: data.threshold
+                    };
+
+                    this.drawGaugeChart(data.pieId, data.threshold, record);
+                }
+            }
         }
-
-        return;
     }
+
 
     errorLoadDownlink(response) {
         console.error(response);
@@ -221,168 +221,93 @@ class ProductTimeliness {
         console.log("Drawing Gauge with ID " + pieId);
         console.log("Data to be put on chart: ", timelinessData);
         console.log("Threshold: " + timeThreshold);
+
         var thresholdLabel = format_dayhours(timeThreshold);
 
         var chartCanvas = document.getElementById(pieId);
-        if (chartCanvas !== null) {
-            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-        } else {
-            console.error("Guage Chart with id " + pieId + " not present on page")
+        if (!chartCanvas) {
+            console.error("Gauge Chart with id " + pieId + " not present on page");
             return;
         }
-        // Remove class from parent .card-body
-        //$('#'+pieId).closest('.card-body').removeClass('busy');
+        chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
 
-        // Data represent: total number of products for Mission/Timeliness Type/other
-        // and number of published products among them
-        // or chartCanvas
-        // Only one label is displayed, for the data published in time
-        // Tooltips shall display the absolute values :
-        //  for data published in time
-        //  for total generated product
-        // new Chart($('#' + pieId), {
-        var dataRemainder = timelinessData.total_count - timelinessData.on_time;
-        //console.log("Remainder of not on time products: "+dataRemainder);
-        // TODO: Split arguments of Chart creation
-        // data, options, pieceLabel, tootips
-        //chartCanvas
-        var timelinessDataArray = [timelinessData.on_time,
-            dataRemainder];
-        var gaugeDatasets = [];
-        // Data Array is empty if total is 0
-        if (timelinessData.total_count > 0) {
-            gaugeDatasets = [{
+        // Use real SSR values
+        const totalCount = timelinessData.total_count;
+        const onTime = timelinessData.on_time;
+        const dataRemainder = totalCount - onTime;
+
+        var timelinessDataArray = totalCount > 0 ? [onTime, dataRemainder] : [];
+
+        var gaugeData = {
+            datasets: totalCount > 0 ? [{
                 data: timelinessDataArray,
                 backgroundColor: ['#31ce36', '#fdaf4b', '#f3545d'],
                 borderRadius: 5,
                 borderWidth: 2
-            }]
-        }
-        // TODO Instead of data, make datasets Empty
-        var gaugeData = {
-            datasets: gaugeDatasets,
+            }] : [],
             labels: ['< ' + thresholdLabel]
         };
+
         var that = this;
         var gaugeChart = new Chart(chartCanvas.getContext('2d'), {
             type: 'doughnut',
             data: gaugeData,
             options: {
-                circumference: Math.PI, // sweep angle in radians
-                rotation: -1.0 * Math.PI, // start angle in radians
+                circumference: Math.PI,
+                rotation: -1.0 * Math.PI,
                 cutoutPercentage: 55,
                 responsive: true,
                 maintainAspectRatio: false,
-                //title: {
-                //    display: false,
-                //    text: "" + (timelinessData.on_time / timelinessData.total_count * 100).toFixed(0) + "%", //'< '+ thresholdLabel,
-                //    fontSize: 24,
-                //    position: 'bottom'
-                //},
                 legend: {
-                    // Not Working: Trying to make the font bigger
                     display: true,
                     position: 'chartArea',
-                    labels: {
-                        fontColor: 'white',
-                        fontSize: 18
-                    },
-                    onClick: function (e) {
-                        //e.stopPropagation();
-                    }
+                    labels: { fontColor: 'white', fontSize: 18 },
+                    onClick: () => { }
                 },
-                layout: {
-                    padding: {
-                        left: 10,
-                        right: 10,
-                        top: 20,
-                        bottom: 20
-                    }
-                },
-                // pieceLabel: {
-                //    // render: 'percentage',
-                //    render: function (args) {
-                //            if (args.label) {
-                //                    // return args.label +":"+ args.percentage+"%";
-                //                    var label = args.percentage+"%";
-                //                    //label += " <"+thresholdLabel;
-                //                    return  label;
-                //            } else {
-                //                    return "";
-                //            }
-                //     },
-                //    fontColor: 'white',
-                //    fontSize: 18,
-                //    position: 'inside'
-                //},
+                layout: { padding: { left: 10, right: 10, top: 20, bottom: 20 } },
                 centerText: {
-                    // To display On TIme percentage under/inside the Gauge
                     display: true,
                     color: "white",
-                    text: "" + (timelinessData.on_time / timelinessData.total_count * 100).toFixed(0) + "%"
+                    text: totalCount > 0 ? ((onTime / totalCount) * 100).toFixed(0) + "%" : "0%"
                 },
-                showTooltips: true,
                 tooltips: {
                     mode: 'label',
                     callbacks: {
-                        // To define the text of the tooltips: Last data item must be replaced with the total 
                         label: function (tooltipItem, data) {
                             var idx = tooltipItem.index;
-                            //console.log("Tooltip on index "+idx);
                             var curr_dataset = data.datasets[0];
-                            var label_str = "";
                             if (idx === 0) {
-                                label_str = data.labels[idx] + ': ' + curr_dataset.data[idx];
+                                return data.labels[idx] + ': ' + curr_dataset.data[idx];
                             } else {
-                                // compute total
-                                // var total = curr_dataset.data[0] + curr_dataset.data[1];
-                                label_str = "Out of threshold: " + curr_dataset.data[1];
+                                return "Out of threshold: " + curr_dataset.data[1];
                             }
-                            return label_str;
                         }
                     }
-                    //labelTextColor: function (tooltipItem, chart) {
-                    //    return chart.data.datasets[0].backgroundColor[tooltipItem.index];
-                    //}
                 }
             },
-            plugins:
-            {
-                legend: {
-                    onClick: null
-                },
+            plugins: {
+                legend: { onClick: null },
                 beforeDraw: function (chart) {
-                    if (chart.data.datasets.length !== 0) {
-
-                        if (chart.config.options.centerText.display !== null &&
-                            typeof chart.config.options.centerText.display !== 'undefined' &&
-                            chart.config.options.centerText.display) {
-                            that.drawInnerText(chart);
-                        }
+                    if (chart.data.datasets.length && chart.config.options.centerText.display) {
+                        that.drawInnerText(chart);
                     }
                 },
                 afterDraw: function (chart) {
                     if (chart.data.datasets.length === 0) {
-                        // No data is present
                         var ctx = chart.chart.ctx;
                         var width = chart.chart.width;
-                        var height = chart.chart.height
-
+                        var height = chart.chart.height;
                         chart.clear();
-
                         ctx.save();
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
-                        // if height added with chart.label.height /2,
-                        // text will be drawn at bottom of canvas
                         ctx.fillText('No data to display', width / 2, height / 2);
                         ctx.restore();
                     }
                 }
             }
-
         });
-        // Save chart to allow clearing it
+
         this.gaugeCharts.set(pieId, gaugeChart);
     }
 

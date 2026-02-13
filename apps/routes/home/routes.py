@@ -1498,7 +1498,7 @@ def admin_space_segment():
     )
 
 
-""" @blueprint.route("/product-timeliness")
+@blueprint.route("/product-timeliness")
 @blueprint.route("/product-timeliness.html")
 @login_required
 def product_timeliness_page():
@@ -1579,33 +1579,48 @@ def product_timeliness_page():
 
         mission = item.get("mission")
         timeliness = item.get("timeliness")
+        product_group = item.get("product_group")
 
         if not mission or not timeliness:
             continue
 
-        # ---- base chart id
-        chart_id = timeliness.lower()
-
-        # ---- Sentinel-3 needs product_group
-        if mission == "S3":
-            product_group = item.get("product_group")
-            if not product_group:
-                continue
-            chart_id = f"{chart_id}-{product_group.lower()}"
-
+        timeliness_key = timeliness.upper()
         total = item.get("total_count", 0)
         on_time = item.get("on_time", 0)
 
         value = round((on_time / total) * 100, 2) if total else 0.0
 
-        view_model.setdefault(mission, {})[chart_id] = {
+        try:
+            threshold = int(item.get("threshold"))
+        except (TypeError, ValueError):
+            threshold = None
+
+        mission_block = view_model.setdefault(mission, {})
+        timeliness_block = mission_block.setdefault(timeliness_key, {})
+        chart_payload = {
             "value": value,
-            "threshold": item.get("threshold"),
+            "threshold": threshold,
+            "pieId": (
+                f"{mission}-{timeliness_key}"
+                + (f"-{product_group.upper()}" if product_group else "")
+                + "-gauge-chart"
+            ).lower(),
         }
+
+        # Mission-level chart
+        if not product_group:
+            timeliness_block["_mission"] = chart_payload
+        else:
+            timeliness_block[product_group.upper()] = chart_payload
 
     current_app.logger.info(
         "[PRODUCT TIMELINESS] View model missions: %s",
         list(view_model.keys()),
+    )
+
+    current_app.logger.info(
+        "[PRODUCT TIMELINESS] FINAL SSR model size: %s charts",
+        sum(len(v) for v in view_model.values()),
     )
 
     # ---- render SSR page
@@ -1614,8 +1629,8 @@ def product_timeliness_page():
         timeliness=view_model,
         missions=MISSIONS,
         period_type=period,
+        raw=timeliness_data,
     )
- """
 
 
 @blueprint.route("/<template>")
