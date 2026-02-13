@@ -46,7 +46,8 @@
     }
 
     #hero-container {
-    position: relative;
+      position: relative;
+      overflow: hidden;
     }
 
   /* Poster starts visible above the video */
@@ -70,7 +71,6 @@
     #home-video {
       width: 100%;
       height: auto;
-      display: block;
     }
   </style>
 
@@ -184,10 +184,9 @@
 </div>
   <!-- News banner overlay (instant messages placeholder) -->
   <div id="custom-banner-placeholder"
-     class="position-absolute text-white"
-     style="top: 125px; left: 15px; width: 350px; z-index: 3;">
+     class="position-absolute text-white">
 
-  <div class="bg-dark p-3 rounded">
+  <div class="bg-dark p-3 rounded scrollable-news">
     <h4 class="card-title text-white text-center mb-3">News</h4>
 
     {% if instant_messages and instant_messages|length > 0 %}
@@ -207,7 +206,7 @@
           </div>
         {% endfor %}
 
-        {% if total_messages > 3 %}
+        {% if total_messages > 5 %}
           <div class="text-center mt-2">
             <a href="/newsList.html"
                class="btn btn-outline-light"
@@ -361,7 +360,31 @@
       }
     });
   </script>
+  <script>
+    function clampNewsToVideo() {
+      const hero = document.getElementById("hero-container");
+      const news = document.querySelector(".scrollable-news");
 
+      if (!hero || !news) return;
+
+      const heroHeight = hero.offsetHeight;
+
+      if (heroHeight > 0) {
+        news.style.maxHeight = (heroHeight - 120) + "px"; // header + padding
+      }
+    }
+
+    window.addEventListener("load", clampNewsToVideo);
+    window.addEventListener("resize", clampNewsToVideo);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const video = document.getElementById("home-video");
+      if (video) {
+        video.addEventListener("loadeddata", clampNewsToVideo);
+        video.addEventListener("playing", clampNewsToVideo);
+      }
+    });
+</script>
   <!-- Keep index.js deferred -->
 <script src="/static/assets/js/index/index.js" defer></script>
 
@@ -379,6 +402,11 @@
         .catch(err => console.error("Failed to load datatakes.js", err));
     }
    
+    const video = document.getElementById("home-video");
+      if (video) {
+        video.addEventListener("loadedmetadata", clampNewsToVideo);
+        video.addEventListener("playing", clampNewsToVideo);
+      }
     // Initialize Home (from index.js, already loaded with defer)
     if (typeof Home !== "undefined") {
       const home = new Home();

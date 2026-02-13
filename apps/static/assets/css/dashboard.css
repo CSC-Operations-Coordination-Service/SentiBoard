@@ -1057,6 +1057,9 @@ a:hover {
     position: static !important;
     width: 100% !important;
     padding: 1rem;
+    height: auto;
+    overflow: visible;
+    margin-bottom: 1rem;
   }
 
 }
@@ -1064,14 +1067,35 @@ a:hover {
 @media (min-width: 992px) {
   #custom-banner-placeholder {
     position: absolute;
-    top: 125px;
+    top: 60px;
     left: 15px;
     width: 350px;
     z-index: 3;
   }
+
+  #custom-banner-placeholder .bg-dark {
+    padding: 1rem;
+    border-radius: 0.375rem;
+  }
+
+  .scrollable-news {
+    overflow-y: auto;
+  }
+
+  .scrollable-news::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollable-news::-webkit-scrollbar-track {
+    background: #343a40;
+  }
+
+  .scrollable-news::-webkit-scrollbar-thumb {
+    background-color: #ffc107;
+    border-radius: 4px;
+  }
+
 }
-
-
 
 @media screen and (max-width: 991px) {
   .logo-header .more {
@@ -1086,7 +1110,13 @@ a:hover {
   }
 
   #custom-banner-placeholder {
-    display: none;
+    display: block !important;
+    position: static;
+    width: 100%;
+    padding: 1rem;
+    height: auto;
+    max-height: none;
+    margin-bottom: 1rem;
   }
 
   #custom-banner-mobile {

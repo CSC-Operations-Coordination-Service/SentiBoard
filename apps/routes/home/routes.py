@@ -455,7 +455,7 @@ def index():
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
-        page_size = 3  # number of messages to show on home page
+        page_size = 5  # number of messages to show on home page
 
         # sorting publicationDate descending
         query = db.session.query(instant_messages_model.InstantMessages).order_by(
