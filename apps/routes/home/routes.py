@@ -1579,10 +1579,36 @@ def product_timeliness_page():
 
         mission = item.get("mission")
         timeliness = item.get("timeliness")
-        product_group = item.get("product_group")
 
         if not mission or not timeliness:
             continue
+
+        product_group = item.get("product_group")
+
+        # Sentinel-3 MUST be split by product
+        if mission == "S3":
+            if not product_group:
+                current_app.logger.info(
+                    f"Skipping S3 item without product group: {timeliness}"
+                )
+                continue
+
+        # Sentinel-5: product_group is implicit (L1 / L2)
+        if mission == "S5" and not product_group:
+            # Try to infer from item content
+            inferred_pg = (
+                item.get("product_level")
+                or item.get("level")
+                or item.get("processing_level")
+            )
+
+            if inferred_pg:
+                product_group = inferred_pg.upper()
+            else:
+                current_app.logger.info(
+                    f"Skipping S5 item without inferable product group: {timeliness}"
+                )
+                continue
 
         timeliness_key = timeliness.upper()
         total = item.get("total_count", 0)
@@ -1597,6 +1623,7 @@ def product_timeliness_page():
 
         mission_block = view_model.setdefault(mission, {})
         timeliness_block = mission_block.setdefault(timeliness_key, {})
+
         chart_payload = {
             "value": value,
             "threshold": threshold,
@@ -1608,10 +1635,10 @@ def product_timeliness_page():
         }
 
         # Mission-level chart
-        if not product_group:
-            timeliness_block["_mission"] = chart_payload
-        else:
+        if product_group:
             timeliness_block[product_group.upper()] = chart_payload
+        else:
+            timeliness_block["_mission"] = chart_payload
 
     current_app.logger.info(
         "[PRODUCT TIMELINESS] View model missions: %s",

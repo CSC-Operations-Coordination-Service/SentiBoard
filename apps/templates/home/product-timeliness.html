@@ -78,39 +78,160 @@
 		<!-- Mission Timeliness by Timeliness Type (Gauge charts) -->
 		<!-- Row with S1 and S2 Charts -->
 		<div class="row">
-			{% for mission, timeliness_map in timeliness.items() %}
-				<div class="col-md-8">
-					<div class="card-header">
-							<div class="card-title">{{ mission }}</div>							 
+			<!-- Sentinel-1 -->
+			<div class="col-md-8">
+				<div class="card-header">
+					<div class="card-title">Sentinel-1</div>
+				</div>
+
+				<div class="row">
+					{% for timeliness_type, charts in timeliness["S1"].items() %}
+					{% for key, chart in charts.items() %}
+						<div class="col-md-6">
+						<div class="card mb-3">
+							<div class="card-header">
+							<div class="card-title">
+								Sentinel-1 {{ timeliness_type }}
+							</div>
+							</div>
+							<div class="card-body">
+							<canvas id="{{ chart.pieId }}" class="canvasBox"></canvas>
+							</div>
+						</div>
+						</div>
+					{% endfor %}
+					{% endfor %}
+				</div>
+			</div>
+
+			<!-- Sentinel-2 -->
+			<!-- Sentinel-2 -->
+			<div class="col-md-4">
+				<div class="card-header">
+					<div class="card-title">Sentinel-2</div>
+				</div>
+
+				{% for timeliness_type, charts in timeliness["S2"].items() %}
+					{% for key, chart in charts.items() %}
+					{% if key == "_mission" %}
+						<div class="card mb-3">
+						<div class="card-header">
+							<div class="card-title">
+							Sentinel-2 {{ timeliness_type }}
+							</div>
+						</div>
+						<div class="card-body">
+							<canvas id="{{ chart.pieId }}" class="canvasBox"></canvas>
+						</div>
+						</div>
+					{% endif %}
+					{% endfor %}
+				{% endfor %}
+			</div>
+
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+				<div class="card-title">Sentinel-3 NRT</div>
+				</div>
+
+				<div class="row">
+				{% for key, chart in timeliness["S3"]["NRT"].items() %}
+					{% if key != "_mission" %}
+					<div class="col-md-4">
+						<div class="card mb-3">
+						<div class="card-header">
+							<div class="card-title">{{ key }} NRT</div>
+						</div>
+						<div class="card-body">
+							<canvas id="{{ chart.pieId }}"></canvas>
+						</div>
+						</div>
 					</div>
-					{% for timeliness_type, charts in timeliness_map.items() %}
-  						<h4>{{ timeliness_type }}</h4>
-						<div class="row">
-							{% for key, chart in charts.items() %}
-								{# Split chartId to extract timeliness type and optional category #}                            
-								<div class="col-md-6">
-									<div class="card">
+					{% endif %}
+				{% endfor %}
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+				<div class="card-title">Sentinel-3 STC</div>
+				</div>
+
+				<div class="row justify-content-center">
+				{% for key, chart in timeliness["S3"]["STC"].items() %}
+					{% if key != "_mission" %}
+					<div class="col-md-4">
+						<div class="card mb-3">
+						<div class="card-header">
+							<div class="card-title">{{ key }} STC</div>
+						</div>
+						<div class="card-body">
+							<canvas id="{{ chart.pieId }}"></canvas>
+						</div>
+						</div>
+					</div>
+					{% endif %}
+				{% endfor %}
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+				<div class="card-title">Sentinel-3 Default Timeliness</div>
+				</div>
+				{% for row in timeliness["S3"]["NTC"].items() | rejectattr(0, "equalto", "_mission") | list | batch(3, fill_with=None) %}
+				<div class="row">
+					{% for item in row %}
+					{% if item %}
+						{% set key = item[0] %}
+						{% set chart = item[1] %}
+						<div class="col-md-4">
+						<div class="card mb-3">
+							<div class="card-header">
+							<div class="card-title">{{ key }} Default</div>
+							</div>
+							<div class="card-body">
+							<canvas id="{{ chart.pieId }}"></canvas>
+							</div>
+						</div>
+						</div>
+					{% endif %}
+					{% endfor %}
+				</div>
+				{% endfor %}
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-5</div>
+				</div>
+				<div class="row">
+					{% if "S5" in timeliness %}
+						{% for timeliness_type, charts in timeliness["S5"].items() %}
+							{% for pg, chart in charts.items() %}
+								<div class="col-md-4">
+									<div class="card mb-3">
 										<div class="card-header">
 											<div class="card-title">
-												{% if key == "_mission" %}
-													{{ mission }} {{ timeliness_type }}
-												{% else %}
-													{{ key }} {{ timeliness_type }}
-												{% endif %}
+												Sentinel-5 {{ timeliness_type }} {% if pg != "_mission" %}{{ pg }}{% endif %}
 											</div>
 										</div>
 										<div class="card-body">
-											<div class="chart-container">
-												<canvas id="{{ chart.pieId }}" style="height:200px"></canvas>
-											</div>
+											<canvas id="{{ chart.pieId }}"></canvas>
 										</div>
 									</div>
+								</div>
 							{% endfor %}
-						</div>
-					{% endfor %}
-					</div>				
+						{% endfor %}
+					{% endif %}
 				</div>
-			{% endfor %}				
+			</div>
 		</div>
 	</div>
 </div>
