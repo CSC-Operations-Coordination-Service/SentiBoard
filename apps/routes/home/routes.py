@@ -1514,6 +1514,7 @@ def product_timeliness_page():
         "S3": ["NTC", "NRT", "STC"],
         "S5": ["NTC", "NRT"],
     }
+
     # ---- check user authorization
     authorized = auth_utils.is_user_authorized(["admin", "ecuser", "esauser"])
     if not authorized:
@@ -1522,11 +1523,67 @@ def product_timeliness_page():
     current_app.logger.info("[PRODUCT TIMELINESS] SSR route START")
 
     # ---- period selection (SSR)
-    period = request.args.get("period", "prev-quarter")
+    period = request.args.get(
+        "period", "prev-quarter"
+    )  # default: previous calendar quarter
+    now = datetime.now(timezone.utc)
+    period_id = None
 
-    # ---- cache key (same as API)
-    cache_key = timeliness_cache.timeliness_cache_key_format.format(
-        "previous", "quarter"
+    # ---- determine previous calendar quarter (always)
+    quarter_index = (now.month - 1) // 3
+    prev_quarter_start_month = quarter_index * 3 - 2
+    prev_quarter_year = now.year
+    if prev_quarter_start_month <= 0:
+        prev_quarter_start_month += 12
+        prev_quarter_year -= 1
+
+    prev_quarter_start = datetime(
+        prev_quarter_year, prev_quarter_start_month, 1, tzinfo=timezone.utc
+    )
+    prev_quarter_end = (
+        prev_quarter_start + relativedelta(months=3) - relativedelta(seconds=1)
+    )
+    prev_quarter_label = (
+        f"{prev_quarter_start:%b %Y} - {prev_quarter_end:%b %Y}"  # keep this always
+    )
+
+    if period == "day":
+        period_start = now - relativedelta(days=1)
+        period_end = now
+        mode = "last"
+        period_id = "24h"
+
+    elif period == "week":
+        period_start = now - relativedelta(days=7)
+        period_end = now
+        mode = "last"
+        period_id = "7d"
+
+    elif period == "month":
+        period_start = now - relativedelta(days=30)
+        period_end = now
+        mode = "last"
+        period_id = "30d"
+
+    elif period in ("prev-quarter", "last-3-months"):
+        # Treat both as fixed previous quarter
+        period_start = prev_quarter_start
+        period_end = prev_quarter_end
+        period_id = "quarter"
+        mode = "previous"
+    else:
+        period_id = period
+
+    cache_key = timeliness_cache.timeliness_cache_key_format.format(mode, period_id)
+
+    # ---- log period for debugging
+    current_app.logger.info(
+        "[PRODUCT TIMELINESS] Selected period: %s (%s → %s), mode=%s, period_id=%s",
+        period,
+        period_start.isoformat(),
+        period_end.isoformat(),
+        period_id,
+        cache_key,
     )
 
     # ---- get from cache (may be Response, dict, or None)
@@ -1551,14 +1608,22 @@ def product_timeliness_page():
     )
 
     if needs_reload:
-        current_app.logger.warning(
-            "[PRODUCT TIMELINESS] Cache empty or invalid → forcing reload"
+
+        current_app.logger.info(
+            "[PRODUCT TIMELINESS] Cache reload using period_id=%s (from period=%s)",
+            period_id,
+            period,
         )
 
-        # ---- trigger expensive computation
-        timeliness_cache.load_timeliness_cache_previous_quarter()
+        current_app.logger.warning(
+            "[PRODUCT TIMELINESS] Cache empty → recompute for %s", period
+        )
 
-        # ---- re-read cache
+        if mode == "previous":
+            timeliness_cache.load_timeliness_cache_previous_quarter()
+        else:
+            timeliness_cache.timeliness_load_cache(period_id)
+
         timeliness_data = flask_cache.get(cache_key)
 
         if hasattr(timeliness_data, "get_json"):
@@ -1598,12 +1663,11 @@ def product_timeliness_page():
         product_group = item.get("product_group")
 
         # Sentinel-3 MUST be split by product
-        if mission == "S3":
-            if not product_group:
-                current_app.logger.info(
-                    f"Skipping S3 item without product group: {timeliness}"
-                )
-                continue
+        if mission == "S3" and not product_group:
+            current_app.logger.info(
+                f"Skipping S3 item without product group: {timeliness}"
+            )
+            continue
 
         # Sentinel-5: product_group is implicit (L1 / L2)
         if mission == "S5" and not product_group:
@@ -1689,7 +1753,11 @@ def product_timeliness_page():
         timeliness=view_model,
         missions=MISSIONS,
         period_type=period,
+        period_id=period_id,
+        prev_quarter_label=prev_quarter_label,
         raw=timeliness_data,
+        period_start=period_start,
+        period_end=period_end,
     )
 
 

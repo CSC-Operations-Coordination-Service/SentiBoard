@@ -26,92 +26,43 @@ class ProductTimeliness {
      */
     constructor() {
 
-        // Start - stop time range
-        this.end_date = new Date();
-        this.end_date.setUTCHours(23, 59, 59, 0);
-        this.start_date = new Date();
-        this.start_date.setMonth(this.end_date.getMonth() - 3);
-        this.start_date.setUTCHours(0, 0, 0, 0);
-
         // Set Charts
         this.gaugeCharts = new Map();
     }
 
     init() {
+        console.info("[PRODUCT TIMELINESS] Initializing from SSR data");
+
+        const select = document.getElementById("time-period-select");
+        if (select) {
+            select.addEventListener("change", () => {
+                this.on_timeperiod_change();
+            });
+        }
 
         this.successLoadTimeliness();
-        return;
     }
 
-    quarterAuthorizedProcess(response) {
-        if (response['authorized'] === true) {
-            var time_period_sel = document.getElementById('time-period-select');
-            if (time_period_sel.options.length === 4) {
-                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
-            }
+    successLoadTimelinessForPeriod(period) {
+        const sel = document.getElementById('time-period-select');
+        if (sel) sel.value = period;
 
-            // Programmatically select the previous quarter as the default time range
-            console.info('Programmatically set the time period to previous quarter')
-            time_period_sel.value = 'prev-quarter';
-        }
+        // Now call the normal successLoadTimeliness()
+        this.successLoadTimeliness();
     }
-
-    errorLoadAuthorized(response) {
-        console.error(response)
-        return;
-    }
-
     on_timeperiod_change() {
-        var time_period_sel = document.getElementById('time-period-select');
-        console.log("Time period changed to " + time_period_sel.value);
-        // this.updateDateInterval(time_period_sel.value);
-        this.loadTimelinessStatistics(time_period_sel.value);
+        const sel = document.getElementById('time-period-select');
+        const period = sel.value;
+        console.log("Time period changed to " + period);
+        window.location.href = `/product-timeliness?period=${period}`;
     }
 
-    updateDateInterval(period_type) {
-
-        // Update start date depending on value of period type
-        // one of: day, week, month, quarter
-        // take delta to be applied from configuration
-        let dates = new ObservationTimePeriod().getIntervalDates(period_type);
-        this.start_date = dates[0];
-        this.end_date = dates[1];
-        return;
-    }
-
-    loadTimelinessStatistics(period_type) {
-        var timeliness_api_name = 'reports/cds-product-timeliness';
-        console.log("Loading statistics for period " + period_type);
-        // Clear previous data, if any
-        // TODO; put Waiting Spinner
-        this.clearAllChartGauges();
-        console.info("Starting retrieval of Timeliness statistics...");
-        // Add class Busy to charts
-        // 
-        var urlParamString = getApiTimePeriodId(period_type);
-        console.log("Period for API URL: " + urlParamString);
-        var that = this;
-        var ajaxTimelinessPromises =
-            asyncAjaxCall('/api/' + timeliness_api_name + '/' + urlParamString,
-                'GET', {},
-                that.successLoadTimeliness.bind(that),
-                that.errorLoadDownlink);
-        // Execute asynchrounous AJAX call
-        ajaxTimelinessPromises.then(function () {
-            console.log("Received all results!");
-            var dialog = document.getElementById('window');
-            if (dialog !== null) {
-                dialog.show();
-                document.getElementById('exit').onclick = function () {
-                    console.log("Clikc");
-                    dialog.close();
-                };
-            }
-        });
-        return;
-    }
 
     successLoadTimeliness() {
+        if (!window.ssrTimelinessData) {
+            console.warn("No SSR data for Product Timeliness available");
+            return;
+        }
 
         for (const mission in window.ssrTimelinessData) {
             const timelinessMap = window.ssrTimelinessData[mission];
@@ -140,12 +91,6 @@ class ProductTimeliness {
                 }
             }
         }
-    }
-
-
-    errorLoadDownlink(response) {
-        console.error(response);
-        return;
     }
 
     // =========     Pie CHart Management  ==========
