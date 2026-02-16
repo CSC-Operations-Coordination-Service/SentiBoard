@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -18,13 +18,6 @@ class ProductTimeliness {
      *   in hours.
      * @type type
      */
-    // TODO Make class, with mission timeliness types get method
-    static timelinessByMission = {
-        'S1': ['NRT', 'NTC'],
-        'S2': ['NTC'],
-        'S3': ['NRT', 'NTC', 'STC'],
-        'S5': ['NRT', 'NTC']
-    };
 
     // Move date handling to MIXIN (periodSelection)
     /**
@@ -46,17 +39,6 @@ class ProductTimeliness {
 
     init() {
 
-        // Retrieve the user profile. In case of "ecuser" role, allow
-        // the visualization of events up to the beginning of the previous quarter
-        //ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
-
-        //  Register event callback for Time period select
-        //var time_period_sel = document.getElementById('time-period-select');
-        //time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
-        // this.updateDateInterval(time_period_sel.value);
-
-        // Retrieve the timeliness of each type for each mission
-        //this.loadTimelinessStatistics('prev-quarter');
         this.successLoadTimeliness();
         return;
     }
@@ -103,11 +85,9 @@ class ProductTimeliness {
         // Clear previous data, if any
         // TODO; put Waiting Spinner
         this.clearAllChartGauges();
-        // Acknowledge the invocation of rest APIs
         console.info("Starting retrieval of Timeliness statistics...");
         // Add class Busy to charts
         // 
-        // /api/cds-product-timeliness/last-<period_id>
         var urlParamString = getApiTimePeriodId(period_type);
         console.log("Period for API URL: " + urlParamString);
         var that = this;

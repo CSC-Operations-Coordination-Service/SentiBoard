@@ -1502,6 +1502,18 @@ def admin_space_segment():
 @blueprint.route("/product-timeliness.html")
 @login_required
 def product_timeliness_page():
+    TIMELINESS_LABELS = {
+        "NTC": "Default Timeliness",
+        "NRT": "NRT",
+        "STC": "STC",
+    }
+
+    TIMELINESS_ORDER_BY_MISSION = {
+        "S1": ["NTC", "NRT"],
+        "S2": ["NTC"],
+        "S3": ["NTC", "NRT", "STC"],
+        "S5": ["NTC", "NRT"],
+    }
     # ---- check user authorization
     authorized = auth_utils.is_user_authorized(["admin", "ecuser", "esauser"])
     if not authorized:
@@ -1627,6 +1639,7 @@ def product_timeliness_page():
         chart_payload = {
             "value": value,
             "threshold": threshold,
+            "label": TIMELINESS_LABELS.get(timeliness_key, timeliness_key),
             "pieId": (
                 f"{mission}-{timeliness_key}"
                 + (f"-{product_group.upper()}" if product_group else "")
@@ -1639,6 +1652,26 @@ def product_timeliness_page():
             timeliness_block[product_group.upper()] = chart_payload
         else:
             timeliness_block["_mission"] = chart_payload
+
+    ordered_view_model = {}
+
+    for mission, mission_block in view_model.items():
+        order = TIMELINESS_ORDER_BY_MISSION.get(mission, [])
+        ordered_timeliness = {}
+
+        # First: known ordered timeliness
+        for t in order:
+            if t in mission_block:
+                ordered_timeliness[t] = mission_block[t]
+
+        # Then: any unexpected timeliness types
+        for t, v in mission_block.items():
+            if t not in ordered_timeliness:
+                ordered_timeliness[t] = v
+
+        ordered_view_model[mission] = ordered_timeliness
+
+    view_model = ordered_view_model
 
     current_app.logger.info(
         "[PRODUCT TIMELINESS] View model missions: %s",
