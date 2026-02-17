@@ -1404,6 +1404,11 @@ def admin_space_segment():
 
     now = datetime.now(timezone.utc)
 
+    current_app.logger.info(
+        "[SPACE SEGMENT] Incoming request: period=%s",
+        request.args.get("period"),
+    )
+
     if period == "day":
         period_start = now - relativedelta(days=1)
         period_end = now
@@ -1415,13 +1420,44 @@ def admin_space_segment():
         period_end = now
     else:  # prev-quarter (default)
         period = "prev-quarter"
-        period_end = now
-        period_start = period_end - relativedelta(months=3)
+        year = now.year
+        quarter = (now.month - 1) // 3 + 1
+
+        if quarter == 1:
+            start_year = year - 1
+            start_month = 10
+        else:
+            start_year = year
+            start_month = (quarter - 2) * 3 + 1
+
+        period_start = datetime(start_year, start_month, 1, tzinfo=timezone.utc)
+        period_end = (period_start + relativedelta(months=3)) - relativedelta(seconds=1)
+
+    current_app.logger.info(
+        "[SPACE SEGMENT] Period resolved -> period=%s start=%s end=%s",
+        period,
+        period_start.isoformat(),
+        period_end.isoformat(),
+    )
 
     # ---- cache keys
-    datatakes_key = datatakes_cache.datatakes_cache_key.format("last", "quarter")
-    unavailability_key = unavailability_cache.unavailability_cache_key.format(
-        "last", "quarter"
+    if period == "prev-quarter":
+        datatakes_key = datatakes_cache.datatakes_cache_key.format(
+            "previous", "quarter"
+        )
+        unavailability_key = unavailability_cache.unavailability_cache_key.format(
+            "previous", "quarter"
+        )
+    else:
+        datatakes_key = datatakes_cache.datatakes_cache_key.format("last", "quarter")
+        unavailability_key = unavailability_cache.unavailability_cache_key.format(
+            "last", "quarter"
+        )
+
+    current_app.logger.info(
+        "[SPACE SEGMENT] Cache keys -> datatakes=%s unavailability=%s",
+        datatakes_key,
+        unavailability_key,
     )
 
     # ---- read cache
@@ -1442,6 +1478,17 @@ def admin_space_segment():
     unavailability_sources = [
         it["_source"] for it in unavailability_json if "_source" in it
     ]
+
+    current_app.logger.info(
+        "[SPACE SEGMENT] Raw cache sizes -> datatakes=%d unavailability=%d",
+        len(datatakes_json),
+        len(unavailability_json),
+    )
+
+    current_app.logger.info(
+        "[SPACE SEGMENT] Filtered by period -> datatakes=%d",
+        len(datatakes_sources),
+    )
 
     # ---- build SSR object
     satellites = acquisitions_utils.build_space_segment_ssr(
@@ -1480,8 +1527,13 @@ def admin_space_segment():
         "S5P": "secondary",
     }
 
-    prev_quarter_label = (
-        period_start.strftime("%b %Y") + " - " + period_end.strftime("%b %Y")
+    prev_quarter_label = acquisitions_utils.previous_quarter_label()
+
+    current_app.logger.info(
+        "[SPACE SEGMENT] SSR render -> satellites=%s period_id=%s label=%s",
+        list(satellites.keys()),
+        period,
+        prev_quarter_label,
     )
 
     return render_template(
@@ -1568,17 +1620,17 @@ def product_timeliness_page():
         period_start = prev_quarter_start
         period_end = prev_quarter_end
         period_id = "quarter"
-        mode = "last"
+        mode = "previous"
 
     elif period in ("last-3-months"):
         # Treat both as fixed previous quarter
         period_start = prev_quarter_start
         period_end = prev_quarter_end
         period_id = "quarter"
-        mode = "last"
+        mode = "previous"
 
     else:
-        period_id = period
+        abort(400)
 
     cache_key = timeliness_cache.timeliness_cache_key_format.format(mode, period_id)
 

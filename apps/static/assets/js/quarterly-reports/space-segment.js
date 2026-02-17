@@ -104,9 +104,21 @@ class SpaceSegment {
         this.completenessThreshold = 0.9999;
 
         this.isSSR = true;
+
+        if (this.isSSR) {
+            this.start_date = null;
+            this.end_date = null;
+        }
     }
 
     init() {
+
+        /*console.group("[SPACE SEGMENT][SSR INIT]");
+        console.log("URL:", window.location.href);
+        console.log("Selected period param:", new URLSearchParams(window.location.search).get("period"));
+        console.log("SSR datatakes count:", SENSING_DATA?.datatakes?.length);
+        console.log("SSR unavailability count:", SENSING_DATA?.unavailability?.length);
+        console.groupEnd();*/
 
         if (!window.SENSING_DATA) {
             console.warn('[SSR] Missing SENSING_DATA');
@@ -132,10 +144,16 @@ class SpaceSegment {
         this.refreshPieChartsAndBoxesSSR();
         this.refreshDatatakesTablesSSR();
 
+
         const sel = document.getElementById('time-period-select');
         if (sel) {
+            /* console.log(
+                 "[SPACE SEGMENT] Dropdown initial value:",
+                 sel.value
+             );*/
             sel.addEventListener('change', () => {
                 const period = sel.value;
+                console.log("[SPACE SEGMENT] Redirecting with period =", period);
                 window.location.href = `/space-segment?period=${period}`;
             });
         }
