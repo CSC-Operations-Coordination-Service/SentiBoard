@@ -31,11 +31,15 @@ class ProductTimeliness {
     }
 
     init() {
-        console.info("[PRODUCT TIMELINESS] Initializing from SSR data");
+        console.info("[PT][JS] init() called");
 
         const select = document.getElementById("time-period-select");
+        console.log("[PT][JS] select exists =", !!select);
+
         if (select) {
+            console.log("[PT][JS] select.value at init =", select.value);
             select.addEventListener("change", () => {
+                console.log("[PT][JS] on_timeperiod_change fired");
                 this.on_timeperiod_change();
             });
         }
@@ -53,7 +57,11 @@ class ProductTimeliness {
     on_timeperiod_change() {
         const sel = document.getElementById('time-period-select');
         const period = sel.value;
-        console.log("Time period changed to " + period);
+
+        console.log("[PT][JS] on_timeperiod_change()");
+        console.log("[PT][JS] selected period =", period);
+        console.log("[PT][JS] redirect → /product-timeliness?period=" + period);
+
         window.location.href = `/product-timeliness?period=${period}`;
     }
 

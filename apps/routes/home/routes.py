@@ -1543,9 +1543,7 @@ def product_timeliness_page():
     prev_quarter_end = (
         prev_quarter_start + relativedelta(months=3) - relativedelta(seconds=1)
     )
-    prev_quarter_label = (
-        f"{prev_quarter_start:%b %Y} - {prev_quarter_end:%b %Y}"  # keep this always
-    )
+    prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
     if period == "day":
         period_start = now - relativedelta(days=1)
@@ -1565,12 +1563,20 @@ def product_timeliness_page():
         mode = "last"
         period_id = "30d"
 
-    elif period in ("prev-quarter", "last-3-months"):
+    elif period in ("prev-quarter"):
         # Treat both as fixed previous quarter
         period_start = prev_quarter_start
         period_end = prev_quarter_end
         period_id = "quarter"
-        mode = "previous"
+        mode = "last"
+
+    elif period in ("last-3-months"):
+        # Treat both as fixed previous quarter
+        period_start = prev_quarter_start
+        period_end = prev_quarter_end
+        period_id = "quarter"
+        mode = "last"
+
     else:
         period_id = period
 
@@ -1578,7 +1584,7 @@ def product_timeliness_page():
 
     # ---- log period for debugging
     current_app.logger.info(
-        "[PRODUCT TIMELINESS] Selected period: %s (%s → %s), mode=%s, period_id=%s",
+        "[PRODUCT TIMELINESS] Selected period: %s (%s → %s), period_id=%s, cache_key=%s",
         period,
         period_start.isoformat(),
         period_end.isoformat(),
@@ -1747,13 +1753,28 @@ def product_timeliness_page():
         sum(len(v) for v in view_model.values()),
     )
 
+    current_app.logger.info(
+        "[PT][RENDER] sending to template | period_type=%s | period_id=%s | label=%s",
+        period,
+        period_id,
+        prev_quarter_label,
+    )
+
+    period_id_for_select = {
+        "24h": "day",
+        "7d": "week",
+        "30d": "month",
+        "quarter": "prev-quarter",
+    }.get(period_id, period_id)
+
     # ---- render SSR page
     return render_template(
         "home/product-timeliness.html",
         timeliness=view_model,
         missions=MISSIONS,
         period_type=period,
-        period_id=period_id,
+        period_id=period_id_for_select,
+        segment="acquisition-service",
         prev_quarter_label=prev_quarter_label,
         raw=timeliness_data,
         period_start=period_start,

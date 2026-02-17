@@ -257,29 +257,7 @@
 	<script type="text/javascript">
     	window.ssrTimelinessData = {{ timeliness | tojson }};
 	</script>
-	<script>
-		document.addEventListener("DOMContentLoaded", function () {
-			const select = document.getElementById("time-period-select");
-			if (!select) return;
-
-			// Get backend-provided period_type
-			let currentPeriod = "{{ period_type }}";
-
-			// First load: if backend didn't provide it, use prev-quarter
-			if (!currentPeriod || currentPeriod === "") {
-				currentPeriod = "prev-quarter";
-			}
-
-			// Apply it to dropdown
-			select.value = currentPeriod;
-
-			// Save first load state in dataset (optional, if needed elsewhere)
-			select.dataset.initialLoad = "true";
-
-			// Immediately call successLoadTimeliness() with this period
-			productTimeliness.successLoadTimelinessForPeriod(currentPeriod);
-		});
-	</script>
+	
 	<script src="/static/assets/js/quarterly-reports/product-timeliness.js"></script>
 	<script defer type="text/javascript">productTimeliness.init();</script>
 
