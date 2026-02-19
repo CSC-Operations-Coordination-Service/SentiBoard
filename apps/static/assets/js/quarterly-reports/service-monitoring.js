@@ -54,10 +54,11 @@ class ServiceMonitoring {
         time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
         // Retrieve the monitoring interfaces
-        this.updateDateInterval('prev-quarter');
+        const period = window.SSR_PERIOD_TYPE || document.getElementById('time-period-select')?.value || 'prev-quarter';
+        this.updateDateInterval(period);
 
         // Clean class variable
-        this.interfaceStatusMap = {'DAS': [], 'DHUS': [], 'ACRI': [], 'CLOUDFERRO': [], 'EXPRIVIA': [], 'WERUM': []};
+        this.interfaceStatusMap = { 'DAS': [], 'DHUS': [], 'ACRI': [], 'CLOUDFERRO': [], 'EXPRIVIA': [], 'WERUM': [] };
 
         // Retrieve the failed monitoring interfaces
         this.loadDASMonitoringInterfaceInPeriod('prev-quarter');
@@ -79,7 +80,8 @@ class ServiceMonitoring {
 
             // Programmatically select the previous quarter as the default time range
             console.info('Programmatically set the time period to previous quarter')
-            time_period_sel.value = 'prev-quarter';
+            //const period = window.SSR_PERIOD_TYPE || time_period_sel.value || 'prev-quarter';
+            //time_period_sel.value = period;
         }
     }
 
@@ -91,11 +93,11 @@ class ServiceMonitoring {
     on_timeperiod_change() {
         var time_period_sel = document.getElementById('time-period-select')
         var selected_time_period = time_period_sel.value
-        console.log("Time period changed to "+ selected_time_period)
+        console.log("Time period changed to " + selected_time_period)
         this.updateDateInterval(selected_time_period)
 
         // Clean class variable
-        this.interfaceStatusMap = {'DAS': [], 'DHUS': [], 'ACRI': [], 'CLOUDFERRO': [], 'EXPRIVIA': [], 'WERUM': []};
+        this.interfaceStatusMap = { 'DAS': [], 'DHUS': [], 'ACRI': [], 'CLOUDFERRO': [], 'EXPRIVIA': [], 'WERUM': [] };
 
         // Retrieve the failed monitoring interfaces
         this.loadDASMonitoringInterfaceInPeriod(selected_time_period);
@@ -167,14 +169,14 @@ class ServiceMonitoring {
         return;
     }
 
-    successLoadInterfaceStatus(response){
+    successLoadInterfaceStatus(response) {
 
         // Acknowledge the successful retrieval of monitoring interfaces
         var rows = format_response(response);
         console.info('List of failed monitoring interfaces successfully retrieved');
 
         // Parse response
-        for (var i = 0 ; i < rows.length ; ++i) {
+        for (var i = 0; i < rows.length; ++i) {
 
             // Auxiliary variables
             var element = rows[i]['_source'];
@@ -216,16 +218,16 @@ class ServiceMonitoring {
         return;
     }
 
-    errorLoadInterfaceStatus(response){
+    errorLoadInterfaceStatus(response) {
         console.error(response)
         return;
     }
 
     refreshAvailabilityStatus() {
         var periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
-        Object.keys(this.interfaceStatusMap).forEach(function(key) {
+        Object.keys(this.interfaceStatusMap).forEach(function (key) {
             var serviceUnavDurationSec = 0, serviceAvailabityPerc = 0;
-            serviceMonitoring.interfaceStatusMap[key].forEach(function(item) {
+            serviceMonitoring.interfaceStatusMap[key].forEach(function (item) {
                 serviceUnavDurationSec += (item['stop'].getTime() - item['start'].getTime()) / 1000;
             });
             serviceAvailabityPerc = (1 - serviceUnavDurationSec / periodDurationSec) * 100;
@@ -234,7 +236,7 @@ class ServiceMonitoring {
             var id_bar = key.toLowerCase() + '-avail-bar';
             $('#' + id_interface_perc).text(serviceAvailabityPerc.toFixed(2) + '%');
             $('#' + id_perc).text(serviceAvailabityPerc.toFixed(2) + '%');
-            $('#' + id_bar).css({"width": serviceAvailabityPerc.toFixed(2) + '%'});
+            $('#' + id_bar).css({ "width": serviceAvailabityPerc.toFixed(2) + '%' });
         })
     }
 
@@ -269,7 +271,7 @@ class ServiceMonitoring {
         content.title = service_name + ' Unavailability events';
 
         // Sort array
-        serviceMonitoring.interfaceStatusMap[service_name].sort(function(a, b) {
+        serviceMonitoring.interfaceStatusMap[service_name].sort(function (a, b) {
             return b['start'].getTime() - a['start'].getTime();
         });
 
@@ -277,9 +279,9 @@ class ServiceMonitoring {
         content.message = '<ul>';
         if (serviceMonitoring.interfaceStatusMap[service_name].length > 0) {
             content.message = '<ul>';
-            serviceMonitoring.interfaceStatusMap[service_name].forEach(function(item) {
+            serviceMonitoring.interfaceStatusMap[service_name].forEach(function (item) {
                 content.message += '<li>Unavailability start: ' + formatUTCDateHour(item['start']) + '; duration [min]: '
-                        + ((item['stop'].getTime() - item['start'].getTime()) / 60000).toFixed(2) + '</li>';
+                    + ((item['stop'].getTime() - item['start'].getTime()) / 60000).toFixed(2) + '</li>';
             });
         } else {
             content.message += '<li>No events reported</li>';
@@ -297,7 +299,7 @@ class ServiceMonitoring {
         var state = serviceMonitoring.serviceColorMap[service_name];
         var style = "withicon";
 
-        $.notify(content,{
+        $.notify(content, {
             type: state,
             placement: {
                 from: placementFrom,

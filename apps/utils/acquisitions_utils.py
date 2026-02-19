@@ -607,3 +607,27 @@ def filter_by_period(datatakes, start, end):
             out.append(d)
 
     return out
+
+
+def normalize_cached_json(obj, *, default=None):
+    """
+    Page-level normalizer.
+    Converts Flask Response -> dict
+    Leaves dict/list untouched
+    Never raises
+    """
+    if obj is None:
+        return default
+
+    # Flask Response
+    if hasattr(obj, "get_json"):
+        try:
+            return obj.get_json(silent=True) or default
+        except Exception:
+            return default
+
+    # Already JSON-compatible
+    if isinstance(obj, (dict, list)):
+        return obj
+
+    return default

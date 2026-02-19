@@ -35,6 +35,7 @@ import apps.cache.modules.events as events_cache
 import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
+import apps.cache.modules.publication as publication_cache
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
@@ -959,7 +960,6 @@ def acquisitions_status():
     try:
         logger.info("[BEG] SSR: Acquisitions Status")
 
-        # Step 1 — Retrieve acquisition plan coverage
         logger.info("[BEG] Retrieve Acquisition Plans Coverage")
         plans_raw = acquisition_plans_cache.get_acquisition_plans_coverage()
         logger.info("[END] Retrieve Acquisition Plans Coverage")
@@ -975,7 +975,6 @@ def acquisitions_status():
         plans_coverage = make_json_safe(plans_raw)
         logger.info(f"[INFO] Retrieved {len(plans_coverage)} plans coverage items")
 
-        # Step 2 -  SATELLITE ORBITS (SSR)
         logger.info("[BEG] Retrieve Satellite Orbits (SSR)")
         orbits_api_key = acquisition_assets_cache.orbits_cache_key
         orbits_raw = flask_cache.get(orbits_api_key)
@@ -992,7 +991,6 @@ def acquisitions_status():
         orbits_safe = make_json_safe(orbits_raw)
         logger.info("[INFO] SSR satellite orbits loaded")
 
-        # Step 3 - ACQUISITION STATIONS (SSR)
         logger.info("[BEG] Retrieve Acquisition Stations (SSR)")
         stations_api_key = acquisition_assets_cache.stations_cache_key
         stations_raw = flask_cache.get(stations_api_key)
@@ -1009,7 +1007,6 @@ def acquisitions_status():
         stations_safe = make_json_safe(stations_raw)
         logger.info("[INFO] SSR acquisition stations loaded")
 
-        # Step 4 — Render the template with SSR-injected JSON
         return render_template(
             "home/acquisitions-status.html",
             plans_coverage_json=plans_coverage,
@@ -1085,7 +1082,6 @@ def news_list_ssr():
 @login_required
 def message_form_ssr():
     try:
-        # Role protection
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
             abort(403)
 
@@ -1135,8 +1131,6 @@ def message_form_ssr():
 @blueprint.route("/admin/instant-messages/add", methods=["POST"])
 @login_required
 def add_instant_message_ssr():
-    # logger.info("SSR Add route called")
-
     try:
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
             abort(403)
@@ -1183,7 +1177,6 @@ def add_instant_message_ssr():
 @blueprint.route("/admin/instant-messages/update", methods=["POST"])
 @login_required
 def update_instant_message_ssr():
-    # logger.info("SSR Update route called")
 
     try:
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
@@ -1240,7 +1233,6 @@ def update_instant_message_ssr():
 @blueprint.route("/admin/instant-messages/delete", methods=["POST"])
 @login_required
 def delete_instant_message_modal():
-    # logger.info("Delete route called")
     try:
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
             logger.warning(f"Unauthorized user: {current_user}")
@@ -1268,7 +1260,6 @@ def delete_instant_message_modal():
 
         db.session.delete(message)
         db.session.commit()
-        # logger.info(f"News deleted: {message_id}")
 
         flash("News successfully deleted", "success")
         return redirect(next_url)
@@ -1418,7 +1409,7 @@ def admin_space_segment():
     elif period == "month":
         period_start = now - relativedelta(days=30)
         period_end = now
-    else:  # prev-quarter (default)
+    else:
         period = "prev-quarter"
         year = now.year
         quarter = (now.month - 1) // 3 + 1
@@ -1831,6 +1822,84 @@ def product_timeliness_page():
         raw=timeliness_data,
         period_start=period_start,
         period_end=period_end,
+    )
+
+
+@blueprint.route("/data-access.html")
+@login_required
+def data_access_page():
+    # ---- authorization
+    if current_user.role not in ["admin", "ecuser", "esauser"]:
+        abort(403)
+
+    logger.info(
+        "[DATA ACCESS] START User=%s Role=%s", current_user.username, current_user.role
+    )
+
+    # --- query params ---
+    period = request.args.get("time-period-select", "prev-quarter")
+    logger.info("[DATA ACCESS] Raw query param time-period-select = %s", period)
+
+    # --- Map frontend period to cache period ---
+    period_map = {
+        "day": "24h",
+        "week": "7d",
+        "month": "30d",
+        "last-3-months": "quarter",
+        "prev-quarter": "quarter",
+    }
+
+    cache_period = period_map.get(period, "quarter")
+    scope = "previous" if period in ["prev-quarter", "last-3-months"] else "last"
+
+    # --- Compose cache keys ---
+    trend_key = publication_cache.publication_trend_api_format.format(
+        scope, cache_period
+    )
+    volume_key = publication_cache.publication_volume_trend_api_format.format(
+        scope, cache_period
+    )
+
+    raw_trend = flask_cache.get(trend_key)
+    if raw_trend is None:
+        raw_trend = {}
+    elif isinstance(raw_trend, Response):
+        raw_trend = raw_trend.get_json() or {}
+    elif not isinstance(raw_trend, dict):
+        raw_trend = {}
+
+    raw_volume = flask_cache.get(volume_key)
+    if raw_volume is None:
+        raw_volume = {}
+    elif isinstance(raw_volume, Response):
+        raw_volume = raw_volume.get_json() or {}
+    elif not isinstance(raw_volume, dict):
+        raw_volume = {}
+
+    trend_data = raw_trend.get("data", {})
+    volume_data = raw_volume.get("data", {})
+
+    prev_quarter_label = acquisitions_utils.previous_quarter_label()
+
+    # --- SSR payload ---
+    ssr_payload = {
+        "period_type": period,
+        "scope": scope,
+        "trend": {
+            "sample_times": raw_trend.get("sample_times", []),
+            "data": trend_data,
+        },
+        "volume": volume_data,
+    }
+
+    return render_template(
+        "home/data-access.html",
+        segment="acquisition-service",
+        ssr_payload=ssr_payload,
+        prev_quarter_label=prev_quarter_label,
+        period_type=period,
+        period_id=period,
+        selected_scope=scope,
     )
 
 
