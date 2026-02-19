@@ -1447,22 +1447,22 @@ class Datatakes {
 
 
         dataList.addEventListener("click", async (e) => {
-            const target = e.target.closest("a.filter-link");
-            if (!target) return;
+            const containerDiv = e.target.closest(".container-border");
+            if (!containerDiv) return;
 
             e.preventDefault();
 
             document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
-            target.classList.add("active");
-
             document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
-            const containerDiv = target.closest('.container-border');
-            if (containerDiv) {
-                containerDiv.classList.add("selected");
-            }
+            // Add selected classes
+            containerDiv.classList.add("selected");
+            const targetLink = containerDiv.querySelector("a.filter-link");
+            if (targetLink) targetLink.classList.add("active");
 
-            const selectedKey = target.textContent.trim();
+            const selectedKey = targetLink ? targetLink.textContent.trim() : null;
+            if (!selectedKey) return;
+
             this.updateTitleAndDate(selectedKey);
 
             // Render both donut charts asynchronously
