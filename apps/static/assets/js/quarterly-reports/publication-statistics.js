@@ -92,7 +92,7 @@ class TrendChartLabels {
         var sampleHour = "H" + pad2Digits(start_date.getUTCHours());
         var weekDays = { 2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat', 1: 'Sun' };
         var labels = [];
-        var first_day = start_date.getDay();
+        var first_day = start_date.getUTCDay();
 
         for (let i = 1; i <= num_labels; i++) {
             labels.push(weekDays[((first_day + i) % 7) + 1] + " " + sampleHour);
@@ -108,35 +108,29 @@ class TrendChartLabels {
         var labels = [];
         var tempDay = new Date(start_date);
         for (let i = 1; i <= num_labels; i++) {
-            tempDay.setDate(tempDay.getDate() + intervalDelta);
-            var nextDay = tempDay.getDate();
+            tempDay.setDate(tempDay.getUTCDate() + intervalDelta);
+            var nextDay = tempDay.getUTCDate();
             // Month start at 0 - realign for human usage
-            var nextMonth = tempDay.getMonth() + 1;
+            var nextMonth = tempDay.getUTCMonth() + 1;
             labels.push(pad2Digits(nextDay) + "/" + pad2Digits(nextMonth) + " " + sampleHour);
         }
         return labels;
     };
 
     static convertToHourLabels(time_string_list) {
-        var labels = time_string_list.map(function (time_str) {
-            // Convert to date
-            // Or jsut parse and extract Hour, Day, Month
-            var sampleTime = new Date(time_str);
-            return "H" + pad2Digits(sampleTime.getHours());
+        return time_string_list.map(time_str => {
+            const d = new Date(time_str.endsWith("Z") ? time_str : time_str + "Z");
+            return "H" + pad2Digits(d.getUTCHours());
         });
-        return labels;
     }
 
     static convertToWeekLabels(time_string_list) {
-        var weekDays = { 2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat', 1: 'Sun' };
-        var labels = time_string_list.map(function (time_str) {
-            // Convert to date
-            // Or jsut parse and extract Hour, Day, Month
-            var sampleTime = new Date(time_str);
-            var weekIndex = sampleTime.getDay() % 7 + 1;
-            return weekDays[weekIndex] + " H" + pad2Digits(sampleTime.getHours());
+        const weekDays = { 1: 'Sun', 2: 'Mon', 3: 'Tue', 4: 'Wed', 5: 'Thu', 6: 'Fri', 7: 'Sat' };
+        return time_string_list.map(time_str => {
+            const d = new Date(time_str.endsWith("Z") ? time_str : time_str + "Z");
+            const weekIndex = d.getUTCDay() + 1;
+            return weekDays[weekIndex] + " H" + pad2Digits(d.getUTCHours());
         });
-        return labels;
     }
 
     static convertToDayLabels(time_string_list) {
@@ -145,7 +139,7 @@ class TrendChartLabels {
             // Convert to date
             // Or jsut parse and extract Hour, Day, Month
             var sampleTime = new Date(time_str);
-            return pad2Digits(sampleTime.getDate()) + "/" + pad2Digits(sampleTime.getMonth() + 1) + " H" + pad2Digits(sampleTime.getHours());
+            return pad2Digits(sampleTime.getUTCDate()) + "/" + pad2Digits(sampleTime.getUTCMonth() + 1) + " H" + pad2Digits(sampleTime.getUTCHours());
         });
         return labels;
     }
@@ -282,6 +276,15 @@ class PublicationStatistics {
     }
 
 
+    formatDateHourUTC(date) {
+        return (
+            pad2Digits(date.getUTCDate()) + "/" +
+            pad2Digits(date.getUTCMonth() + 1) + "/" +
+            date.getUTCFullYear() + " " +
+            pad2Digits(date.getUTCHours()) + ":" +
+            pad2Digits(date.getUTCMinutes())
+        );
+    }
     onPeriodChange(period) {
         window.location.href =
             `/data-access?time-period-select=${period}`;
@@ -297,6 +300,19 @@ class PublicationStatistics {
             console.warn("[PUB STATS] No SSR trend data", trendResponse);
             return;
         }
+
+        const lastSampleTime = trend.sample_times.at(- 1);
+        const normalized =
+            lastSampleTime.replace(/(\.\d{3})\d+$/, '$1') + 'Z';
+        const lastUpdateUtc = new Date(normalized);
+        this.setLastUpdatedLabel(lastUpdateUtc);
+
+        console.log(
+            "[UTC CHECK]",
+            "raw:", lastSampleTime,
+            "utc:", lastUpdateUtc.toISOString(),
+            "local:", lastUpdateUtc.toString()
+        );
 
         console.log(
             "[PUB STATS] SSR samples:",
@@ -533,8 +549,8 @@ class PublicationStatistics {
     }
 
     setLastUpdatedLabel(lastUpdateTime) {
-        var nowDateString = formatDateHour(lastUpdateTime);
-        $("#publication-trend-last-updated").text(nowDateString);
+        const utcString = this.formatDateHourUTC(lastUpdateTime);
+        $("#publication-trend-last-updated").text(utcString);
     }
 
 

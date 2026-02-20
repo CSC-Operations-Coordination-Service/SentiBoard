@@ -1889,7 +1889,10 @@ def data_access_page():
             "sample_times": raw_trend.get("sample_times", []),
             "data": trend_data,
         },
-        "volume": volume_data,
+        "volume": {
+            "sample_times": raw_trend.get("sample_times", []),
+            "data": volume_data,
+        },
     }
 
     return render_template(
