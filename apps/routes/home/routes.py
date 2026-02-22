@@ -36,6 +36,7 @@ import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.cache.modules.publication as publication_cache
+import apps.elastic.modules.interface_monitoring as elastic_interface_monitoring
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
@@ -209,6 +210,7 @@ PERIOD_TO_CACHE = {
     "prev-quarter": "previous-quarter",
 }
 
+# used on product-timeliness
 MISSIONS = {
     "S1": {
         "title": "Sentinel-1",
@@ -245,6 +247,26 @@ MISSIONS = {
             {"id": "nrt-l2", "title": "L2 NRT"},
         ],
     },
+}
+
+
+# List of services and their cache keys -- data-access.html
+SERVICE_CACHE_MAP = {
+    "DAS": "DD_DAS",
+    "DHUS": "DD_DHUS",
+    "ACRI": "LTA_Acri",
+    "CLOUDFERRO": "LTA_CloudFerro",
+    "EXPRIVIA": "LTA_Exprivia",
+    "WERUM": "LTA_Werum",
+}
+
+SERVICE_COLOR_MAP = {
+    "DAS": "info",
+    "DHUS": "warning",
+    "ACRI": "primary",
+    "CLOUDFERRO": "secondary",
+    "EXPRIVIA": "success",
+    "WERUM": "warning",
 }
 
 
@@ -1828,31 +1850,50 @@ def product_timeliness_page():
 @blueprint.route("/data-access.html")
 @login_required
 def data_access_page():
-    # ---- authorization
+
+    # ------------------------------------------------------------------
+    # AUTH
+    # ------------------------------------------------------------------
     if current_user.role not in ["admin", "ecuser", "esauser"]:
         abort(403)
 
     logger.info(
-        "[DATA ACCESS] START User=%s Role=%s", current_user.username, current_user.role
+        "[DATA ACCESS] SSR START user=%s role=%s",
+        current_user.username,
+        current_user.role,
     )
 
-    # --- query params ---
+    # ------------------------------------------------------------------
+    # PERIOD
+    # ------------------------------------------------------------------
     period = request.args.get("time-period-select", "prev-quarter")
-    logger.info("[DATA ACCESS] Raw query param time-period-select = %s", period)
+    logger.info("[DATA ACCESS] period=%s", period)
 
-    # --- Map frontend period to cache period ---
+    start_date, end_date = acquisitions_utils.getIntervalDates(period)
+    period_duration_sec = (end_date - start_date).total_seconds()
+
+    logger.info(
+        "[SSR WINDOW] start=%s end=%s duration_sec=%.2f",
+        start_date.isoformat(),
+        end_date.isoformat(),
+        period_duration_sec,
+    )
+
+    # Frontend-aligned mapping
     period_map = {
-        "day": "24h",
-        "week": "7d",
-        "month": "30d",
-        "last-3-months": "quarter",
-        "prev-quarter": "quarter",
+        "day": ("last", "24h"),
+        "week": ("last", "7d"),
+        "month": ("last", "30d"),
+        "last-3-months": ("last", "quarter"),
+        "prev-quarter": ("previous", "quarter"),
     }
 
-    cache_period = period_map.get(period, "quarter")
-    scope = "previous" if period in ["prev-quarter", "last-3-months"] else "last"
+    scope, cache_period = period_map.get(period, ("last", "quarter"))
+    logger.info("[SSR PERIOD MAP] scope=%s cache_period=%s", scope, cache_period)
 
-    # --- Compose cache keys ---
+    # ------------------------------------------------------------------
+    # Trend + Volume
+    # ------------------------------------------------------------------
     trend_key = publication_cache.publication_trend_api_format.format(
         scope, cache_period
     )
@@ -1861,45 +1902,177 @@ def data_access_page():
     )
 
     raw_trend = flask_cache.get(trend_key)
+    raw_volume = flask_cache.get(volume_key)
+
+    # ---- normalize TREND ----
     if raw_trend is None:
+        logger.warning("[SSR][TREND] cache MISS key=%s", trend_key)
         raw_trend = {}
     elif isinstance(raw_trend, Response):
         raw_trend = raw_trend.get_json() or {}
     elif not isinstance(raw_trend, dict):
+        logger.warning("[SSR][TREND] unexpected type=%s", type(raw_trend))
         raw_trend = {}
 
-    raw_volume = flask_cache.get(volume_key)
+    # ---- normalize VOLUME ----
     if raw_volume is None:
+        logger.warning("[SSR][VOLUME] cache MISS key=%s", volume_key)
         raw_volume = {}
     elif isinstance(raw_volume, Response):
         raw_volume = raw_volume.get_json() or {}
     elif not isinstance(raw_volume, dict):
+        logger.warning("[SSR][VOLUME] unexpected type=%s", type(raw_volume))
         raw_volume = {}
 
     trend_data = raw_trend.get("data", {})
     volume_data = raw_volume.get("data", {})
 
-    prev_quarter_label = acquisitions_utils.previous_quarter_label()
+    logger.info(
+        "[SSR TREND/VOLUME] trend_keys=%d volume_keys=%d",
+        len(trend_data),
+        len(volume_data),
+    )
 
-    # --- SSR payload ---
-    ssr_payload = {
-        "period_type": period,
-        "scope": scope,
-        "trend": {
-            "sample_times": raw_trend.get("sample_times", []),
-            "data": trend_data,
-        },
-        "volume": {
-            "sample_times": raw_trend.get("sample_times", []),
-            "data": volume_data,
-        },
-    }
+    # ===== NEW SSR AVAILABILITY (REPLACES API) =====
+    interface_status_map = {svc: [] for svc in SERVICE_CACHE_MAP.keys()}
 
+    for svc_name, elastic_service_name in SERVICE_CACHE_MAP.items():
+
+        logger.info(
+            "[SSR][ELASTIC] Fetching interface monitoring svc=%s scope=%s period=%s",
+            svc_name,
+            scope,
+            cache_period,
+        )
+
+        # ---- EXACT SAME Elastic calls as API loaders ----
+        if scope == "last":
+            if cache_period == "quarter":
+                raw_items = elastic_interface_monitoring.fetch_interface_monitoring_last_quarter(
+                    elastic_service_name
+                )
+            else:
+                # Fetch quarter and slice (same as cache loader)
+                quarter_items = elastic_interface_monitoring.fetch_interface_monitoring_last_quarter(
+                    elastic_service_name
+                )
+                now = datetime.now()
+
+                if cache_period == "24h":
+                    raw_items = [
+                        i
+                        for i in quarter_items
+                        if datetime.strptime(
+                            i["_source"]["status_time_start"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                        )
+                        >= now - timedelta(hours=24)
+                    ]
+                elif cache_period == "7d":
+                    raw_items = [
+                        i
+                        for i in quarter_items
+                        if datetime.strptime(
+                            i["_source"]["status_time_start"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                        )
+                        >= now - timedelta(days=7)
+                    ]
+                elif cache_period == "30d":
+                    raw_items = [
+                        i
+                        for i in quarter_items
+                        if datetime.strptime(
+                            i["_source"]["status_time_start"], "%Y-%m-%dT%H:%M:%S.%fZ"
+                        )
+                        >= now - timedelta(days=30)
+                    ]
+                else:
+                    raw_items = []
+        else:
+            raw_items = (
+                elastic_interface_monitoring.fetch_interface_monitoring_prev_quarter(
+                    elastic_service_name
+                )
+            )
+
+        logger.info(
+            "[SSR][ELASTIC] svc=%s raw_items=%d",
+            svc_name,
+            len(raw_items),
+        )
+
+        # ---- Time-window clipping (IDENTICAL to frontend logic) ----
+        for row in raw_items:
+            src = row.get("_source", {})
+            try:
+                start = acquisitions_utils.parse_utc(src["status_time_start"])
+                stop = acquisitions_utils.parse_utc(src["status_time_stop"])
+            except Exception as e:
+                logger.warning("[SSR][PARSE FAIL] %s", e)
+                continue
+
+            if stop <= start_date or start >= end_date:
+                continue
+
+            interface_status_map[svc_name].append(
+                {
+                    "start": max(start, start_date),
+                    "stop": min(stop, end_date),
+                }
+            )
+
+        logger.info(
+            "[SSR][WINDOWED] svc=%s intervals=%d",
+            svc_name,
+            len(interface_status_map[svc_name]),
+        )
+
+    # AVAILABILITY COMPUTATION
+    availability_map = {}
+
+    for svc, intervals in interface_status_map.items():
+        unav_sec = sum((i["stop"] - i["start"]).total_seconds() for i in intervals)
+
+        availability = (
+            (1.0 - unav_sec / period_duration_sec) * 100.0
+            if period_duration_sec > 0
+            else 100.0
+        )
+
+        availability_map[svc] = availability
+
+        logger.info(
+            "[SSR][AVAILABILITY] svc=%s unav_sec=%.2f avail=%.5f",
+            svc,
+            unav_sec,
+            availability,
+        )
+
+    logger.info(
+        "[SSR][AVAILABILITY][FINAL] %s",
+        {k: round(v, 2) for k, v in availability_map.items()},
+    )
+
+    # FINAL RENDER
     return render_template(
         "home/data-access.html",
         segment="acquisition-service",
-        ssr_payload=ssr_payload,
-        prev_quarter_label=prev_quarter_label,
+        ssr_payload={
+            "period_type": period,
+            "availability_map": availability_map,
+            "interface_status_map": interface_status_map,
+            "service_color_map": SERVICE_COLOR_MAP,
+            "scope": scope,
+            "trend": {
+                "sample_times": raw_trend.get("sample_times", []),
+                "data": trend_data,
+            },
+            "volume": {
+                "sample_times": raw_volume.get("sample_times", []),
+                "data": volume_data,
+            },
+            "start_date": start_date.isoformat(),
+            "end_date": end_date.isoformat(),
+        },
         period_type=period,
         period_id=period,
         selected_scope=scope,

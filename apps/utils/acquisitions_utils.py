@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import json
 import time
+import calendar
 from flask import Response, current_app
 from collections import defaultdict
-from datetime import date, datetime as dt, timezone
+from datetime import date, datetime as dt, timezone, timedelta
 from flask_login import current_user
 from apps import flask_cache
 from dateutil.parser import isoparse
+import datetime
+
 
 STATIONS = ["svalbard", "inuvik", "matera", "maspalomas", "neustrelitz"]
 
@@ -631,3 +634,32 @@ def normalize_cached_json(obj, *, default=None):
         return obj
 
     return default
+
+
+def getIntervalDates(period_type: str):
+    # Use timezone-aware UTC now
+    now = dt.now(timezone.utc)
+    end_date = now.replace(minute=0, second=0, microsecond=0)
+    start_date = end_date
+
+    if period_type == "day":
+        # Last 24 hours → start at 00:00 today
+        start_date = end_date - timedelta(days=1)
+
+    elif period_type == "week":
+        # Last 7 days → start at 00:00 6 days ago (7 days total)
+        start_date = end_date - timedelta(days=7)
+
+    elif period_type == "month":
+        # Last 30 days → start at 00:00 29 days ago (30 days total)
+        start_date = end_date - timedelta(days=30)
+
+    elif period_type in ("last-3-months", "prev-quarter"):
+        # Last 3 months rolling → 90 days
+        start_date = end_date - timedelta(days=90)
+
+    return start_date, end_date
+
+
+def parse_utc(dt_str: str):
+    return datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
