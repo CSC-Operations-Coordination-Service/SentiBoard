@@ -144,11 +144,10 @@
 									<h5>LOGIN</h5>
 								</a>
 							</li>
-							{% endif %}
-						
+							{% endif %}						
 
                         <!-- Time range filter -->
-                        <li class="nav-item dropdown hidden-caret d-none d-lg-block">
+						<li class="nav-item dropdown hidden-caret d-none d-lg-block">
 							<div class="form-group form-floating-label" id="time-period-select-container">
 								<select name="time-period-select" id="time-period-select" class="form-control input-solid">
 									<option value="day"
@@ -164,16 +163,17 @@
 										{% if (segment == "data-availability" and selected_period == "prev-quarter")
       										or (segment == "acquisition-service" and period_id == "prev-quarter") %}selected{% endif %}>Last 3 Months</option>
 
-									<!-- Fixed previous quarter (optional) -->
 									{% if prev_quarter_label is defined %}
-									<option value="prev-quarter"
-									{% if period_id == "prev-quarter" %}selected{% endif %}>
-										{{ prev_quarter_label }}
+									<option value="prev-quarter-specific"
+										{% if (segment == "data-availability" and selected_period == "prev-quarter" and prev_quarter_label)
+											or (segment == "acquisition-service" and period_id == "prev-quarter" and prev_quarter_label) %}selected{% endif %}>
+										{{ prev_quarter_label }} 
 									</option>
 									{% endif %}
 								</select>
 							</div>
 						</li>
+
 
                         <!-- User account menu -->
 						{% if current_user.is_authenticated %}

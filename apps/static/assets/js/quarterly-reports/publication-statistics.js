@@ -36,12 +36,14 @@ var pub_service_list = ['DAS'];
 
         window.SSR_DATA_TYPE = payload?.default_datatype || "NUM";
 
-        window.SSR_PERIOD_TYPE = payload?.period_type;
+        window.SSR_PERIOD_TYPE = payload?.period_type;  // effective period for data
+        window.SSR_UI_PERIOD = payload?.ui_period;      // for dropdown selection
 
     } catch (e) {
         console.error("[SSR] Failed to parse SSR payload", e);
     }
 })();
+
 
 class TrendChart {
 
@@ -216,13 +218,19 @@ class PublicationStatistics {
     init() {
         console.log("[PublicationStatistics] INIT");
 
-        //Read period from shared monitoring logic
-        this.period_type =
-            window.SSR_PERIOD_TYPE ||
-            "prev-quarter"; // safe fallback
+        // Fail-safe SSR period reading
+        if (!window.SSR_PERIOD_TYPE) {
+            console.warn("[SSR WARNING] SSR_PERIOD_TYPE not set, defaulting to prev-quarter");
+            window.SSR_PERIOD_TYPE = "prev-quarter";
+        }
+
+        this.period_type = window.SSR_PERIOD_TYPE || "prev-quarter";
 
         this.dataType = window.SSR_DATA_TYPE || "NUM";
-
+        const dropDownValue = window.SSR_UI_PERIOD;
+        console.log("[SSR DEBUG] SSR_UI_PERIOD=", dropDownValue);
+        console.log("[SSR DEBUG] SSR_PERIOD_TYPE=", window.SSR_PERIOD_TYPE);
+        console.log("[SSR DEBUG] Setting select value to ", this.period_type);
         console.log("[INIT] Period resolved as:", this.period_type);
         console.log("[INIT] DataType:", this.dataType);
 
@@ -232,47 +240,39 @@ class PublicationStatistics {
         // Init charts
         this.initTrendCharts();
 
-        // Apply SSR data (if present)
+        // Apply SSR data safely
         this.applySSRData(
             this.period_type,
-            window.PUBLICATION_TREND_DATA,
-            window.PUBLICATION_VOLUME_TREND_DATA
+            window.PUBLICATION_TREND_DATA || {},
+            window.PUBLICATION_VOLUME_TREND_DATA || {}
         );
 
-        $('#time-trend-data-type-select')
-            .off('change')
-            .on('change', () => this.on_datatype_change());
+        // Bind controls safely
+        const $dataTypeSelect = $('#time-trend-data-type-select');
+        $dataTypeSelect.off('change').on('change', () => this.on_datatype_change());
+        $dataTypeSelect.val('count');
 
-        // Bind controls
-        $('#time-trend-data-type-select').val('count');
         $('#published-trend-das-num-row').show();
         $('#published-trend-das-vol-row').hide();
 
-        $("#time-period-select")
-            .off("change.publicationStats")
-            .on("change.publicationStats", (e) => {
-                const selected = e.target.value;
+        const $periodSelect = $("#time-period-select");
+        const dropdownValue = window.SSR_UI_PERIOD || window.SSR_PERIOD_TYPE;  // dropdown
 
-                console.log(
-                    "[PUB STATS][PERIOD CHANGE]",
-                    "User selected:", selected,
-                    "| current SSR period:", this.period_type
-                );
+        $periodSelect.val(dropdownValue);
+        console.log("[TIME SELECT INIT] select after =", $periodSelect.val());
 
-                // SSR rule: must reload to get new data
-                if (selected !== this.period_type) {
-                    console.log(
-                        "[PUB STATS][SSR]",
-                        "Reloading page to fetch new SSR payload for period:",
-                        selected
-                    );
+        $periodSelect.off("change.publicationStats").on("change.publicationStats", (e) => {
+            const selected = e.target.value;
+            console.log("[PUB STATS][PERIOD CHANGE]",
+                "User selected:", selected,
+                "| current SSR period:", this.period_type
+            );
+            if (selected !== this.period_type) {
+                window.location.href =
+                    `${window.location.pathname}?time-period-select=${selected}`;
+            }
+        });
 
-                    window.location.href =
-                        `${window.location.pathname}?time-period-select=${selected}`;
-                }
-            });
-
-        $("#time-period-select").val(this.period_type);
     }
 
 
@@ -363,6 +363,7 @@ class PublicationStatistics {
         }
 
         console.log("[PUB STATS] SSR trend rendered successfully");
+
     }
 
     updateDateInterval(period_type) {

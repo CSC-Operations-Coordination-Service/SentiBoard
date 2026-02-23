@@ -663,3 +663,37 @@ def getIntervalDates(period_type: str):
 
 def parse_utc(dt_str: str):
     return datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+
+
+def resolve_period(
+    *,
+    request_args: dict,
+    param_name: str = "time-period-select",
+    default: str = "prev-quarter",
+    logger=None,
+):
+    """
+    Resolves UI period into an effective backend period.
+
+    Returns:
+        ui_period (str): what the user selected (for dropdown / hydration)
+        effective_period (str): what backend logic must use
+    """
+
+    PERIOD_ALIAS = {
+        # UX aliases
+        "last-3-months": "prev-quarter",
+    }
+
+    ui_period = request_args.get(param_name, default)
+    effective_period = PERIOD_ALIAS.get(ui_period, ui_period)
+
+    if logger:
+        logger.info(
+            "[PERIOD RESOLVE] ui_period=%s effective_period=%s alias=%s",
+            ui_period,
+            effective_period,
+            ui_period != effective_period,
+        )
+
+    return ui_period, effective_period

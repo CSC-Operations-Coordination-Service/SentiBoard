@@ -1851,9 +1851,7 @@ def product_timeliness_page():
 @login_required
 def data_access_page():
 
-    # ------------------------------------------------------------------
     # AUTH
-    # ------------------------------------------------------------------
     if current_user.role not in ["admin", "ecuser", "esauser"]:
         abort(403)
 
@@ -1863,13 +1861,36 @@ def data_access_page():
         current_user.role,
     )
 
-    # ------------------------------------------------------------------
     # PERIOD
-    # ------------------------------------------------------------------
     period = request.args.get("time-period-select", "prev-quarter")
     logger.info("[DATA ACCESS] period=%s", period)
 
-    start_date, end_date = acquisitions_utils.getIntervalDates(period)
+    if "time-period-select" in request.args:
+        ui_period, effective_period = acquisitions_utils.resolve_period(
+            request_args=request.args,
+            param_name="time-period-select",
+            default=None,
+            logger=logger,
+        )
+    else:
+        ui_period = "prev-quarter"
+        effective_period = "prev-quarter"
+
+    logger.info(
+        "[PERIOD RESOLVED] UI_PERIOD=%s effective_period=%s",
+        ui_period,
+        effective_period,
+    )
+
+    if period == "prev-quarter-specific" or period == "prev-quarter" or not period:
+        ui_period = "prev-quarter-specific"
+        effective_period = "prev-quarter"
+    else:
+        ui_period = period
+        effective_period = period
+
+    start_date, end_date = acquisitions_utils.getIntervalDates(effective_period)
+
     period_duration_sec = (end_date - start_date).total_seconds()
 
     logger.info(
@@ -1891,9 +1912,7 @@ def data_access_page():
     scope, cache_period = period_map.get(period, ("last", "quarter"))
     logger.info("[SSR PERIOD MAP] scope=%s cache_period=%s", scope, cache_period)
 
-    # ------------------------------------------------------------------
     # Trend + Volume
-    # ------------------------------------------------------------------
     trend_key = publication_cache.publication_trend_api_format.format(
         scope, cache_period
     )
@@ -1904,25 +1923,19 @@ def data_access_page():
     raw_trend = flask_cache.get(trend_key)
     raw_volume = flask_cache.get(volume_key)
 
-    # ---- normalize TREND ----
-    if raw_trend is None:
-        logger.warning("[SSR][TREND] cache MISS key=%s", trend_key)
-        raw_trend = {}
-    elif isinstance(raw_trend, Response):
-        raw_trend = raw_trend.get_json() or {}
-    elif not isinstance(raw_trend, dict):
-        logger.warning("[SSR][TREND] unexpected type=%s", type(raw_trend))
-        raw_trend = {}
+    def normalize_cache(obj, label):
+        if obj is None:
+            logger.warning("[SSR][%s] cache MISS", label)
+            return {}
+        if isinstance(obj, Response):
+            return obj.get_json() or {}
+        if isinstance(obj, dict):
+            return obj
+        logger.warning("[SSR][%s] unexpected type=%s", label, type(obj))
+        return {}
 
-    # ---- normalize VOLUME ----
-    if raw_volume is None:
-        logger.warning("[SSR][VOLUME] cache MISS key=%s", volume_key)
-        raw_volume = {}
-    elif isinstance(raw_volume, Response):
-        raw_volume = raw_volume.get_json() or {}
-    elif not isinstance(raw_volume, dict):
-        logger.warning("[SSR][VOLUME] unexpected type=%s", type(raw_volume))
-        raw_volume = {}
+    raw_trend = normalize_cache(raw_trend, "TREND")
+    raw_volume = normalize_cache(raw_volume, "VOLUME")
 
     trend_data = raw_trend.get("data", {})
     volume_data = raw_volume.get("data", {})
@@ -1947,43 +1960,34 @@ def data_access_page():
 
         # ---- EXACT SAME Elastic calls as API loaders ----
         if scope == "last":
+            quarter_items = (
+                elastic_interface_monitoring.fetch_interface_monitoring_last_quarter(
+                    elastic_service_name
+                )
+            )
+
             if cache_period == "quarter":
-                raw_items = elastic_interface_monitoring.fetch_interface_monitoring_last_quarter(
-                    elastic_service_name
-                )
+                raw_items = quarter_items
             else:
-                # Fetch quarter and slice (same as cache loader)
-                quarter_items = elastic_interface_monitoring.fetch_interface_monitoring_last_quarter(
-                    elastic_service_name
-                )
-                now = datetime.now()
+                now = datetime.now(timezone.utc)
+
+                def in_window(row, delta):
+                    t = acquisitions_utils.parse_utc(
+                        row["_source"]["status_time_start"]
+                    )
+                    return t >= now - delta
 
                 if cache_period == "24h":
                     raw_items = [
-                        i
-                        for i in quarter_items
-                        if datetime.strptime(
-                            i["_source"]["status_time_start"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                        )
-                        >= now - timedelta(hours=24)
+                        i for i in quarter_items if in_window(i, timedelta(hours=24))
                     ]
                 elif cache_period == "7d":
                     raw_items = [
-                        i
-                        for i in quarter_items
-                        if datetime.strptime(
-                            i["_source"]["status_time_start"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                        )
-                        >= now - timedelta(days=7)
+                        i for i in quarter_items if in_window(i, timedelta(days=7))
                     ]
                 elif cache_period == "30d":
                     raw_items = [
-                        i
-                        for i in quarter_items
-                        if datetime.strptime(
-                            i["_source"]["status_time_start"], "%Y-%m-%dT%H:%M:%S.%fZ"
-                        )
-                        >= now - timedelta(days=30)
+                        i for i in quarter_items if in_window(i, timedelta(days=30))
                     ]
                 else:
                     raw_items = []
@@ -1995,7 +1999,7 @@ def data_access_page():
             )
 
         logger.info(
-            "[SSR][ELASTIC] svc=%s raw_items=%d",
+            "[SSR][ELASTIC RAW] svc=%s items=%d",
             svc_name,
             len(raw_items),
         )
@@ -2051,17 +2055,19 @@ def data_access_page():
         "[SSR][AVAILABILITY][FINAL] %s",
         {k: round(v, 2) for k, v in availability_map.items()},
     )
+    prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
     # FINAL RENDER
     return render_template(
         "home/data-access.html",
         segment="acquisition-service",
         ssr_payload={
-            "period_type": period,
+            "period_type": effective_period,
+            "ui_period": ui_period,
+            "scope": scope,
             "availability_map": availability_map,
             "interface_status_map": interface_status_map,
             "service_color_map": SERVICE_COLOR_MAP,
-            "scope": scope,
             "trend": {
                 "sample_times": raw_trend.get("sample_times", []),
                 "data": trend_data,
@@ -2073,9 +2079,10 @@ def data_access_page():
             "start_date": start_date.isoformat(),
             "end_date": end_date.isoformat(),
         },
-        period_type=period,
-        period_id=period,
+        period_type=effective_period,
+        period_id=ui_period,
         selected_scope=scope,
+        prev_quarter_label=prev_quarter_label,
     )
 
 
