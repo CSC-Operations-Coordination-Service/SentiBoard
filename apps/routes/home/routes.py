@@ -1940,23 +1940,23 @@ def data_access_page():
     trend_data = raw_trend.get("data", {})
     volume_data = raw_volume.get("data", {})
 
-    logger.info(
-        "[SSR TREND/VOLUME] trend_keys=%d volume_keys=%d",
-        len(trend_data),
-        len(volume_data),
-    )
+    # logger.info(
+    #     "[SSR TREND/VOLUME] trend_keys=%d volume_keys=%d",
+    #     len(trend_data),
+    #     len(volume_data),
+    # )
 
     # ===== NEW SSR AVAILABILITY (REPLACES API) =====
     interface_status_map = {svc: [] for svc in SERVICE_CACHE_MAP.keys()}
 
     for svc_name, elastic_service_name in SERVICE_CACHE_MAP.items():
 
-        logger.info(
-            "[SSR][ELASTIC] Fetching interface monitoring svc=%s scope=%s period=%s",
-            svc_name,
-            scope,
-            cache_period,
-        )
+        # logger.info(
+        #     "[SSR][ELASTIC] Fetching interface monitoring svc=%s scope=%s period=%s",
+        #     svc_name,
+        #     scope,
+        #     cache_period,
+        # )
 
         # ---- EXACT SAME Elastic calls as API loaders ----
         if scope == "last":
@@ -2024,11 +2024,11 @@ def data_access_page():
                 }
             )
 
-        logger.info(
-            "[SSR][WINDOWED] svc=%s intervals=%d",
-            svc_name,
-            len(interface_status_map[svc_name]),
-        )
+    # logger.info(
+    #     "[SSR][WINDOWED] svc=%s intervals=%d",
+    #     svc_name,
+    #     len(interface_status_map[svc_name]),
+    # )
 
     # AVAILABILITY COMPUTATION
     availability_map = {}
@@ -2044,12 +2044,12 @@ def data_access_page():
 
         availability_map[svc] = availability
 
-        logger.info(
-            "[SSR][AVAILABILITY] svc=%s unav_sec=%.2f avail=%.5f",
-            svc,
-            unav_sec,
-            availability,
-        )
+    # logger.info(
+    #     "[SSR][AVAILABILITY] svc=%s unav_sec=%.2f avail=%.5f",
+    #     svc,
+    #     unav_sec,
+    #     availability,
+    # )
 
     logger.info(
         "[SSR][AVAILABILITY][FINAL] %s",

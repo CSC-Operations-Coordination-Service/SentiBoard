@@ -26,7 +26,7 @@ var pub_service_list = ['DAS'];
     try {
         const payload = JSON.parse(el.textContent);
 
-        console.log("[SSR] Payload loaded:", payload);
+        //console.log("[SSR] Payload loaded:", payload);
 
         window.PUBLICATION_TREND_DATA =
             payload?.trend || payload?.publication_trend || null;
@@ -291,7 +291,7 @@ class PublicationStatistics {
     }
 
     applySSRData(periodKey, trendResponse, volumeResponse) {
-        console.log("[PUB STATS] applySSRData", periodKey);
+        //console.log("[PUB STATS] applySSRData", periodKey);
 
         //  SUPPORT BOTH SHAPES
         const trend = trendResponse?.trend ?? trendResponse;
@@ -307,19 +307,19 @@ class PublicationStatistics {
         const lastUpdateUtc = new Date(normalized);
         this.setLastUpdatedLabel(lastUpdateUtc);
 
-        console.log(
+        /*console.log(
             "[UTC CHECK]",
             "raw:", lastSampleTime,
             "utc:", lastUpdateUtc.toISOString(),
             "local:", lastUpdateUtc.toString()
-        );
+        );*/
 
-        console.log(
+        /*console.log(
             "[PUB STATS] SSR samples:",
             trend.sample_times.length,
             "services:",
             Object.keys(trend.data || {})
-        );
+        );*/
 
         //  Update labels
         this.updateTrendChartsLabels(trend.sample_times);
@@ -444,7 +444,7 @@ class PublicationStatistics {
     // TODO: Move to chart Class
     _initTrendChart(service, dataType, timeLabels) {
         var chartId = this.trendChartId(service, dataType);
-        console.log("Initializing Chart with ID: ", chartId);
+        //console.log("Initializing Chart with ID: ", chartId);
         var multipleLineChart = document.getElementById(chartId).getContext('2d');
         var axisTicks = {
             beginAtZero: true,
@@ -540,8 +540,8 @@ class PublicationStatistics {
 
     updateChartLabels(service, dataType, timeLabels) {
         var chartId = this.trendChartId(service, dataType);
-        console.log("Updating Labels for Chart with el id: " + chartId);
-        console.log("Current list of chart IDs: ",)
+        //console.log("Updating Labels for Chart with el id: " + chartId);
+        //console.log("Current list of chart IDs: ", chartId)
         var serviceChart = this.trendCharts.get(chartId);
 
         // Draw Chart with updated labels
@@ -556,8 +556,8 @@ class PublicationStatistics {
 
 
     drawMissionTrendChart(trendChart, mission, missionpublicationTrend) {
-        console.info("Drawing trend for mission " + mission);
-        console.debug(" with data: ", missionpublicationTrend);
+        //console.info("Drawing trend for mission " + mission);
+        //console.debug(" with data: ", missionpublicationTrend);
         // copy wiht spread common parameters
         // Configure the Trend Chart using parameters depending
         // on the mission
@@ -566,7 +566,7 @@ class PublicationStatistics {
         Object.keys(mission_params).forEach(function (paramkey) {
             mission_data[paramkey] = mission_params[paramkey];
         });
-        console.log("Mission " + mission + ", " + "Adding data to chart: ", missionpublicationTrend);
+        //console.log("Mission " + mission + ", " + "Adding data to chart: ", missionpublicationTrend);
         mission_data.data = missionpublicationTrend;
         // Get Trend Chart for service service
         trendChart.data.datasets.push(mission_data);
@@ -575,7 +575,7 @@ class PublicationStatistics {
 
 
     trendChartId(pub_service, dataType) {
-        console.log("Computing Chart el id for service " + pub_service, ", data type: ", dataType);
+        //console.log("Computing Chart el id for service " + pub_service, ", data type: ", dataType);
         // Datatype one of: nrt/ntc/stc (Timeliness type)
         var chartId = pub_service.toLowerCase();
         chartId += "-" + dataType.toLowerCase() + "-multipleLineChart";

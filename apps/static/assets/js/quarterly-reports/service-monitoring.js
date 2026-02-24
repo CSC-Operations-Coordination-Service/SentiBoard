@@ -20,7 +20,7 @@ delivered to him.
 
     window.SSR_SERVICE_MONITORING_PAYLOAD = JSON.parse(el.textContent);
 
-    console.group('[SM][SSR]');
+    /*console.group('[SM][SSR]');
     console.log('Period:', window.SSR_SERVICE_MONITORING_PAYLOAD.period_type);
     console.log('Start:', window.SSR_SERVICE_MONITORING_PAYLOAD.start_date);
     console.log('End:', window.SSR_SERVICE_MONITORING_PAYLOAD.end_date);
@@ -28,7 +28,7 @@ delivered to him.
         'Services:',
         Object.keys(window.SSR_SERVICE_MONITORING_PAYLOAD.interface_status_map || {})
     );
-    console.groupEnd();
+    console.groupEnd();*/
 })();
 
 class ServiceMonitoring {
@@ -41,10 +41,10 @@ class ServiceMonitoring {
     }
 
     init() {
-        console.log(
+        /*console.log(
             '[SM][SSR][DEBUG] Raw availability payload:',
             JSON.stringify(this.availabilityMap, null, 2)
-        );
+        );*/
 
         if (!Object.keys(this.availabilityMap).length) {
             console.warn('[SM][SSR] Availability map is EMPTY — check SSR backend');
@@ -68,7 +68,7 @@ class ServiceMonitoring {
             if (percEl) percEl.innerText = perc;
             if (interfacePercEl) interfacePercEl.innerText = perc;
 
-            console.log(`[SM][SSR] ${service} availability updated: ${perc}`);
+            //console.log(`[SM][SSR] ${service} availability updated: ${perc}`);
         });
     }
     refreshAvailabilityStatus(newPayload) {
@@ -77,7 +77,7 @@ class ServiceMonitoring {
             this.interfaceStatusMap = newPayload.interface_status_map || this.interfaceStatusMap;
         }
 
-        console.group('[SM][refreshAvailabilityStatus]');
+        //console.group('[SM][refreshAvailabilityStatus]');
         this.render();
         console.groupEnd();
     }
@@ -108,15 +108,13 @@ class ServiceMonitoring {
 
     showUnavailabilityEvents(service) {
         const events = this.interfaceStatusMap[service] || [];
-        events.sort((a, b) => b.start - a.start);
+        events.sort((a, b) => new Date(b.start) - new Date(a.start));
 
         let html = '<ul>';
         if (events.length === 0) {
             html += '<li>No events reported</li>';
         } else {
-            events.forEach(e => {
-                html += `<li>${e.start.toISOString()} - ${((e.stop - e.start) / 60000).toFixed(2)} min</li>`;
-            });
+            events.forEach(e => { const start = new Date(e.start); const stop = new Date(e.stop); html += `<li>${start.toISOString()} - ${((stop - start) / 60000).toFixed(2)} min</li>`; });
         }
         html += '</ul>';
 
