@@ -9,7 +9,9 @@ from datetime import date, datetime as dt, timezone, timedelta
 from flask_login import current_user
 from apps import flask_cache
 from dateutil.parser import isoparse
+from dateutil.relativedelta import relativedelta
 import datetime
+import apps.cache.modules.interface_monitoring as interface_monitoring_cache
 
 
 STATIONS = ["svalbard", "inuvik", "matera", "maspalomas", "neustrelitz"]
@@ -32,6 +34,15 @@ SATELLITE_INFO = {
     "S3B": ("Copernicus Sentinel-3B", ["OLCI", "SLSTR", "SRAL", "MWR", "EDDS"]),
     "S5P": ("Copernicus Sentinel-5P", ["TROPOMI", "EDDS"]),
 }
+
+SERVICES = [
+    "ACRI",
+    "CLOUDFERRO",
+    "DAS",
+    "DHUS",
+    "EXPRIVIA",
+    "WERUM",
+]
 
 
 def build_acquisition_payload(acquisitions, edrs_acquisitions, period_id=""):
@@ -697,3 +708,92 @@ def resolve_period(
         )
 
     return ui_period, effective_period
+
+
+def resolve_period_dates(period_key):
+    """
+    Returns (start_datetime, end_datetime) in UTC
+    """
+
+    end = dt.now(timezone.utc)
+
+    if period_key in ("24h", "day"):
+        start = end - timedelta(hours=24)
+
+    elif period_key in ("7d", "week"):
+        start = end - timedelta(days=7)
+
+    elif period_key in ("30d", "month"):
+        start = end - timedelta(days=30)
+
+    elif period_key == "prev-quarter":
+        # previous full quarter
+        month = ((end.month - 1) // 3) * 3 + 1
+        current_q_start = dt(end.year, month, 1)
+
+        prev_q_end = current_q_start - timedelta(seconds=1)
+        prev_q_start = prev_q_end - relativedelta(months=3)
+        prev_q_start = prev_q_start.replace(day=1, hour=0, minute=0, second=0)
+
+        start = prev_q_start
+        end = prev_q_end
+
+    elif period_key == "lifetime":
+        # system lifetime start
+        start = dt(2000, 1, 1, tzinfo=timezone.utc)
+
+    else:
+        raise ValueError(f"Unknown period_key: {period_key}")
+
+    return start, end
+
+
+def load_cached_interface_events(period_key):
+    events = {}
+
+    for service in SERVICES:
+        if period_key == "prev-quarter":
+            cache_key = (
+                interface_monitoring_cache.interface_monitoring_cache_key.format(
+                    "previous", "quarter", service
+                )
+            )
+        else:
+            cache_key = (
+                interface_monitoring_cache.interface_monitoring_cache_key.format(
+                    "last", period_key, service
+                )
+            )
+
+        resp = flask_cache.get(cache_key)
+        rows = json.loads(resp.get_data(as_text=True)) if resp else []
+
+        events[service] = rows
+
+    return events
+
+
+def compute_availability_from_cached_events(period_key, start, end):
+    events = load_cached_interface_events(period_key)
+    duration = (end - start).total_seconds()
+
+    availability_map = {}
+    interface_status_map = {}
+
+    for service, rows in events.items():
+        unavail = 0
+
+        for r in rows:
+            s = dt.fromisoformat(
+                r["_source"]["status_time_start"].replace("Z", "+00:00")
+            )
+            e = dt.fromisoformat(
+                r["_source"]["status_time_stop"].replace("Z", "+00:00")
+            )
+            unavail += (e - s).total_seconds()
+
+        availability_map[service] = round((1 - unavail / duration) * 100, 2)
+
+        interface_status_map[service] = rows
+
+    return availability_map, interface_status_map

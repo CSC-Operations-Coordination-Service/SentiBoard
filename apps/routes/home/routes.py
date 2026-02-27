@@ -36,6 +36,7 @@ import apps.cache.modules.datatakes as datatakes_cache
 import apps.cache.modules.acquisitionplans as acquisition_plans_cache
 import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.cache.modules.publication as publication_cache
+import apps.cache.modules.archive as archive_cache
 import apps.elastic.modules.interface_monitoring as elastic_interface_monitoring
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
@@ -2082,6 +2083,84 @@ def data_access_page():
         period_type=effective_period,
         period_id=ui_period,
         selected_scope=scope,
+        prev_quarter_label=prev_quarter_label,
+    )
+
+
+@blueprint.route("/data-archive.html")
+@login_required
+def data_archive_page():
+    if current_user.role not in ["admin", "ecuser", "esauser"]:
+        return "Unauthorized", 403
+
+    # Build the archive payload
+    archive_payload = {}
+
+    periods = {
+        "24h": ("last", "24h"),
+        "7d": ("last", "7d"),
+        "30d": ("last", "30d"),
+        "prev-quarter": ("previous", "quarter"),
+        "lifetime": ("all", "lifetime"),
+    }
+
+    for key, (period_type, period_id) in periods.items():
+        raw_data = archive_cache.get_archive_cached_data(period_type, period_id)
+        normalized_data = acquisitions_utils.normalize_cached_json(raw_data, default={})
+
+        # Ensure normalized_data is a dict
+        if not isinstance(normalized_data, dict):
+            normalized_data = {}
+
+        # Ensure `data` exists and is always a list
+        normalized_data.setdefault("data", [])
+
+        # Optional: ensure interval exists
+        normalized_data.setdefault("interval", {"from": None, "to": None})
+
+        # Serialize for SSR
+        serialized_data = acquisitions_utils.safe_serialize(normalized_data)
+        archive_payload[key] = serialized_data
+
+        logger.info("[SSR][DEBUG][%s] Normalized data: %s", key, normalized_data)
+
+        # get start/end of prev-quarter
+        start, end = acquisitions_utils.resolve_period_dates(key)
+
+        # compute availability using cached events
+        availability_map, interface_status_map = (
+            acquisitions_utils.compute_availability_from_cached_events(key, start, end)
+        )
+
+        normalized_data["availability_map"] = availability_map
+        normalized_data["interface_status_map"] = interface_status_map
+
+        archive_payload[key] = acquisitions_utils.safe_serialize(normalized_data)
+
+    logger.info(
+        "[SSR][AVAILABILITY][prev-quarter] interfaces=%d values=%s",
+        len(availability_map),
+        availability_map,
+    )
+
+    # inject into archive_payload
+    archive_payload["prev-quarter"]["availability_map"] = availability_map
+    archive_payload["prev-quarter"]["interface_status_map"] = interface_status_map
+
+    # --- Step 3: logging for info ---
+    prev_quarter_label = acquisitions_utils.previous_quarter_label()
+    logger.info("[SSR][INFO] Previous quarter label: %s", prev_quarter_label)
+    logger.info("[SSR][ARCHIVE PAYLOAD KEYS] %s", list(archive_payload.keys()))
+
+    # Log a short summary of each period's data for quick inspection
+    for period, payload in archive_payload.items():
+        num_records = len(payload.get("data", [])) if isinstance(payload, dict) else 0
+        logger.info("[SSR][SUMMARY][%s] Records count: %d", period, num_records)
+
+    return render_template(
+        "home/data-archive.html",
+        segment="acquisition-service",
+        archive_payload=archive_payload,
         prev_quarter_label=prev_quarter_label,
     )
 

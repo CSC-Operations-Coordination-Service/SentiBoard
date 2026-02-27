@@ -123,7 +123,7 @@
         </div>
 
         <!-- LTA usage [Number] -->
-        <div class="row" id="LTA-period-mission-levels-num-row">
+        <div class="row" id="LTA-period-mission-levels-num-row" data-period="period" data-datatype="num">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -139,7 +139,7 @@
         </div>
 
         <!-- LTA usage [Volume] -->
-        <div class="row" id="LTA-period-mission-levels-vol-row">
+        <div class="row" id="LTA-period-mission-levels-vol-row" data-period="period" data-datatype="vol">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -155,7 +155,7 @@
         </div>
 
                 <!-- LTA lifetime usage [Number] -->
-        <div class="row" id="LTA-lifetime-mission-levels-num-row">
+        <div class="row" id="LTA-lifetime-mission-levels-num-row" data-period="lifetime" data-datatype="num">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -171,7 +171,7 @@
         </div>
 
         <!-- LTA lifetime usage [Volume] -->
-        <div class="row" id="LTA-lifetime-mission-levels-vol-row">
+        <div class="row" id="LTA-lifetime-mission-levels-vol-row" data-period="lifetime" data-datatype="vol">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -321,9 +321,19 @@
 {% block javascripts %}
 
     <script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
+    <script id="archive-ssr-payload" type="application/json">
+        {{ archive_payload | tojson }}
+    </script>
+
     <script src="/static/assets/js/quarterly-reports/archive-statistics.js"></script>
     <script src="/static/assets/js/quarterly-reports/service-monitoring.js"></script>
-    <script defer type="text/javascript">archiveStatistics.init();</script>
+    <!-- <script defer type="text/javascript">archiveStatistics.init();</script> -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const archiveStats = new ArchiveStatisticsCharts();
+            archiveStats.init(SSR_ARCHIVE_PAYLOAD);
+        });
+    </script>
     <script defer type="text/javascript">serviceMonitoring.init();</script>
 
 {% endblock javascripts %}

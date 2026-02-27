@@ -10,26 +10,36 @@ disclose in whole or in part, information contained herein except for or on
 behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
+(function bootstrapServiceMonitoringSSR() {
+    const el =
+        document.getElementById('publication-trend-ssr') ||
+        document.getElementById('archive-ssr-payload');
 
-(function () {
-    const el = document.getElementById('publication-trend-ssr');
     if (!el) {
-        console.error('[SM][SSR] Missing SSR payload element');
+        console.warn('[SM][SSR] No SSR payload found on page');
         return;
     }
 
-    window.SSR_SERVICE_MONITORING_PAYLOAD = JSON.parse(el.textContent);
+    let raw;
+    try {
+        raw = JSON.parse(el.textContent);
+    } catch (e) {
+        console.error('[SM][SSR] Invalid JSON in SSR payload', e);
+        return;
+    }
 
-    /*console.group('[SM][SSR]');
-    console.log('Period:', window.SSR_SERVICE_MONITORING_PAYLOAD.period_type);
-    console.log('Start:', window.SSR_SERVICE_MONITORING_PAYLOAD.start_date);
-    console.log('End:', window.SSR_SERVICE_MONITORING_PAYLOAD.end_date);
-    console.log(
-        'Services:',
-        Object.keys(window.SSR_SERVICE_MONITORING_PAYLOAD.interface_status_map || {})
-    );
-    console.groupEnd();*/
+    // data-access.html → availability exists
+    if (raw.availability_map) {
+        window.SSR_SERVICE_MONITORING_PAYLOAD = raw;
+        console.info('[SM][SSR] Using access-page availability payload');
+        return;
+    }
+
+    // data-archive.html → NO availability (EXPECTED)
+    console.info('[SM][SSR] Archive page detected — availability disabled');
+    window.SSR_SERVICE_MONITORING_PAYLOAD = null;
 })();
+
 
 class ServiceMonitoring {
 
@@ -41,17 +51,32 @@ class ServiceMonitoring {
     }
 
     init() {
-        /*console.log(
-            '[SM][SSR][DEBUG] Raw availability payload:',
-            JSON.stringify(this.availabilityMap, null, 2)
-        );*/
+        console.group('[SM][SSR][INIT]');
 
-        if (!Object.keys(this.availabilityMap).length) {
-            console.warn('[SM][SSR] Availability map is EMPTY — check SSR backend');
+        const archive = window.SSR_ARCHIVE_PAYLOAD?.["prev-quarter"];
+
+        if (archive?.availability_map) {
+            this.availabilityMap = archive.availability_map;
+            this.interfaceStatusMap = archive.interface_status_map || {};
+
+            console.info(
+                "[SM][SSR] availability_map loaded from ARCHIVE payload",
+                this.availabilityMap
+            );
+        } else {
+            console.warn(
+                "[SM][SSR] availability_map missing in ARCHIVE payload"
+            );
         }
 
-        // Render immediately to update UI percentages & bars
+        if (!Object.keys(this.availabilityMap).length) {
+            console.warn('[SM][SSR][INIT] availabilityMap is EMPTY');
+        } else {
+            console.info('[SM][SSR][INIT] availabilityMap OK');
+        }
+
         this.render();
+        console.groupEnd();
     }
 
 
