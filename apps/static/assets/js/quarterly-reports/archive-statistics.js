@@ -18,15 +18,7 @@
         return window.SSR_ARCHIVE_PAYLOAD[period] || { data: [] };
     }
 
-    // Load previous quarter into your charts
-    const prevQuarterData = getPeriod('prev-quarter');
 
-    if (prevQuarterData.data.length && typeof archiveStatistics !== 'undefined') {
-        archiveStatistics.loadArchive(prevQuarterData, 'period');
-        console.info('[ARCHIVE][SSR] prev-quarter charts loaded');
-    } else {
-        console.warn('[ARCHIVE][SSR] No prev-quarter data to render');
-    }
 })();
 
 class ArchiveMissionStatistics {
@@ -185,34 +177,17 @@ class ArchiveStatisticsCharts {
     }
 
     showPeriod(periodKey) {
-        const speriodKey = this._normalizePeriodKey(periodKey);
-
-        const periodPayload = window.SSR_ARCHIVE_PAYLOAD[speriodKey];
-
-        console.group(`[ARCHIVE][PERIOD CHANGE] ${periodKey}`);
-        console.log("Mapped period:", speriodKey);
-        console.log("availability_map:", periodPayload?.availability_map);
-        console.log("interface_status_map:", periodPayload?.interface_status_map);
-        console.log("rows:", periodPayload?.data?.length);
-        console.groupEnd();
-
-
-        console.group('[ARCHIVE][SHOW PERIOD]');
-        console.log('Requested period (UI):', periodKey);
-
         const ssrKey = this._normalizePeriodKey(periodKey);
-        console.log('Mapped SSR period:', ssrKey);
-
         const payload = this.datasets[ssrKey];
 
         if (!payload || !payload.data) {
-            console.warn('[ARCHIVE] No data for SSR period:', ssrKey);
-            // Clear previous chart to show 0%
-            this.clearCharts(PeriodKey);
+            this.clearCharts(PeriodKey); // Clears the 'period' bucket
             return;
         }
 
-        this.clearCharts(PeriodKey); // destroy previous bars
+        // before drawing the new ones into that same bucket.
+        this.clearCharts(PeriodKey);
+
         this.loadArchive(payload, PeriodKey);
 
         this.currentPeriod = ssrKey;
@@ -228,7 +203,6 @@ class ArchiveStatisticsCharts {
         }
         this.setLastUpdatedLabel(new Date(payload.interval.to));
 
-        console.groupEnd();
     }
 
     on_datatype_change(ev) {
@@ -451,7 +425,8 @@ class ArchiveStatisticsCharts {
         axesTicksConfig[barAxis] = barAxisTicks;
         var labelMaxWidths = [10, 8, 9, 12, 12];
         // TODO for each dataset, compute a labelMaxWidth, based on the dataset dataTYpe
-        console.debug("Saving Chart object for periodType ", periodType, ", dataType ", dataType);
+        //console.debug("Saving Chart object for periodType ", periodType, ", dataType ", dataType);
+        const chartInstance = this; // Capture the chart instance for use in tooltip callbacks
         this.stackBarChart[periodType].set(dataType, new Chart(chartCanvas.getContext('2d'), {
             type: barType,
             data: barData,
@@ -492,18 +467,27 @@ class ArchiveStatisticsCharts {
                     ]
                 },
                 showTooltips: true,
+                customDataType: dataType,
                 tooltips: {
                     mode: 'label',
                     callbacks: {
+                        title: function (tooltipItems, data) {
+                            const dt = tooltipItems[0].chart?.options?.customDataType
+                                || chartInstance.currentDatatype === 'volume'
+                                ? 'VOL'
+                                : 'NUM';
 
-                        title: (tooltipItems, data) => {
-                            return ArchiveStatisticsCharts.buildTooltipTitle(dataType,
-                                tooltipItems, data);
+                            return ArchiveStatisticsCharts.buildTooltipTitle(
+                                dt, tooltipItems, data);
                         },
-                        label: (tooltipItems, data) => {
-                            return ArchiveStatisticsCharts.buildTooltipLabel(dataType,
-                                labelMaxWidths,
-                                tooltipItems, data);
+                        label: function (tooltipItem, data) {
+                            const dt = tooltipItem.chart?.options?.customDataType
+                                || chartInstance.currentDatatype === 'volume'
+                                ? 'VOL'
+                                : 'NUM';
+
+                            return ArchiveStatisticsCharts.buildTooltipLabel(
+                                dt, labelMaxWidths, tooltipItem, data);
                         }
                     }
                 }
@@ -521,44 +505,37 @@ class ArchiveStatisticsCharts {
     }
 
     static buildTooltipTitle(dataType, tooltipItems, data) {
-        var idx = tooltipItems.index;
-        var archiveTotal = tooltipItems.reduce((accumulator, barStack) => {
-            return accumulator + (barStack.yLabel || 0);
+        var label = tooltipItems[0].xLabel || tooltipItems[0].yLabel;
+
+        var total = tooltipItems.reduce((sum, item) => {
+            var val = parseFloat(item.yLabel) || parseFloat(item.xLabel) || 0;
+            return sum + val;
         }, 0);
+
+        var formattedTotal;
         if (dataType === 'VOL') {
-            archiveTotal = format_size_decimal(archiveTotal);
+            formattedTotal = format_size_decimal(total);
         } else {
-            archiveTotal = format_count(archiveTotal);
+            formattedTotal = format_count(total);
         }
 
-        return tooltipItems[0].xLabel + ': ' + archiveTotal;
+        return label + ' (Total: ' + formattedTotal + ')';
     }
 
     static buildTooltipLabel(dataType, maxWidths, tooltipItem, data) {
-        const idx = tooltipItem.index;
         const datasetIdx = tooltipItem.datasetIndex;
-
-        const datasetLabel = data.datasets[datasetIdx]?.label ?? "Unknown";
-        let rawValue = data.datasets[datasetIdx]?.data[idx];
-
-        // Handle undefined or null only (0 is a valid value!)
-        if (rawValue === null || rawValue === undefined) {
-            return `${datasetLabel}: N/A`;
-        }
+        const dataset = data.datasets[datasetIdx];
+        const label = dataset.label || '';
+        const value = Number(dataset.data[tooltipItem.index]) || 0;
 
         let formattedValue;
-
         if (dataType === 'VOL') {
-            formattedValue = format_size_decimal(Number(rawValue));
+            formattedValue = format_size_decimal(value);
         } else {
-            formattedValue = format_count(Number(rawValue));
-            const padLength = maxWidths[idx] || 0;
-            if (padLength > 0) {
-                formattedValue = String(formattedValue).padStart(padLength);
-            }
+            formattedValue = format_count(value);
         }
 
-        return `${datasetLabel}: ${formattedValue}`;
+        return label + ': ' + formattedValue;
     }
 
 
@@ -635,7 +612,7 @@ class ArchiveStatisticsCharts {
 }
 
 
-
+let archiveStatistics = new ArchiveStatisticsCharts();
 
 (function () {
     const el = document.getElementById('archive-ssr-payload');
@@ -662,15 +639,4 @@ class ArchiveStatisticsCharts {
         return window.SSR_ARCHIVE_PAYLOAD[period] || { data: [] };
     }
 
-    const prevQuarterData = getPeriod('prev-quarter');
-
-    if (prevQuarterData.data.length) {
-        // Ensure the archiveStatistics instance is ready
-        archiveStatistics.loadArchive(prevQuarterData, PeriodKey);
-        console.info('[ARCHIVE][SSR] prev-quarter charts loaded');
-    } else {
-        console.warn('[ARCHIVE][SSR] No prev-quarter data to render');
-    }
 })();
-
-let archiveStatistics = new ArchiveStatisticsCharts();
