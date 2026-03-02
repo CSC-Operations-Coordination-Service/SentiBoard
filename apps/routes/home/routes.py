@@ -38,6 +38,7 @@ import apps.cache.modules.acquisitionassets as acquisition_assets_cache
 import apps.cache.modules.publication as publication_cache
 import apps.cache.modules.archive as archive_cache
 import apps.elastic.modules.interface_monitoring as elastic_interface_monitoring
+import apps.cache.modules.interface_monitoring_ssr as interface_monitoring_cache_ssr
 import apps.models.instant_messages as instant_messages_model
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
@@ -2093,8 +2094,7 @@ def data_archive_page():
     if current_user.role not in ["admin", "ecuser", "esauser"]:
         return "Unauthorized", 403
 
-    # Build the archive payload
-    archive_payload = {}
+    services = ["ACRI", "CLOUDFERRO", "EXPRIVIA", "WERUM"]
 
     periods = {
         "24h": ("last", "24h"),
@@ -2104,58 +2104,81 @@ def data_archive_page():
         "lifetime": ("all", "lifetime"),
     }
 
-    for key, (period_type, period_id) in periods.items():
-        raw_data = archive_cache.get_archive_cached_data(period_type, period_id)
-        normalized_data = acquisitions_utils.normalize_cached_json(raw_data, default={})
+    # Build the archive payload
+    archive_payload = {}
 
-        # Ensure normalized_data is a dict
-        if not isinstance(normalized_data, dict):
-            normalized_data = {}
+    for label, (ptype, pid) in periods.items():
+        raw = archive_cache.get_archive_cached_data(ptype, pid)
+        normalized = acquisitions_utils.normalize_cached_json(raw, default={})
+        normalized.setdefault("data", [])
+        normalized.setdefault("interval", {"from": None, "to": None})
+        archive_payload[label] = acquisitions_utils.safe_serialize(normalized)
 
-        # Ensure `data` exists and is always a list
-        normalized_data.setdefault("data", [])
+    service_monitoring_payload = {}
 
-        # Optional: ensure interval exists
-        normalized_data.setdefault("interval", {"from": None, "to": None})
+    for service in services:
+        interface_monitoring_cache_ssr.ensure_interface_cache_loaded_ssr(service)
 
-        # Serialize for SSR
-        serialized_data = acquisitions_utils.safe_serialize(normalized_data)
-        archive_payload[key] = serialized_data
+    for label, (ptype, pid) in periods.items():
+        start, end = acquisitions_utils.resolve_period_dates(label)
 
-        logger.info("[SSR][DEBUG][%s] Normalized data: %s", key, normalized_data)
+        period_events = []
+        for service in services:
+            events = interface_monitoring_cache_ssr.load_interface_events_ssr(
+                service=service, period_type=ptype, period_id=pid
+            )
 
-        # get start/end of prev-quarter
-        start, end = acquisitions_utils.resolve_period_dates(key)
+            logger.info(
+                "[SSR][IM][%s][%s] events=%d sample=%s",
+                service,
+                label,
+                len(events),
+                events[:1],
+            )
 
-        # compute availability using cached events
-        availability_map, interface_status_map = (
-            acquisitions_utils.compute_availability_from_cached_events(key, start, end)
+            period_events.extend(events)
+
+        interface_status_map = acquisitions_utils.build_interface_status_map(
+            period_events
         )
 
-        normalized_data["availability_map"] = availability_map
-        normalized_data["interface_status_map"] = interface_status_map
+        clean_status_map = {}
+        for iface, failures in interface_status_map.items():
+            # Remove 'LTA_' and uppercase everything to match UI IDs
+            clean_name = iface.replace("LTA_", "").upper()
+            clean_status_map[clean_name] = (
+                acquisitions_utils.normalize_interface_events(failures)
+            )
 
-        archive_payload[key] = acquisitions_utils.safe_serialize(normalized_data)
+        interface_status_map = clean_status_map
 
-    logger.info(
-        "[SSR][AVAILABILITY][prev-quarter] interfaces=%d values=%s",
-        len(availability_map),
-        availability_map,
-    )
+        availability_map = acquisitions_utils.compute_availability_from_interface_map(
+            interface_status_map, start, end
+        )
 
-    # inject into archive_payload
-    archive_payload["prev-quarter"]["availability_map"] = availability_map
-    archive_payload["prev-quarter"]["interface_status_map"] = interface_status_map
+        service_monitoring_payload[label] = {
+            "interface_status_map": interface_status_map,
+            "availability_map": availability_map,
+        }
 
-    # --- Step 3: logging for info ---
+        for iface, failures in interface_status_map.items():
+            logger.info(
+                "[SSR][FAILURES][%s][%s] count=%d",
+                label,
+                iface,
+                len(failures),
+            )
+
+    for label, monitoring in service_monitoring_payload.items():
+        archive_payload.setdefault(label, {})
+        archive_payload[label]["availability_map"] = monitoring["availability_map"]
+        archive_payload[label]["interface_status_map"] = monitoring[
+            "interface_status_map"
+        ]
+
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
-    logger.info("[SSR][INFO] Previous quarter label: %s", prev_quarter_label)
-    logger.info("[SSR][ARCHIVE PAYLOAD KEYS] %s", list(archive_payload.keys()))
 
-    # Log a short summary of each period's data for quick inspection
-    for period, payload in archive_payload.items():
-        num_records = len(payload.get("data", [])) if isinstance(payload, dict) else 0
-        logger.info("[SSR][SUMMARY][%s] Records count: %d", period, num_records)
+    logger.info("[SSR][DONE] Payload ready")
 
     return render_template(
         "home/data-archive.html",

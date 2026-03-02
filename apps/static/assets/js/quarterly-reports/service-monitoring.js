@@ -10,6 +10,7 @@ disclose in whole or in part, information contained herein except for or on
 behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
+/* service-monitoring.js */
 (function bootstrapServiceMonitoringSSR() {
     const el =
         document.getElementById('publication-trend-ssr') ||
@@ -36,8 +37,8 @@ delivered to him.
     }
 
     // data-archive.html → NO availability (EXPECTED)
-    console.info('[SM][SSR] Archive page detected — availability disabled');
-    window.SSR_SERVICE_MONITORING_PAYLOAD = null;
+    // console.info('[SM][SSR] Archive page detected — availability disabled');
+    // window.SSR_SERVICE_MONITORING_PAYLOAD = null;
 })();
 
 
@@ -81,8 +82,18 @@ class ServiceMonitoring {
 
 
     render() {
+        const allServices = ['acri', 'cloudferro', 'exprivia', 'werum'];
+        allServices.forEach(s => {
+            const bar = document.getElementById(s + '-avail-bar');
+            const perc = document.getElementById(s + '-avail-perc');
+            const iface = document.getElementById(s + '-interface-avail-perc');
+            if (bar) bar.style.width = '100%';
+            if (perc) perc.innerText = '100.00%';
+            if (iface) iface.innerText = '100.00%';
+        });
         Object.entries(this.availabilityMap).forEach(([service, value]) => {
             const perc = value.toFixed(2) + '%';
+            const s = service.toLowerCase();
 
             // Update UI labels and progress bars
             const barEl = document.getElementById(service.toLowerCase() + '-avail-bar');
@@ -96,40 +107,40 @@ class ServiceMonitoring {
             //console.log(`[SM][SSR] ${service} availability updated: ${perc}`);
         });
     }
+
     refreshAvailabilityStatus(newPayload) {
         if (newPayload) {
-            this.availabilityMap = newPayload.availability_map || this.availabilityMap;
-            this.interfaceStatusMap = newPayload.interface_status_map || this.interfaceStatusMap;
+            this.availabilityMap = newPayload.availability_map || {};
+            this.interfaceStatusMap = newPayload.interface_status_map || {};
         }
 
         //console.group('[SM][refreshAvailabilityStatus]');
         this.render();
-        console.groupEnd();
     }
 
-    showDASUnavailabilityEvents() {
-        serviceMonitoring.showUnavailabilityEvents('DAS');
-    }
-
-    showDHUSUnavailabilityEvents() {
-        serviceMonitoring.showUnavailabilityEvents('DHUS');
-    }
-
-    showAcriUnavailabilityEvents() {
-        serviceMonitoring.showUnavailabilityEvents('ACRI');
-    }
-
-    showCloudFerroUnavailabilityEvents() {
-        serviceMonitoring.showUnavailabilityEvents('CLOUDFERRO');
-    }
-
-    showExpriviaUnavailabilityEvents() {
-        serviceMonitoring.showUnavailabilityEvents('EXPRIVIA');
-    }
-
-    showWerumUnavailabilityEvents() {
-        serviceMonitoring.showUnavailabilityEvents('WERUM');
-    }
+    /* showDASUnavailabilityEvents() {
+         serviceMonitoring.showUnavailabilityEvents('DAS');
+     }
+ 
+     showDHUSUnavailabilityEvents() {
+         serviceMonitoring.showUnavailabilityEvents('DHUS');
+     }
+ 
+     showAcriUnavailabilityEvents() {
+         serviceMonitoring.showUnavailabilityEvents('ACRI');
+     }
+ 
+     showCloudFerroUnavailabilityEvents() {
+         serviceMonitoring.showUnavailabilityEvents('CLOUDFERRO');
+     }
+ 
+     showExpriviaUnavailabilityEvents() {
+         serviceMonitoring.showUnavailabilityEvents('EXPRIVIA');
+     }
+ 
+     showWerumUnavailabilityEvents() {
+         serviceMonitoring.showUnavailabilityEvents('WERUM');
+     }*/
 
     showUnavailabilityEvents(service) {
         const events = this.interfaceStatusMap[service] || [];

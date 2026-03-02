@@ -10,7 +10,7 @@
  behalf of SERCO to fulfill the purpose for which the document was
  delivered to him.
  */
-
+/* archive-statistcs.js*/
 (function () {
     if (!window.SSR_ARCHIVE_PAYLOAD) return;
 
@@ -217,7 +217,9 @@ class ArchiveStatisticsCharts {
 
         this.currentPeriod = ssrKey;
 
-        this.loadArchive(payload, PeriodKey);
+        if (window.serviceMonitoring) {
+            window.serviceMonitoring.refreshAvailabilityStatus(payload);
+        }
 
         const lifetimePayload = this.datasets["lifetime"];
         if (lifetimePayload?.data?.length) {
@@ -261,7 +263,7 @@ class ArchiveStatisticsCharts {
 
     computeArchiveStatistics(data_rows) {
         var archiveStatistics = new ArchiveMissionStatistics();
-        console.debug("Computing statistics from response: ", data_rows);
+        //console.debug("Computing statistics from response: ", data_rows);
 
         for (const record of data_rows) {
 
@@ -400,7 +402,7 @@ class ArchiveStatisticsCharts {
 
     drawDetailedBarChart(chartId, archiveLevelDetailData, dataType, periodType) {
         console.log("Drawing Stacked Bars with ID " + chartId + ", for period type " + periodType);
-        console.debug("Data to be put on Detail chart: ", archiveLevelDetailData);
+        //console.debug("Data to be put on Detail chart: ", archiveLevelDetailData);
 
         var chartCanvas = document.getElementById(chartId);
         if (chartCanvas !== null) {
@@ -412,8 +414,9 @@ class ArchiveStatisticsCharts {
         // Get the labels to associate with legends (labels for each portion of a stack
         var stackLabels = this._extractAllSubObjectsKeys(Object.values(archiveLevelDetailData)).sort();
         console.debug("Extracted all Level Keys", stackLabels);
+
         var barDetailDatasets = this._buildHomogeneousDetailedDatasets(stackLabels, archiveLevelDetailData);
-        console.debug("Level/Mission Datasets: ", barDetailDatasets);
+        //console.debug("Level/Mission Datasets: ", barDetailDatasets);
 
         var barData = {
             datasets: barDetailDatasets, // datsets with integrated missing elements
@@ -563,14 +566,14 @@ class ArchiveStatisticsCharts {
     clearCharts(periodType) {
         const key = periodType.toLowerCase();
 
-        if (!this.stackBarChart[key]) {
-            console.warn("[ARCHIVE][CLEAR] No chart bucket for", key);
-            return;
+        if (this.stackBarChart[key]) {
+            this.stackBarChart[key].forEach((pChart, dataType) => {
+                if (pChart) {
+                    pChart.destroy(); // This removes the tooltips and event listeners
+                }
+            });
+            this.stackBarChart[key].clear(); // Clear the Map
         }
-
-        this.stackBarChart[key].forEach((pChart) => {
-            if (pChart) pChart.destroy();
-        });
     }
 
     _normalizePeriod(periodKey) {
@@ -631,7 +634,8 @@ class ArchiveStatisticsCharts {
 
 }
 
-let archiveStatistics = new ArchiveStatisticsCharts();
+
+
 
 (function () {
     const el = document.getElementById('archive-ssr-payload');
@@ -642,7 +646,7 @@ let archiveStatistics = new ArchiveStatisticsCharts();
 
     try {
         window.SSR_ARCHIVE_PAYLOAD = JSON.parse(el.textContent);
-        console.info('[SM][SSR] Archive payload periods:', Object.keys(window.SSR_ARCHIVE_PAYLOAD));
+        //console.info('[SM][SSR] Archive payload periods:', Object.keys(window.SSR_ARCHIVE_PAYLOAD));
         console.log(
             "[ARCHIVE][SSR] availability_map:",
             SSR_ARCHIVE_PAYLOAD["prev-quarter"]?.availability_map
@@ -668,3 +672,5 @@ let archiveStatistics = new ArchiveStatisticsCharts();
         console.warn('[ARCHIVE][SSR] No prev-quarter data to render');
     }
 })();
+
+let archiveStatistics = new ArchiveStatisticsCharts();

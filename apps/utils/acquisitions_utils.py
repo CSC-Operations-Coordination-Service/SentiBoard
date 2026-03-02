@@ -1,3 +1,4 @@
+# apps.utils.acquisitions_utils
 from __future__ import annotations
 
 import json
@@ -11,7 +12,6 @@ from apps import flask_cache
 from dateutil.parser import isoparse
 from dateutil.relativedelta import relativedelta
 import datetime
-import apps.cache.modules.interface_monitoring as interface_monitoring_cache
 
 
 STATIONS = ["svalbard", "inuvik", "matera", "maspalomas", "neustrelitz"]
@@ -748,52 +748,74 @@ def resolve_period_dates(period_key):
     return start, end
 
 
-def load_cached_interface_events(period_key):
-    events = {}
+def build_interface_status_map(events):
+    """
+    Build a map:
+        interface_name -> list of status events
 
-    for service in SERVICES:
-        if period_key == "prev-quarter":
-            cache_key = (
-                interface_monitoring_cache.interface_monitoring_cache_key.format(
-                    "previous", "quarter", service
-                )
-            )
-        else:
-            cache_key = (
-                interface_monitoring_cache.interface_monitoring_cache_key.format(
-                    "last", period_key, service
-                )
-            )
+    Input:
+        events: list[dict]
 
-        resp = flask_cache.get(cache_key)
-        rows = json.loads(resp.get_data(as_text=True)) if resp else []
+    Output:
+        dict[str, list[dict]]
+    """
+    interface_map = defaultdict(list)
 
-        events[service] = rows
+    if not events:
+        return {}
 
-    return events
+    for ev in events:
+        src = ev.get("_source", {})
+        interface = src.get("interface_name")
+        if not interface:
+            continue
+
+        interface_map[interface].append(ev)
+
+    return dict(interface_map)
 
 
-def compute_availability_from_cached_events(period_key, start, end):
-    events = load_cached_interface_events(period_key)
-    duration = (end - start).total_seconds()
+def compute_availability_from_interface_map(interface_status_map, start, end):
+    availability = {}
 
-    availability_map = {}
-    interface_status_map = {}
+    total_seconds = (end - start).total_seconds()
 
-    for service, rows in events.items():
-        unavail = 0
+    for iface, failures in interface_status_map.items():
+        down = sum(f["duration"] for f in failures)
+        availability[iface] = max(0.0, 100.0 * (1 - down / total_seconds))
 
-        for r in rows:
-            s = dt.fromisoformat(
-                r["_source"]["status_time_start"].replace("Z", "+00:00")
-            )
-            e = dt.fromisoformat(
-                r["_source"]["status_time_stop"].replace("Z", "+00:00")
-            )
-            unavail += (e - s).total_seconds()
+    return availability
 
-        availability_map[service] = round((1 - unavail / duration) * 100, 2)
 
-        interface_status_map[service] = rows
+def normalize_interface_events(events):
+    out = []
+    for ev in events:
+        src = ev.get("_source", {})
+        out.append(
+            {
+                "start": src.get("status_time_start"),
+                "stop": src.get("status_time_stop"),
+                "duration": src.get("status_duration", 0),
+            }
+        )
+    return out
 
-    return availability_map, interface_status_map
+
+def compute_availability_from_events(interface_status_map, period_start, period_end):
+    total_period_seconds = (period_end - period_start).total_seconds()
+    availability = {}
+
+    for service, events in interface_status_map.items():
+        down_seconds = 0.0
+
+        for e in events:
+            start = max(dt.fromisoformat(e["start"]), period_start)
+            stop = min(dt.fromisoformat(e["stop"]), period_end)
+
+            if stop > start:
+                down_seconds += (stop - start).total_seconds()
+
+        up_seconds = max(total_period_seconds - down_seconds, 0)
+        availability[service] = round((up_seconds / total_period_seconds) * 100, 6)
+
+    return availability

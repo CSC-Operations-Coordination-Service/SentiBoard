@@ -330,10 +330,42 @@
     <!-- <script defer type="text/javascript">archiveStatistics.init();</script> -->
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            const payloadEl = document.getElementById('archive-ssr-payload');
+            window.SSR_ARCHIVE_PAYLOAD = JSON.parse(payloadEl.innerHTML);
+
             const archiveStats = new ArchiveStatisticsCharts();
             archiveStats.init(SSR_ARCHIVE_PAYLOAD);
+
+            const prevQuarter = SSR_ARCHIVE_PAYLOAD['prev-quarter'];
+            if (!prevQuarter) {
+                console.warn("[SM][PATCH] No 'prev-quarter' data found in SSR_ARCHIVE_PAYLOAD");
+                return;
+            }
+
+            if (!window.serviceMonitoring) {
+                window.serviceMonitoring = new ServiceMonitoring();
+            }
+            
+            const periodSelect = document.getElementById('time-trend-data-type-select');
+    if (periodSelect) {
+        periodSelect.addEventListener('change', function(e) {
+            const uiValue = e.target.value; // e.g., "week"
+            const mapping = { "week": "7d", "month": "30d", "quarter": "prev-quarter", "day": "24h" };
+            const periodKey = mapping[uiValue] || "7d";
+            
+            const newData = window.SSR_ARCHIVE_PAYLOAD[periodKey];
+            if (newData) {
+                console.info(`[SM] Switching UI to: ${periodKey}`);
+                window.serviceMonitoring.refreshAvailabilityStatus(newData);
+            }
+        });
+    }
+
+    // 5. Initial Render (Default to prev-quarter)
+    const initialData = window.SSR_ARCHIVE_PAYLOAD['prev-quarter'];
+    window.serviceMonitoring.refreshAvailabilityStatus(initialData);
         });
     </script>
-    <script defer type="text/javascript">serviceMonitoring.init();</script>
+  <!--   <script defer type="text/javascript">serviceMonitoring.init();</script> -->
 
 {% endblock javascripts %}
