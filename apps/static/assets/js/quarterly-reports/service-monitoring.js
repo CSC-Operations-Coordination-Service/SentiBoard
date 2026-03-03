@@ -36,124 +36,134 @@ delivered to him.
         return;
     }
 
-    // data-archive.html → NO availability (EXPECTED)
-    // console.info('[SM][SSR] Archive page detected — availability disabled');
-    // window.SSR_SERVICE_MONITORING_PAYLOAD = null;
+    window.SSR_ARCHIVE_PAYLOAD = raw;
+    //console.info('[SM][SSR] Using archive-page payload for availability', Object.keys(raw));
 })();
 
 
 class ServiceMonitoring {
 
     constructor() {
+        this.archivePayload = window.SSR_ARCHIVE_PAYLOAD || {};
 
-        const ssr = window.SSR_SERVICE_MONITORING_PAYLOAD || {};
-        this.availabilityMap = ssr.availability_map || {};
-        this.interfaceStatusMap = ssr.interface_status_map || {};
+        this.currentPeriod = null;
+
+        this.availabilityMap = {};
+        this.interfaceStatusMap = {};
     }
 
     init() {
-        console.group('[SM][SSR][INIT]');
+        console.group('[SM][INIT]');
 
-        const archive = window.SSR_ARCHIVE_PAYLOAD?.["prev-quarter"];
-
-        if (archive?.availability_map) {
-            this.availabilityMap = archive.availability_map;
-            this.interfaceStatusMap = archive.interface_status_map || {};
-
-            console.info(
-                "[SM][SSR] availability_map loaded from ARCHIVE payload",
-                this.availabilityMap
-            );
-        } else {
-            console.warn(
-                "[SM][SSR] availability_map missing in ARCHIVE payload"
-            );
+        if (!this.archivePayload || !Object.keys(this.archivePayload).length) {
+            console.error('[SM][INIT] archivePayload is EMPTY');
+            console.groupEnd();
+            return;
         }
 
-        if (!Object.keys(this.availabilityMap).length) {
-            console.warn('[SM][SSR][INIT] availabilityMap is EMPTY');
-        } else {
-            console.info('[SM][SSR][INIT] availabilityMap OK');
-        }
+        // One canonical entry point
+        this.refreshAvailabilityStatus('prev-quarter');
 
-        this.render();
         console.groupEnd();
     }
 
 
     render() {
-        const allServices = ['acri', 'cloudferro', 'exprivia', 'werum'];
-        allServices.forEach(s => {
-            const bar = document.getElementById(s + '-avail-bar');
-            const perc = document.getElementById(s + '-avail-perc');
-            const iface = document.getElementById(s + '-interface-avail-perc');
-            if (bar) bar.style.width = '100%';
-            if (perc) perc.innerText = '100.00%';
-            if (iface) iface.innerText = '100.00%';
-        });
-        Object.entries(this.availabilityMap).forEach(([service, value]) => {
-            const perc = value.toFixed(2) + '%';
-            const s = service.toLowerCase();
+        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM'];
 
-            // Update UI labels and progress bars
-            const barEl = document.getElementById(service.toLowerCase() + '-avail-bar');
-            const percEl = document.getElementById(service.toLowerCase() + '-avail-perc');
-            const interfacePercEl = document.getElementById(service.toLowerCase() + '-interface-avail-perc');
+        services.forEach(service => {
+            const key = service.toLowerCase();
+
+            const barEl = document.getElementById(`${key}-avail-bar`);
+            const percEl = document.getElementById(`${key}-avail-perc`);
+            const ifaceEl = document.getElementById(`${key}-interface-avail-perc`);
+
+            // Default when no data
+            let value = this.availabilityMap[service];
+            if (typeof value !== 'number') {
+                value = 100;
+            }
+
+            const perc = value.toFixed(2) + '%';
 
             if (barEl) barEl.style.width = perc;
             if (percEl) percEl.innerText = perc;
-            if (interfacePercEl) interfacePercEl.innerText = perc;
-
-            //console.log(`[SM][SSR] ${service} availability updated: ${perc}`);
+            if (ifaceEl) ifaceEl.innerText = perc;
         });
     }
 
-    refreshAvailabilityStatus(newPayload) {
-        if (newPayload) {
-            this.availabilityMap = newPayload.availability_map || {};
-            this.interfaceStatusMap = newPayload.interface_status_map || {};
+    refreshAvailabilityStatus(periodKey) {
+        console.group(`[SM][PERIOD] Switching to ${periodKey}`);
+
+        if (!periodKey) {
+            console.error('[SM][PERIOD] Missing periodKey for refresh');
+            console.groupEnd();
+            return;
         }
 
-        //console.group('[SM][refreshAvailabilityStatus]');
+        this.currentPeriod = periodKey;
+
+        // Ensure per-period caches exist
+        if (!this.availabilityMapPerPeriod) this.availabilityMapPerPeriod = {};
+        if (!this.interfaceStatusMapPerPeriod) this.interfaceStatusMapPerPeriod = {};
+
+        // Get payload for the period, fallback to empty
+        const payload = this.archivePayload[periodKey] || {};
+
+        // Update per-period maps
+        this.availabilityMapPerPeriod[periodKey] = payload.availability_map || {};
+        this.interfaceStatusMapPerPeriod[periodKey] = payload.interface_status_map || {};
+
+        // Normalize interface map: ensure each service has an array
+        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM', 'DAS', 'DHUS'];
+        services.forEach(svc => {
+            if (!Array.isArray(this.interfaceStatusMapPerPeriod[periodKey][svc])) {
+                this.interfaceStatusMapPerPeriod[periodKey][svc] = [];
+            }
+        });
+
+        // Activate current maps
+        this.availabilityMap = this.availabilityMapPerPeriod[periodKey];
+        this.interfaceStatusMap = this.interfaceStatusMapPerPeriod[periodKey];
+
+        console.log('availabilityMap:', this.availabilityMap);
+        console.log('interfaceStatusMap:', this.interfaceStatusMap);
+
+        console.groupEnd();
+
+        // Render UI and ensure previous event displays are cleared
         this.render();
     }
 
-    /* showDASUnavailabilityEvents() {
-         serviceMonitoring.showUnavailabilityEvents('DAS');
-     }
- 
-     showDHUSUnavailabilityEvents() {
-         serviceMonitoring.showUnavailabilityEvents('DHUS');
-     }
- 
-     showAcriUnavailabilityEvents() {
-         serviceMonitoring.showUnavailabilityEvents('ACRI');
-     }
- 
-     showCloudFerroUnavailabilityEvents() {
-         serviceMonitoring.showUnavailabilityEvents('CLOUDFERRO');
-     }
- 
-     showExpriviaUnavailabilityEvents() {
-         serviceMonitoring.showUnavailabilityEvents('EXPRIVIA');
-     }
- 
-     showWerumUnavailabilityEvents() {
-         serviceMonitoring.showUnavailabilityEvents('WERUM');
-     }*/
-
     showUnavailabilityEvents(service) {
-        const events = this.interfaceStatusMap[service] || [];
+        console.group(`[SM][CLICK] ${service}`);
+
+        const periodEvents = this.interfaceStatusMapPerPeriod?.[this.currentPeriod] || {};
+        const events = Array.isArray(periodEvents[service]) ? periodEvents[service] : [];
+
+        console.log('period:', this.currentPeriod);
+        console.log('events:', events);
+
+        console.groupEnd();
+
+        // Sort newest first
         events.sort((a, b) => new Date(b.start) - new Date(a.start));
 
+        // Build HTML and clear old event list each time
         let html = '<ul>';
         if (events.length === 0) {
-            html += '<li>No events reported</li>';
+            html += `<li>No events for ${service} in selected period</li>`;
         } else {
-            events.forEach(e => { const start = new Date(e.start); const stop = new Date(e.stop); html += `<li>${start.toISOString()} - ${((stop - start) / 60000).toFixed(2)} min</li>`; });
+            events.forEach(e => {
+                const start = new Date(e.start);
+                const stop = new Date(e.stop);
+                const desc = e.description || 'No description';
+                html += `<li>${start.toISOString()} - ${((stop - start) / 60000).toFixed(2)} min — ${desc}</li>`;
+            });
         }
         html += '</ul>';
 
+        // Show notification (old ones cleared automatically by $.notify)
         $.notify({
             title: `${service} Unavailability events`,
             message: html,
@@ -161,6 +171,15 @@ class ServiceMonitoring {
         }, {
             type: this.serviceColorMap?.[service] || 'info',
             placement: { from: 'top', align: 'right' }
+        });
+    }
+    normalizeInterfaceMap() {
+        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM'];
+
+        services.forEach(svc => {
+            if (!Array.isArray(this.interfaceStatusMap[svc])) {
+                this.interfaceStatusMap[svc] = [];
+            }
         });
     }
 
@@ -173,4 +192,5 @@ class ServiceMonitoring {
     showWerumUnavailabilityEvents() { this.showUnavailabilityEvents('WERUM'); }
 }
 
-let serviceMonitoring = new ServiceMonitoring();
+window.serviceMonitoring = new ServiceMonitoring();
+window.serviceMonitoring.init();

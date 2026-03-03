@@ -346,24 +346,19 @@
                 window.serviceMonitoring = new ServiceMonitoring();
             }
             
-            const periodSelect = document.getElementById('time-trend-data-type-select');
-    if (periodSelect) {
-        periodSelect.addEventListener('change', function(e) {
-            const uiValue = e.target.value; // e.g., "week"
-            const mapping = { "week": "7d", "month": "30d", "quarter": "prev-quarter", "day": "24h" };
-            const periodKey = mapping[uiValue] || "7d";
+            const periodSelect = document.getElementById('time-period-select');
+            if (periodSelect) {
+                periodSelect.addEventListener('change', function(e) {
+                    const uiValue = e.target.value; 
+                    const mapping = { "week": "7d", "month": "30d", "quarter": "prev-quarter", "day": "24h" };
+                    const periodKey = mapping[uiValue] || "prev-quarter";
             
-            const newData = window.SSR_ARCHIVE_PAYLOAD[periodKey];
-            if (newData) {
-                console.info(`[SM] Switching UI to: ${periodKey}`);
-                window.serviceMonitoring.refreshAvailabilityStatus(newData);
+                    console.info(`[SM] Switching UI to: ${periodKey}`);
+                    if(window.serviceMonitoring) {
+                        window.serviceMonitoring.refreshAvailabilityStatus(periodKey);
+                    }
+                });
             }
-        });
-    }
-
-    // 5. Initial Render (Default to prev-quarter)
-    const initialData = window.SSR_ARCHIVE_PAYLOAD['prev-quarter'];
-    window.serviceMonitoring.refreshAvailabilityStatus(initialData);
         });
     </script>
   <!--   <script defer type="text/javascript">serviceMonitoring.init();</script> -->

@@ -192,9 +192,9 @@ class ArchiveStatisticsCharts {
 
         this.currentPeriod = ssrKey;
 
-        if (window.serviceMonitoring) {
+        /*if (window.serviceMonitoring) {
             window.serviceMonitoring.refreshAvailabilityStatus(payload);
-        }
+        }*/
 
         const lifetimePayload = this.datasets["lifetime"];
         if (lifetimePayload?.data?.length) {
