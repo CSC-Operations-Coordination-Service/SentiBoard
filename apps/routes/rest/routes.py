@@ -16,6 +16,8 @@ import json
 import logging
 from datetime import datetime, timezone, timedelta
 from os import abort
+from urllib.parse import urlparse
+from functools import wraps
 
 from apps.utils.events_utils import make_json_safe
 from flask import request, Response
@@ -40,10 +42,32 @@ from apps import flask_cache, db
 from . import blueprint
 from ...utils import auth_utils, db_utils
 
+
 logger = logging.getLogger(__name__)
 
 
 # Public functions - login not required
+
+
+def internal_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 1. Check for AJAX header
+        if request.headers.get("X-Requested-With") != "XMLHttpRequest":
+            logger.warning(f"[BLOCKED] Non-AJAX access attempt to {request.path}")
+            abort(403)
+
+        # 2. Check Referer to prevent direct URL typing
+        referer = request.headers.get("Referer")
+        if not referer or urlparse(referer).netloc != request.host:
+            logger.warning(
+                f"[BLOCKED] External/Direct access attempt to {request.path} from {referer}"
+            )
+            abort(403)
+
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
 # TEMPORARY ENDPOINT UNTIL ORBIT ACQUISITION PLANS ARE IMPLEMENTED
@@ -51,14 +75,8 @@ logger = logging.getLogger(__name__)
     "/api/acquisitions/acquisition-datatakes/<mission>/<satellite>/<day>",
     methods=["GET"],
 )
+@internal_only
 def get_acquisition_datatakes(mission, satellite, day):
-    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
-        logger.warning("[BLOCKED] Direct access attempt to  Acquisition Datatakes API")
-        abort(403)
-    logger.info(
-        "[BEG] INTERNAL Acquisition Datatakes for %s %s %s", mission, satellite, day
-    )
-
     satellite_day_datatakes = datatakes_cache.get_satellite_day_datatakes(
         satellite, day
     )
@@ -73,7 +91,7 @@ def get_acquisition_datatakes(mission, satellite, day):
 @blueprint.route(
     "/api/acquisitions/acquisition-plans/<mission>/<satellite>/<day>", methods=["GET"]
 )
-@login_required
+@internal_only
 def get_acquisition_plans(mission, satellite, day):
     logger.debug("Called INTERNAL Acquisition Plan KML")
 
@@ -193,10 +211,8 @@ def get_news_previous_quarter():
 
 
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])
+@internal_only
 def get_cds_datatake(datatake_id):
-    if request.headers.get("X-Requested-With") != "XMLHttpRequest":
-        logger.warning("[BLOCKED] Direct access attempt to CDS Datatakes API")
-        abort(403)
     logger.info("[BEG] INTERNAL API GET Datatake info %s ", datatake_id)
 
     data = datatakes_cache.load_datatake_details(datatake_id)

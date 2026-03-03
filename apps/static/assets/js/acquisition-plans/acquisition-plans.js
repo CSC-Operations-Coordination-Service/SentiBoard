@@ -392,9 +392,16 @@ class AcquisitionPlansViewer {
     }
 
     successLoadAcquisitionStations(response) {
-        this.viewer_widget.dataSources.add(
-            Cesium.CzmlDataSource.load(response)
-        );
+        // If response is a string, parse it. If it's already an object, use it directly.
+        const czml = typeof response === 'string' ? JSON.parse(response) : response;
+
+        // We create the DataSource first, then load the object data into it
+        const dataSource = new Cesium.CzmlDataSource();
+        dataSource.load(czml).then((ds) => {
+            this.viewer_widget.dataSources.add(ds);
+        }).catch((err) => {
+            console.error("CZML Station Load Error:", err);
+        });
     }
 
     failureLoadAcquisitionStations(response) {

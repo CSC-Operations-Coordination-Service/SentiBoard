@@ -224,5 +224,11 @@
         window.addEventListener('load', function () {
             setTimeout(() => acquisitionPlanViewer.init(), 0); 
         });
+
+        $.ajaxSetup({
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
     </script>
 {% endblock javascripts %}
