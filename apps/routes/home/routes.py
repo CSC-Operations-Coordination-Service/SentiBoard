@@ -40,6 +40,7 @@ import apps.cache.modules.archive as archive_cache
 import apps.elastic.modules.interface_monitoring as elastic_interface_monitoring
 import apps.cache.modules.interface_monitoring_ssr as interface_monitoring_cache_ssr
 import apps.models.instant_messages as instant_messages_model
+import apps.models.anomalies as anomalies_model
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
 import apps.cache.modules.unavailability as unavailability_cache
@@ -2185,6 +2186,127 @@ def data_archive_page():
         segment="acquisition-service",
         archive_payload=archive_payload,
         prev_quarter_label=prev_quarter_label,
+    )
+
+
+@blueprint.route("/news.html")
+@login_required
+def news_manager():
+    # Attempt to get data
+    news_api_uri = events_cache.news_cache_key.format("previous", "quarter")
+    cached_res = flask_cache.get(news_api_uri)
+
+    if not cached_res:
+        events_cache.load_news_cache_previous_quarter()
+        cached_res = flask_cache.get(news_api_uri)
+
+    # cached_res is a Response object in your code, we need the JSON data
+    news_data = json.loads(cached_res.get_data()) if cached_res else []
+
+    return render_template("admin/news.html", news_list=news_data)
+
+
+@blueprint.route("/anomalies.html", methods=["GET", "POST"])
+@login_required
+def show_anomalies_page():
+    # --- 1. HANDLE SAVING (POST) ---
+    if request.method == "POST":
+        try:
+            # Authorization Check
+            if not auth_utils.is_user_authorized(["admin"]):
+                flash("Not authorized", "danger")
+                return redirect(url_for("home_blueprint.show_anomalies_page"))
+            is_new = request.form.get("is_new") == "true"
+            key = request.form.get("key")
+            logger.info(f"SSR SAVE START: is_new={is_new}, key={key}")
+            title = request.form.get("title")
+            category = request.form.get("category")
+            impacted_item = request.form.get("impactedItem")
+            impacted_satellite = request.form.get("impactedSatellite")
+            environment = request.form.get("environment")
+            news_title = request.form.get("newsTitle")
+            news_link = request.form.get("newsLink")
+            pub_date_str = request.form.get("publicationDate")
+
+            if is_new:
+                if not key or not title:
+                    logger.error("ADD FAILED: Key or Title is missing")
+                    return redirect(url_for("home_blueprint.show_anomalies_page"))
+
+                try:
+                    if len(pub_date_str) <= 10:
+                        pub_date_str += " 00:00:00"
+                    publication_date = datetime.strptime(
+                        pub_date_str, "%d/%m/%Y %H:%M:%S"
+                    )
+                except Exception as d_err:
+                    logger.error(f"DATE PARSE ERROR: {d_err} for string {pub_date_str}")
+                    publication_date = datetime.now()
+
+                start_date = publication_date
+                end_date = start_date + timedelta(hours=24)
+
+                logger.info(f"Calling save_anomaly for {key}")
+                anomalies_model.save_anomaly(
+                    title,
+                    key,
+                    "",
+                    publication_date,
+                    category,
+                    impacted_item,
+                    impacted_satellite,
+                    start_date,
+                    end_date,
+                    "",
+                    "",
+                    news_link,
+                    news_title,
+                )
+            else:
+                # --- UPDATE EXISTING ANOMALY LOGIC ---
+                logger.info(f"SSR: Updating anomaly {key}")
+                anomalies_model.update_anomaly_categorization(
+                    key,
+                    category,
+                    impacted_item,
+                    impacted_satellite,
+                    environment,
+                    news_link,
+                    news_title,
+                )
+
+            # Force Cache Reload so the table shows new data
+            events_cache.load_anomalies_cache_previous_quarter()
+            logger.info("SSR SAVE SUCCESSFUL")
+
+        except Exception as ex:
+            logger.error(f"CRITICAL ERROR IN SSR SAVE: {ex}", exc_info=True)
+
+        return redirect(url_for("home_blueprint.show_anomalies_page"))
+
+    logger.info("Serving Anomalies Admin Page - Server Side")
+
+    anomalies_api_uri = events_cache.anomalies_cache_key.format("previous", "quarter")
+    anomalies_data = flask_cache.get(anomalies_api_uri)
+
+    if isinstance(anomalies_data, Response):
+        anomalies_data = anomalies_data.get_data(as_text=True)
+
+    if isinstance(anomalies_data, str):
+        try:
+            anomalies_list = json.loads(anomalies_data)
+        except json.JSONDecodeError:
+            anomalies_list = []
+    else:
+        anomalies_list = anomalies_data or []
+
+    if isinstance(anomalies_list, dict):
+        anomalies_list = anomalies_list.get("anomalies", [])
+
+    anomalies_json = json.dumps({a["key"]: a for a in anomalies_list})
+
+    return render_template(
+        "admin/anomalies.html", anomalies=anomalies_list, anomalies_json=anomalies_json
     )
 
 
