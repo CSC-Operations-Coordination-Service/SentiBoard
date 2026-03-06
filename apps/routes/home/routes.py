@@ -299,7 +299,7 @@ def index():
     metadata = get_metadata("index.html")
     metadata["page_url"] = request.url
     segment = "index"
-    period_id = "7d"
+    period_id = "24h"
 
     ALLOWED_SATELLITES = {
         "S1A",
@@ -476,8 +476,11 @@ def index():
         title += f' <a href="/events.html?showDayEvents={pub_date}">Read More</a>'
 
         # Append to list
-        if now - event_time <= timedelta(hours=48):
+        if now - event_time <= timedelta(hours=24):
             anomalies_details.append({"time_ago": time_ago, "content": title})
+
+        if len(anomalies_details) > 2:
+            break
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
@@ -992,7 +995,7 @@ def acquisitions_status():
         if isinstance(plans_raw, Response):
             try:
                 plans_raw = plans_raw.get_json(force=True)
-                logger.info("[DEBUG] Extracted JSON from Response object")
+                # logger.info("[DEBUG] Extracted JSON from Response object")
             except Exception as e:
                 logger.exception("[ERR] Failed to parse Response JSON")
                 plans_raw = {}  # fallback to empty dict
@@ -1008,7 +1011,7 @@ def acquisitions_status():
         if isinstance(orbits_raw, Response):
             try:
                 orbits_raw = orbits_raw.get_json(force=True)
-                logger.info("[DEBUG] Extracted JSON from orbits Response")
+            # logger.info("[DEBUG] Extracted JSON from orbits Response")
             except Exception:
                 logger.exception("[ERR] Failed to parse orbits Response JSON")
                 orbits_raw = {}
@@ -1024,7 +1027,7 @@ def acquisitions_status():
         if isinstance(stations_raw, Response):
             try:
                 stations_raw = stations_raw.get_json(force=True)
-                logger.info("[DEBUG] Extracted JSON from stations Response")
+                # logger.info("[DEBUG] Extracted JSON from stations Response")
             except Exception:
                 logger.exception("[ERR] Failed to parse stations Response JSON")
                 stations_raw = {}
@@ -2305,6 +2308,25 @@ def show_anomalies_page():
 
     anomalies_json = json.dumps({a["key"]: a for a in anomalies_list})
 
+    """ if anomalies_list and len(anomalies_list) > 0:
+        logger.info(
+            f"DEBUG: First anomaly date type: {type(anomalies_list[0].get('publicationDate'))}"
+        )
+        logger.info(
+            f"DEBUG: First anomaly date value: {anomalies_list[0].get('publicationDate')}"
+        ) 
+    """
+
+    for a in anomalies_list:
+        pub_date = a.get("publicationDate")
+        if pub_date and isinstance(pub_date, str):
+            try:
+                # Adjust the format string below to match exactly how your JSON stores dates
+                # Usually ISO format: '2026-03-06T10:20:49'
+                a["publicationDate"] = datetime.fromisoformat(pub_date.replace("Z", ""))
+            except Exception:
+                pass  # Keep as string if parsing fails
+
     return render_template(
         "admin/anomalies.html", anomalies=anomalies_list, anomalies_json=anomalies_json
     )
@@ -2407,3 +2429,47 @@ def protect_internal_apis():
 
         if not referer.startswith(host):
             abort(403)
+
+
+@blueprint.app_template_filter("format_datetime")
+def format_datetime(value):
+    if not value:
+        return "N/A"
+
+    if hasattr(value, "strftime"):
+        return value.strftime("%d/%m/%Y %H:%M:%S")
+
+    if isinstance(value, str):
+        try:
+            dt = datetime.fromisoformat(value.replace("Z", ""))
+            return dt.strftime("%d/%m/%Y %H:%M:%S")
+        except:
+            try:
+                dt = datetime.strptime(value, "%d/%m/%Y %H:%M:%S")
+                return dt.strftime("%d/%m/%Y %H:%M:%S")
+            except:
+                return value
+    return value
+
+
+@blueprint.app_template_filter("sortable_date")
+def sortable_date(value):
+    if not value:
+        return "00000000000000"
+
+    dt_obj = None
+
+    if hasattr(value, "strftime"):
+        dt_obj = value
+    elif isinstance(value, str):
+        try:
+            dt_obj = datetime.fromisoformat(value.replace("Z", ""))
+        except:
+            try:
+                dt_obj = datetime.strptime(value, "%d/%m/%Y %H:%M:%S")
+            except:
+                return value
+
+    if dt_obj:
+        return dt_obj.strftime("%Y%m%d%H%M%S")
+    return value

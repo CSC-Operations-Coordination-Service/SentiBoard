@@ -71,6 +71,10 @@ class Anomalies {
         // Simply initialize the datatable on the existing HTML
         this.anomaliesTable = $('#basic-datatables-anomalies').DataTable({
             "pageLength": 10,
+            "order": [[2, "desc"]],
+            "columnDefs": [
+                { "orderable": false, "targets": 6 }
+            ]
         });
     }
 

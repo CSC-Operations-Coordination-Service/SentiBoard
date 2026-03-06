@@ -72,7 +72,6 @@
 			</div>
 
 			<div class="row">
-
 				<!-- Table container -->
 				<div class="col-md-12">
 					<div class="card card-admin">
@@ -95,7 +94,9 @@
 										<tr>
 											<td>{{ anomaly.key }}</td>
 											<td>{{ anomaly.title }}</td>
-											<td>{{ anomaly.publicationDate }}</td>
+											<td data-order="{{ anomaly.publicationDate | sortable_date }}">
+												{{ anomaly.publicationDate | format_datetime }}
+											</td>
 											<td>{{ anomaly.category }}</td>
 											<td>{{ anomaly.impactedItem if anomaly.impactedItem else anomaly.impacted_item }}</td>
 											<td>{{ anomaly.impactedSatellite }}</td>
@@ -116,7 +117,6 @@
 						</div>
 					</div>
 				</div>
-
 			</div>
 		</div>
 	</div>

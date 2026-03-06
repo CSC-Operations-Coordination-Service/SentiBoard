@@ -68,8 +68,6 @@ class Home {
     }
 
     succesLoadAnomalies(response) {
-
-        // Format the response from the query
         var rows = format_response(response);
         console.info('Events loaded. Num of events: ' + rows.length);
 
@@ -89,7 +87,7 @@ class Home {
             // Append the anomaly in the list of items to be displayed if:
             // 1. The anomaly occurred within 48h from now
             // 2. There is at least one impacted datatake
-            if ((now.getTime() - start_time.getTime() <= 48 * 60 * 60 * 1000) &&
+            if ((now.getTime() - start_time.getTime() <= 24 * 60 * 60 * 1000) &&
                 home.datatakesImpacted(element)) {
 
                 var category = element["category"];
