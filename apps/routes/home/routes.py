@@ -1531,6 +1531,7 @@ def admin_space_segment():
             "instruments": satellites[sat]["instruments"],
             "datatakes": satellites[sat]["datatakes"],
             "unavailability": satellites[sat]["unavailability"],
+            "events": satellites[sat].get("events", {}),
         }
         for sat in satellites
     }

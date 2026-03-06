@@ -2,14 +2,10 @@
 from __future__ import annotations
 
 import json
-import time
-import calendar
 from flask import Response, current_app
 from collections import defaultdict
 from datetime import date, datetime as dt, timezone, timedelta
 from flask_login import current_user
-from apps import flask_cache
-from dateutil.parser import isoparse
 from dateutil.relativedelta import relativedelta
 import datetime
 
@@ -337,13 +333,69 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
         if sat == "S1B":
             continue
 
+        current_dt_list = dt_by_sat.get(sat, [])
+
         inst_data = compute_availability_single_sat(
-            dt_by_sat.get(sat, []),
+            current_dt_list,
             unavail_by_sat.get(sat, []),
             period_start,
             period_end,
             instruments_list,
         )
+
+        unavail_hours = {"sat": 0.0, "acq": 0.0, "other": 0.0}
+        # These will hold the lists for the JS <ul> popups
+        categorized_events = {"sat_events": [], "acq_events": [], "other_events": []}
+
+        for dt in current_dt_list:
+            # Calculate duration in hours
+            # Duration is often in microseconds in some DBs, hence the / 3600...
+            duration_hrs = dt.get("l0_sensing_duration", 0) / 3600000000.0
+
+            # If duration is 0, try to calculate from timestamps
+            if (
+                duration_hrs <= 0
+                and dt.get("observation_time_start")
+                and dt.get("observation_time_stop")
+            ):
+                try:
+                    start = dt["observation_time_start"]
+                    stop = dt["observation_time_stop"]
+                    # Ensure they are datetime objects
+                    delta = stop - start
+                    duration_hrs = delta.total_seconds() / 3600.0
+                except:
+                    duration_hrs = 0
+
+            # Logic for categorization based on CAMS Origin and attached tickets
+            if dt.get("last_attached_ticket") and dt.get("cams_origin"):
+                # Completeness logic: how much was LOST? (1 - completeness)
+                # Recalc_completeness usually returns 0-100
+                compl_perc = dt.get("completeness", 100) / 100.0
+                lost_hrs = duration_hrs * (1.0 - compl_perc)
+
+                origin = dt.get("cams_origin", "").lower()
+
+                # Build the event object for the list
+                event_entry = {
+                    "date": (
+                        dt.get("observation_time_start").strftime("%d/%m/%Y")
+                        if hasattr(dt.get("observation_time_start"), "strftime")
+                        else "N/A"
+                    ),
+                    "type": dt.get("cams_origin"),
+                    "description": f"Ticket {dt.get('last_attached_ticket')} - Impacted ID: {dt.get('key')}",
+                }
+
+                if "acquis" in origin:
+                    unavail_hours["acq"] += lost_hrs
+                    categorized_events["acq_events"].append(event_entry)
+                elif "cam" in origin or "sat" in origin:
+                    unavail_hours["sat"] += lost_hrs
+                    categorized_events["sat_events"].append(event_entry)
+                else:
+                    unavail_hours["other"] += lost_hrs
+                    categorized_events["other_events"].append(event_entry)
 
         success = round(sum(i["availability"] for i in inst_data) / len(inst_data), 2)
 
@@ -352,8 +404,9 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             "fullname": fullname,
             "success": success,  # <--- matches JS naming
             "class": classify_satellite(success),
-            "datatakes": dt_by_sat.get(sat, []),
-            "unavailability": unavail_by_sat.get(sat, []),
+            "datatakes": current_dt_list,
+            "unavailability": unavail_hours,
+            "events": categorized_events,
             "instruments": inst_data,
         }
 

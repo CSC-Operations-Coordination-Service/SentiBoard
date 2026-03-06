@@ -16,11 +16,11 @@ class SpaceSegment {
     constructor() {
 
         // Start - stop time range
-        this.end_date = new Date();
+        /*this.end_date = new Date();
         this.end_date.setUTCHours(23, 59, 59, 0);
         this.start_date = new Date();
         this.start_date.setMonth(this.end_date.getMonth() - 3);
-        this.start_date.setUTCHours(0, 0, 0, 0);
+        this.start_date.setUTCHours(0, 0, 0, 0);*/
 
         // Set of colors used in the pie charts
         this.colorsPool = [
@@ -43,72 +43,12 @@ class SpaceSegment {
             'S5P': 'secondary'
         };
 
-        // Set the current user profile
-        this.profile = '';
-
-        // Set of satellite unavailabilities
         this.satUnavailabilities = {};
-
-        // Set of datatakes by satellite
-        this.datatakesBySatellite = {
-            'S1A': [],
-            'S1C': [],
-            'S2A': [],
-            'S2B': [],
-            'S2C': [],
-            'S3A': [],
-            'S3B': [],
-            'S5P': []
-        };
-
-        // Set of datatakes by satellite
         this.impactedDatatakesBySatellite = {
-            'S1A': [],
-            'S1C': [],
-            'S2A': [],
-            'S2B': [],
-            'S2C': [],
-            'S3A': [],
-            'S3B': [],
-            'S5P': []
+            'S1A': [], 'S1C': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
         };
-
-        // Set the bootstrap tables for each datatake
-        this.impactedDatatakesTablesBySatellite = {
-            'S1A': null,
-            'S1C': null,
-            'S2A': null,
-            'S2B': null,
-            'S2C': null,
-            'S3A': null,
-            'S3B': null,
-            'S5P': null
-        };
-
-        // Set of impacted instruments by satellite
-        this.impactedInstrumentBySatellite = {
-            'S1A': ['SAR', 'PDHT', 'OCP', 'EDDS'],
-            'S1C': ['SAR', 'PDHT', 'OCP', 'EDDS'],
-            'S2A': ['MSI', 'MMFU', 'OCP', 'EDDS', 'STR'],
-            'S2B': ['MSI', 'MMFU', 'OCP', 'EDDS', 'STR'],
-            'S2C': ['MSI', 'MMFU', 'OCP', 'EDDS', 'STR'],
-            'S3A': ['OLCI', 'SLSTR', 'SRAL', 'MWR', 'EDDS'],
-            'S3B': ['OLCI', 'SLSTR', 'SRAL', 'MWR', 'EDDS'],
-            'S5P': ['TROPOMI', 'EDDS']
-        };
-
-        // Set the categorized anomalies map
-        this.categorizedAnomalies = {};
-
-        // Set the completeness threshold for displaying the anomaly in the list
-        this.completenessThreshold = 0.9999;
-
-        this.isSSR = true;
-
-        if (this.isSSR) {
-            this.start_date = null;
-            this.end_date = null;
-        }
+        this.impactedDatatakesTablesBySatellite = {};
+        this.satellites = {}; // To store SENSING_DATA.stats
     }
 
     init() {
@@ -125,76 +65,52 @@ class SpaceSegment {
             return;
         }
 
-        console.info('[SSR] Initializing SpaceSegment from SSR');
+        console.info('[SSR] Initializing SpaceSegment');
 
-        const datatakes = Array.isArray(SENSING_DATA.datatakes) ? SENSING_DATA.datatakes : [];
-        const unavailability = Array.isArray(SENSING_DATA.unavailability) ? SENSING_DATA.unavailability : [];
+        // 1. Load Data from SSR object
+        this.satellites = SENSING_DATA.stats || {};
+        this.loadDatatakesFromSSR(SENSING_DATA.datatakes || []);
+        this.loadUnavailabilityFromSSR(SENSING_DATA.unavailability || []);
 
-        this.loadDatatakesFromSSR(datatakes);
-        this.loadUnavailabilityFromSSR(unavailability);
+        // 2. Setup UI Toggle
+        this.toggleDatatakesUI(!!SENSING_DATA.detailsAllowed);
 
-        if (SENSING_DATA.detailsAllowed) {
-            this.toggleDatatakesUI(true);
-        } else {
-            this.toggleDatatakesUI(false);
-        }
-
-
-        console.log("[SSR] Stats rendered to DOM with correct colors", SENSING_DATA.detailsAllowed);
+        // 3. Render Components
+        this.refreshAvailabilityStatus(); // Now updates DOM from SSR data
         this.refreshPieChartsAndBoxesSSR();
         this.refreshDatatakesTablesSSR();
 
-
+        // 4. Time Period Listener
         const sel = document.getElementById('time-period-select');
         if (sel) {
-            /* console.log(
-                 "[SPACE SEGMENT] Dropdown initial value:",
-                 sel.value
-             );*/
             sel.addEventListener('change', () => {
-                const period = sel.value;
-                console.log("[SPACE SEGMENT] Redirecting with period =", period);
-                window.location.href = `/space-segment?period=${period}`;
+                window.location.href = `/space-segment?period=${sel.value}`;
             });
         }
 
     }
 
     loadDatatakesFromSSR(datatakes) {
-        if (!Array.isArray(datatakes)) {
-            console.warn('[SSR] datatakes is not an array:', datatakes);
-            return;
-        }
-
         datatakes.forEach(dt => {
             if (!dt || !dt.satellite_unit) return;
-
-            dt.observation_time_start = new Date(dt.observation_time_start);
-            dt.observation_time_stop = new Date(dt.observation_time_stop);
-
             const sat = dt.satellite_unit.toUpperCase();
 
-            if (!this.datatakesBySatellite[sat]) {
-                this.datatakesBySatellite[sat] = [];
-            }
+            // Map dates
+            dt.observation_time_start = new Date(dt.observation_time_start);
 
-            this.datatakesBySatellite[sat].push(dt);
-
-            // Check if this datatake would be considered "impacted"
+            // Filter only impacted for the table
             const isImpacted = dt.last_attached_ticket && dt.completeness_status?.ACQ?.percentage < 100;
             if (isImpacted) {
                 if (!this.impactedDatatakesBySatellite[sat]) this.impactedDatatakesBySatellite[sat] = [];
                 this.impactedDatatakesBySatellite[sat].push(dt);
             }
-
         });
 
     }
 
     loadUnavailabilityFromSSR(unavailability) {
-        if (!unavailability) return;
         unavailability.forEach(u => {
-            this.satUnavailabilities[u.key] = {
+            this.satUnavailabilities[u.key || u.unavailability_reference] = {
                 satellite: u.satellite_unit,
                 item: u.subsystem,
                 duration: u.unavailability_duration / 1_000_000,
@@ -208,15 +124,13 @@ class SpaceSegment {
 
     toggleDatatakesUI(showTables) {
         const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
-
         sats.forEach(sat => {
             const table = document.getElementById(`${sat}-table-container`);
             const boxes = document.getElementById(`${sat}-boxes-container`);
-
-            if (!table || !boxes) return;
-
-            table.style.display = showTables ? "block" : "none";
-            boxes.style.display = showTables ? "none" : "flex";
+            if (table && boxes) {
+                table.style.display = showTables ? "block" : "none";
+                boxes.style.display = showTables ? "none" : "flex";
+            }
         });
     }
 
@@ -275,64 +189,19 @@ class SpaceSegment {
     }
 
     refreshAvailabilityStatus() {
-        if (this.isSSR) {
-            console.info("[SSR] Skipping availability recomputation");
-            return;
-        }
-        var periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
-        var availabilityStatus = {
-            'S1A': { 'SAR': 100, 'EDDS': 100, 'PDHT': 100, 'OCP': 100 },
-            'S1C': { 'SAR': 100, 'EDDS': 100, 'PDHT': 100, 'OCP': 100 },
-            'S2A': { 'MSI': 100, 'MMFU': 100, 'OCP': 100, 'EDDS': 100, 'STR': 100 },
-            'S2B': { 'MSI': 100, 'MMFU': 100, 'OCP': 100, 'EDDS': 100, 'STR': 100 },
-            'S2C': { 'MSI': 100, 'MMFU': 100, 'OCP': 100, 'EDDS': 100, 'STR': 100 },
-            'S3A': { 'OLCI': 100, 'SLSTR': 100, 'SRAL': 100, 'MWR': 100, 'EDDS': 100 },
-            'S3B': { 'OLCI': 100, 'SLSTR': 100, 'SRAL': 100, 'MWR': 100, 'EDDS': 100 },
-            'S5P': { 'TROPOMI': 100, 'EDDS': 100 }
-        };
+        console.info("[SSR] Updating availability bars from pre-computed data");
 
-        Object.keys(this.satUnavailabilities).forEach(function (ref, key) {
-            var satellite = spaceSegment.satUnavailabilities[ref]['satellite'];
-            var impactedItem = spaceSegment.satUnavailabilities[ref]['item'];
-            if (impactedItem in availabilityStatus[satellite]) {
-                availabilityStatus[satellite][impactedItem] -=
-                    (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
-            } else {
+        const stats = SENSING_DATA.instrument_stats; // Expected from backend
+        if (!stats) return;
 
-                // Introduce a dedicate management of Star Trackers unavailabilities: issues affecting any
-                // of the star trackers are mapped vs the same status bar
-                if (impactedItem.toUpperCase() === 'STR-1' || impactedItem.toUpperCase() === 'STR-2') {
-                    availabilityStatus[satellite]['STR'] -=
-                        (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
-                }
+        Object.keys(stats).forEach(sat => {
+            Object.keys(stats[sat]).forEach(instrument => {
+                const value = stats[sat][instrument]; // e.g. 99.85
+                const id_perc = `${sat.toLowerCase()}-${instrument.toLowerCase()}-avail-perc`;
+                const id_bar = `${sat.toLowerCase()}-${instrument.toLowerCase()}-avail-bar`;
 
-                // Introduce a dedicated management of S5p mission unavailabilities.
-                if (satellite.toUpperCase() === 'S5P') {
-                    availabilityStatus[satellite]['TROPOMI'] -=
-                        (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
-                }
-
-                // Introduce a dedicated management of S3 mission unavailabilities. Since a single unavailability may
-                // affect more than one instrument, a further check is needed, to assess the impact on a specific
-                // instrument by looking t the unavailability comment.
-                if (satellite.toUpperCase() === 'S3A' || satellite.toUpperCase() === 'S3B') {
-                    var s3items = ['OLCI', 'SLSTR', 'SRAL', 'MWR'];
-                    for (var index = 0; index < s3items.length; ++index) {
-                        if (spaceSegment.satUnavailabilities[ref]['comment'].includes(s3items[index])) {
-                            availabilityStatus[satellite][s3items[index]] -=
-                                (spaceSegment.satUnavailabilities[ref]['duration'] / periodDurationSec * 100);
-                        }
-                    }
-                }
-            }
-        });
-        Object.keys(availabilityStatus).forEach(function (sat, key) {
-            Object.keys(availabilityStatus[sat]).forEach(function (instrument, key2) {
-                var id_perc = sat.toLowerCase() + '-' + instrument.toLowerCase() + '-avail-perc';
-                var id_bar = sat.toLowerCase() + '-' + instrument.toLowerCase() + '-avail-bar';
-                var value = availabilityStatus[sat][instrument];
-                $('#' + id_perc).text(value.toFixed(2) + '%');
-                $('#' + id_bar).css({ "width": value.toFixed(2) + '%' });
+                $(`#${id_perc}`).text(value.toFixed(2) + '%');
+                $(`#${id_bar}`).css({ "width": value.toFixed(2) + '%' });
             });
         });
     }
@@ -392,17 +261,12 @@ class SpaceSegment {
 
     refreshPieChartsAndBoxesSSR() {
 
-        console.log("[SSR] Rendering L0 sensing pie charts & summary boxes");
-
-        for (const sat of ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p']) {
-
+        const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
+        sats.forEach(sat => {
             const key = sat.toUpperCase();
+            const d = this.satellites[key];
+            if (!d) return;
 
-            if (!SENSING_DATA.stats[key]) continue;
-
-            const d = SENSING_DATA.stats[key];
-
-            // --- 1. PIE CHART DATA FORMAT ---
             const chartData = {
                 "Successful": d.success,
                 "Satellite Issue": d.sat_fail || 0,
@@ -410,22 +274,14 @@ class SpaceSegment {
                 "Other": d.other_fail || 0,
             };
 
-            // draw pie
-            spaceSegment.clearPieChart(`${sat}-sensing-statistics-pie-chart`);
-            spaceSegment.refreshPieChart(`${sat}-sensing-statistics-pie-chart`, chartData);
+            this.refreshPieChart(`${sat}-sensing-statistics-pie-chart`, chartData);
 
-            // --- 2. UPDATE BOXES ---
-            document.querySelector(`#${sat}-successful-datatakes-box`).innerHTML = d.success + "h";
-            document.querySelector(`#${sat}-satellite-failures-box`).innerHTML = (d.sat_fail || 0) + "h";
-            document.querySelector(`#${sat}-acquisition-failures-box`).innerHTML = (d.acq_fail || 0) + "h";
-            document.querySelector(`#${sat}-other-failures-box`).innerHTML = (d.other_fail || 0) + "h";
-
-            // Show the box container
-            if (!SENSING_DATA.detailsAllowed) {
-                document.querySelector(`#${sat}-boxes-container`).style.display = "flex";
-
-            }
-        }
+            // Update Summary Boxes
+            $(`#${sat}-successful-datatakes-box`).html(d.success + "h");
+            $(`#${sat}-satellite-failures-box`).html((d.sat_fail || 0) + "h");
+            $(`#${sat}-acquisition-failures-box`).html((d.acq_fail || 0) + "h");
+            $(`#${sat}-other-failures-box`).html((d.other_fail || 0) + "h");
+        });
     }
 
     clearPieChart(pieId) {
@@ -513,102 +369,66 @@ class SpaceSegment {
     }
 
     showSensingStatistics(satellite) {
-        if (this.isSSR) {
-            console.info("[SSR] Skipping availability recomputation");
+        // 1. Get the pre-computed data from the SSR object
+        // 'this.satellites' should be populated from 'sensing_stats' in your init()
+        const satData = this.satellites[satellite];
+
+        if (!satData) {
+            console.error("No data found for satellite:", satellite);
             return;
         }
 
-        // Auxiliary Variable Declaration
-        var content = { title: satellite + ' Sensing Statistics' };
+        // 2. Prepare the notification content
+        var content = {
+            title: satellite + ' Sensing Statistics',
+            icon: 'fa fa-bell'
+        };
 
-        // Append global statistics
-        var tickets_list = [];
-        var hours = 0, totSensing = 0, failedSensingAcq = 0, failedSensingSat = 0, failedSensingOther = 0;
-        spaceSegment.datatakesBySatellite[satellite].forEach(function (datatake) {
-            if (datatake['l0_sensing_duration']) {
-                hours = datatake['l0_sensing_duration'] / 3600000000;
-            } else {
-                hours = (datatake['observation_time_stop'].getTime() - datatake['observation_time_start'].getTime()) / 3600000;
-            }
-            totSensing += hours;
-            if (datatake['last_attached_ticket'] && datatake['cams_origin']) {
-                let compl = spaceSegment.recalcDatatakeAcqCompleteness(datatake) / 100;
-                if (datatake['cams_origin'].includes('Acquis')) {
-                    failedSensingAcq += hours * (1 - compl);
-                } else if (datatake['cams_origin'].includes('CAM') || datatake['cams_origin'].includes('Sat')) {
-                    failedSensingSat += hours * (1 - compl);
-                } else {
-                    failedSensingOther += hours * (1 - compl);
-                }
+        // 3. Extract pre-calculated values from the backend
+        // Assuming backend provides these based on your 'build_space_segment_ssr' logic
+        const successHours = satData.success || 0;
+        const unavailability = satData.unavailability || { sat: 0, acq: 0, other: 0 };
+
+        // Calculate total planned (Success + all Failures)
+        const totSensing = successHours + unavailability.sat + unavailability.acq + unavailability.other;
+
+        // Calculate percentages safely
+        const getPerc = (val) => totSensing > 0 ? ((val / totSensing) * 100).toFixed(2) : "0.00";
+
+        // 4. Build the HTML Message
+        let msg = `<b>Planned sensing:</b> ${totSensing.toFixed(2)} [hours]<br />`;
+        msg += `<b>Successful sensing:</b> ${successHours.toFixed(2)} (${getPerc(successHours)}%)<br />`;
+        msg += `<hr />`;
+
+        // Failures breakdown
+        const categories = [
+            { label: 'Satellite issues', val: unavailability.sat, key: 'sat_events' },
+            { label: 'Acquisition issues', val: unavailability.acq, key: 'acq_events' },
+            { label: 'Other issues', val: unavailability.other, key: 'other_events' }
+        ];
+
+        categories.forEach(cat => {
+            msg += `<b>Sensing failed due to ${cat.label}:</b> ${cat.val.toFixed(2)} [hours] (${getPerc(cat.val)}%)<br />`;
+
+            // Add event list if they exist in the SSR object
+            if (satData.events && satData.events[cat.key] && satData.events[cat.key].length > 0) {
+                msg += `<ul style="margin-bottom: 5px; font-size: 0.85rem;">`;
+                satData.events[cat.key].forEach(anom => {
+                    // Use backend formatted dates
+                    msg += `<li>${anom.date || ''}: ${anom.type || 'Issue'}. ${anom.description || ''}</li>`;
+                });
+                msg += `</ul>`;
             }
         });
-        var totSuccessSensing = totSensing - (failedSensingAcq + failedSensingSat + failedSensingOther);
-        var totSuccessSensingPerc = (totSuccessSensing / totSensing) * 100;
-        var failedSensingAcqPerc = (failedSensingAcq / totSensing) * 100;
-        var failedSensingSatPerc = (failedSensingSat / totSensing) * 100;
-        var failedSensingOtherPerc = (failedSensingOther / totSensing) * 100;
-        content.message = 'Planned sensing [hours]: ' + totSensing.toFixed(2) + '<br />';
-        content.message += 'Successful sensing [hours]: ' + totSuccessSensing.toFixed(2) +
-            ' (' + totSuccessSensingPerc.toFixed(2) + '%)<br />';
 
-        // Display satellite events
-        content.message += 'Sensing failed due to Satellite issues [hours]: ' +
-            failedSensingSat.toFixed(2) + ' (' + failedSensingSatPerc.toFixed(2) + '%)<br />';
-        if (failedSensingSat > 0) {
-            content.message += 'Events list:<br />';
-            content.message += '<ul>';
-            for (let key in spaceSegment.categorizedAnomalies[satellite]['sat_events']) {
-                let anom = spaceSegment.categorizedAnomalies[satellite]['sat_events'][key];
-                content.message += '<li>' + anom['date'] + ': ' + anom['type'] + ' issue. ' + anom['description'] + '</li>';
-            }
-            content.message += '</ul>';
-        }
+        content.message = msg;
 
-        // Display Acquisition events
-        content.message += 'Sensing failed due to Acquisition issues [hours]: ' +
-            failedSensingAcq.toFixed(2) + ' (' + failedSensingAcqPerc.toFixed(2) + '%)<br />';
-        if (failedSensingAcq > 0) {
-            content.message += 'Events list:<br />';
-            content.message += '<ul>';
-            for (let key in spaceSegment.categorizedAnomalies[satellite]['acq_events']) {
-                let anom = spaceSegment.categorizedAnomalies[satellite]['acq_events'][key];
-                content.message += '<li>' + anom['date'] + ': ' + anom['type'] + ' issue. ' + anom['description'] + '</li>';
-            }
-            content.message += '</ul>';
-        }
-
-        // Display other events
-        content.message += 'Sensing failed due to Other issues [hours]: ' +
-            failedSensingOther.toFixed(2) + ' (' + failedSensingOtherPerc.toFixed(2) + '%)<br />';
-        if (failedSensingOther > 0) {
-            content.message += 'Events list:<br />';
-            content.message += '<ul>';
-            for (let key in spaceSegment.categorizedAnomalies[satellite]['other_events']) {
-                let anom = spaceSegment.categorizedAnomalies[satellite]['other_events'][key];
-                content.message += '<li>' + anom['date'] + ': ' + anom['type'] + ' issue. ' + anom['description'] + '</li>';
-            }
-            content.message += '</ul>';
-        }
-
-        // Add other popup properties
-        content.icon = 'fa fa-bell';
-        content.url = '';
-        content.target = '_blank';
-
-        // Message visualization
-        var placementFrom = "top";
-        var placementAlign = "right";
-        var state = "danger";
-        var style = "withicon";
 
         $.notify(content, {
-            type: state,
-            placement: {
-                from: placementFrom,
-                align: placementAlign
-            },
+            type: "info", // Changed to info for better readability
+            placement: { from: "top", align: "right" },
             time: 1000,
-            delay: 0,
+            delay: 0, // Keeps it open until user closes or clicks away if configured
         });
     }
 
