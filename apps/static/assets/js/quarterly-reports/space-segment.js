@@ -210,7 +210,7 @@ class SpaceSegment {
 
     showUnavailabilityEvents(satellite) {
 
-        console.log(`[DEBUG] All processed unavailabilities in memory:`, this.satUnavailabilities);
+        //console.log(`[DEBUG] All processed unavailabilities in memory:`, this.satUnavailabilities);
 
         //const rawForSat = Object.values(this.satUnavailabilities).filter(u => u.satellite === satellite);
         //console.log(`[DEBUG] Raw events for ${satellite} (before time/item filtering):`, rawForSat);
@@ -228,12 +228,15 @@ class SpaceSegment {
         const periodEnd = parseDate(SENSING_DATA.end);
         const isRangeValid = !!(periodStart && periodEnd && periodStart.getTime() !== periodEnd.getTime());
         console.log(`[DEBUG] Range Valid: ${isRangeValid}`, periodStart, periodEnd);
+        var hasEvents = false;
         var count = 0;
         var content = {};
         content.title = 'Unavailability events';
+        content.message = ''; // Start empty
+
+        let listItems = '';
 
         // Collect unavailabilities
-        content.message = '<ul>';
         Object.keys(spaceSegment.satUnavailabilities).forEach(function (ref) {
             var unav = spaceSegment.satUnavailabilities[ref];
             if (unav['satellite'] === satellite &&
@@ -242,9 +245,10 @@ class SpaceSegment {
                 const isWithinTime = !isRangeValid || (eventStart >= periodStart && eventStart <= periodEnd);
                 if (isWithinTime) {
                     if (unav['duration'] / (3600) > 0.1) {
+                        hasEvents = true;
                         var duration = (unav['duration'] / (3600)).toFixed(1);
-                        content.message += '<li>Ref: ' + unav['reference'] +
-                            ' (' + unav['item'] + '); ' + // Added the item in parentheses
+                        listItems += '<li>Ref: ' + unav['reference'] +
+                            ' (' + unav['item'] + '); ' +
                             'type: ' + unav['type'] + '; ' +
                             'occurence date: ' + unav['start'].replace('.000Z', '') + '; ' +
                             'duration[h]: ' + duration + '</li>';
@@ -255,7 +259,11 @@ class SpaceSegment {
 
             }
         });
-        content.message += '</ul>';
+        if (hasEvents) {
+            content.message = '<ul>' + listItems + '</ul>';
+        } else {
+            content.message = '<p>No unavailability events found for this period.</p>';
+        }
 
         if (count > 0) {
             content.message += '<p> + ' + count.toString() + ' more occurrences omitted for brief duration.</p>'
