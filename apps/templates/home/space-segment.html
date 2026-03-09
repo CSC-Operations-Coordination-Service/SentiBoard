@@ -1311,7 +1311,9 @@
 			datatakes: {{ datatakes|tojson|safe }},
 			unavailability: {{ unavailability|tojson|safe }},
 			stats: {{ sensing_stats|tojson|safe }},
-			detailsAllowed : {{ details_allowed|tojson }}
+			detailsAllowed : {{ details_allowed|tojson }},
+			start : {{ start|tojson}},
+			end : {{ end|tojson}}
 		};
 
 		if (!SENSING_DATA || !SENSING_DATA.stats) {

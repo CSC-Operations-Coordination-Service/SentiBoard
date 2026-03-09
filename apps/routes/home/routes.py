@@ -1565,6 +1565,8 @@ def admin_space_segment():
         sensing_stats=acquisitions_utils.safe_serialize(stats),
         datatakes=acquisitions_utils.safe_serialize(datatakes_sources),
         unavailability=acquisitions_utils.safe_serialize(unavailability_sources),
+        start=period_start.isoformat(),
+        end=period_end.isoformat(),
         space_segment_colors=space_segment_colors,
         details_allowed=authorized,
     )

@@ -67,6 +67,8 @@ class SpaceSegment {
 
         console.info('[SSR] Initializing SpaceSegment');
 
+        //console.log('[DEBUG] Raw Unavailability from SENSING_DATA:', SENSING_DATA.unavailability);
+
         // 1. Load Data from SSR object
         this.satellites = SENSING_DATA.stats || {};
         this.loadDatatakesFromSSR(SENSING_DATA.datatakes || []);
@@ -208,31 +210,53 @@ class SpaceSegment {
 
     showUnavailabilityEvents(satellite) {
 
-        // Build the message to be displayed
+        console.log(`[DEBUG] All processed unavailabilities in memory:`, this.satUnavailabilities);
+
+        //const rawForSat = Object.values(this.satUnavailabilities).filter(u => u.satellite === satellite);
+        //console.log(`[DEBUG] Raw events for ${satellite} (before time/item filtering):`, rawForSat);
+
+        const parseDate = (dateStr) => {
+            if (!dateStr || dateStr === "undefined" || dateStr === "") return null;
+            try {
+                let sanitized = dateStr.replace('+00:00', 'Z').split('.')[0] + 'Z';
+                let d = new Date(sanitized);
+                return isNaN(d.getTime()) ? null : d;
+            } catch (e) { return null; }
+        };
+
+        const periodStart = parseDate(SENSING_DATA.start);
+        const periodEnd = parseDate(SENSING_DATA.end);
+        const isRangeValid = !!(periodStart && periodEnd && periodStart.getTime() !== periodEnd.getTime());
+        console.log(`[DEBUG] Range Valid: ${isRangeValid}`, periodStart, periodEnd);
         var count = 0;
         var content = {};
         content.title = 'Unavailability events';
 
         // Collect unavailabilities
         content.message = '<ul>';
-        Object.keys(spaceSegment.satUnavailabilities).forEach(function (ref, key) {
-            if (spaceSegment.satUnavailabilities[ref]['satellite'] === satellite &&
-                spaceSegment.satUnavailabilities[ref]['item'] != 'EDDS') {
-                var unav = spaceSegment.satUnavailabilities[ref];
-
-                // Display only occurrences lasting more than a given threshold
-                if (unav['duration'] / (60 * 60) > 0.1) {
-                    var duration = (unav['duration'] / (60 * 60)).toFixed(1);
-                    content.message += '<li>Ref: ' + unav['reference'] + '; type: ' + unav['type'] + '; occurence date: '
-                        + unav['start'].replace('.000Z', '') + '; duration[h]: ' + duration + '</li>';
-                } else {
-                    count++;
+        Object.keys(spaceSegment.satUnavailabilities).forEach(function (ref) {
+            var unav = spaceSegment.satUnavailabilities[ref];
+            if (unav['satellite'] === satellite &&
+                unav['item'] !== 'EDDS') {
+                var eventStart = new Date(unav['start']);
+                const isWithinTime = !isRangeValid || (eventStart >= periodStart && eventStart <= periodEnd);
+                if (isWithinTime) {
+                    if (unav['duration'] / (3600) > 0.1) {
+                        var duration = (unav['duration'] / (3600)).toFixed(1);
+                        content.message += '<li>Ref: ' + unav['reference'] +
+                            ' (' + unav['item'] + '); ' + // Added the item in parentheses
+                            'type: ' + unav['type'] + '; ' +
+                            'occurence date: ' + unav['start'].replace('.000Z', '') + '; ' +
+                            'duration[h]: ' + duration + '</li>';
+                    } else {
+                        count++;
+                    }
                 }
+
             }
         });
         content.message += '</ul>';
 
-        // If needed, show the number of skipped unavailabilities
         if (count > 0) {
             content.message += '<p> + ' + count.toString() + ' more occurrences omitted for brief duration.</p>'
         }
