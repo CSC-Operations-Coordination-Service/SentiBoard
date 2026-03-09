@@ -21,71 +21,80 @@ delivered to him.
         return;
     }
 
-    let raw;
     try {
-        raw = JSON.parse(el.textContent);
+        const raw = JSON.parse(el.textContent);
+        window.SHARED_SSR_PAYLOAD = raw;
+
+        // Keep your existing assignments for backward compatibility if needed
+        if (raw.availability_map) {
+            window.SSR_SERVICE_MONITORING_PAYLOAD = raw;
+        } else {
+            window.SSR_ARCHIVE_PAYLOAD = raw;
+        }
     } catch (e) {
         console.error('[SM][SSR] Invalid JSON in SSR payload', e);
         return;
     }
 
-    // data-access.html → availability exists
-    if (raw.availability_map) {
-        window.SSR_SERVICE_MONITORING_PAYLOAD = raw;
-        console.info('[SM][SSR] Using access-page availability payload');
-        return;
-    }
-
-    window.SSR_ARCHIVE_PAYLOAD = raw;
-    //console.info('[SM][SSR] Using archive-page payload for availability', Object.keys(raw));
 })();
 
 
 class ServiceMonitoring {
 
     constructor() {
-        this.archivePayload = window.SSR_ARCHIVE_PAYLOAD || {};
+        this.archivePayload = window.SHARED_SSR_PAYLOAD ||
+            window.SSR_ARCHIVE_PAYLOAD ||
+            window.SSR_SERVICE_MONITORING_PAYLOAD || {};
 
         this.currentPeriod = null;
-
         this.availabilityMap = {};
         this.interfaceStatusMap = {};
+
+        // Cache for the period-based view (Archive page)
+        this.availabilityMapPerPeriod = {};
+        this.interfaceStatusMapPerPeriod = {};
     }
 
     init() {
-        console.group('[SM][INIT]');
+        if (this.archivePayload.availability_map) {
+            console.info('[SM][INIT] Detected Flat Payload (Data Access)');
+            this.currentPeriod = 'default'; // Set a dummy period so event lookup works
+            this.availabilityMap = this.archivePayload.availability_map;
+            this.interfaceStatusMap = this.archivePayload.interface_status_map || {};
 
-        if (!this.archivePayload || !Object.keys(this.archivePayload).length) {
-            console.error('[SM][INIT] archivePayload is EMPTY');
-            console.groupEnd();
-            return;
+            // Map it to our period cache so showUnavailabilityEvents can find it
+            this.availabilityMapPerPeriod['default'] = this.availabilityMap;
+            this.interfaceStatusMapPerPeriod['default'] = this.interfaceStatusMap;
+
+            this.render();
         }
-
-        // One canonical entry point
-        this.refreshAvailabilityStatus('prev-quarter');
+        // Case B: Archive Page (Nested structure)
+        else if (this.archivePayload['prev-quarter'] || this.archivePayload['24h']) {
+            console.info('[SM][INIT] Detected Period-based Payload (Archive)');
+            this.refreshAvailabilityStatus('prev-quarter');
+        }
+        else {
+            console.error('[SM][INIT] Payload is empty or format unknown');
+        }
 
         console.groupEnd();
     }
 
 
     render() {
-        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM'];
+        // Updated to include DAS and DHUS which appear in your HTML
+        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM', 'DAS', 'DHUS'];
 
         services.forEach(service => {
             const key = service.toLowerCase();
-
             const barEl = document.getElementById(`${key}-avail-bar`);
             const percEl = document.getElementById(`${key}-avail-perc`);
             const ifaceEl = document.getElementById(`${key}-interface-avail-perc`);
 
-            // Default when no data
             let value = this.availabilityMap[service];
-            if (typeof value !== 'number') {
-                value = 100;
-            }
+            if (typeof value !== 'number') value = 100;
 
             const perc = value.toFixed(2) + '%';
-
             if (barEl) barEl.style.width = perc;
             if (percEl) percEl.innerText = perc;
             if (ifaceEl) ifaceEl.innerText = perc;
@@ -93,13 +102,13 @@ class ServiceMonitoring {
     }
 
     refreshAvailabilityStatus(periodKey) {
-        console.group(`[SM][PERIOD] Switching to ${periodKey}`);
+        console.info(`[SM][PERIOD] Switching to ${periodKey}`);
 
-        if (!periodKey) {
+        /*if (!periodKey) {
             console.error('[SM][PERIOD] Missing periodKey for refresh');
             console.groupEnd();
             return;
-        }
+        }*/
 
         this.currentPeriod = periodKey;
 
@@ -126,10 +135,10 @@ class ServiceMonitoring {
         this.availabilityMap = this.availabilityMapPerPeriod[periodKey];
         this.interfaceStatusMap = this.interfaceStatusMapPerPeriod[periodKey];
 
-        console.log('availabilityMap:', this.availabilityMap);
-        console.log('interfaceStatusMap:', this.interfaceStatusMap);
+        /*console.log('availabilityMap:', this.availabilityMap);
+        console.log('interfaceStatusMap:', this.interfaceStatusMap);*/
 
-        console.groupEnd();
+        //console.groupEnd();
 
         // Render UI and ensure previous event displays are cleared
         this.render();
@@ -138,7 +147,9 @@ class ServiceMonitoring {
     showUnavailabilityEvents(service) {
         console.group(`[SM][CLICK] ${service}`);
 
-        const periodEvents = this.interfaceStatusMapPerPeriod?.[this.currentPeriod] || {};
+        const activePeriod = this.currentPeriod || 'default';
+
+        const periodEvents = this.interfaceStatusMapPerPeriod?.[activePeriod] || {};
         const events = Array.isArray(periodEvents[service]) ? periodEvents[service] : [];
 
         console.log('period:', this.currentPeriod);
@@ -182,15 +193,6 @@ class ServiceMonitoring {
         });
     }
 
-    normalizeInterfaceMap() {
-        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM'];
-
-        services.forEach(svc => {
-            if (!Array.isArray(this.interfaceStatusMap[svc])) {
-                this.interfaceStatusMap[svc] = [];
-            }
-        });
-    }
 
     // Optional helpers for each service
     showDASUnavailabilityEvents() { this.showUnavailabilityEvents('DAS'); }
