@@ -149,6 +149,13 @@ class ServiceMonitoring {
         // Sort newest first
         events.sort((a, b) => new Date(b.start) - new Date(a.start));
 
+        const formatDate = (date) => {
+            const d = new Date(date);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+
+
         // Build HTML and clear old event list each time
         let html = '<ul>';
         if (events.length === 0) {
@@ -157,8 +164,9 @@ class ServiceMonitoring {
             events.forEach(e => {
                 const start = new Date(e.start);
                 const stop = new Date(e.stop);
+                const duration = ((stop - start) / 60000).toFixed(2);
                 const desc = e.description || 'No description';
-                html += `<li>${start.toISOString()} - ${((stop - start) / 60000).toFixed(2)} min — ${desc}</li>`;
+                html += `<li>Unavailability start: ${formatDate(start)}; duration [min]: ${duration}</li>`;
             });
         }
         html += '</ul>';
@@ -173,6 +181,7 @@ class ServiceMonitoring {
             placement: { from: 'top', align: 'right' }
         });
     }
+
     normalizeInterfaceMap() {
         const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM'];
 
