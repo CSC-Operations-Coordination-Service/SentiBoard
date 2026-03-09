@@ -402,7 +402,6 @@ class SpaceSegment {
 
     showSensingStatistics(satellite) {
         // 1. Get the pre-computed data from the SSR object
-        // 'this.satellites' should be populated from 'sensing_stats' in your init()
         const satData = this.satellites[satellite];
 
         if (!satData) {
@@ -428,29 +427,29 @@ class SpaceSegment {
         const getPerc = (val) => totSensing > 0 ? ((val / totSensing) * 100).toFixed(2) : "0.00";
 
         // 4. Build the HTML Message
-        let msg = `<b>Planned sensing:</b> ${totSensing.toFixed(2)} [hours]<br />`;
-        msg += `<b>Successful sensing:</b> ${successHours.toFixed(2)} (${getPerc(successHours)}%)<br />`;
+        let msg = `<b>Planned sensing [hours]:</b> ${totSensing.toFixed(2)}<br />`;
+        msg += `<b>Successful sensing [hours]:</b> ${successHours.toFixed(2)} (${getPerc(successHours)}%)<br />`;
         msg += `<hr />`;
 
         // Failures breakdown
         const categories = [
-            { label: 'Satellite issues', val: unavailability.sat, key: 'sat_events' },
-            { label: 'Acquisition issues', val: unavailability.acq, key: 'acq_events' },
-            { label: 'Other issues', val: unavailability.other, key: 'other_events' }
+            { label: 'Satellite issues', val: unavailability.sat },
+            { label: 'Acquisition issues', val: unavailability.acq },
+            { label: 'Other issues', val: unavailability.other }
         ];
 
         categories.forEach(cat => {
-            msg += `<b>Sensing failed due to ${cat.label}:</b> ${cat.val.toFixed(2)} [hours] (${getPerc(cat.val)}%)<br />`;
+            msg += `<b>Sensing failed due to ${cat.label} [hours]:</b> ${cat.val.toFixed(2)}  (${getPerc(cat.val)}%)<br />`;
 
             // Add event list if they exist in the SSR object
-            if (satData.events && satData.events[cat.key] && satData.events[cat.key].length > 0) {
-                msg += `<ul style="margin-bottom: 5px; font-size: 0.85rem;">`;
-                satData.events[cat.key].forEach(anom => {
-                    // Use backend formatted dates
-                    msg += `<li>${anom.date || ''}: ${anom.type || 'Issue'}. ${anom.description || ''}</li>`;
-                });
-                msg += `</ul>`;
-            }
+            /* if (satData.events && satData.events[cat.key] && satData.events[cat.key].length > 0) {
+                 msg += `<ul style="margin-bottom: 5px; font-size: 0.85rem;">`;
+                 satData.events[cat.key].forEach(anom => {
+                     // Use backend formatted dates
+                     msg += `<li>${anom.date || ''}: ${anom.type || 'Issue'}. ${anom.description || ''}</li>`;
+                 });
+                 msg += `</ul>`;
+             }*/
         });
 
         content.message = msg;

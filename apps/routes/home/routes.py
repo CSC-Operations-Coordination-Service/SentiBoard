@@ -1676,9 +1676,9 @@ def product_timeliness_page():
         )
         timeliness_data = timeliness_data.get_json()
 
-    current_app.logger.info(
-        "[PRODUCT TIMELINESS] RAW CACHE payload: %r", timeliness_data
-    )
+    # current_app.logger.info(
+    #    "[PRODUCT TIMELINESS] RAW CACHE payload: %r", timeliness_data
+    # )
 
     # ---- decide if cache must be recomputed
     needs_reload = (
