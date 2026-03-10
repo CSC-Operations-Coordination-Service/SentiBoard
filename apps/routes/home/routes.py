@@ -392,31 +392,21 @@ def index():
             continue
 
         try:
-            if isinstance(event_time_str, str):
-                try:
-                    # try ISO format first (e.g. "2025-11-06T16:41:41")
-                    event_time = datetime.fromisoformat(event_time_str)
-                except ValueError:
-                    # fallback to European style: "06/11/2025 16:41:41"
-                    event_time = datetime.strptime(event_time_str, "%d/%m/%Y %H:%M:%S")
-            elif isinstance(event_time_str, (int, float)):
-                event_time = datetime.fromtimestamp(event_time_str, timezone.utc)
-            else:
-                event_time = event_time_str
+            event_time = datetime.strptime(event_time_str, "%d/%m/%Y %H:%M:%S")
+            event_time = event_time.replace(tzinfo=timezone.utc)
         except Exception as e:
             current_app.logger.warning(
                 f"[INDEX] Invalid datetime in item {idx}: {event_time_str} ({e})"
             )
             continue
 
-        # Ensure event_time is timezone-aware
-        if event_time.tzinfo is None:
-            event_time = event_time.replace(tzinfo=LOCAL_TZ)
-
-        event_time = event_time.astimezone(timezone.utc)
-
         diff = now - event_time
-        total_hours = diff.total_seconds() / 3600
+        total_seconds = diff.total_seconds()
+
+        if not (0 <= total_seconds <= 86400):
+            continue
+
+        """ total_hours = diff.total_seconds() / 3600
         days = int(total_hours // 24)
         hours = int(total_hours % 24)
         minutes = int((diff.total_seconds() % 3600) // 60)
@@ -428,9 +418,7 @@ def index():
         elif total_hours >= 1:
             time_ago = f"{round(total_hours)} hour(s)"
         else:
-            time_ago = f"{minutes} minute(s)"
-
-        category = item.get("category", "Unknown")
+            time_ago = f"{minutes} minute(s) """
 
         raw_impacted_sat = item.get("impactedSatellite")
 
@@ -463,12 +451,9 @@ def index():
 
         try:
             # Convert the string "[{'datatakeID':...}]" into a Python list
-            # Using ast.literal_eval handles the single quotes in your API response safely
             completeness_list = ast.literal_eval(raw_completeness)
 
             for dt in completeness_list:
-                # We look for the numeric values (L0_, L1_, L2_)
-                # Your JS logic sums 3 values and divides by 3
                 vals = [v for k, v in dt.items() if isinstance(v, (int, float))]
 
                 if len(vals) >= 3:
@@ -480,18 +465,22 @@ def index():
 
                 if avg_completeness < threshold:
                     is_impacted = True
-                    break  # Found at least one bad datatake, so this anomaly counts
-
+                    break
         except Exception as e:
             current_app.logger.warning(f"Error parsing completeness for {idx}: {e}")
-            # If parsing fails, we might want to assume it's impacted just to be safe
             is_impacted = True
 
-        # If the anomaly is fully recovered (all > 90%), skip it
         if not is_impacted:
             current_app.logger.info(f"[INDEX] Skipping {idx}: All datatakes recovered.")
             continue
 
+        total_hours = total_seconds / 3600
+        if total_hours >= 1:
+            time_ago = f"{round(total_hours)} hour(s) ago"
+        else:
+            time_ago = f"{int(total_seconds // 60)} minute(s) ago"
+
+        category = item.get("category", "Unknown")
         display_satellite = SATELLITE_DISPLAY_NAMES.get(impacted_sat, raw_impacted_sat)
 
         # Default title
@@ -516,7 +505,7 @@ def index():
         if now - event_time <= timedelta(hours=24):
             anomalies_details.append({"time_ago": time_ago, "content": title})
 
-        if len(anomalies_details) > 2:
+        if len(anomalies_details) >= 2:
             break
 
     # ---- SSR: Load Instant Messages for Home ----
