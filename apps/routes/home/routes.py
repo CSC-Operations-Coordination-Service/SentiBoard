@@ -56,6 +56,7 @@ import requests
 import time
 import logging
 import math
+import ast
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 
@@ -456,7 +457,43 @@ def index():
             )
             continue
 
+        raw_completeness = item.get("datatakes_completeness", "[]")
+        is_impacted = False
+        threshold = 90
+
+        try:
+            # Convert the string "[{'datatakeID':...}]" into a Python list
+            # Using ast.literal_eval handles the single quotes in your API response safely
+            completeness_list = ast.literal_eval(raw_completeness)
+
+            for dt in completeness_list:
+                # We look for the numeric values (L0_, L1_, L2_)
+                # Your JS logic sums 3 values and divides by 3
+                vals = [v for k, v in dt.items() if isinstance(v, (int, float))]
+
+                if len(vals) >= 3:
+                    avg_completeness = sum(vals[:3]) / 3
+                elif len(vals) > 0:
+                    avg_completeness = sum(vals) / len(vals)
+                else:
+                    avg_completeness = 0  # No data means 0 completeness
+
+                if avg_completeness < threshold:
+                    is_impacted = True
+                    break  # Found at least one bad datatake, so this anomaly counts
+
+        except Exception as e:
+            current_app.logger.warning(f"Error parsing completeness for {idx}: {e}")
+            # If parsing fails, we might want to assume it's impacted just to be safe
+            is_impacted = True
+
+        # If the anomaly is fully recovered (all > 90%), skip it
+        if not is_impacted:
+            current_app.logger.info(f"[INDEX] Skipping {idx}: All datatakes recovered.")
+            continue
+
         display_satellite = SATELLITE_DISPLAY_NAMES.get(impacted_sat, raw_impacted_sat)
+
         # Default title
         title = None
         if category == "Platform":
