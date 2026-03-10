@@ -779,14 +779,14 @@ def resolve_period_dates(period_key):
     elif period_key in ("30d", "month"):
         start = end - timedelta(days=30)
 
-    elif period_key == "prev-quarter":
+    elif period_key in ("prev-quarter", "prev-quarter-specific"):
         # previous full quarter
         month = ((end.month - 1) // 3) * 3 + 1
-        current_q_start = dt(end.year, month, 1)
+        current_q_start = dt(end.year, month, 1, tzinfo=timezone.utc)
 
         prev_q_end = current_q_start - timedelta(seconds=1)
         prev_q_start = prev_q_end - relativedelta(months=3)
-        prev_q_start = prev_q_start.replace(day=1, hour=0, minute=0, second=0)
+        # prev_q_start = prev_q_start.replace(day=1, hour=0, minute=0, second=0)
 
         start = prev_q_start
         end = prev_q_end

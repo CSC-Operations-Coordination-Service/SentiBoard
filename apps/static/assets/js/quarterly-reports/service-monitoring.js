@@ -104,12 +104,6 @@ class ServiceMonitoring {
     refreshAvailabilityStatus(periodKey) {
         console.info(`[SM][PERIOD] Switching to ${periodKey}`);
 
-        /*if (!periodKey) {
-            console.error('[SM][PERIOD] Missing periodKey for refresh');
-            console.groupEnd();
-            return;
-        }*/
-
         this.currentPeriod = periodKey;
 
         // Ensure per-period caches exist
@@ -135,10 +129,6 @@ class ServiceMonitoring {
         this.availabilityMap = this.availabilityMapPerPeriod[periodKey];
         this.interfaceStatusMap = this.interfaceStatusMapPerPeriod[periodKey];
 
-        /*console.log('availabilityMap:', this.availabilityMap);
-        console.log('interfaceStatusMap:', this.interfaceStatusMap);*/
-
-        //console.groupEnd();
 
         // Render UI and ensure previous event displays are cleared
         this.render();

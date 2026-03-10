@@ -130,14 +130,13 @@ class ArchiveStatisticsCharts {
         this._bindEvents();
 
         const periodSelect = document.getElementById("time-period-select");
+
+
         const datatypeSelect = document.getElementById("time-trend-data-type-select");
 
-        let defaultPeriod = "prev-quarter-specific";
-        if (!this.datasets[this._normalizePeriodKey(defaultPeriod)]) {
-            defaultPeriod = "prev-quarter";
-        }
+        let defaultPeriod = this.datasets["prev-quarter-specific"] ? "prev-quarter-specific" : "prev-quarter";
 
-        console.info("[ARCHIVE][INIT] Default period:", defaultPeriod);
+        console.info("[ARCHIVE][INIT] forcing default period:", defaultPeriod);
 
         if (periodSelect) {
             periodSelect.value = defaultPeriod;
@@ -169,8 +168,24 @@ class ArchiveStatisticsCharts {
         return map[key] || key;
     }
     _bindEvents() {
-        document.getElementById("time-period-select")
-            .addEventListener("change", (e) => this.showPeriod(e.target.value));
+        const periodSelect = document.getElementById("time-period-select");
+
+        periodSelect.addEventListener("change", (e) => {
+            let selectedValue = e.target.value;
+
+            // FORCE REDIRECTION
+            if (selectedValue === "prev-quarter") {
+                const specificKey = "prev-quarter-specific";
+                // Check if data exists for the specific quarter
+                if (this.datasets[specificKey]) {
+                    console.info("[ARCHIVE] Diverting 'prev-quarter' to 'prev-quarter-specific'");
+                    selectedValue = specificKey;
+                    e.target.value = specificKey; // Force the dropdown UI to visually change
+                }
+            }
+
+            this.showPeriod(selectedValue);
+        });
 
         document.getElementById("time-trend-data-type-select")
             .addEventListener("change", this.on_datatype_change.bind(this));
@@ -178,9 +193,12 @@ class ArchiveStatisticsCharts {
 
     showPeriod(periodKey) {
         const ssrKey = this._normalizePeriodKey(periodKey);
+        this.currentPeriod = ssrKey;
+
         const payload = this.datasets[ssrKey];
 
         if (!payload || !payload.data) {
+            console.warn(`[ARCHIVE] No data found for key ${ssrKey}`);
             this.clearCharts(PeriodKey); // Clears the 'period' bucket
             return;
         }
@@ -191,10 +209,6 @@ class ArchiveStatisticsCharts {
         this.loadArchive(payload, PeriodKey);
 
         this.currentPeriod = ssrKey;
-
-        /*if (window.serviceMonitoring) {
-            window.serviceMonitoring.refreshAvailabilityStatus(payload);
-        }*/
 
         const lifetimePayload = this.datasets["lifetime"];
         if (lifetimePayload?.data?.length) {
@@ -565,11 +579,16 @@ class ArchiveStatisticsCharts {
             week: "7d",
             month: "30d",
             "prev-quarter": "prev-quarter",
-            "prev-quarter-specific": "prev-quarter",
+            "prev-quarter-specific": "prev-quarter-specific",
             lifetime: "lifetime"
         };
 
-        return map[uiKey] || uiKey;
+        let mappedKey = map[uiKey] || uiKey;
+
+        if (mappedKey === "prev-quarter" && this.datasets["prev-quarter-specific"]) {
+            return "prev-quarter-specific";
+        }
+        return mappedKey;
     }
 
     _drawChart(chartCanvas, barData, dataType, horizontal) {

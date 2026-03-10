@@ -333,30 +333,33 @@
             const payloadEl = document.getElementById('archive-ssr-payload');
             window.SSR_ARCHIVE_PAYLOAD = JSON.parse(payloadEl.innerHTML);
 
-            const archiveStats = new ArchiveStatisticsCharts();
-            archiveStats.init(SSR_ARCHIVE_PAYLOAD);
+            window.archiveStats = new ArchiveStatisticsCharts();
+            window.archiveStats.init(window.SSR_ARCHIVE_PAYLOAD);
 
-            const prevQuarter = SSR_ARCHIVE_PAYLOAD['prev-quarter'];
+            /*const prevQuarter = SSR_ARCHIVE_PAYLOAD['prev-quarter'];
             if (!prevQuarter) {
                 console.warn("[SM][PATCH] No 'prev-quarter' data found in SSR_ARCHIVE_PAYLOAD");
                 return;
-            }
+            }*/
 
             if (!window.serviceMonitoring) {
                 window.serviceMonitoring = new ServiceMonitoring();
+                window.serviceMonitoring.archivePayload = window.SSR_ARCHIVE_PAYLOAD;
             }
             
             const periodSelect = document.getElementById('time-period-select');
             if (periodSelect) {
                 periodSelect.addEventListener('change', function(e) {
-                    const uiValue = e.target.value; 
-                    const mapping = { "week": "7d", "month": "30d", "quarter": "prev-quarter", "day": "24h" };
-                    const periodKey = mapping[uiValue] || "prev-quarter";
-            
-                    console.info(`[SM] Switching UI to: ${periodKey}`);
-                    if(window.serviceMonitoring) {
-                        window.serviceMonitoring.refreshAvailabilityStatus(periodKey);
-                    }
+                    // Wait a tiny bit for ArchiveStats._bindEvents to finish its redirection
+                    setTimeout(() => {
+                        // Get the final key after redirection (e.g., 'prev-quarter-specific')
+                        const finalKey = window.archiveStats.currentPeriod;
+                    
+                        console.info(`[SM][SYNC] Syncing Monitoring to redirected key: ${finalKey}`);
+                        if(window.serviceMonitoring) {
+                            window.serviceMonitoring.refreshAvailabilityStatus(finalKey);
+                        }
+                    }, 0);
                 });
             }
         });
