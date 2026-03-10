@@ -2108,6 +2108,7 @@ def data_archive_page():
         "7d": ("last", "7d"),
         "30d": ("last", "30d"),
         "prev-quarter": ("previous", "quarter"),
+        "prev-quarter-specific": ("previous", "quarter"),
         "lifetime": ("all", "lifetime"),
     }
 
