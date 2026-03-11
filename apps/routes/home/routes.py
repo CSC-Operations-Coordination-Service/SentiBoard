@@ -41,6 +41,9 @@ import apps.elastic.modules.interface_monitoring as elastic_interface_monitoring
 import apps.cache.modules.interface_monitoring_ssr as interface_monitoring_cache_ssr
 import apps.models.instant_messages as instant_messages_model
 import apps.models.anomalies as anomalies_model
+from apps.models.user_role import get_roles as model_get_roles
+from apps.models.user_role import save_role as model_save_role
+from apps.models.user_role import delete_role as model_delete_role
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
 import apps.cache.modules.unavailability as unavailability_cache
@@ -287,6 +290,49 @@ def admin_required(f):
         return f(*args, **kwargs)
 
     return decorated
+
+
+@blueprint.route("/roles.html", methods=["GET", "POST"])
+@login_required
+def roles_page():
+    try:
+        logger.info("--- Entering roles_page ---")
+
+        authorized = auth_utils.is_user_authorized(["admin", "ecuser", "esauser"])
+        logger.info(f"User authorization status: {authorized}")
+
+        if not authorized:
+            logger.warning(f"Unauthorized access attempt by user")
+            return render_template("errors/401.html"), 401
+
+        if request.method == "POST":
+            action = request.form.get("action")
+            role_name = request.form.get("name")
+
+            if action == "add":
+                description = request.form.get("description")
+                model_save_role(role_name, description)
+                # Optional: flash("Role added successfully!", "success")
+
+            elif action == "delete":
+                # Extra security check: ensure they aren't trying to delete protected roles
+                if role_name not in ["admin", "guest", "ecuser"]:
+                    model_delete_role(role_name)
+                # Optional: flash(f"Role {role_name} deleted.", "info")
+            return redirect(url_for("home_blueprint.roles_page"))
+
+        roles_list = model_get_roles()
+
+        logger.info(f"Type of roles_list: {type(roles_list)}")
+        if roles_list is not None:
+            logger.info(f"Number of roles retrieved: {len(roles_list)}")
+        else:
+            logger.error("model_get_roles() returned None")
+
+        return render_template("admin/roles.html", roles=roles_list)
+
+    except Exception as ex:
+        logger.error(f"Error in roles_page: {str(ex)}", exc_info=True)
 
 
 @blueprint.route("/index.html")
@@ -1398,29 +1444,12 @@ def acquisition_service_page():
             "last", cache_period
         )
 
-    # current_app.logger.info(
-    #     "[ACQUISITION SERVICE] Cache keys-> acquisitions=%s edrs=%s",
-    #     acquisitions_key,
-    #     edrs_key,
-    # )
-
     acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(acquisitions_key))
     edrs_acquisitions = acquisitions_utils._cache_to_list(flask_cache.get(edrs_key))
-
-    # current_app.logger.info(
-    #    "[ACQUISITION SERVICE] loaded rows-> acquisitions=%d edrs=%d",
-    #    len(acquisitions),
-    #    len(edrs_acquisitions),
-    # )
 
     payload = acquisitions_utils.build_acquisition_payload(
         acquisitions, edrs_acquisitions, period_id=period_id
     )
-
-    # current_app.logger.info(
-    #    "[ACQUISITION SERVICE] Paylod global-> %s",
-    #    payload["global"],
-    # )
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
@@ -1701,10 +1730,6 @@ def product_timeliness_page():
             "[PRODUCT TIMELINESS] Cache returned Response, extracting JSON"
         )
         timeliness_data = timeliness_data.get_json()
-
-    # current_app.logger.info(
-    #    "[PRODUCT TIMELINESS] RAW CACHE payload: %r", timeliness_data
-    # )
 
     # ---- decide if cache must be recomputed
     needs_reload = (
@@ -2242,7 +2267,6 @@ def news_manager():
 @blueprint.route("/anomalies.html", methods=["GET", "POST"])
 @login_required
 def show_anomalies_page():
-    # --- 1. HANDLE SAVING (POST) ---
     if request.method == "POST":
         try:
             # Authorization Check
@@ -2337,15 +2361,6 @@ def show_anomalies_page():
         anomalies_list = anomalies_list.get("anomalies", [])
 
     anomalies_json = json.dumps({a["key"]: a for a in anomalies_list})
-
-    """ if anomalies_list and len(anomalies_list) > 0:
-        logger.info(
-            f"DEBUG: First anomaly date type: {type(anomalies_list[0].get('publicationDate'))}"
-        )
-        logger.info(
-            f"DEBUG: First anomaly date value: {anomalies_list[0].get('publicationDate')}"
-        ) 
-    """
 
     for a in anomalies_list:
         pub_date = a.get("publicationDate")
