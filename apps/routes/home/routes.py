@@ -44,6 +44,10 @@ import apps.models.anomalies as anomalies_model
 from apps.models.user_role import get_roles as model_get_roles
 from apps.models.user_role import save_role as model_save_role
 from apps.models.user_role import delete_role as model_delete_role
+from apps.models.users import get_users as model_get_users
+from apps.models.users import update_user as update_user
+from apps.models.users import save_user as save_user
+from apps.models.users import delete_user as delete_user
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
 import apps.cache.modules.unavailability as unavailability_cache
@@ -303,7 +307,7 @@ def roles_page():
 
         if not authorized:
             logger.warning(f"Unauthorized access attempt by user")
-            return render_template("errors/401.html"), 401
+            return render_template("home/page-404.html"), 404
 
         if request.method == "POST":
             action = request.form.get("action")
@@ -333,6 +337,84 @@ def roles_page():
 
     except Exception as ex:
         logger.error(f"Error in roles_page: {str(ex)}", exc_info=True)
+
+
+@blueprint.route("/users.html", methods=["GET", "POST"])
+@login_required
+def admin_users_page():
+    if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
+        return render_template("home/page-404.html"), 404
+
+    if request.method == "POST":
+        action = request.form.get("action")  # We'll send this from JS
+
+        try:
+            if action == "update":
+                update_user(
+                    id=request.form.get("id"),
+                    username=request.form.get("username"),
+                    email=request.form.get("email"),
+                    password=request.form.get("password"),
+                    role=request.form.get("role"),
+                )
+                return redirect(
+                    url_for("home_blueprint.admin_users_page", msg="updated")
+                )
+
+            elif action == "add":
+                save_user(
+                    username=request.form.get("username"),
+                    email=request.form.get("email"),
+                    password=request.form.get("password"),
+                    role=request.form.get("role"),
+                )
+                return redirect(url_for("home_blueprint.admin_users_page", msg="added"))
+
+            elif action == "delete":
+                delete_user(username=request.form.get("username"))
+                return redirect(
+                    url_for("home_blueprint.admin_users_page", msg="deleted")
+                )
+
+        except Exception as ex:
+            logger.error(f"Action {action} failed", exc_info=True)
+
+    msg_type = request.args.get("msg")
+    messages = {
+        "updated": "User updated successfully!",
+        "added": "New user created successfully!",
+        "deleted": "User removed successfully!",
+    }
+    status_msg = messages.get(msg_type)
+
+    try:
+        roles_raw = model_get_roles()
+        users_raw = model_get_users()
+
+        users_data = [
+            {
+                "id": u.id,
+                "username": u.username,
+                "email": u.email,
+                "role": u.role,
+                "modifyDate": u.modifyDate.isoformat() if u.modifyDate else None,
+            }
+            for u in (users_raw or [])
+        ]
+
+        roles_data = [
+            {"name": r.name, "description": r.description} for r in (roles_raw or [])
+        ]
+
+        return render_template(
+            "admin/users.html",
+            users=users_data,
+            roles=roles_data,
+            status_msg=status_msg,
+        )
+    except Exception as ex:
+        logger.error("Error loading admin users page", exc_info=True)
+        return render_template("home/page-500.html"), 500
 
 
 @blueprint.route("/index.html")
@@ -2434,7 +2516,6 @@ def route_template(template):
         return render_template("home/page-500.html"), 500
 
 
-# Helper - Extract current page name from request
 def get_segment(request):
     try:
 

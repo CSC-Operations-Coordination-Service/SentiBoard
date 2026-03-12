@@ -736,13 +736,6 @@ def resolve_period(
     default: str = "prev-quarter",
     logger=None,
 ):
-    """
-    Resolves UI period into an effective backend period.
-
-    Returns:
-        ui_period (str): what the user selected (for dropdown / hydration)
-        effective_period (str): what backend logic must use
-    """
 
     PERIOD_ALIAS = {
         # UX aliases
