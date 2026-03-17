@@ -481,9 +481,11 @@
 	</script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function(){
-			console.log('[ACQUISITION SERVICE] SSR payload period:', window.ACQUISITION_PAYLOAD?.meta?.period_id);
 			const payloadEl = document.getElementById('acquisition-payload');
-			window.ACQUISITION_PAYLOAD = JSON.parse(payloadEl.textContent);
+			if(payloadEl){
+				window.ACQUISITION_PAYLOAD = JSON.parse(payloadEl.textContent);
+			}
+			console.log('[ACQUISITION SERVICE] SSR payload period:', window.ACQUISITION_PAYLOAD?.meta?.period_id);
 
 			window.acquisitionServiceMod = new AcquisitionServiceMod();
 			window.acquisitionServiceMod.init();

@@ -42,6 +42,14 @@ class AcquisitionServiceMod {
     init() {
         //  Register event callback for Time period select
         const time_period_sel = document.getElementById('time-period-select');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const period = urlParams.get('period');
+        if (period && time_period_sel) {
+            time_period_sel.value = period;
+
+        }
+
         if (time_period_sel) {
             time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
         }
@@ -57,7 +65,11 @@ class AcquisitionServiceMod {
 
     on_timeperiod_change() {
         const select = document.getElementById('time-period-select');
-        const period = select.value;
+        let period = select.value;
+
+        if (period === 'prev-quarter') {
+            period = 'prev-quarter-specific';
+        }
 
         console.log('[ACQUISITION SERVICE] period change->', period);
         window.location.href = `/acquisition-service?period=${period}`;

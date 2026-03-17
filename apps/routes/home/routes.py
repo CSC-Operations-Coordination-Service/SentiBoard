@@ -219,6 +219,7 @@ PERIOD_TO_CACHE = {
     "week": "7d",
     "month": "30d",
     "prev-quarter": "previous-quarter",
+    "prev-quarter-specific": "previous-quarter",
 }
 
 # used on product-timeliness
@@ -1505,7 +1506,11 @@ def acquisition_service_page():
     if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
         abort(403)
 
-    period_id = request.args.get("period", "prev-quarter")
+    requested_period = request.args.get("period", "prev-quarter-specific")
+    if requested_period == "prev-quarter":
+        period_id = "prev-quarter-specific"
+    else:
+        period_id = requested_period
 
     current_app.logger.info("[ACQUISITION SERVICE] Requested period: %s", period_id)
 
@@ -1556,7 +1561,7 @@ def admin_space_segment():
     current_app.logger.info("[SPACE SEGMENT] SSR route START")
 
     # ---- period selection (SSR)
-    period = request.args.get("period", "prev-quarter")
+    period = request.args.get("period", "prev-quarter-specific")
 
     now = datetime.now(timezone.utc)
 
@@ -1575,7 +1580,7 @@ def admin_space_segment():
         period_start = now - relativedelta(days=30)
         period_end = now
     else:
-        period = "prev-quarter"
+        period = "prev-quarter-specific"
         year = now.year
         quarter = (now.month - 1) // 3 + 1
 
@@ -1734,9 +1739,7 @@ def product_timeliness_page():
     current_app.logger.info("[PRODUCT TIMELINESS] SSR route START")
 
     # ---- period selection (SSR)
-    period = request.args.get(
-        "period", "prev-quarter"
-    )  # default: previous calendar quarter
+    period = request.args.get("period", "prev-quarter-specific")
     now = datetime.now(timezone.utc)
     period_id = None
 
@@ -1774,14 +1777,7 @@ def product_timeliness_page():
         mode = "last"
         period_id = "30d"
 
-    elif period in ("prev-quarter"):
-        # Treat both as fixed previous quarter
-        period_start = prev_quarter_start
-        period_end = prev_quarter_end
-        period_id = "quarter"
-        mode = "previous"
-
-    elif period in ("last-3-months"):
+    elif period in ("prev-quarter", "prev-quarter-specific", "last-3-months"):
         # Treat both as fixed previous quarter
         period_start = prev_quarter_start
         period_end = prev_quarter_end
@@ -1967,12 +1963,15 @@ def product_timeliness_page():
         prev_quarter_label,
     )
 
-    period_id_for_select = {
-        "24h": "day",
-        "7d": "week",
-        "30d": "month",
-        "quarter": "prev-quarter",
-    }.get(period_id, period_id)
+    if period in ["prev-quarter", "last-3-months"]:
+        period_id_for_select = "prev-quarter-specific"
+    else:
+        period_id_for_select = {
+            "24h": "day",
+            "7d": "week",
+            "30d": "month",
+            "quarter": period,
+        }.get(period_id, period)
 
     # ---- render SSR page
     return render_template(

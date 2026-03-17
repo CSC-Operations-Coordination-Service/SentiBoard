@@ -56,8 +56,10 @@ class ProductTimeliness {
     }
     on_timeperiod_change() {
         const sel = document.getElementById('time-period-select');
-        const period = sel.value;
-
+        let period = sel.value;
+        if (period === 'prev-quarter') {
+            period = 'prev-quarter-specific'
+        }
         console.log("[PT][JS] on_timeperiod_change()");
         console.log("[PT][JS] selected period =", period);
         console.log("[PT][JS] redirect → /product-timeliness?period=" + period);

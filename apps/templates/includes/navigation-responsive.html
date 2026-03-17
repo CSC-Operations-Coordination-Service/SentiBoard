@@ -165,8 +165,9 @@
 
 									{% if prev_quarter_label is defined %}
 									<option value="prev-quarter-specific"
-										{% if (segment == "data-availability" and selected_period == "prev-quarter" and prev_quarter_label)
-											or (segment == "acquisition-service" and period_id == "prev-quarter" and prev_quarter_label) %}selected{% endif %}>
+										{% if (segment == "acquisition-service" and period_id == "prev-quarter-specific" and prev_quarter_label) %}
+											selected
+										{% endif %}>
 										{{ prev_quarter_label }} 
 									</option>
 									{% endif %}
