@@ -312,8 +312,6 @@ def previous_quarter_label(today=None):
 
 
 def build_space_segment_ssr(datatakes, unavailability, period_start, period_end):
-
-    # group records
     dt_by_sat = {}
     for d in datatakes:
         sat = (d.get("satellite_unit") or d.get("platform") or "").upper()
@@ -329,159 +327,177 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
     satellites = {}
 
     for sat, (fullname, instruments_list) in SATELLITE_INFO.items():
-
         if sat == "S1B":
             continue
 
         current_dt_list = dt_by_sat.get(sat, [])
+        totSensing = 0.0
+        failedSensingAcq = 0.0
+        failedSensingSat = 0.0
+        failedSensingOther = 0.0
+        categorized_events = {"sat_events": {}, "acq_events": {}, "other_events": {}}
+
+        for datatake in current_dt_list:
+            hours = 0.0
+            if datatake.get("l0_sensing_duration"):
+                hours = datatake["l0_sensing_duration"] / 3600000000.0
+            else:
+                try:
+                    start_obj = dt.fromisoformat(
+                        datatake["observation_time_start"].replace("Z", "+00:00")
+                    )
+                    stop_obj = dt.fromisoformat(
+                        datatake["observation_time_stop"].replace("Z", "+00:00")
+                    )
+                    hours = (stop_obj - start_obj).total_seconds() / 3600.0
+                except:
+                    continue
+
+            totSensing += hours
+
+            origin = datatake.get("cams_origin")
+            ticket = datatake.get("last_attached_ticket")
+            compl_val = recalc_completeness(datatake)
+
+            if ticket and origin and compl_val < 99.9:
+                lost_hrs = hours * (1.0 - (compl_val / 100.0))
+
+                if "Acquis" in origin:
+                    failedSensingAcq += lost_hrs
+                    categorized_events["acq_events"][ticket] = {
+                        "date": datatake.get("observation_time_start")[:10],
+                        "description": datatake.get("description"),
+                        "type": "Acquisition",
+                    }
+                elif "CAM" in origin or "Sat" in origin:
+                    failedSensingSat += lost_hrs
+                    categorized_events["sat_events"][ticket] = {
+                        "date": datatake.get("observation_time_start")[:10],
+                        "description": datatake.get("description"),
+                        "type": "Satellite",
+                    }
+                else:
+                    failedSensingOther += lost_hrs
+                    categorized_events["other_events"][ticket] = {
+                        "date": datatake.get("observation_time_start")[:10],
+                        "description": datatake.get("description"),
+                        "type": "Other",
+                    }
+
+        totSuccessSensing = totSensing - (
+            failedSensingAcq + failedSensingSat + failedSensingOther
+        )
 
         inst_data = compute_availability_single_sat(
-            current_dt_list,
             unavail_by_sat.get(sat, []),
             period_start,
             period_end,
             instruments_list,
+            tot_planned_hrs=totSensing,
+            tot_success_hrs=totSuccessSensing,
+            sat_id=sat,
         )
 
-        unavail_hours = {"sat": 0.0, "acq": 0.0, "other": 0.0}
-        # These will hold the lists for the JS <ul> popups
-        categorized_events = {"sat_events": [], "acq_events": [], "other_events": []}
-
-        for dt in current_dt_list:
-            # Calculate duration in hours
-            # Duration is often in microseconds in some DBs, hence the / 3600...
-            duration_hrs = dt.get("l0_sensing_duration", 0) / 3600000000.0
-
-            # If duration is 0, try to calculate from timestamps
-            if (
-                duration_hrs <= 0
-                and dt.get("observation_time_start")
-                and dt.get("observation_time_stop")
-            ):
-                try:
-                    start = dt["observation_time_start"]
-                    stop = dt["observation_time_stop"]
-                    # Ensure they are datetime objects
-                    delta = stop - start
-                    duration_hrs = delta.total_seconds() / 3600.0
-                except:
-                    duration_hrs = 0
-
-            # Logic for categorization based on CAMS Origin and attached tickets
-            if dt.get("last_attached_ticket") and dt.get("cams_origin"):
-                # Completeness logic: how much was LOST? (1 - completeness)
-                # Recalc_completeness usually returns 0-100
-                compl_perc = dt.get("completeness", 100) / 100.0
-                lost_hrs = duration_hrs * (1.0 - compl_perc)
-
-                origin = dt.get("cams_origin", "").lower()
-
-                # Build the event object for the list
-                event_entry = {
-                    "date": (
-                        dt.get("observation_time_start").strftime("%d/%m/%Y")
-                        if hasattr(dt.get("observation_time_start"), "strftime")
-                        else "N/A"
-                    ),
-                    "type": dt.get("cams_origin"),
-                    "description": f"Ticket {dt.get('last_attached_ticket')} - Impacted ID: {dt.get('key')}",
-                }
-
-                if "acquis" in origin:
-                    unavail_hours["acq"] += lost_hrs
-                    categorized_events["acq_events"].append(event_entry)
-                elif "cam" in origin or "sat" in origin:
-                    unavail_hours["sat"] += lost_hrs
-                    categorized_events["sat_events"].append(event_entry)
-                else:
-                    unavail_hours["other"] += lost_hrs
-                    categorized_events["other_events"].append(event_entry)
-
-        success = round(sum(i["availability"] for i in inst_data) / len(inst_data), 2)
+        avg_inst_avail = (
+            sum(i["availability"] for i in inst_data) / len(inst_data)
+            if inst_data
+            else 0.0
+        )
 
         satellites[sat] = {
             "satellite": sat,
             "fullname": fullname,
-            "success": success,  # <--- matches JS naming
-            "class": classify_satellite(success),
-            "datatakes": current_dt_list,
-            "unavailability": unavail_hours,
-            "events": categorized_events,
+            "success": totSuccessSensing,
+            "success_percentage": (
+                (totSuccessSensing / totSensing * 100) if totSensing > 0 else 100.0
+            ),
+            "class": classify_satellite(avg_inst_avail),
+            "unavailability": {
+                "sat": failedSensingSat,
+                "acq": failedSensingAcq,
+                "other": failedSensingOther,
+            },
             "instruments": inst_data,
+            "datatakes": current_dt_list,
+            "events": {
+                k: sorted(list(v.values()), key=lambda x: x["date"])
+                for k, v in categorized_events.items()
+            },
         }
 
     return satellites
 
 
 def compute_availability_single_sat(
-    datatakes, unavailabilities, start, end, instruments
+    unavailabilities, start, end, instruments, tot_planned_hrs, tot_success_hrs, sat_id
 ):
-    total_seconds = (end - start).total_seconds()
-    if total_seconds <= 0:
+    period_duration_sec = (end - start).total_seconds()
+    if period_duration_sec <= 0:
         return [{"name": i, "availability": 100.0} for i in instruments]
 
-    availability = {inst: 100.0 for inst in instruments}
+    availability = {inst.upper(): 100.0 for inst in instruments}
 
+    if tot_planned_hrs > 0:
+        global_success_ratio = tot_success_hrs / tot_planned_hrs
+        for inst in availability:
+            availability[inst] = 100.0 * global_success_ratio
+
+    processed_refs = set()
     for ev in unavailabilities:
-        item = (ev.get("subsystem") or ev.get("instrument") or "").upper()
-        satellite = (ev.get("satellite_unit") or ev.get("satellite") or "").upper()
-        comment = (ev.get("comment") or "").upper()
+        ref = ev.get("unavailability_reference", "unknown")
+        sub = (ev.get("subsystem") or ev.get("instrument") or "").upper()
+        unique_key = f"{ref}_{sub}"
+        if unique_key in processed_refs:
+            continue
+        processed_refs.add(unique_key)
 
         duration_raw = ev.get("unavailability_duration", 0)
-        if duration_raw:
-            duration_sec = duration_raw / 1_000_000
-        else:
+        duration_sec = duration_raw / 1_000_000 if duration_raw else 0
+
+        if not duration_sec:
             try:
-                duration_sec = (
-                    dt.fromisoformat(ev["end_time"].replace("Z", ""))
-                    - dt.fromisoformat(ev["start_time"].replace("Z", ""))
-                ).total_seconds()
+                s_time = dt.fromisoformat(ev["start_time"].replace("Z", "+00:00"))
+                e_time = dt.fromisoformat(ev["end_time"].replace("Z", "+00:00"))
+                duration_sec = (e_time - s_time).total_seconds()
             except:
                 duration_sec = 0
 
-        if duration_sec <= 0:
-            continue
+        impact_pct = (duration_sec / period_duration_sec) * 100
+        comment = (ev.get("comment") or "").upper()
+        satellite = sat_id.upper()
 
-        impact = (duration_sec / total_seconds) * 100
-
-        if item in availability:
-            availability[item] -= impact
-
-        elif item in ("STR-1", "STR-2") and "STR" in availability:
-            availability["STR"] -= impact
-
+        if sub in availability:
+            availability[sub] -= impact_pct
+        elif sub in ("STR-1", "STR-2", "STR") and "STR" in availability:
+            availability["STR"] -= impact_pct
         elif satellite == "S5P" and "TROPOMI" in availability:
-            availability["TROPOMI"] -= impact
-
+            availability["TROPOMI"] -= impact_pct
         elif satellite in ("S3A", "S3B"):
-            for inst in ["OLCI", "SLSTR", "SRAL", "MWR"]:
-                if inst in availability and inst in comment:
-                    availability[inst] -= impact
+            for inst_name in ["OLCI", "SLSTR", "SRAL", "MWR"]:
+                if inst_name in availability and inst_name in (sub + comment):
+                    availability[inst_name] -= impact_pct
 
     display_name_map = {
+        "STR": "STAR TRACKER",
         "STR-1": "STAR TRACKER",
         "STR-2": "STAR TRACKER",
-        "STR": "STAR TRACKER",
-    }  # map star trackers
-    ui_availability = []
+    }
 
-    for inst, val in availability.items():
-        ui_name = display_name_map.get(inst, inst)
-        if ui_name == "EDDS":
+    ui_results = []
+    for inst in instruments:
+        inst_up = inst.upper()
+        if inst_up == "EDDS":
             continue
-        ui_availability.append(
-            {"name": ui_name, "availability": max(0, min(100, round(val, 2)))}
+
+        val = availability.get(inst_up, 100.0)
+        ui_results.append(
+            {
+                "name": display_name_map.get(inst_up, inst_up),
+                "availability": max(0, min(100, round(val, 2))),
+            }
         )
 
-    grouped = {}
-    for entry in ui_availability:
-        grouped[entry["name"]] = grouped.get(entry["name"], 0) + entry["availability"]
-
-    ui_availability = [
-        {"name": k, "availability": min(100, v)} for k, v in grouped.items()
-    ]
-
-    return ui_availability
+    return ui_results
 
 
 def classify_satellite(pct):
@@ -577,15 +593,18 @@ def build_sensing_statistics(datatakes, completeness_threshold=0.99):
     return data
 
 
-def recalc_completeness(datatake: dict) -> float:
-
-    for key in ("L0_", "L1_", "L2_"):
-        value = datatake.get(key)
-        if value is not None:
+def recalc_completeness(datatake):
+    """
+    Priority: L0_ > L1_ > L2_
+    Safely converts strings to floats and handles None/Empty values.
+    """
+    for key in ["L0_", "L1_", "L2_"]:
+        val = datatake.get(key)
+        if val is not None and val != "":
             try:
-                return float(value)
-            except (TypeError, ValueError):
-                pass
+                return float(val)
+            except (ValueError, TypeError):
+                continue  # Try the next level if this one is malformed
 
     return 0.0
 

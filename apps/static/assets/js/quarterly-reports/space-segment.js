@@ -115,6 +115,7 @@ class SpaceSegment {
             this.satUnavailabilities[u.key || u.unavailability_reference] = {
                 satellite: u.satellite_unit,
                 item: u.subsystem,
+                // Result is now in SECONDS
                 duration: u.unavailability_duration / 1_000_000,
                 comment: u.comment,
                 start: u.start_time,
@@ -123,6 +124,8 @@ class SpaceSegment {
             };
         });
     }
+
+
 
     toggleDatatakesUI(showTables) {
         const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
@@ -209,110 +212,112 @@ class SpaceSegment {
     }
 
     showUnavailabilityEvents(satellite) {
-
-        //console.log(`[DEBUG] All processed unavailabilities in memory:`, this.satUnavailabilities);
-
-        //const rawForSat = Object.values(this.satUnavailabilities).filter(u => u.satellite === satellite);
-        //console.log(`[DEBUG] Raw events for ${satellite} (before time/item filtering):`, rawForSat);
+        const startStr = window.SENSING_DATA ? window.SENSING_DATA.start : null;
+        const endStr = window.SENSING_DATA ? window.SENSING_DATA.end : null;
 
         const parseDate = (dateStr) => {
-            if (!dateStr || dateStr === "undefined" || dateStr === "") return null;
-            try {
-                let sanitized = dateStr.replace('+00:00', 'Z').split('.')[0] + 'Z';
-                let d = new Date(sanitized);
-                return isNaN(d.getTime()) ? null : d;
-            } catch (e) { return null; }
+            if (!dateStr) return null;
+            let d = new Date(dateStr);
+            return isNaN(d.getTime()) ? null : d;
         };
 
-        const periodStart = parseDate(SENSING_DATA.start);
-        const periodEnd = parseDate(SENSING_DATA.end);
-        const isRangeValid = !!(periodStart && periodEnd && periodStart.getTime() !== periodEnd.getTime());
-        console.log(`[DEBUG] Range Valid: ${isRangeValid}`, periodStart, periodEnd);
-        var hasEvents = false;
+        const periodStart = parseDate(startStr);
+        const periodEnd = parseDate(endStr);
+        const isRangeValid = !!(periodStart && periodEnd);
+
         var count = 0;
         var content = {};
         content.title = 'Unavailability events';
-        content.message = ''; // Start empty
+        content.message = '<ul>';
+        var hasEvents = false;
 
-        let listItems = '';
+        // Use 'this' to access the class property
+        Object.keys(this.satUnavailabilities).forEach((ref) => {
+            var unav = this.satUnavailabilities[ref];
 
-        // Collect unavailabilities
-        Object.keys(spaceSegment.satUnavailabilities).forEach(function (ref) {
-            var unav = spaceSegment.satUnavailabilities[ref];
-            if (unav['satellite'] === satellite &&
-                unav['item'] !== 'EDDS') {
-                var eventStart = new Date(unav['start']);
+            if (unav['satellite'] === satellite && unav['item'] !== 'EDDS') {
+
+                // SSR Date Filter
+                const eventStart = new Date(unav.start);
                 const isWithinTime = !isRangeValid || (eventStart >= periodStart && eventStart <= periodEnd);
+
                 if (isWithinTime) {
-                    if (unav['duration'] / (3600) > 0.1) {
+                    // Convert Seconds to Hours (matches your original code)
+                    var durationHours = unav['duration'] / (60 * 60);
+
+                    if (durationHours > 0.1) {
                         hasEvents = true;
-                        var duration = (unav['duration'] / (3600)).toFixed(1);
-                        listItems += '<li>Ref: ' + unav['reference'] +
-                            ' (' + unav['item'] + '); ' +
-                            'type: ' + unav['type'] + '; ' +
-                            'occurence date: ' + unav['start'].replace('.000Z', '') + '; ' +
-                            'duration[h]: ' + duration + '</li>';
+                        var durationFormatted = durationHours.toFixed(1);
+
+                        // Exact string replication from your previous version
+                        content.message += '<li>Ref: ' + unav['reference'] + ' (' + unav['item'] + '); ' +
+                            'type: ' + unav['type'] + '; occurrence date: ' +
+                            unav['start'].replace('.000Z', '').replace('Z', '') +
+                            '; duration[h]: ' + durationFormatted + '</li>';
                     } else {
                         count++;
                     }
                 }
-
             }
         });
-        if (hasEvents) {
-            content.message = '<ul>' + listItems + '</ul>';
-        } else {
+
+        content.message += '</ul>';
+
+        // Footer logic for "No Events" or "Omitted"
+        if (!hasEvents) {
             content.message = '<p>No unavailability events found for this period.</p>';
         }
 
         if (count > 0) {
-            content.message += '<p> + ' + count.toString() + ' more occurrences omitted for brief duration.</p>'
+            content.message += '<p> + ' + count.toString() + ' more occurrences omitted for brief duration.</p>';
         }
 
-        // Add other popup properties
+        // Popup settings
         content.icon = 'fa fa-bell';
         content.url = '';
         content.target = '_blank';
 
-        // Message visualization
-        var placementFrom = "top";
-        var placementAlign = "right";
-        var state = spaceSegment.satUnavailabilitiesColorMap[satellite];
-        var style = "withicon";
+        var state = this.satUnavailabilitiesColorMap[satellite] || 'info';
 
         $.notify(content, {
             type: state,
-            placement: {
-                from: placementFrom,
-                align: placementAlign
-            },
+            placement: { from: "top", align: "right" },
             time: 1000,
             delay: 0,
         });
     }
 
     refreshPieChartsAndBoxesSSR() {
-
         const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
         sats.forEach(sat => {
             const key = sat.toUpperCase();
             const d = this.satellites[key];
             if (!d) return;
 
-            const chartData = {
-                "Successful": d.success,
-                "Satellite Issue": d.sat_fail || 0,
-                "Acquisition Issue": d.acq_fail || 0,
-                "Other": d.other_fail || 0,
-            };
+            // Extract values from the SSR object sent by Flask
+            const success = d.success || 0;
+            const satFail = d.unavailability ? d.unavailability.sat : 0;
+            const acqFail = d.unavailability ? d.unavailability.acq : 0;
+            const othFail = d.unavailability ? d.unavailability.other : 0;
 
-            this.refreshPieChart(`${sat}-sensing-statistics-pie-chart`, chartData);
+            const total = success + satFail + acqFail + othFail;
+            const getPerc = (val) => (total > 0 ? (val / total * 100).toFixed(2) : "0.00");
 
-            // Update Summary Boxes
-            $(`#${sat}-successful-datatakes-box`).html(d.success + "h");
-            $(`#${sat}-satellite-failures-box`).html((d.sat_fail || 0) + "h");
-            $(`#${sat}-acquisition-failures-box`).html((d.acq_fail || 0) + "h");
-            $(`#${sat}-other-failures-box`).html((d.other_fail || 0) + "h");
+            // REPLICATE ORIGINAL KEY FORMAT: "Label: XX.XX%"
+            const chartData = {};
+            chartData['Successful sensing: ' + getPerc(success) + '%'] = success.toFixed(2);
+            chartData['Sensing failed due to Acquisition issues: ' + getPerc(acqFail) + '%'] = acqFail.toFixed(2);
+            chartData['Sensing failed due to Satellite issues: ' + getPerc(satFail) + '%'] = satFail.toFixed(2);
+            chartData['Sensing failed due to Other issues: ' + getPerc(othFail) + '%'] = othFail.toFixed(2);
+
+            const pieId = `${sat.toLowerCase()}-sensing-statistics-pie-chart`;
+            this.refreshPieChart(pieId, chartData);
+
+            // Update Boxes: "Hours (Percentage%)"
+            $(`#${sat}-successful-datatakes-box`).text(`${success.toFixed(2)} (${getPerc(success)}%)`);
+            $(`#${sat}-satellite-failures-box`).text(`${satFail.toFixed(2)} (${getPerc(satFail)}%)`);
+            $(`#${sat}-acquisition-failures-box`).text(`${acqFail.toFixed(2)} (${getPerc(acqFail)}%)`);
+            $(`#${sat}-other-failures-box`).text(`${othFail.toFixed(2)} (${getPerc(othFail)}%)`);
         });
     }
 
@@ -322,13 +327,22 @@ class SpaceSegment {
             chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
         }
     }
-
     refreshPieChart(pieId, data) {
         var chartCanvas = document.getElementById(pieId);
-        if (chartCanvas !== null) {
-            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        if (chartCanvas === null) return;
+
+
+        if (!this.activeCharts) {
+            this.activeCharts = {};
         }
-        new Chart($('#' + pieId), {
+
+
+        if (this.activeCharts[pieId]) {
+            this.activeCharts[pieId].destroy();
+        }
+
+
+        this.activeCharts[pieId] = new Chart(chartCanvas.getContext('2d'), {
             type: 'pie',
             data: {
                 datasets: [{
@@ -354,19 +368,19 @@ class SpaceSegment {
                     render: 'percentage',
                     fontColor: 'white',
                     fontSize: 14,
+                    precision: 2
                 },
-                showTooltips: true,
+                tooltips: {
+                    enabled: true
+                },
                 layout: {
-                    padding: {
-                        left: 20,
-                        right: 20,
-                        top: 20,
-                        bottom: 20
-                    }
+                    padding: { left: 20, right: 20, top: 20, bottom: 20 }
                 }
             }
-        })
+        });
     }
+
+
 
     refreshBoxes(satellite, data) {
 
@@ -400,8 +414,8 @@ class SpaceSegment {
             ' (' + failedSensingOthPerc + '%)');
     }
 
+
     showSensingStatistics(satellite) {
-        // 1. Get the pre-computed data from the SSR object
         const satData = this.satellites[satellite];
 
         if (!satData) {
@@ -409,59 +423,61 @@ class SpaceSegment {
             return;
         }
 
-        // 2. Prepare the notification content
         var content = {
             title: satellite + ' Sensing Statistics',
-            icon: 'fa fa-bell'
+            icon: 'fa fa-bell',
+            url: '',
+            target: '_blank'
         };
 
-        // 3. Extract pre-calculated values from the backend
-        // Assuming backend provides these based on your 'build_space_segment_ssr' logic
         const successHours = satData.success || 0;
         const unavailability = satData.unavailability || { sat: 0, acq: 0, other: 0 };
-
-        // Calculate total planned (Success + all Failures)
         const totSensing = successHours + unavailability.sat + unavailability.acq + unavailability.other;
 
-        // Calculate percentages safely
         const getPerc = (val) => totSensing > 0 ? ((val / totSensing) * 100).toFixed(2) : "0.00";
 
-        // 4. Build the HTML Message
-        let msg = `<b>Planned sensing [hours]:</b> ${totSensing.toFixed(2)}<br />`;
-        msg += `<b>Successful sensing [hours]:</b> ${successHours.toFixed(2)} (${getPerc(successHours)}%)<br />`;
-        msg += `<hr />`;
 
-        // Failures breakdown
-        const categories = [
-            { label: 'Satellite issues', val: unavailability.sat },
-            { label: 'Acquisition issues', val: unavailability.acq },
-            { label: 'Other issues', val: unavailability.other }
+        content.message = 'Planned sensing [hours]: ' + totSensing.toFixed(2) + '<br />';
+        content.message += 'Successful sensing [hours]: ' + successHours.toFixed(2) +
+            ' (' + getPerc(successHours) + '%)<br />';
+
+
+        const sections = [
+            { label: 'Satellite issues', val: unavailability.sat, key: 'sat_events' },
+            { label: 'Acquisition issues', val: unavailability.acq, key: 'acq_events' },
+            { label: 'Other issues', val: unavailability.other, key: 'other_events' }
         ];
 
-        categories.forEach(cat => {
-            msg += `<b>Sensing failed due to ${cat.label} [hours]:</b> ${cat.val.toFixed(2)}  (${getPerc(cat.val)}%)<br />`;
+        sections.forEach(sec => {
+            content.message += 'Sensing failed due to ' + sec.label + ' [hours]: ' +
+                sec.val.toFixed(2) + ' (' + getPerc(sec.val) + '%)<br />';
 
-            // Add event list if they exist in the SSR object
-            /* if (satData.events && satData.events[cat.key] && satData.events[cat.key].length > 0) {
-                 msg += `<ul style="margin-bottom: 5px; font-size: 0.85rem;">`;
-                 satData.events[cat.key].forEach(anom => {
-                     // Use backend formatted dates
-                     msg += `<li>${anom.date || ''}: ${anom.type || 'Issue'}. ${anom.description || ''}</li>`;
-                 });
-                 msg += `</ul>`;
-             }*/
+
+            if (sec.val > 0) {
+                const eventList = (satData.events && satData.events[sec.key]) ? satData.events[sec.key] : [];
+
+                if (eventList.length > 0) {
+                    content.message += 'Events list:<br />';
+                    content.message += '<ul>';
+
+                    eventList.forEach(anom => {
+                        content.message += '<li>' + (anom.date || '') + ': ' +
+                            (anom.type || '') + ' issue. ' +
+                            (anom.description || '') + '</li>';
+                    });
+                    content.message += '</ul>';
+                }
+            }
         });
-
-        content.message = msg;
-
 
         $.notify(content, {
-            type: "info", // Changed to info for better readability
+            type: "danger",
             placement: { from: "top", align: "right" },
             time: 1000,
-            delay: 0, // Keeps it open until user closes or clicks away if configured
+            delay: 0,
         });
     }
+
 
     refreshDatatakesTablesSSR() {
         console.log("[SSR] Rendering impacted datatakes tables using DataTables");

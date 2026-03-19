@@ -133,7 +133,7 @@
 									onclick="spaceSegment.showUnavailabilityEvents('{{ sat }}')"
 									title="Display the relevant unavailabilities"></i>
 								</div>
-								<h3 class="fw-bold text-info mb-3" id="{{ sat|lower }}-avail-perc">{{ "%.2f"|format(sat_data.success) }}%</h3>
+								<h3 class="fw-bold text-info mb-3" style="display: none" id="{{ sat|lower }}-avail-perc">{{ "%.2f"|format(sat_data.success_percentage) }}%</h3>
 							</div>
 							{% for instr in sat_data.instruments %}
 								<div class="progress progress-sm {% if not loop.first %}mt-2{% endif %}">

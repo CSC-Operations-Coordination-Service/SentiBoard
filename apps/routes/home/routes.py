@@ -897,12 +897,10 @@ def data_availability():
     try:
         current_app.logger.info("[DATA-AVAILABILITY] Starting route")
 
-        # Detect AJAX
         is_ajax = request.args.get("ajax") == "1"
         search_query = request.args.get("search", "").strip()
         has_search = bool(search_query)
 
-        # --- Determine selected period ---
         if has_search:
             selected_period = "prev-quarter"
             session.pop("selected_period", None)  # remove old user period
@@ -1080,7 +1078,6 @@ def data_availability():
             "search_query": search_query,
         }
 
-        # --- Return JSON for AJAX ---
         if is_ajax:
             safe_payload = {
                 "datatakes": make_json_safe(datatakes_for_ssr),
@@ -1089,7 +1086,6 @@ def data_availability():
             }
             return jsonify(safe_payload), 200
 
-        # --- Otherwise render template ---
         current_app.logger.info(
             f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} datatakes to frontend (search={has_search})"
         )
@@ -1563,6 +1559,9 @@ def admin_space_segment():
     # ---- period selection (SSR)
     period = request.args.get("period", "prev-quarter-specific")
 
+    if period == "prev-quarter":
+        period = "prev-quarter-specific"
+
     now = datetime.now(timezone.utc)
 
     current_app.logger.info(
@@ -1570,17 +1569,24 @@ def admin_space_segment():
         request.args.get("period"),
     )
 
+    cache_prefix = "last"
+
     if period == "day":
+        cache_range = "24h"
         period_start = now - relativedelta(days=1)
         period_end = now
     elif period == "week":
+        cache_range = "7d"
         period_start = now - relativedelta(days=7)
         period_end = now
     elif period == "month":
+        cache_range = "30d"
         period_start = now - relativedelta(days=30)
         period_end = now
-    else:
+    elif period == "prev-quarter-specific":
         period = "prev-quarter-specific"
+        cache_prefix = "previous"
+        cache_range = "quarter"
         year = now.year
         quarter = (now.month - 1) // 3 + 1
 
@@ -1593,6 +1599,11 @@ def admin_space_segment():
 
         period_start = datetime(start_year, start_month, 1, tzinfo=timezone.utc)
         period_end = (period_start + relativedelta(months=3)) - relativedelta(seconds=1)
+    else:
+        # Fallback for "last-quarter" or anything else
+        cache_range = "quarter"
+        period_start = now - relativedelta(months=3)
+        period_end = now
 
     current_app.logger.info(
         "[SPACE SEGMENT] Period resolved -> period=%s start=%s end=%s",
@@ -1602,18 +1613,16 @@ def admin_space_segment():
     )
 
     # ---- cache keys
-    if period == "prev-quarter":
-        datatakes_key = datatakes_cache.datatakes_cache_key.format(
-            "previous", "quarter"
-        )
-        unavailability_key = unavailability_cache.unavailability_cache_key.format(
-            "previous", "quarter"
-        )
-    else:
-        datatakes_key = datatakes_cache.datatakes_cache_key.format("last", "quarter")
-        unavailability_key = unavailability_cache.unavailability_cache_key.format(
-            "last", "quarter"
-        )
+    datatakes_key = datatakes_cache.datatakes_cache_key.format(
+        cache_prefix, cache_range
+    )
+    unavailability_key = unavailability_cache.unavailability_cache_key.format(
+        cache_prefix, cache_range
+    )
+
+    current_app.logger.info(
+        f"[SSR] Using Cache Keys: {datatakes_key} | {unavailability_key}"
+    )
 
     current_app.logger.info(
         "[SPACE SEGMENT] Cache keys -> datatakes=%s unavailability=%s",
@@ -1665,10 +1674,22 @@ def admin_space_segment():
         for dt in sat.get("datatakes", []):
             dt["completeness"] = acquisitions_utils.recalc_completeness(dt)
 
-    # ---- build sensing stats
+    for sat_id, sat_data in satellites.items():
+        # Calculate % based on total planned hours vs success hours
+        unavail = sat_data["unavailability"]
+        total_planned = (
+            sat_data["success"] + unavail["sat"] + unavail["acq"] + unavail["other"]
+        )
+
+        if total_planned > 0:
+            sat_data["success_percentage"] = (sat_data["success"] / total_planned) * 100
+        else:
+            sat_data["success_percentage"] = 100.0
+
     stats = {
         sat: {
             "success": satellites[sat]["success"],
+            "success_percentage": satellites[sat]["success_percentage"],
             "class": satellites[sat]["class"],
             "instruments": satellites[sat]["instruments"],
             "datatakes": satellites[sat]["datatakes"],
