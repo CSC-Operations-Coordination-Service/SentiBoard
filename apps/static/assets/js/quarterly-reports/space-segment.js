@@ -93,21 +93,38 @@ class SpaceSegment {
     }
 
     loadDatatakesFromSSR(datatakes) {
-        datatakes.forEach(dt => {
-            if (!dt || !dt.satellite_unit) return;
-            const sat = dt.satellite_unit.toUpperCase();
+        this.impactedDatatakesBySatellite = {
+            'S1A': [], 'S1C': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
+        };
 
-            // Map dates
-            dt.observation_time_start = new Date(dt.observation_time_start);
+        // 2. Access the stats object where Python stored the processed datatakes
+        const stats = window.SENSING_DATA.stats || {};
 
-            // Filter only impacted for the table
-            const isImpacted = dt.last_attached_ticket && dt.completeness_status?.ACQ?.percentage < 100;
-            if (isImpacted) {
-                if (!this.impactedDatatakesBySatellite[sat]) this.impactedDatatakesBySatellite[sat] = [];
-                this.impactedDatatakesBySatellite[sat].push(dt);
+        console.log("stats", stats);
+
+        Object.keys(this.impactedDatatakesBySatellite).forEach(sat => {
+            const satData = stats[sat];
+            if (satData && satData.datatakes) {
+                satData.datatakes.forEach(dt => {
+                    // Use the same threshold as Python (99.9)
+                    const compl = dt.completeness !== undefined ? dt.completeness : 100;
+                    //const hasTicket = !!dt.last_attached_ticket;
+
+                    // Only add to the 'impacted' list if it meets the criteria
+                    const isImpacted = dt.last_attached_ticket && compl < 99.9;
+                    if (isImpacted) {
+                        // Ensure dates are JS objects for the table formatter
+                        dt.observation_time_start = new Date(dt.observation_time_start);
+                        this.impactedDatatakesBySatellite[sat].push(dt);
+                    }
+                });
             }
         });
 
+        console.info(`[SSR] Data loading complete.`);
+        Object.keys(this.impactedDatatakesBySatellite).forEach(sat => {
+            console.log(`-> ${sat}: ${this.impactedDatatakesBySatellite[sat].length} impacted datatakes found.`);
+        });
     }
 
     loadUnavailabilityFromSSR(unavailability) {
