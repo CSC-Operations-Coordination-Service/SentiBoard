@@ -69,20 +69,18 @@ class SpaceSegment {
 
         //console.log('[DEBUG] Raw Unavailability from SENSING_DATA:', SENSING_DATA.unavailability);
 
-        // 1. Load Data from SSR object
         this.satellites = SENSING_DATA.stats || {};
-        this.loadDatatakesFromSSR(SENSING_DATA.datatakes || []);
         this.loadUnavailabilityFromSSR(SENSING_DATA.unavailability || []);
+        this.loadDatatakesFromSSR(SENSING_DATA.datatakes || []);
 
-        // 2. Setup UI Toggle
         this.toggleDatatakesUI(!!SENSING_DATA.detailsAllowed);
 
-        // 3. Render Components
-        this.refreshAvailabilityStatus(); // Now updates DOM from SSR data
+        this.refreshAvailabilityStatus();
         this.refreshPieChartsAndBoxesSSR();
-        this.refreshDatatakesTablesSSR();
+        if (SENSING_DATA.detailsAllowed) {
+            this.refreshDatatakesTablesSSR();
+        }
 
-        // 4. Time Period Listener
         const sel = document.getElementById('time-period-select');
         if (sel) {
             sel.addEventListener('change', () => {
@@ -103,20 +101,14 @@ class SpaceSegment {
         console.log("stats", stats);
 
         Object.keys(this.impactedDatatakesBySatellite).forEach(sat => {
-            const satData = stats[sat];
-            if (satData && satData.datatakes) {
-                satData.datatakes.forEach(dt => {
-                    // Use the same threshold as Python (99.9)
-                    const compl = dt.completeness !== undefined ? dt.completeness : 100;
-                    //const hasTicket = !!dt.last_attached_ticket;
-
-                    // Only add to the 'impacted' list if it meets the criteria
-                    const isImpacted = dt.last_attached_ticket && compl < 99.9;
-                    if (isImpacted) {
-                        // Ensure dates are JS objects for the table formatter
-                        dt.observation_time_start = new Date(dt.observation_time_start);
-                        this.impactedDatatakesBySatellite[sat].push(dt);
-                    }
+            if (stats[sat] && stats[sat].datatakes) {
+                this.impactedDatatakesBySatellite[sat] = stats[sat].datatakes.filter(dt => {
+                    // Replication of logic: Impacted = Ticket exists AND completeness < 99.9
+                    return dt.last_attached_ticket && dt.completeness < 99.9;
+                }).map(dt => {
+                    // Convert string dates to JS Date objects for the table sorting
+                    dt.observation_time_start = new Date(dt.observation_time_start);
+                    return dt;
                 });
             }
         });
@@ -304,6 +296,7 @@ class SpaceSegment {
         });
     }
 
+
     refreshPieChartsAndBoxesSSR() {
         const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
         sats.forEach(sat => {
@@ -431,68 +424,44 @@ class SpaceSegment {
             ' (' + failedSensingOthPerc + '%)');
     }
 
-
     showSensingStatistics(satellite) {
         const satData = this.satellites[satellite];
+        if (!satData || !satData.events) return;
 
-        if (!satData) {
-            console.error("No data found for satellite:", satellite);
-            return;
-        }
+        const totalPlanned = satData.success +
+            (satData.unavailability.sat || 0) +
+            (satData.unavailability.acq || 0) +
+            (satData.unavailability.other || 0);
 
-        var content = {
+        let content = {
             title: satellite + ' Sensing Statistics',
             icon: 'fa fa-bell',
-            url: '',
-            target: '_blank'
+            message: `Planned sensing [hours]: ${totalPlanned.toFixed(2)}<br />`
         };
 
-        const successHours = satData.success || 0;
-        const unavailability = satData.unavailability || { sat: 0, acq: 0, other: 0 };
-        const totSensing = successHours + unavailability.sat + unavailability.acq + unavailability.other;
+        content.message += `Successful sensing [hours]: ${satData.success.toFixed(2)} (${satData.success_percentage.toFixed(2)}%)<br />`;
 
-        const getPerc = (val) => totSensing > 0 ? ((val / totSensing) * 100).toFixed(2) : "0.00";
-
-
-        content.message = 'Planned sensing [hours]: ' + totSensing.toFixed(2) + '<br />';
-        content.message += 'Successful sensing [hours]: ' + successHours.toFixed(2) +
-            ' (' + getPerc(successHours) + '%)<br />';
-
-
-        const sections = [
-            { label: 'Satellite issues', val: unavailability.sat, key: 'sat_events' },
-            { label: 'Acquisition issues', val: unavailability.acq, key: 'acq_events' },
-            { label: 'Other issues', val: unavailability.other, key: 'other_events' }
+        const mapping = [
+            { key: 'sat_events', label: 'Satellite issues', val: satData.unavailability.sat },
+            { key: 'acq_events', label: 'Acquisition issues', val: satData.unavailability.acq },
+            { key: 'other_events', label: 'Other issues', val: satData.unavailability.other }
         ];
 
-        sections.forEach(sec => {
-            content.message += 'Sensing failed due to ' + sec.label + ' [hours]: ' +
-                sec.val.toFixed(2) + ' (' + getPerc(sec.val) + '%)<br />';
+        mapping.forEach(section => {
+            let perc = satData.success_percentage > 0 ? (section.val / (satData.success / (satData.success_percentage / 100)) * 100).toFixed(2) : "0.00";
+            content.message += `Sensing failed due to ${section.label} [hours]: ${section.val.toFixed(2)} (${perc}%)<br />`;
 
-
-            if (sec.val > 0) {
-                const eventList = (satData.events && satData.events[sec.key]) ? satData.events[sec.key] : [];
-
-                if (eventList.length > 0) {
-                    content.message += 'Events list:<br />';
-                    content.message += '<ul>';
-
-                    eventList.forEach(anom => {
-                        content.message += '<li>' + (anom.date || '') + ': ' +
-                            (anom.type || '') + ' issue. ' +
-                            (anom.description || '') + '</li>';
-                    });
-                    content.message += '</ul>';
-                }
+            const events = satData.events[section.key] || [];
+            if (events.length > 0) {
+                content.message += 'Events list:<br /><ul>';
+                (Array.isArray(events) ? events : Object.values(events)).forEach(ev => {
+                    content.message += `<li>${ev.date}: ${ev.description}</li>`;
+                });
+                content.message += '</ul>';
             }
         });
 
-        $.notify(content, {
-            type: "danger",
-            placement: { from: "top", align: "right" },
-            time: 1000,
-            delay: 0,
-        });
+        $.notify(content, { type: "danger", placement: { from: "top", align: "right" }, delay: 0 });
     }
 
 

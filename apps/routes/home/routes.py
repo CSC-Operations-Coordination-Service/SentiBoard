@@ -1620,16 +1620,6 @@ def admin_space_segment():
         cache_prefix, cache_range
     )
 
-    current_app.logger.info(
-        f"[SSR] Using Cache Keys: {datatakes_key} | {unavailability_key}"
-    )
-
-    current_app.logger.info(
-        "[SPACE SEGMENT] Cache keys -> datatakes=%s unavailability=%s",
-        datatakes_key,
-        unavailability_key,
-    )
-
     # ---- read cache
     def parse_cache(raw):
         if raw is None:
@@ -1641,25 +1631,24 @@ def admin_space_segment():
     datatakes_json = parse_cache(flask_cache.get(datatakes_key))
     unavailability_json = parse_cache(flask_cache.get(unavailability_key))
 
-    raw_sources = [it["_source"] for it in datatakes_json if "_source" in it]
-    datatakes_sources = acquisitions_utils.filter_by_period(
-        raw_sources, period_start, period_end
-    )
-    unavailability_sources = [
-        it["_source"] for it in unavailability_json if "_source" in it
+    datatakes_sources = [
+        it.get("_source", it) for it in datatakes_json if isinstance(it, dict)
     ]
-
-    current_app.logger.info(
-        "[SPACE SEGMENT] Raw cache sizes -> datatakes=%d unavailability=%d",
-        len(datatakes_json),
-        len(unavailability_json),
+    unavailability_sources = [
+        it.get("_source", it) for it in unavailability_json if isinstance(it, dict)
+    ]
+    """
+    current_app.logger.error(
+        f"!!! [LOG STEP 2] DATA FROM CACHE -> Datatakes: {len(datatakes_json)}, Unavail: {len(unavailability_json)}"
     )
 
-    current_app.logger.info(
-        "[SPACE SEGMENT] Filtered by period -> datatakes=%d",
-        len(datatakes_sources),
-    )
-
+    if unavailability_sources:
+        current_app.logger.error(
+            f"!!! SAMPLE RAW UNAVAILABILITY: {unavailability_sources[0]}"
+        )
+    else:
+        current_app.logger.error("!!! UNAVAILABILITY SOURCES IS EMPTY!")
+    """
     # ---- build SSR object
     satellites = acquisitions_utils.build_space_segment_ssr(
         datatakes_sources,
@@ -1669,12 +1658,13 @@ def admin_space_segment():
     )
 
     # ---- compute L0/L1/L2 completeness for SSR tables
-
+    stats = {}
     for sat in satellites.values():
         for dt in sat.get("datatakes", []):
             dt["completeness"] = acquisitions_utils.recalc_completeness(dt)
 
     for sat_id, sat_data in satellites.items():
+
         # Calculate % based on total planned hours vs success hours
         unavail = sat_data["unavailability"]
         total_planned = (
@@ -1711,14 +1701,14 @@ def admin_space_segment():
     }
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
-
+    """
     current_app.logger.info(
         "[SPACE SEGMENT] SSR render -> satellites=%s period_id=%s label=%s",
         list(satellites.keys()),
         period,
         prev_quarter_label,
     )
-
+    """
     return render_template(
         "home/space-segment.html",
         satellites=satellites,

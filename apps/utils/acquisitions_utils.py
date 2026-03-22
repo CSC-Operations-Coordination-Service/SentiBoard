@@ -308,16 +308,49 @@ def previous_quarter_label(today=None):
     start = date(year, start_month, 1)
     end = date(year, end_month, 1)
 
-    return f"{start.strftime('%b')} – {end.strftime('%b %Y')}"
+    return f"{start.strftime('%b')} - {end.strftime('%b %Y')}"
 
 
 def build_space_segment_ssr(datatakes, unavailability, period_start, period_end):
+    # current_app.logger.error("--- [DEBUG SSR] STARTING LOOKUP TABLE CONSTRUCTION ---")
+    comment_lookup = {}
+
+    for u in unavailability:
+        comment_text = (
+            u.get("cams_description")
+            or u.get("comment")
+            or u.get("description")
+            or "No details available"
+        )
+
+        ids = [
+            u.get("unavailability_reference"),
+            u.get("key"),
+            u.get("ticket_id"),
+            u.get("issue_ticket"),
+        ]
+
+        for val in ids:
+            if val:
+                s = str(val).strip().upper()
+                comment_lookup[s] = comment_text
+
+                comment_lookup[s.replace("_", "-")] = comment_text
+                comment_lookup[s.replace("-", "_")] = comment_text
+
+    """
+    current_app.logger.error(
+        f"--- [DEBUG SSR] LOOKUP READY. TOTAL KEYS: {len(comment_lookup)} ---"
+    )
+    """
+    # Group datatakes by satellite
     dt_by_sat = {}
     for d in datatakes:
         sat = (d.get("satellite_unit") or d.get("platform") or "").upper()
         if sat:
             dt_by_sat.setdefault(sat, []).append(d)
 
+    # Group unavailability by satellite (for instrument bars)
     unavail_by_sat = {}
     for u in unavailability:
         sat = (u.get("satellite_unit") or u.get("satellite") or "").upper()
@@ -335,9 +368,15 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
         failedSensingAcq = 0.0
         failedSensingSat = 0.0
         failedSensingOther = 0.0
-        categorized_events = {"sat_events": {}, "acq_events": {}, "other_events": {}}
+
+        categorized_events = {
+            "sat_events": {},
+            "acq_events": {},
+            "other_events": {},
+        }
 
         for datatake in current_dt_list:
+            # --- Duration Logic ---
             hours = 0.0
             if datatake.get("l0_sensing_duration"):
                 hours = datatake["l0_sensing_duration"] / 3600000000.0
@@ -354,40 +393,85 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                     continue
 
             totSensing += hours
-
-            origin = datatake.get("cams_origin")
             ticket = datatake.get("last_attached_ticket")
             compl_val = recalc_completeness(datatake)
 
-            if ticket and origin and compl_val < 99.9:
+            if ticket and compl_val < 99.99:
                 lost_hrs = hours * (1.0 - (compl_val / 100.0))
+                clean_ticket = str(ticket).strip().upper() if ticket else "UNKNOWN-GAP"
 
-                if "Acquis" in origin:
-                    failedSensingAcq += lost_hrs
-                    categorized_events["acq_events"][ticket] = {
-                        "date": datatake.get("observation_time_start")[:10],
-                        "description": datatake.get("description"),
-                        "type": "Acquisition",
-                    }
-                elif "CAM" in origin or "Sat" in origin:
+                found_comment = (
+                    comment_lookup.get(clean_ticket)
+                    or datatake.get("cams_description")
+                    or datatake.get("description")
+                )
+
+                if not found_comment:
+                    found_comment = (
+                        datatake.get("cams_description")
+                        or datatake.get("description")
+                        or datatake.get("comment")
+                    )
+
+                final_desc = (
+                    found_comment if found_comment else f"Issue ticket: {clean_ticket}"
+                )
+
+                raw_origin = datatake.get("cams_origin") or ""
+                origin_str = raw_origin.upper()
+                desc_upper = final_desc.upper()
+
+                event_data = {
+                    "date": datatake.get("observation_time_start")[:10],
+                    "description": final_desc,
+                    "type": "Other",
+                }
+
+                # --- Categorization Logic ---
+                issue_type_label = "Other"
+
+                if "OCM" in desc_upper or any(
+                    x in origin_str for x in ["SAT", "CAM", "INSTRUMENT"]
+                ):
                     failedSensingSat += lost_hrs
-                    categorized_events["sat_events"][ticket] = {
-                        "date": datatake.get("observation_time_start")[:10],
-                        "description": datatake.get("description"),
-                        "type": "Satellite",
-                    }
+                    issue_type_label = "Satellite"
+                    category_key = "sat_events"
+
+                # Acquisition Logic
+                elif any(
+                    x in origin_str for x in ["ACQUIS", "X-BAND", "ANTENNA", "GROUND"]
+                ) or any(x in desc_upper for x in ["FIBER", "NETWORK", "STATION"]):
+                    failedSensingAcq += lost_hrs
+                    issue_type_label = "Acquisition"
+                    category_key = "acq_events"
+
+                # Other Logic
                 else:
                     failedSensingOther += lost_hrs
-                    categorized_events["other_events"][ticket] = {
-                        "date": datatake.get("observation_time_start")[:10],
-                        "description": datatake.get("description"),
-                        "type": "Other",
-                    }
+                    category_key = "other_events"
+                    if "RFI" in desc_upper:
+                        issue_type_label = "RFI"
+                    elif "PRODUCTION" in desc_upper:
+                        issue_type_label = "Production"
+                    else:
+                        issue_type_label = "Other"
+
+                display_label = raw_origin if raw_origin else issue_type_label
+                formatted_description = f"{display_label} issue. {final_desc}"
+
+                event_data = {
+                    "date": datatake.get("observation_time_start")[:10],
+                    "description": formatted_description,  # Use the formatted version here
+                    "type": display_label,
+                }
+
+                categorized_events[category_key][clean_ticket] = event_data
 
         totSuccessSensing = totSensing - (
             failedSensingAcq + failedSensingSat + failedSensingOther
         )
 
+        # Instrument Availability (The bars)
         inst_data = compute_availability_single_sat(
             unavail_by_sat.get(sat, []),
             period_start,
@@ -435,18 +519,18 @@ def compute_availability_single_sat(
     if period_duration_sec <= 0:
         return [{"name": i, "availability": 100.0} for i in instruments]
 
+    # REPLICATION: JS starts every instrument at exactly 100%
+    # and only subtracts based on 'satUnavailabilities' events.
     availability = {inst.upper(): 100.0 for inst in instruments}
-
-    if tot_planned_hrs > 0:
-        global_success_ratio = tot_success_hrs / tot_planned_hrs
-        for inst in availability:
-            availability[inst] = 100.0 * global_success_ratio
 
     processed_refs = set()
     for ev in unavailabilities:
+        # Generate a unique key to prevent double-counting
+        # (replicates JS: if (!this.satUnavailabilities[unavailability['reference']] ...))
         ref = ev.get("unavailability_reference", "unknown")
         sub = (ev.get("subsystem") or ev.get("instrument") or "").upper()
         unique_key = f"{ref}_{sub}"
+
         if unique_key in processed_refs:
             continue
         processed_refs.add(unique_key)
@@ -454,6 +538,7 @@ def compute_availability_single_sat(
         duration_raw = ev.get("unavailability_duration", 0)
         duration_sec = duration_raw / 1_000_000 if duration_raw else 0
 
+        # Fallback to start/end time if duration is missing
         if not duration_sec:
             try:
                 s_time = dt.fromisoformat(ev["start_time"].replace("Z", "+00:00"))
@@ -468,24 +553,32 @@ def compute_availability_single_sat(
 
         if sub in availability:
             availability[sub] -= impact_pct
-        elif sub in ("STR-1", "STR-2", "STR") and "STR" in availability:
+
+        # Star Tracker Mapping (STR-1/STR-2 -> STR)
+        elif sub in ("STR-1", "STR-2") and "STR" in availability:
             availability["STR"] -= impact_pct
+
+        # S5P TROPOMI Override
         elif satellite == "S5P" and "TROPOMI" in availability:
             availability["TROPOMI"] -= impact_pct
+
+        # S3 Mission Instrument Logic (Looking into comments)
         elif satellite in ("S3A", "S3B"):
             for inst_name in ["OLCI", "SLSTR", "SRAL", "MWR"]:
-                if inst_name in availability and inst_name in (sub + comment):
+                if inst_name in availability and inst_name in comment:
                     availability[inst_name] -= impact_pct
 
+    # UI Formatting
     display_name_map = {
         "STR": "STAR TRACKER",
-        "STR-1": "STAR TRACKER",
-        "STR-2": "STAR TRACKER",
+        "MSI": "MSI",
+        "OLCI": "OLCI",
     }
 
     ui_results = []
     for inst in instruments:
         inst_up = inst.upper()
+
         if inst_up == "EDDS":
             continue
 
@@ -595,17 +688,27 @@ def build_sensing_statistics(datatakes, completeness_threshold=0.99):
 
 def recalc_completeness(datatake):
     """
-    Priority: L0_ > L1_ > L2_
-    Safely converts strings to floats and handles None/Empty values.
+    Priority: Standard L-levels -> Cached Final Percentage.
+    Handles None, empty strings, and '%' symbols.
     """
-    for key in ["L0_", "L1_", "L2_"]:
+    priority_keys = [
+        "L0_",
+        "L1_",
+        "L2_",
+        "final_completeness_percentage",
+        "L0",
+        "L1",
+        "L2",
+    ]
+    for key in priority_keys:
         val = datatake.get(key)
         if val is not None and val != "":
             try:
+                if isinstance(val, str):
+                    val = val.replace("%", "").strip()
                 return float(val)
             except (ValueError, TypeError):
-                continue  # Try the next level if this one is malformed
-
+                continue
     return 0.0
 
 
