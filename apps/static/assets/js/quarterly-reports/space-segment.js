@@ -309,7 +309,7 @@ class SpaceSegment {
             const othFail = d.unavailability ? d.unavailability.other : 0;
 
             const total = success + satFail + acqFail + othFail;
-            const getPerc = (val) => (total > 0 ? (val / total * 100).toFixed(2) : "0.00");
+            const getPerc = (val) => (total > 0 ? (val / total * 100).toFixed(0) : "0.00");
 
             // REPLICATE ORIGINAL KEY FORMAT: "Label: XX.XX%"
             const chartData = {};
@@ -424,12 +424,15 @@ class SpaceSegment {
 
     showSensingStatistics(satellite) {
         const satData = this.satellites[satellite];
-        if (!satData || !satData.events) return;
-
+        if (!satData || !satData.events) {
+            console.error(`No event data found for ${satellite}`);
+            return;
+        }
         const totalPlanned = satData.success +
             (satData.unavailability.sat || 0) +
             (satData.unavailability.acq || 0) +
             (satData.unavailability.other || 0);
+
 
         let content = {
             title: satellite + ' Sensing Statistics',
@@ -446,10 +449,11 @@ class SpaceSegment {
         ];
 
         mapping.forEach(section => {
+            const events = satData.events[section.key] || [];
+
             let perc = satData.success_percentage > 0 ? (section.val / (satData.success / (satData.success_percentage / 100)) * 100).toFixed(2) : "0.00";
             content.message += `Sensing failed due to ${section.label} [hours]: ${section.val.toFixed(2)} (${perc}%)<br />`;
 
-            const events = satData.events[section.key] || [];
             if (events.length > 0) {
                 content.message += 'Events list:<br /><ul>';
                 (Array.isArray(events) ? events : Object.values(events)).forEach(ev => {

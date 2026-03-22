@@ -373,6 +373,9 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
 
         for datatake in current_dt_list:
             dt_id = datatake.get("datatake_id", "")
+            ticket = datatake.get("last_attached_ticket")
+            compl_val = recalc_completeness(datatake)
+            datatake["completeness"] = compl_val
             # --- Duration Logic ---
             hours = 0.0
             if datatake.get("l0_sensing_duration"):
@@ -390,26 +393,18 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                     continue
 
             totSensing += hours
-            ticket = datatake.get("last_attached_ticket")
-            compl_val = recalc_completeness(datatake)
+            display_id = dt_id
+            if dt_id.startswith("S1") and dt_id[4:].isdigit():
+                try:
+                    hexaNum = hex(int(dt_id[4:]))[2:]
+                    display_id = f"{dt_id} ({hexaNum})"
+                except:
+                    pass
 
-            if ticket:
-                # Ensure the S1 Hex ID logic from your old code is applied
-                orig_id = datatake.get("datatake_id", "")
-                if orig_id.startswith("S1"):
-                    try:
-                        num = orig_id[4:]
-                        hexaNum = hex(int(num))[2:]
-                        datatake["datatake_id"] = f"{orig_id} ({hexaNum})"
-                    except:
-                        pass
-                datatake["datatake_id_display"] = (
-                    dt_id  # LOG Use a display key to avoid overwriting original
-                )
-                datatake["completeness"] = compl_val
-                table_datatakes.append(datatake)
+            datatake["datatake_id_display"] = display_id
+            table_datatakes.append(datatake)
 
-            if ticket and compl_val < 99.9:
+            if ticket and compl_val < 100.0:
                 lost_hrs = hours * (1.0 - (compl_val / 100.0))
                 clean_ticket = str(ticket).strip().upper()
 
@@ -441,6 +436,7 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                 }
 
                 # --- Categorization Logic ---
+                category_key = "other_events"
                 issue_type_label = "Other"
 
                 if "OCM" in desc_upper or any(
@@ -479,6 +475,12 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                 }
 
                 categorized_events[category_key][clean_ticket] = event_data
+            elif ticket:
+                # Log if a ticket exists but completeness is 100 (so it's ignored)
+                if compl_val >= 99.9:
+                    print(
+                        f"DEBUG [{sat}]: Ignoring Ticket {ticket} because completeness is {compl_val}%"
+                    )
 
         totSuccessSensing = totSensing - (
             failedSensingAcq + failedSensingSat + failedSensingOther
@@ -501,14 +503,18 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             else 0.0
         )
 
+        sensing_pct = (
+            (totSuccessSensing / totSensing * 100) if totSensing > 0 else 100.0
+        )
+
+        final_status_pct = min(sensing_pct, avg_inst_avail)
+
         satellites[sat] = {
             "satellite": sat,
             "fullname": fullname,
             "success": totSuccessSensing,
-            "success_percentage": (
-                (totSuccessSensing / totSensing * 100) if totSensing > 0 else 100.0
-            ),
-            "class": classify_satellite(avg_inst_avail),
+            "success_percentage": sensing_pct,
+            "class": classify_satellite(final_status_pct),
             "unavailability": {
                 "sat": failedSensingSat,
                 "acq": failedSensingAcq,
