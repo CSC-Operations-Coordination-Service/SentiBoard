@@ -102,7 +102,7 @@ class SpaceSegment {
             if (stats[sat] && stats[sat].datatakes) {
                 this.impactedDatatakesBySatellite[sat] = stats[sat].datatakes.filter(dt => {
                     // Replication of logic: Impacted = Ticket exists AND completeness < 99.9
-                    return dt.last_attached_ticket && dt.completeness < 100;
+                    return dt.last_attached_ticket && dt.completeness < 100.0;
                 }).map(dt => {
                     // Convert string dates to JS Date objects for the table sorting
                     dt.observation_time_start = new Date(dt.observation_time_start);
