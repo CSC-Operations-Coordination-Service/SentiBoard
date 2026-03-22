@@ -1637,18 +1637,7 @@ def admin_space_segment():
     unavailability_sources = [
         it.get("_source", it) for it in unavailability_json if isinstance(it, dict)
     ]
-    """
-    current_app.logger.error(
-        f"!!! [LOG STEP 2] DATA FROM CACHE -> Datatakes: {len(datatakes_json)}, Unavail: {len(unavailability_json)}"
-    )
 
-    if unavailability_sources:
-        current_app.logger.error(
-            f"!!! SAMPLE RAW UNAVAILABILITY: {unavailability_sources[0]}"
-        )
-    else:
-        current_app.logger.error("!!! UNAVAILABILITY SOURCES IS EMPTY!")
-    """
     # ---- build SSR object
     satellites = acquisitions_utils.build_space_segment_ssr(
         datatakes_sources,
@@ -1701,14 +1690,7 @@ def admin_space_segment():
     }
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
-    """
-    current_app.logger.info(
-        "[SPACE SEGMENT] SSR render -> satellites=%s period_id=%s label=%s",
-        list(satellites.keys()),
-        period,
-        prev_quarter_label,
-    )
-    """
+
     return render_template(
         "home/space-segment.html",
         satellites=satellites,

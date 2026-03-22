@@ -95,16 +95,14 @@ class SpaceSegment {
             'S1A': [], 'S1C': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
         };
 
-        // 2. Access the stats object where Python stored the processed datatakes
         const stats = window.SENSING_DATA.stats || {};
 
-        console.log("stats", stats);
 
         Object.keys(this.impactedDatatakesBySatellite).forEach(sat => {
             if (stats[sat] && stats[sat].datatakes) {
                 this.impactedDatatakesBySatellite[sat] = stats[sat].datatakes.filter(dt => {
                     // Replication of logic: Impacted = Ticket exists AND completeness < 99.9
-                    return dt.last_attached_ticket && dt.completeness < 99.9;
+                    return dt.last_attached_ticket && dt.completeness < 100;
                 }).map(dt => {
                     // Convert string dates to JS Date objects for the table sorting
                     dt.observation_time_start = new Date(dt.observation_time_start);
@@ -484,15 +482,20 @@ class SpaceSegment {
                     ? moment(dt.observation_time_start).format("YYYY-MM-DD")
                     : "-";
                 let issueType = "Other";
-                if (dt.cams_origin) {
-                    if (dt.cams_origin.includes("Acquis")) issueType = "Acquisition";
-                    else if (dt.cams_origin.includes("CAM") || dt.cams_origin.includes("Sat")) issueType = "Satellite";
+                const origin = dt.cams_origin || "";
+                if (origin.includes("Acquis")) {
+                    issueType = "Acquisition";
+                } else if (origin.includes("CAM") || origin.includes("Sat")) {
+                    issueType = "Satellite";
+                } else if (origin !== "") {
+                    // This creates the "Other (Production)" look you saw in the old code
+                    issueType = `Other (${origin})`;
                 }
                 const issueLink = dt.last_attached_ticket
                     ? `<a href="https://cams.esa.int/browse/${dt.last_attached_ticket}" target="_blank">${dt.last_attached_ticket}</a>`
                     : "-";
                 const completeness = dt.completeness !== undefined ? dt.completeness.toFixed(2) : "-";
-                return [key, issueDate, issueType, issueLink, completeness];
+                return [key, issueDate, issueType, issueLink, completeness, null];
             });
 
             // Initialize DataTable if not already

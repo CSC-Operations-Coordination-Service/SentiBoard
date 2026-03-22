@@ -312,7 +312,7 @@ def previous_quarter_label(today=None):
 
 
 def build_space_segment_ssr(datatakes, unavailability, period_start, period_end):
-    # current_app.logger.error("--- [DEBUG SSR] STARTING LOOKUP TABLE CONSTRUCTION ---")
+
     comment_lookup = {}
 
     for u in unavailability:
@@ -338,11 +338,6 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                 comment_lookup[s.replace("_", "-")] = comment_text
                 comment_lookup[s.replace("-", "_")] = comment_text
 
-    """
-    current_app.logger.error(
-        f"--- [DEBUG SSR] LOOKUP READY. TOTAL KEYS: {len(comment_lookup)} ---"
-    )
-    """
     # Group datatakes by satellite
     dt_by_sat = {}
     for d in datatakes:
@@ -363,6 +358,7 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
         if sat == "S1B":
             continue
 
+        table_datatakes = []
         current_dt_list = dt_by_sat.get(sat, [])
         totSensing = 0.0
         failedSensingAcq = 0.0
@@ -376,6 +372,7 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
         }
 
         for datatake in current_dt_list:
+            dt_id = datatake.get("datatake_id", "")
             # --- Duration Logic ---
             hours = 0.0
             if datatake.get("l0_sensing_duration"):
@@ -396,9 +393,25 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             ticket = datatake.get("last_attached_ticket")
             compl_val = recalc_completeness(datatake)
 
-            if ticket and compl_val < 99.99:
+            if ticket:
+                # Ensure the S1 Hex ID logic from your old code is applied
+                orig_id = datatake.get("datatake_id", "")
+                if orig_id.startswith("S1"):
+                    try:
+                        num = orig_id[4:]
+                        hexaNum = hex(int(num))[2:]
+                        datatake["datatake_id"] = f"{orig_id} ({hexaNum})"
+                    except:
+                        pass
+                datatake["datatake_id_display"] = (
+                    dt_id  # LOG Use a display key to avoid overwriting original
+                )
+                datatake["completeness"] = compl_val
+                table_datatakes.append(datatake)
+
+            if ticket and compl_val < 99.9:
                 lost_hrs = hours * (1.0 - (compl_val / 100.0))
-                clean_ticket = str(ticket).strip().upper() if ticket else "UNKNOWN-GAP"
+                clean_ticket = str(ticket).strip().upper()
 
                 found_comment = (
                     comment_lookup.get(clean_ticket)
@@ -502,7 +515,7 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                 "other": failedSensingOther,
             },
             "instruments": inst_data,
-            "datatakes": current_dt_list,
+            "datatakes": table_datatakes,
             "events": {
                 k: sorted(list(v.values()), key=lambda x: x["date"])
                 for k, v in categorized_events.items()
@@ -519,14 +532,10 @@ def compute_availability_single_sat(
     if period_duration_sec <= 0:
         return [{"name": i, "availability": 100.0} for i in instruments]
 
-    # REPLICATION: JS starts every instrument at exactly 100%
-    # and only subtracts based on 'satUnavailabilities' events.
     availability = {inst.upper(): 100.0 for inst in instruments}
 
     processed_refs = set()
     for ev in unavailabilities:
-        # Generate a unique key to prevent double-counting
-        # (replicates JS: if (!this.satUnavailabilities[unavailability['reference']] ...))
         ref = ev.get("unavailability_reference", "unknown")
         sub = (ev.get("subsystem") or ev.get("instrument") or "").upper()
         unique_key = f"{ref}_{sub}"
@@ -538,7 +547,6 @@ def compute_availability_single_sat(
         duration_raw = ev.get("unavailability_duration", 0)
         duration_sec = duration_raw / 1_000_000 if duration_raw else 0
 
-        # Fallback to start/end time if duration is missing
         if not duration_sec:
             try:
                 s_time = dt.fromisoformat(ev["start_time"].replace("Z", "+00:00"))
