@@ -192,7 +192,7 @@ class SpaceSegment {
         }
 
         // Log the number of satellite unavailabilties
-        console.info("Number of sat unavailabilities: " + Object.keys(this.satUnavailabilities).length);
+        //console.info("Number of sat unavailabilities: " + Object.keys(this.satUnavailabilities).length);
 
         // Refresh impacted item status
         this.refreshAvailabilityStatus();
@@ -451,7 +451,7 @@ class SpaceSegment {
         mapping.forEach(section => {
             const events = satData.events[section.key] || [];
 
-            let perc = satData.success_percentage > 0 ? (section.val / (satData.success / (satData.success_percentage / 100)) * 100).toFixed(2) : "0.00";
+            let perc = totalPlanned > 0 ? (section.val / totalPlanned * 100).toFixed(2) : "0.00";
             content.message += `Sensing failed due to ${section.label} [hours]: ${section.val.toFixed(2)} (${perc}%)<br />`;
 
             if (events.length > 0) {

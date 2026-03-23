@@ -312,6 +312,8 @@ def previous_quarter_label(today=None):
 
 
 def build_space_segment_ssr(datatakes, unavailability, period_start, period_end):
+    # print(f"\n--- DEBUG START ---")
+    # print(f"Total Datatakes Received: {len(datatakes)}")
 
     comment_lookup = {}
 
@@ -353,13 +355,13 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             unavail_by_sat.setdefault(sat, []).append(u)
 
     satellites = {}
+    JS_THRESHOLD = 0.9999
 
     for sat, (fullname, instruments_list) in SATELLITE_INFO.items():
         if sat == "S1B":
             continue
 
         table_datatakes = []
-        current_dt_list = dt_by_sat.get(sat, [])
         totSensing = 0.0
         failedSensingAcq = 0.0
         failedSensingSat = 0.0
@@ -370,121 +372,147 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             "acq_events": {},
             "other_events": {},
         }
+        current_dt_list = dt_by_sat.get(sat, [])
+
+        # LOG: How many records per satellite before we start
+        # print(f"Checking {sat}: Found {len(current_dt_list)} raw records")
 
         for datatake in current_dt_list:
-            dt_id = datatake.get("datatake_id", "")
-            ticket = datatake.get("last_attached_ticket")
+            origin = datatake.get("cams_origin") or ""
+
             compl_val = recalc_completeness(datatake)
-            datatake["completeness"] = compl_val
-            # --- Duration Logic ---
-            hours = 0.0
+            ticket = datatake.get("last_attached_ticket")
+
+            if not ticket and compl_val == 0.0:
+                compl_fraction = 1.0  # Treat as 100% for sensing stats
+            else:
+                compl_fraction = compl_val / 100.0
+
             if datatake.get("l0_sensing_duration"):
                 hours = datatake["l0_sensing_duration"] / 3600000000.0
             else:
                 try:
-                    start_obj = dt.fromisoformat(
-                        datatake["observation_time_start"].replace("Z", "+00:00")
-                    )
-                    stop_obj = dt.fromisoformat(
-                        datatake["observation_time_stop"].replace("Z", "+00:00")
-                    )
-                    hours = (stop_obj - start_obj).total_seconds() / 3600.0
+                    start_raw = datatake.get("observation_time_start")
+                    stop_raw = datatake.get("observation_time_stop")
+
+                    if start_raw and stop_raw:
+                        dt_start = dt.fromisoformat(start_raw.replace("Z", "+00:00"))
+                        dt_stop = dt.fromisoformat(stop_raw.replace("Z", "+00:00"))
+
+                        hours = (dt_stop - dt_start).total_seconds() / 3600.0
                 except:
-                    continue
+                    hours = 0.0
 
             totSensing += hours
-            display_id = dt_id
-            if dt_id.startswith("S1") and dt_id[4:].isdigit():
-                try:
-                    hexaNum = hex(int(dt_id[4:]))[2:]
-                    display_id = f"{dt_id} ({hexaNum})"
-                except:
-                    pass
-
-            datatake["datatake_id_display"] = display_id
+            # LOG: Capture any record that has a ticket or is not 100%
+            # if ticket or compl_fraction < 1.0:
+            #    print(
+            #        f"  [{sat}] Record: {datatake.get('datatake_id', 'N/A')} | Hours: {hours:.4f} | Compl: {compl_val}% | Ticket: {ticket} | Origin: {origin}"
+            #    )
             table_datatakes.append(datatake)
 
-            if ticket and compl_val < 100.0:
-                lost_hrs = hours * (1.0 - (compl_val / 100.0))
-                clean_ticket = str(ticket).strip().upper()
+            if ticket and origin and compl_fraction < JS_THRESHOLD:
+                if compl_fraction < JS_THRESHOLD:
+                    lost_hrs = hours * (1.0 - compl_fraction)
+                    clean_ticket = str(ticket).strip().upper()
 
-                found_comment = (
-                    comment_lookup.get(clean_ticket)
-                    or datatake.get("cams_description")
-                    or datatake.get("description")
-                )
-
-                if not found_comment:
                     found_comment = (
-                        datatake.get("cams_description")
+                        comment_lookup.get(clean_ticket)
+                        or datatake.get("cams_description")
                         or datatake.get("description")
-                        or datatake.get("comment")
                     )
 
-                final_desc = (
-                    found_comment if found_comment else f"Issue ticket: {clean_ticket}"
-                )
+                    if not found_comment:
+                        found_comment = (
+                            datatake.get("cams_description")
+                            or datatake.get("description")
+                            or datatake.get("comment")
+                        )
 
-                raw_origin = datatake.get("cams_origin") or ""
-                origin_str = raw_origin.upper()
-                desc_upper = final_desc.upper()
+                    final_desc = (
+                        found_comment
+                        if found_comment
+                        else f"Issue ticket: {clean_ticket}"
+                    )
 
-                event_data = {
-                    "date": datatake.get("observation_time_start")[:10],
-                    "description": final_desc,
-                    "type": "Other",
-                }
+                    raw_origin = datatake.get("cams_origin") or ""
+                    origin_str = raw_origin.upper()
+                    desc_upper = final_desc.upper()
 
-                # --- Categorization Logic ---
-                category_key = "other_events"
-                issue_type_label = "Other"
+                    event_data = {
+                        "date": (
+                            datatake.get("observation_time_start") or "0000-00-00"
+                        )[:10],
+                        "description": final_desc,
+                        "type": "Other",
+                    }
 
-                if "OCM" in desc_upper or any(
-                    x in origin_str for x in ["SAT", "CAM", "INSTRUMENT"]
-                ):
-                    failedSensingSat += lost_hrs
-                    issue_type_label = "Satellite"
-                    category_key = "sat_events"
-
-                # Acquisition Logic
-                elif any(
-                    x in origin_str for x in ["ACQUIS", "X-BAND", "ANTENNA", "GROUND"]
-                ) or any(x in desc_upper for x in ["FIBER", "NETWORK", "STATION"]):
-                    failedSensingAcq += lost_hrs
-                    issue_type_label = "Acquisition"
-                    category_key = "acq_events"
-
-                # Other Logic
-                else:
-                    failedSensingOther += lost_hrs
+                    # --- Categorization Logic ---
                     category_key = "other_events"
-                    if "RFI" in desc_upper:
-                        issue_type_label = "RFI"
-                    elif "PRODUCTION" in desc_upper:
-                        issue_type_label = "Production"
+                    issue_type_label = "Other"
+
+                    if "OCM" in desc_upper or any(
+                        x in origin_str for x in ["SAT", "CAM", "INSTRUMENT"]
+                    ):
+                        failedSensingSat += lost_hrs
+                        issue_type_label = "Satellite"
+                        category_key = "sat_events"
+
+                    # Acquisition Logic
+                    elif any(
+                        x in origin_str
+                        for x in ["ACQUIS", "X-BAND", "ANTENNA", "GROUND"]
+                    ) or any(x in desc_upper for x in ["FIBER", "NETWORK", "STATION"]):
+                        failedSensingAcq += lost_hrs
+                        issue_type_label = "Acquisition"
+                        category_key = "acq_events"
+
+                    # Other Logic
                     else:
-                        issue_type_label = "Other"
+                        failedSensingOther += lost_hrs
+                        category_key = "other_events"
+                        if "RFI" in desc_upper:
+                            issue_type_label = "RFI"
+                        elif "PRODUCTION" in desc_upper:
+                            issue_type_label = "Production"
+                        else:
+                            issue_type_label = "Other"
 
-                display_label = raw_origin if raw_origin else issue_type_label
-                formatted_description = f"{display_label} issue. {final_desc}"
+                    display_label = raw_origin if raw_origin else issue_type_label
+                    formatted_description = f"{display_label} issue. {final_desc}"
 
-                event_data = {
-                    "date": datatake.get("observation_time_start")[:10],
-                    "description": formatted_description,  # Use the formatted version here
-                    "type": display_label,
-                }
+                    event_data = {
+                        "date": (
+                            datatake.get("observation_time_start") or "0000-00-00"
+                        )[:10],
+                        "description": formatted_description,  # Use the formatted version here
+                        "type": display_label,
+                    }
 
                 categorized_events[category_key][clean_ticket] = event_data
-            elif ticket:
-                # Log if a ticket exists but completeness is 100 (so it's ignored)
-                if compl_val >= 99.9:
-                    print(
-                        f"DEBUG [{sat}]: Ignoring Ticket {ticket} because completeness is {compl_val}%"
-                    )
+            # elif ticket:
+            # Log if a ticket exists but completeness is 100 (so it's ignored)
+            # if compl_val >= 99.9:
+            #    print(
+            #        f"DEBUG [{sat}]: Ignoring Ticket {ticket} because completeness is {compl_val}%"
+            #    )
 
         totSuccessSensing = totSensing - (
             failedSensingAcq + failedSensingSat + failedSensingOther
         )
+
+        totSensing = round(totSensing, 2)
+
+        if totSensing > 0:
+            sensing_pct = float(f"{(totSuccessSensing / totSensing):.2f}") * 100
+
+            # print(f"--- SENSING CALC [{sat}] ---")
+            # print(f"  Raw Success: {totSuccessSensing}")
+            # print(f"  Rounded Planned: {totSensing}")
+            # print(f"  Final Pct: {sensing_pct}%")
+
+        else:
+            sensing_pct = 100.0
 
         # Instrument Availability (The bars)
         inst_data = compute_availability_single_sat(
@@ -502,11 +530,6 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             if inst_data
             else 0.0
         )
-
-        sensing_pct = (
-            (totSuccessSensing / totSensing * 100) if totSensing > 0 else 100.0
-        )
-
         final_status_pct = min(sensing_pct, avg_inst_avail)
 
         satellites[sat] = {
