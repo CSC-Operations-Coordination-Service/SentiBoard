@@ -7,6 +7,13 @@ from dateutil.relativedelta import relativedelta
 import logging
 from apps.models.anomalies import Anomalies
 import apps.cache.modules.datatakes as datatakes_cache
+from apps.elastic.modules.datatakes import (
+    _calc_s1_datatake_completeness,
+    _calc_s2_datatake_completeness,
+    _calc_s3_datatake_completeness,
+    _calc_s5_datatake_completeness,
+    _calc_datatake_completeness_status,
+)
 from jinja2 import Undefined
 from flask import current_app
 from apps import flask_cache
@@ -513,39 +520,132 @@ def generate_completeness_cache():
 
 
 def enrich_datatake(dt):
-    dt_copy = dt.copy()
-    dt_id = dt_copy.get("id") or dt_copy.get("datatake_id")
+    dt_id = dt.get("id") or dt.get("datatake_id")
     if not dt_id:
-        return dt_copy
+        return dt
 
     full_details = datatakes_cache.load_datatake_details(dt_id) or {}
-    raw = full_details.get("_source", full_details)
 
-    completeness_list = [
-        {"productType": k, "status": round(v, 2)}
-        for k, v in raw.items()
-        if k.endswith("_local_percentage") and isinstance(v, (int, float))
-    ]
-    dt_copy["completeness_list"] = completeness_list
+    is_list = isinstance(full_details, list)
 
-    comp = raw.get("completeness_status", {}) or {}
-    acq = comp.get("ACQ", {})
-    pub = comp.get("PUB", {})
-    dt_copy["acquisition_status"] = acq.get("status") or "ACQUIRED"
-    dt_copy["publication_status"] = pub.get("status") or "PUBLISHED"
+    # 1. Normalize the data structure for legacy functions
+    if is_list:
+        prod_list = []
+        for item in full_details:
+            if isinstance(item, dict) and "_source" in item:
+                prod_list.append(item)
+            else:
+                prod_list.append({"_source": item})
+    else:
+        source_content = full_details.get("_source", full_details)
+        prod_list = [{"_source": source_content, "_id": dt_id}]
 
-    raw["completeness_status"] = {
-        "ACQ": {
-            "status": dt_copy["acquisition_status"],
-            "percentage": acq.get("percentage") or 100,
-        },
-        "PUB": {
-            "status": dt_copy["publication_status"],
-            "percentage": pub.get("percentage") or 100,
-        },
-    }
-    dt_copy["raw"] = raw
-    return dt_copy
+    if not prod_list:
+        return dt
+
+    src = prod_list[0]["_source"]
+
+    comp_levels = {}
+
+    # 2. Mission-Specific Calculation Logic
+    mission = dt_id.upper()
+    try:
+        if "S1" in mission:
+            comp_levels = _calc_s1_datatake_completeness(prod_list[0])
+        elif "S2" in mission:
+            comp_levels = _calc_s2_datatake_completeness(prod_list[0])
+        elif "S3" in mission:
+            comp_levels = _calc_s3_datatake_completeness(prod_list)
+        elif "S5" in mission:
+            comp_levels = _calc_s5_datatake_completeness(prod_list)
+
+        # 3. Merge calculated levels into src for the Status Calculator
+        src.update(comp_levels)
+
+        # 4. Calculate Status (needs 'satellite_unit' and 'observation_time_stop' in src)
+        # Ensure mission-critical fields are in src if they were missing
+        if "satellite_unit" not in src:
+            src["satellite_unit"] = dt_id[:3].upper()
+
+        if "S1" in mission or "S2" in mission:
+            unique_products = {}
+            for k, v in src.items():
+                if k.endswith("_local_percentage"):
+                    p_type = k.replace("_local_percentage", "")
+                    unique_products[p_type] = round(v, 2)
+
+            # Convert unique dictionary back to the list the JS expects
+            sorted_products = [
+                {"productType": pt, "status": val}
+                for pt, val in unique_products.items()
+            ]
+
+            # Sort using your helper: L0 -> L1 -> L2 -> OUT_OF_MONITORING
+            sorted_products.sort(
+                key=lambda x: get_product_level_python(x.get("productType", ""))
+            )
+
+            # Overwrite the list to ensure NO duplicates are sent to frontend
+            src["completeness_list"] = sorted_products
+            if "products" in src:
+                del src["products"]
+
+        status_obj = _calc_datatake_completeness_status(src)
+
+        acq_status_upper = str(status_obj["ACQ"]["status"]).upper()
+        pub_status_upper = str(status_obj["PUB"]["status"]).upper()
+
+        # 5. Final Update
+        dt.update(
+            {
+                "acquisition_status": acq_status_upper,
+                "publication_status": pub_status_upper,
+                "completeness_status": status_obj,
+                "raw": src,
+            }
+        )
+
+        dt["raw"]["completeness_status"] = status_obj
+
+    except Exception as e:
+        # Log error but return partial dt so the page doesn't crash
+        print(f"Error enriching {dt_id}: {e}")
+
+    # print(f"DEBUG: {dt_id} list size: {len(src.get('completeness_list', []))}")
+
+    return dt
+
+
+def get_product_level_python(product_type):
+    """Replicates the JS getProductLevel logic for sorting S1/S2"""
+    if not product_type or product_type == "OUT_OF_MONITORING":
+        return 99
+
+    # 1. Direct check for common S2 levels that might miss the regex
+    if "_L1C" in product_type:
+        return 1
+    if "_L2A" in product_type:
+        return 2
+    if "_L0_" in product_type:
+        return 0
+
+    # 2. Match the level (e.g., IW_RAW__0S -> 0, MSD_L1B___ -> 1)
+    # Improved regex to look for the digit specifically after the double underscore
+    match = re.search(r"__([0-9A-Z])", product_type)
+    if match:
+        lvl = match.group(1)
+        if lvl.isdigit():
+            return int(lvl)
+        if lvl == "A":  # Handle Level-3 or specialized 'A' products
+            return 3
+        if lvl == "S":
+            return 0
+
+    # 3. Sentinel-1 specific defaults for processed products
+    if any(prefix in product_type for prefix in ["GRDH", "ETA", "OCN", "SLC"]):
+        return 2
+
+    return 98
 
 
 def make_json_safe(o):
@@ -579,3 +679,6 @@ def find_undefined_paths(obj, path="root"):
             if isinstance(v, Undefined):
                 logger.error(f"[UNDEFINED] Found at {new_path}")
             find_undefined_paths(v, new_path)
+
+
+import re

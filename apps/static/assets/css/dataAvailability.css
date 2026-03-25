@@ -668,7 +668,7 @@ ul#dataList {
 
 .btn.btn-outline-secondary {
   background-color: #FFC107;
-  color: #212529;
+  color: #212529 !important;
   border-radius: 5px;
   padding: 10px 10px;
   font-size: 0.9rem;

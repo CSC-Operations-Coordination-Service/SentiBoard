@@ -18,40 +18,33 @@ const formatDataDetail = [];
 class Datatakes {
     constructor(dataInput = {}) {
         this.serverData = dataInput || {};
-        // fullDataTakes = full normalized datatakes (server sends normalized_datatakes)
-        this.fullDataTakes = Array.isArray(this.serverData.datatakes)
+
+        this.mockDataTakes = Array.isArray(this.serverData.datatakes)
             ? this.serverData.datatakes
-            : [];
+            : (Array.isArray(this.serverData.datatakes) ? this.serverData.datatakes : []);
 
-        // filteredDataTakes is the current filtered set (client-side)
+
+        this.currentDataArray = [...this.mockDataTakes];
+        // fullDataTakes now refers to the slice sent by the server to keep the UI snappy
+        this.fullDataTakes = [...this.mockDataTakes];
         this.filteredDataTakes = [...this.fullDataTakes];
-
-        // mockDataTakes is the paged/enriched SSR slice the server gave us (faster to render sidebar)
-        this.mockDataTakes = Array.isArray(this.serverData.datatakes_for_ssr)
-            ? this.serverData.datatakes_for_ssr
-            : [];
 
         this.anomalies = Array.isArray(dataInput.anomalies)
             ? dataInput.anomalies
             : [];
 
-
-
         this.quarterAuthorized = !!dataInput.quarter_authorized;
         this.selectedPeriod = dataInput.selected_period || "week";
 
-
-        // --- Search queries ---
         this.searchQuery = this.serverData.search_query || "";
         this.searchQueryClean = this.serverData.search_query_clean || "";
-
         this.generatedAt = this.serverData.generated_at || null;
 
         this.itemsPerPage = 10;
         this.rowsPerPage = 10;
         this.infoItemsPerPage = 10;
         this.displayedCount = 0;
-        this.activeRequestsCount = 0;
+        this.activeRequestsCount = 0; // Tracks concurrent async tasks
         this.spinnerVisible = false;
 
     }
@@ -70,82 +63,60 @@ class Datatakes {
             if (this.activeRequestsCount <= 0) this.hideSpinner();
         }
     }
-
     async init() {
         $('#ec-logo-header, #esa-logo-header').hide();
         this.activeRequestsCount = 0;
         this.showSpinner();
+
         try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const rawSearchQuery = urlParams.get("search") || "";
-            let hasSearchFilter = false;
-
-            if (rawSearchQuery) {
-                // clean the query locally
-                this.searchQueryClean = rawSearchQuery.split(" ")[0].split("(")[0].trim();
-                //console.log("[DATATAKES] Cleaned search query for filtering:", this.searchQueryClean);
-
-                // filter datatakes on client-side
-                hasSearchFilter = this.filterDatatakesOnPageLoad(this.searchQueryClean);
-
-                if (hasSearchFilter) {
-                    this.populateDataList(false);
-                    if (this.filteredDataTakes.length > 0) {
-                        this.renderTableWithoutPagination(this.filteredDataTakes, this.filteredDataTakes[0].id);
-                    }
-                }
-
-                // force period to prev-quarter for search
-                this.selectedPeriod = "prev-quarter";
-            }
-
-            // Set period dropdown and date limits
-            const periodSelect = document.getElementById('time-period-select');
-            if (periodSelect) periodSelect.value = this.selectedPeriod;
-            this.setDateRangeLimits(this.selectedPeriod, hasSearchFilter);
-
+            // 1. Initial Setup
             this.setupPeriodSelector();
-            console.log("[LIMITS] Applying date range limits for period:", this.selectedPeriod);
 
             const dataList = document.getElementById("dataList");
-            const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-            if (!dataList) {
+            if (dataList) {
+                const items = dataList.querySelectorAll("li");
+                // Attach the click listeners to the HTML elements Python rendered
+                this.attachItemListeners(items);
+            }
+            else {
                 console.error("[DATATAKES] Missing #dataList element");
                 return;
             }
-
-            this.displayedCount = 0;
-            this.attachEventListeners();
-
-            if (hasSearchFilter) {
-                // Already filtered and rendered above; skip normal SSR initialization
-                console.log("[DATATAKES] Initialization complete (search mode)");
-                this.hideSpinner();
-                return;
-            }
-
-
-            // --- Spinner-aware async calls ---
-            await this.populateDataList(false);
             this.attachItemListeners(dataList.querySelectorAll("li"));
 
-            if (loadMoreBtn && !loadMoreBtn.dataset.bound) {
-                loadMoreBtn.dataset.bound = "true";
-                loadMoreBtn.addEventListener("click", () => this.withSpinner(() => this.populateDataList(true)));
+
+            // We use the first item in the list to populate the dashboard view
+            if (this.mockDataTakes.length > 0) {
+                await this.renderTablePage(1);
+                await this.initCharts();
+            } else {
+                console.warn("[DATATAKES] No items available to render charts.");
             }
 
-            await this.renderTablePage(1);
-
-            await this.initCharts();
-
             console.log("[DATATAKES] Initialization complete");
+
         } catch (err) {
-            console.error(err);
+            console.error("[DATATAKES] Init error:", err);
         } finally {
-            setTimeout(() => this.hideSpinner(), 0);
+            // Ensure spinner hides even if an error occurs
+            setTimeout(() => this.hideSpinner(), 500);
         }
     }
+
+    showSpinner() {
+        if (!this.spinnerVisible) {
+            $('#spinner').show();
+            this.spinnerVisible = true;
+        }
+    }
+
+    hideSpinner() {
+        if (this.spinnerVisible && this.activeRequestsCount <= 0) {
+            $('#spinner').hide();
+            this.spinnerVisible = false;
+        }
+    }
+
 
     setupPeriodSelector() {
         const selector = document.getElementById('time-period-select');
@@ -170,10 +141,10 @@ class Datatakes {
             if (!tbody) return;
 
             this.currentPage = page;
-            const dataset = this.filteredDataTakes || this.currentDataArray;
+            const dataset = this.mockDataTakes;
             const start = (page - 1) * this.rowsPerPage;
             const end = start + this.rowsPerPage;
-            const current = this.currentDataArray.slice(start, end);
+            const current = dataset.slice(start, end);
 
             tbody.innerHTML = "";
 
@@ -214,7 +185,7 @@ class Datatakes {
 
             this.renderPaginationControls();
         } finally {
-            setTimeout(() => this.hideSpinner(), 0);
+            this.hideSpinner();
         }
 
     }
@@ -284,7 +255,7 @@ class Datatakes {
 
     populateDataList(append = false) {
         this.showSpinner();
-        try {
+        /*try {
             const dataList = document.getElementById("dataList");
             const loadMoreBtn = document.getElementById("loadMoreBtn");
 
@@ -354,7 +325,7 @@ class Datatakes {
             }
         } finally {
             setTimeout(() => this.hideSpinner(), 0);
-        }
+        }*/
     }
 
     attachItemListeners(listItems) {
@@ -363,19 +334,28 @@ class Datatakes {
         listItems.forEach(li => {
             const containerDiv = li.querySelector(".container-border");
             const a = li.querySelector("a.filter-link");
+
             if (!containerDiv || !a) return;
 
+            // 1. Get the ID from the link text
             const id = a.textContent.trim();
+
+            // 2. Find the full data object ('take') from the available arrays
             const take =
                 this.filteredDataTakes?.find(d => d.id === id) ||
                 this.fullDataTakes?.find(d => d.id === id) ||
                 this.mockDataTakes?.find(d => d.id === id);
+
             if (!take) {
                 console.warn("[DATATAKES] could not find item in any list", id);
                 return;
             }
 
-            containerDiv.addEventListener("click", () => this.handleItemClick(take, containerDiv, a));
+            // 3. Re-attach the original handler that manages the border and visual state
+            containerDiv.addEventListener("click", (e) => {
+                e.preventDefault();
+                this.handleItemClick(take, containerDiv, a);
+            });
         });
     }
 
@@ -527,9 +507,6 @@ class Datatakes {
     }
 
     async renderInfoTable(dataInput, page = 1) {
-
-        //console.log("==== renderInfoTable START ====");
-        console.log("Requested datatake ID:", dataInput);
         this.showSpinner();
         try {
             const tableBody = document.getElementById("modalInfoTableBody");
@@ -538,231 +515,150 @@ class Datatakes {
             tableBody.innerHTML = "";
             paginationControls.innerHTML = "";
 
-            const cleanDataInput = dataInput.split(" ")[0]; // take only the first part before space
-            //console.log("Cleaned datatake ID for search:", cleanDataInput);
-
-            // Find datatake from SSR list
+            const cleanDataInput = dataInput.split(" ")[0];
             let datatake = this.fullDataTakes.find(dt => dt.id === cleanDataInput);
 
-            //console.log("Found datatake:", datatake);
-
             if (!datatake) {
-                console.error("Datatake NOT FOUND in fullDataTakes");
                 tableBody.innerHTML = `<tr><td colspan="2">Datatake not found</td></tr>`;
                 return;
             }
 
             const mission = datatake.mission || cleanDataInput.substring(0, 2);
-            const showTimeliness = mission === "S3" || mission === "S5";
+            const showTimeliness = mission === "S3" || mission === "S5" || mission === "S5P";
 
             this.renderInfoTableHeader(showTimeliness);
 
-            // Toggle header column
-            //const timelinessTh = tableHead.querySelector("th:first-child");
-            //if (timelinessTh) {
-            //    timelinessTh.style.display = showTimeliness ? "" : "none";
-            //}
-
-            const needsEnrichment =
-                !datatake.completeness_list ||
-                datatake.completeness_list.length === 0;
-
-            //console.log("Needs enrichment?", needsEnrichment);
-
-            if (needsEnrichment && datatake.id) {
+            // Enrichment
+            if ((!datatake.completeness_list || datatake.completeness_list.length === 0) && datatake.id) {
                 try {
                     const formData = new FormData();
                     formData.append("datatake_id", cleanDataInput);
-
-                    //console.log("[AJAX] Calling /data-availability/enrich for", cleanDataInput);
-
-                    const response = await fetch("/data-availability/enrich", {
-                        method: "POST",
-                        body: formData
-                    });
-
+                    const response = await fetch("/data-availability/enrich", { method: "POST", body: formData });
                     if (response.ok) {
                         const enriched = await response.json();
-                        //console.log("[AJAX] Enriched response:", enriched);
-
                         Object.assign(datatake, enriched);
-
                         const idx = this.fullDataTakes.findIndex(dt => dt.id === cleanDataInput);
                         if (idx > -1) this.fullDataTakes[idx] = datatake;
-
-                        //console.log("[AJAX] Datatake after merge:", datatake);
-
-                    } else {
-                        console.error("[AJAX] Enrichment failed:", response.status);
                     }
-
-                } catch (err) {
-                    console.error("[AJAX] ERROR enriching datatake:", err);
-                }
+                } catch (err) { console.error("Enrichment error:", err); }
             }
 
+            let tempMap = new Map();
 
-            // ----------------------------------
-            // Normalize data
-            // ----------------------------------
-            let dataArray = null;
+            const addToMap = (rawType, status, timeliness) => {
+                if (!rawType) return;
 
-            if (datatake.completeness_list && datatake.completeness_list.length > 0) {
-                dataArray = datatake.completeness_list.map(row => {
-                    let rowTimeliness = "-";
-                    let productType = row.productType;
+                let cleanType = rawType.replace("_local_percentage", "");
+                let finalTimeliness = timeliness || "-";
 
-                    if (showTimeliness && row.productType) {
-                        if (mission === "S3") {
-                            rowTimeliness = row.timeliness || "-";
-                            // Remove prefix if it exists in productType
-                            productType = productType.replace(/^([A-Z]{2,3})-/, "").replace(/_+$/, "");
-                        } else if (mission === "S5") {
-                            // S5: take timeliness directly from field, remove suffix from productType
-                            rowTimeliness = row.timeliness || "-";
-                            productType = productType.replace(/_(NRTI|OFFL)$/, "").replace(/_+$/, "");
-                        }
-                    } else {
-                        // If timeliness not shown
-                        productType = productType.replace(/_+$/, "");
+                if (showTimeliness && (finalTimeliness === "-" || finalTimeliness === "")) {
+                    // Check for S3 style: NT-OL_... or S5 style: ..._NRTI
+                    const pattern = /^(NR|NT|ST|AL|OFFL|NRTI)[-_]|[-_](NRTI|OFFL|NR|NT|ST|AL)$/;
+                    const match = cleanType.match(pattern);
+
+                    if (match) {
+                        finalTimeliness = match[1] || match[2];
+                        // Remove the timeliness and the separator from the product name
+                        cleanType = cleanType.replace(/^(NR|NT|ST|AL|OFFL|NRTI)[-_]/, "")
+                            .replace(/[-_](NRTI|OFFL|NR|NT|ST|AL)$/, "");
                     }
-
-                    return {
-                        productType,
-                        status: typeof row.status === "number" ? row.status : row.status,
-                        timeliness: showTimeliness ? rowTimeliness : undefined
-                    };
-                });
-            } else {
-                const allKeys = [
-                    ...Object.keys(datatake),
-                    ...Object.keys(datatake.raw || {})
-                ];
-
-                const pctKeys = allKeys.filter(k => k.endsWith("_local_percentage"));
-
-                if (pctKeys.length > 0) {
-                    //console.log("Building table from percentage keys:", pctKeys);
-                    dataArray = pctKeys.map(k => ({
-                        productType: k.replace("local_percentage", ""),
-                        status: datatake[k] ?? datatake.raw?.[k] ?? "-",
-                        timeliness: showTimeliness ? "-" : undefined
-                    }));
                 }
-            }
 
-            if (!dataArray || dataArray.length === 0) {
-                const completeness = datatake.completeness || {};
-                const compKeys = Object.keys(completeness).filter(k =>
-                    k.endsWith("_local_percentage")
-                );
+                // Final cleanup of extra underscores/dashes
+                cleanType = cleanType.replace(/^[-_]+|[-_]+$/g, "");
 
-                dataArray = compKeys.map(k => ({
-                    productType: k.replace("local_percentage", ""),
-                    status: completeness[k]
-                }));
-            }
+                const key = showTimeliness ? `${cleanType}|${finalTimeliness}` : cleanType;
 
-            if (mission === "S2" || dataArray.length === 0) {
-                //console.log("Filtering S2 for MSI products");
-                dataArray = dataArray.filter(item => item.productType.includes("MSI"));
-            }
-
-            // ----------------------------------
-            // Sorting 
-            // ----------------------------------
-            const S1_LEVEL_ORDER = {
-                "0": 1,
-                "1": 2,
-                "2": 3,
-                "A": 4
+                if (!tempMap.has(key)) {
+                    tempMap.set(key, {
+                        productType: cleanType,
+                        status: status,
+                        timeliness: finalTimeliness
+                    });
+                }
             };
+
+            // Source 1: completeness_list
+            if (datatake.completeness_list && datatake.completeness_list.length > 0) {
+                datatake.completeness_list.forEach(row => {
+                    let pType = row.productType || "";
+                    let rowT = row.timeliness || "-";
+
+                    // Initial split for S3 if the list itself has combined names
+                    if (mission.startsWith("S3") && pType.includes("-") && rowT === "-") {
+                        const parts = pType.split("-");
+                        rowT = parts[0];
+                        pType = parts.slice(1).join("-");
+                    }
+                    addToMap(pType, row.status, rowT);
+                });
+            }
+
+            const allKeys = [
+                ...Object.keys(datatake),
+                ...Object.keys(datatake.raw || {}),
+                ...Object.keys(datatake.completeness || {})
+            ];
+            allKeys.filter(k => k.endsWith("_local_percentage")).forEach(k => {
+                const val = datatake[k] ?? datatake.raw?.[k] ?? datatake.completeness?.[k] ?? "-";
+                addToMap(k, val, "-");
+            });
+
+            let dataArray = Array.from(tempMap.values());
+
+            // Filtering
+            if (mission === "S2") dataArray = dataArray.filter(item => item.productType.includes("MSI"));
+
+            // Sorting
+            const S1_LEVEL_ORDER = { "0": 1, "1": 2, "2": 3, "A": 4 };
             dataArray.sort((a, b) => {
-                // ----------------------------------
-                // S1 custom product level sorting
-                // ----------------------------------
                 if (mission === "S1") {
-                    const la = this.extractS1ProductLevel(a.productType);
-                    const lb = this.extractS1ProductLevel(b.productType);
-
-                    const oa = S1_LEVEL_ORDER[la] ?? 99;
-                    const ob = S1_LEVEL_ORDER[lb] ?? 99;
-
+                    const oa = S1_LEVEL_ORDER[this.extractS1ProductLevel(a.productType)] ?? 99;
+                    const ob = S1_LEVEL_ORDER[this.extractS1ProductLevel(b.productType)] ?? 99;
                     if (oa !== ob) return oa - ob;
                 }
-
                 if (showTimeliness) {
-                    const order = { NRTI: 1, OFFL: 2, "NR": 3, "NT": 4, "ST": 5, "AL": 6 };
+                    const order = { "NRTI": 1, "OFFL": 2, "NR": 1, "NT": 2, "ST": 3, "AL": 4 };
                     const ta = order[a.timeliness] ?? 99;
                     const tb = order[b.timeliness] ?? 99;
                     if (ta !== tb) return ta - tb;
                 }
-                if (a.productType !== b.productType) {
-                    return a.productType.localeCompare(b.productType);
-                }
-                return parseFloat(b.status) - parseFloat(a.status);
+                return a.productType.localeCompare(b.productType);
             });
 
-            // Header
-            const key = datatake.details?.key || datatake.id || "-";
-            const timeliness =
-                datatake.details?.timeliness ||
-                datatake.raw?.timeliness ||
-                datatake.raw?.timeliness_status ||
-                "-";
-
+            // Header labels
+            const headerKey = datatake.details?.key || datatake.id || "-";
+            const headerTime = datatake.details?.timeliness || datatake.raw?.timeliness || "-";
             $('#datatake-details').empty().append(`
                 <div class="form-group">
-                    <label>Datatake ID: ${key}</label>
-                    <label style="margin-left: 20px;">Timeliness: ${timeliness}</label>
+                    <label>Datatake ID: ${headerKey}</label>
+                    <label style="margin-left: 20px;">Timeliness: ${headerTime}</label>
                 </div>
             `);
 
-            // Render table rows
-            if (!dataArray || dataArray.length === 0) {
-                console.warn("No completeness data available.");
-                const row = document.createElement("tr");
-                row.innerHTML = `<td colspan="2">No data available.</td>`;
-                tableBody.appendChild(row);
-                return;
-            }
-
+            // Rendering
             this.currentDataArray = dataArray;
-
             const totalItems = dataArray.length;
             const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
             this.currentPage = page;
-
-            const startIndex = (page - 1) * this.infoItemsPerPage;
-            const endIndex = Math.min(startIndex + this.infoItemsPerPage, totalItems);
-            const pageItems = dataArray.slice(startIndex, endIndex);
-
-            //console.log(`Rendering items ${startIndex} → ${endIndex}`, pageItems);
+            const pageItems = dataArray.slice((page - 1) * this.infoItemsPerPage, page * this.infoItemsPerPage);
 
             pageItems.forEach(item => {
                 const row = document.createElement("tr");
-
                 if (showTimeliness) {
                     const td = document.createElement("td");
                     td.textContent = item.timeliness;
                     row.appendChild(td);
                 }
-
-                const productTd = document.createElement("td");
-                productTd.textContent = item.productType;
-                row.appendChild(productTd);
-
-                const statusTd = document.createElement("td");
-                statusTd.textContent =
-                    typeof item.status === "number"
-                        ? item.status.toFixed(2)
-                        : item.status;
-                row.appendChild(statusTd);
-
+                const pTd = document.createElement("td");
+                pTd.textContent = item.productType;
+                row.appendChild(pTd);
+                const sTd = document.createElement("td");
+                sTd.textContent = typeof item.status === 'number' ? item.status.toFixed(2) : item.status;
+                row.appendChild(sTd);
                 tableBody.appendChild(row);
             });
 
-            // Pagination
             if (totalPages > 1) {
                 const makeButton = (text, pageNum, disabled = false, active = false) => {
                     const btn = document.createElement("button");
@@ -773,13 +669,10 @@ class Datatakes {
                     btn.addEventListener("click", () => this.renderInfoTable(cleanDataInput, pageNum));
                     return btn;
                 };
-
                 paginationControls.appendChild(makeButton("« Prev", this.currentPage - 1, this.currentPage === 1));
-
                 for (let i = 1; i <= totalPages; i++) {
                     paginationControls.appendChild(makeButton(i, i, false, i === this.currentPage));
                 }
-
                 paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
             }
         } finally {
@@ -848,15 +741,19 @@ class Datatakes {
         if (!normalizedLinkKey) return;
 
         const relevantData = this.fullDataTakes.filter(dt =>
-            (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
+            (dt.id || "").toUpperCase() === (normalizedLinkKey || "").toUpperCase() // Changed from startsWith to strict equality
         );
 
-        //console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
+        console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
 
         if (relevantData.length === 0) {
             console.warn(`No data found for key: ${normalizedLinkKey}`);
             return;
         }
+
+        const entry = relevantData[0];
+        console.log(`[DEBUG] Chart Update for ${normalizedLinkKey}:`, entry.raw?.completeness_status);
+
 
         // Shared color map
         const colorMap = {
@@ -878,7 +775,9 @@ class Datatakes {
         if (type === "publication") {
             const entry = relevantData[0];
             const pub = entry.raw?.completeness_status?.PUB || {};
-            const percentage = parseFloat(pub.percentage) || 0;
+            const percentage = pub.percentage !== undefined ? parseFloat(pub.percentage) : 0;
+            console.log(`[DEBUG] ${normalizedLinkKey} PUB Percentage:`, percentage);
+
             const status = pub.status?.toUpperCase() || "UNKNOWN";
             const remaining = Math.max(0, 100 - percentage);
             const [completeColor, missingColor] = colorMap[status] || colorMap["UNKNOWN"];
@@ -1163,71 +1062,6 @@ class Datatakes {
         return true;
     }
 
-    setDateRangeLimits(period, force = false) {
-        const fromInput = document.getElementById("from-date");
-        const toInput = document.getElementById("to-date");
-        if (!fromInput || !toInput) return;
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const hasSearch = urlParams.has('search');
-
-        // Skip if coming from search or user already selected dates
-        if ((hasSearch && !force) || (!force && fromInput.value && toInput.value)) {
-            console.log("[Date Range Limits] Skipping due to search or user input.");
-            return;
-        }
-
-        const now = new Date();
-        let maxDate = new Date(now);
-        let fromDate = new Date(now);
-
-        switch (period) {
-            case 'day':
-                fromDate.setDate(fromDate.getDate() - 1);
-                break;
-            case '7days':
-            case 'week':
-                fromDate.setDate(fromDate.getDate() - 7);
-                break;
-            case 'month':
-                fromDate.setMonth(fromDate.getMonth() - 1);
-                break;
-            case 'last-quarter':
-            case 'prev-quarter':
-            case 'default': {
-                const day = fromDate.getDate();
-                fromDate.setMonth(fromDate.getMonth() - 3, 1);
-                const lastDay = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0).getDate();
-                fromDate.setDate(Math.min(day, lastDay));
-                break;
-            }
-        }
-
-        // --- Format for input[type="datetime-local"] ---
-        const formatDateTimeLocal = (d) => {
-            const pad = (n) => n.toString().padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        };
-
-        const min = formatDateTimeLocal(fromDate);
-        const max = formatDateTimeLocal(maxDate);
-
-        // Assign min/max to inputs
-        fromInput.min = min;
-        fromInput.max = max;
-        toInput.min = min;
-        toInput.max = max;
-
-        // If the current from/to are invalid, fix them
-        if (fromInput.value && toInput.value && fromInput.value > toInput.value) {
-            toInput.value = fromInput.value;
-        }
-
-        /*console.log("[LIMITS] Min date (UTC):", fromDate.toISOString());
-        console.log("[LIMITS] Max date (UTC):", maxDate.toISOString());*/
-        console.log(`[Date Range Limits] Applied period="${period}" -- min=${min}, max=${max}`);
-    }
-
     showTableSection(firstId) {
         const tableSection = document.getElementById("tableSection");
         if (!tableSection) return;
@@ -1257,14 +1091,6 @@ class Datatakes {
         tableSection.style.display = "block";
 
         const selectedData = dataset.find(item => item.id === selectedId);
-        /*if (!selectedData) {
-            console.warn(`No data found for: ${selectedId}`);
-            tableBody.innerHTML = "";
-            //tableSection.style.display = "none";
-            return;
-        }
-        //console.log("completeness_status", selectedData.raw.completeness_status);*/
-
         let data = selectedData ? [selectedData] : [];
 
         if (searchQuery) {
@@ -1447,11 +1273,8 @@ class Datatakes {
         this.filterSidebarItems();
     }
     attachEventListeners() {
-        const searchInput = document.getElementById("searchInput");
         const dataList = document.getElementById("dataList");
         const tableSection = document.getElementById("tableSection");
-        const missionSelect = document.getElementById("mission-select");
-        const resetBtn = document.getElementById("resetFilterButton");
         const satelliteSelect = document.getElementById("satellite-select");
         const fromDate = document.getElementById("from-date");
         const toDate = document.getElementById("to-date");
@@ -1459,73 +1282,15 @@ class Datatakes {
         fromDate.addEventListener("change", () => this.applyAllFilters());
         toDate.addEventListener("change", () => this.applyAllFilters());
 
-        this.allSatelliteOptions = Array.from(satelliteSelect.options).map(opt => opt.cloneNode(true));
 
         if (!dataList || !tableSection) {
             console.error("One or more DOM elements missing for setup.");
             return;
         }
 
-        //tableSection.style.display = "none";
-
-        if (searchInput) {
-            searchInput.addEventListener("input", () => {
-                this.currentSearchTerm = searchInput.value;
-                this.filterSidebarItems();
-            });
+        if (satelliteSelect) {
+            this.allSatelliteOptions = Array.from(satelliteSelect.options).map(opt => opt.cloneNode(true));
         }
-
-        if (missionSelect && satelliteSelect) {
-            missionSelect.addEventListener("change", () => {
-                const selectedMission = missionSelect.value.toUpperCase();
-                this.currentMission = selectedMission;
-
-                // Reset search input if mission reset
-                if (selectedMission === "") {
-                    this.currentSearchTerm = "";
-                    searchInput.value = "";
-                }
-
-                this.filterSatellitesByMission(selectedMission, satelliteSelect);
-                // Enable satellite select unless it's Sentinel 5P
-                if (selectedMission === "S5") {
-                    satelliteSelect.disabled = true;
-                    satelliteSelect.value = "";
-                } else {
-                    satelliteSelect.disabled = false;
-
-                    // Restore all then filter
-                    satelliteSelect.innerHTML = `
-                        <option value="">All Satellites</option>
-                    `;
-
-                    /*const filtered = allSatelliteOptions.filter(opt => opt.value.startsWith(selectedMission));
-                    filtered.forEach(opt => satelliteSelect.appendChild(opt));
-                    satelliteSelect.value = "";*/
-                    this.filterSatellitesByMission(selectedMission, satelliteSelect);
-                }
-
-                this.filterSidebarItems();
-                this.hideInfoTable();
-            });
-        }
-
-        const closeBtn = document.getElementById("closeTableButton");
-        if (closeBtn) {
-            closeBtn.addEventListener("click", () => {
-                this.hideTable();
-            });
-        }
-
-        if (resetBtn) {
-            resetBtn.addEventListener("click", () => this.resetFilters());
-        }
-
-        // Load More Button 
-        document.getElementById("loadMoreBtn").addEventListener("click", () => {
-            this.populateDataList(true);
-        });
-
 
         dataList.addEventListener("click", async (e) => {
             const containerDiv = e.target.closest(".container-border");
@@ -1543,20 +1308,57 @@ class Datatakes {
             const selectedKey = targetLink ? targetLink.textContent.trim() : null;
             if (!selectedKey) return;
 
+            let itemData = this.fullDataTakes.find(t => t.id === selectedKey);
+
+            if (itemData && itemData.is_lightweight) {
+                showGlobalLoading(); // Show a small spinner over the charts
+
+                try {
+                    const formData = new FormData();
+                    formData.append('datatake_id', selectedKey);
+
+                    const response = await fetch('/data-availability/enrich', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: `datatake_id=${encodeURIComponent(selectedKey)}`
+                    });
+                    const enrichedData = await response.json();
+
+                    // Update our local data so we don't have to fetch it again
+                    Object.assign(itemData, enrichedData);
+                    itemData.is_lightweight = false;
+                } catch (err) {
+                    console.error("Failed to enrich datatake on click:", err);
+                } finally {
+                    hideGlobalLoading();
+                }
+            }
+
             this.updateTitleAndDate(selectedKey);
 
             // Render both donut charts asynchronously
-            try {
-                await Promise.all([
-                    this.updateCharts("publication", selectedKey),
-                    this.updateCharts("acquisition", selectedKey)
-                ]);
-            } catch (err) {
-                console.error("Error rendering charts:", err);
-            }
+            await Promise.all([
+                this.updateCharts("publication", selectedKey),
+                this.updateCharts("acquisition", selectedKey)
+            ]);
+
             this.renderTableWithoutPagination(this.fullDataTakes, selectedKey);
             this.hideInfoTable();
         });
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener("click", () => {
+                this.populateDataList(true);
+            })
+        }
+
+        const closeBtn = document.getElementById("closeTableButton");
+        if (closeBtn) {
+            closeBtn.addEventListener("click", () => {
+                this.hideTable();
+            });
+        }
+
     }
 
 
@@ -1641,21 +1443,6 @@ class Datatakes {
             setTimeout(() => this.hideSpinner(), 0);
         }
 
-    }
-
-
-    showSpinner() {
-        if (!this.spinnerVisible) {
-            $('#spinner').show();
-            this.spinnerVisible = true;
-        }
-    }
-
-    hideSpinner() {
-        if (this.spinnerVisible && this.activeRequestsCount <= 0) {
-            $('#spinner').hide();
-            this.spinnerVisible = false;
-        }
     }
 }
 

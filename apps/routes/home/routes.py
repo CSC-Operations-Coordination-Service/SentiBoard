@@ -893,27 +893,52 @@ def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = request.url
     segment = "data-availability"
+    BATCH_SIZE = 20  # Consistent batch size for pagination
 
     try:
-        current_app.logger.info("[DATA-AVAILABILITY] Starting route")
+        current_app.logger.info("\n" + "=" * 50)
+        current_app.logger.info("[DATA-AVAILABILITY] ROUTE TRIGGERED")
+        # Log every single argument arriving from the browser
+        current_app.logger.info(f"[ARGS RECEIVED] {dict(request.args)}")
+
+        limit = int(request.args.get("limit", BATCH_SIZE))
 
         is_ajax = request.args.get("ajax") == "1"
         search_query = request.args.get("search", "").strip()
-        has_search = bool(search_query)
+        mission_filter = request.args.get("mission", "").upper()
+        current_app.logger.info(
+            f"[LOG] Filters -> Mission: '{mission_filter}', Limit: {limit}"
+        )
 
-        if has_search:
+        sat_filter = request.args.get("satellite", "")
+
+        if mission_filter == "S5":
+            sat_filter = ""  # S5 has no sub-units
+        elif sat_filter and not sat_filter.startswith(mission_filter):
+            # If Mission is S2 but Satellite is S1A, ignore the satellite filter
+            sat_filter = ""
+
+        from_date_str = request.args.get("fromdate", "")
+        to_date_str = request.args.get("todate", "")
+        has_search = bool(search_query)
+        selected_period = request.args.get("period") or session.get(
+            "selected_period", "week"
+        )
+
+        current_app.logger.info(
+            f"[EXTRACTED] Mission: '{mission_filter}' | Sat: '{sat_filter}' | Search: '{search_query}' | Period: '{selected_period}'"
+        )
+
+        if has_search and not request.args.get("period"):
             selected_period = "prev-quarter"
-            session.pop("selected_period", None)  # remove old user period
-        else:
-            selected_period = request.args.get("period") or session.get(
-                "selected_period", "week"
-            )
+
+        if bool(search_query) and not request.args.get("period"):
+            selected_period = "prev-quarter"
+            current_app.logger.info("[LOG] Forcing prev-quarter due to search query.")
 
         # Save user-selected period in session only if not search
         if not has_search and "period" in request.args:
             session["selected_period"] = selected_period
-            if not is_ajax:
-                return redirect(url_for("home_blueprint.data_availability"))
 
         # --- Cache keys ---
         datatakes_cache_key_map = {
@@ -938,6 +963,10 @@ def data_availability():
         anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
         datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
 
+        current_app.logger.info(
+            f"[LOG] Cache Loaded. Total items in raw cache: {len(datatakes_data)}"
+        )
+
         # --- POST: datatake details ---
         datatake_details = None
         if request.method == "POST":
@@ -954,31 +983,116 @@ def data_availability():
             "esauser",
         )
 
-        if selected_period == "prev-quarter":
-            now = datetime.now(timezone.utc)
-            cutoff = now - timedelta(days=90)
+        # Simplified for logging
+        dt_suffix = datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d"
+        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
+            "last", dt_suffix
+        )
 
-            filtered = []
-            for item in datatakes_data:
-                src = item.get("_source", {})
-                raw = src.get("observation_time_start")
-                try:
-                    dt = parser.isoparse(raw)
-                    if dt >= cutoff:
-                        filtered.append(item)
-                except Exception:
+        current_app.logger.info(f"[CACHE] Loading from URI: {datatakes_cache_uri}")
+        current_app.logger.info(
+            f"[CACHE] Items found in raw cache: {len(datatakes_data)}"
+        )
+
+        filtered_raw = []
+        mission_counts = {}
+
+        # Pre-calculate search/filter terms outside the loop for speed
+        search_q = search_query.lower() if search_query else None
+        m_filter_upper = mission_filter.upper() if mission_filter else None
+        s_filter_upper = sat_filter.upper() if sat_filter else None
+
+        for item in datatakes_data:
+            src = item.get("_source", {})
+            item_sat = (src.get("satellite_unit") or "").upper()
+
+            if item_sat.startswith("S1"):
+                if item_sat not in ["S1A", "S1C"]:
                     continue
 
-            datatakes_data = filtered
-            current_app.logger.info(
-                f"[PREV-QUARTER OVERRIDE] Filtered to last 90 days → {len(datatakes_data)} items"
-            )
+            if m_filter_upper and m_filter_upper not in item_sat:
+                continue
 
-        # --- Normalize datatakes ---
-        normalized_datatakes = []
-        for d in datatakes_data:
+            if s_filter_upper and item_sat != s_filter_upper:
+                continue
+
+            # Search logic
+            if search_q:
+                item_id = str(src.get("datatake_id") or src.get("id", "")).lower()
+                if search_q not in item_id:
+                    continue
+
+            item_id = str(src.get("datatake_id") or src.get("id", "")).lower()
+            item_start = src.get("observation_time_start", "")
+            if from_date_str and item_start < from_date_str:
+                continue
+            if to_date_str and item_start > to_date_str:
+                continue
+
+            mission_key = item_sat[:2] if item_sat else "???"
+            mission_counts[mission_key] = mission_counts.get(mission_key, 0) + 1
+
+            filtered_raw.append(item)
+
+        current_app.logger.info(
+            f"[LOG] Global Mission Distribution in Cache: {mission_counts}"
+        )
+        current_app.logger.info(f"[LOG] Items passing filters: {len(filtered_raw)}")
+
+        # --- Pagination ---
+        try:
+            limit = int(request.args.get("limit", BATCH_SIZE))
+            page = 1
+        except Exception:
+            page = 1
+            limit = BATCH_SIZE
+
+        filtered_raw.sort(
+            key=lambda x: x.get("_source", {}).get("observation_time_start", ""),
+            reverse=False,
+        )
+
+        total_found = len(filtered_raw)
+        paged_raw_data = filtered_raw[:limit]
+        has_more = total_found > limit
+
+        current_app.logger.info(
+            f"[LOG] Pagination: Showing {len(paged_raw_data)} of {total_found}"
+        )
+
+        datatakes_for_ssr = []
+        for index, d in enumerate(paged_raw_data):
             src = d.get("_source", {}) or {}
             dt_id = src.get("datatake_id") or src.get("id")
+
+            l0 = src.get("L0_", 0)
+            l1 = src.get("L1_", 0)
+            l2 = src.get("L2_", 0)
+
+            # Logic for ACQ (Priority: L0 -> L1 -> L2)
+            acq_p = (
+                l0
+                if "L0_" in src
+                else (l1 if "L1_" in src else (l2 if "L2_" in src else 0))
+            )
+
+            # Logic for PUB (Average of available)
+            levels = [v for k, v in src.items() if k in ["L0_", "L1_", "L2_"]]
+            pub_p = sum(levels) / len(levels) if levels else 0
+
+            # --- MATCH THE COLORMAP STRINGS ---
+            # Thresholds: 90.0 (Acquired/Published), 10.0 (Partial), else Unavailable
+            acq_status = (
+                "ACQUIRED"
+                if acq_p >= 90
+                else ("PARTIAL" if acq_p >= 10 else "UNAVAILABLE")
+            )
+            pub_status = (
+                "PUBLISHED"
+                if pub_p >= 90
+                else ("PARTIAL" if pub_p >= 10 else "UNAVAILABLE")
+            )
+
             start_time = (
                 to_utc(src.get("observation_time_start"))
                 if src.get("observation_time_start")
@@ -990,120 +1104,77 @@ def data_availability():
                 else None
             )
 
-            normalized_datatakes.append(
-                {
-                    "id": dt_id,
-                    "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
-                    "start_time": to_utc_iso(start_time) if start_time else None,
-                    "stop_time": to_utc_iso(stop_time) if stop_time else None,
-                    "acquisition_status": src.get("completeness_status", {})
-                    .get("ACQ", {})
-                    .get("status", "unknown"),
-                    "publication_status": src.get("completeness_status", {})
-                    .get("PUB", {})
-                    .get("status", "unknown"),
-                    "raw": src,
-                }
-            )
+            # Using enrich_datatake as your final formatter
+            item_normalized = {
+                "id": dt_id,
+                "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
+                "start_time": to_utc_iso(start_time) if start_time else None,
+                "stop_time": to_utc_iso(stop_time) if stop_time else None,
+                "acquisition_status": acq_status,
+                "publication_status": pub_status,
+                "raw": src,
+            }
 
-        # --- Normalize anomalies ---
-        normalized_anomalies = []
-        for a in anomalies_data:
-            src = a.get("_source", {}) or {}
-            normalized_anomalies.append(
-                {
-                    "key": safe_json_value(src.get("key") or src.get("id"), "unknown"),
-                    "category": safe_json_value(
-                        src.get("category") or src.get("type"), "Unknown"
-                    ),
-                    "publicationDate": safe_json_value(
-                        src.get("occurence_date")
-                        or src.get("occurrence_date")
-                        or src.get("publicationDate")
-                        or src.get("created")
-                        or ""
-                    ),
-                    "impactedSatellite": safe_json_value(
-                        src.get("impactedSatellite"), "Unknown"
-                    ),
-                    "description": safe_json_value(src.get("description"), ""),
-                    "datatakes_completeness": src.get("datatakes_completeness", []),
-                    "start": src.get("start"),
-                    "end": src.get("end"),
-                    "title": src.get("title"),
-                    "text": src.get("text"),
-                }
-            )
+            # Inject the completeness_status object into 'raw' so JS 'renderTableWithoutPagination' finds it
+            item_normalized["raw"]["completeness_status"] = {
+                "ACQ": {"status": acq_status, "percentage": acq_p},
+                "PUB": {"status": pub_status, "percentage": pub_p},
+            }
 
-        normalized_datatakes = replace_undefined(normalized_datatakes)
-        normalized_anomalies = replace_undefined(normalized_anomalies)
+            if index == 0 and not is_ajax:
+                datatakes_for_ssr.append(enrich_datatake(item_normalized))
+            else:
+                item_normalized["is_lightweight"] = True
+                datatakes_for_ssr.append(item_normalized)
 
-        # --- Filter & sort ---
-        normalized_datatakes = [
-            dt for dt in normalized_datatakes if dt.get("start_time") and dt.get("id")
-        ]
-
-        normalized_datatakes.sort(key=datatake_sort_key)
-        datatakes_cache.generate_completeness_cache(normalized_datatakes)
-
-        # --- Pagination ---
-        try:
-            page = int(request.args.get("page", 1))
-            if page < 1:
-                page = 1
-        except Exception:
-            page = 1
-        start_idx = (page - 1) * BATCH_SIZE
-        end_idx = start_idx + BATCH_SIZE
-
-        paged_datatakes = normalized_datatakes[start_idx:end_idx]
-        datatakes_for_ssr = [enrich_datatake(dt) for dt in paged_datatakes]
-
-        total_pages = (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE
-
-        current_app.logger.info(
-            f"[DATA-AVAILABILITY] pagination slice for period '{selected_period}': {start_idx} → {end_idx}"
-        )
-
+        # --- 9. Payload Preparation ---
         payload = {
-            "anomalies": replace_undefined(normalized_anomalies),
+            "anomalies": replace_undefined(anomalies_data),
             "datatakes": datatakes_for_ssr,
             "quarter_authorized": quarter_authorized,
             "selected_period": selected_period,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "datatake_details": datatake_details,
             "current_page": page,
-            "total_pages": (len(normalized_datatakes) + BATCH_SIZE - 1) // BATCH_SIZE,
+            "current_limit": limit,
+            "total_pages": (total_found + BATCH_SIZE - 1) // BATCH_SIZE,
             "has_search": has_search,
             "search_query": search_query,
+            "mission": mission_filter,
+            "satellite": sat_filter,
+            "has_more": has_more,
+            "BATCH_SIZE": BATCH_SIZE,
+            "mission_counts": mission_counts,
         }
 
+        current_app.logger.info(f"[LOG] Final SSR list size: {len(datatakes_for_ssr)}")
+        current_app.logger.info("=" * 50 + "\n")
+
         if is_ajax:
-            safe_payload = {
-                "datatakes": make_json_safe(datatakes_for_ssr),
-                "current_page": page,
-                "total_pages": total_pages,
-            }
-            return jsonify(safe_payload), 200
+            return (
+                jsonify(
+                    {
+                        "datatakes": make_json_safe(datatakes_for_ssr),
+                        "has_more": has_more,
+                    }
+                ),
+                200,
+            )
 
         current_app.logger.info(
-            f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} datatakes to frontend (search={has_search})"
+            f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} items to frontend"
         )
+
         return render_template(
             "home/data-availability.html",
             **payload,
-            normalized_datatakes=normalized_datatakes,
-            segment=segment,
             **metadata,
-            datatakes_for_ssr=replace_undefined(datatakes_for_ssr),
-            BATCH_SIZE=BATCH_SIZE,
+            segment=segment,
         )
 
     except Exception as e:
-        current_app.logger.error(
-            f"[DATA-AVAILABILITY] Error rendering template: {e}", exc_info=True
-        )
-        if request.args.get("ajax") == "1":
+        current_app.logger.error(f"[DATA-AVAILABILITY] Error: {e}", exc_info=True)
+        if is_ajax:
             return jsonify({"error": "internal_server_error"}), 500
         abort(500)
 
@@ -1120,8 +1191,7 @@ def enrich_datatake_modal():
 
     enriched = enrich_datatake(dt)
 
-    safe_enriched = make_json_safe(enriched)
-    return jsonify(safe_enriched), 200
+    return jsonify(make_json_safe(enriched)), 200
 
 
 @blueprint.route("/acquisitions-status")
@@ -1573,8 +1643,8 @@ def admin_space_segment():
 
     if period == "day":
         cache_range = "24h"
-        period_start = now - relativedelta(days=1)
-        period_end = now
+        period_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        period_end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
     elif period == "week":
         cache_range = "7d"
         period_start = now - relativedelta(days=7)
