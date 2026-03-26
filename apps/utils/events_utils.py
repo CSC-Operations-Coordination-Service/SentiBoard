@@ -612,6 +612,15 @@ def enrich_datatake(dt):
         print(f"Error enriching {dt_id}: {e}")
 
     # print(f"DEBUG: {dt_id} list size: {len(src.get('completeness_list', []))}")
+    # Ensure the root object has the keys the JS expects
+    if "observation_time_start" in src and "start_time" not in dt:
+        dt["start_time"] = src["observation_time_start"]
+    if "observation_time_stop" in src and "stop_time" not in dt:
+        dt["stop_time"] = src["observation_time_stop"]
+
+    # Also ensure the 'raw' object has them to prevent JS lookup errors
+    src["start_time"] = src.get("observation_time_start")
+    src["stop_time"] = src.get("observation_time_stop")
 
     return dt
 

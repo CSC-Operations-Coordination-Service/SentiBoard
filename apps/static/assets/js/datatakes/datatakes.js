@@ -1052,6 +1052,20 @@ class Datatakes {
         return true;
     }
 
+    getValidDate(row) {
+        // Check every possible key coming from Python or the Cache
+        const rawValue = row.start_time ||
+            row.observation_time_start ||
+            (row.raw && row.raw.observation_time_start) ||
+            (row.raw && row.raw.start_time);
+
+        if (!rawValue) return "N/A";
+
+        // IMPORTANT: If rawValue is null/undefined, moment() returns "Now".
+        // We must check if rawValue exists first.
+        return moment.utc(rawValue).format('YYYY-MM-DD HH:mm');
+    }
+
     showTableSection(firstId) {
         const tableSection = document.getElementById("tableSection");
         if (!tableSection) return;
@@ -1107,8 +1121,8 @@ class Datatakes {
             const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
 
             const platform = row.satellite || raw.satellite_unit || "N/A";
-            const startTime = row.start_time ? moment.utc(row.start_time).format('YYYY-MM-DD HH:mm') : "N/A";
-            const stopTime = row.stop_time ? moment.utc(row.stop_time).format('YYYY-MM-DD HH:mm') : "N/A";
+            const startTime = this.getValidDate(row.start_time) ? moment.utc(row.start_time).format('YYYY-MM-DD HH:mm') : "N/A";
+            const stopTime = this.getValidDate(row.stop_time) ? moment.utc(row.stop_time).format('YYYY-MM-DD HH:mm') : "N/A";
 
             // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :

@@ -1109,7 +1109,11 @@ def data_availability():
                 "id": dt_id,
                 "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
                 "start_time": to_utc_iso(start_time) if start_time else None,
+                "observation_time_start": (
+                    to_utc_iso(start_time) if start_time else None
+                ),
                 "stop_time": to_utc_iso(stop_time) if stop_time else None,
+                "observation_time_stop": to_utc_iso(stop_time) if stop_time else None,
                 "acquisition_status": acq_status,
                 "publication_status": pub_status,
                 "raw": src,
@@ -2066,57 +2070,63 @@ def data_access_page():
     )
 
     # PERIOD
-    period = request.args.get("time-period-select", "prev-quarter")
+    period = request.args.get("time-period-select", "prev-quarter-specific")
     logger.info("[DATA ACCESS] period=%s", period)
 
-    if "time-period-select" in request.args:
-        ui_period, effective_period = acquisitions_utils.resolve_period(
-            request_args=request.args,
-            param_name="time-period-select",
-            default=None,
-            logger=logger,
-        )
+    # 2. Normalize 'prev-quarter' to 'prev-quarter-specific' to match your dropdown value
+    if period == "prev-quarter" or not period:
+        period = "prev-quarter-specific"
+
+    now = datetime.now(timezone.utc)
+
+    if period == "day":
+        cache_prefix, cache_range = "last", "24h"
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+    elif period == "week":
+        cache_prefix, cache_range = "last", "7d"
+        start_date = now - relativedelta(days=7)
+        end_date = now
+    elif period == "month":
+        cache_prefix, cache_range = "last", "30d"
+        start_date = now - relativedelta(days=30)
+        end_date = now
+    elif period == "prev-quarter-specific":
+        cache_prefix, cache_range = "previous", "quarter"
+
+        # Exact Calendar Quarter Calculation
+        year = now.year
+        quarter = (now.month - 1) // 3 + 1
+        if quarter == 1:
+            start_year, start_month = year - 1, 10
+        else:
+            start_year, start_month = year, (quarter - 2) * 3 + 1
+
+        start_date = datetime(start_year, start_month, 1, tzinfo=timezone.utc)
+        end_date = (start_date + relativedelta(months=3)) - relativedelta(seconds=1)
     else:
-        ui_period = "prev-quarter"
-        effective_period = "prev-quarter"
+        # Fallback for last-3-months
+        cache_prefix, cache_range = "last", "quarter"
+        start_date = now - relativedelta(months=3)
+        end_date = now
 
-    logger.info(
-        "[PERIOD RESOLVED] UI_PERIOD=%s effective_period=%s",
-        ui_period,
-        effective_period,
-    )
-
-    if period == "prev-quarter-specific" or period == "prev-quarter" or not period:
-        ui_period = "prev-quarter-specific"
-        effective_period = "prev-quarter"
-    else:
-        ui_period = period
-        effective_period = period
-
-    start_date, end_date = acquisitions_utils.getIntervalDates(effective_period)
+    # 3. Synchronize variables for Template and Mapping
+    ui_period = period  # For the dropdown 'selected' state
+    effective_period = period  # For the SSR payload
+    scope = cache_prefix  # 'previous' or 'last'
+    cache_period = cache_range  # 'quarter', '24h', etc.
 
     period_duration_sec = (end_date - start_date).total_seconds()
 
     logger.info(
-        "[SSR WINDOW] start=%s end=%s duration_sec=%.2f",
-        start_date.isoformat(),
-        end_date.isoformat(),
-        period_duration_sec,
+        "[DATA ACCESS] Period: %s | Scope: %s | Range: %s to %s",
+        period,
+        scope,
+        start_date,
+        end_date,
     )
 
-    # Frontend-aligned mapping
-    period_map = {
-        "day": ("last", "24h"),
-        "week": ("last", "7d"),
-        "month": ("last", "30d"),
-        "last-3-months": ("last", "quarter"),
-        "prev-quarter": ("previous", "quarter"),
-    }
-
-    scope, cache_period = period_map.get(period, ("last", "quarter"))
-    logger.info("[SSR PERIOD MAP] scope=%s cache_period=%s", scope, cache_period)
-
-    # Trend + Volume
+    # 4. Fetch Cache (Uses your trend/volume format)
     trend_key = publication_cache.publication_trend_api_format.format(
         scope, cache_period
     )
@@ -2144,23 +2154,22 @@ def data_access_page():
     trend_data = raw_trend.get("data", {})
     volume_data = raw_volume.get("data", {})
 
-    # logger.info(
-    #     "[SSR TREND/VOLUME] trend_keys=%d volume_keys=%d",
-    #     len(trend_data),
-    #     len(volume_data),
-    # )
+    logger.info(
+        "[SSR TREND/VOLUME] trend_keys=%d volume_keys=%d",
+        len(trend_data),
+        len(volume_data),
+    )
 
     # ===== NEW SSR AVAILABILITY (REPLACES API) =====
     interface_status_map = {svc: [] for svc in SERVICE_CACHE_MAP.keys()}
-
     for svc_name, elastic_service_name in SERVICE_CACHE_MAP.items():
 
-        # logger.info(
-        #     "[SSR][ELASTIC] Fetching interface monitoring svc=%s scope=%s period=%s",
-        #     svc_name,
-        #     scope,
-        #     cache_period,
-        # )
+        logger.info(
+            "[SSR][ELASTIC] Fetching interface monitoring svc=%s scope=%s period=%s",
+            svc_name,
+            scope,
+            cache_period,
+        )
 
         # ---- EXACT SAME Elastic calls as API loaders ----
         if scope == "last":
@@ -2228,11 +2237,11 @@ def data_access_page():
                 }
             )
 
-    # logger.info(
-    #     "[SSR][WINDOWED] svc=%s intervals=%d",
-    #     svc_name,
-    #     len(interface_status_map[svc_name]),
-    # )
+    logger.info(
+        "[SSR][WINDOWED] svc=%s intervals=%d",
+        svc_name,
+        len(interface_status_map[svc_name]),
+    )
 
     # AVAILABILITY COMPUTATION
     availability_map = {}
@@ -2245,20 +2254,20 @@ def data_access_page():
             if period_duration_sec > 0
             else 100.0
         )
-
         availability_map[svc] = availability
 
-    # logger.info(
-    #     "[SSR][AVAILABILITY] svc=%s unav_sec=%.2f avail=%.5f",
-    #     svc,
-    #     unav_sec,
-    #     availability,
-    # )
+        interface_status_map[svc] = [
+            {"start": i["start"].isoformat(), "stop": i["stop"].isoformat()}
+            for i in intervals
+        ]
 
     logger.info(
-        "[SSR][AVAILABILITY][FINAL] %s",
-        {k: round(v, 2) for k, v in availability_map.items()},
+        "[SSR][AVAILABILITY] svc=%s unav_sec=%.2f avail=%.5f",
+        svc,
+        unav_sec,
+        availability,
     )
+
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
     # FINAL RENDER
