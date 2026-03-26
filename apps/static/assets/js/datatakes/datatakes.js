@@ -141,10 +141,9 @@ class Datatakes {
             if (!tbody) return;
 
             this.currentPage = page;
-            const dataset = this.mockDataTakes;
+            const dataset = this.mockDataTakes || [];
             const start = (page - 1) * this.rowsPerPage;
-            const end = start + this.rowsPerPage;
-            const current = dataset.slice(start, end);
+            const current = dataset.slice(start, start + this.rowsPerPage);
 
             tbody.innerHTML = "";
 
@@ -158,12 +157,16 @@ class Datatakes {
             }
 
             current.forEach(dt => {
+                const startTimeSource = dt.observation_time_start || dt.start_time || "N/A";
+                const stopTimeSource = dt.observation_time_stop || dt.stop_time || "N/A";
+                const startTime = dt.start_time || (dt.raw && dt.raw.observation_time_start);
+                const stopTime = dt.stop_time || (dt.raw && dt.raw.observation_time_stop);
                 const row = document.createElement('tr');
                 row.innerHTML = `
                 <td>${dt.id}</td>
                 <td>${dt.platform || 'N/A'}</td>
-                <td>${this.formatDate(dt.start_time)}</td>
-                <td>${this.formatDate(dt.stop_time)}</td>
+                <td>${this.formatDate(startTimeSource)}</td> 
+                <td>${this.formatDate(stopTimeSource)}</td>
                 <td><span class="status-circle status-${(dt.acquisition_status || '').toLowerCase()}"></span>
                     ${dt.acquisition_status || 'N/A'}
                 </td>
@@ -213,9 +216,16 @@ class Datatakes {
     }
 
     formatDate(dateStr) {
-        if (!dateStr) return "N/A";
+        // If it's null, undefined, or an empty string, stop immediately
+        if (!dateStr || dateStr === "None" || dateStr === "") return "N/A";
+
         const d = new Date(dateStr);
-        return isNaN(d) ? "N/A" : d.toISOString().replace("T", " ").split(".")[0];
+
+        // Check if the date is valid
+        if (isNaN(d.getTime())) return "N/A";
+
+        // Returns YYYY-MM-DD HH:mm:ss
+        return d.toISOString().replace("T", " ").split(".")[0];
     }
 
     filterDatatakesOnPageLoad(cleanQuery = "") {

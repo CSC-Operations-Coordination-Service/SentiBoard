@@ -397,24 +397,8 @@
 																					<tr>
 																					<td>{{ dt.id }}</td>
 																					<td>{{ dt.platform or 'N/A' }}</td>
-																					<td>
-																						{% if dt.start_time %}
-																							{{ dt.start_time }}
-																						{% elif dt.raw and dt.raw.observation_time_start %}
-																							{{ dt.raw.observation_time_start }}
-																						{% else %}
-																							N/A
-																						{% endif %}
-																					</td>
-																					<td>
-																						{% if dt.stop_time %}
-																							{{ dt.stop_time }}
-																						{% elif dt.raw and dt.raw.observation_time_stop %}
-																							{{ dt.raw.observation_time_stop }}
-																						{% else %}
-																							N/A
-																						{% endif %}
-																					</td>
+																					<td>{{ dt.observation_time_start or dt.start_time or 'N/A' }}</td>
+																					<td>{{ dt.observation_time_stop or dt.stop_time or 'N/A' }}</td>
 																					<td>
 																						<span class="status-circle status-{{ dt.acquisition_status|lower }}"></span>
 																						{{ dt.acquisition_status or 'N/A' }}
