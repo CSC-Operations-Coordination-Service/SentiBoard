@@ -1053,7 +1053,6 @@ class Datatakes {
     }
 
     getValidDate(row) {
-        // Check every possible key coming from Python or the Cache
         const rawValue = row.start_time ||
             row.observation_time_start ||
             (row.raw && row.raw.observation_time_start) ||
@@ -1061,8 +1060,17 @@ class Datatakes {
 
         if (!rawValue) return "N/A";
 
-        // IMPORTANT: If rawValue is null/undefined, moment() returns "Now".
-        // We must check if rawValue exists first.
+        // Format the date strictly using UTC to avoid timezone shifts
+        return moment.utc(rawValue).format('YYYY-MM-DD HH:mm');
+    }
+
+    getValidDateStop(row) {
+        const rawValue = row.stop_time ||
+            row.observation_time_stop ||
+            (row.raw && row.raw.observation_time_stop) ||
+            (row.raw && row.raw.stop_time);
+
+        if (!rawValue) return "N/A";
         return moment.utc(rawValue).format('YYYY-MM-DD HH:mm');
     }
 
@@ -1121,9 +1129,8 @@ class Datatakes {
             const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
 
             const platform = row.satellite || raw.satellite_unit || "N/A";
-            const startTime = this.getValidDate(row.start_time) ? moment.utc(row.start_time).format('YYYY-MM-DD HH:mm') : "N/A";
-            const stopTime = this.getValidDate(row.stop_time) ? moment.utc(row.stop_time).format('YYYY-MM-DD HH:mm') : "N/A";
-
+            const startTime = this.getValidDate(row);
+            const stopTime = this.getValidDateStop(row);
             // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
                 acqStatus === "UNAVAILABLE" ? "#FF0000" :
@@ -1136,7 +1143,7 @@ class Datatakes {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td data-label="Data Take ID">${row.id}</td>
-                <td data-label="Platform">${platform}</td>
+                <td data-label="Platform">${row.platform || (row.raw && row.raw.satellite_unit) || "N/A"}</td>
                 <td data-label="Start Date">${startTime}</td>
                 <td data-label="Stop Date">${stopTime}</td>
                 <td data-label="Acquisition"><span class="status-badge" style="background-color:${acquisitionColor}">${acqStatus}</span></td>

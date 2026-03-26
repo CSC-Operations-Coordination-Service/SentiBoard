@@ -709,19 +709,22 @@
 			}
 			
 		});
-		function openDataTake(id){
-			document.getElementById("datatake_id").value = id;
-			document.getElementById("detailsForm").submit();
-		}
+		
 	</script>
 	<script>
-		function openDatatake(id) {
+		function openDataTake(id) {
 			const spinner = document.getElementById("spinner");
-    		if (spinner) spinner.style.setProperty('display', 'flex', 'important');
-   
+			if (spinner) spinner.style.setProperty('display', 'flex', 'important');
 
-			document.getElementById("datatake_id").value = id;
-			document.getElementById("detailsForm").submit();
+			const input = document.getElementById("datatake_id");
+			const form = document.getElementById("detailsForm");
+			
+			if (input && form) {
+				input.value = id;
+				form.submit();
+			} else {
+				console.error("Details form or input not found!");
+			}
 		}
 	</script>
 	<script>
