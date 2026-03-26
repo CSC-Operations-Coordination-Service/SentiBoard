@@ -504,8 +504,7 @@ class Datatakes {
             setTimeout(() => this.hideSpinner(), 0);
         }
 
-    }
-    async renderInfoTable(dataInput, page = 1) {
+    } async renderInfoTable(dataInput, page = 1) {
         this.showSpinner();
         try {
             const tableBody = document.getElementById("modalInfoTableBody");
@@ -523,9 +522,6 @@ class Datatakes {
             }
 
             const mission = datatake.mission || cleanDataInput.substring(0, 2);
-
-            // --- STRICT COLUMN CONTROL ---
-            // S1 and S2 will NOT have the timeliness column, preventing the leading dash issue.
             const showTimeliness = ["S3", "S5", "S5P"].includes(mission);
 
             this.renderInfoTableHeader(showTimeliness);
@@ -549,14 +545,11 @@ class Datatakes {
 
             const addToMap = (rawType, status, timeliness) => {
                 if (!rawType) return;
-
                 let cleanType = rawType.replace("_local_percentage", "");
                 let finalTimeliness = timeliness && timeliness !== "-" ? timeliness : "";
 
-                // --- DEDUPLICATION LOGIC ---
                 if (showTimeliness) {
                     const validCodes = ["NRTI", "OFFL", "NRT", "STC", "NTC", "NOMINAL", "NR", "ST", "NT", "AL"];
-
                     validCodes.forEach(code => {
                         const globalRegex = new RegExp(`(^|[-_])${code}([-_]|$)`, "gi");
                         if (globalRegex.test(cleanType)) {
@@ -567,7 +560,6 @@ class Datatakes {
                         }
                     });
 
-                    // Mission-specific mapping for S3/S5
                     if (mission === "S3") {
                         if (finalTimeliness === "NRT") finalTimeliness = "NR";
                         if (finalTimeliness === "STC") finalTimeliness = "ST";
@@ -578,23 +570,15 @@ class Datatakes {
                     }
                 }
 
-                // Clean up string artifacts (double underscores, etc.)
                 cleanType = cleanType.replace(/[-_]+/g, "_").replace(/^_+|_+$/g, "");
                 if (!finalTimeliness) finalTimeliness = "-";
 
-                // Unique Key: S1/S2 deduplicate by Type only. S3/S5 deduplicate by Type+Timeliness.
                 const key = showTimeliness ? `${cleanType}|${finalTimeliness}` : cleanType;
-
                 if (!tempMap.has(key)) {
-                    tempMap.set(key, {
-                        productType: cleanType,
-                        status: status,
-                        timeliness: finalTimeliness
-                    });
+                    tempMap.set(key, { productType: cleanType, status: status, timeliness: finalTimeliness });
                 }
             };
 
-            // Process Source 1 & 2
             if (datatake.completeness_list) {
                 datatake.completeness_list.forEach(row => addToMap(row.productType, row.status, row.timeliness));
             }
@@ -607,7 +591,6 @@ class Datatakes {
 
             let dataArray = Array.from(tempMap.values());
 
-            // Filtering & Sorting
             if (mission === "S2") dataArray = dataArray.filter(item => item.productType.includes("MSI"));
 
             dataArray.sort((a, b) => {
@@ -626,8 +609,14 @@ class Datatakes {
                 return a.productType.localeCompare(b.productType);
             });
 
-            // Rendering
-            const pageItems = dataArray.slice((page - 1) * this.infoItemsPerPage, page * this.infoItemsPerPage);
+            // --- PAGINATION CALCULATION ---
+            this.currentPage = page;
+            const totalItems = dataArray.length;
+            const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
+            const startIndex = (this.currentPage - 1) * this.infoItemsPerPage;
+            const pageItems = dataArray.slice(startIndex, startIndex + this.infoItemsPerPage);
+
+            // Render Table Rows
             pageItems.forEach(item => {
                 const row = document.createElement("tr");
                 if (showTimeliness) {
@@ -645,14 +634,42 @@ class Datatakes {
                 tableBody.appendChild(row);
             });
 
-            // ... (Pagination logic) ...
-            this.currentDataArray = dataArray;
-            // (Standard pagination rendering here)
+            // --- RENDER PAGINATION CONTROLS ---
+            if (totalPages > 1) {
+                const makeButton = (text, pageNum, disabled = false, active = false) => {
+                    const btn = document.createElement("button");
+                    btn.textContent = text;
+                    btn.disabled = disabled;
+                    btn.className = `pagination-btn ${active ? 'active' : ''}`;
+                    btn.addEventListener("click", () => this.renderInfoTable(cleanDataInput, pageNum));
+                    return btn;
+                };
+
+                paginationControls.appendChild(makeButton("« Prev", this.currentPage - 1, this.currentPage === 1));
+
+                // Basic logic to show all page numbers
+                for (let i = 1; i <= totalPages; i++) {
+                    paginationControls.appendChild(makeButton(i, i, false, i === this.currentPage));
+                }
+
+                paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
+            }
+
+            // Header labels
+            const headerKey = datatake.details?.key || datatake.id || "-";
+            const headerTime = datatake.details?.timeliness || datatake.raw?.timeliness || "-";
+            $('#datatake-details').empty().append(`
+                <div class="form-group">
+                    <label>Datatake ID: ${headerKey}</label>
+                    <label style="margin-left: 20px;">Timeliness: ${headerTime}</label>
+                </div>
+            `);
 
         } finally {
             setTimeout(() => this.hideSpinner(), 0);
         }
     }
+
     renderInfoTableHeader(showTimeliness) {
         const tableHead = document.querySelector(".custom-box-table-sm thead");
         if (!tableHead) return;
