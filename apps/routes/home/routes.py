@@ -48,6 +48,13 @@ from apps.models.users import get_users as model_get_users
 from apps.models.users import update_user as update_user
 from apps.models.users import save_user as save_user
 from apps.models.users import delete_user as delete_user
+from apps.elastic.modules.datatakes import (
+    _calc_s1_datatake_completeness,
+    _calc_s2_datatake_completeness,
+    _calc_s3_datatake_completeness,
+    _calc_s5_datatake_completeness,
+    _calc_datatake_completeness_status,
+)
 import apps.utils.auth_utils as auth_utils
 import apps.utils.acquisitions_utils as acquisitions_utils
 import apps.cache.modules.unavailability as unavailability_cache
@@ -1065,33 +1072,13 @@ def data_availability():
             src = d.get("_source", {}) or {}
             dt_id = src.get("datatake_id") or src.get("id")
 
-            l0 = src.get("L0_", 0)
-            l1 = src.get("L1_", 0)
-            l2 = src.get("L2_", 0)
+            status_obj = _calc_datatake_completeness_status(src)
+            acq_status = status_obj["ACQ"]["status"]
+            pub_status = status_obj["PUB"]["status"]
 
-            # Logic for ACQ (Priority: L0 -> L1 -> L2)
-            acq_p = (
-                l0
-                if "L0_" in src
-                else (l1 if "L1_" in src else (l2 if "L2_" in src else 0))
-            )
-
-            # Logic for PUB (Average of available)
-            levels = [v for k, v in src.items() if k in ["L0_", "L1_", "L2_"]]
-            pub_p = sum(levels) / len(levels) if levels else 0
-
-            # --- MATCH THE COLORMAP STRINGS ---
-            # Thresholds: 90.0 (Acquired/Published), 10.0 (Partial), else Unavailable
-            acq_status = (
-                "ACQUIRED"
-                if acq_p >= 90
-                else ("PARTIAL" if acq_p >= 10 else "UNAVAILABLE")
-            )
-            pub_status = (
-                "PUBLISHED"
-                if pub_p >= 90
-                else ("PARTIAL" if pub_p >= 10 else "UNAVAILABLE")
-            )
+            # These are the percentages calculated by the shared function
+            acq_p = status_obj["ACQ"]["percentage"]
+            pub_p = status_obj["PUB"]["percentage"]
 
             # --- START OF UPDATED PIECE ---
             # 1. Get the datetime OBJECTS using the safe to_utc (which now returns None on failure)
@@ -1121,10 +1108,7 @@ def data_availability():
             }
 
             # Inject the completeness_status object into 'raw' so JS 'renderTableWithoutPagination' finds it
-            item_normalized["raw"]["completeness_status"] = {
-                "ACQ": {"status": acq_status, "percentage": acq_p},
-                "PUB": {"status": pub_status, "percentage": pub_p},
-            }
+            item_normalized["raw"]["completeness_status"] = status_obj
 
             if index == 0 and not is_ajax:
                 datatakes_for_ssr.append(enrich_datatake(item_normalized))
