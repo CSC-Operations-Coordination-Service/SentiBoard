@@ -217,14 +217,14 @@ class PublicationStatistics {
 
     init() {
         console.log("[PublicationStatistics] INIT");
-
+        let raw_period = window.SSR_PERIOD_TYPE || "prev-quarter";
+        this.period_type = raw_period;
         // Fail-safe SSR period reading
         if (!window.SSR_PERIOD_TYPE) {
             console.warn("[SSR WARNING] SSR_PERIOD_TYPE not set, defaulting to prev-quarter");
             window.SSR_PERIOD_TYPE = "prev-quarter";
         }
 
-        this.period_type = window.SSR_PERIOD_TYPE || "prev-quarter";
 
         this.dataType = window.SSR_DATA_TYPE || "NUM";
         const dropDownValue = window.SSR_UI_PERIOD;
@@ -389,21 +389,28 @@ class PublicationStatistics {
     }
 
     initTrendParameters(period_type) {
+        const lookupKey = (period_type === 'prev-quarter-specific') ? 'prev-quarter' : period_type;
         const obs = new ObservationTimePeriod();
-        const dates = obs.getIntervalDates(period_type);
+        const dates = obs.getIntervalDates(lookupKey);
 
         this.start_date = dates[0];
         this.end_date = dates[1];
 
-        this.trend_numperiods =
-            TrendChart.subperiod_config[period_type][0];
-        this.trend_subperiodtype =
-            TrendChart.subperiod_config[period_type][1];
+        // Access the config using the translated key to avoid "undefined" error
+        const config = TrendChart.subperiod_config[lookupKey];
+
+        if (config) {
+            this.trend_numperiods = config[0];
+            this.trend_subperiodtype = config[1];
+        } else {
+            console.error(`[SM] No config found for period: ${lookupKey}`);
+        }
 
         console.log(
             "[TREND PARAMS]",
-            "subperiod:", this.trend_subperiodtype,
-            "num:", this.trend_numperiods
+            "original:", period_type,
+            "using lookup:", lookupKey,
+            "subperiod:", this.trend_subperiodtype
         );
     }
 
