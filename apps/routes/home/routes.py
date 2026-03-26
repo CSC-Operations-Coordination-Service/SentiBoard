@@ -1093,27 +1093,28 @@ def data_availability():
                 else ("PARTIAL" if pub_p >= 10 else "UNAVAILABLE")
             )
 
-            start_time = (
-                to_utc(src.get("observation_time_start"))
-                if src.get("observation_time_start")
-                else None
-            )
-            stop_time = (
-                to_utc(src.get("observation_time_stop"))
-                if src.get("observation_time_stop")
-                else None
-            )
+            # --- START OF UPDATED PIECE ---
+            # 1. Get the datetime OBJECTS using the safe to_utc (which now returns None on failure)
+            raw_start = src.get("observation_time_start")
+            raw_stop = src.get("observation_time_stop")
+
+            start_time_obj = to_utc(raw_start)
+            stop_time_obj = to_utc(raw_stop)
+
+            # 2. Convert to ISO strings using the safe to_utc_iso
+            # If start_time_obj is None, these will now be None (showing N/A)
+            # instead of Today's date.
+            start_iso = to_utc_iso(start_time_obj)
+            stop_iso = to_utc_iso(stop_time_obj)
 
             # Using enrich_datatake as your final formatter
             item_normalized = {
                 "id": dt_id,
                 "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
-                "start_time": to_utc_iso(start_time) if start_time else None,
-                "observation_time_start": (
-                    to_utc_iso(start_time) if start_time else None
-                ),
-                "stop_time": to_utc_iso(stop_time) if stop_time else None,
-                "observation_time_stop": to_utc_iso(stop_time) if stop_time else None,
+                "start_time": start_iso,
+                "observation_time_start": start_iso,
+                "stop_time": stop_iso,
+                "observation_time_stop": stop_iso,
                 "acquisition_status": acq_status,
                 "publication_status": pub_status,
                 "raw": src,

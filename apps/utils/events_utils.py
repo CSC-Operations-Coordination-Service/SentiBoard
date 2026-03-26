@@ -27,25 +27,45 @@ THRESHOLD_RECOVERED = 90.0
 THRESHOLD_PARTIAL = 10.0
 
 
+from datetime import datetime, timezone
+
+
 def to_utc(dt):
     """
     Convert a datetime or string to UTC datetime (aware).
-    Returns a datetime object, not a string.
+    Returns a datetime object, or None if parsing fails.
     """
-    if isinstance(dt, str):
-        try:
-            if "/" in dt:
-                dt = datetime.strptime(dt, "%d/%m/%Y %H:%M:%S")
-            else:
-                dt = datetime.fromisoformat(dt)
-        except Exception:
-            dt = datetime.now(timezone.utc)
+    if not dt:
+        return None
 
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt
+    if isinstance(dt, str):
+        # Clean the string
+        dt_str = dt.strip()
+        if dt_str.lower() in ["none", "null", ""]:
+            return None
+
+        try:
+            if "/" in dt_str:
+                dt = datetime.strptime(dt_str, "%d/%m/%Y %H:%M:%S")
+            else:
+                # Replace 'Z' with +00:00 for older Python fromisoformat compatibility
+                dt = datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+        except Exception:
+            # CRITICAL: Return None instead of datetime.now()
+            return None
+
+    # Final check: if dt is not a datetime object, return None
+    if not isinstance(dt, datetime):
+        return None
+
+    try:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+        return dt
+    except Exception:
+        return None
 
 
 def safe_get(val, default=""):
@@ -128,24 +148,44 @@ def datatake_sort_key(dt):
 
 def to_utc_iso(dt):
     """
-    Convert a datetime to UTC and return ISO string.
+    Convert a datetime or string to UTC and return ISO string.
+    Returns None if parsing fails to avoid defaulting to today's date.
     """
+    if not dt:
+        return None
+
     if isinstance(dt, str):
-        # try to parse string first
+        # Stop early if the string itself says "None" or is empty
+        if dt.strip().lower() in ["none", "null", ""]:
+            return None
+
         try:
             if "/" in dt:
+                # Handle DD/MM/YYYY HH:MM:SS
                 dt = datetime.strptime(dt, "%d/%m/%Y %H:%M:%S")
             else:
-                dt = datetime.fromisoformat(dt)
+                # Handle ISO formats (e.g., 2026-03-19T12:11:15.000Z)
+                # .replace('Z', '+00:00') ensures compatibility with older Python versions
+                clean_dt = dt.replace("Z", "+00:00")
+                dt = datetime.fromisoformat(clean_dt)
         except Exception:
-            # fallback to now
-            dt = datetime.now(timezone.utc)
+            # If parsing fails, we return None.
+            return None
 
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    else:
-        dt = dt.astimezone(timezone.utc)
-    return dt.isoformat()
+    # Final check: if dt is not a datetime object by now, we can't process it
+    if not isinstance(dt, datetime):
+        return None
+
+    try:
+        # Handle timezone awareness
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+
+        return dt.isoformat()
+    except Exception:
+        return None
 
 
 def get_impacted_satellite(a):

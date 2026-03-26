@@ -157,16 +157,14 @@ class Datatakes {
             }
 
             current.forEach(dt => {
-                const startTimeSource = dt.observation_time_start || dt.start_time || "N/A";
-                const stopTimeSource = dt.observation_time_stop || dt.stop_time || "N/A";
-                const startTime = dt.start_time || (dt.raw && dt.raw.observation_time_start);
-                const stopTime = dt.stop_time || (dt.raw && dt.raw.observation_time_stop);
+                const rawStart = (dt.raw && dt.raw.observation_time_start) || dt.start_time;
+                const rawStop = (dt.raw && dt.raw.observation_time_stop) || dt.stop_time;
                 const row = document.createElement('tr');
                 row.innerHTML = `
                 <td>${dt.id}</td>
                 <td>${dt.platform || 'N/A'}</td>
-                <td>${this.formatDate(startTimeSource)}</td> 
-                <td>${this.formatDate(stopTimeSource)}</td>
+                <td>${this.formatDate(rawStart)}</td> 
+                <td>${this.formatDate(rawStop)}</td>
                 <td><span class="status-circle status-${(dt.acquisition_status || '').toLowerCase()}"></span>
                     ${dt.acquisition_status || 'N/A'}
                 </td>
@@ -216,16 +214,21 @@ class Datatakes {
     }
 
     formatDate(dateStr) {
-        // If it's null, undefined, or an empty string, stop immediately
-        if (!dateStr || dateStr === "None" || dateStr === "") return "N/A";
+        // If Python returned None, dateStr will be null or undefined
+        if (!dateStr || dateStr === "None" || dateStr === "null") {
+            return "N/A";
+        }
 
         const d = new Date(dateStr);
 
-        // Check if the date is valid
-        if (isNaN(d.getTime())) return "N/A";
+        // Final safety check for invalid dates
+        if (isNaN(d.getTime())) {
+            return "N/A";
+        }
 
-        // Returns YYYY-MM-DD HH:mm:ss
-        return d.toISOString().replace("T", " ").split(".")[0];
+        // Format as YYYY-MM-DD HH:mm (UTC)
+        const pad = (n) => n.toString().padStart(2, '0');
+        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
     }
 
     filterDatatakesOnPageLoad(cleanQuery = "") {
