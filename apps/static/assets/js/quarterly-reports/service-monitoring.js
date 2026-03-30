@@ -42,6 +42,16 @@ delivered to him.
 class ServiceMonitoring {
 
     constructor() {
+        // Set of colors associated to service
+        this.serviceColorMap = {
+            'DAS': 'info',
+            'DHUS': 'warning',
+            'ACRI': 'primary',
+            'CLOUDFERRO': 'secondary',
+            'EXPRIVIA': 'success',
+            'WERUM': 'warning'
+        };
+
         this.archivePayload = window.SHARED_SSR_PAYLOAD ||
             window.SSR_ARCHIVE_PAYLOAD ||
             window.SSR_SERVICE_MONITORING_PAYLOAD || {};
