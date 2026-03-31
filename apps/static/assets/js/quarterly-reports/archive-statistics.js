@@ -136,7 +136,7 @@ class ArchiveStatisticsCharts {
 
         let defaultPeriod = this.datasets["prev-quarter-specific"] ? "prev-quarter-specific" : "prev-quarter";
 
-        console.info("[ARCHIVE][INIT] forcing default period:", defaultPeriod);
+        //console.info("[ARCHIVE][INIT] forcing default period:", defaultPeriod);
 
         if (periodSelect) {
             periodSelect.value = defaultPeriod;
@@ -212,7 +212,7 @@ class ArchiveStatisticsCharts {
 
         const lifetimePayload = this.datasets["lifetime"];
         if (lifetimePayload?.data?.length) {
-            console.info("[ARCHIVE][SSR] Rendering lifetime charts");
+            //console.info("[ARCHIVE][SSR] Rendering lifetime charts");
             this.loadArchive(lifetimePayload, LifetimeKey);
         }
         this.setLastUpdatedLabel(new Date(payload.interval.to));
@@ -302,9 +302,9 @@ class ArchiveStatisticsCharts {
             return;
         }
 
-        console.info(
+        /*console.info(
             `[ARCHIVE][SSR] Rendering ${rows.length} rows for ${periodType}`
-        );
+        );*/
 
         const archiveStatistics = this.computeArchiveStatistics(rows);
 
@@ -389,7 +389,7 @@ class ArchiveStatisticsCharts {
     }
 
     drawDetailedBarChart(chartId, archiveLevelDetailData, dataType, periodType) {
-        console.log("Drawing Stacked Bars with ID " + chartId + ", for period type " + periodType);
+        //console.log("Drawing Stacked Bars with ID " + chartId + ", for period type " + periodType);
         //console.debug("Data to be put on Detail chart: ", archiveLevelDetailData);
 
         var chartCanvas = document.getElementById(chartId);
@@ -401,7 +401,7 @@ class ArchiveStatisticsCharts {
         }
         // Get the labels to associate with legends (labels for each portion of a stack
         var stackLabels = this._extractAllSubObjectsKeys(Object.values(archiveLevelDetailData)).sort();
-        console.debug("Extracted all Level Keys", stackLabels);
+        //console.debug("Extracted all Level Keys", stackLabels);
 
         var barDetailDatasets = this._buildHomogeneousDetailedDatasets(stackLabels, archiveLevelDetailData);
         //console.debug("Level/Mission Datasets: ", barDetailDatasets);
@@ -410,7 +410,7 @@ class ArchiveStatisticsCharts {
             datasets: barDetailDatasets, // datsets with integrated missing elements
             labels: stackLabels  // Names of each dataset elements
         };
-        console.debug("Creating Stacked Bar with Data: ", barData);
+        //console.debug("Creating Stacked Bar with Data: ", barData);
         var barAxisTicks = {};
         var barStackAxisTicks = {
             beginAtZero: true,
@@ -643,10 +643,10 @@ let archiveStatistics = new ArchiveStatisticsCharts();
     try {
         window.SSR_ARCHIVE_PAYLOAD = JSON.parse(el.textContent);
         //console.info('[SM][SSR] Archive payload periods:', Object.keys(window.SSR_ARCHIVE_PAYLOAD));
-        console.log(
+        /*console.log(
             "[ARCHIVE][SSR] availability_map:",
             SSR_ARCHIVE_PAYLOAD["prev-quarter"]?.availability_map
-        );
+        );*/
     } catch (e) {
         console.error('[SM][SSR][FATAL] Invalid JSON in archive payload', e);
         return;

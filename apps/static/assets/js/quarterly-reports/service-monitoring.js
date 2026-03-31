@@ -66,28 +66,39 @@ class ServiceMonitoring {
     }
 
     init() {
+        //console.group('[SM][INIT]');
+
+        // 1. HYDRATION: Convert strings to Dates for ALL periods in the payload
+        const servicesList = ["ACRI", "CLOUDFERRO", "EXPRIVIA", "WERUM", "DAS", "DHUS"];
+
+        Object.keys(this.archivePayload).forEach(periodKey => {
+            const pData = this.archivePayload[periodKey];
+            if (pData && pData.interface_status_map) {
+                servicesList.forEach(s => {
+                    const events = pData.interface_status_map[s];
+                    if (Array.isArray(events)) {
+                        events.forEach(ev => {
+                            if (ev.start && typeof ev.start === 'string') ev.start = new Date(ev.start);
+                            if (ev.stop && typeof ev.stop === 'string') ev.stop = new Date(ev.stop);
+                        });
+                    }
+                });
+            }
+        });
+
+        // 2. Logic to choose the starting period
         if (this.archivePayload.availability_map) {
-            console.info('[SM][INIT] Detected Flat Payload (Data Access)');
-            this.currentPeriod = 'default'; // Set a dummy period so event lookup works
+            this.currentPeriod = 'default';
             this.availabilityMap = this.archivePayload.availability_map;
             this.interfaceStatusMap = this.archivePayload.interface_status_map || {};
-
-            // Map it to our period cache so showUnavailabilityEvents can find it
-            this.availabilityMapPerPeriod['default'] = this.availabilityMap;
-            this.interfaceStatusMapPerPeriod['default'] = this.interfaceStatusMap;
-
             this.render();
         }
-        // Case B: Archive Page (Nested structure)
         else if (this.archivePayload['prev-quarter'] || this.archivePayload['24h']) {
-            console.info('[SM][INIT] Detected Period-based Payload (Archive)');
+            // This triggers the calculation logic below
             this.refreshAvailabilityStatus('prev-quarter');
         }
-        else {
-            console.error('[SM][INIT] Payload is empty or format unknown');
-        }
 
-        console.groupEnd();
+        //console.groupEnd();
     }
 
 
@@ -113,35 +124,82 @@ class ServiceMonitoring {
 
     refreshAvailabilityStatus(periodKey) {
         console.info(`[SM][PERIOD] Switching to ${periodKey}`);
-
         this.currentPeriod = periodKey;
 
-        // Ensure per-period caches exist
-        if (!this.availabilityMapPerPeriod) this.availabilityMapPerPeriod = {};
-        if (!this.interfaceStatusMapPerPeriod) this.interfaceStatusMapPerPeriod = {};
-
-        // Get payload for the period, fallback to empty
         const payload = this.archivePayload[periodKey] || {};
+        this.availabilityMap = payload.availability_map || {};
+        this.interfaceStatusMap = payload.interface_status_map || {};
 
-        // Update per-period maps
-        this.availabilityMapPerPeriod[periodKey] = payload.availability_map || {};
-        this.interfaceStatusMapPerPeriod[periodKey] = payload.interface_status_map || {};
+        const legacyMap = {
+            '24h': 'day',
+            '7d': 'week',
+            '30d': 'month',
+            'prev-quarter': 'prev-quarter',
+            'last-quarter': 'prev-quarter'
+        };
 
-        // Normalize interface map: ensure each service has an array
-        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM', 'DAS', 'DHUS'];
-        services.forEach(svc => {
-            if (!Array.isArray(this.interfaceStatusMapPerPeriod[periodKey][svc])) {
-                this.interfaceStatusMapPerPeriod[periodKey][svc] = [];
+        let legacyKey = legacyMap[periodKey] || periodKey;
+
+        let dates;
+        let isFallback = false;
+        try {
+            dates = new ObservationTimePeriod().getIntervalDates(legacyKey);
+            this.start_date = dates[0];
+            this.end_date = dates[1];
+        } catch (e) {
+            isFallback = true;
+            if (payload.interval) {
+                this.start_date = new Date(payload.interval.from);
+                this.end_date = new Date(payload.interval.to);
             }
+        }
+
+        var periodDurationSec;
+        if (isFallback) {
+            if (periodKey === '7d') periodDurationSec = 7 * 24 * 60 * 60;
+            else if (periodKey === '30d') periodDurationSec = 30 * 24 * 60 * 60;
+            else if (periodKey === '24h') periodDurationSec = 24 * 60 * 60;
+            else {
+                periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
+            }
+        } else {
+            periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
+        }
+
+        console.info(`[SM][MATH] Period: ${periodKey} | Duration: ${periodDurationSec}s`);
+
+        this.render();
+
+        var debugResults = [];
+        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM', 'DAS', 'DHUS'];
+
+        services.forEach((key) => {
+            var serviceUnavDurationSec = 0;
+            const events = this.interfaceStatusMap[key] || [];
+
+            events.forEach((item) => {
+                if (item.start instanceof Date && item.stop instanceof Date) {
+                    serviceUnavDurationSec += (item.stop.getTime() - item.start.getTime()) / 1000;
+                }
+            });
+
+            // Use the standardized denominator we established earlier
+            var serviceAvailabityPerc = (1 - serviceUnavDurationSec / periodDurationSec) * 100;
+            var displayValue = serviceAvailabityPerc.toFixed(2) + '%';
+
+            var id_base = key.toLowerCase();
+            $(`#${id_base}-avail-perc`).text(displayValue);
+            $(`#${id_base}-interface-avail-perc`).text(displayValue);
+            $(`#${id_base}-avail-bar`).css({ "width": displayValue });
+
+            debugResults.push({
+                Service: key,
+                'Status': 'Corrected (Single-Count)',
+                'Downtime (s)': serviceUnavDurationSec.toFixed(1),
+                'Final %': displayValue
+            });
         });
 
-        // Activate current maps
-        this.availabilityMap = this.availabilityMapPerPeriod[periodKey];
-        this.interfaceStatusMap = this.interfaceStatusMapPerPeriod[periodKey];
-
-
-        // Render UI and ensure previous event displays are cleared
-        this.render();
     }
 
     showUnavailabilityEvents(service) {

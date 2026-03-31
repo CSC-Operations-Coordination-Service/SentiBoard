@@ -93,7 +93,7 @@ class Datatakes {
                 console.warn("[DATATAKES] No items available to render charts.");
             }
 
-            console.log("[DATATAKES] Initialization complete");
+            //console.log("[DATATAKES] Initialization complete");
 
         } catch (err) {
             console.error("[DATATAKES] Init error:", err);
@@ -747,7 +747,7 @@ class Datatakes {
             (dt.id || "").toUpperCase() === (normalizedLinkKey || "").toUpperCase() // Changed from startsWith to strict equality
         );
 
-        console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
+        //console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
 
         if (relevantData.length === 0) {
             console.warn(`No data found for key: ${normalizedLinkKey}`);
@@ -755,7 +755,7 @@ class Datatakes {
         }
 
         const entry = relevantData[0];
-        console.log(`[DEBUG] Chart Update for ${normalizedLinkKey}:`, entry.raw?.completeness_status);
+        //console.log(`[DEBUG] Chart Update for ${normalizedLinkKey}:`, entry.raw?.completeness_status);
 
 
         // Shared color map
@@ -779,7 +779,7 @@ class Datatakes {
             const entry = relevantData[0];
             const pub = entry.raw?.completeness_status?.PUB || {};
             const percentage = pub.percentage !== undefined ? parseFloat(pub.percentage) : 0;
-            console.log(`[DEBUG] ${normalizedLinkKey} PUB Percentage:`, percentage);
+            //console.log(`[DEBUG] ${normalizedLinkKey} PUB Percentage:`, percentage);
 
             const status = pub.status?.toUpperCase() || "UNKNOWN";
             const remaining = Math.max(0, 100 - percentage);

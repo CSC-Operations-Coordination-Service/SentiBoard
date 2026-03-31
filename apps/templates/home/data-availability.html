@@ -544,27 +544,22 @@
 				console.log(`[Date Range] Limits set for ${period}: ${min} to ${max}`);
 			};
 
-			// 3. Execute on load
 			setDateRangeLimits(periodValue);
 
 			if (missionSelect && satelliteSelect) {
-				// Initial state on page load
 				const selectedMission = missionSelect.value.toUpperCase();
 				satelliteSelect.disabled = (selectedMission === "S5");
 
 				missionSelect.addEventListener("change", () => {
 					const val = missionSelect.value.toUpperCase();
 					
-					// Logic: Reset search if mission cleared
 					if (val === "" && searchInput) {
 						searchInput.value = "";
 					}
 
-					// UI: Disable satellite for S5
 					satelliteSelect.disabled = (val === "S5");
 
 					showSpinner();
-					// We manually submit here to ensure 'searchInput' reset is captured
 					filterForm.submit(); 
 				});
 			}
@@ -573,7 +568,6 @@
 
 			if (searchInput && filterForm) {
 				searchInput.addEventListener("input", () => {
-					// Clear the timer if the user is still typing
 					clearTimeout(searchTimeout);
 					
 					searchTimeout = setTimeout(() => {
@@ -594,7 +588,6 @@
 
 			// Show spinner when any filter is changed
 			if (filterForm) {
-				// Combine all inputs into one listener logic
 				const inputs = filterForm.querySelectorAll('select, input[type="datetime-local"]');
 				inputs.forEach(input => {
 					input.addEventListener('change', () => {
@@ -640,31 +633,25 @@
 			const updateSatelliteUI = () => {
 				const selectedMission = missionSelect.value.toUpperCase(); // e.g., "S1", "S2", "S3", "S5"
     
-				// 1. If mission is cleared (empty), show all satellites and enable the dropdown
 				if (!selectedMission) {
 					satelliteSelect.disabled = false;
 					Array.from(satelliteSelect.options).forEach(opt => opt.style.display = "block");
 					return;
 				}
 
-				// 2. Clear selected satellite if it doesn't belong to the new mission
-				// Example: if satellite was "S1A" and mission becomes "S2", reset to ""
 				if (satelliteSelect.value && !satelliteSelect.value.startsWith(selectedMission)) {
 					satelliteSelect.value = ""; 
 				}
 
-				// 3. Mission-specific logic
 				if (selectedMission === "S5") {
 					satelliteSelect.disabled = true;
 					satelliteSelect.value = "";
 				} else {
 					satelliteSelect.disabled = false;
 					
-					// 4. Filter the dropdown options visually
 					Array.from(satelliteSelect.options).forEach(opt => {
-						if (opt.value === "") return; // Don't hide the "All Satellites" placeholder
+						if (opt.value === "") return; 
 						
-						// Show only satellites starting with the mission code (S1, S2, or S3)
 						const matches = opt.value.toUpperCase().startsWith(selectedMission);
 						opt.style.display = matches ? "block" : "none";
 					});
@@ -694,7 +681,7 @@
 
 			// Initialize JS controller
 			try {
-				console.info("[DATA-AVAILABILITY] Initializing Datatakes controller...");
+				//console.info("[DATA-AVAILABILITY] Initializing Datatakes controller...");
 				window.datatakes = new Datatakes(serverData);
 				window.datatakes.init();
 

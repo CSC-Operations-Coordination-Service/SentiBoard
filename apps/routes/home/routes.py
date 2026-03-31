@@ -900,11 +900,11 @@ def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = request.url
     segment = "data-availability"
-    BATCH_SIZE = 20  # Consistent batch size for pagination
+    BATCH_SIZE = 20
 
     try:
-        current_app.logger.info("\n" + "=" * 50)
-        current_app.logger.info("[DATA-AVAILABILITY] ROUTE TRIGGERED")
+        # current_app.logger.info("\n" + "=" * 50)
+        # current_app.logger.info("[DATA-AVAILABILITY] ROUTE TRIGGERED")
         # Log every single argument arriving from the browser
         current_app.logger.info(f"[ARGS RECEIVED] {dict(request.args)}")
 
@@ -913,9 +913,9 @@ def data_availability():
         is_ajax = request.args.get("ajax") == "1"
         search_query = request.args.get("search", "").strip()
         mission_filter = request.args.get("mission", "").upper()
-        current_app.logger.info(
-            f"[LOG] Filters -> Mission: '{mission_filter}', Limit: {limit}"
-        )
+        # current_app.logger.info(
+        #    f"[LOG] Filters -> Mission: '{mission_filter}', Limit: {limit}"
+        # )
 
         sat_filter = request.args.get("satellite", "")
 
@@ -932,9 +932,9 @@ def data_availability():
             "selected_period", "week"
         )
 
-        current_app.logger.info(
-            f"[EXTRACTED] Mission: '{mission_filter}' | Sat: '{sat_filter}' | Search: '{search_query}' | Period: '{selected_period}'"
-        )
+        # current_app.logger.info(
+        #     f"[EXTRACTED] Mission: '{mission_filter}' | Sat: '{sat_filter}' | Search: '{search_query}' | Period: '{selected_period}'"
+        # )
 
         if has_search and not request.args.get("period"):
             selected_period = "prev-quarter"
@@ -970,9 +970,9 @@ def data_availability():
         anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
         datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
 
-        current_app.logger.info(
-            f"[LOG] Cache Loaded. Total items in raw cache: {len(datatakes_data)}"
-        )
+        # current_app.logger.info(
+        #    f"[LOG] Cache Loaded. Total items in raw cache: {len(datatakes_data)}"
+        # )
 
         # --- POST: datatake details ---
         datatake_details = None
@@ -996,10 +996,10 @@ def data_availability():
             "last", dt_suffix
         )
 
-        current_app.logger.info(f"[CACHE] Loading from URI: {datatakes_cache_uri}")
-        current_app.logger.info(
-            f"[CACHE] Items found in raw cache: {len(datatakes_data)}"
-        )
+        # current_app.logger.info(f"[CACHE] Loading from URI: {datatakes_cache_uri}")
+        # current_app.logger.info(
+        #    f"[CACHE] Items found in raw cache: {len(datatakes_data)}"
+        # )
 
         filtered_raw = []
         mission_counts = {}
@@ -1041,10 +1041,10 @@ def data_availability():
 
             filtered_raw.append(item)
 
-        current_app.logger.info(
-            f"[LOG] Global Mission Distribution in Cache: {mission_counts}"
-        )
-        current_app.logger.info(f"[LOG] Items passing filters: {len(filtered_raw)}")
+        # current_app.logger.info(
+        #    f"[LOG] Global Mission Distribution in Cache: {mission_counts}"
+        # )
+        # current_app.logger.info(f"[LOG] Items passing filters: {len(filtered_raw)}")
 
         # --- Pagination ---
         try:
@@ -1063,9 +1063,9 @@ def data_availability():
         paged_raw_data = filtered_raw[:limit]
         has_more = total_found > limit
 
-        current_app.logger.info(
-            f"[LOG] Pagination: Showing {len(paged_raw_data)} of {total_found}"
-        )
+        # current_app.logger.info(
+        #    f"[LOG] Pagination: Showing {len(paged_raw_data)} of {total_found}"
+        # )
 
         datatakes_for_ssr = []
         for index, d in enumerate(paged_raw_data):
@@ -1081,7 +1081,6 @@ def data_availability():
             pub_p = status_obj["PUB"]["percentage"]
 
             # --- START OF UPDATED PIECE ---
-            # 1. Get the datetime OBJECTS using the safe to_utc (which now returns None on failure)
             raw_start = src.get("observation_time_start")
             raw_stop = src.get("observation_time_stop")
 
@@ -1089,12 +1088,9 @@ def data_availability():
             stop_time_obj = to_utc(raw_stop)
 
             # 2. Convert to ISO strings using the safe to_utc_iso
-            # If start_time_obj is None, these will now be None (showing N/A)
-            # instead of Today's date.
             start_iso = to_utc_iso(start_time_obj)
             stop_iso = to_utc_iso(stop_time_obj)
 
-            # Using enrich_datatake as your final formatter
             item_normalized = {
                 "id": dt_id,
                 "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
@@ -1116,7 +1112,6 @@ def data_availability():
                 item_normalized["is_lightweight"] = True
                 datatakes_for_ssr.append(item_normalized)
 
-        # --- 9. Payload Preparation ---
         payload = {
             "anomalies": replace_undefined(anomalies_data),
             "datatakes": datatakes_for_ssr,
@@ -1150,9 +1145,9 @@ def data_availability():
                 200,
             )
 
-        current_app.logger.info(
-            f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} items to frontend"
-        )
+        # current_app.logger.info(
+        #    f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} items to frontend"
+        # )
 
         return render_template(
             "home/data-availability.html",
@@ -1198,9 +1193,9 @@ def acquisitions_status():
     try:
         logger.info("[BEG] SSR: Acquisitions Status")
 
-        logger.info("[BEG] Retrieve Acquisition Plans Coverage")
+        # logger.info("[BEG] Retrieve Acquisition Plans Coverage")
         plans_raw = acquisition_plans_cache.get_acquisition_plans_coverage()
-        logger.info("[END] Retrieve Acquisition Plans Coverage")
+        # logger.info("[END] Retrieve Acquisition Plans Coverage")
 
         if isinstance(plans_raw, Response):
             try:
@@ -2325,13 +2320,13 @@ def data_archive_page():
                 service=service, period_type=ptype, period_id=pid
             )
 
-            logger.info(
-                "[SSR][IM][%s][%s] events=%d sample=%s",
-                service,
-                label,
-                len(events),
-                events[:1],
-            )
+            # logger.info(
+            #     "[SSR][IM][%s][%s] events=%d sample=%s",
+            #     service,
+            #     label,
+            #     len(events),
+            #     events[:1],
+            # )
 
             period_events.extend(events)
 
@@ -2375,7 +2370,7 @@ def data_archive_page():
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
-    logger.info("[SSR][DONE] Payload ready")
+    # logger.info("[SSR][DONE] Payload ready")
 
     return render_template(
         "home/data-archive.html",
@@ -2504,11 +2499,9 @@ def show_anomalies_page():
         pub_date = a.get("publicationDate")
         if pub_date and isinstance(pub_date, str):
             try:
-                # Adjust the format string below to match exactly how your JSON stores dates
-                # Usually ISO format: '2026-03-06T10:20:49'
                 a["publicationDate"] = datetime.fromisoformat(pub_date.replace("Z", ""))
             except Exception:
-                pass  # Keep as string if parsing fails
+                pass
 
     return render_template(
         "admin/anomalies.html", anomalies=anomalies_list, anomalies_json=anomalies_json
