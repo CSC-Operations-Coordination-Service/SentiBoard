@@ -299,6 +299,7 @@ def start_scheduler(app):
         import time
         import schedule
 
+        time.sleep(1)
         app.logger.info("[BEG] Scheduler - RUN ALL tasks")
         try:
             schedule.run_all(10)
