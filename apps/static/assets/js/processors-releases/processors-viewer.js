@@ -326,11 +326,19 @@ class ProcessorsViewer {
         // var picture = '<img src="/static/assets/img/maintenance.png" style="width: 36px; height: 36px;">';
 
         // Return the event instance
+
+        var group;
+        try {
+            group = this.IPFsGroupsMap[category_id];
+        }
+        catch (er) {
+            group = "";
+        }
         return {
             id: procRelease['id'].concat("-", category_id),
             release_id: procRelease['id'],
             title: title,
-            group: this.IPFsGroupsMap[category_id],
+            group: group,
             start: start_time,
             end: end_time,
             className: cssClass,
