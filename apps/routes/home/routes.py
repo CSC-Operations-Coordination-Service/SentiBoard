@@ -96,127 +96,114 @@ from apps.utils.events_utils import (
 
 PAGE_METADATA = {
     "index.html": {
-        "title": "Copernicus Sentinel Operations Dashboard | Real-Time Satellite Data & Events",
+        "title": "Copernicus Sentinel Operations Dashboard | Real-Time Satellite Monitoring",
         "description": (
-            "The Copernicus Sentinel Operations Dashboard (Sentiboard) provides real-time satellite data,"
-            " mission events, data availability, and acquisition status for ESA's Copernicus Sentinel missions. "
-            "Monitor Earth observation activities, satellite events, and mission performance through the official ESA operations dashboard. "
-            "ESA operations dashboard."
+            "Track live Sentinel satellite events, data availability, "
+            "and acquisition status on the official Copernicus Operations Dashboard (Sentiboard). "
+            "Updated every hour for ESA Sentinel-1, -2, -3, and -5P missions."
         ),
         "page_keywords": [
-            "Copernicus Sentinel Operations Dashboard",
-            "Sentiboard real-time satellite data",
-            "ESA Sentinel mission events",
-            "Sentinel data availability monitoring",
-            "Acquisition status of Copernicus satellites",
-            "Sentinel processors release timeline",
-            "Real-time satellite event dashboard",
+            "Copernicus Sentinel Operations Dashboard real-time",
+            "Sentiboard live satellite data",
+            "ESA Sentinel mission monitoring dashboard",
+            "Sentinel real-time acquisition and events",
+            "Copernicus Earth observation status",
         ],
     },
     "about.html": {
-        "title": "About the Copernicus Sentinel Dashboard | ESA Earth Observation Missions",
+        "title": "About Sentiboard | ESA Copernicus Sentinel Operations Dashboard",
         "description": (
-            "Learn about the Copernicus Sentinel Dashboard (Sentiboard) and how it supports real-time monitoring of ESA Earth observation missions. "
-            "Discover how Sentinel satellite data availability, acquisition status, and mission events are tracked to provide reliable satellite data services. "
+            "Learn how Sentiboard — the ESA Copernicus Sentinel Operations Dashboard — monitors real-time satellite events, "
+            "data availability, and acquisition status for Sentinel-1, -2, -3, and -5P. Free and publicly accessible."
         ),
         "page_keywords": [
-            "Copernicus Earth observation programme",
-            "Sentinel satellite data monitoring",
-            "ESA Copernicus Space Component",
-            "Sentinel mission planning and acquisition",
-            "Copernicus Operations Dashboard overview",
-            "Earth observation mission data services",
-            "Sentinel data availability and quality",
-            "Copernicus Ground Segment transformation",
+            "ESA Copernicus Sentinel dashboard explained",
+            "What is Sentiboard",
+            "Copernicus Ground Segment monitoring",
+            "Sentinel satellite data transparency",
+            "ESA open Earth observation operations",
+            "Copernicus Space Component data services",
         ],
     },
     "acquisitions-status.html": {
-        "title": "Sentinel Acquisition Status Map | Copernicus Satellite Observation Schedule",
+        "title": "Sentinel Acquisition Plans & Real-Time Status | Copernicus Dashboard",
         "description": (
-            "Explore the Sentinel acquisition status map on the Copernicus Sentinel Dashboard (Sentiboard). Visualize real-time satellite acquisition planning, "
-            "sensing scenarios, orbit data, and observation schedules for Sentinel missions using an interactive 3D globe. "
+            "Explore past, current, and future Sentinel satellite acquisition plans on an interactive 3D globe. ",
+            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard.",
         ),
         "page_keywords": [
-            "Sentinel acquisition status map",
+            "Sentinel acquisition plans real-time map",
             "Copernicus satellite observation schedule",
-            "Real-time Sentinel acquisition planning",
-            "Interactive 3D globe Sentinel missions",
-            "Sentinel orbit data and sensing scenarios",
-            "Datatake filtering by satellite or date",
-            "Published Sentinel products overview",
-            "Copernicus acquisition plans visualization",
+            "Sentinel datatake status viewer",
+            "ESA Sentinel 3D acquisition globe",
+            "Sentinel-1 sensing mode coverage",
+            "Sentinel-2 acquisition planning",
+            "Copernicus acquisition completeness",
         ],
     },
     "events.html": {
-        "title": "Sentinel Events & Anomalies | Real-Time Copernicus Mission Operations",
+        "title": "Sentinel Mission Events & Anomalies | Copernicus Operations Dashboard",
         "description": (
-            "Browse Sentinel mission events on the Copernicus Sentinel Dashboard (Sentiboard), including real-time events, satellite anomalies,  "
-            "calibration activities, and mission manoeuvres. Understand how operational events impact Sentinel data production and availability."
+            "Browse Sentinel satellite events including anomalies, calibrations, manoeuvres, and production issues from the past 3 months. ",
+            "Understand how each event affects Copernicus data completeness and availability.",
         ),
         "page_keywords": [
-            "Sentinel mission events dashboard",
-            "Copernicus real-time satellite anomalies",
-            "Sentinel calibration activities",
-            "Mission Manoeuvre impact on data",
-            "ESA Sentinel operations monitoring",
-            "Sentinel data completeness analysis",
-            "Event types affecting satellite products",
-            "Real-time Copernicus event tracking",
+            "Sentinel satellite anomalies and events",
+            "Copernicus real-time satellite event calendar",
+            "Sentinel calibration activities dashboard",
+            "ESA satellite manoeuvre data impact",
+            "Copernicus mission event history",
+            "Sentinel data completeness events",
+            "Copernicus anomaly monitoring",
         ],
     },
     "data-availability.html": {
-        "title": "Copernicus Sentinel Data Availability | Real-Time Earth Observation Data",
+        "title": "Copernicus Sentinel Data Availability | Real-Time Datatake Monitor",
         "description": (
-            "Monitor Copernicus Sentinel data availability in real time using the Sentiboard. "
-            "Track satellite data access, publication completeness, data quality, and delivery status "
-            "across Sentinel missions and Earth observation collections."
+            "Monitor real-time Copernicus Sentinel data availability, datatake delivery status, and publication completeness. ",
+            "Filter by mission (S1, S2, S3, S5P), satellite, date, and sensing mode on the official ESA operations dashboard.",
         ),
         "page_keywords": [
-            "Copernicus Sentinel data availability",
-            "Real-time Earth observation data",
-            "Sentinel data publication completeness",
-            "Acquisition platform and sensor mode tracking",
-            "Sentinel data delivery status monitoring",
-            "Filter datatakes by mission or satellite",
-            "Sentinel-5P data access monitoring",
-            "Copernicus satellite data quality metrics",
+            "Copernicus Sentinel data availability real-time",
+            "Sentinel datatake completeness tracker",
+            "ESA satellite data delivery status",
+            "Sentinel-2 product publication monitoring",
+            "Copernicus data quality metrics",
+            "Sentinel data availability percentage",
+            "Real-time Earth observation data access",
         ],
     },
     "processors-viewer.html": {
-        "title": "Copernicus Sentinel Processor Releases | ESA Data Processing Timeline",
+        "title": "Copernicus Sentinel Processor Releases | Interactive Timeline",
         "description": (
-            "Explore the Copernicus Sentinel processor releases timeline on the Sentiboard. "
-            "Track ESA processor versions, data processing updates, and changes across the "
-            "Copernicus processing chain using an interactive release history."
+            "Explore the full history of Copernicus Sentinel processor releases on an interactive timeline. ",
+            "Track ESA processing baseline versions for Sentinel-1, -2, -3, and -5P and understand how each update affects satellite data products.",
         ),
         "page_keywords": [
-            "Copernicus Sentinel processor releases",
-            "ESA Sentinel data processing timeline",
-            "Interactive processor release history",
-            "Sentinel processor version tracking",
-            "Copernicus processing chain updates",
-            "Timeline of Sentinel data processing",
-            "Sentinel data processing change log",
-            "Processor releases and satellite data updates",
+            "Copernicus Sentinel processor releases timeline",
+            "ESA Sentinel processing baseline versions",
+            "Sentinel processor changelog",
+            "Copernicus data processing updates",
+            "Sentinel-2 processor release history",
+            "ESA ground segment processing baseline",
+            "Copernicus processor version tracker",
         ],
     },
 }
 # Default fallback metadata for any page not listed above:
 DEFAULT_PAGE_METADATA = {
-    "title": "Copernicus Sentinel Operations Dashboard | ESA Earth Observation",
+    "title": "Copernicus Sentinel Operations Dashboard | Real-Time Satellite Monitoring",
     "description": (
-        "The Copernicus Sentinel Operations Dashboard (Sentiboard) provides real-time satellite data, "
-        "mission events, data availability, and acquisition status for ESA Earth observation missions. "
-        "Explore satellite operations, Sentinel mission monitoring, and Copernicus data services."
+        "Track live Sentinel satellite events, data availability, "
+        "and acquisition status on the official Copernicus Operations Dashboard (Sentiboard). "
+        "Updated every hour for ESA Sentinel-1, -2, -3, and -5P missions."
     ),
     "page_keywords": [
-        "Copernicus Sentinel Operations Dashboard",
-        "Sentiboard real-time satellite data",
-        "ESA Sentinel mission events",
-        "Sentinel data availability monitoring",
-        "Acquisition status of Copernicus satellites",
-        "Sentinel processors release timeline",
-        "Real-time satellite event dashboard",
+        "Copernicus Sentinel Operations Dashboard real-time",
+        "Sentiboard live satellite data",
+        "ESA Sentinel mission monitoring dashboard",
+        "Sentinel real-time acquisition and events",
+        "Copernicus Earth observation status",
     ],
 }
 BATCH_SIZE = 10
@@ -434,7 +421,7 @@ def index_html_redirect():
 def index():
 
     metadata = get_metadata("index.html")
-    metadata["page_url"] = request.url
+    metadata["page_url"] = "https://operations.dashboard.copernicus.eu/index"
     segment = "index"
     period_id = "24h"
 
@@ -699,8 +686,8 @@ def events():
 
     try:
         metadata = get_metadata("events.html")
-        metadata["page_url"] = request.url
-
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
+        segment = "events"
         today = datetime.today()
         year = request.args.get("year", type=int, default=today.year)
         month = request.args.get("month", type=int, default=today.month)
@@ -748,6 +735,7 @@ def events():
             event_type_map=event_type_map,
             missing_datatakes_info=[],
             **metadata,
+            segment=segment,
         )
     except Exception as e:
         current_app.logger.error(f"Error rendering / events: {e}", exc_info=True)
@@ -777,6 +765,21 @@ def events_data():
 
         cache_entry = events_cache.flask_cache.get(cache_key)
         raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
+
+        for a in raw_anomalies:
+            src = a.get("_source", a)
+            datatake_ids = src.get("datatake_ids") or src.get("environment", "")
+            targets = ["S3B-118-234", "S3B-118-237", "S3B-118-238"]
+            if any(d in str(datatake_ids) for d in targets):
+                current_app.logger.info(
+                    "CACHE DEBUG | keys=%s | category=%s | type=%s | origin=%s | environment=%s | datatake_ids=%s",
+                    list(src.keys()),
+                    src.get("category"),
+                    src.get("type"),
+                    src.get("origin"),
+                    src.get("environment"),
+                    src.get("datatake_ids"),
+                )
 
         if not raw_anomalies:
             current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
@@ -898,13 +901,14 @@ def to_utc_dt(value):
 @blueprint.route("/data-availability", methods=["GET", "POST"])
 def data_availability():
     metadata = get_metadata("data-availability.html")
-    metadata["page_url"] = request.url
+    metadata["page_url"] = (
+        "https://operations.dashboard.copernicus.eu/data-availability.html"
+    )
     segment = "data-availability"
     BATCH_SIZE = 20
 
     try:
-        # current_app.logger.info("\n" + "=" * 50)
-        # current_app.logger.info("[DATA-AVAILABILITY] ROUTE TRIGGERED")
+
         # Log every single argument arriving from the browser
         current_app.logger.info(f"[ARGS RECEIVED] {dict(request.args)}")
 
@@ -913,16 +917,12 @@ def data_availability():
         is_ajax = request.args.get("ajax") == "1"
         search_query = request.args.get("search", "").strip()
         mission_filter = request.args.get("mission", "").upper()
-        # current_app.logger.info(
-        #    f"[LOG] Filters -> Mission: '{mission_filter}', Limit: {limit}"
-        # )
 
         sat_filter = request.args.get("satellite", "")
 
         if mission_filter == "S5":
             sat_filter = ""  # S5 has no sub-units
         elif sat_filter and not sat_filter.startswith(mission_filter):
-            # If Mission is S2 but Satellite is S1A, ignore the satellite filter
             sat_filter = ""
 
         from_date_str = request.args.get("fromdate", "")
@@ -931,10 +931,6 @@ def data_availability():
         selected_period = request.args.get("period") or session.get(
             "selected_period", "week"
         )
-
-        # current_app.logger.info(
-        #     f"[EXTRACTED] Mission: '{mission_filter}' | Sat: '{sat_filter}' | Search: '{search_query}' | Period: '{selected_period}'"
-        # )
 
         if has_search and not request.args.get("period"):
             selected_period = "prev-quarter"
@@ -970,10 +966,6 @@ def data_availability():
         anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
         datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
 
-        # current_app.logger.info(
-        #    f"[LOG] Cache Loaded. Total items in raw cache: {len(datatakes_data)}"
-        # )
-
         # --- POST: datatake details ---
         datatake_details = None
         if request.method == "POST":
@@ -990,21 +982,14 @@ def data_availability():
             "esauser",
         )
 
-        # Simplified for logging
         dt_suffix = datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d"
         datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
             "last", dt_suffix
         )
 
-        # current_app.logger.info(f"[CACHE] Loading from URI: {datatakes_cache_uri}")
-        # current_app.logger.info(
-        #    f"[CACHE] Items found in raw cache: {len(datatakes_data)}"
-        # )
-
         filtered_raw = []
         mission_counts = {}
 
-        # Pre-calculate search/filter terms outside the loop for speed
         search_q = search_query.lower() if search_query else None
         m_filter_upper = mission_filter.upper() if mission_filter else None
         s_filter_upper = sat_filter.upper() if sat_filter else None
@@ -1041,11 +1026,6 @@ def data_availability():
 
             filtered_raw.append(item)
 
-        # current_app.logger.info(
-        #    f"[LOG] Global Mission Distribution in Cache: {mission_counts}"
-        # )
-        # current_app.logger.info(f"[LOG] Items passing filters: {len(filtered_raw)}")
-
         # --- Pagination ---
         try:
             limit = int(request.args.get("limit", BATCH_SIZE))
@@ -1063,10 +1043,6 @@ def data_availability():
         paged_raw_data = filtered_raw[:limit]
         has_more = total_found > limit
 
-        # current_app.logger.info(
-        #    f"[LOG] Pagination: Showing {len(paged_raw_data)} of {total_found}"
-        # )
-
         datatakes_for_ssr = []
         for index, d in enumerate(paged_raw_data):
             src = d.get("_source", {}) or {}
@@ -1075,10 +1051,6 @@ def data_availability():
             status_obj = _calc_datatake_completeness_status(src)
             acq_status = status_obj["ACQ"]["status"]
             pub_status = status_obj["PUB"]["status"]
-
-            # These are the percentages calculated by the shared function
-            acq_p = status_obj["ACQ"]["percentage"]
-            pub_p = status_obj["PUB"]["percentage"]
 
             # --- START OF UPDATED PIECE ---
             raw_start = src.get("observation_time_start")
@@ -1145,10 +1117,6 @@ def data_availability():
                 200,
             )
 
-        # current_app.logger.info(
-        #    f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} items to frontend"
-        # )
-
         return render_template(
             "home/data-availability.html",
             **payload,
@@ -1187,7 +1155,9 @@ def acquisitions_status():
     - Acquisition Stations (SSR)
     """
     metadata = get_metadata("acquisitions-status.html")
-    metadata["page_url"] = request.url
+    metadata["page_url"] = (
+        "https://operations.dashboard.copernicus.eu/acquisitions-status.html"
+    )
     segment = "acquisitions-status"
 
     try:
@@ -1507,7 +1477,9 @@ def delete_instant_message_modal():
 @blueprint.route("/processors-viewer.html")
 def processors_page():
     metadata = get_metadata("processors-viewer.html")
-    metadata["page_url"] = request.url
+    metadata["page_url"] = (
+        "https://operations.dashboard.copernicus.eu/processors-viewer.html"
+    )
     segment = "processors-viewer"
     COPERNICUS_URL = (
         "https://configuration.copernicus.eu/rest/api/baseline/processors-releases"
@@ -2519,7 +2491,7 @@ def route_template(template):
 
         # Get metadata safely
         metadata = get_metadata(template)
-        metadata["page_url"] = request.url
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/index.html"
 
         if template in ["processors-viewer", "processors-viewer.html"]:
             return processors_page()
