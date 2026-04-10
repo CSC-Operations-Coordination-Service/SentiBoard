@@ -18,9 +18,11 @@
     manifest_url='/manifest.json'
 ) %}
 
+    {# --- Use passed description if available, otherwise use SEO description --- #}
     <title>{{ title }} | Copernicus Dashboard</title>
     <meta name="description" content="{{ description }}">
 
+    {# Keywords can be a string or a callable that returns a string #}
     {% set safe_keywords = keywords | default([]) %}
     {% if safe_keywords %}
       {% if safe_keywords is iterable and safe_keywords is not string %}
@@ -50,7 +52,6 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ page_url }}">
     <meta property="og:locale" content="en_GB">
-
     {% if image_url %}
       <meta property="og:image" content="{{ image_url }}">
       <meta property="og:image:width" content="{{ image_width }}">
@@ -99,6 +100,11 @@
                 "width": 60,
                 "height": 60
               }
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": {{ ("https://operations.dashboard.copernicus.eu/search?q={search_term_string}") | tojson }},
+              "query-input": "required name=search_term_string"
             }
           },
           {

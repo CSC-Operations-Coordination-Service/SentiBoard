@@ -66,29 +66,43 @@
 			</div>
 
 			<div class="row">
-
-				<!-- Table container -->
 				<div class="col-md-12">
 					<div class="card card-admin">
 						<div class="card-body">
 							<div class="table-responsive">
-								<table id="basic-datatables-news" class="display table table-striped table-hover" >
+								<table id="basic-datatables-news" class="display table table-striped table-hover">
 									<thead>
 										<tr>
-											<th>Title</th>
+											<th style="max-width: 60px">Title</th>
 											<th style="max-width: 60px">Occurrence Date</th>
 											<th style="max-width: 60px">Category</th>
 											<th style="max-width: 60px">Impacted Satellite</th>
-											<th>Link</th>
+											<th style="max-width: 60px">Link</th>
 											<th style="max-width: 40px">Actions</th>
 										</tr>
 									</thead>
+									<tbody>
+										{% for item in news_list %}
+										<tr>
+											<td>{{ item.title }}</td>
+											<td>{{ item.occurrenceDate }}</td>
+											<td>{{ item.category }}</td>
+											<td>{{ item.impactedSatellite }}</td>
+											<td><a href="{{ item.link }}" target="_blank">View</a></td>
+											<td>
+												<button type="button" class="btn-link" data-toggle="modal" data-target="#editNewsModal"
+														onclick="news.editNewsDetails('{{ item.link }}')">
+													<i class="icon-pencil"></i>
+												</button>
+											</td>
+										</tr>
+										{% endfor %}
+									</tbody>
 								</table>
 							</div>
 						</div>
 					</div>
 				</div>
-
 			</div>
 		</div>
 	</div>
@@ -103,6 +117,10 @@
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
 
 	<!-- Page related JS Class -->
+	 <script>
+    // This variable will be available to news.js immediately
+		window.injectedNewsData = {{ news_list | tojson | safe }};
+	</script>
 	<script src="/static/assets/js/admin/news.js"></script>
 	<script defer type="text/javascript">news.init();</script>
 

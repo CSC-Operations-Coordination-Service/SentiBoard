@@ -127,16 +127,26 @@
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
     <link rel="stylesheet" href="/static/assets/css/processors.css">
 
+    <script>
+        window.PROCESSORS_RELEASES = {{ processors_releases | tojson }};
+    </script>
 	<!-- Page related JS Class -->
     <script src='https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js'></script>
+    
     <script src="/static/assets/js/processors-releases/processors-viewer.js"></script>
-    <script defer type="text/javascript">procViewer.init();</script>
+    
+
     <script>
+        $(document).ready(function() {
+            procViewer.init();
+        });
 
         // Filter processors releases
         $('#processors-text-filter').on('input', function(event) {
             procViewer.filterReleases($(this).val());
         });
     </script>
+
+        
 
 {% endblock javascripts %}

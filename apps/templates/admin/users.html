@@ -69,7 +69,11 @@
 									<div class="col-md-12">
 										<div class="form-group form-group-default" id="new-user-role-div">
 											<label>Role</label>
-											<select id="new-user-role" type="text" class="form-control" autocomplete="off" placeholder="Select role" onkeyup="users.validateNewUserDetails()">
+											 <select id="new-user-role" class="form-control" onchange="users.validateNewUserDetails()">
+												<option value="" disabled selected>Select role</option>
+												{% for role in roles %}
+													<option value="{{ role.name }}">{{ role.name }}</option>
+												{% endfor %}
 											</select>
 										</div>
 									</div>
@@ -106,6 +110,16 @@
 
 				<!-- Table container -->
 				<div class="col-md-8">
+					{% if status_msg %}
+					<div id="status-alert" class="alert alert-success"
+						style="color: #ffffff; background-color: #28a745; border-color: #28a745; margin-bottom: 20px;">
+						{{ status_msg }}
+					</div>
+					<script>
+						setTimeout(() => { $('#status-alert').fadeOut('slow'); }, 3000);
+					</script>
+					{% endif %}
+
 					<div class="card card-admin">
 						<div class="card-body">
 							<div class="table-responsive">
@@ -118,6 +132,25 @@
 											<th>Actions</th>
 										</tr>
 									</thead>
+									<tbody>
+										{% for user in users %}
+										<tr>
+										<td>{{ user.username }}</td>
+										<td>{{ user.email }}</td>
+										<td>{{ user.role }}</td>
+										<td>
+											<button type="button" class="btn-link" onclick="users.editUserDetails('{{ user.username }}')">
+												<i class="icon-pencil"></i>
+											</button>
+											{% if user.username != 'admin' %}
+											<button type="button" class="btn-link" onclick="users.deleteUser('{{ user.username }}')">
+												<i class="icon-trash"></i>
+											</button>
+											{% endif %}
+										</td>
+										</tr>
+										{% endfor %}
+									</tbody>
 								</table>
 							</div>
 						</div>
@@ -153,6 +186,14 @@
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/admin/users.js"></script>
-	<script defer type="text/javascript">users.init();</script>
+
+	<script type="text/javascript">
+        const serverSideUsers = {{ users | tojson | safe }};
+        const serverSideRoles = {{ roles | tojson | safe }};
+       
+        $(document).ready(function() {
+            users.init(serverSideUsers, serverSideRoles);
+        });
+    </script>
 
 {% endblock javascripts %}

@@ -15,32 +15,17 @@ class News {
 
     // Move date handling to MIXIN (periodSelection)
     constructor() {
+        this.newsList = {};
 
-        // Hide time period selector
-        $('#time-period-select').hide();
-
-        // News table
-        try {
-            this.newsTable = $('#basic-datatables-news').DataTable({
-                "language": {
-                  "emptyTable": "Retrieving news..."
-                },
-                columnDefs: [{
-                        targets: -1,
-                        data: null,
-                        render: function (data, type, row) {
-                            if (type === 'display') {
-                                return '<button type="button" class="btn-link" data-toggle="modal" data-target="#editNewsModal" '+
-                                    'onclick="news.editNewsDetails(\'' + data[4] + '\')"><i class="icon-pencil"></i></button>';
-                            } else {
-                                return data;
-                            }
-                        }
-                    }]
-                });
-        } catch(err) {
-            console.info('Initializing news class - skipping table creation...')
+        // 1. Initialize local map from SSR data
+        if (window.injectedNewsData) {
+            window.injectedNewsData.forEach(item => {
+                this.newsList[item.link] = item;
+            });
         }
+
+        // 2. Setup DataTable (without AJAX)
+        this.newsTable = $('#basic-datatables-news').DataTable();
 
         // Array containing serialized anomaly categories
         this.categories = [
@@ -62,16 +47,18 @@ class News {
             'Copernicus Sentinel-5p',];
 
         // Map containing serialized anomalies accessed from "key" field
-        this.newsList = {};
     }
 
     init() {
         $('#esa-logo-header').hide();
-        // Retrieve the anomalies from local MYSQL DB
-        asyncAjaxCall('/api/events/news/previous-quarter', 'GET', {}, news.successLoadNews.bind(this),
-            news.errorLoadNews.bind(this));
+        // REMOVED: asyncAjaxCall('/api/events/news/previous-quarter', ...)
+        console.info('Table initialized with SSR data.');
+    }
 
-        return;
+    successUpdateNews() {
+        $('#editNewsModal').modal('hide');
+        // REFRESH the page to get fresh SSR data
+        location.reload();
     }
 
     successLoadNews(response) {
@@ -83,7 +70,7 @@ class News {
 
         // Parse response
         var data = new Array();
-        for (var i = 0 ; i < rows.length ; ++i){
+        for (var i = 0; i < rows.length; ++i) {
 
             // Auxiliary variables
             // Use the link as the unique key identifier (human readable)
@@ -98,7 +85,7 @@ class News {
             // News status record:
             // Title, occurrenceDate, category, impactedSatellite, link
             data.push([newsItem['title'], newsItem['occurrenceDate'], newsItem['category'],
-                newsItem['impactedSatellite'], newsItem['link']]);
+            newsItem['impactedSatellite'], newsItem['link']]);
         }
 
         // Refresh news table and return
@@ -106,7 +93,7 @@ class News {
         return;
     }
 
-    errorLoadNews(response){
+    errorLoadNews(response) {
         console.error(response)
         return;
     }
@@ -123,27 +110,27 @@ class News {
         $('#news-details').html('');
         $('#news-details').append(
             '<div class="form-group" id="news-title-div" style="width: 430px">' +
-                '<label for="news-title">News title</label>' +
-                '<input type="text" disabled style="color: #6c757d" class="form-control" id="news-title" placeholder="news title">' +
+            '<label for="news-title">News title</label>' +
+            '<input type="text" disabled style="color: #6c757d" class="form-control" id="news-title" placeholder="news title">' +
             '</div>');
         $('#news-title').val(newsItem['title']);
 
         // Link
         $('#news-details').append(
             '<div class="form-group" id="news-link-div" style="width: 430px">' +
-                '<label for="news-link">Link</label>' +
-                '<input type="text" disabled style="color: #6c757d" class="form-control" id="news-link" placeholder="news link">' +
+            '<label for="news-link">Link</label>' +
+            '<input type="text" disabled style="color: #6c757d" class="form-control" id="news-link" placeholder="news link">' +
             '</div>');
         $('#news-link').val(newsItem['link']);
 
         // Category select
         $('#news-details').append(
             '<div class="form-group">' +
-                '<label for="news-category-select">Category</label>' +
-                '<select class="form-control" id="news-category-select" placeholder="category"></select>' +
+            '<label for="news-category-select">Category</label>' +
+            '<select class="form-control" id="news-category-select" placeholder="category"></select>' +
             '</div>');
         let selectedCategory = null
-        news.categories.forEach(function(category) {
+        news.categories.forEach(function (category) {
             if (newsItem['category'] === category) selectedCategory = category;
             let selected = newsItem['category'] === category ? ' selected ' : '';
             $('#news-category-select').append('<option value="' + category + '"' + selected + '>' + category + '</option>');
@@ -152,10 +139,10 @@ class News {
         // Impacted satellite select
         $('#news-details').append(
             '<div class="form-group">' +
-                '<label for="news-impacted-satellite-select">Impacted Satellite</label>' +
-                '<select class="form-control" id="news-impacted-satellite-select" placeholder="impacted satellite"></select>' +
+            '<label for="news-impacted-satellite-select">Impacted Satellite</label>' +
+            '<select class="form-control" id="news-impacted-satellite-select" placeholder="impacted satellite"></select>' +
             '</div>');
-        news.impactedSatellites.forEach(function(satellite) {
+        news.impactedSatellites.forEach(function (satellite) {
             let selected = newsItem['impactedSatellite'] === satellite ? ' selected ' : '';
             $('#news-impacted-satellite-select').append('<option value="' + satellite + '"' + selected + '>' + satellite + '</option>');
         });
@@ -163,16 +150,16 @@ class News {
         // Occurrence date
         $('#news-details').append(
             '<div class="form-group" id="news-occurrence-date-div" style="width: 430px">' +
-                '<label for="news-occurrence-date">Occurrence date</label>' +
-                '<input type="text" class="form-control" id="news-occurrence-date" placeholder="dd/MM/yyyy HH:mm:ss.SSSSSS">' +
+            '<label for="news-occurrence-date">Occurrence date</label>' +
+            '<input type="text" class="form-control" id="news-occurrence-date" placeholder="dd/MM/yyyy HH:mm:ss.SSSSSS">' +
             '</div>');
         $('#news-occurrence-date').val(newsItem['occurrenceDate']);
 
         // Data takes
         $('#news-details').append(
             '<div class="form-group" id="news-environment-div" style="width: 430px">' +
-                '<label for="news-environment">Datatakes</label>' +
-                '<input type="text" class="form-control" id="news-environment" placeholder="datatakes">' +
+            '<label for="news-environment">Datatakes</label>' +
+            '<input type="text" class="form-control" id="news-environment" placeholder="datatakes">' +
             '</div>');
         $('#news-environment').val(newsItem['environment']);
     }
@@ -198,22 +185,7 @@ class News {
         ajaxCall('/api/events/news/update', 'POST', newsItem, this.successUpdateNews.bind(this), this.errorUpdateNews.bind(this));
     }
 
-    successUpdateNews() {
 
-        // Close edit anomaly modal window
-        $('#editNewsModal').modal('hide');
-
-        // Clean news details panel
-        $('#news-link').val('');
-        $('#news-category-select').val('');
-        $('#news-impacted-satellite-select').val('');
-        $('#news-link').val('');
-        $('#news-environment').val('');
-        $('#news-occurrence-date').val('');
-
-        // Refresh anomalies table
-        asyncAjaxCall('/api/events/news/previous-quarter', 'GET', {}, news.successLoadNews, news.errorLoadNews);
-    }
 
     errorUpdateNews() {
         console.error(response)
