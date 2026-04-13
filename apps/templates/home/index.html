@@ -10,7 +10,7 @@
     page_url=page_url
   ) }}
 
-<!-- Preload custom font -->
+  <!-- Preload custom font -->
   <link
     rel="preload"
     href="/static/assets/fonts/esa/NotesEsa.woff2"
@@ -129,101 +129,31 @@
       </video>
     </div>
 
-<!-- Real-time events box for large screens -->
-<div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
-     style="top: 60px; right: 16px; width: 347px; z-index: 2;">
-  <h4 class="card-title mb-3">Real-time events</h4>
-  <ol class="activity-feed mb-0 pl-3">
-    {% if anomalies_details and anomalies_details|length > 0 %}
-      {% for detail in anomalies_details %}
-      <li class="feed-item feed-item-warning" style="color: white">
-        <i class="flaticon-alarm-1 feed-item-icon"></i>
-        <time class="date">{{ detail.time_ago }}</time>
-        <div class="text" style="word-wrap: break-word; max-width: 250px;">
-          {{ detail.content | safe }}
-        </div>
-      </li>
-      {% endfor %}
-    {% else %}
-      <li class="feed-item feed-item-success">
-        <i class="flaticon-success feed-item-icon"></i>
-        <h4 style="color: white; position: relative; top: -27px" class="text">Nominal operations</h4>
-      </li>
-    {% endif %}
-  </ol>
-</div>
-
-<!-- Real-time events for mobile -->
-<div class="d-block d-lg-none mt-3">
-  <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile">
-    Show Real-time Events
-  </button>
-  <div class="collapse" id="eventBoxMobile">
-    <div class="bg-dark text-white p-3 rounded">
+    <!-- Real-time events box for large screens -->
+    <div class="position-absolute bg-dark text-white p-3 rounded d-none d-lg-block"
+         style="top: 60px; right: 16px; width: 347px; z-index: 2;">
       <h4 class="card-title mb-3">Real-time events</h4>
-      <ol class="activity-feed mb-0 pl-3">
-        {% if anomalies_details and anomalies_details|length > 0 %}
-          {% for detail in anomalies_details %}
-          <li class="feed-item feed-item-warning" style="color: white">
-            <i class="flaticon-alarm-1 feed-item-icon"></i>
-            <time class="date">{{ detail.time_ago }}</time>
-            <div class="text" style="word-wrap: break-word; max-width: 250px;">
-              {{ detail.content | safe}}
-            </div>
-          </li>
-          {% endfor %}
-        {% else %}
-          <li class="feed-item feed-item-success">
-            <i class="flaticon-success feed-item-icon"></i>
-            <h4 style="color: white; position: relative; top: -27px" class="text">Nominal operations</h4>
-          </li>
-        {% endif %}
-      </ol>
+      <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-lg"></ol>
+    </div>
+
+    <!-- Real-time events for mobile -->
+    <div class="d-block d-lg-none mt-3">
+      <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#eventBoxMobile">
+        Show Real-time Events
+      </button>
+      <div class="collapse" id="eventBoxMobile">
+        <div class="bg-dark text-white p-3 rounded">
+          <h4 class="card-title mb-3">Real-time events</h4>
+          <ol class="activity-feed mb-0 pl-3" id="real-time-event-list-sm"></ol>
+        </div>
+      </div>
     </div>
   </div>
-</div>
   <!-- News banner overlay (instant messages placeholder) -->
   <div id="custom-banner-placeholder"
-     class="position-absolute text-white"
-     style="top: 125px; left: 15px; width: 350px; z-index: 3;">
-
-  <div class="bg-dark p-3 rounded">
-    <h4 class="card-title text-white text-center mb-3">News</h4>
-
-    {% if instant_messages and instant_messages|length > 0 %}
-        {% for item in instant_messages %}
-          <div class="news-card p-2 rounded shadow mb-2 text-white">
-            <div class="fw-bold">{{ item.title }}</div>
-            <div class="text-muted small">{{ item.publicationDate }}</div>
-            <div>{{ item.text }}</div>
-
-            {% if item.link %}
-              <div>
-                <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">
-                  Read more
-                </a>
-              </div>
-            {% endif %}
-          </div>
-        {% endfor %}
-
-        {% if total_messages > 3 %}
-          <div class="text-center mt-2">
-            <a href="/newsList.html"
-               class="btn btn-outline-light"
-               style="background-color:#FFC107;color:#212529;">
-              View all news
-            </a>
-          </div>
-        {% endif %}
-
-    {% else %}
-        <div class="text-center py-4">
-          There are no news at the moment.
-        </div>
-    {% endif %}
+      class="position-absolute text-white"
+      style="top: 125px; left: 15px; width: 350px; z-index: 3;">
   </div>
-</div>
   <!-- News banner for mobile -->
   <div class="d-block d-lg-none mt-3">
     <button class="btn btn-outline-light btn-block mb-2" type="button" data-toggle="collapse" data-target="#customBannerMobile">
@@ -242,7 +172,7 @@
             <div class="card-green">
                 <h1>Acquisitions Status</h1>
                 <p>View displays the past, current and future Copernicus Sentinels' acquisition on an interactive,
-                    3D globe. Through this view, users can either inspect the status of a past acquistion, or learn
+                    3D globe. Through this view, users can either inspect the status of a past acquisition, or learn
                     about the planned acquisitions for the mission of interest. By default, the real-time sensing
                     scenario is displayed.</p><a href="/acquisitions-status.html" class="btn btn-lg rounded mt-3 btn-learn-more">Learn more</a>
             </div>
@@ -305,13 +235,6 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
-  <script>
-    window.SSR_INSTANT_MESSAGES = {{ instant_messages_json | safe }};
-    window.SSR_TOTAL_MESSAGES = {{ total_messages}};
-    window.useRole = {{ user_role | tojson}};
-  </script>
-
-
   <!-- Inline tiny script for faster mobile interactivity -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -378,7 +301,7 @@
         .then(() => console.log("datatakes.js loaded"))
         .catch(err => console.error("Failed to load datatakes.js", err));
     }
-   
+
     // Initialize Home (from index.js, already loaded with defer)
     if (typeof Home !== "undefined") {
       const home = new Home();
@@ -388,3 +311,4 @@
 </script>
 
 {% endblock javascripts %}
+

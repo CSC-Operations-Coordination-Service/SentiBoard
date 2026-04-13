@@ -38,16 +38,14 @@ class Home {
         $('#copernicus-logo-header').show();
         $('#ec-logo-header').show();
 
+        // Load the events from local db
+        console.info('Loading events...');
+        asyncAjaxCall('/api/events/anomalies/last-24h', 'GET', {}, this.succesLoadAnomalies, this.errorLoadAnomalies);
+
         // Load the custom message from the JSON file
         console.info('Loading custom message...');
 
-        //this.fetchInstantMessages();
-        if (window.SSR_INSTANT_MESSAGES) {
-            this.renderInstantMessageCards(
-                window.SSR_INSTANT_MESSAGES,
-                window.SSR_TOTAL_MESSAGES
-            );
-        }
+        this.fetchInstantMessages();
 
         // Remove Home video controls
         $('#home-video').hover(function toggleControls() {
@@ -68,6 +66,8 @@ class Home {
     }
 
     succesLoadAnomalies(response) {
+
+        // Format the response from the query
         var rows = format_response(response);
         console.info('Events loaded. Num of events: ' + rows.length);
 
@@ -87,7 +87,7 @@ class Home {
             // Append the anomaly in the list of items to be displayed if:
             // 1. The anomaly occurred within 48h from now
             // 2. There is at least one impacted datatake
-            if ((now.getTime() - start_time.getTime() <= 24 * 60 * 60 * 1000) &&
+            if ((now.getTime() - start_time.getTime() <= 48 * 60 * 60 * 1000) &&
                 home.datatakesImpacted(element)) {
 
                 var category = element["category"];
@@ -306,17 +306,22 @@ class Home {
     formatDate(dateString) {
         if (!dateString) return 'No date provided';
 
-        const date = new Date(dateString);
-        if (isNaN(date)) return 'Invalid date';
+        // If the string has seconds, remove them
+        // Expect formats like: "2025-12-15T11:44:00" or "2025-12-15 11:44:00"
+        const trimmed = dateString.replace('T', ' ').substring(0, 16); // keeps YYYY-MM-DD HH:MM
 
-        return date.toLocaleDateString('en-GB', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: false,
-            timeZone: 'Europe/Rome'
+        return trimmed;
+    }
+
+
+
+    fetchInstantMessages() {
+        $.getJSON('/api/instant-messages/all', (data) => {
+            const firstThree = data.messages.slice(0, 3);
+            this.renderInstantMessageCards(firstThree, data.messages.length);
+        }).fail((xhr) => {
+            console.error("Failed to load instant messages:", xhr.responseText);
+            $('#custom-banner-placeholder').html('<div class="bg-dark text-white text-center p-4 rounded">Failed to load instant messages.</div>');
         });
     }
 
@@ -354,7 +359,7 @@ class Home {
             desktopHtml += `
                 <div class="news-card p-2 rounded shadow mb-2" style="color: white;">
                 <div class="d-flex align-items-start">
-                    <i class="fas ${icon}" 
+                    <i class="fa ${icon}" 
                     style="color: ${borderColor}; font-size: 1.2rem; margin-right: 8px; margin-top: 2px;"></i>
                     <div>
                     <div class="fw-bold">${item.title}</div>

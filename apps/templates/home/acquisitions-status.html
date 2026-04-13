@@ -201,34 +201,24 @@
 	<!-- Datatables -->
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
     <!-- Page related JS Class -->
-    <script type="text/javascript">
-        // Inject SSR acquisition plan days as a global JS variable
-        window.SSR_ACQ_PLAN_DAYS = {{ plans_coverage_json | tojson | safe }};
-        window.SSR_SATELLITE_ORBITS = {{ satellite_orbits_json | tojson | safe }};
-        window.SSR_ACQUISITION_STATIONS = {{ acquisition_stations_json | tojson | safe }};
 
-        /*console.log("[SSR] Plans missions:", Object.keys(SSR_ACQ_PLAN_DAYS || {}).slice(0, 3));
-        console.log("[SSR] Orbits payload type:", typeof SSR_SATELLITE_ORBITS);
-        console.log("[SSR] Acquisition Stations payload type:", typeof SSR_ACQUISITION_STATIONS);*/
-    </script>
     <script src="/static/assets/lib/markdown-it/markdown-it.min.js"></script>
     <script src="/static/assets/lib/markdown-it/markdown-it-sanitizer.min.js"></script>
     <script src="/static/assets/lib/hammer/hammer.min.js"></script>
     <script src="/static/assets/lib/knockout/knockout-3.5.1.debug.js"></script>
     <script src="/static/assets/lib/knockout/knockout-es5.min.js"></script>
+
     <script src="/static/assets/lib/Cesium/1.106/Cesium.js"></script>
+    
     <script src="/static/assets/lib/CesiumNavigation/cesium-navigation.js"></script>
     <link href="/static/assets/lib/CesiumNavigation/cesium-navigation.css" rel="stylesheet">
+
     <script src="/static/assets/js/acquisition-plans/acquisition-plans.js"></script>
     <script>
         window.addEventListener('load', function () {
             setTimeout(() => acquisitionPlanViewer.init(), 0); 
         });
-
-        $.ajaxSetup({
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
     </script>
+
+
 {% endblock javascripts %}

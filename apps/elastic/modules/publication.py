@@ -55,7 +55,7 @@ def get_cds_publication_size_by_mission(start_date, end_date, mission):
     api_start_time = perf_counter()
 
     for productLevel, level_value in productLevel_list.items():
-        logger.info(
+        logger.debug(
             "[INFO] productLevel=%s | type=%s | value=%s",
             productLevel,
             type(level_value),
@@ -100,7 +100,7 @@ def get_cds_publication_size_by_mission(start_date, end_date, mission):
                             }
                         )
                         query_end_time = perf_counter()
-                        logger.info(
+                        logger.debug(
                             f"Query for mission {mission}, product_type: {productType}, start: {start_date},  Query Execution Time : {query_end_time - query_start_time:0.6f}"
                         )
                     except Exception as ex:
@@ -148,7 +148,7 @@ def get_cds_publication_size_by_mission(start_date, end_date, mission):
                         }
                     )
                     query_end_time = perf_counter()
-                    logger.info(
+                    logger.debug(
                         f"Query for mission {mission}, product_type: {productType}, start: {start_date},  Query Execution Time : {query_end_time - query_start_time:0.6f}"
                     )
                 except Exception as ex:

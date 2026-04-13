@@ -1,47 +1,27 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${SERCO}
+Copyright (C) ${startYear}-${currentYear} ${Telespazio}
 All rights reserved.
 
-This document discloses subject matter in which SERCO has
+This document discloses subject matter in which TPZ has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of SERCO to fulfill the purpose for which the document was
+behalf of TPZ to fulfill the purpose for which the document was
 delivered to him.
 */
-/* service-monitoring.js */
-(function bootstrapServiceMonitoringSSR() {
-    const el =
-        document.getElementById('publication-trend-ssr') ||
-        document.getElementById('archive-ssr-payload');
-
-    if (!el) {
-        console.warn('[SM][SSR] No SSR payload found on page');
-        return;
-    }
-
-    try {
-        const raw = JSON.parse(el.textContent);
-        window.SHARED_SSR_PAYLOAD = raw;
-
-        // Keep your existing assignments for backward compatibility if needed
-        if (raw.availability_map) {
-            window.SSR_SERVICE_MONITORING_PAYLOAD = raw;
-        } else {
-            window.SSR_ARCHIVE_PAYLOAD = raw;
-        }
-    } catch (e) {
-        console.error('[SM][SSR] Invalid JSON in SSR payload', e);
-        return;
-    }
-
-})();
-
 
 class ServiceMonitoring {
 
     constructor() {
+
+        // Start - stop time range
+        this.end_date = new Date();
+        this.end_date.setUTCHours(23, 59, 59, 0);
+        this.start_date = new Date();
+        this.start_date.setMonth(this.end_date.getMonth() - 3);
+        this.start_date.setUTCHours(0, 0, 0, 0);
+
         // Set of colors associated to service
         this.serviceColorMap = {
             'DAS': 'info',
@@ -52,216 +32,281 @@ class ServiceMonitoring {
             'WERUM': 'warning'
         };
 
-        this.archivePayload = window.SHARED_SSR_PAYLOAD ||
-            window.SSR_ARCHIVE_PAYLOAD ||
-            window.SSR_SERVICE_MONITORING_PAYLOAD || {};
-
-        this.currentPeriod = null;
-        this.availabilityMap = {};
-        this.interfaceStatusMap = {};
-
-        // Cache for the period-based view (Archive page)
-        this.availabilityMapPerPeriod = {};
-        this.interfaceStatusMapPerPeriod = {};
+        // Minimum completeness value for datatakes (percentage)
+        this.interfaceStatusMap = {
+            'DAS': [],
+            'DHUS': [],
+            'ACRI': [],
+            'CLOUDFERRO': [],
+            'EXPRIVIA': [],
+            'WERUM': []
+        };
     }
 
     init() {
-        //console.group('[SM][INIT]');
 
-        // 1. HYDRATION: Convert strings to Dates for ALL periods in the payload
-        const servicesList = ["ACRI", "CLOUDFERRO", "EXPRIVIA", "WERUM", "DAS", "DHUS"];
+        // Retrieve the user profile. In case of "ecuser" role, allow
+        // the visualization of events up to the beginning of the previous quarter
+        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
 
-        Object.keys(this.archivePayload).forEach(periodKey => {
-            const pData = this.archivePayload[periodKey];
-            if (pData && pData.interface_status_map) {
-                servicesList.forEach(s => {
-                    const events = pData.interface_status_map[s];
-                    if (Array.isArray(events)) {
-                        events.forEach(ev => {
-                            if (ev.start && typeof ev.start === 'string') ev.start = new Date(ev.start);
-                            if (ev.stop && typeof ev.stop === 'string') ev.stop = new Date(ev.stop);
-                        });
-                    }
-                });
-            }
-        });
+        //  Register event callback for Time period select
+        var time_period_sel = document.getElementById('time-period-select');
+        time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
 
-        // 2. Logic to choose the starting period
-        if (this.archivePayload.availability_map) {
-            this.currentPeriod = 'default';
-            this.availabilityMap = this.archivePayload.availability_map;
-            this.interfaceStatusMap = this.archivePayload.interface_status_map || {};
-            this.render();
-        }
-        else if (this.archivePayload['prev-quarter'] || this.archivePayload['24h']) {
-            // This triggers the calculation logic below
-            this.refreshAvailabilityStatus('prev-quarter');
-        }
+        // Retrieve the monitoring interfaces
+        this.updateDateInterval('prev-quarter');
 
-        //console.groupEnd();
+        // Clean class variable
+        this.interfaceStatusMap = {'DAS': [], 'DHUS': [], 'ACRI': [], 'CLOUDFERRO': [], 'EXPRIVIA': [], 'WERUM': []};
+
+        // Retrieve the failed monitoring interfaces
+        this.loadDASMonitoringInterfaceInPeriod('prev-quarter');
+        // this.loadDHUSMonitoringInterfaceInPeriod('prev-quarter');
+        this.loadAcriMonitoringInterfaceInPeriod('prev-quarter');
+        this.loadCloudFerroMonitoringInterfaceInPeriod('prev-quarter');
+        this.loadExpriviaMonitoringInterfaceInPeriod('prev-quarter');
+        this.loadWerumMonitoringInterfaceInPeriod('prev-quarter');
+
+        return;
     }
 
+    quarterAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            var time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel.options.length == 4) {
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
+            }
 
-    render() {
-        // Updated to include DAS and DHUS which appear in your HTML
-        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM', 'DAS', 'DHUS'];
-
-        services.forEach(service => {
-            const key = service.toLowerCase();
-            const barEl = document.getElementById(`${key}-avail-bar`);
-            const percEl = document.getElementById(`${key}-avail-perc`);
-            const ifaceEl = document.getElementById(`${key}-interface-avail-perc`);
-
-            let value = this.availabilityMap[service];
-            if (typeof value !== 'number') value = 100;
-
-            const perc = value.toFixed(2) + '%';
-            if (barEl) barEl.style.width = perc;
-            if (percEl) percEl.innerText = perc;
-            if (ifaceEl) ifaceEl.innerText = perc;
-        });
+            // Programmatically select the previous quarter as the default time range
+            console.info('Programmatically set the time period to previous quarter')
+            time_period_sel.value = 'prev-quarter';
+        }
     }
 
-    refreshAvailabilityStatus(periodKey) {
-        console.info(`[SM][PERIOD] Switching to ${periodKey}`);
-        this.currentPeriod = periodKey;
+    errorLoadAuthorized(response) {
+        console.error(response)
+        return;
+    }
 
-        const payload = this.archivePayload[periodKey] || {};
-        this.availabilityMap = payload.availability_map || {};
-        this.interfaceStatusMap = payload.interface_status_map || {};
+    on_timeperiod_change() {
+        var time_period_sel = document.getElementById('time-period-select')
+        var selected_time_period = time_period_sel.value
+        console.log("Time period changed to "+ selected_time_period)
+        this.updateDateInterval(selected_time_period)
 
-        const legacyMap = {
-            '24h': 'day',
-            '7d': 'week',
-            '30d': 'month',
-            'prev-quarter': 'prev-quarter',
-            'last-quarter': 'prev-quarter'
-        };
+        // Clean class variable
+        this.interfaceStatusMap = {'DAS': [], 'DHUS': [], 'ACRI': [], 'CLOUDFERRO': [], 'EXPRIVIA': [], 'WERUM': []};
 
-        let legacyKey = legacyMap[periodKey] || periodKey;
+        // Retrieve the failed monitoring interfaces
+        this.loadDASMonitoringInterfaceInPeriod(selected_time_period);
+        // this.loadDHUSMonitoringInterfaceInPeriod(selected_time_period);
+        this.loadAcriMonitoringInterfaceInPeriod(selected_time_period);
+        this.loadCloudFerroMonitoringInterfaceInPeriod(selected_time_period);
+        this.loadExpriviaMonitoringInterfaceInPeriod(selected_time_period);
+        this.loadWerumMonitoringInterfaceInPeriod(selected_time_period);
+    }
 
-        let dates;
-        let isFallback = false;
-        try {
-            dates = new ObservationTimePeriod().getIntervalDates(legacyKey);
-            this.start_date = dates[0];
-            this.end_date = dates[1];
-        } catch (e) {
-            isFallback = true;
-            if (payload.interval) {
-                this.start_date = new Date(payload.interval.from);
-                this.end_date = new Date(payload.interval.to);
-            }
-        }
+    updateDateInterval(period_type) {
 
-        var periodDurationSec;
-        if (isFallback) {
-            if (periodKey === '7d') periodDurationSec = 7 * 24 * 60 * 60;
-            else if (periodKey === '30d') periodDurationSec = 30 * 24 * 60 * 60;
-            else if (periodKey === '24h') periodDurationSec = 24 * 60 * 60;
-            else {
-                periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
-            }
+        // Update start date depending on value of period type
+        // one of: day, week, month, quarter
+        // take delta to be applied from configuration
+        console.info('Updating time interval: ' + period_type);
+        let dates = new ObservationTimePeriod().getIntervalDates(period_type);
+        this.start_date = dates[0];
+        this.end_date = dates[1];
+        return;
+    }
+
+    loadDASMonitoringInterfaceInPeriod(selected_time_period) {
+        this.loadMonitoringInterfaceInPeriod(selected_time_period, 'DD_DAS');
+    }
+
+    loadDHUSMonitoringInterfaceInPeriod(selected_time_period) {
+        this.loadMonitoringInterfaceInPeriod(selected_time_period, 'DD_DHUS');
+    }
+
+    loadAcriMonitoringInterfaceInPeriod(selected_time_period) {
+        this.loadMonitoringInterfaceInPeriod(selected_time_period, 'LTA_Acri');
+    }
+
+    loadCloudFerroMonitoringInterfaceInPeriod(selected_time_period) {
+        this.loadMonitoringInterfaceInPeriod(selected_time_period, 'LTA_CloudFerro');
+    }
+
+    loadExpriviaMonitoringInterfaceInPeriod(selected_time_period) {
+        this.loadMonitoringInterfaceInPeriod(selected_time_period, 'LTA_Exprivia');
+    }
+
+    loadWerumMonitoringInterfaceInPeriod(selected_time_period) {
+        this.loadMonitoringInterfaceInPeriod(selected_time_period, 'LTA_Werum');
+    }
+
+    loadMonitoringInterfaceInPeriod(selected_time_period, service_name) {
+
+        // Acknowledge the invocation of rest APIs
+        console.info("Retrieving status monitoring for: " + service_name);
+
+        // Execute asynchronous AJAX call
+        if (selected_time_period === 'day') {
+            asyncAjaxCall('/api/reporting/cds-interface-status-monitoring/last-24h/' + service_name, 'GET', {},
+                this.successLoadInterfaceStatus.bind(this), this.errorLoadInterfaceStatus);
+        } else if (selected_time_period === 'week') {
+            asyncAjaxCall('/api/reporting/cds-interface-status-monitoring/last-7d/' + service_name, 'GET', {},
+                this.successLoadInterfaceStatus.bind(this), this.errorLoadInterfaceStatus);
+        } else if (selected_time_period === 'month') {
+            asyncAjaxCall('/api/reporting/cds-interface-status-monitoring/last-30d/' + service_name, 'GET', {},
+                this.successLoadInterfaceStatus.bind(this), this.errorLoadInterfaceStatus);
+        } else if (selected_time_period === 'prev-quarter') {
+            asyncAjaxCall('/api/reporting/cds-interface-status-monitoring/previous-quarter/' + service_name, 'GET', {},
+                this.successLoadInterfaceStatus.bind(this), this.errorLoadInterfaceStatus);
         } else {
-            periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
+            asyncAjaxCall('/api/reporting/cds-interface-status-monitoring/last-quarter/' + service_name, 'GET', {},
+                this.successLoadInterfaceStatus.bind(this), this.errorLoadInterfaceStatus);
         }
-
-        console.info(`[SM][MATH] Period: ${periodKey} | Duration: ${periodDurationSec}s`);
-
-        this.render();
-
-        var debugResults = [];
-        const services = ['ACRI', 'CLOUDFERRO', 'EXPRIVIA', 'WERUM', 'DAS', 'DHUS'];
-
-        services.forEach((key) => {
-            var serviceUnavDurationSec = 0;
-            const events = this.interfaceStatusMap[key] || [];
-
-            events.forEach((item) => {
-                if (item.start instanceof Date && item.stop instanceof Date) {
-                    serviceUnavDurationSec += (item.stop.getTime() - item.start.getTime()) / 1000;
-                }
-            });
-
-            // Use the standardized denominator we established earlier
-            var serviceAvailabityPerc = (1 - serviceUnavDurationSec / periodDurationSec) * 100;
-            var displayValue = serviceAvailabityPerc.toFixed(2) + '%';
-
-            var id_base = key.toLowerCase();
-            $(`#${id_base}-avail-perc`).text(displayValue);
-            $(`#${id_base}-interface-avail-perc`).text(displayValue);
-            $(`#${id_base}-avail-bar`).css({ "width": displayValue });
-
-            debugResults.push({
-                Service: key,
-                'Status': 'Corrected (Single-Count)',
-                'Downtime (s)': serviceUnavDurationSec.toFixed(1),
-                'Final %': displayValue
-            });
-        });
-
+        return;
     }
 
-    showUnavailabilityEvents(service) {
-        console.group(`[SM][CLICK] ${service}`);
+    successLoadInterfaceStatus(response){
 
-        const activePeriod = this.currentPeriod || 'default';
+        // Acknowledge the successful retrieval of monitoring interfaces
+        var rows = format_response(response);
+        console.info('List of failed monitoring interfaces successfully retrieved');
 
-        const periodEvents = this.interfaceStatusMapPerPeriod?.[activePeriod] || {};
-        const events = Array.isArray(periodEvents[service]) ? periodEvents[service] : [];
+        // Parse response
+        for (var i = 0 ; i < rows.length ; ++i) {
 
-        console.log('period:', this.currentPeriod);
-        console.log('events:', events);
+            // Auxiliary variables
+            var element = rows[i]['_source'];
 
-        console.groupEnd();
+            // Parse the failed monitoring interface
+            var status = {};
+            var start = moment(element['status_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+            status['start'] = start;
+            var stop = moment(element['status_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+            status['stop'] = stop;
 
-        // Sort newest first
-        events.sort((a, b) => new Date(b.start) - new Date(a.start));
+            // Status duration
+            if (!element['status_duration']) {
+                status['duration'] = 0; // By default, set an average duration of 0h
+            } else {
+                status['duration'] = element['status_duration'];
+            }
 
-        const formatDate = (date) => {
-            const d = new Date(date);
-            const pad = (n) => n.toString().padStart(2, '0');
+            // Store the failed monitoring interfaces in a dedicated class member
+            if (element['interface_name'] === 'DD_DAS') {
+                this.interfaceStatusMap['DAS'].push(status);
+            } else if (element['interface_name'] === 'DD_DHUS') {
+                this.interfaceStatusMap['DHUS'].push(status);
+            } else if (element['interface_name'] === 'LTA_Acri') {
+                this.interfaceStatusMap['ACRI'].push(status);
+            } else if (element['interface_name'] === 'LTA_CloudFerro') {
+                this.interfaceStatusMap['CLOUDFERRO'].push(status);
+            } else if (element['interface_name'] === 'LTA_Exprivia') {
+                this.interfaceStatusMap['EXPRIVIA'].push(status);
+            } else if (element['interface_name'] === 'LTA_Werum') {
+                this.interfaceStatusMap['WERUM'].push(status);
+            } else {
+                console.warning('Invalid service name: ' + element['interface_name']);
+            }
+        }
 
-            // Use getUTCDate, getUTCMonth, getUTCFullYear, and getUTCHours
-            return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}/${d.getUTCFullYear()} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`;
-        };
+        // Refresh impacted item status
+        this.refreshAvailabilityStatus();
+        return;
+    }
 
+    errorLoadInterfaceStatus(response){
+        console.error(response)
+        return;
+    }
 
-        // Build HTML and clear old event list each time
-        let html = '<ul>';
-        if (events.length === 0) {
-            html += `<li>No events for ${service} in selected period</li>`;
+    refreshAvailabilityStatus() {
+        var periodDurationSec = (this.end_date.getTime() - this.start_date.getTime()) / 1000;
+        Object.keys(this.interfaceStatusMap).forEach(function(key) {
+            var serviceUnavDurationSec = 0, serviceAvailabityPerc = 0;
+            serviceMonitoring.interfaceStatusMap[key].forEach(function(item) {
+                serviceUnavDurationSec += (item['stop'].getTime() - item['start'].getTime()) / 1000;
+            });
+            serviceAvailabityPerc = (1 - serviceUnavDurationSec / periodDurationSec) * 100;
+            var id_interface_perc = key.toLowerCase() + '-interface-avail-perc';
+            var id_perc = key.toLowerCase() + '-avail-perc';
+            var id_bar = key.toLowerCase() + '-avail-bar';
+            $('#' + id_interface_perc).text(serviceAvailabityPerc.toFixed(2) + '%');
+            $('#' + id_perc).text(serviceAvailabityPerc.toFixed(2) + '%');
+            $('#' + id_bar).css({"width": serviceAvailabityPerc.toFixed(2) + '%'});
+        })
+    }
+
+    showDASUnavailabilityEvents() {
+        serviceMonitoring.showUnavailabilityEvents('DAS');
+    }
+
+    showDHUSUnavailabilityEvents() {
+        serviceMonitoring.showUnavailabilityEvents('DHUS');
+    }
+
+    showAcriUnavailabilityEvents() {
+        serviceMonitoring.showUnavailabilityEvents('ACRI');
+    }
+
+    showCloudFerroUnavailabilityEvents() {
+        serviceMonitoring.showUnavailabilityEvents('CLOUDFERRO');
+    }
+
+    showExpriviaUnavailabilityEvents() {
+        serviceMonitoring.showUnavailabilityEvents('EXPRIVIA');
+    }
+
+    showWerumUnavailabilityEvents() {
+        serviceMonitoring.showUnavailabilityEvents('WERUM');
+    }
+
+    showUnavailabilityEvents(service_name) {
+
+        // Build the message to be displayed
+        var content = {};
+        content.title = service_name + ' Unavailability events';
+
+        // Sort array
+        serviceMonitoring.interfaceStatusMap[service_name].sort(function(a, b) {
+            return b['start'].getTime() - a['start'].getTime();
+        });
+
+        // Collect unavailabilities
+        content.message = '<ul>';
+        if (serviceMonitoring.interfaceStatusMap[service_name].length > 0) {
+            content.message = '<ul>';
+            serviceMonitoring.interfaceStatusMap[service_name].forEach(function(item) {
+                content.message += '<li>Unavailability start: ' + formatUTCDateHour(item['start']) + '; duration [min]: '
+                        + ((item['stop'].getTime() - item['start'].getTime()) / 60000).toFixed(2) + '</li>';
+            });
         } else {
-            events.forEach(e => {
-                const start = new Date(e.start);
-                const stop = new Date(e.stop);
-                const duration = ((stop - start) / 60000).toFixed(2);
-                const desc = e.description || 'No description';
-                html += `<li>Unavailability start: ${formatDate(start)}; duration [min]: ${duration}</li>`;
-            });
+            content.message += '<li>No events reported</li>';
         }
-        html += '</ul>';
+        content.message += '</ul>';
 
-        // Show notification (old ones cleared automatically by $.notify)
-        $.notify({
-            title: `${service} Unavailability events`,
-            message: html,
-            icon: 'fa fa-bell'
-        }, {
-            type: this.serviceColorMap?.[service] || 'info',
-            placement: { from: 'top', align: 'right' }
+        // Add other popup properties
+        content.icon = 'fa fa-bell';
+        content.url = '';
+        content.target = '_blank';
+
+        // Message visualization
+        var placementFrom = "top";
+        var placementAlign = "right";
+        var state = serviceMonitoring.serviceColorMap[service_name];
+        var style = "withicon";
+
+        $.notify(content,{
+            type: state,
+            placement: {
+                from: placementFrom,
+                align: placementAlign
+            },
+            time: 1000,
+            delay: 0,
         });
     }
-
-
-    // Optional helpers for each service
-    showDASUnavailabilityEvents() { this.showUnavailabilityEvents('DAS'); }
-    showDHUSUnavailabilityEvents() { this.showUnavailabilityEvents('DHUS'); }
-    showAcriUnavailabilityEvents() { this.showUnavailabilityEvents('ACRI'); }
-    showCloudFerroUnavailabilityEvents() { this.showUnavailabilityEvents('CLOUDFERRO'); }
-    showExpriviaUnavailabilityEvents() { this.showUnavailabilityEvents('EXPRIVIA'); }
-    showWerumUnavailabilityEvents() { this.showUnavailabilityEvents('WERUM'); }
 }
 
-window.serviceMonitoring = new ServiceMonitoring();
-window.serviceMonitoring.init();
+let serviceMonitoring = new ServiceMonitoring();
