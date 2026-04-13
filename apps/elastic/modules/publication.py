@@ -11,6 +11,7 @@ disclose in whole or in part, information contained herein except for or on
 behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
+
 import copy
 import logging
 from time import perf_counter

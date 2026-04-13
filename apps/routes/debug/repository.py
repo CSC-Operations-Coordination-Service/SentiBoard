@@ -245,7 +245,13 @@ def get_cds_datatake(start_date, end_date):
             end_date.strftime("%Y-%m-%d"),
         )
 
+        # indices = ["cds-datatake"]
+        indices = _build_cds_completeness_indices(
+            "s1", CDS_MISSIONS["s1"]
+        ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
         results = []
         for index in indices:
             try:
@@ -304,6 +310,9 @@ def get_cds_datatake_selected_fields(start_date, end_date):
         logger.info("[CDS] Querying selected fields from indices=%s", indices)
 
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
+
         results = []
         for index in indices:
             try:
@@ -417,7 +426,12 @@ def get_cds_s3_completeness(start_date, end_date):
 
         indices = ["cds-s3-completeness"]
 
+        indices = _build_cds_completeness_indices(
+            "s3", CDS_MISSIONS["s3"], splitted=True
+        )
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S3][DEBUG] Querying indexes:%s", indices)
         results = []
         for index in indices:
             logger.info("On index %s", index)
@@ -469,6 +483,8 @@ def get_cds_s3_completeness_selected_fields(start_date, end_date):
         indices = ["cds-s3-completeness"]
 
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S3] Querying indexes:%s", indices)
         results = []
         for index in indices:
             logger.info("On index %s", index)
@@ -532,6 +548,8 @@ def get_cds_s5_completeness(start_date, end_date):
         # indices = utils.get_index_name_from_interval_date('cds-s5-completeness', start_date, end_date)
         indices = ["cds-s5-completeness"]
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
+
         results = []
         for index in indices:
             try:
@@ -583,6 +601,7 @@ def get_cds_s5_completeness_selected_fields(start_date, end_date):
         # indices = utils.get_index_name_from_interval_date('cds-s5-completeness', start_date, end_date)
         indices = ["cds-s5-completeness"]
         elastic = elastic_client.ElasticClient()
+        logger.info("[CDS][S5] Querying indexes:%s", indices)
         results = []
         for index in indices:
             try:
