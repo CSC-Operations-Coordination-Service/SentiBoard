@@ -1243,20 +1243,21 @@ def news_list_ssr():
 
         messages = []
         for m in messages_raw:
+            pub_str = None
             if m.publicationDate:
-                pub_dt_rome = m.publicationDate.replace(tzinfo=timezone.utc).astimezone(
-                    LOCAL_TZ
+                pub_str = (
+                    m.publicationDate.replace(tzinfo=timezone.utc)
+                    .astimezone(LOCAL_TZ)
+                    .strftime("%Y-%m-%d %H:%M")
                 )
-                pub_str = pub_dt_rome.strftime("%Y-%m-%d %H:%M")
-            else:
-                pub_str = None
+
             messages.append(
                 {
                     "id": m.id,
                     "title": m.title,
                     "text": m.text,
                     "link": m.link,
-                    "messageType": m.messageType,
+                    "messageType": m.messageType or "warning",
                     "publicationDate": pub_str,
                     "publicationDateUtc": (
                         m.publicationDate.isoformat() if m.publicationDate else None
@@ -1264,13 +1265,12 @@ def news_list_ssr():
                 }
             )
 
-        total_pages = math.ceil(total_messages / page_size)
-
+        total_pages = math.ceil(total_messages / page_size) if total_messages else 1
         user_role = getattr(current_user, "role", "guest")
 
         return render_template(
             "home/newsList.html",
-            messages=make_json_safe(messages),
+            messages=messages,
             total_pages=total_pages,
             current_page=page,
             user_role=user_role,
@@ -1290,7 +1290,6 @@ def message_form_ssr():
 
         message_id = request.args.get("id")
         next_url = request.args.get("next", "/newsList.html")
-
         message_data = None
 
         if message_id:
@@ -1303,13 +1302,13 @@ def message_form_ssr():
             if not message:
                 abort(404)
 
+            pub_str = ""
             if message.publicationDate:
-                pub_dt_rome = message.publicationDate.replace(
-                    tzinfo=timezone.utc
-                ).astimezone(LOCAL_TZ)
-                pub_str = pub_dt_rome.strftime("%Y-%m-%dT%H:%M")
-            else:
-                pub_str = ""
+                pub_str = (
+                    message.publicationDate.replace(tzinfo=timezone.utc)
+                    .astimezone(LOCAL_TZ)
+                    .strftime("%Y-%m-%dT%H:%M")
+                )
 
             message_data = {
                 "id": message.id,
@@ -1343,8 +1342,9 @@ def add_instant_message_ssr():
         title = request.form.get("title", "").strip()
         text = request.form.get("text", "").strip()
         link = request.form.get("link", "").strip()
-        message_type = request.form.get("messageType", "").strip()
         publication_date_str = request.form.get("publicationDate", "").strip()
+
+        message_type = request.form.get("messageType", "warning").strip()
 
         if not title or not text or not publication_date_str:
             flash("Missing required fields", "danger")
@@ -1353,19 +1353,15 @@ def add_instant_message_ssr():
         local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
             tzinfo=LOCAL_TZ
         )
-
         publication_date = local_dt.astimezone(timezone.utc)
 
-        modify_date = datetime.now(timezone.utc)
-
-        # Save the message
         instant_messages_model.save_instant_messages(
             title=title,
             text=text,
             link=link,
             publication_date=publication_date,
             message_type=message_type,
-            modify_date=modify_date,
+            modify_date=datetime.now(timezone.utc),
         )
 
         flash("News added successfully!", "success")
@@ -1380,7 +1376,6 @@ def add_instant_message_ssr():
 @blueprint.route("/admin/instant-messages/update", methods=["POST"])
 @login_required
 def update_instant_message_ssr():
-
     try:
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
             abort(403)
@@ -1395,13 +1390,12 @@ def update_instant_message_ssr():
         title = request.form.get("title", "").strip()
         text = request.form.get("text", "").strip()
         link = request.form.get("link", "").strip()
-        message_type = request.form.get("messageType", "").strip()
         publication_date_str = request.form.get("publicationDate", "").strip()
+        message_type = request.form.get("messageType", "warning").strip()
 
         local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
             tzinfo=LOCAL_TZ
         )
-
         new_pub_dt_utc = local_dt.astimezone(timezone.utc)
 
         message = (
@@ -1438,16 +1432,13 @@ def update_instant_message_ssr():
 def delete_instant_message_modal():
     try:
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
-            logger.warning(f"Unauthorized user: {current_user}")
             abort(403)
 
         message_id = request.form.get("id", "").strip()
         next_url = request.form.get("next", "/newsList.html")
-        # logger.info(f"Message ID to delete: {message_id}, next: {next_url}")
 
         if not message_id:
             flash("Missing news ID", "danger")
-            logger.warning("Missing news ID")
             return redirect(next_url)
 
         message = (
@@ -1458,7 +1449,6 @@ def delete_instant_message_modal():
 
         if not message:
             flash("News not found", "danger")
-            logger.warning(f"News not found: {message_id}")
             return redirect(next_url)
 
         db.session.delete(message)
@@ -1467,7 +1457,7 @@ def delete_instant_message_modal():
         flash("News successfully deleted", "success")
         return redirect(next_url)
 
-    except Exception as ex:
+    except Exception:
         logger.exception("Error deleting News post")
         db.session.rollback()
         flash("Delete failed", "danger")

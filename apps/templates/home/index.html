@@ -192,8 +192,31 @@
 
     {% if instant_messages and instant_messages|length > 0 %}
         {% for item in instant_messages %}
+           {# ── Resolve status flag ──────────────────────────────────── #}
+          {% set status = (item.status or 'new')|lower %}
+          {% if status == 'resolved' %}
+            {% set flag_cls  = 'ne-flag-resolved' %}
+            {% set flag_icon = '✓' %}
+            {% set badge_cls = 'ne-card-badge-resolved' %}
+            {% set badge_txt = 'RESOLVED' %}
+          {% elif status == 'disaster' %}
+            {% set flag_cls  = 'ne-flag-disaster' %}
+            {% set flag_icon = '⚠' %}
+            {% set badge_cls = 'ne-card-badge-disaster' %}
+            {% set badge_txt = 'DISASTER' %}
+          {% else %}
+            {% set flag_cls  = 'ne-flag-new' %}
+            {% set flag_icon = '!' %}
+            {% set badge_cls = 'ne-card-badge-new' %}
+            {% set badge_txt = 'NEW' %}
+          {% endif %}
           <div class="news-card p-2 rounded shadow mb-2 text-white">
-            <div class="fw-bold">{{ item.title }}</div>
+            {# Flag + title row #}
+            <div class="d-flex align-items-center mb-1" style="gap:8px;">
+              <span class="ne-news-flag {{ flag_cls }}" title="{{ badge_txt }}">{{ flag_icon }}</span>
+              <span class="fw-bold" style="font-size:0.95rem;">{{ item.title }}</span>
+              <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
+            </div>
             <div class="text-muted small">{{ item.publicationDate }}</div>
             <div>{{ item.text }}</div>
 
@@ -231,6 +254,55 @@
     </button>
     <div class="collapse" id="customBannerMobile">
       <div id="custom-banner-mobile" class="bg-dark text-white p-3 rounded"></div>
+       {% if instant_messages and instant_messages|length > 0 %}
+
+        {% for item in instant_messages %}
+
+          {% set status = (item.status or 'new')|lower %}
+          {% if status == 'resolved' %}
+            {% set flag_cls  = 'ne-flag-resolved' %}
+            {% set flag_icon = '✓' %}
+            {% set badge_cls = 'ne-card-badge-resolved' %}
+            {% set badge_txt = 'RESOLVED' %}
+          {% elif status == 'disaster' %}
+            {% set flag_cls  = 'ne-flag-disaster' %}
+            {% set flag_icon = '⚠' %}
+            {% set badge_cls = 'ne-card-badge-disaster' %}
+            {% set badge_txt = 'DISASTER' %}
+          {% else %}
+            {% set flag_cls  = 'ne-flag-new' %}
+            {% set flag_icon = '!' %}
+            {% set badge_cls = 'ne-card-badge-new' %}
+            {% set badge_txt = 'NEW' %}
+          {% endif %}
+          <div class="news-card p-2 rounded shadow mb-2 text-white">
+            <div class="d-flex align-items-center mb-1" style="gap:8px;">
+              <span class="ne-news-flag {{ flag_cls }}" title="{{ badge_txt }}">{{ flag_icon }}</span>
+              <span class="fw-bold" style="font-size:0.95rem;">{{ item.title }}</span>
+              <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
+            </div>
+            <div class="text-muted small mb-1">{{ item.publicationDate }}</div>
+            <div style="font-size:0.88rem;">{{ item.text }}</div>
+            {% if item.link %}
+              <div class="mt-1">
+                <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">Read more</a>
+              </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+          {% if total_messages > 3 %}
+            <div class="text-center mt-2">
+              <a href="/newsList.html" class="btn btn-outline-light"
+                style="background-color:#FFC107; color:#212529;">
+                View all news
+              </a>
+            </div>
+          {% endif %}
+
+        {% else %}
+          <div class="text-center py-4">There are no news at the moment.</div>
+        {% endif %}
     </div>
   </div>
 </div>
