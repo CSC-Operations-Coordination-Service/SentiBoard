@@ -21,7 +21,6 @@
     <title>{{ title }} | Copernicus Dashboard</title>
     <meta name="description" content="{{ description }}">
 
-    {# Keywords can be a string or a callable that returns a string #}
     {% set safe_keywords = keywords | default([]) %}
     {% if safe_keywords %}
       {% if safe_keywords is iterable and safe_keywords is not string %}

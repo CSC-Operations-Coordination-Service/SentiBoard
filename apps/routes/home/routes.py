@@ -15,84 +15,22 @@ delivered to him.
 from flask import (
     render_template,
     request,
-    current_app,
-    abort,
-    jsonify,
-    session,
     redirect,
     url_for,
-    Response,
     flash,
+    current_app,
+    Response,
+    Flask,
+    jsonify,
+    abort,
 )
-from flask_login import current_user, login_required
 from jinja2 import TemplateNotFound
 from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
-import apps.cache.modules.acquisitions as acquisitions_cache
-import apps.cache.modules.timeliness as timeliness_cache
-import apps.cache.modules.events as events_cache
-import apps.cache.modules.datatakes as datatakes_cache
-import apps.cache.modules.acquisitionplans as acquisition_plans_cache
-import apps.cache.modules.acquisitionassets as acquisition_assets_cache
-import apps.cache.modules.publication as publication_cache
-import apps.cache.modules.archive as archive_cache
-import apps.elastic.modules.interface_monitoring as elastic_interface_monitoring
-import apps.cache.modules.interface_monitoring_ssr as interface_monitoring_cache_ssr
-import apps.models.instant_messages as instant_messages_model
-import apps.models.anomalies as anomalies_model
-from apps.models.user_role import get_roles as model_get_roles
-from apps.models.user_role import save_role as model_save_role
-from apps.models.user_role import delete_role as model_delete_role
-from apps.models.users import get_users as model_get_users
-from apps.models.users import update_user as update_user
-from apps.models.users import save_user as save_user
-from apps.models.users import delete_user as delete_user
-from apps.elastic.modules.datatakes import (
-    _calc_s1_datatake_completeness,
-    _calc_s2_datatake_completeness,
-    _calc_s3_datatake_completeness,
-    _calc_s5_datatake_completeness,
-    _calc_datatake_completeness_status,
-)
-import apps.utils.auth_utils as auth_utils
-import apps.utils.acquisitions_utils as acquisitions_utils
-import apps.cache.modules.unavailability as unavailability_cache
-from apps.utils.date_utils import format_pub_date
-from datetime import datetime, date, timezone, timedelta
-from dateutil import parser
-from dateutil.relativedelta import relativedelta
-from calendar import monthrange
-from apps import flask_cache, db
-from collections import Counter
+import os
 import json
-import requests
-import time
-import logging
-import math
-import ast
-from zoneinfo import ZoneInfo
-from collections import defaultdict
-
-logger = logging.getLogger(__name__)
-
-LOCAL_TZ = ZoneInfo("Europe/Rome")
-
-from apps.utils.events_utils import (
-    build_event_instance,
-    get_impacted_satellite,
-    to_utc,
-    to_utc_iso,
-    safe_get,
-    load_cache_as_list,
-    safe_value,
-    safe_json_value,
-    replace_undefined,
-    datatake_sort_key,
-    enrich_datatake,
-    make_json_safe,
-    find_undefined_paths,
-)
+import traceback
 
 PAGE_METADATA = {
     "index.html": {
@@ -418,405 +356,18 @@ def get_metadata(template):
     return PAGE_METADATA.get(template, DEFAULT_PAGE_METADATA)
 
 
-def admin_required(f):
-    @wraps(f)
-    @login_required
-    def decorated(*args, **kwargs):
-        if getattr(current_user, "role", None) not in ("admin", "ecuser", "esauser"):
-            return abort(403)
-        return f(*args, **kwargs)
-
-    return decorated
-
-
-@blueprint.route("/roles.html", methods=["GET", "POST"])
-@login_required
-def roles_page():
-    try:
-        logger.info("--- Entering roles_page ---")
-
-        authorized = auth_utils.is_user_authorized(["admin", "ecuser", "esauser"])
-        logger.info(f"User authorization status: {authorized}")
-
-        if not authorized:
-            logger.warning(f"Unauthorized access attempt by user")
-            return render_template("home/page-404.html"), 404
-
-        if request.method == "POST":
-            action = request.form.get("action")
-            role_name = request.form.get("name")
-
-            if action == "add":
-                description = request.form.get("description")
-                model_save_role(role_name, description)
-                # Optional: flash("Role added successfully!", "success")
-
-            elif action == "delete":
-                # Extra security check: ensure they aren't trying to delete protected roles
-                if role_name not in ["admin", "guest", "ecuser"]:
-                    model_delete_role(role_name)
-                # Optional: flash(f"Role {role_name} deleted.", "info")
-            return redirect(url_for("home_blueprint.roles_page"))
-
-        roles_list = model_get_roles()
-
-        logger.info(f"Type of roles_list: {type(roles_list)}")
-        if roles_list is not None:
-            logger.info(f"Number of roles retrieved: {len(roles_list)}")
-        else:
-            logger.error("model_get_roles() returned None")
-
-        return render_template("admin/roles.html", roles=roles_list)
-
-    except Exception as ex:
-        logger.error(f"Error in roles_page: {str(ex)}", exc_info=True)
-
-
-@blueprint.route("/users.html", methods=["GET", "POST"])
-@login_required
-def admin_users_page():
-    if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
-        return render_template("home/page-404.html"), 404
-
-    if request.method == "POST":
-        action = request.form.get("action")  # We'll send this from JS
-
-        try:
-            if action == "update":
-                update_user(
-                    id=request.form.get("id"),
-                    username=request.form.get("username"),
-                    email=request.form.get("email"),
-                    password=request.form.get("password"),
-                    role=request.form.get("role"),
-                )
-                return redirect(
-                    url_for("home_blueprint.admin_users_page", msg="updated")
-                )
-
-            elif action == "add":
-                save_user(
-                    username=request.form.get("username"),
-                    email=request.form.get("email"),
-                    password=request.form.get("password"),
-                    role=request.form.get("role"),
-                )
-                return redirect(url_for("home_blueprint.admin_users_page", msg="added"))
-
-            elif action == "delete":
-                delete_user(username=request.form.get("username"))
-                return redirect(
-                    url_for("home_blueprint.admin_users_page", msg="deleted")
-                )
-
-        except Exception as ex:
-            logger.error(f"Action {action} failed", exc_info=True)
-
-    msg_type = request.args.get("msg")
-    messages = {
-        "updated": "User updated successfully!",
-        "added": "New user created successfully!",
-        "deleted": "User removed successfully!",
-    }
-    status_msg = messages.get(msg_type)
-
-    try:
-        roles_raw = model_get_roles()
-        users_raw = model_get_users()
-
-        users_data = [
-            {
-                "id": u.id,
-                "username": u.username,
-                "email": u.email,
-                "role": u.role,
-                "modifyDate": u.modifyDate.isoformat() if u.modifyDate else None,
-            }
-            for u in (users_raw or [])
-        ]
-
-        roles_data = [
-            {"name": r.name, "description": r.description} for r in (roles_raw or [])
-        ]
-
-        return render_template(
-            "admin/users.html",
-            users=users_data,
-            roles=roles_data,
-            status_msg=status_msg,
-        )
-    except Exception as ex:
-        logger.error("Error loading admin users page", exc_info=True)
-        return render_template("home/page-500.html"), 500
-
-
-@blueprint.route("/index.html")
-def index_html_redirect():
-    return redirect(url_for("home_blueprint.index"))
-
-
 @blueprint.route("/index")
 def index():
     metadata = get_metadata("index.html")
     metadata["page_url"] = request.url
-    segment = "index"
-    period_id = "24h"
+    return render_template("home/index.html", segment="index", **metadata)
 
-    ALLOWED_SATELLITES = {
-        "S1A",
-        "S1C",
-        "S2A",
-        "S2B",
-        "S2C",
-        "S3A",
-        "S3B",
-        "S5P",
-    }
 
-    # Build the cache key
-    anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
-    current_app.logger.info(f"[INDEX] starting here")
-    # current_app.logger.info(f"[INDEX] using cache key: {anomalies_api_uri}")
-
-    # Get and inspect cache content
-    raw_cache = flask_cache.get(anomalies_api_uri)
-    current_app.logger.info(f"[INDEX] Cache content raw type: {type(raw_cache)}")
-    current_app.logger.info(
-        f"[INDEX] Cache raw content preview: {str(raw_cache)[:400]}"
-    )
-
-    # ---- SAFE CACHE HANDLING ----
-    anomalies_data = []
-
-    if raw_cache is None:
-        current_app.logger.warning(
-            "[INDEX] Cache empty or missing for %s", anomalies_api_uri
-        )
-
-    elif hasattr(raw_cache, "get_json"):  # Flask Response
-        try:
-            anomalies_data = raw_cache.get_json() or []
-            current_app.logger.info(
-                f"[INDEX] Parsed JSON from Response: {len(anomalies_data)} items"
-            )
-        except Exception as e:
-            current_app.logger.warning(f"[INDEX] Failed to parse Response JSON: {e}")
-
-    elif isinstance(raw_cache, (bytes, str)):
-        try:
-            anomalies_data = json.loads(raw_cache) or []
-            current_app.logger.info(
-                f"[INDEX] Parsed raw JSON string: {len(anomalies_data)} items"
-            )
-        except Exception as e:
-            current_app.logger.warning(f"[INDEX] Failed to decode JSON string: {e}")
-
-    elif isinstance(raw_cache, list):
-        anomalies_data = raw_cache
-        current_app.logger.info(
-            f"[INDEX] Using cached list: {len(anomalies_data)} items"
-        )
-
-    else:
-        current_app.logger.warning(f"[INDEX] Unknown cache type {type(raw_cache)}")
-
-    current_app.logger.info(f"[INDEX] Total anomalies read: {len(anomalies_data)}")
-
-    now = datetime.now(timezone.utc)
-    anomalies_details = []
-
-    SATELLITE_DISPLAY_NAMES = {
-        "S1A": "Copernicus Sentinel-1A",
-        "S1C": "Copernicus Sentinel-1C",
-        "S2A": "Copernicus Sentinel-2A",
-        "S2B": "Copernicus Sentinel-2B",
-        "S2C": "Copernicus Sentinel-2C",
-        "S3A": "Copernicus Sentinel-3A",
-        "S3B": "Copernicus Sentinel-3B",
-        "S5P": "Copernicus Sentinel-5P",
-    }
-
-    for idx, item in enumerate(anomalies_data):
-        if not isinstance(item, dict):
-            current_app.logger.warning(
-                f"[INDEX] Skipping invalid anomaly at index {idx}: {item}"
-            )
-            continue
-
-        event_time_str = item.get("start")
-
-        if not event_time_str:
-            current_app.logger.warning(
-                f"[INDEX] Missing 'time' field in item {idx}: {item} "
-            )
-            continue
-
-        try:
-            event_time = datetime.strptime(event_time_str, "%d/%m/%Y %H:%M:%S")
-            event_time = event_time.replace(tzinfo=timezone.utc)
-        except Exception as e:
-            current_app.logger.warning(
-                f"[INDEX] Invalid datetime in item {idx}: {event_time_str} ({e})"
-            )
-            continue
-
-        diff = now - event_time
-        total_seconds = diff.total_seconds()
-
-        if not (0 <= total_seconds <= 86400):
-            continue
-
-        """ total_hours = diff.total_seconds() / 3600
-        days = int(total_hours // 24)
-        hours = int(total_hours % 24)
-        minutes = int((diff.total_seconds() % 3600) // 60)
-
-        if days >= 1:
-            time_ago = f"{days} day(s)"
-            if hours > 0:
-                time_ago += f", {hours} hour(s)"
-        elif total_hours >= 1:
-            time_ago = f"{round(total_hours)} hour(s)"
-        else:
-            time_ago = f"{minutes} minute(s) """
-
-        raw_impacted_sat = item.get("impactedSatellite")
-
-        # Skip missing or empty
-        if not raw_impacted_sat:
-            current_app.logger.info(
-                f"[INDEX] Skipping anomaly without impactedSatellite at index {idx}"
-            )
-            continue
-
-        impacted_sat = (
-            raw_impacted_sat.replace("Copernicus", "")
-            .replace("Sentinel-", "S")
-            .replace("Sentinel ", "S")
-            .replace("-", "")
-            .replace(" ", "")
-            .upper()
-        )
-
-        # Filter only allowed satellites
-        if impacted_sat not in ALLOWED_SATELLITES:
-            current_app.logger.info(
-                f"[INDEX] Skipping non-allowed satellite {impacted_sat} at index {idx}"
-            )
-            continue
-
-        raw_completeness = item.get("datatakes_completeness", "[]")
-        is_impacted = False
-        threshold = 90
-
-        try:
-            # Convert the string "[{'datatakeID':...}]" into a Python list
-            completeness_list = ast.literal_eval(raw_completeness)
-
-            for dt in completeness_list:
-                vals = [v for k, v in dt.items() if isinstance(v, (int, float))]
-
-                if len(vals) >= 3:
-                    avg_completeness = sum(vals[:3]) / 3
-                elif len(vals) > 0:
-                    avg_completeness = sum(vals) / len(vals)
-                else:
-                    avg_completeness = 0  # No data means 0 completeness
-
-                if avg_completeness < threshold:
-                    is_impacted = True
-                    break
-        except Exception as e:
-            current_app.logger.warning(f"Error parsing completeness for {idx}: {e}")
-            is_impacted = True
-
-        if not is_impacted:
-            current_app.logger.info(f"[INDEX] Skipping {idx}: All datatakes recovered.")
-            continue
-
-        total_hours = total_seconds / 3600
-        if total_hours >= 1:
-            time_ago = f"{round(total_hours)} hour(s) ago"
-        else:
-            time_ago = f"{int(total_seconds // 60)} minute(s) ago"
-
-        category = item.get("category", "Unknown")
-        display_satellite = SATELLITE_DISPLAY_NAMES.get(impacted_sat, raw_impacted_sat)
-
-        # Default title
-        title = None
-        if category == "Platform":
-            title = f"Satellite issue, affecting {display_satellite} data."
-        elif category == "Acquisition":
-            title = f"Acquisition issue, affecting {display_satellite} data."
-        elif category == "Production":
-            title = f"Production issue, affecting {display_satellite} data."
-        elif category == "Manoeuvre":
-            title = f"Manoeuvre issue, affecting {display_satellite} data."
-        elif category == "Calibration":
-            title = f"Calibration issue, affecting {display_satellite} data."
-        else:
-            title = f"{category} issue, affecting {display_satellite} data."
-        # Add “Read More” link
-        pub_date = item.get("publicationDate", "")[:10]
-        title += f' <a href="/events.html?showDayEvents={pub_date}">Read More</a>'
-
-        # Append to list
-        if now - event_time <= timedelta(hours=24):
-            anomalies_details.append({"time_ago": time_ago, "content": title})
-
-        if len(anomalies_details) >= 2:
-            break
-
-    # ---- SSR: Load Instant Messages for Home ----
+@blueprint.route("/<template>")
+def route_template(template):
     try:
-        page_size = 3  # number of messages to show on home page
-
-        # sorting publicationDate descending
-        query = db.session.query(instant_messages_model.InstantMessages).order_by(
-            instant_messages_model.InstantMessages.publicationDate.desc()
-        )
-
-        total_messages = query.count()
-        instant_messages_raw = query.limit(page_size).all()
-
-        # Serialize messages to JSON-friendly format
-        instant_messages = [
-            {
-                "id": msg.id,
-                "title": msg.title,
-                "text": msg.text,
-                "messageType": msg.messageType,
-                "publicationDate": format_pub_date(msg.publicationDate),
-                "link": msg.link,
-            }
-            for msg in instant_messages_raw
-        ]
-
-    except Exception:
-        logger.exception("Failed to load SSR Home News")
-        instant_messages = []
-        total_messages = 0
-
-    # Include user role
-    user_role = getattr(current_user, "role", None)
-
-    # Ensure JSON-safe values
-    instant_messages_safe = make_json_safe(instant_messages)
-
-    # Serialize to JSON string
-    instant_messages_json = json.dumps(instant_messages_safe)
-
-    return render_template(
-        "home/index.html",
-        segment=segment,
-        anomalies_details=anomalies_details,
-        instant_messages_json=instant_messages_json,
-        total_messages=total_messages,
-        user_role=user_role,
-        **metadata,
-    )
-
+        if not template.endswith(".html"):
+            abort(404)
 
 @blueprint.route("/events")
 def events():
@@ -824,571 +375,84 @@ def events():
         metadata = get_metadata("events.html")
         metadata["page_url"] = request.url
 
-        today = datetime.today()
-        year = request.args.get("year", type=int, default=today.year)
-        month = request.args.get("month", type=int, default=today.month)
+        if template in admin_pages:
 
-        icon_map = {
-            "acquisition": "fas fa-broadcast-tower",
-            "calibration": "fas fa-compass",
-            "manoeuvre": "/static/assets/img/joystick.svg",
-            "production": "fas fa-cog",
-            "satellite": "fas fa-satellite-dish",
-        }
+            # Serve the file (if exists) from app/templates/admin/FILE.html
+            return render_template("admin/" + template, segment=segment, **metadata)
 
-        event_type_map = {
-            "acquisition": "acquisition",
-            "calibration": "calibration",
-            "data access": "data-access",
-            "manoeuvre": "manoeuvre",
-            "production": "production",
-            "satellite": "satellite",
-        }
+        # Serve the file (if exists) from app/templates/home/FILE.html
+        return render_template("home/" + template, segment=segment, **metadata)
 
-        quarter_authorized = current_user.is_authenticated and current_user.role in (
-            "admin",
-            "ecuser",
-            "esauser",
-        )
+    except TemplateNotFound:
+        return render_template("home/page-404.html"), 404
 
-        days_in_month = monthrange(year, month)[1]
-        first_day_offset = date(year, month, 1).weekday()
-        month_name = date(year, month, 1).strftime("%B")
-
-        return render_template(
-            "home/events.html",
-            current_month=month,
-            current_year=year,
-            current_month_name=month_name,
-            days_in_month=days_in_month,
-            first_day_offset=first_day_offset,
-            anomalies_by_date={},
-            json_anomalies=[],
-            json_events=[],
-            json_datatakes=[],
-            quarter_authorized=quarter_authorized,
-            icon_map=icon_map,
-            event_type_map=event_type_map,
-            missing_datatakes_info=[],
-            **metadata,
-        )
-    except Exception as e:
-        current_app.logger.error(f"Error rendering / events: {e}", exc_info=True)
-        abort(500)
+    except:
+        return render_template("home/page-500.html"), 500
 
 
-@blueprint.route("/events_data")
-def events_data():
-    year = request.args.get("year", type=int)
-    month = request.args.get("month", type=int)
-    if not year or not month:
-        return jsonify({"error": "Missing year or month"}), 400
-
+# Helper - Extract current page name from request
+def get_segment(request):
     try:
-        quarter_authorized = current_user.is_authenticated and current_user.role in (
-            "admin",
-            "ecuser",
-            "esauser",
-        )
 
-        if quarter_authorized:
-            events_cache.load_anomalies_cache_previous_quarter()
-            cache_key = events_cache.anomalies_cache_key.format("previous", "quarter")
-        else:
-            events_cache.load_anomalies_cache_last_quarter()
-            cache_key = events_cache.anomalies_cache_key.format("last", "quarter")
+        segment = request.path.split("/")[-1]
 
-        cache_entry = events_cache.flask_cache.get(cache_key)
-        raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
+        if segment == "":
+            segment = "index"
 
-        if not raw_anomalies:
-            current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
-            return jsonify({"anomalies": [], "anomalies_by_date": {}, "events": []})
+        return segment
 
-        def serialize_anomalie(a):
-            src = a.get("_source", a)
-            date_str = (
-                src.get("occurence_date")
-                or src.get("occurrence_date")
-                or src.get("publicationDate")
-                or src.get("created")
-            )
-
-            if isinstance(date_str, datetime):
-                date_str = to_utc_iso(date_str)
-
-            if isinstance(date_str, str) and "/" in date_str:
-                try:
-                    dt = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
-                    date_str = to_utc_iso(dt)
-                except Exception:
-                    pass
-
-            impacted_satellite = get_impacted_satellite(src)
-
-            datatakes_completeness = src.get("datatakes_completeness", [])
-            if isinstance(datatakes_completeness, str):
-                try:
-                    datatakes_completeness = json.loads(
-                        datatakes_completeness.replace("'", '"')
-                    )
-                except Exception:
-                    datatakes_completeness = []
-
-            return {
-                "key": safe_get(src.get("key")) or safe_get(src.get("id")),
-                "category": src.get("category") or src.get("type") or "Unknown",
-                "environment": src.get("environment", ""),
-                "publicationDate": date_str,
-                "description": src.get("description", ""),
-                "impactedSatellite": impacted_satellite,
-                "datatakes_completeness": datatakes_completeness,
-            }
-
-        anomalies = []
-        for a in raw_anomalies:
-            serialized = serialize_anomalie(a)
-            if serialized:
-                anomalies.append(serialized)
-            else:
-                current_app.logger.info("[SKIPPED] anomaly filtered by prefix")
-
-        events = []
-        anomalies_by_date = {}
-        skipped_full = 0
-        kept_partial = 0
-
-        for a in anomalies:
-            instance = build_event_instance(a, current_app.logger)
-            if not instance:
-                continue
-            if instance.get("fullRecover"):
-                skipped_full += 1
-                continue
-            else:
-                kept_partial += 1
-
-            date_str = instance.get("from") or instance.get("publicationDate")
-            if not date_str:
-                current_app.logger.info(f"Skipping instance without 'from': {instance}")
-                continue
-
-            try:
-                dt = datetime.fromisoformat(date_str)
-            except Exception:
-                try:
-                    dt = datetime.strptime(date_str, "%d/%m/%Y %H:%M:%S")
-                except Exception:
-                    current_app.logger.info(
-                        f"invalid date format in instance: {instance}"
-                    )
-                    continue
-
-            if dt.year == year and dt.month == month:
-                date_key = dt.strftime("%Y-%m-%d")
-                anomalies_by_date.setdefault(date_key, []).append(instance)
-                events.append(instance)
-
-        # --- Return clean JSON response ---
-        response = {
-            "year": year,
-            "month": month,
-            "anomalies": anomalies,
-            "anomalies_by_date": anomalies_by_date,
-            "count": sum(len(v) for v in anomalies_by_date.values()),
-            "events": events,
-        }
-
-        return jsonify(response)
-
-    except Exception as e:
-        current_app.logger.error(f"Error in /events_data: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@blueprint.app_template_filter("to_utc_dt")
-def to_utc_dt(value):
-    """
-    Jinja filter to ensure ISO strings or datetimes render properly in templates.
-    Converts to a UTC-aware datetime using existing to_utc().
-    """
-    try:
-        return to_utc(value)
-    except Exception:
+    except:
         return None
 
 
-@blueprint.route("/data-availability", methods=["GET", "POST"])
-def data_availability():
-    metadata = get_metadata("data-availability.html")
-    metadata["page_url"] = request.url
-    segment = "data-availability"
-    BATCH_SIZE = 20
+# --- BASIC AUTH ---
+def check_auth(username, password):
+    return username == "admin" and password == "yourpassword"
 
+
+def authenticate():
+    return Response(
+        "Login required.", 401, {"WWW-Authenticate": 'Basic realm="Login Required"'}
+    )
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+
+    return decorated
+
+
+def is_safe_url(target):
+    # Prevent open redirects
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return test_url.scheme in ("http", "https") and ref_url.netloc == test_url.netloc
+
+
+@blueprint.route("/admin/message", methods=["GET"])
+def admin_home_message():
     try:
-        # current_app.logger.info("\n" + "=" * 50)
-        # current_app.logger.info("[DATA-AVAILABILITY] ROUTE TRIGGERED")
-        # Log every single argument arriving from the browser
-        current_app.logger.info(f"[ARGS RECEIVED] {dict(request.args)}")
-
-        limit = int(request.args.get("limit", BATCH_SIZE))
-
-        is_ajax = request.args.get("ajax") == "1"
-        search_query = request.args.get("search", "").strip()
-        mission_filter = request.args.get("mission", "").upper()
-        # current_app.logger.info(
-        #    f"[LOG] Filters -> Mission: '{mission_filter}', Limit: {limit}"
-        # )
-
-        sat_filter = request.args.get("satellite", "")
-
-        if mission_filter == "S5":
-            sat_filter = ""  # S5 has no sub-units
-        elif sat_filter and not sat_filter.startswith(mission_filter):
-            # If Mission is S2 but Satellite is S1A, ignore the satellite filter
-            sat_filter = ""
-
-        from_date_str = request.args.get("fromdate", "")
-        to_date_str = request.args.get("todate", "")
-        has_search = bool(search_query)
-        selected_period = request.args.get("period") or session.get(
-            "selected_period", "week"
-        )
-
-        # current_app.logger.info(
-        #     f"[EXTRACTED] Mission: '{mission_filter}' | Sat: '{sat_filter}' | Search: '{search_query}' | Period: '{selected_period}'"
-        # )
-
-        if has_search and not request.args.get("period"):
-            selected_period = "prev-quarter"
-
-        if bool(search_query) and not request.args.get("period"):
-            selected_period = "prev-quarter"
-            current_app.logger.info("[LOG] Forcing prev-quarter due to search query.")
-
-        # Save user-selected period in session only if not search
-        if not has_search and "period" in request.args:
-            session["selected_period"] = selected_period
-
-        # --- Cache keys ---
-        datatakes_cache_key_map = {
-            "day": "last-24h",
-            "week": "last-7d",
-            "month": "last-30d",
-            "prev-quarter": "previous-quarter",
-            "default": "last-7d",
+        # This empty object is used to populate the form initially
+        empty_message = {
+            "title": "",
+            "text": "",
+            "link": "",
+            "messageType": "info",
+            "publicationDate": "",
         }
-
-        datatakes_key = datatakes_cache_key_map.get(selected_period, "last-7d")
-        anomalies_cache_uri = events_cache.anomalies_cache_key.format(
-            "last",
-            "last" if selected_period == "prev-quarter" else "7d",
-        )
-        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
-            "last",
-            datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
-        )
-
-        # --- Load caches ---
-        anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
-        datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
-
-        # current_app.logger.info(
-        #    f"[LOG] Cache Loaded. Total items in raw cache: {len(datatakes_data)}"
-        # )
-
-        # --- POST: datatake details ---
-        datatake_details = None
-        if request.method == "POST":
-            selected_id = request.form.get("datatake_id")
-            if selected_id:
-                datatake_details = (
-                    datatakes_cache.load_datatake_details(selected_id) or {}
-                )
-
-        # --- Authorization ---
-        quarter_authorized = current_user.is_authenticated and current_user.role in (
-            "admin",
-            "ecuser",
-            "esauser",
-        )
-
-        # Simplified for logging
-        dt_suffix = datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d"
-        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
-            "last", dt_suffix
-        )
-
-        # current_app.logger.info(f"[CACHE] Loading from URI: {datatakes_cache_uri}")
-        # current_app.logger.info(
-        #    f"[CACHE] Items found in raw cache: {len(datatakes_data)}"
-        # )
-
-        filtered_raw = []
-        mission_counts = {}
-
-        # Pre-calculate search/filter terms outside the loop for speed
-        search_q = search_query.lower() if search_query else None
-        m_filter_upper = mission_filter.upper() if mission_filter else None
-        s_filter_upper = sat_filter.upper() if sat_filter else None
-
-        for item in datatakes_data:
-            src = item.get("_source", {})
-            item_sat = (src.get("satellite_unit") or "").upper()
-
-            if item_sat.startswith("S1"):
-                if item_sat not in ["S1A", "S1C"]:
-                    continue
-
-            if m_filter_upper and m_filter_upper not in item_sat:
-                continue
-
-            if s_filter_upper and item_sat != s_filter_upper:
-                continue
-
-            # Search logic
-            if search_q:
-                item_id = str(src.get("datatake_id") or src.get("id", "")).lower()
-                if search_q not in item_id:
-                    continue
-
-            item_id = str(src.get("datatake_id") or src.get("id", "")).lower()
-            item_start = src.get("observation_time_start", "")
-            if from_date_str and item_start < from_date_str:
-                continue
-            if to_date_str and item_start > to_date_str:
-                continue
-
-            mission_key = item_sat[:2] if item_sat else "???"
-            mission_counts[mission_key] = mission_counts.get(mission_key, 0) + 1
-
-            filtered_raw.append(item)
-
-        # current_app.logger.info(
-        #    f"[LOG] Global Mission Distribution in Cache: {mission_counts}"
-        # )
-        # current_app.logger.info(f"[LOG] Items passing filters: {len(filtered_raw)}")
-
-        # --- Pagination ---
-        try:
-            limit = int(request.args.get("limit", BATCH_SIZE))
-            page = 1
-        except Exception:
-            page = 1
-            limit = BATCH_SIZE
-
-        filtered_raw.sort(
-            key=lambda x: x.get("_source", {}).get("observation_time_start", ""),
-            reverse=False,
-        )
-
-        total_found = len(filtered_raw)
-        paged_raw_data = filtered_raw[:limit]
-        has_more = total_found > limit
-
-        # current_app.logger.info(
-        #    f"[LOG] Pagination: Showing {len(paged_raw_data)} of {total_found}"
-        # )
-
-        datatakes_for_ssr = []
-        for index, d in enumerate(paged_raw_data):
-            src = d.get("_source", {}) or {}
-            dt_id = src.get("datatake_id") or src.get("id")
-
-            status_obj = _calc_datatake_completeness_status(src)
-            acq_status = status_obj["ACQ"]["status"]
-            pub_status = status_obj["PUB"]["status"]
-
-            # These are the percentages calculated by the shared function
-            acq_p = status_obj["ACQ"]["percentage"]
-            pub_p = status_obj["PUB"]["percentage"]
-
-            # --- START OF UPDATED PIECE ---
-            raw_start = src.get("observation_time_start")
-            raw_stop = src.get("observation_time_stop")
-
-            start_time_obj = to_utc(raw_start)
-            stop_time_obj = to_utc(raw_stop)
-
-            # 2. Convert to ISO strings using the safe to_utc_iso
-            start_iso = to_utc_iso(start_time_obj)
-            stop_iso = to_utc_iso(stop_time_obj)
-
-            item_normalized = {
-                "id": dt_id,
-                "platform": safe_json_value(src.get("satellite_unit") or "Unknown"),
-                "start_time": start_iso,
-                "observation_time_start": start_iso,
-                "stop_time": stop_iso,
-                "observation_time_stop": stop_iso,
-                "acquisition_status": acq_status,
-                "publication_status": pub_status,
-                "raw": src,
-            }
-
-            # Inject the completeness_status object into 'raw' so JS 'renderTableWithoutPagination' finds it
-            item_normalized["raw"]["completeness_status"] = status_obj
-
-            if index == 0 and not is_ajax:
-                datatakes_for_ssr.append(enrich_datatake(item_normalized))
-            else:
-                item_normalized["is_lightweight"] = True
-                datatakes_for_ssr.append(item_normalized)
-
-        payload = {
-            "anomalies": replace_undefined(anomalies_data),
-            "datatakes": datatakes_for_ssr,
-            "quarter_authorized": quarter_authorized,
-            "selected_period": selected_period,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "datatake_details": datatake_details,
-            "current_page": page,
-            "current_limit": limit,
-            "total_pages": (total_found + BATCH_SIZE - 1) // BATCH_SIZE,
-            "has_search": has_search,
-            "search_query": search_query,
-            "mission": mission_filter,
-            "satellite": sat_filter,
-            "has_more": has_more,
-            "BATCH_SIZE": BATCH_SIZE,
-            "mission_counts": mission_counts,
-        }
-
-        current_app.logger.info(f"[LOG] Final SSR list size: {len(datatakes_for_ssr)}")
-        current_app.logger.info("=" * 50 + "\n")
-
-        if is_ajax:
-            return (
-                jsonify(
-                    {
-                        "datatakes": make_json_safe(datatakes_for_ssr),
-                        "has_more": has_more,
-                    }
-                ),
-                200,
-            )
-
-        # current_app.logger.info(
-        #    f"[DATA-AVAILABILITY] sending {len(datatakes_for_ssr)} items to frontend"
-        # )
 
         return render_template(
-            "home/data-availability.html",
-            **payload,
-            **metadata,
-            segment=segment,
+            "admin/newMessages.html", message=empty_message, segment="admin-message"
         )
 
     except Exception as e:
-        current_app.logger.error(f"[DATA-AVAILABILITY] Error: {e}", exc_info=True)
-        if is_ajax:
-            return jsonify({"error": "internal_server_error"}), 500
-        abort(500)
-
-
-@blueprint.route("/data-availability/enrich", methods=["POST"])
-def enrich_datatake_modal():
-    datatake_id = request.form.get("datatake_id")
-    if not datatake_id:
-        return jsonify({"error": "missing_id"}), 400
-
-    dt = datatakes_cache.load_datatake_details(datatake_id)
-    if not dt:
-        return jsonify({"error": "not_found"}), 404
-
-    enriched = enrich_datatake(dt)
-
-    return jsonify(make_json_safe(enriched)), 200
-
-
-@blueprint.route("/acquisitions-status")
-def acquisitions_status():
-    """
-    SSR: Render the Acquisitions Status page with:
-    - Acquisition Plan Coverage
-    - Satellite Orbits
-    - Acquisition Stations (SSR)
-    """
-    metadata = get_metadata("acquisitions-status.html")
-    metadata["page_url"] = request.url
-    segment = "acquisitions-status"
-
-    try:
-        logger.info("[BEG] SSR: Acquisitions Status")
-
-        # logger.info("[BEG] Retrieve Acquisition Plans Coverage")
-        plans_raw = acquisition_plans_cache.get_acquisition_plans_coverage()
-        # logger.info("[END] Retrieve Acquisition Plans Coverage")
-
-        if isinstance(plans_raw, Response):
-            try:
-                plans_raw = plans_raw.get_json(force=True)
-                # logger.info("[DEBUG] Extracted JSON from Response object")
-            except Exception as e:
-                logger.exception("[ERR] Failed to parse Response JSON")
-                plans_raw = {}  # fallback to empty dict
-
-        plans_coverage = make_json_safe(plans_raw)
-        logger.info(f"[INFO] Retrieved {len(plans_coverage)} plans coverage items")
-
-        logger.info("[BEG] Retrieve Satellite Orbits (SSR)")
-        orbits_api_key = acquisition_assets_cache.orbits_cache_key
-        orbits_raw = flask_cache.get(orbits_api_key)
-        logger.info("[END] Retrieve Satellite Orbits (SSR)")
-
-        if isinstance(orbits_raw, Response):
-            try:
-                orbits_raw = orbits_raw.get_json(force=True)
-            # logger.info("[DEBUG] Extracted JSON from orbits Response")
-            except Exception:
-                logger.exception("[ERR] Failed to parse orbits Response JSON")
-                orbits_raw = {}
-
-        orbits_safe = make_json_safe(orbits_raw)
-        logger.info("[INFO] SSR satellite orbits loaded")
-
-        logger.info("[BEG] Retrieve Acquisition Stations (SSR)")
-        stations_api_key = acquisition_assets_cache.stations_cache_key
-        stations_raw = flask_cache.get(stations_api_key)
-        logger.info("[END] Retrieve Acquisition Stations (SSR)")
-
-        if isinstance(stations_raw, Response):
-            try:
-                stations_raw = stations_raw.get_json(force=True)
-                # logger.info("[DEBUG] Extracted JSON from stations Response")
-            except Exception:
-                logger.exception("[ERR] Failed to parse stations Response JSON")
-                stations_raw = {}
-
-        stations_safe = make_json_safe(stations_raw)
-        logger.info("[INFO] SSR acquisition stations loaded")
-
-        return render_template(
-            "home/acquisitions-status.html",
-            plans_coverage_json=plans_coverage,
-            satellite_orbits_json=orbits_safe,
-            acquisition_stations_json=stations_safe,
-            segment=segment,
-            **metadata,
-        )
-
-    except Exception:
-        logger.exception("[ERR] SSR: Acquisitions Status")
-        return render_template("home/page-500.html"), 500
-
-    finally:
-        logger.info("[END] SSR: Acquisitions Status")
-
-
-@blueprint.route("/newsList.html")
-def news_list_ssr():
-    try:
-        page = int(request.args.get("page", 1))
-        page_size = 6
-        offset = (page - 1) * page_size
-
-        query = db.session.query(instant_messages_model.InstantMessages).order_by(
-            instant_messages_model.InstantMessages.publicationDate.desc()
+        current_app.logger.error(
+            "Exception in admin_home_message: %s", traceback.format_exc()
         )
 
         total_messages = query.count()

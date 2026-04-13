@@ -15,231 +15,360 @@ const mockDataTakes = [];
 
 const formatDataDetail = [];
 
+
 class Datatakes {
-    constructor(dataInput = {}) {
-        this.serverData = dataInput || {};
-
-        this.mockDataTakes = Array.isArray(this.serverData.datatakes)
-            ? this.serverData.datatakes
-            : (Array.isArray(this.serverData.datatakes) ? this.serverData.datatakes : []);
-
-
-        this.currentDataArray = [...this.mockDataTakes];
-        // fullDataTakes now refers to the slice sent by the server to keep the UI snappy
-        this.fullDataTakes = [...this.mockDataTakes];
-        this.filteredDataTakes = [...this.fullDataTakes];
-
-        this.anomalies = Array.isArray(dataInput.anomalies)
-            ? dataInput.anomalies
-            : [];
-
-        this.quarterAuthorized = !!dataInput.quarter_authorized;
-        this.selectedPeriod = dataInput.selected_period || "week";
-
-        this.searchQuery = this.serverData.search_query || "";
-        this.searchQueryClean = this.serverData.search_query_clean || "";
-        this.generatedAt = this.serverData.generated_at || null;
-
-        this.itemsPerPage = 10;
+    constructor(mockDataTakes, formatDataDetail) {
+        this.mockDataTakes = mockDataTakes;
+        this.formatDataDetail = formatDataDetail;
+        this.currentPage = 1;
         this.rowsPerPage = 10;
+        this.currentInfoPage = 1;
+        this.itemsPerPage = 7;
         this.infoItemsPerPage = 10;
-        this.displayedCount = 0;
-        this.activeRequestsCount = 0; // Tracks concurrent async tasks
-        this.spinnerVisible = false;
+        this.currentDataArray = [];
+        this.donutChartInstance = null;
+        this.resizeListenerAttached = false;
+        this.datatakesEventsMap = {};
+        this.currentMission = "";
+        this.currentSatellite = "";
+        this.currentSearchTerm = "";
+        this.fromDate = "";
+        this.toDate = "";
+        this.currentDatatakeId = null;
+
+        // Threshold used to state the completeness
+        this.completeness_threshold = 90;
+        this.activeRequestsCount = 0;  // count of ongoing requests
 
     }
 
-    // --- Spinner-aware async wrapper ---
-    async withSpinner(promiseFn) {
-        try {
-            this.activeRequestsCount++;
-            this.showSpinner();
-            return await promiseFn();
-        } catch (err) {
-            console.error(err);
-            throw err;
-        } finally {
-            this.activeRequestsCount--;
-            if (this.activeRequestsCount <= 0) this.hideSpinner();
-        }
-    }
-    async init() {
-        $('#ec-logo-header, #esa-logo-header').hide();
-        this.activeRequestsCount = 0;
-        this.showSpinner();
+    init() {
+        document.addEventListener("DOMContentLoaded", () => {
+            // Hide EC and Copernicus logos from header
+            $('#ec-logo-header').hide();
+            $('#esa-logo-header').hide();
 
-        try {
-            // 1. Initial Setup
-            this.setupPeriodSelector();
-
-            const dataList = document.getElementById("dataList");
-            if (dataList) {
-                const items = dataList.querySelectorAll("li");
-                // Attach the click listeners to the HTML elements Python rendered
-                this.attachItemListeners(items);
-            }
-            else {
-                console.error("[DATATAKES] Missing #dataList element");
-                return;
-            }
-            this.attachItemListeners(dataList.querySelectorAll("li"));
+            /*limit the diplay data takes*/
+            this.displayedCount = 0;
+            this.itemsPerPage = 10;
 
 
-            // We use the first item in the list to populate the dashboard view
-            if (this.mockDataTakes.length > 0) {
-                await this.renderTablePage(1);
-                await this.initCharts();
-            } else {
-                console.warn("[DATATAKES] No items available to render charts.");
-            }
-
-            //console.log("[DATATAKES] Initialization complete");
-
-        } catch (err) {
-            console.error("[DATATAKES] Init error:", err);
-        } finally {
-            // Ensure spinner hides even if an error occurs
-            setTimeout(() => this.hideSpinner(), 500);
-        }
-    }
-
-    showSpinner() {
-        if (!this.spinnerVisible) {
-            $('#spinner').show();
-            this.spinnerVisible = true;
-        }
-    }
-
-    hideSpinner() {
-        if (this.spinnerVisible && this.activeRequestsCount <= 0) {
-            $('#spinner').hide();
-            this.spinnerVisible = false;
-        }
-    }
+            // Populate the data list and set default view
+            this.populateDataList(false);
+            this.setupResizeObserver();
+            this.attachEventListeners();
+            this.setDefaultView();
 
 
-    setupPeriodSelector() {
-        const selector = document.getElementById('time-period-select');
-        if (!selector) return;
+            // Retrieve the user profile to determine quarter authorization
+            ajaxCall(
+                '/api/auth/quarter-authorized',
+                'GET',
+                {},
+                this.quarterAuthorizedProcess,
+                this.errorLoadAuthorized
+            );
 
-        // Use backend-provided selectedPeriod, default to 'week'
-        selector.value = this.selectedPeriod || 'week';
+            // Retrieve the time select combo box instance
+            const time_period_sel = document.getElementById('time-period-select');
 
-        selector.addEventListener('change', (e) => {
-            const period = e.target.value;
-            window.location = `/data-availability?period=${period}`;
+            // Check if search parameter exists in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasSearch = urlParams.has('search');
+
+            // Set time period based on presence of search
+            time_period_sel.value = hasSearch ? 'prev-quarter' : 'week';
+            // Trigger the change handler manually
+            this.on_timeperiod_change({ target: time_period_sel });
+
+            // Add event listener for user selection
+            time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+
+            // Load datatakes for the selected period
+            //this.loadDatatakesInPeriod(time_period_sel.value);
+
+            console.log("Datatakes initialized.");
+
         });
     }
 
-    renderTablePage(page = 1) {
+    filterDatatakesOnPageLoad() {
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        const searchFilter = urlParams.get('search');
+
+        if (searchFilter) {
+            this.filteredDataTakes = this.mockDataTakes.filter(take =>
+                take.id.toLowerCase().includes(searchFilter.toLowerCase())
+            );
+
+            return true;
+        } else {
+            this.filteredDataTakes = null;
+            return false;
+        }
+    }
+
+    on_timeperiod_change() {
+        const time_period_sel = document.getElementById('time-period-select');
+        const selected = time_period_sel.value;
+        console.log("Time period changed to " + selected);
+
+        //Set the calendar inputs based on selected period
+        this.setDateRangeLimits(selected);
+
+        this.loadDatatakesInPeriod(selected, true);
+    }
+
+    quarterAuthorizedProcess(response) {
+        if (response['authorized'] === true) {
+            var time_period_sel = document.getElementById('time-period-select');
+            if (time_period_sel.options.length == 4) {
+                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
+            }
+        }
+    }
+
+    errorLoadAuthorized(response) {
+        return;
+    }
+
+    loadDatatakesInPeriod(selected_time_period, shouldReapplyFilters = false) {
+        // Reset counters and flags
+        this.completedRequestsCount = 0;
+        this.hasServerError = false;
+        this.pendingDatatakes = null;
+        this.activeRequestsCount = 0;
+
+        // Show spinner immediately
         this.showSpinner();
-        try {
-            if (!Array.isArray(this.currentDataArray)) {
-                this.currentDataArray = [];
-            }
-            const tbody = document.getElementById('dataTableBody');
-            if (!tbody) return;
 
-            this.currentPage = page;
-            const dataset = this.mockDataTakes || [];
-            const start = (page - 1) * this.rowsPerPage;
-            const current = dataset.slice(start, start + this.rowsPerPage);
+        // Function to track requests and manage spinner
+        const finishRequest = (wasSuccessful) => {
+            this.completedRequestsCount++;
 
-            tbody.innerHTML = "";
-
-            if (current.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">
-                No datatakes available for the selected period.
-            </td></tr>`;
-
-                if (spinner) spinner.style.display = "none";
-                return;
+            // If this request succeeded, clear server error
+            if (wasSuccessful) {
+                this.hasServerError = false;
             }
 
-            current.forEach(dt => {
-                const rawStart = (dt.raw && dt.raw.observation_time_start) || dt.start_time;
-                const rawStop = (dt.raw && dt.raw.observation_time_stop) || dt.stop_time;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                <td>${dt.id}</td>
-                <td>${dt.platform || 'N/A'}</td>
-                <td>${this.formatDate(rawStart)}</td> 
-                <td>${this.formatDate(rawStop)}</td>
-                <td><span class="status-circle status-${(dt.acquisition_status || '').toLowerCase()}"></span>
-                    ${dt.acquisition_status || 'N/A'}
-                </td>
-                <td><span class="status-circle status-${(dt.publication_status || '').toLowerCase()}"></span>
-                    ${dt.publication_status || 'N/A'}
-                    ${dt.publication_percent ? `(${dt.publication_percent}%)` : ""}
-                </td>
-                <td>
-                    <button class="btn btn-outline-info btn-sm"
-                            data-datatake-id="${dt.id}"
-                            data-toggle="modal"
-                            data-target="#showDatatakeDetailsModal">
-                        Details
-                    </button>
-                </td>
-            `;
-                tbody.appendChild(row);
-            });
+            // Only hide spinner when both requests have succeeded at least once
+            if (this.completedRequestsCount >= 2 && !this.hasServerError) {
+                this.hideSpinner();
 
-            this.renderPaginationControls();
-        } finally {
-            this.hideSpinner();
-        }
+                // Update charts and table
+                if (this.pendingDatatakes?.length > 0) {
+                    const firstTake = this.pendingDatatakes[0];
+                    this.updateTitleAndDate(firstTake.id);
+                    // Render both charts asynchronously
+                    (async () => {
+                        try {
+                            await Promise.all([
+                                this.updateCharts("publication", firstTake.id),
+                                this.updateCharts("acquisition", firstTake.id)
+                            ]);
+                        } catch (err) {
+                            console.error("Error rendering charts:", err);
+                        }
+                    })();
 
-    }
+                    /*if (this.updateInfoTable) {
+                        this.updateInfoTable(firstTake.id);
+                    }*/
+                }
+            }
+        };
 
-    renderPaginationControls() {
-        const pagination = document.getElementById("tablePagination");
-        if (!pagination) return;
-
-        const totalPages = Math.ceil(this.mockDataTakes.length / this.rowsPerPage);
-        pagination.innerHTML = "";
-
-        for (let i = 1; i <= totalPages; i++) {
-            const btn = document.createElement("button");
-            btn.textContent = i;
-            btn.classList.add("btn", "btn-sm", "btn-outline-light", "mx-1");
-            if (i === this.currentPage) btn.classList.add("active");
-
-            btn.addEventListener("click", () => {
-                this.currentPage = i;
-                this.renderTablePage(i);
-            });
-
-            pagination.appendChild(btn);
-        }
-    }
-
-    formatDate(dateStr) {
-        // If Python returned None, dateStr will be null or undefined
-        if (!dateStr || dateStr === "None" || dateStr === "null") {
-            return "N/A";
-        }
-
-        const d = new Date(dateStr);
-
-        // Final safety check for invalid dates
-        if (isNaN(d.getTime())) {
-            return "N/A";
-        }
-
-        // Format as YYYY-MM-DD HH:mm (UTC)
-        const pad = (n) => n.toString().padStart(2, '0');
-        return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-    }
-
-    filterDatatakesOnPageLoad(cleanQuery = "") {
-        if (!cleanQuery) return false;
-
-        this.filteredDataTakes = this.fullDataTakes.filter(take =>
-            take.id.toLowerCase().includes(cleanQuery.toLowerCase())
+        // Events anomalies request
+        asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
+            (response) => {
+                this.successLoadAnomalies(response);
+                finishRequest(true); // mark success
+            },
+            (response) => {
+                console.error("Anomalies load error", response);
+                if (response?.status === 500) this.hasServerError = true;
+                finishRequest(false); // mark failure
+            }
         );
 
-        //console.log("[LOAD] filteredDataTakes after page load filter:", this.filteredDataTakes.map(t => t.id));
-        return this.filteredDataTakes.length > 0;
+        // Datatakes request
+        const urlMap = {
+            day: '/api/worker/cds-datatakes/last-24h',
+            week: '/api/worker/cds-datatakes/last-7d',
+            month: '/api/worker/cds-datatakes/last-30d',
+            'prev-quarter': '/api/worker/cds-datatakes/previous-quarter',
+            default: '/api/worker/cds-datatakes/last-quarter'
+        };
+
+        const url = urlMap[selected_time_period] || urlMap.default;
+
+        asyncAjaxCall(url, 'GET', {},
+            async (response) => {
+                await this.successLoadDatatakes(response);
+                this.pendingDatatakes = response; // store for chart update later
+
+                if (shouldReapplyFilters) {
+                    const hasSearch = this.filterDatatakesOnPageLoad(); // apply search param
+                    if (!hasSearch) {
+                        this.filterSidebarItems(); // apply UI filters
+                    }
+                }
+                if (this.mockDataTakes?.length > 0) {
+                    this.setDefaultView();
+                } else {
+                    console.warn("mockDataTakes empty — skipping setDefaultView()");
+                }
+
+                finishRequest(true); // mark success
+            },
+            (response) => {
+                console.error("Datatakes load error", response);
+                if (response?.status === 500) this.hasServerError = true;
+                finishRequest(false); // mark failure
+            }
+        );
+    }
+
+    successLoadAnomalies(response) {
+        console.log("Anomalies successfully retrieved");
+        this.datatakesEventsMap = {};
+        const rows = format_response(response);
+
+        for (const anomaly of rows) {
+            const rawCompleteness = format_response(anomaly["datatakes_completeness"]);
+            for (const raw of rawCompleteness) {
+                let fixedStr;
+                try {
+                    fixedStr = raw.replaceAll("'", '"');
+                    const completenessMap = JSON.parse(fixedStr);
+
+                    for (const [_, value] of Object.entries(completenessMap)) {
+                        const datatakeId = Object.values(value)[0];
+                        const completeness = this.calcDatatakeCompleteness(Object.values(value));
+
+                        if (completeness < this.completeness_threshold) {
+                            this.datatakesEventsMap[datatakeId] = anomaly;
+                        }
+                    }
+                } catch (ex) {
+                    console.warn("Error parsing datatake completeness:", ex);
+                    console.warn("Failed string:", fixedStr || raw);
+                    continue;
+                }
+            }
+        }
+    }
+
+    errorLoadAnomalies(response) {
+        console.error(response);
+    }
+
+    async successLoadDatatakes(response) {
+        const rows = format_response(response);
+        console.info('Datatakes successfully retrieved');
+
+
+        const datatakes = rows.map(row => {
+            const element = row['_source'];
+            let sat_unit = element['satellite_unit'];
+            if (sat_unit.includes('S1') || sat_unit.includes('S2')) {
+                sat_unit += ` (${element['instrument_mode']})`;
+            }
+            let datatake_id = element['datatake_id'];
+            if (sat_unit.includes('S1')) {
+                datatake_id = this.overrideS1DatatakesId(datatake_id);
+            }
+            const sensing_start = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+            const sensing_stop = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
+
+            return {
+                id: datatake_id,
+                satellite: sat_unit,
+                start: sensing_start,
+                stop: sensing_stop,
+                completenessStatus: element['completeness_status'],
+                raw: element
+            };
+        });
+
+        this.mockDataTakes = datatakes.sort((a, b) => {
+            const timeA = Date.parse(a.raw?.observation_time_start || "");
+            const timeB = Date.parse(b.raw?.observation_time_start || "");
+
+            if (!isNaN(timeA) && !isNaN(timeB)) return timeA - timeB;
+            if (!isNaN(timeA)) return -1;
+            if (!isNaN(timeB)) return 1;
+            return (a.raw?.datatake_id || "").localeCompare(b.raw?.datatake_id || "");
+        });
+
+        this.displayedCount = 0;
+
+        const hasSearchParam = this.filterDatatakesOnPageLoad(); //sets this.filteredDataTakes
+        if (hasSearchParam) {
+            const sel = document.getElementById('time-period-select');
+            if (sel) sel.value = 'last-quarter';
+        }
+
+        this.populateDataList(false);
+        this.setDefaultView();
+
+        const currentList = this.filteredDataTakes?.length ? this.filteredDataTakes : datatakes;
+
+        if (currentList.length > 0) {
+            const firstTake = currentList[0];
+
+            this.updateTitleAndDate(firstTake.id);
+
+            try {
+                await Promise.all([
+                    this.updateCharts("publication", firstTake.id),
+                    this.updateCharts("acquisition", firstTake.id)
+                ]);
+            } catch (err) {
+                console.error("Error rendering charts:", err);
+            }
+
+            /*if (this.updateInfoTable) {
+                this.updateInfoTable(firstTake.id);
+            }*/
+            if (hasSearchParam && this.filteredDataTakes?.length) {
+                const tableSection = document.getElementById("tableSection");
+                if (tableSection) {
+                    tableSection.style.display = "block";
+                    tableSection.style.opacity = "1";
+                }
+                if (typeof this.renderTableWithoutPagination === "function") {
+                    this.renderTableWithoutPagination(this.filteredDataTakes, this.filteredDataTakes[0].id);
+                } else {
+                    console.warn("renderTableWithoutPagination function not found, skipping table render.");
+                }
+            }
+
+
+            const dataList = document.getElementById("dataList");
+            if (dataList) {
+                dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
+                dataList.querySelectorAll("a.selected").forEach(el => el.classList.remove("selected"));
+
+                const selectedContainer = [...dataList.querySelectorAll("li div.container-border")]
+                    .find(div => div.querySelector("a")?.textContent === firstTake.id);
+                if (selectedContainer) {
+                    selectedContainer.classList.add("selected");
+                    selectedContainer.querySelector("a")?.classList.add("selected");
+                }
+            }
+        }
+    }
+
+    errorLoadDatatake(response) {
+        console.error(response)
+        if (response && response.status === 500) {
+            console.warn("Server error 500 - spinner will hide and error shown");
+            this.hideSpinner();
+        } else {
+            this.hideSpinner();
+        }
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
@@ -267,143 +396,111 @@ class Datatakes {
     }
 
     populateDataList(append = false) {
-        this.showSpinner();
-        /*try {
-            const dataList = document.getElementById("dataList");
-            const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-            if (!dataList) return;
-
-            const data = this.filteredDataTakes && this.filteredDataTakes.length
-                ? this.filteredDataTakes
-                : this.mockDataTakes;
-
-            //console.log("[POPULATE] data used for sidebar:", data.map(t => t.id));
-
-            if (!append) {
-                dataList.innerHTML = "";
-                this.displayedCount = 0;
-            }
-
-            if (data.length === 0) {
-                const li = document.createElement("li");
-                li.textContent = " ";
-                li.style.color = "#aaa";
-                if (loadMoreBtn) {
-                    loadMoreBtn.style.display = "none"
-                }
-                return;
-            }
-
-            const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
-            const fragment = document.createDocumentFragment();
-
-            nextItems.forEach(take => {
-                const li = document.createElement("li");
-                const containerDiv = document.createElement("div");
-                containerDiv.className = "container-border";
-
-                const a = document.createElement("a");
-                a.href = "#";
-                a.className = "filter-link";
-                a.dataset.filterType = "groundStation";
-                a.dataset.filterValue = this.getGroundStation(take.id);
-                a.textContent = take.id;
-
-                a.addEventListener("click", e => e.preventDefault());
-
-
-                const status = (take.acquisition_status || "unknown").toLowerCase();
-                const statusCircle = document.createElement("div");
-                statusCircle.className = `status-circle-dt-${status}`;
-
-                containerDiv.appendChild(a);
-                containerDiv.appendChild(statusCircle);
-                li.appendChild(containerDiv);
-                fragment.appendChild(li);
-            });
-
-            dataList.appendChild(fragment);
-            this.displayedCount += nextItems.length;
-
-            if (loadMoreBtn) {
-                loadMoreBtn.style.display = "block";
-                loadMoreBtn.disabled = this.displayedCount >= data.length;
-            }
-
-            if (!append && nextItems.length > 0) {
-                const first = dataList.querySelector(".container-border");
-                const a = first?.querySelector("a.filter-link");
-                if (first && a) this.handleItemClick(nextItems[0], first, a);
-            }
-        } finally {
-            setTimeout(() => this.hideSpinner(), 0);
-        }*/
-    }
-
-    attachItemListeners(listItems) {
-        if (!listItems) return;
-
-        listItems.forEach(li => {
-            const containerDiv = li.querySelector(".container-border");
-            const a = li.querySelector("a.filter-link");
-
-            if (!containerDiv || !a) return;
-
-            // 1. Get the ID from the link text
-            const id = a.textContent.trim();
-
-            // 2. Find the full data object ('take') from the available arrays
-            const take =
-                this.filteredDataTakes?.find(d => d.id === id) ||
-                this.fullDataTakes?.find(d => d.id === id) ||
-                this.mockDataTakes?.find(d => d.id === id);
-
-            if (!take) {
-                console.warn("[DATATAKES] could not find item in any list", id);
-                return;
-            }
-
-            // 3. Re-attach the original handler that manages the border and visual state
-            containerDiv.addEventListener("click", (e) => {
-                e.preventDefault();
-                this.handleItemClick(take, containerDiv, a);
-            });
-        });
-    }
-
-    handleItemClick(take, containerDiv, a) {
         const dataList = document.getElementById("dataList");
+        const searchInput = document.getElementById("searchInput");
+        const inputWidth = searchInput?.offsetWidth || 300;
+        const data = this.filteredDataTakes?.length ? this.filteredDataTakes : this.mockDataTakes;
+
         if (!dataList) return;
 
-        // Deselect previous
-        dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
-        dataList.querySelectorAll("a.selected").forEach(el => el.classList.remove("selected"));
+        const validData = data.filter(take => {
+            const valid = take?.raw?.observation_time_start && take?.raw?.datatake_id;
+            if (!valid) console.warn("Skipping invalid take:", take);
+            return valid;
+        });
 
-        // Select new
-        containerDiv.classList.add("selected");
-        a.classList.add("selected");
+        const sortedData = validData;
 
-        const container = document.querySelector(".datatakes-container");
-        if (!container) return;
+        if (!append) {
+            dataList.innerHTML = "";
+            this.displayedCount = 0;
+        }
 
-        this.updateTitleAndDate?.(take.id);
-        (async () => {
-            try {
-                await Promise.all([
-                    this.updateCharts?.("publication", take.id),
-                    this.updateCharts?.("acquisition", take.id),
-                ]);
-            } catch (err) {
-                console.error("[DATATAKES] Chart update error:", err);
-            }
-        })();
+        const nextItems = sortedData.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
 
-        const sourceList = this.filteredDataTakes?.length
-            ? this.filteredDataTakes
-            : this.fullDataTakes;
+        if (!append && nextItems.length === 0) {
+            const li = document.createElement("li");
+            li.textContent = "No results found";
+            li.style.color = "#aaa";
+            dataList.appendChild(li);
+            document.getElementById("loadMoreBtn").style.display = "none";
+            return;
+        }
 
-        this.renderTableWithoutPagination(sourceList, take.id);
+        const fragment = document.createDocumentFragment();
+
+        nextItems.forEach((take, index) => {
+            const li = document.createElement("li");
+
+            const containerDiv = document.createElement("div");
+            containerDiv.className = "container-border";
+            Object.assign(containerDiv.style, {
+                width: `${inputWidth}px`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.5rem 0.75rem",
+                boxSizing: "border-box",
+                cursor: "pointer"
+            });
+
+            const a = document.createElement("a");
+            a.href = "#";
+            a.className = "filter-link";
+            a.dataset.filterType = "groundStation";
+            a.dataset.filterValue = this.getGroundStation(take.id);
+            a.textContent = take.id;
+
+            a.addEventListener("click", e => e.preventDefault());
+
+            containerDiv.addEventListener("click", () => {
+                dataList.querySelectorAll(".container-border.selected").forEach(el => el.classList.remove("selected"));
+                dataList.querySelectorAll("a.selected").forEach(el => el.classList.remove("selected"));
+
+                containerDiv.classList.add("selected");
+                a.classList.add("selected");
+
+                if (document.querySelector(".datatakes-container")) {
+                    this.updateTitleAndDate(take.id);
+
+                    // Render both charts asynchronously
+                    (async () => {
+                        try {
+                            await Promise.all([
+                                this.updateCharts("publication", take.id),
+                                this.updateCharts("acquisition", take.id)
+                            ]);
+                        } catch (err) {
+                            console.error("Error rendering charts:", err);
+                        }
+                    })();
+                } else {
+                    console.warn("Datatakes container not found, skipping chart/title update.");
+                }
+            });
+
+            const status = take.completenessStatus?.ACQ?.status?.toLowerCase() || "unknown";
+            const statusCircle = document.createElement("div");
+            statusCircle.className = `status-circle-dt-${status}`;
+
+            containerDiv.appendChild(a);
+            containerDiv.appendChild(statusCircle);
+            li.appendChild(containerDiv);
+            fragment.appendChild(li);
+        });
+
+        dataList.appendChild(fragment);
+        this.displayedCount += nextItems.length;
+
+        const loadMoreBtn = document.getElementById("loadMoreBtn");
+        if (loadMoreBtn) {
+            loadMoreBtn.style.display = this.displayedCount >= sortedData.length ? "none" : "block";
+        }
+
+        if (!append && this.displayedCount === 0 && nextItems.length > 0) {
+            this.handleInitialSelection(nextItems[0]);
+        }
+
     }
 
     setupResizeObserver() {
@@ -459,227 +556,229 @@ class Datatakes {
     }
 
     async toggleInfoTable(passedId = null) {
-        this.showSpinner();
-        try {
-            this.fromInfoIcon = true;
+        this.fromInfoIcon = true;
 
-            const modalEl = document.getElementById("completenessTableModal");
-            const paragraph = document.querySelector(".datatakes-container h4");
+        const modalEl = document.getElementById("completenessTableModal");
+        const paragraph = document.querySelector(".datatakes-container h4");
 
-            if (!modalEl || !paragraph) {
-                console.error("Modal container or paragraph not found!");
-                return;
-            }
-
-            let selectedId = passedId;
-
-            // fallback to chart header text if no ID was passed
-            if (!selectedId && paragraph) {
-                const fullText = paragraph.textContent.trim().replace(/_/g, "-");
-                const parts = fullText.split("-");
-                selectedId = parts.slice(0, 3).join("-");
-            }
-
-            if (!selectedId) {
-                console.error("No valid datatake ID to use for info table.");
-                return;
-            }
-
-            console.log("Looking for datatake ID:", selectedId);
-
-            const $modal = $('#completenessTableModal');
-
-            // Ensure this is attached only once
-            $modal.off('hide.bs.modal').on('hide.bs.modal', function () {
-                // Remove focus from anything inside the modal before hiding
-                document.activeElement.blur();
-            });
-
-            try {
-                const datatakeLabel = document.getElementById("modalDatatakeId");
-                if (datatakeLabel) {
-                    datatakeLabel.textContent = selectedId;
-                }
-                await this.renderInfoTable(selectedId);
-
-                // Show the modal
-                $modal.modal('show');
-
-                // Ensure scroll reset
-                $modal.find('.modal-body').scrollTop(0);
-
-            } catch (err) {
-                console.error("Failed to render info table for datatake:", selectedId, err);
-            } finally {
-                this.fromInfoIcon = false;
-            }
-        } finally {
-            setTimeout(() => this.hideSpinner(), 0);
+        if (!modalEl || !paragraph) {
+            console.error("Modal container or paragraph not found!");
+            return;
         }
 
-    } async renderInfoTable(dataInput, page = 1) {
-        this.showSpinner();
+        let selectedId = passedId;
+
+        // fallback to chart header text if no ID was passed
+        if (!selectedId && paragraph) {
+            const fullText = paragraph.textContent.trim().replace(/_/g, "-");
+            const parts = fullText.split("-");
+            selectedId = parts.slice(0, 3).join("-");
+        }
+
+        if (!selectedId) {
+            console.error("No valid datatake ID to use for info table.");
+            return;
+        }
+
+        console.log("Looking for datatake ID:", selectedId);
+
         try {
-            const tableBody = document.getElementById("modalInfoTableBody");
-            const paginationControls = document.getElementById("modalPaginationControls");
+            // Render the table
+            await this.renderInfoTable(selectedId);
+            const $modal = $('#completenessTableModal');
+            // Remove old listeners
+            $modal.off('hide.bs.modal shown.bs.modal');
 
-            tableBody.innerHTML = "";
-            paginationControls.innerHTML = "";
+            // Show modal
 
-            const cleanDataInput = dataInput.split(" ")[0];
-            let datatake = this.fullDataTakes.find(dt => dt.id === cleanDataInput);
+            // Use a tiny timeout to ensure modal is fully visible
+            const label = document.getElementById("modalDatatakeId");
+            if (label) {
+                label.textContent = `(${selectedId})`;
+                label.style.color = "white";
+                label.style.fontWeight = "bold";
+                //console.log("[LABEL SET]", label.textContent);
+            }
 
-            if (!datatake) {
-                tableBody.innerHTML = `<tr><td colspan="2">Datatake not found</td></tr>`;
+            $modal.modal('show');
+
+            await this.renderInfoTable(selectedId);
+
+            const loadingRow = document.getElementById("tableLoadingRow");
+            if (loadingRow) loadingRow.remove();
+
+            $modal.find('.modal-body').scrollTop(0);
+
+
+        } catch (err) {
+            console.error("Failed to render info table for datatake:", selectedId, err);
+        } finally {
+            this.fromInfoIcon = false;
+        }
+    }
+
+    async renderInfoTable(dataInput, page = 1, showTimeliness = null) {
+        //console.debug("[INFO TABLE] Start rendering info table", dataInput, "page:", page);
+        //console.log("Render", this === window.datatakes, "datainput", dataInput);
+
+        const tableBody = document.getElementById("modalInfoTableBody");
+        const tableHead = document.querySelector(".custom-box-table-sm thead tr");
+        const paginationControls = document.getElementById("modalPaginationControls");
+
+        // Clear table and pagination
+        tableBody.innerHTML = "";
+        paginationControls.innerHTML = "";
+
+        let dataArray = [];
+
+        // Detect mission
+        let missionCode = "";
+        if (typeof dataInput === "string") {
+            missionCode = dataInput.split("-")[0].trim();
+        }
+
+        if (showTimeliness === null) {
+            showTimeliness = missionCode.startsWith("S3") || missionCode.startsWith("S5");
+        }
+
+        //console.debug("[INFO TABLE] mission:", missionCode, "showTimeliness:", showTimeliness);
+
+        // Toggle timeliness column
+        const timelinessTh = tableHead.querySelector("th:first-child");
+        if (timelinessTh) timelinessTh.style.display = showTimeliness ? "" : "none";
+
+        // Fetch datatake if input is string
+        if (typeof dataInput === "string") {
+            const datatake_id = dataInput.split("(")[0].trim();
+            this.currentDatatakeId = datatake_id;
+
+            // Set the label immediately
+            const label = document.getElementById("modalDatatakeId");
+            if (label) {
+                label.textContent = `(${datatake_id})`;
+                label.style.color = "white";
+                label.style.fontWeight = "bold";
+                label.offsetHeight;
+                //console.log("[LABEL SET]", label.textContent);
+            }
+
+            const $modal = $('#completenessTableModal');
+            //$modal.modal('show');
+            $modal.find('.modal-body').scrollTop(0);
+            this.fromInfoIcon = false;
+
+            try {
+                const response = await fetch(`/api/worker/cds-datatake/${datatake_id}`);
+                if (!response.ok) throw new Error("Failed to fetch datatake details");
+
+                const datatake = await response.json();
+
+                // Map data based on mission
+                if (missionCode.startsWith("S5")) {
+                    dataArray = this.mapS5Data(datatake);
+                } else if (missionCode.startsWith("S3")) {
+                    dataArray = this.mapS3Data(datatake);
+                } else {
+                    dataArray = this.mapS1S2Data(datatake, missionCode);
+                }
+
+            } catch (err) {
+                console.error("[INFO TABLE] Error fetching datatake:", err);
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = showTimeliness ? 3 : 2;
+                cell.textContent = "Error retrieving data.";
+                row.appendChild(cell);
+                tableBody.appendChild(row);
                 return;
             }
+        } else {
+            dataArray = dataInput;
+        }
 
-            const mission = datatake.mission || cleanDataInput.substring(0, 2);
-            const showTimeliness = ["S3", "S5", "S5P"].includes(mission);
+        // Sorting
+        dataArray.sort((a, b) => {
 
-            this.renderInfoTableHeader(showTimeliness);
-
-            // Enrichment
-            if ((!datatake.completeness_list || datatake.completeness_list.length === 0) && datatake.id) {
-                try {
-                    const formData = new FormData();
-                    formData.append("datatake_id", cleanDataInput);
-                    const response = await fetch("/data-availability/enrich", { method: "POST", body: formData });
-                    if (response.ok) {
-                        const enriched = await response.json();
-                        Object.assign(datatake, enriched);
-                        const idx = this.fullDataTakes.findIndex(dt => dt.id === cleanDataInput);
-                        if (idx > -1) this.fullDataTakes[idx] = datatake;
-                    }
-                } catch (err) { console.error("Enrichment error:", err); }
+            // S3 / S5 timeliness ordering (unchanged)
+            if (showTimeliness) {
+                const order = { NRTI: 1, OFFL: 2, "NR": 3, "NT": 4, "ST": 5, "AL": 6 };
+                const tA = order[a.timeliness] ?? 99;
+                const tB = order[b.timeliness] ?? 99;
+                if (tA !== tB) return tA - tB;
             }
 
-            let tempMap = new Map();
+            // S1: order by product level (L0 → L1 → L2)
+            if (missionCode.startsWith("S1")) {
+                const lA = this.getProductLevel(a.productType);
+                const lB = this.getProductLevel(b.productType);
 
-            const addToMap = (rawType, status, timeliness) => {
-                if (!rawType) return;
-                let cleanType = rawType.replace("_local_percentage", "");
-                let finalTimeliness = timeliness && timeliness !== "-" ? timeliness : "";
+                /*console.group("[S1 LEVEL CHECK]");
+                console.log("A productType:", a.productType, "→ level:", lA);
+                console.log("B productType:", b.productType, "→ level:", lB);
+                console.groupEnd();*/
 
-                if (showTimeliness) {
-                    const validCodes = ["NRTI", "OFFL", "NRT", "STC", "NTC", "NOMINAL", "NR", "ST", "NT", "AL"];
-                    validCodes.forEach(code => {
-                        const globalRegex = new RegExp(`(^|[-_])${code}([-_]|$)`, "gi");
-                        if (globalRegex.test(cleanType)) {
-                            if (!finalTimeliness || finalTimeliness === "-") {
-                                finalTimeliness = code.toUpperCase();
-                            }
-                            cleanType = cleanType.replace(globalRegex, "$1$2");
-                        }
-                    });
+                if (lA !== lB) return lA - lB;
+            }
 
-                    if (mission === "S3") {
-                        if (finalTimeliness === "NRT") finalTimeliness = "NR";
-                        if (finalTimeliness === "STC") finalTimeliness = "ST";
-                        if (finalTimeliness === "NTC") finalTimeliness = "NT";
-                    } else if (mission === "S5" || mission === "S5P") {
-                        if (finalTimeliness === "NRT") finalTimeliness = "NRTI";
-                        if (finalTimeliness === "NTC") finalTimeliness = "OFFL";
-                    }
-                }
+            // Default: product name
+            if (a.productType !== b.productType) {
+                return a.productType.localeCompare(b.productType);
+            }
 
-                cleanType = cleanType.replace(/[-_]+/g, "_").replace(/^_+|_+$/g, "");
-                if (!finalTimeliness) finalTimeliness = "-";
+            // Status descending
+            return parseFloat(b.status) - parseFloat(a.status);
+        });
 
-                const key = showTimeliness ? `${cleanType}|${finalTimeliness}` : cleanType;
-                if (!tempMap.has(key)) {
-                    tempMap.set(key, { productType: cleanType, status: status, timeliness: finalTimeliness });
-                }
+        // Pagination calculation
+        const totalPages = Math.ceil(dataArray.length / this.infoItemsPerPage);
+        const startIndex = (page - 1) * this.infoItemsPerPage;
+        const endIndex = Math.min(startIndex + this.infoItemsPerPage, dataArray.length);
+        const pageItems = dataArray.slice(startIndex, endIndex);
+
+        //console.debug("[INFO TABLE] Rendering page items:", pageItems);
+
+        // Render table rows
+        for (const item of pageItems) {
+            const row = document.createElement("tr");
+
+            if (showTimeliness) {
+                const timelinessCell = document.createElement("td");
+                timelinessCell.textContent = item.timeliness;
+                row.appendChild(timelinessCell);
+            }
+
+            const productCell = document.createElement("td");
+            productCell.textContent = item.productType;
+            row.appendChild(productCell);
+
+            const statusCell = document.createElement("td");
+            statusCell.textContent = item.status;
+            row.appendChild(statusCell);
+
+            tableBody.appendChild(row);
+        }
+
+        //console.debug("[INFO TABLE] Table rendered with", pageItems.length, "rows");
+
+        // Render pagination buttons
+        if (totalPages > 1) {
+            const createButton = (text, pageNum, disabled = false, isActive = false) => {
+                const btn = document.createElement("button");
+                btn.textContent = text;
+                btn.disabled = disabled;
+                btn.classList.add("pagination-btn");
+                if (isActive) btn.classList.add("active");
+                btn.addEventListener("click", () => this.renderInfoTable(this.currentDataArray, pageNum, showTimeliness));
+                return btn;
             };
 
-            if (datatake.completeness_list) {
-                datatake.completeness_list.forEach(row => addToMap(row.productType, row.status, row.timeliness));
+            paginationControls.appendChild(createButton("« Prev", page - 1, page === 1));
+
+            for (let i = 1; i <= totalPages; i++) {
+                paginationControls.appendChild(createButton(i, i, false, i === page));
             }
 
-            const allKeys = [...Object.keys(datatake), ...Object.keys(datatake.raw || {}), ...Object.keys(datatake.completeness || {})];
-            allKeys.filter(k => k.endsWith("_local_percentage")).forEach(k => {
-                const val = datatake[k] ?? datatake.raw?.[k] ?? datatake.completeness?.[k] ?? "-";
-                addToMap(k, val, "-");
-            });
-
-            let dataArray = Array.from(tempMap.values());
-
-            if (mission === "S2") dataArray = dataArray.filter(item => item.productType.includes("MSI"));
-
-            dataArray.sort((a, b) => {
-                if (mission === "S1") {
-                    const S1_ORDER = { "0": 1, "1": 2, "2": 3, "A": 4 };
-                    const oa = S1_ORDER[this.extractS1ProductLevel(a.productType)] ?? 99;
-                    const ob = S1_ORDER[this.extractS1ProductLevel(b.productType)] ?? 99;
-                    if (oa !== ob) return oa - ob;
-                }
-                if (showTimeliness) {
-                    const order = { "NR": 1, "NRTI": 1, "NRT": 1, "ST": 2, "STC": 2, "NT": 3, "OFFL": 3, "NTC": 3 };
-                    const ta = order[a.timeliness] ?? 99;
-                    const tb = order[b.timeliness] ?? 99;
-                    if (ta !== tb) return ta - tb;
-                }
-                return a.productType.localeCompare(b.productType);
-            });
-
-            // --- PAGINATION CALCULATION ---
-            this.currentPage = page;
-            const totalItems = dataArray.length;
-            const totalPages = Math.ceil(totalItems / this.infoItemsPerPage);
-            const startIndex = (this.currentPage - 1) * this.infoItemsPerPage;
-            const pageItems = dataArray.slice(startIndex, startIndex + this.infoItemsPerPage);
-
-            // Render Table Rows
-            pageItems.forEach(item => {
-                const row = document.createElement("tr");
-                if (showTimeliness) {
-                    const td = document.createElement("td");
-                    td.textContent = item.timeliness;
-                    row.appendChild(td);
-                }
-                const pTd = document.createElement("td");
-                pTd.textContent = item.productType;
-                row.appendChild(pTd);
-
-                const sTd = document.createElement("td");
-                sTd.textContent = typeof item.status === 'number' ? item.status.toFixed(2) : item.status;
-                row.appendChild(sTd);
-                tableBody.appendChild(row);
-            });
-
-            // --- RENDER PAGINATION CONTROLS ---
-            if (totalPages > 1) {
-                const makeButton = (text, pageNum, disabled = false, active = false) => {
-                    const btn = document.createElement("button");
-                    btn.textContent = text;
-                    btn.disabled = disabled;
-                    btn.className = `pagination-btn ${active ? 'active' : ''}`;
-                    btn.addEventListener("click", () => this.renderInfoTable(cleanDataInput, pageNum));
-                    return btn;
-                };
-
-                paginationControls.appendChild(makeButton("« Prev", this.currentPage - 1, this.currentPage === 1));
-
-                // Basic logic to show all page numbers
-                for (let i = 1; i <= totalPages; i++) {
-                    paginationControls.appendChild(makeButton(i, i, false, i === this.currentPage));
-                }
-
-                paginationControls.appendChild(makeButton("Next »", this.currentPage + 1, this.currentPage === totalPages));
-            }
-
-            // Header labels
-            const headerKey = datatake.details?.key || datatake.id || "-";
-            const headerTime = datatake.details?.timeliness || datatake.raw?.timeliness || "-";
-            $('#datatake-details').empty().append(`
-                <div class="form-group">
-                    <label>Datatake ID: ${headerKey}</label>
-                    <label style="margin-left: 20px;">Timeliness: ${headerTime}</label>
-                </div>
-            `);
-
-        } finally {
-            setTimeout(() => this.hideSpinner(), 0);
+            paginationControls.appendChild(createButton("Next »", page + 1, page === totalPages));
         }
 
         this.currentDataArray = dataArray;
@@ -688,33 +787,75 @@ class Datatakes {
         //console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
 
-    renderInfoTableHeader(showTimeliness) {
-        const tableHead = document.querySelector(".custom-box-table-sm thead");
-        if (!tableHead) return;
+    // Mapping functions
+    mapS1S2Data(datatake, missionCode) {
+        const rows = [];
 
-        tableHead.innerHTML = `
-        <tr>
-            ${showTimeliness ? "<th>Timeliness</th>" : ""}
-            <th>Product type</th>
-            <th>Status (%)</th>
-        </tr>
-    `;
+        for (const key of Object.keys(datatake)) {
+            if (!key.endsWith("_local_percentage")) continue;
+
+            const productType = key.replace("_local_percentage", "");
+
+            // S2: keep ONLY MSI products
+            if (missionCode.startsWith("S2") && !productType.startsWith("MSI_")) {
+                continue;
+            }
+
+            rows.push({
+                timeliness: "-",
+                productType,
+                status: datatake[key].toFixed(2)
+            });
+        }
+
+        return rows;
     }
 
-    extractS1ProductLevel(productType) {
-        // Matches RAW__0A, RAW__1A, RAW__2A, RAW__A?, SLC__1A, etc.
-        const match = productType.match(/__(\w)/);
-        return match ? match[1] : null;
+
+    getProductLevel(productType) {
+        if (productType === "OUT_OF_MONITORING") return 99;
+
+        const match = productType.match(/__([0-9A-Z])/);
+        if (match) {
+            const lvl = match[1];
+            if (!isNaN(lvl)) return parseInt(lvl, 10); // 0,1,2
+            if (lvl === "A") return 3; // optional: map letters to numbers
+            return 98; // unknown letters
+        }
+
+        // GRDH, ETA, OCN → maybe treat as level 2 by default
+        if (productType.startsWith("IW_GRDH")) return 2;
+        if (productType.startsWith("IW_ETA")) return 2;
+        if (productType.startsWith("IW_OCN")) return 2;
+
+        return 98;
     }
 
-    async initCharts() {
-        // Use first datatake for initial charts
-        if (!this.fullDataTakes.length) return;
-        const first = this.fullDataTakes[0];
-        // auto spinner for initial load
-        await this.withSpinner(() => this.updateCharts("publication", first));
-        await this.withSpinner(() => this.updateCharts("acquisition", first));
+
+
+    mapS3Data(datatake) {
+        const rows = [];
+        for (const key of Object.keys(datatake)) {
+            if (!key.endsWith("_local_percentage")) continue;
+            const productType = key.replace("_local_percentage", "");
+            const tKey = productType + "_timeliness";
+            rows.push({ timeliness: datatake[tKey] ?? "-", productType, status: datatake[key].toFixed(2) });
+        }
+        return rows;
     }
+
+    mapS5Data(datatake) {
+        if (!Array.isArray(datatake)) {
+            console.error("[S5] Expected array, got:", datatake);
+            return [];
+        }
+        return datatake.map(row => ({
+            timeliness: row.timeliness,
+            productType: row.product,
+            status: row.percentage.toFixed(2)
+        }));
+    }
+
 
     updateCharts(type, linkKey) {
         // Select the right container & chart instance name
@@ -748,8 +889,8 @@ class Datatakes {
 
         if (!normalizedLinkKey) return;
 
-        const relevantData = this.fullDataTakes.filter(dt =>
-            (dt.id || "").toUpperCase() === (normalizedLinkKey || "").toUpperCase() // Changed from startsWith to strict equality
+        const relevantData = this.mockDataTakes.filter(dt =>
+            (dt.id || "").toUpperCase().startsWith((normalizedLinkKey || "").toString().toUpperCase())
         );
 
         //console.log("Raw data for", normalizedLinkKey, relevantData.map(dt => dt.raw));
@@ -758,10 +899,6 @@ class Datatakes {
             console.warn(`No data found for key: ${normalizedLinkKey}`);
             return;
         }
-
-        const entry = relevantData[0];
-        //console.log(`[DEBUG] Chart Update for ${normalizedLinkKey}:`, entry.raw?.completeness_status);
-
 
         // Shared color map
         const colorMap = {
@@ -783,9 +920,7 @@ class Datatakes {
         if (type === "publication") {
             const entry = relevantData[0];
             const pub = entry.raw?.completeness_status?.PUB || {};
-            const percentage = pub.percentage !== undefined ? parseFloat(pub.percentage) : 0;
-            //console.log(`[DEBUG] ${normalizedLinkKey} PUB Percentage:`, percentage);
-
+            const percentage = parseFloat(pub.percentage) || 0;
             const status = pub.status?.toUpperCase() || "UNKNOWN";
             const remaining = Math.max(0, 100 - percentage);
             const [completeColor, missingColor] = colorMap[status] || colorMap["UNKNOWN"];
@@ -933,164 +1068,128 @@ class Datatakes {
         $('#completenessTableModal').modal('hide');
     }
 
-    toUtcStringNoShift(localDateTime) {
-        return localDateTime + ":00Z";
-    }
-
     filterSidebarItems() {
         const selectedMission = document.getElementById("mission-select").value.toUpperCase();
         const selectedSatellite = document.getElementById("satellite-select").value.toUpperCase();
         const searchQuery = document.getElementById("searchInput").value.toUpperCase();
 
         // Read and store from/to date values
-        const fromInput = document.getElementById("from-date")?.value;
-        const toInput = document.getElementById("to-date")?.value;
 
-        this.fromDate = fromInput ? new Date(fromInput) : null;
-        this.toDate = toInput ? new Date(toInput) : null;
+        this.fromDate = document.getElementById("from-date").value;;
+        this.toDate = document.getElementById("to-date").value;;
 
         const searchTerms = searchQuery.split(/\s+/).map(s => s.trim()).filter(Boolean);
 
-        /* console.log("[FILTER] Selected mission:", selectedMission, "Satellite:", selectedSatellite, "Search terms:", searchTerms);
-         console.log("[FILTER] filteredDataTakes after filter:", this.filteredDataTakes.map(t => t.id));*/
         try {
-            this.filteredDataTakes = this.fullDataTakes.filter(take => {
+            this.filteredDataTakes = this.mockDataTakes.filter(take => {
                 const id = (take.id || "").toUpperCase();
-                const satellite = (take.satellite || take.raw?.satellite || take.raw?.satellite_unit || "").toUpperCase();
+                const satellite = (take.satellite || take.raw?.satellite_unit || "").toUpperCase();
 
-                let acquisitionDateStr = take.raw?.observation_time_start || take.start_time || take.start;
-                if (!acquisitionDateStr) return false;
+                let acquisitionDateRaw = take.raw?.observation_time_start || take.start || "";
+                let acquisitionDate = "";
 
-                const acquisitionDate = new Date(acquisitionDateStr);
-                if (isNaN(acquisitionDate)) return false;
-
+                if (acquisitionDateRaw instanceof Date) {
+                    acquisitionDate = acquisitionDateRaw.toISOString();
+                } else if (typeof acquisitionDateRaw === "string") {
+                    acquisitionDate = new Date(acquisitionDateRaw).toISOString();
+                }
                 const matchesMission = !selectedMission || id.startsWith(selectedMission);
                 const matchesSatellite = !selectedSatellite || satellite.startsWith(selectedSatellite);
-                const matchesSearch = !searchTerms.length || searchTerms.every(term => id.includes(term));
-                const matchesDate = this.isWithinDateRange(acquisitionDate);
-                return matchesMission && matchesSearch && matchesSatellite && matchesDate;
+
+                const matchesSearch = !searchTerms.length || searchTerms.every(term => {
+                    return id.includes(term);
+                });
+
+                return matchesMission && matchesSearch && matchesSatellite && this.isWithinDateRange(acquisitionDate);
             });
-
-            this.displayedCount = 0;
-
-            const first = this.filteredDataTakes?.[0];
-            if (first) {
-                this.handleInitialSelection(first);
-                this.renderTableWithoutPagination(this.filteredDataTakes, first.id);
-                this.showTableSection();
-            } else {
-                this.hideTable();
-                return;
-            }
 
         } catch (err) {
             console.error("Error during filtering:", err);
         }
 
-        this.renderSidebarList();
         this.displayedCount = 0;
         this.populateDataList(false);
         const first = this.filteredDataTakes?.[0];
         if (first) {
             this.handleInitialSelection(first);
-            this.renderTableWithoutPagination(this.filteredDataTakes, first.id);
         } else {
             this.hideTable();
         }
     }
 
-    renderSidebarList() {
-        const ul = document.getElementById("dataList");
-        if (!ul) return;
+    isWithinDateRange(dateString) {
+        if (!dateString) return true;
+        const date = new Date(dateString);
+        const from = this.fromDate ? new Date(this.fromDate) : null;
+        const to = this.toDate ? new Date(this.toDate) : null;
 
-        ul.innerHTML = "";
-
-        if (!this.filteredDataTakes || !this.filteredDataTakes.length) {
-            ul.innerHTML = "<li><em>No datatakes found</em></li>";
-            return;
-        }
-
-        this.filteredDataTakes.forEach((dt, i) => {
-            const status = (dt.acquisition_status || "unknown").toLowerCase();
-
-            const li = document.createElement("li");
-            li.innerHTML = `
-            <div class="container-border ${i === 0 ? "selected" : ""}"
-                style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;cursor:pointer;">
-                <a href="#" class="filter-link ${i === 0 ? "selected" : ""}"
-                    onclick="event.preventDefault();"
-                    data-id="${dt.id}">
-                    ${dt.id}
-                </a>
-                <div class="status-circle-dt-${status}"></div>
-            </div>
-        `;
-
-            // Re-attach click listener
-            this.attachItemListeners([li]);
-
-            ul.appendChild(li);
-        });
-    }
-
-    filterSatellitesByMission(mission, satelliteSelect) {
-        satelliteSelect.innerHTML = "";
-        const allOption = this.allSatelliteOptions.find(opt => opt.value === "");
-        if (allOption) satelliteSelect.appendChild(allOption.cloneNode(true));
-
-
-        // Filter based on mission
-        const filtered = mission
-            ? this.allSatelliteOptions.filter(opt => opt.value.toUpperCase().startsWith(mission.toUpperCase()))
-            : this.allSatelliteOptions.filter(opt => opt.value !== ""); // All except "All Satellites"
-
-        filtered.forEach(opt => satelliteSelect.appendChild(opt.cloneNode(true)));
-
-        // Reset selection
-        satelliteSelect.value = "";
-        satelliteSelect.disabled = mission === "S5"; // Keep S5 disabled if needed
-    }
-
-    isWithinDateRange(acquisitionDate) {
-        if (!acquisitionDate) return false;
-
-        const fromTime = this.fromDate ? this.fromDate.getTime() : null;
-        const toTime = this.toDate ? this.toDate.getTime() : null;
-        const dtTime = acquisitionDate.getTime();
-
-        const reasons = [];
-        if (fromTime && dtTime < fromTime) reasons.push(`start < from`);
-        if (toTime && dtTime > toTime) reasons.push(`start > to`);
-
-        if (reasons.length > 0) {
-            //console.log(`[DATE-FILTER] Excluding datatake ${acquisitionDate.toISOString()}:`, reasons);
-            return false;
-        }
+        if (from && date < from) return false;
+        if (to && date > to) return false;
 
         return true;
     }
 
-    getValidDate(row) {
-        const rawValue = row.start_time ||
-            row.observation_time_start ||
-            (row.raw && row.raw.observation_time_start) ||
-            (row.raw && row.raw.start_time);
+    setDateRangeLimits(period) {
+        const fromInput = document.getElementById("from-date");
+        const toInput = document.getElementById("to-date");
+        if (!fromInput || !toInput) return;
 
-        if (!rawValue) return "N/A";
+        const urlParams = new URLSearchParams(window.location.search);
+        const hasSearch = urlParams.has('search');
 
-        // Format the date strictly using UTC to avoid timezone shifts
-        return moment.utc(rawValue).format('YYYY-MM-DD HH:mm');
+        // Skip setting values if search is present
+        if (hasSearch) {
+            console.log("[Date Range Limits] Skipping setting date inputs due to search param.");
+            return;
+        }
+
+        const now = new Date();
+        const maxDate = new Date(now);
+        let fromDate = new Date(now);
+
+        switch (period) {
+            case 'day':
+                fromDate.setDate(fromDate.getDate() - 1);
+                break;
+            case 'week':
+                fromDate.setDate(fromDate.getDate() - 7);
+                break;
+            case 'month':
+                fromDate.setMonth(fromDate.getMonth() - 1);
+                break;
+            case 'last-quarter':
+            case 'default': {
+                const day = fromDate.getDate();
+                fromDate.setMonth(fromDate.getMonth() - 3, 1);
+                const lastDay = new Date(fromDate.getFullYear(), fromDate.getMonth() + 1, 0).getDate();
+                fromDate.setDate(Math.min(day, lastDay));
+                break;
+            }
+        }
+
+        const formatDateTimeLocal = (d) => {
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        };
+
+        const min = formatDateTimeLocal(fromDate);
+        const max = formatDateTimeLocal(maxDate);
+
+        fromInput.min = min;
+        fromInput.max = max;
+        toInput.min = min;
+        toInput.max = max;
+
+        if (fromInput.value && (fromInput.value < min || fromInput.value > max)) {
+            fromInput.value = '';
+        }
+        if (toInput.value && (toInput.value < min || toInput.value > max)) {
+            toInput.value = '';
+        }
+
+        console.log(`[Date Range Limits] Period: ${period}, Min: ${min}, Max: ${max}`);
     }
 
-    getValidDateStop(row) {
-        const rawValue = row.stop_time ||
-            row.observation_time_stop ||
-            (row.raw && row.raw.observation_time_stop) ||
-            (row.raw && row.raw.stop_time);
-
-        if (!rawValue) return "N/A";
-        return moment.utc(rawValue).format('YYYY-MM-DD HH:mm');
-    }
 
     showTableSection(firstId) {
         const tableSection = document.getElementById("tableSection");
@@ -1117,11 +1216,19 @@ class Datatakes {
             return;
         }
 
+        tableSection.style.display = "none";
         tableBody.innerHTML = "";
-        tableSection.style.display = "block";
 
         const selectedData = dataset.find(item => item.id === selectedId);
-        let data = selectedData ? [selectedData] : [];
+        if (!selectedData) {
+            console.warn(`No data found for: ${selectedId}`);
+            tableBody.innerHTML = "";
+            tableSection.style.display = "none";
+            return;
+        }
+        //console.log("completeness_status", selectedData.raw.completeness_status);
+
+        let data = [selectedData];
 
         if (searchQuery) {
             const query = searchQuery.toLowerCase();
@@ -1135,7 +1242,7 @@ class Datatakes {
             console.warn("No data matched the search query.");
 
             tableBody.innerHTML = "";
-            //tableSection.style.display = "none";
+            tableSection.style.display = "none";
             return;
         }
 
@@ -1147,8 +1254,9 @@ class Datatakes {
             const pubStatus = completeness.PUB?.status?.toUpperCase() || "UNKNOWN";
 
             const platform = row.satellite || raw.satellite_unit || "N/A";
-            const startTime = this.getValidDate(row);
-            const stopTime = this.getValidDateStop(row);
+            const startTime = row.start ? moment.utc(row.start).format('YYYY-MM-DD HH:mm') : "N/A";
+            const stopTime = row.stop ? moment.utc(row.stop).format('YYYY-MM-DD HH:mm') : "N/A";
+
             // Status colors
             const acquisitionColor = acqStatus === "ACQUIRED" ? "#0aa41b" :
                 acqStatus === "UNAVAILABLE" ? "#FF0000" :
@@ -1161,7 +1269,7 @@ class Datatakes {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td data-label="Data Take ID">${row.id}</td>
-                <td data-label="Platform">${row.platform || (row.raw && row.raw.satellite_unit) || "N/A"}</td>
+                <td data-label="Platform">${platform}</td>
                 <td data-label="Start Date">${startTime}</td>
                 <td data-label="Stop Date">${stopTime}</td>
                 <td data-label="Acquisition"><span class="status-badge" style="background-color:${acquisitionColor}">${acqStatus}</span></td>
@@ -1180,20 +1288,25 @@ class Datatakes {
 
             tableBody.appendChild(tr);
         });
-        //tableSection.style.display = "block";
+        tableSection.style.display = "block";
     }
 
     updateTitleAndDate(selectedKey) {
-        if (!selectedKey || !this.fullDataTakes?.length) {
+        if (!selectedKey) {
             return;
         }
 
+        if (!this.mockDataTakes || this.mockDataTakes.length === 0) {
+            console.warn("mockDataTakes is empty or not loaded yet.");
+            return;
+        }
 
         // Find datatake
-        const dataTake = this.fullDataTakes.find(item => item.id === selectedKey);
+        const dataTake = this.mockDataTakes.find(item => item.id === selectedKey);
 
         if (!dataTake) {
             console.warn(`Datatake not found for key: ${selectedKey}`);
+            console.log("Available datatake IDs:", this.mockDataTakes.map(item => item.id));
             return;
         }
 
@@ -1211,105 +1324,57 @@ class Datatakes {
             return;
         }
 
-        const rawStart = dataTake.start_time || null;
-        let startDate = "N/A";
-        if (rawStart) {
-            const d = new Date(rawStart);
-            if (!isNaN(d)) {
-                startDate = d.toISOString().replace("T", " ").slice(0, 19);
-            }
-        }
+        const startDate = new Date(dataTake.start)
+            .toISOString()
+            .replace("T", " ")
+            .slice(0, 19);
 
         titleSpan.textContent = `${dataTake.id}`;
         dateElement.textContent = `${startDate}`;
     }
 
     resetFilters() {
-        console.log("[RESET] Starting resetFilters");
-
+        // Reset filter form inputs
         const missionSelect = document.getElementById("mission-select");
         const satelliteSelect = document.getElementById("satellite-select");
         const searchInput = document.getElementById("searchInput");
         const fromDateInput = document.getElementById("from-date");
         const toDateInput = document.getElementById("to-date");
-        const dataList = document.getElementById("dataList");
 
         if (missionSelect) missionSelect.value = "";
-        if (satelliteSelect) {
-            satelliteSelect.innerHTML = ""
-            this.allSatelliteOptions.forEach(opt =>
-                satelliteSelect.appendChild(opt.cloneNode(true))
-            );
-            satelliteSelect.value = "";
-            satelliteSelect.disabled = false;
-        }
-
+        if (satelliteSelect) satelliteSelect.value = "";
         if (searchInput) searchInput.value = "";
         if (fromDateInput) fromDateInput.value = "";
         if (toDateInput) toDateInput.value = "";
 
-
-
         // Clear internal state
         this.filteredDataTakes = [];
-        this.fromDate = null;
-        this.toDate = null;
         this.currentMission = "";
         this.currentSearchTerm = "";
-        this.displayedCount = 0;
-
-        //console.log("[RESET] filteredDataTakes after clear:", this.filteredDataTakes);
-
-        if (!dataList) return;
-
-        this.mockDataTakes = this.fullDataTakes.length ? this.fullDataTakes : this.ssrDataTakes;
-
-        this.filteredDataTakes = [...this.mockDataTakes];
-
-        //console.log("[RESET] mockDataTakes for reset:", this.mockDataTakes.map(t => t.id));
-
-        dataList.innerHTML = "";
-
-        this.populateDataList(false);
-
-        const firstTake = this.mockDataTakes[0];
-        if (firstTake) {
-            //console.log("[RESET] selecting first datatake:", firstTake.id);
-            requestAnimationFrame(() => {
-                const firstContainer = dataList.querySelector(".container-border");
-                const firstA = firstContainer?.querySelector("a.filter-link");
-                //console.log("[RESET] firstContainer / firstA found:", !!firstContainer, !!firstA);
-                if (firstContainer && firstA) {
-                    this.handleItemClick(firstTake, firstContainer, firstA);
-                }
-            });
-        }
 
         if (window.history.replaceState) {
             const cleanUrl = window.location.origin + window.location.pathname;
             window.history.replaceState(null, '', cleanUrl);
         }
 
-        this.hideInfoTable?.();
-
         document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
-        document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
+        document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
-        console.log("[RESET] done.");
+        this.displayedCount = 0;
+        this.populateDataList(false);
+
+
+        this.hideInfoTable?.();
     }
 
-    applyAllFilters() {
-        this.filterSidebarItems();
-    }
     attachEventListeners() {
+        const searchInput = document.getElementById("searchInput");
         const dataList = document.getElementById("dataList");
         const tableSection = document.getElementById("tableSection");
+        const missionSelect = document.getElementById("mission-select");
+        const resetBtn = document.getElementById("resetFilterButton");
         const satelliteSelect = document.getElementById("satellite-select");
-        const fromDate = document.getElementById("from-date");
-        const toDate = document.getElementById("to-date");
-
-        fromDate.addEventListener("change", () => this.applyAllFilters());
-        toDate.addEventListener("change", () => this.applyAllFilters());
+        const allSatelliteOptions = Array.from(satelliteSelect.options).slice(1);
 
 
         if (!dataList || !tableSection) {
@@ -1317,9 +1382,69 @@ class Datatakes {
             return;
         }
 
-        if (satelliteSelect) {
-            this.allSatelliteOptions = Array.from(satelliteSelect.options).map(opt => opt.cloneNode(true));
+        tableSection.style.display = "none";
+
+        if (searchInput) {
+            searchInput.addEventListener("input", () => {
+                this.currentSearchTerm = searchInput.value;
+                this.filterSidebarItems();
+            });
         }
+
+        if (missionSelect && satelliteSelect) {
+            missionSelect.addEventListener("change", () => {
+                const selectedMission = missionSelect.value;
+                this.currentMission = selectedMission;
+
+                // Reset search input if mission reset
+                if (selectedMission === "") {
+                    this.currentSearchTerm = "";
+                    searchInput.value = "";
+                }
+
+                // Enable satellite select unless it's Sentinel 5P
+                if (selectedMission === "S5") {
+                    satelliteSelect.disabled = true;
+                    satelliteSelect.value = "";
+                } else {
+                    satelliteSelect.disabled = false;
+
+                    // Restore all then filter
+                    satelliteSelect.innerHTML = `
+                        <option value="">All Satellites</option>
+                    `;
+
+                    const filtered = allSatelliteOptions.filter(opt => opt.value.startsWith(selectedMission));
+                    filtered.forEach(opt => satelliteSelect.appendChild(opt));
+
+                    /*if (filtered.length > 0) {
+                        satelliteSelect.value = filtered[0].value;
+                    } else {*/
+                    satelliteSelect.value = "";
+                    //}
+                }
+
+                this.filterSidebarItems();
+                this.hideInfoTable();
+            });
+        }
+
+        const closeBtn = document.getElementById("closeTableButton");
+        if (closeBtn) {
+            closeBtn.addEventListener("click", () => {
+                this.hideTable();
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener("click", () => this.resetFilters());
+        }
+
+        // Load More Button 
+        document.getElementById("loadMoreBtn").addEventListener("click", () => {
+            this.populateDataList(true);
+        });
+
 
         dataList.addEventListener("click", async (e) => {
             const containerDiv = e.target.closest(".container-border");
@@ -1330,6 +1455,7 @@ class Datatakes {
             document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
             document.querySelectorAll(".container-border.selected").forEach(div => div.classList.remove("selected"));
 
+            // Add selected classes
             containerDiv.classList.add("selected");
             const targetLink = containerDiv.querySelector("a.filter-link");
             if (targetLink) targetLink.classList.add("active");
@@ -1337,141 +1463,124 @@ class Datatakes {
             const selectedKey = targetLink ? targetLink.textContent.trim() : null;
             if (!selectedKey) return;
 
-            let itemData = this.fullDataTakes.find(t => t.id === selectedKey);
-
-            if (itemData && itemData.is_lightweight) {
-                showGlobalLoading(); // Show a small spinner over the charts
-
-                try {
-                    const formData = new FormData();
-                    formData.append('datatake_id', selectedKey);
-
-                    const response = await fetch('/data-availability/enrich', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body: `datatake_id=${encodeURIComponent(selectedKey)}`
-                    });
-                    const enrichedData = await response.json();
-
-                    // Update our local data so we don't have to fetch it again
-                    Object.assign(itemData, enrichedData);
-                    itemData.is_lightweight = false;
-                } catch (err) {
-                    console.error("Failed to enrich datatake on click:", err);
-                } finally {
-                    hideGlobalLoading();
-                }
-            }
-
             this.updateTitleAndDate(selectedKey);
 
             // Render both donut charts asynchronously
-            await Promise.all([
-                this.updateCharts("publication", selectedKey),
-                this.updateCharts("acquisition", selectedKey)
-            ]);
-
-            this.renderTableWithoutPagination(this.fullDataTakes, selectedKey);
-            this.hideInfoTable();
-        });
-        const loadMoreBtn = document.getElementById("loadMoreBtn");
-        if (loadMoreBtn) {
-            loadMoreBtn.addEventListener("click", () => {
-                this.populateDataList(true);
-            })
-        }
-
-        const closeBtn = document.getElementById("closeTableButton");
-        if (closeBtn) {
-            closeBtn.addEventListener("click", () => {
-                this.hideTable();
-            });
-        }
-
-    }
-
-
-    async initializeDefaultView() {
-        this.showSpinner();
-        try {
-            const sidebarItems = document.querySelectorAll(".filter-link");
-            if (!sidebarItems.length) return;
-
-            const firstLink = sidebarItems[0];
-            firstLink.classList.add("active");
-
-            const parentDiv = firstLink.closest(".container-border");
-            if (parentDiv) parentDiv.classList.add("selected");
-
-            const firstKey = firstLink.textContent.trim();
-            const firstDataTake = this.mockDataTakes.find(dt => dt.id === firstKey);
-            if (!firstDataTake) {
-                console.warn("First datatake not found in mockDataTakes");
-                return;
-            }
-
-            // Update title/date
-            this.updateTitleAndDate(firstDataTake.id);
-
-            // Update charts
-            await Promise.all([
-                this.updateCharts("publication", firstDataTake.id),
-                this.updateCharts("acquisition", firstDataTake.id)
-            ]);
-
-            // Populate info table
-            this.renderTableWithoutPagination([firstDataTake], firstDataTake.id);
-
-            // Show table section
-            this.showTableSection(firstDataTake.id);
-        } finally {
-            setTimeout(() => this.hideSpinner(), 0);
-        }
-
-    }
-
-    async handleInitialSelection(first = null, dataset = this.filteredDataTakes) {
-        this.showSpinner();
-        try {
-            if (!dataset || !dataset.length) {
-                this.hideTable();
-                return;
-            }
-
-            // Determine the first datatake to select
-            const selectedTake = first || dataset[0];
-
-            // Highlight sidebar
-            document.querySelectorAll(".filter-link").forEach(link => link.classList.remove("active"));
-            document.querySelectorAll(".container-border").forEach(div => div.classList.remove("selected"));
-
-            const sidebarLink = document.querySelector(`.filter-link[data-id="${selectedTake.id}"]`);
-            if (sidebarLink) {
-                sidebarLink.classList.add("active");
-                const parentDiv = sidebarLink.closest(".container-border");
-                if (parentDiv) parentDiv.classList.add("selected");
-            }
-
-            // Update title and date
-            this.updateTitleAndDate(selectedTake.id);
-
-            // Render charts
             try {
                 await Promise.all([
-                    this.updateCharts("publication", selectedTake.id),
-                    this.updateCharts("acquisition", selectedTake.id),
+                    this.updateCharts("publication", selectedKey),
+                    this.updateCharts("acquisition", selectedKey)
                 ]);
             } catch (err) {
-                console.error("Chart update error:", err);
+                console.error("Error rendering charts:", err);
             }
+            this.renderTableWithoutPagination(this.mockDataTakes, selectedKey);
+            this.hideInfoTable();
+        });
+    }
 
-            // Render table and show section
-            this.renderTableWithoutPagination(dataset, selectedTake.id);
-            this.showTableSection(selectedTake.id);
-        } finally {
-            setTimeout(() => this.hideSpinner(), 0);
+    async setDefaultView(retryCount = 0) {
+        const sidebarItems = document.querySelectorAll(".filter-link");
+
+        if (sidebarItems.length === 0) {
+            if (retryCount < 5) { // retry up to 5 times
+                console.warn("Sidebar not ready, retrying setDefaultView...");
+                setTimeout(() => this.setDefaultView(retryCount + 1), 200);
+            } else {
+                console.error("Sidebar items not found after retries.");
+            }
+            return;
         }
 
+        const firstLink = sidebarItems[0];
+        const defaultKey = firstLink.textContent.trim();
+
+        if (!defaultKey) {
+            console.warn("Sidebar first link has no valid text, cannot update title/date.");
+            return;
+        }
+
+        if (!firstLink) {
+            console.warn("No sidebar items found.");
+            return;
+        }
+
+        firstLink.classList.add("active");
+
+
+        // Safely update title and charts once the DOM is ready
+        if (document.querySelector(".datatakes-container")) {
+            this.updateTitleAndDate(defaultKey);
+
+            (async () => {
+                try {
+                    await Promise.all([
+                        this.updateCharts("publication", defaultKey),
+                        this.updateCharts("acquisition", defaultKey)
+                    ]);
+                } catch (err) {
+                    console.error("Error rendering initial charts:", err);
+                }
+            })();
+        } else {
+            console.warn("Datatakes container not found, skipping chart update.");
+        }
+    }
+
+    handleInitialSelection(first) {
+        if (!first) return;
+
+        // Ensure the DOM elements are ready
+        if (document.querySelector(".datatakes-container")) {
+            this.updateTitleAndDate(first.id);
+
+            (async () => {
+                try {
+                    await Promise.all([
+                        this.updateCharts("publication", first.id),
+                        this.updateCharts("acquisition", first.id)
+                    ]);
+                } catch (err) {
+                    console.error("Error rendering charts for initial selection:", err);
+                }
+            })();
+        } else {
+            console.warn("Datatakes container not found for initial selection.");
+        }
+
+        this.renderTableWithoutPagination([first], first.id);
+
+        const firstLink = [...document.querySelectorAll(".filter-link")]
+            .find(link => link.textContent.trim() === first.id);
+
+        if (firstLink) {
+            firstLink.classList.add("active");
+            const parentDiv = firstLink.closest(".container-border");
+            if (parentDiv) parentDiv.classList.add("selected");
+        }
+
+        this.showTableSection(first.id);
+    }
+
+    showSpinner() {
+        const spinner = document.getElementById('spinner');
+        console.log("Active requests count before showSpinner:", this.activeRequestsCount);
+        if (spinner && this.activeRequestsCount === 0) {
+            console.log("Showing spinner...");
+            spinner.classList.add('active');
+        }
+        this.activeRequestsCount++;
+    }
+
+    hideSpinner() {
+        if (this.activeRequestsCount > 0) this.activeRequestsCount--;
+        if (this.activeRequestsCount === 0) {
+            const spinner = document.getElementById('spinner');
+            if (spinner) {
+                console.log("Hiding spinner...");
+                spinner.classList.remove('active');
+            }
+        }
     }
 }
 
