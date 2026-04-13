@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${SERCO}
+Copyright (C) ${startYear}-${currentYear} ${Telespazio}
 All rights reserved.
 
-This document discloses subject matter in which SERCO has
+This document discloses subject matter in which TPZ has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of SERCO to fulfill the purpose for which the document was
+behalf of TPZ to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -19,170 +19,275 @@ class Users {
         // Hide time period selector
         $('#time-period-select').hide();
 
+        // Data take table
+        try {
+            this.usersTable = $('#basic-datatables-users').DataTable({
+                "language": {
+                  "emptyTable": "Retrieving users..."
+                },
+                columnDefs: [{
+                        targets: -1,
+                        data: null,
+                        render: function (data, type, row) {
+                            if (type === 'display' &&
+
+                                    // Allow deletion only of roles different from "admin"
+                                    (data[0].toString() === 'admin')) {
+
+                                return '<button type="button" class="btn-link" onclick="users.editUserDetails(\'' + data[0] + '\')"><i class="icon-pencil"></i></button>';
+
+                            } else if (type === 'display' &&
+
+                                    // Allow deletion only of roles different from "admin"
+                                    (data[0].toString() !== 'admin')) {
+
+                                return '<button type="button" class="btn-link" onclick="users.editUserDetails(\'' + data[0] + '\')"><i class="icon-pencil"></i></button>' +
+                                       '<button type="button" class="btn-link" onclick="users.deleteUser(\'' + data[0] + '\')"><i class="icon-trash"></i></button>';
+
+                            } else {
+                                return data;
+                            }
+                        }
+                    }]
+                });
+        } catch(err) {
+            console.info('Initializing users class - skipping table creation...')
+        }
+
         // Map containing serialized users accessed from "username" field
         this.users = {};
 
         // Map containing serialized roles accessed from "role name" field
         this.roles = [];
 
-        this.usersTable = null;
-
     }
 
-    init(initialUsers, initialRoles) {
-        this.usersTable = $('#basic-datatables-users').DataTable();
+    init() {
 
-        if (initialRoles) {
-            initialRoles.forEach(role => {
-                this.roles.push(role.name);
-            });
+        // Retrieve roles from local MYSQL DB
+        ajaxCall('/api/auth/roles', 'GET', {}, this.loadRoles.bind(this), this.errorLoadRoles.bind(this));
+
+        // Retrieve users from local MYSQL DB
+        ajaxCall('/api/auth/users', 'GET', {}, this.loadUsers.bind(this), this.errorLoadUsers.bind(this));
+
+        return;
+    }
+
+    loadRoles(response) {
+
+        // Acknowledge the successful retrieval of users
+        var rows = format_response(response);
+        console.info('Roles successfully retrieved');
+        console.info("Number of records: " + rows.length);
+
+        // Parse response
+        for (var i = 0 ; i < rows.length ; ++i){
+            this.roles.push(rows[i]['name']);
         }
-        if (initialUsers) {
-            this.loadUsers(initialUsers);
-        }
+
+        // Populate the select in the modal window to add a new user
+        users.roles.forEach(function(role) {
+            $('#new-user-role').append('<option value="' + role + '">' + role + '</option>');
+        });
+    }
+
+    errorLoadRoles(response){
+        console.error(response)
+        return;
     }
 
     loadUsers(response) {
-        let rows = (typeof format_response === "function") ? format_response(response) : response;
 
+        // Acknowledge the successful retrieval of users
+        var rows = format_response(response);
         console.info('Users successfully retrieved');
         console.info("Number of records: " + rows.length);
 
-        var tableData = [];
-        this.users = {};
+        // Parse response
+        var data = new Array();
+        for (var i = 0 ; i < rows.length ; ++i){
 
-        rows.forEach(user => {
-            this.users[user.username] = user;
+            // Auxiliary variables
+            var element = rows[i];
+            var uuid = element['id'];
+            var username = element['username'];
+            var email = element['email'];
+            var password = element['password'];
+            var role = element['role'];
+            var modify_date = moment(element['modifyDate'], 'yyyy-MM-DD HH:mm:ss.SSS').toDate();
 
-            let actionButtons = `
-                <button type="button" class="btn-link" onclick="users.editUserDetails('${user.username}')">
-                    <i class="icon-pencil"></i>
-                </button>`;
+            // Save a local copy of the user
+            this.users[username] = element;
 
-            if (user.username !== 'admin') {
-                actionButtons += `
-                <button type="button" class="btn-link" onclick="users.deleteUser('${user.username}')">
-                    <i class="icon-trash"></i>
-                </button>`;
-            }
+            // Push the element row, with the collected information
+            // row is a datatable row, related to a single user
+            // User status record:
+            // username, email, role, modify date
+            data.push([username, email, role]);
+        }
 
-            tableData.push([
-                user.username,
-                user.email,
-                user.role,
-                actionButtons
-            ]);
-        });
+        // Refresh users table and return
+        this.usersTable.clear().rows.add(data).draw();
+        return;
+    }
 
-        this.usersTable.clear().rows.add(tableData).draw();
+    errorLoadUsers(response){
+        console.error(response)
+        return;
+    }
+
+    createUser(user) {
+
     }
 
     editUserDetails(username) {
-        let user = this.users[username];
-        if (user) {
-            this.buildUserDetailsPanel(user);
-        }
-    }
-
-    buildUserDetailsPanel(user) {
-        const container = $('#user-details');
-        container.html('');
-
-        let roleOptions = this.roles.map(role => {
-            let selected = (user.role === role) ? 'selected' : '';
-            return `<option value="${role}" ${selected}>${role}</option>`;
-        }).join('');
-
-        container.append(`
-        <div class="form-group" id="username-div">
-            <label for="username">Username *</label>
-            <input type="text" class="form-control" id="username" value="${user.username}" placeholder="Enter username" required onkeyup="users.validateUserDetails()">
-        </div>
-
-        <div class="form-group" id="user-email-div">
-            <label for="user-email">Email *</label>
-            <input type="text" class="form-control" id="user-email" value="${user.email}" placeholder="Enter e-mail" required onkeyup="users.validateUserDetails()">
-        </div>
-
-        <div class="form-group">
-            <label for="user-role-select">Role</label>
-            <select class="form-control" id="user-role-select">
-                ${roleOptions}
-            </select>
-        </div>
-
-        <div class="form-group" id="user-password-div">
-            <label for="user-password">Password</label>
-            <input type="password" class="form-control" id="user-password" placeholder="Leave blank to keep current" onkeyup="users.validateUserDetails()">
-        </div>
-
-        <div class="form-group">
-            <button id="save-user-details-btn" class="btn btn-primary pull-right" onclick="users.updateUserDetails('${user.id}')">Update</button>
-        </div>
-    `);
-
-        this.validateUserDetails();
-    }
-
-    updateUserDetails(id) {
-        this.submitSSRForm({
-            'action': 'update',
-            'id': id,
-            'username': $('#username').val(),
-            'email': $('#user-email').val(),
-            'role': $('#user-role-select').val(),
-            'password': $('#user-password').val()
-        });
-    }
-
-    successUpdateUser() {
-        // Redirect to the same page with a 'success' parameter in the URL
-        window.location.href = "/users.html?msg=updated";
-    }
-
-    addUser() {
-        if (!this.validateNewUserDetails()) return;
-
-        this.submitSSRForm({
-            'action': 'add',
-            'username': $('#new-username').val(),
-            'email': $('#new-user-email').val(),
-            'role': $('#new-user-role').val(),
-            'password': $('#new-user-password').val()
-        });
+        let user = users.users[username];
+        users.buildUserDetailsPanel(user);
     }
 
     deleteUser(username) {
-        if (confirm(`Are you sure you want to delete ${username}?`)) {
-            this.submitSSRForm({
-                'action': 'delete',
-                'username': username
-            });
+        let user = users.users[username];
+        console.info(user);
+    }
+
+    buildUserDetailsPanel(user) {
+
+        // Build widgets
+        $('#user-details').html('');
+        $('#user-details').append(
+            '<div class="form-group" id="username-div">' +
+                '<label for="username">Username *</label>' +
+                '<input type="text" class="form-control" id="username" placeholder="Enter username" required onkeyup="users.validateUserDetails()">' +
+            '</div>');
+        $('#username').val(user['username']);
+        $('#user-details').append(
+            '<div class="form-group" id="user-email-div">' +
+                '<label for="user-email">Email *</label>' +
+                '<input type="text" class="form-control" id="user-email" placeholder="Enter e-mail" required onkeyup="users.validateUserDetails()">' +
+            '</div>');
+        $('#user-email').val(user['email']);
+        $('#user-details').append(
+            '<div class="form-group">' +
+                '<label for="user-role-select">Role</label>' +
+                '<select class="form-control" id="user-role-select" placeholder="User role"></select>' +
+            '</div>');
+        users.roles.forEach(function(role) {
+            let selected = user['role'] === role ? ' selected ' : '';
+            $('#user-role-select').append('<option value="' + role + '"' + selected + '>' + role + '</option>');
+        });
+        $('#user-details').append(
+            '<div class="form-group" id="user-password-div">' +
+                '<label for="user-password">Password</label>' +
+                '<input type="password" class="form-control" id="user-password" placeholder="Password" onkeyup="users.validateUserDetails()">' +
+            '</div>');
+        $('#user-password').val(user['password']);
+        $('#user-details').append(
+            '<div class="form-group">' +
+                '<button id="save-user-details-btn" class="btn btn-primary pull-right" onclick="users.updateUserDetails(\'' + user['id'] + '\')">Update</button>' +
+            '</div>');
+
+        // Invoke form validation
+        users.validateUserDetails();
+    }
+
+    updateUserDetails(id) {
+
+        // Retrieve new user's details
+        let username = $('#username').val();
+        let email =  $('#user-email').val();
+        let role = $('#user-role-select').val();
+        let password = $('#user-password').val();
+
+        // Invoke user's details update
+        let data = {'id': id, 'username': username, 'email': email, 'password': password, 'role': role}
+        ajaxCall('/api/auth/user', 'POST', data, this.successUpdateUser.bind(this), this.errorUpdateUser.bind(this));
+    }
+
+    successUpdateUser() {
+
+        // Clean user details panel
+        $('#username').val('');
+        $('#user-email').val('');
+        $('#user-role-select').val('');
+        $('#user-password').val('');
+
+        // Reload users table
+        ajaxCall('/api/auth/users', 'GET', {}, this.loadUsers.bind(this), this.errorLoadUsers.bind(this));
+    }
+
+    errorUpdateUser() {
+        console.error(response)
+        return;
+    }
+
+    validateUserDetails() {
+
+        // Retrieve existing user's details
+        let username = $('#username').val();
+        let email =  $('#user-email').val();
+
+        // Username
+        if (!username) {
+            $('#username-div').addClass('has-error');
+            $('#username-div-help').remove();
+            $('#username-div').append('<small id="username-div-help" class="form-text text-muted">username cannot be null</small>');
+            $("#save-user-details-btn").prop("disabled", true);
+            return ;
+        } else {
+            $('#username-div').removeClass('has-error');
+            $('#username-div-help').remove();
+            $("#save-user-details-btn").prop("disabled", false);
+        }
+
+        // Email
+        if (!email) {
+            $('#user-email-div').addClass('has-error');
+            $('#user-email-div-help').remove();
+            $('#user-email-div').append('<small id="user-email-div-help" class="form-text text-muted">enter a valid email address</small>');
+            $("#save-user-details-btn").prop("disabled", true);
+            return ;
+        } else {
+            $('#user-email-div').removeClass('has-error');
+            $('#user-email-div-help').remove();
+            $("#save-user-details-btn").prop("disabled", false);
         }
     }
 
-    submitSSRForm(data) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/users.html';
+    addUser() {
 
-        for (const key in data) {
-            if (data.hasOwnProperty(key)) {
-                const hiddenField = document.createElement('input');
-                hiddenField.type = 'hidden';
-                hiddenField.name = key;
-                hiddenField.value = data[key];
-                form.appendChild(hiddenField);
-            }
+        // Return if input values are incomplete / missing
+        if (!users.validateNewUserDetails()) {
+            return ;
         }
 
-        document.body.appendChild(form);
-        form.submit();
+        // Retrieve user parameters from new user form
+        let username = $('#new-username').val();
+        let email = $('#new-user-email').val();
+        let role = $('#new-user-role').val();
+        let password = $('#new-user-password').val();
+
+        // Invoke new user creation
+        let data = {'username': username, 'email': email, 'password': password, 'role': role}
+        ajaxCall('/api/auth/user', 'POST', data, this.successAddUser.bind(this), this.errorAddUser.bind(this));
     }
 
-    successAddUser() {
-        // Same for adding a user
-        window.location.href = "/users.html?msg=added";
+    successAddUser(response) {
+
+        // Close new user modal window
+        $('#addUserModal').modal('hide');
+
+        // Empty input fields
+        $('#new-username').val('');
+        $('#new-user-email').val('');
+        $('#new-user-password').val('');
+
+        // Reload the users table
+        ajaxCall('/api/auth/users', 'GET', {}, this.loadUsers.bind(this), this.errorLoadUsers.bind(this));
+    }
+
+    errorAddUser(response) {
+        console.error(response)
+        return;
     }
 
     validateNewUserDetails() {
@@ -249,33 +354,22 @@ class Users {
         return true;
     }
 
-    validateUserDetails() {
-        const username = $('#username').val();
-        const email = $('#user-email').val();
+    deleteUser(username) {
 
-        // Check if fields are empty
-        const isUsernameValid = !!username;
-        const isEmailValid = !!email;
-
-        // Toggle Error classes
-        $('#username-div').toggleClass('has-error', !isUsernameValid);
-        $('#user-email-div').toggleClass('has-error', !isEmailValid);
-
-        // Handle Help Text
-        $('#username-div-help, #user-email-div-help').remove();
-        if (!isUsernameValid) {
-            $('#username-div').append('<small id="username-div-help" class="form-text text-muted">username cannot be null</small>');
-        }
-        if (!isEmailValid) {
-            $('#user-email-div').append('<small id="user-email-div-help" class="form-text text-muted">enter a valid email address</small>');
-        }
-
-        // Disable/Enable button
-        $("#save-user-details-btn").prop("disabled", !(isUsernameValid && isEmailValid));
+        // Delete the specified role from the local MYSQL DB
+        let data = {'username': username};
+        ajaxCall('/api/auth/user', 'DELETE', data, this.successDeleteUser.bind(this), this.errorDeleteUser.bind(this));
     }
 
-    successDeleteUser() {
-        window.location.href = "/users.html?msg=deleted";
+    successDeleteUser(response) {
+
+        // Reload the role table
+        ajaxCall('/api/auth/users', 'GET', {}, this.loadUsers.bind(this), this.errorLoadUsers.bind(this));
+    }
+
+    errorDeleteUser(response) {
+        console.error(response)
+        return;
     }
 }
 

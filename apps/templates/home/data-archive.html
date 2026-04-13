@@ -123,7 +123,7 @@
         </div>
 
         <!-- LTA usage [Number] -->
-        <div class="row" id="LTA-period-mission-levels-num-row" data-period="period" data-datatype="num">
+        <div class="row" id="LTA-period-mission-levels-num-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -139,7 +139,7 @@
         </div>
 
         <!-- LTA usage [Volume] -->
-        <div class="row" id="LTA-period-mission-levels-vol-row" data-period="period" data-datatype="vol">
+        <div class="row" id="LTA-period-mission-levels-vol-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -155,7 +155,7 @@
         </div>
 
                 <!-- LTA lifetime usage [Number] -->
-        <div class="row" id="LTA-lifetime-mission-levels-num-row" data-period="lifetime" data-datatype="num">
+        <div class="row" id="LTA-lifetime-mission-levels-num-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -171,7 +171,7 @@
         </div>
 
         <!-- LTA lifetime usage [Volume] -->
-        <div class="row" id="LTA-lifetime-mission-levels-vol-row" data-period="lifetime" data-datatype="vol">
+        <div class="row" id="LTA-lifetime-mission-levels-vol-row">
             <div class="col-md-12">
                 <div class="card">
                     <div class="card-header">
@@ -321,49 +321,9 @@
 {% block javascripts %}
 
     <script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
-    <script id="archive-ssr-payload" type="application/json">
-        {{ archive_payload | tojson }}
-    </script>
-
     <script src="/static/assets/js/quarterly-reports/archive-statistics.js"></script>
     <script src="/static/assets/js/quarterly-reports/service-monitoring.js"></script>
-    <!-- <script defer type="text/javascript">archiveStatistics.init();</script> -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const payloadEl = document.getElementById('archive-ssr-payload');
-            window.SSR_ARCHIVE_PAYLOAD = JSON.parse(payloadEl.innerHTML);
-
-            window.archiveStats = new ArchiveStatisticsCharts();
-            window.archiveStats.init(window.SSR_ARCHIVE_PAYLOAD);
-
-            /*const prevQuarter = SSR_ARCHIVE_PAYLOAD['prev-quarter'];
-            if (!prevQuarter) {
-                console.warn("[SM][PATCH] No 'prev-quarter' data found in SSR_ARCHIVE_PAYLOAD");
-                return;
-            }*/
-
-            if (!window.serviceMonitoring) {
-                window.serviceMonitoring = new ServiceMonitoring();
-                window.serviceMonitoring.archivePayload = window.SSR_ARCHIVE_PAYLOAD;
-            }
-            
-            const periodSelect = document.getElementById('time-period-select');
-            if (periodSelect) {
-                periodSelect.addEventListener('change', function(e) {
-                    // Wait a tiny bit for ArchiveStats._bindEvents to finish its redirection
-                    setTimeout(() => {
-                        // Get the final key after redirection (e.g., 'prev-quarter-specific')
-                        const finalKey = window.archiveStats.currentPeriod;
-                    
-                        console.info(`[SM][SYNC] Syncing Monitoring to redirected key: ${finalKey}`);
-                        if(window.serviceMonitoring) {
-                            window.serviceMonitoring.refreshAvailabilityStatus(finalKey);
-                        }
-                    }, 0);
-                });
-            }
-        });
-    </script>
-  <!--   <script defer type="text/javascript">serviceMonitoring.init();</script> -->
+    <script defer type="text/javascript">archiveStatistics.init();</script>
+    <script defer type="text/javascript">serviceMonitoring.init();</script>
 
 {% endblock javascripts %}

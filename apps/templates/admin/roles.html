@@ -44,37 +44,14 @@
 					<div class="card card-admin">
 						<div class="card-body">
 							<div class="table-responsive">
-								<table id="basic-datatables-roles" class="display table table-striped table-hover">
+								<table id="basic-datatables-roles" class="display table table-striped table-hover" >
 									<thead>
 										<tr>
-											<th style="width: 25%">Role name</th>
+											<th>Role name</th>
 											<th>Description</th>
-											<th style="width: 25%; white-space:nowrap;">Actions</th>
+											<th>Actions</th>
 										</tr>
 									</thead>
-									<tbody>
-										{% for role in roles %}
-										{% set rname = role.name if role.name is defined else role[0] %}
-										{% set rdesc = role.description if role.description is defined else role[1] %}
-										<tr>
-											<td>{{ rname }}</td>
-											<td>{{ rdesc or '' }}</td>
-											<td class="text-center">
-												{% if rname not in ['admin', 'guest', 'ecuser'] %}
-													<form method="POST" style="display:inline;" onsubmit="return confirm('Delete {{ rname }}?');">
-														<input type="hidden" name="action" value="delete">
-            											<input type="hidden" name="name" value="{{ rname }}">
-														<button type="submit" class="btn-link">
-															<i class="icon-trash"></i>
-														</button>
-													</form>
-												{% else %}
-													<p class="m-0">This role cannot be deleted</p>
-												{% endif %}
-											</td>
-										</tr>
-										{% endfor %}
-									</tbody>
 								</table>
 							</div>
 						</div>
@@ -88,24 +65,19 @@
 							<h4 class="card-title">Add role</h4>
 						</div>
 						<div class="card-body">
-							<form method="POST" action="{{ url_for('home_blueprint.roles_page') }}">
+							<div class="add-role" id="add-role">
 								<div class="form-group" id="role-name-div">
-									<input type="hidden" name="action" value="add"> <div class="form-group">
 									<label for="role-name">Role name *</label>
-									<input type="text" name="name" class="form-control" id="role-name"
-										placeholder="Enter role name" required onkeyup="roles.validateRole()">
+									<input type="text" class="form-control" id="role-name" placeholder="Enter role name" required onkeyup="roles.validateRole()">
 								</div>
 								<div class="form-group" id="role-description-div">
 									<label for="role-description">Description</label>
-									<textarea name="description" class="form-control" rows="5"
-											id="role-description" placeholder="Enter description"></textarea>
+									<textarea type="text" class="form-control" rows="5" id="role-description" placeholder="Enter description"></textarea>
 								</div>
 								<div class="form-group">
-									<button type="submit" id="role-add-btn" class="btn btn-primary pull-right" disabled>
-										Add role
-									</button>
+									<button id="role-add-btn" class="btn btn-primary pull-right" disabled onclick="roles.addRole()">Add role</button>
 								</div>
-							</form>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -125,25 +97,6 @@
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/admin/roles.js"></script>
-	<script>
-        $(document).ready(function() {
-            // DataTables will automatically create the search, length,
-            // and pagination divs seen in your original snippet.
-            $('#basic-datatables-roles').DataTable({
-                "pageLength": 10,
-				"autowidth": false,
-				"columnDefs":[
-					{ "orderable":false, "targets":2},
-					{ "className":"text-center", "targets":2}
-				],
-                "order": [[ 0, "asc" ]], // Sort by role name by default
-                "language": {
-                    "search": "Search:",
-                    "lengthMenu": "Show _MENU_ entries",
-                    "info": "Showing _START_ to _END_ of _TOTAL_ entries"
-                }
-            });
-        });
-    </script>
+	<script defer type="text/javascript">roles.init();</script>
 
 {% endblock javascripts %}
