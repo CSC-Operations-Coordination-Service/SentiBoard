@@ -78,173 +78,250 @@
 		<!-- Mission Timeliness by Timeliness Type (Gauge charts) -->
 		<!-- Row with S1 and S2 Charts -->
 		<div class="row">
-			<!-- Sentinel-1 -->
+
+			<!-- col-12 col-sm-6  -->
 			<div class="col-md-8">
 				<div class="card-header">
-					<div class="card-title">Sentinel-1</div>
+						<div class="card-title">Sentinel-1</div>
 				</div>
-
 				<div class="row">
-					{% for timeliness_type, charts in timeliness["S1"].items() %}
-					{% for key, chart in charts.items() %}
-						<div class="col-md-6">
-						<div class="card mb-3">
+					<div class="col-md-6">
+						<div class="card">
 							<div class="card-header">
-							<div class="card-title">
-								Sentinel-1 {{ chart.label }}
-							</div>
+								<div class="card-title">Sentinel-1 Default Timeliness</div>
 							</div>
 							<div class="card-body">
-							<canvas id="{{ chart.pieId }}" class="canvasBox" height="300"></canvas>
+								<div class="chart-container">
+									<canvas id="s1-ntc-gauge-chart" class="canvasBox"></canvas>
+								</div>
 							</div>
 						</div>
+					</div>
+					<div class="col-md-6">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-1 NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container" >
+									<canvas id="s1-nrt-gauge-chart" class="canvasBox"></canvas>
+								</div>
+							</div>
 						</div>
-					{% endfor %}
-					{% endfor %}
+					</div>
 				</div>
+			<!--
+			-->
 			</div>
-
-			<!-- Sentinel-2 -->
-			<!-- Sentinel-2 -->
 			<div class="col-md-4">
 				<div class="card-header">
 					<div class="card-title">Sentinel-2</div>
 				</div>
-
-				{% for timeliness_type, charts in timeliness["S2"].items() %}
-					{% for key, chart in charts.items() %}
-					{% if key == "_mission" %}
-						<div class="card mb-3">
-						<div class="card-header">
-							<div class="card-title">
-							Sentinel-2 {{ chart.label }}
-							</div>
-						</div>
-						<div class="card-body">
-							<canvas id="{{ chart.pieId }}" class="canvasBox" height="300"></canvas>
-						</div>
-						</div>
-					{% endif %}
-					{% endfor %}
-				{% endfor %}
-			</div>
-
-		</div>
-		<div class="row">
-			<div class="col-md-12">
-				<div class="card-header">
-				<div class="card-title">Sentinel-3 NRT</div>
-				</div>
-
 				<div class="row">
-				{% for key, chart in timeliness["S3"]["NRT"].items() %}
-					{% if key != "_mission" %}
-					<div class="col-md-4">
-						<div class="card mb-3">
-						<div class="card-header">
-							<div class="card-title">{{ key }} NRT</div>
-						</div>
-						<div class="card-body">
-							<canvas id="{{ chart.pieId }}" height="300"></canvas>
-						</div>
-						</div>
-					</div>
-					{% endif %}
-				{% endfor %}
-				</div>
-			</div>
-		</div>
-		<div class="row">
-			<div class="col-md-12">
-				<div class="card-header">
-				<div class="card-title">Sentinel-3 STC</div>
-				</div>
-
-				<div class="row justify-content-start">
-				{% for key, chart in timeliness["S3"]["STC"].items() %}
-					{% if key != "_mission" %}
-					<div class="col-md-4">
-						<div class="card mb-3">
-						<div class="card-header">
-							<div class="card-title">{{ key }} STC</div>
-						</div>
-						<div class="card-body">
-							<canvas id="{{ chart.pieId }}" height="300"></canvas>
-						</div>
-						</div>
-					</div>
-					{% endif %}
-				{% endfor %}
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="col-md-12">
-				{# ---- Section title (take label from first chart) ---- #}
-				{% set ntc_items = timeliness["S3"]["NTC"].items() | list %}
-				{% set first_item = ntc_items | first %}
-
-				<div class="card-header">
-					<div class="card-title">
-						Sentinel-3 {{ first_item[1].label }}
-					</div>
-				</div>
-
-				 {% for row in ntc_items
-					| rejectattr(0, "equalto", "_mission")
-					| list
-					| batch(3, fill_with=None)
-				%}
-				<div class="row">
-					{% for item in row %}
-					{% if item %}
-						{% set key = item[0] %}
-						{% set chart = item[1] %}
-						<div class="col-md-4">
-						<div class="card mb-3">
+					<div class="col-md-12">
+						<div class="card">
 							<div class="card-header">
-							<div class="card-title">
-								{{ key }} {{ chart.label }}</div>
+								<div class="card-title">Sentinel-2 Default Timeliness</div>
 							</div>
 							<div class="card-body">
-								<canvas id="{{ chart.pieId }}" height="300"></canvas>
+								<div class="chart-container">
+    									<canvas id="s2-ntc-gauge-chart" class="canvasBox"></canvas>
+								</div>
 							</div>
 						</div>
-						</div>
-					{% endif %}
-					{% endfor %}
+					</div>
 				</div>
-				{% endfor %}
 			</div>
 		</div>
+
+		<!-- Row with S3 NRT Charts-->
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 NRT</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">OLCI NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-nrt-olci-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SLSTR NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-nrt-slstr-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SRAL NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-nrt-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S3 STC Charts-->
+		<div class="row" >
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 STC</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4 col-md-offset-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SRAL STC</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-stc-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4 col-md-offset-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SYN STC</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-stc-syn-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S3 NTC Charts-->
+		<div class="row">
+			<div class="col-md-12">
+				<div class="card-header">
+					<div class="card-title">Sentinel-3 Default Timeliness</div>
+				</div>
+				<div class="row">
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">OLCI Default Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-olci-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SLSTR Default Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-slstr-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SRAL Default Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-sral-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">SYN Default Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s3-ntc-syn-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Row with S5 Levels Charts -->
 		<div class="row">
 			<div class="col-md-12">
 				<div class="card-header">
 					<div class="card-title">Sentinel-5</div>
 				</div>
 				<div class="row">
-					{% if "S5" in timeliness %}
-						{% for timeliness_type, charts in timeliness["S5"].items() %}
-							{% for pg, chart in charts.items() %}
-								<div class="col-md-4">
-									<div class="card mb-3">
-										<div class="card-header">
-											<div class="card-title">
-												Sentinel-5 {% if pg != "_mission" %}{{ pg }}{% endif %} {{ chart.label }}
-											</div>
-										</div>
-										<div class="card-body">
-											<canvas id="{{ chart.pieId }}" height="300"></canvas>
-										</div>
-									</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-5 L1 Default Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s5-ntc-l1-gauge-chart" style="width: 50%; height: 50%"></canvas>
 								</div>
-							{% endfor %}
-						{% endfor %}
-					{% endif %}
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-5 L2 Default Timeliness</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s5-ntc-l2-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="col-md-4">
+						<div class="card">
+							<div class="card-header">
+								<div class="card-title">Sentinel-5 L2 NRT</div>
+							</div>
+							<div class="card-body">
+								<div class="chart-container">
+									<canvas id="s5-nrt-l2-gauge-chart" style="width: 50%; height: 50%"></canvas>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
+
 	</div>
 </div>
 
@@ -254,10 +331,6 @@
 {% block javascripts %}
 
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
-	<script type="text/javascript">
-    	window.ssrTimelinessData = {{ timeliness | tojson }};
-	</script>
-	
 	<script src="/static/assets/js/quarterly-reports/product-timeliness.js"></script>
 	<script defer type="text/javascript">productTimeliness.init();</script>
 

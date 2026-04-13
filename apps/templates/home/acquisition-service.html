@@ -106,7 +106,11 @@
 								<div class="numbers">
 									<p class="card-category">Total planned acquisitions</p>
 									<h4 class="card-title" id="planned-acquisitions-global-box-mod">
-										{{ payload.global.planned }}
+										<div class="spinner">
+											<div class="bounce1"></div>
+											<div class="bounce2"></div>
+											<div class="bounce3"></div>
+										</div>
 									</h4>
 								</div>
 							</div>
@@ -127,10 +131,11 @@
 								<div class="numbers">
 									<p class="card-category">Successful acquisitions</p>
 									<h4 class="card-title" id="successful-acquisitions-global-box-mod">
-										{{ payload.global.successful }}
-										<span>
-											({{ payload.global.successful_percentage }}%)
-										</span>
+										<div class="spinner">
+											<div class="bounce1"></div>
+											<div class="bounce2"></div>
+											<div class="bounce3"></div>
+										</div>
 									</h4>
 								</div>
 							</div>
@@ -151,10 +156,11 @@
 								<div class="numbers">
 									<p class="card-category">Failures due to Satellite issues</p>
 									<h4 class="card-title" id="satellite-failures-global-box-mod">
-										{{ payload.global.fail_sat }}
-										<span>
-											({{ payload.global.fail_sat_percentage }}%)
-										</span>	
+										<div class="spinner">
+											<div class="bounce1"></div>
+											<div class="bounce2"></div>
+											<div class="bounce3"></div>
+										</div>
 									</h4>
 								</div>
 							</div>
@@ -175,10 +181,11 @@
 								<div class="numbers">
 									<p class="card-category">Failures due to Acquisition Service issues</p>
 									<h4 class="card-title" id="acquisition-failures-global-box-mod">
-										{{ payload.global.fail_acq }}
-										<span>
-											({{ payload.global.fail_acq_percentage }}%)
-										</span>	
+										<div class="spinner">
+											<div class="bounce1"></div>
+											<div class="bounce2"></div>
+											<div class="bounce3"></div>
+										</div>
 									</h4>
 								</div>
 							</div>
@@ -199,10 +206,11 @@
 								<div class="numbers">
 									<p class="card-category">Failures due to Other causes (RFI, bad weather, MPS)</p>
 									<h4 class="card-title" id="other-failures-global-box-mod">
-										{{ payload.global.fail_other }}
-										<span>
-											({{ payload.global.fail_other_percentage }}%)
-										</span>	
+										<div class="spinner">
+											<div class="bounce1"></div>
+											<div class="bounce2"></div>
+											<div class="bounce3"></div>
+										</div>
 									</h4>
 								</div>
 							</div>
@@ -220,12 +228,20 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="svalbard-station-box-mod">
-							{{ payload.stations.svalbard.passes | int }}
+							<div class="spinner">
+								<div class="bounce1"></div>
+								<div class="bounce2"></div>
+								<div class="bounce3"></div>
+							</div>
 						</h1>
 						<h5 class="op-8">Successful passes over Svalbard</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="svalbard-station-box-perc-mod">
-								{{ payload.stations.svalbard.passes_percentage }}%
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
 							</h3>
 						</div>
 					</div>
@@ -237,12 +253,20 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="inuvik-station-box-mod">
-							{{ payload.stations.inuvik.passes | int }}
+							<div class="spinner">
+								<div class="bounce1"></div>
+								<div class="bounce2"></div>
+								<div class="bounce3"></div>
+							</div>
 						</h1>
 						<h5 class="op-8">Successful passes over Inuvik</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="inuvik-station-box-perc-mod">
-								{{ payload.stations.inuvik.passes_percentage }}%
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
 							</h3>
 						</div>
 					</div>
@@ -254,12 +278,20 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="matera-station-box-mod">
-							{{ payload.stations.matera.passes | int }}
+							<div class="spinner">
+								<div class="bounce1"></div>
+								<div class="bounce2"></div>
+								<div class="bounce3"></div>
+							</div>
 						</h1>
 						<h5 class="op-8">Successful passes over Matera</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="matera-station-box-perc-mod">
-								{{ payload.stations.matera.passes_percentage }}%
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
 							</h3>
 						</div>
 					</div>
@@ -271,12 +303,20 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="maspalomas-station-box-mod">
-							{{ payload.stations.maspalomas.passes | int }}
+							<div class="spinner">
+								<div class="bounce1"></div>
+								<div class="bounce2"></div>
+								<div class="bounce3"></div>
+							</div>
 						</h1>
 						<h5 class="op-8">Successful passes over Maspalomas</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="maspalomas-station-box-perc-mod">
-								{{ payload.stations.maspalomas.passes_percentage }}%
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
 							</h3>
 						</div>
 					</div>
@@ -288,12 +328,20 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="neustrelitz-station-box-mod">
-							{{ payload.stations.neustrelitz.passes | int }}
+							<div class="spinner">
+								<div class="bounce1"></div>
+								<div class="bounce2"></div>
+								<div class="bounce3"></div>
+							</div>
 						</h1>
 						<h5 class="op-8">Successful passes over Neustrelitz</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="neustrelitz-station-box-perc-mod">
-								{{ payload.stations.neustrelitz.passes_percentage }}%
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
 							</h3>
 						</div>
 					</div>
@@ -305,12 +353,20 @@
 				<div class="card card-secondary">
 					<div class="card-body skew-shadow">
 						<h1 id="edrs-box-mod">
-							{{ payload.edrs.successful | int }} / {{ payload.edrs.planned | int }}
+							<div class="spinner">
+								<div class="bounce1"></div>
+								<div class="bounce2"></div>
+								<div class="bounce3"></div>
+							</div>
 						</h1>
 						<h5 class="op-8">Successful passes using EDRS</h5>
 						<div class="pull-right">
 							<h3 class="fw-bold op-8" id="edrs-box-perc-mod">
-								{{ payload.edrs.percentage }}%
+								<div class="spinner">
+									<div class="bounce1"></div>
+									<div class="bounce2"></div>
+									<div class="bounce3"></div>
+								</div>
 							</h3>
 						</div>
 					</div>
@@ -321,20 +377,16 @@
 
 		<!-- Successful vs failed passes, per station (pie charts) -->
 		<div class="row">
+
 			<!-- Svalbard -->
 			<div class="col-md-6">
 				<div class="card">
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Svalbard Acquisition Service availability</div>
-							<button type="button"
-										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
-										data-toggle="tooltip"
-										data-placement="bottom"
-										title="Display the Svalbard acquisitions statistics"
-										onclick="acquisitionServiceMod.showAcquisitionStatistics('svalbard')">
-									<i class="la flaticon-search-1"></i>
-							</button>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="acquisitionServiceMod.showAcquisitionStatistics('svalbard')"
+									   title="Display the Svalbard acquisitions statistics"></i>
 						</div>
 					</div>
 					<div class="card-body">
@@ -351,14 +403,9 @@
 					<div class="card-header">
 						<div class="row">
 						<div class="card-title ml-3">Inuvik Acquisition Service availability</div>
-						<button type="button"
-										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
-										data-toggle="tooltip"
-										data-placement="bottom"
-										title="Display the Inuvik acquisitions statistics"
-										onclick="acquisitionServiceMod.showAcquisitionStatistics('inuvik')">
-									<i class="la flaticon-search-1"></i>
-						</button>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="acquisitionServiceMod.showAcquisitionStatistics('inuvik')"
+									   title="Display the Inuvik acquisitions statistics"></i>
 						</div>
 					</div>
 					<div class="card-body">
@@ -375,14 +422,9 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Matera Acquisition Service availability</div>
-							<button type="button"
-											class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
-											data-toggle="tooltip"
-											data-placement="bottom"
-											title="Display the Matera acquisitions statistics"
-											onclick="acquisitionServiceMod.showAcquisitionStatistics('matera')">
-										<i class="la flaticon-search-1"></i>
-							</button>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="acquisitionServiceMod.showAcquisitionStatistics('matera')"
+									   title="Display the Matera acquisitions statistics"></i>
 						</div>
 					</div>
 					<div class="card-body">
@@ -399,14 +441,9 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Maspalomas Acquisition Service availability</div>
-							<button type="button"
-										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
-										data-toggle="tooltip"
-										data-placement="bottom"
-										title="Display the Maspalomas acquisitions statistics"
-										onclick="acquisitionServiceMod.showAcquisitionStatistics('maspalomas')">
-									<i class="la flaticon-search-1"></i>
-							</button>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="acquisitionServiceMod.showAcquisitionStatistics('maspalomas')"
+									   title="Display the Maspalomas acquisitions statistics"></i>
 						</div>
 					</div>
 					<div class="card-body">
@@ -423,14 +460,9 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Neustrelitz Acquisition Service availability</div>
-							<button type="button"
-											class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
-											data-toggle="tooltip"
-											data-placement="bottom"
-											title="Display the Neustrelitz acquisitions statistics"
-											onclick="acquisitionServiceMod.showAcquisitionStatistics('neustrelitz')">
-										<i class="la flaticon-search-1"></i>
-							</button>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="acquisitionServiceMod.showAcquisitionStatistics('neustrelitz')"
+									   title="Display the Neustrelitz acquisitions statistics"></i>
 						</div>
 					</div>
 					<div class="card-body">
@@ -447,14 +479,9 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">EDRS Acquisition Service availability</div>
-							<button type="button"
-											class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
-											data-toggle="tooltip"
-											data-placement="bottom"
-											title="Display the EDRS acquisitions statistics"
-											onclick="acquisitionServiceMod.showAcquisitionStatistics('edrs')">
-										<i class="la flaticon-search-1"></i>
-							</button>
+							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
+									   data-toggle="tooltip" onclick="acquisitionServiceMod.showAcquisitionStatistics('edrs')"
+									   title="Display the EDRS acquisitions statistics"></i>
 						</div>
 					</div>
 					<div class="card-body">
@@ -474,21 +501,9 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
 	<script src="/static/assets/js/quarterly-reports/acquisition-service-mod.js"></script>
-	<script id="acquisition-payload" type="application/json">
-		{{ payload | tojson}}
-	</script>
-	<script>
-		document.addEventListener('DOMContentLoaded', function(){
-			const payloadEl = document.getElementById('acquisition-payload');
-			if(payloadEl){
-				window.ACQUISITION_PAYLOAD = JSON.parse(payloadEl.textContent);
-			}
-			console.log('[ACQUISITION SERVICE] SSR payload period:', window.ACQUISITION_PAYLOAD?.meta?.period_id);
+	<script defer type="text/javascript">acquisitionServiceMod.init();</script>
 
-			window.acquisitionServiceMod = new AcquisitionServiceMod();
-			window.acquisitionServiceMod.init();
-		})
-	</script>
 {% endblock javascripts %}

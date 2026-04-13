@@ -383,15 +383,11 @@ ul#dataList {
 }
 
 .container-border {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: inline-flex;
   border: 1.5px solid #FFC107;
-  padding: 4px 10px;
+  padding: 2px 18px;
   border-radius: 6px;
-  width: 100%;
   box-sizing: border-box;
-  cursor: pointer;
 }
 
 .container-border:hover {
@@ -668,7 +664,7 @@ ul#dataList {
 
 .btn.btn-outline-secondary {
   background-color: #FFC107;
-  color: #212529 !important;
+  color: #212529;
   border-radius: 5px;
   padding: 10px 10px;
   font-size: 0.9rem;
@@ -915,15 +911,41 @@ th:nth-of-type(6) .tooltip-text::after {
 }
 
 /*SPINNER*/
+/*spinner container */
+
 #spinner {
   display: none;
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background: rgba(255, 255, 255, 0.7);
   z-index: 10;
-  display: flex;
   justify-content: center;
   align-items: center;
+}
+
+.spinner-overlay {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: -1;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-overlay.active {
+  display: flex;
+}
+
+#spinner.active {
+  display: flex;
+  /* show when active */
 }
 
 /*spinner bar*/
@@ -933,7 +955,7 @@ th:nth-of-type(6) .tooltip-text::after {
   background: #eee;
   overflow: hidden;
   position: relative;
-  /*margin: auto;*/
+  margin: auto;
   border-radius: 4px;
 }
 
