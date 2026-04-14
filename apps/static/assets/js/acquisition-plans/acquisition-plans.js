@@ -346,6 +346,17 @@ class AcquisitionPlansViewer {
         }
     }
 
+    waitForCesiumToolbar(viewer, callback, attempt = 0) {
+        const toolbar = viewer.container.querySelector('.cesium-viewer-toolbar');
+        if (toolbar) {
+            callback(); // safe to initialize plugin
+        } else if (attempt < 20) {
+            setTimeout(() => this.waitForCesiumToolbar(viewer, callback, attempt + 1), 100);
+        } else {
+            console.error('Cesium viewer toolbar not found after 2s.');
+        }
+    }
+
     // SatelliteChange: the event handler is attached to MissionAcquisitionDays object
     // event selection_change and received the couple satellite/day
     on_satellite_change(selectionEv) {

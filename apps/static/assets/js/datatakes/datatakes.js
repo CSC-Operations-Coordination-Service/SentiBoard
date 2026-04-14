@@ -681,6 +681,11 @@ class Datatakes {
         } finally {
             setTimeout(() => this.hideSpinner(), 0);
         }
+
+        this.currentDataArray = dataArray;
+        this.currentPage = page;
+
+        //console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
 
     renderInfoTableHeader(showTimeliness) {

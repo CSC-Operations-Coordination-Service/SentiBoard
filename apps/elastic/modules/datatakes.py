@@ -110,6 +110,14 @@ def fetch_datatake_details(datatake_id):
         return "Unrecongnized datatake ID: " + datatake_id
 
 
+def _build_cds_completeness_indices(mission, satellites, splitted=False):
+    """
+    Build CDS completeness index names dynamically
+    """
+    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
+    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
+
+
 def _get_cds_datatakes(start_date: datetime, end_date: datetime):
     end_date_str = end_date.strftime("%d-%m-%Y")
     start_date_str = start_date.strftime("%d-%m-%Y")
@@ -136,7 +144,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
 
     results = []
     try:
-
         # Define start and end dates range
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
@@ -149,6 +156,8 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
 
         logger.info("[CDS][S1S2] Querying indices: %s", indices)
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
 
         # Fetch results from Elastic database
         for index in indices:
@@ -199,6 +208,7 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         logger.error(ex)
 
     # Calculate completeness for every datatake
+    clean_results = []
     for dt in results:
         # logger.info(
         #    "[CDS][S1S2][LIST][BEFORE] datatake_id=%s keys=%s",
@@ -284,7 +294,7 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         # )
 
     # Return the response
-    return results
+    return clean_results
 
 
 def _get_cds_s3_datatakes(start_date, end_date):
@@ -295,7 +305,6 @@ def _get_cds_s3_datatakes(start_date, end_date):
 
     results = []
     try:
-
         # Define start and end dates range
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
@@ -426,7 +435,6 @@ def _get_cds_s5_datatakes(start_date, end_date):
 
     results = []
     try:
-
         # Define start and end dates range
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
@@ -1078,12 +1086,11 @@ def _get_cds_s1s2_datatake_details(datatake_id):
 
 def _get_cds_s3_datatake_details(datatake_id):
     """
-    Fetch the datatakes completeness information from the published products.
+    Fetch S3 datatake completeness info from published products.
+    Returns an object suitable for frontend mapS3Data().
     """
-
     results = []
     try:
-
         # Auxiliary variable declaration
         indices = _build_cds_completeness_indices(
             "s3", CDS_MISSIONS["s3"], splitted=True
@@ -1091,7 +1098,6 @@ def _get_cds_s3_datatake_details(datatake_id):
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S3] Querying indexes details:%s", indices)
 
-        # Fetch results (products) from Elastic database
         for index in indices:
             try:
                 results += elastic.query_scan(
@@ -1151,24 +1157,24 @@ def _get_cds_s3_datatake_details(datatake_id):
     datatake["product_level"] = (
         "L2"
         if any(k.startswith("L2_") for k in datatake)
-        else "L1" if any(k.startswith("L1_") for k in datatake) else "L0"
+        else "L1"
+        if any(k.startswith("L1_") for k in datatake)
+        else "L0"
     )
     datatake["final_completeness_percentage"] = max(
         [v for k, v in datatake.items() if k.endswith("_local_percentage")], default=0.0
     )
 
-    # Return the datatakes list
     return datatake
 
 
 def _get_cds_s5_datatake_details(datatake_id):
     """
-    Fetch the datatake information given the datatake ID.
+    Fetch S5 datatake completeness info from published products.
+    Returns a list of dictionaries suitable for frontend mapS5Data().
     """
-
     results = []
     try:
-
         # Auxiliary variable declaration
         # indices = ["cds-s5-completeness"]
         indices = _build_cds_completeness_indices(
@@ -1177,7 +1183,6 @@ def _get_cds_s5_datatake_details(datatake_id):
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S5] Querying indexes:%s", indices)
 
-        # Fetch results from Elastic database
         for index in indices:
             try:
                 results += elastic.query_scan(
@@ -1234,7 +1239,9 @@ def _get_cds_s5_datatake_details(datatake_id):
     datatake["product_level"] = (
         "L2"
         if any(k.startswith("L2_") for k in datatake)
-        else "L1" if any(k.startswith("L1_") for k in datatake) else "L0"
+        else "L1"
+        if any(k.startswith("L1_") for k in datatake)
+        else "L0"
     )
     datatake["final_completeness_percentage"] = max(
         [v for k, v in datatake.items() if k.endswith("_local_percentage")], default=0.0
