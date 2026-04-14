@@ -23,7 +23,7 @@
 
 {% block content %}
 
-	<!-- Define page content -->
+		<!-- Define page content -->
 	<div class="content" style="min-height: calc(100% - 130px);">
 		<div class="page-inner">
 			<h1 class="sr-only">Copernicus Sentinel Data Availability</h1>
@@ -45,32 +45,7 @@
 				</ul>
 			</div>
 
-			<!-- Datatake details panel 
-			<div class="modal fade" id="showDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
-				<div class="modal-dialog" role="document">
-					<div class="modal-content" style="background: #006B7C">
-						<div class="modal-header no-bd">
-							<h5 class="modal-title">
-								<span class="fw-mediumbold">View</span>
-								<span class="fw-light">Datatake details</span>
-								
-							</h5>
-							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-								<span aria-hidden="true" style="color: white">&times;</span>
-							</button>
-						</div>
-						<div class="modal-body">
-							<form>
-								<div id="datatake-details">
-								</div>
-							</form>
-						</div>
-						<div class="modal-footer no-bd">
-							<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-						</div>
-					</div>
-				</div>
-			</div>-->
+			
 			<!-- Completeness Table Modal -->
 			<div class="modal fade" id="completenessTableModal" tabindex="-1" role="dialog">
 				<div class="modal-dialog modal-md" role="document">
@@ -78,10 +53,11 @@
 						<div class="modal-header no-bd">
 							<h5 class="modal-title">
 							<span class="fw-mediumbold">Datatake</span>
-							<span class="fw-light">Details</span>
-							<span id="modalDatatakeId"
-								class="fw-light ml-2"
-								style="font-size: 0.9em; color: yellow; font-weight: bold;">
+							<span class="fw-mediumbold">Details</span>
+							 <span id="modalDatatakeId"
+								class="fw-mediumbold"
+								>
+								<!-- filled dynamically -->
 							</span>
 							</h5>
 							<button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -163,49 +139,87 @@
 									<!-- Left Panel -->
 								<div class="col-12 col-md-3 left-panel d-flex flex-column mb-3 mb-md-0">
 									<div class="filter-panel p-3 flex-grow-1">
-											<!-- Filter by Mission -->
-											<div class="form-group d-flex flex-column gap-2">
-												<select id="mission-select" class="form-control" onchange="datatakes.filterSidebarItems()">
-															<option value="">All Missions</option>
-															<option value="S1">Sentinel 1</option>
-															<option value="S2">Sentinel 2</option>
-															<option value="S3">Sentinel 3</option>
-															<option value="S5">Sentinel 5P</option>
-													</select>
-													<select id="satellite-select" class="form-control" onchange="datatakes.filterSidebarItems()">
-														<option value="">All Satellites</option>
-														<option value="S1a">S1A</option>
-														<option value="S1c">S1C</option>
-														<option value="S2a">S2A</option>
-														<option value="S2b">S2B</option>
-														<option value="S2c">S2C</option>
-														<option value="S3a">S3A</option>
-														<option value="S3b">S3B</option>
-													</select>
-			
-													<!-- Inline Date Range -->
-													<div class="d-flex flex-column gap-2">
-														<div class="d-flex align-items-center gap-2">
-															<label for="from-date"  class="inline-label" style="min-width: 40px;">From</label>
-															<input type="datetime-local" id="from-date" class="form-control" onchange="datatakes.filterSidebarItems()">
-														</div>
-													
-														<div class="d-flex align-items-center gap-2">
-															<label for="to-date"  class="inline-label" style="min-width: 40px;">To</label>
-															<input type="datetime-local" id="to-date" class="form-control" onchange="datatakes.filterSidebarItems()">
-														</div>
+										
+										<form method="GET" action="{{ url_for('home_blueprint.data_availability') }}" id="filterForm" class="d-flex flex-column gap-2">
+											<input type="hidden" name="period" value="{{ selected_period }}">
+											<input type="hidden" name="limit" value="{{ current_limit }}">
+
+											<select id="mission-select" name="mission" class="form-control" onchange="this.form.submit()">
+												<option value="">All Missions</option>
+												<option value="S1" {{ 'selected' if mission=='S1' }}>Sentinel 1</option>
+												<option value="S2" {{ 'selected' if mission=='S2' }}>Sentinel 2</option>
+												<option value="S3" {{ 'selected' if mission=='S3' }}>Sentinel 3</option>
+												<option value="S5" {{ 'selected' if mission=='S5' }}>Sentinel 5P</option>
+											</select>
+
+											<select id="satellite-select" name="satellite" class="form-control" onchange="this.form.submit()">
+												<option value="">All Satellites</option>
+												{% if not mission or mission == 'S1' %}
+													<option value="S1A" {{ 'selected' if request.args.get('satellite')|upper == 'S1A' }}>S1A</option>
+													<option value="S1C" {{ 'selected' if request.args.get('satellite')|upper =='S1C' }}>S1C</option>
+												{% endif %}
+												{% if not mission or mission == 'S2' %}
+													<option value="S2A" {{ 'selected' if request.args.get('satellite')|upper =='S2A' }}>S2A</option>
+													<option value="S2B" {{ 'selected' if request.args.get('satellite')|upper =='S2B' }}>S2B</option>
+													<option value="S2C" {{ 'selected' if request.args.get('satellite')|upper =='S2C' }}>S2C</option>
+												{% endif %}
+												{% if not mission or mission == 'S3' %}
+													<option value="S3A" {{ 'selected' if request.args.get('satellite')|upper =='S3A' }}>S3A</option>
+													<option value="S3B" {{ 'selected' if request.args.get('satellite')|upper =='S3B' }}>S3B</option>
+												{% endif %}
+											</select>
+
+											<div class="d-flex flex-column gap-2">
+												<div class="d-flex align-items-center gap-2">
+													<label class="inline-label" style="min-width: 40px;">From</label>
+													<input type="datetime-local" id="from-date" name="fromdate" class="form-control" 
+														value="{{ request.args.get('fromdate','') }}" onchange="this.form.submit()">
+												</div>
+												<div class="d-flex align-items-center gap-2">
+													<label class="inline-label" style="min-width: 40px;">To</label>
+													<input type="datetime-local" id="to-date" name="todate" class="form-control" 
+														value="{{ request.args.get('todate','') }}" onchange="this.form.submit()">
+												</div>
+											</div>
+
+											<input type="text" id="searchInput" name="search" class="form-control mb-2" placeholder="Search by id..." 
+												value="{{ request.args.get('search','') }}">
+											
+											<a id="resetFiltersBtn" href="{{ url_for('home_blueprint.data_availability', period=selected_period) }}" 
+											class="btn btn-sm btn-outline-secondary">Reset Filters</a>
+										</form>
+
+										<ul class="list-unstyled mt-3" id="dataList">
+											{% for dt in datatakes %}
+												<li>
+													<div class="container-border" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem;" data-id="{{ dt.id }}">
+														<a href="#" class="filter-link" style="text-decoration:none; color:inherit; flex-grow:1;">
+															{{ dt.id }}
+														</a>
+														<div class="status-circle-dt-{{ dt.acquisition_status|lower }}"></div>
 													</div>
-													<button class="btn btn-outline-secondary" id="resetFilterButton">Reset Filter</button>
+												</li>
+											{% else %}
+												<li><em>No items found for these filters.</em></li>
+											{% endfor %}
+										</ul>
+
+										{% if has_more %}
+											<div class="text-center mt-3">
+												<a id="loadMoreBtn" 
+												href="{{ url_for('home_blueprint.data_availability', 
+															period=selected_period, 
+															limit=current_limit + BATCH_SIZE,
+															mission=mission,
+															satellite=request.args.get('satellite',''),
+															search=request.args.get('search',''),
+															fromdate=request.args.get('fromdate',''),
+															todate=request.args.get('todate','')) }}" 
+												class="btn btn-outline-primary w-100">
+												Load More
+												</a>
 											</div>
-											<!-- Filter by Ground Station -->
-											<div class="form-group">
-												<input type="text" id="searchInput" class="form-control mb-3"
-												placeholder="Search by id..." oninput="datatakes.filterSidebarItems()">
-													<ul class="list-unstyled" id="dataList">
-															<!-- Items will be injected here by JavaScript -->
-													</ul>
-													<button class="loadMore" id="loadMoreBtn">Load More</button>
-											</div>
+										{% endif %}
 									</div>
 								</div>
 								<!-- Main Content -->
@@ -213,7 +227,7 @@
 									<div class="datatakes-container flex-grow-1">
 										<!-- Loading Spinner -->
 										<div class="chart-container" style="position: relative;">
-											<div id="spinner" class="spinner-overlay">
+											<div id="spinner">
 												<div class="spinner-bar"> </div>
 											</div>
 											<!-- Charts Section -->
@@ -234,6 +248,12 @@
 										</div>
 										
 										<!-- Table and Legend Section -->
+										 {% if datatake_details %}
+											<div class="alert alert-info mt-3">
+												<h5>Datatake {{ datatake_details['_source'].datatake_id }}</h5>
+												<pre>{{ datatake_details | tojson(indent=2) }}</pre>
+											</div>
+										{% endif %}
 										<div class="table-legend-wrapper mt-3">
 											<!-- Datatake Details Section -->
 											<div id="tableSection" class="mt-2" style="display: none;">
@@ -372,8 +392,39 @@
 																							<th>Actions</th>
 																					</tr>
 																			</thead>
-																			<tbody id="dataTableBody"></tbody>
-																			<!-- Populated dynamically -->
+																			<tbody id="dataTableBody">
+																				{% if datatakes %}
+																					{% for dt in datatakes %}
+																					<tr>
+																					<td>{{ dt.id }}</td>
+																					<td>{{ dt.platform or 'N/A' }}</td>
+																					<td>{{ dt.observation_time_start or dt.start_time or 'N/A' }}</td>
+																					<td>{{ dt.observation_time_stop or dt.stop_time or 'N/A' }}</td>
+																					<td>
+																						<span class="status-circle status-{{ dt.acquisition_status|lower }}"></span>
+																						{{ dt.acquisition_status or 'N/A' }}
+																					</td>
+																					<td>
+																						<span class="status-circle status-{{ dt.publication_status|lower }}"></span>
+																						{{ dt.publication_status or 'N/A' }}
+																						{% if dt.publication_percent is defined %}
+																						({{ dt.publication_percent }}%)
+																						{% endif %}
+																					</td>
+																					<td>
+																						<button class="btn btn-outline-info btn-sm"
+																								onclick="openDataTake('{{ dt.id }}')">
+																						Details
+																						</button>
+																					</td>
+																					</tr>
+																					{% endfor %}
+																				{% else %}
+																					<tr>
+																					<td colspan="7" class="text-center text-muted">No datatakes available for the selected period.</td>
+																					</tr>
+																				{% endif %}
+																			</tbody>
 																	</table>
 															</div>
 													</div>
@@ -430,10 +481,236 @@
 
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
+	<script id="server-data" type="application/json">
+		{{ {
+				"anomalies": anomalies,
+				"datatakes": datatakes,
+				"datatakes_for_ssr": datatakes,
+				"quarter_authorized": quarter_authorized,
+				"selected_period": selected_period,
+				"generated_at": generated_at,
+				"search_query":search_query
+			} | tojson }}
+	</script>	
 	<script>
-		datatakes.init();
-	</script>
+		document.addEventListener("DOMContentLoaded", () => {
+			const spinner = document.getElementById("spinner");
+			const filterForm = document.getElementById("filterForm");
+			const loadMoreBtn = document.getElementById("loadMoreBtn");
+			const resetBtn = document.getElementById("resetFiltersBtn");
+			const missionSelect = document.getElementById("mission-select");
+			const satelliteSelect = document.getElementById("satellite-select");
+			const searchInput = document.getElementById("searchInput");
+			const periodValue = document.querySelector('input[name="period"]')?.value || 'day';
 
+			const showSpinner = () => {
+				if (spinner) spinner.style.setProperty('display', 'flex', 'important');
+			};
+
+			const formatDateTimeLocal = (d) => {
+				const pad = (n) => n.toString().padStart(2, '0');
+				return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+			};
+			const setDateRangeLimits = (period) => {
+				const fromInput = document.getElementById("from-date");
+				const toInput = document.getElementById("to-date");
+				if (!fromInput || !toInput) return;
+
+				const urlParams = new URLSearchParams(window.location.search);
+				if (urlParams.has('search') && urlParams.get('search') !== "") return;
+
+				const now = new Date();
+				const maxDate = new Date(now);
+				let fromDate = new Date(now);
+
+				switch (period) {
+					case 'day': fromDate.setDate(fromDate.getDate() - 1); break;
+					case 'week': fromDate.setDate(fromDate.getDate() - 7); break;
+					case 'month': fromDate.setMonth(fromDate.getMonth() - 1); break;
+					case 'prev-quarter': // Match your Python key
+					case 'last-quarter':
+						fromDate.setMonth(fromDate.getMonth() - 3); 
+						break;
+					default: fromDate.setDate(fromDate.getDate() - 7);
+				}
+
+				const min = formatDateTimeLocal(fromDate);
+				const max = formatDateTimeLocal(maxDate);
+
+				fromInput.min = min;
+				fromInput.max = max;
+				toInput.min = min;
+				toInput.max = max;
+
+				console.log(`[Date Range] Limits set for ${period}: ${min} to ${max}`);
+			};
+
+			setDateRangeLimits(periodValue);
+
+			if (missionSelect && satelliteSelect) {
+				const selectedMission = missionSelect.value.toUpperCase();
+				satelliteSelect.disabled = (selectedMission === "S5");
+
+				missionSelect.addEventListener("change", () => {
+					const val = missionSelect.value.toUpperCase();
+					
+					if (val === "" && searchInput) {
+						searchInput.value = "";
+					}
+
+					satelliteSelect.disabled = (val === "S5");
+
+					showSpinner();
+					filterForm.submit(); 
+				});
+			}
+	
+			let searchTimeout;
+
+			if (searchInput && filterForm) {
+				searchInput.addEventListener("input", () => {
+					clearTimeout(searchTimeout);
+					
+					searchTimeout = setTimeout(() => {
+						if (spinner) spinner.style.setProperty('display', 'flex', 'important');
+							filterForm.submit();
+						}, 500);
+					});
+					
+					searchInput.addEventListener("keydown", (e) => {
+						if (e.key === "Enter") {
+							e.preventDefault();
+							clearTimeout(searchTimeout);
+							if (spinner) spinner.style.setProperty('display', 'flex', 'important');
+							filterForm.submit();
+						}
+					});
+			}
+
+			// Show spinner when any filter is changed
+			if (filterForm) {
+				const inputs = filterForm.querySelectorAll('select, input[type="datetime-local"]');
+				inputs.forEach(input => {
+					input.addEventListener('change', () => {
+						showSpinner();
+					});
+				});
+				filterForm.addEventListener("submit", showSpinner);
+			}
+
+
+			if (resetBtn) {
+				resetBtn.addEventListener("click", function() {
+					showSpinner();
+					this.innerHTML = "Reseting...";
+					this.classList.add("disabled");
+				});
+			}
+
+			// Show spinner when "Load More" is clicked
+			if (loadMoreBtn) {
+				loadMoreBtn.addEventListener("click", function() {
+					showSpinner();
+					this.innerHTML = "Loading...";
+					this.classList.add("disabled");
+				});
+			}
+
+			const el = document.getElementById("server-data");
+			if (el) {
+				try {
+					const serverData = JSON.parse(el.textContent);
+					serverData.datatakes = serverData.datatakes || [];
+					serverData.anomalies = serverData.anomalies || [];
+					
+					window.datatakes = new Datatakes(serverData);
+					window.datatakes.init();
+					window.datatakes.initializeDefaultView?.();
+				} catch (err) {
+					console.error("[DATA-AVAILABILITY] Initialization Error:", err);
+				}
+			}
+
+			const updateSatelliteUI = () => {
+				const selectedMission = missionSelect.value.toUpperCase(); // e.g., "S1", "S2", "S3", "S5"
+    
+				if (!selectedMission) {
+					satelliteSelect.disabled = false;
+					Array.from(satelliteSelect.options).forEach(opt => opt.style.display = "block");
+					return;
+				}
+
+				if (satelliteSelect.value && !satelliteSelect.value.startsWith(selectedMission)) {
+					satelliteSelect.value = ""; 
+				}
+
+				if (selectedMission === "S5") {
+					satelliteSelect.disabled = true;
+					satelliteSelect.value = "";
+				} else {
+					satelliteSelect.disabled = false;
+					
+					Array.from(satelliteSelect.options).forEach(opt => {
+						if (opt.value === "") return; 
+						
+						const matches = opt.value.toUpperCase().startsWith(selectedMission);
+						opt.style.display = matches ? "block" : "none";
+					});
+				}
+			};
+
+			updateSatelliteUI();
+			
+			const selects = filterForm.querySelectorAll('select, input[type="datetime-local"]');
+			selects.forEach(el => {
+				el.addEventListener("change", () => {
+					showGlobalLoading();
+				});
+			});
+
+			let serverData = {};
+			try {
+				serverData = JSON.parse(el.textContent);
+			} catch (err) {
+				console.error("[DATA-AVAILABILITY] Failed to parse server data:", err);
+				return;
+			}
+
+			// Fallbacks
+			serverData.datatakes = serverData.datatakes || [];
+			serverData.anomalies = serverData.anomalies || [];
+
+			// Initialize JS controller
+			try {
+				//console.info("[DATA-AVAILABILITY] Initializing Datatakes controller...");
+				window.datatakes = new Datatakes(serverData);
+				window.datatakes.init();
+
+				window.datatakes.initializeDefaultView?.();
+
+			} catch (err) {
+				console.error("[DATA-AVAILABILITY] Error initializing Datatakes:", err);
+			}
+			
+		});
+		
+	</script>
+	<script>
+		function openDataTake(id) {
+			const spinner = document.getElementById("spinner");
+			if (spinner) spinner.style.setProperty('display', 'flex', 'important');
+
+			const input = document.getElementById("datatake_id");
+			const form = document.getElementById("detailsForm");
+			
+			if (input && form) {
+				input.value = id;
+				form.submit();
+			} else {
+				console.error("Details form or input not found!");
+			}
+		}
+	</script>
 	<script>
 		$(function () {
 				$('[data-toggle="tooltip"]').tooltip();

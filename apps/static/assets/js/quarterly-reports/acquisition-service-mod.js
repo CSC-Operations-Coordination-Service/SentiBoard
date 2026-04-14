@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -15,65 +15,19 @@ class AcquisitionServiceMod {
 
     constructor() {
 
-        // Set of impacted datatakes, grouped by satellite
-        this.impactedDatatakesBySatellite = {
-            's1a': [],
-            's1c': [],
-            's2a': [],
-            's2b': [],
-            's2c': [],
-            's3a': [],
-            's3b': [],
-            's3d': [],
-            's5p': []
-        };
+        const payload = window.ACQUISITION_PAYLOAD || {};
 
-        // Set of categorized events
-        this.categorizedAnomalies = {};
+        this.downlinkPasses = payload.downlink_passes || {};
+        this.downlinkAnomalies = payload.downlink_anomalies || {};
 
-        // Set of downlink passes, grouped by Station and Satellite
-        this.downlinkPasses = {
-            'svalbard': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': []},
-            'inuvik': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'maspalomas': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'matera': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'neustrelitz': {'s1a': [], 's1c': []},
-            'dlr': {'s5p': []}
-        };
+        this.globalStats = payload.global || {};
+        this.stationsStats = payload.stations || {};
+        this.edrsStats = payload.edrs || {};
 
-        // Set of anomalies, grouped by Station, and divided by "Ground Segment" and "Space Segment"
-        this.downlinkAnomalies = {
-            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                         's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []},
-                         's3a': {'acq': [], 'sat': [], 'other': []}, 's3b': {'acq': [], 'sat': [], 'other': []}},
-            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                           's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'dlr': {'s5p': {'acq': [], 'sat': [], 'other': []}}
-        };
+        this.EDRSPasses = (payload.edrs && payload.edrs.passes) || {};
+        this.EDRSAnomalies = (payload.edrs && payload.edrs.anomalies) || {};
 
-        // Set of EDRS passes, grouped by Satellite
-        this.EDRSPasses = {
-            's1a': [],
-            's1c': [],
-            's2a': [],
-            's2b': [],
-            's2c': []
-        };
-
-        // Set of EDRS operations, grouped by Satellite
-        this.EDRSAnomalies = {
-            's1a': {'acq': [], 'sat': [], 'other': []},
-            's1c': {'acq': [], 'sat': [], 'other': []},
-            's2a': {'acq': [], 'sat': [], 'other': []},
-            's2b': {'acq': [], 'sat': [], 'other': []},
-            's2c': {'acq': [], 'sat': [], 'other': []},
-        };
+        this.charts = {};
 
         // Set of colors used in the pie charts
         this.colorsPool = [
@@ -86,491 +40,101 @@ class AcquisitionServiceMod {
     }
 
     init() {
-
-        // Retrieve the user profile. In case of "ecuser" role, allow
-        // the visualization of events up to the beginning of the previous quarter
-        ajaxCall('/api/auth/quarter-authorized', 'GET', {}, this.quarterAuthorizedProcess, this.errorLoadAuthorized);
-
         //  Register event callback for Time period select
-        var time_period_sel = document.getElementById('time-period-select');
-        time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this))
+        const time_period_sel = document.getElementById('time-period-select');
 
-        // Retrieve the Datatakes and related anomalies in period
-        this.loadDatatakesInPeriod('prev-quarter');
+        const urlParams = new URLSearchParams(window.location.search);
+        const period = urlParams.get('period');
+        if (period && time_period_sel) {
+            time_period_sel.value = period;
 
-        return;
-    }
-
-    quarterAuthorizedProcess(response) {
-        if (response['authorized'] === true) {
-            var time_period_sel = document.getElementById('time-period-select');
-            if (time_period_sel.options.length == 4) {
-                time_period_sel.append(new Option(getPreviousQuarterRange(), 'prev-quarter'));
-            }
-
-            // Programmatically select the previous quarter as the default time range
-            console.info('Programmatically set the time period to previous quarter')
-            time_period_sel.value = 'prev-quarter';
         }
-    }
 
-    errorLoadAuthorized(response) {
-        console.error(response)
-        return;
+        if (time_period_sel) {
+            time_period_sel.addEventListener('change', this.on_timeperiod_change.bind(this));
+        }
+
+        this.downlinkPasses = window.ACQUISITION_PAYLOAD.downlink_passes || {};
+        this.downlinkAnomalies = window.ACQUISITION_PAYLOAD.downlink_anomalies || {};
+
+        this.prepareGlobalStats();
+        this.refreshStationBoxesFromPayload();
+        this.refreshPieChartsAndBoxes();
+        this.refreshEDRSPieChartsAndBoxes();
     }
 
     on_timeperiod_change() {
-        var time_period_sel = document.getElementById('time-period-select');
-        var selected_time_period = time_period_sel.value;
-        console.log("Time period changed to "+ selected_time_period);
-        this.loadDatatakesInPeriod(selected_time_period);
+        const select = document.getElementById('time-period-select');
+        let period = select.value;
+
+        if (period === 'prev-quarter') {
+            period = 'prev-quarter-specific';
+        }
+
+        console.log('[ACQUISITION SERVICE] period change->', period);
+        window.location.href = `/acquisition-service?period=${period}`;
     }
 
-    loadDatatakesInPeriod(selected_time_period) {
+    prepareGlobalStats() {
+        const data = this.globalStats;
+        if (!data) return;
 
-        // Clear previous data, if any - impacted datatakes
-        this.impactedDatatakesBySatellite = {
-            's1a': [],
-            's1c': [],
-            's2a': [],
-            's2b': [],
-            's2c': [],
-            's3a': [],
-            's3b': [],
-            's5p': []
+        this._globalTotals = {
+            planned: data.planned || 0,
+            successful: data.successful || 0,
+            fail_sat: data.fail_sat || 0,
+            fail_acq: data.fail_acq || 0,
+            fail_other: data.fail_other || 0
         };
-
-        // Clear previous data, if any - categorized events
-        this.categorizedAnomalies = {};
-
-        // Acknowledge the invocation of rest APIs
-        console.info("Invoking Datatakes retrieval...");
-
-        // Execute asynchronous AJAX call
-        if (selected_time_period === 'day') {
-            ajaxCall('/api/worker/cds-datatakes/last-24h', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'week') {
-            ajaxCall('/api/worker/cds-datatakes/last-7d', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'month') {
-            ajaxCall('/api/worker/cds-datatakes/last-30d', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else if (selected_time_period === 'prev-quarter') {
-            ajaxCall('/api/worker/cds-datatakes/previous-quarter', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        } else {
-            ajaxCall('/api/worker/cds-datatakes/last-quarter', 'GET', {},
-                this.successLoadDatatakes.bind(this), this.errorLoadDatatake);
-        }
-
-        return;
     }
 
-    successLoadDatatakes(response) {
-
-        // Acknowledge the successful retrieval of S1/S2 data takes
-        var rows = format_response(response);
-        console.info('Datatakes successfully retrieved');
-        console.info("Number of records: " + rows.length);
-
-        // Parse response
-        for (var i = 0 ; i < rows.length ; ++i){
-
-            // Auxiliary variables
-            var element = rows[i]['_source'];
-
-            // Satellite unit
-            var sat_unit = element['satellite_unit'].toLowerCase();
-
-            // Sensing start and stop time
-            element['observation_time_start'] = moment(element['observation_time_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
-            element['observation_time_stop'] = moment(element['observation_time_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
-
-            // Check the presence of any related ticket: in case of anomalies,
-            // store the datatake in a dedicated structure
-            if (element['last_attached_ticket']) {
-                this.impactedDatatakesBySatellite[sat_unit].push(element);
-            }
-        }
-
-        // Retrieve the downlink / EDRS operations and related anomalies only after datatakes retrieval
-        var time_period_sel = document.getElementById('time-period-select');
-        this.loadAcquisitionsInPeriod(time_period_sel.value);
-        this.loadEDRSAcquisitionsInPeriod(time_period_sel.value);
-
-        return;
-    }
-
-    errorLoadDatatake(response) {
-        console.error(response)
-        return;
-    }
-
-    loadAcquisitionsInPeriod(selected_time_period) {
-
-        // Clear previous data, if any
-        this.downlinkPasses = {
-            'svalbard': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': [], 's3a': [], 's3b': []},
-            'inuvik': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'maspalomas': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'matera': {'s1a': [], 's1c': [], 's2a': [], 's2b': [], 's2c': []},
-            'neustrelitz': {'s1a': [], 's1c': []},
-            'dlr': {'s5p': []}
-        };
-
-        this.downlinkAnomalies = {
-            'svalbard': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                         's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []},
-                         's3a': {'acq': [], 'sat': [], 'other': []}, 's3b': {'acq': [], 'sat': [], 'other': []}},
-            'inuvik': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'maspalomas': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                           's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'matera': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []},
-                       's2a': {'acq': [], 'sat': [], 'other': []}, 's2b': {'acq': [], 'sat': [], 'other': []}, 's2c': {'acq': [], 'sat': [], 'other': []}},
-            'neustrelitz': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'edrs': {'s1a': {'acq': [], 'sat': [], 'other': []}, 's1c': {'acq': [], 'sat': [], 'other': []}},
-            'dlr': {'s5p': {'acq': [], 'sat': [], 'other': []}}
-        };
-
-        // Clear pie charts and boxes
-        this.clearGlobalBoxes();
-        this.clearPieChartsAndBoxes();
-
-        // Acknowledge the invocation of rest APIs
-        console.info("Invoking Acquisitions retrieval...");
-
-        // Execute asynchronous AJAX call
-        if (selected_time_period === 'day') {
-            asyncAjaxCall('/api/reporting/cds-acquisitions/last-24h', 'GET', {},
-                this.successLoadAcquisitions.bind(this), this.errorLoadAcquisitions);
-        } else if (selected_time_period === 'week') {
-            asyncAjaxCall('/api/reporting/cds-acquisitions/last-7d', 'GET', {},
-                this.successLoadAcquisitions.bind(this), this.errorLoadAcquisitions);
-        } else if (selected_time_period === 'month') {
-            asyncAjaxCall('/api/reporting/cds-acquisitions/last-30d', 'GET', {},
-                this.successLoadAcquisitions.bind(this), this.errorLoadAcquisitions);
-        } else if (selected_time_period === 'prev-quarter') {
-            asyncAjaxCall('/api/reporting/cds-acquisitions/previous-quarter', 'GET', {},
-                this.successLoadAcquisitions.bind(this), this.errorLoadAcquisitions);
-        } else {
-            asyncAjaxCall('/api/reporting/cds-acquisitions/last-quarter', 'GET', {},
-                this.successLoadAcquisitions.bind(this), this.errorLoadAcquisitions);
-        }
-
-        return;
-    }
-
-    clearGlobalBoxes() {
-        ['planned-acquisitions', 'successful-acquisitions', 'satellite-failures', 'acquisition-failures',
-                'other-failures'].forEach(function(item) {
-            var boxId = item.toLowerCase() + '-global-box';
-            $('#' + boxId + '-mod').html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
-        })
-    }
-
-    clearPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
-            var pieId = station.toLowerCase() + '-station-pie-chart-mod';
-            var boxId = station.toLowerCase() + '-station-box-mod';
-            acquisitionServiceMod.clearPieChart(pieId);
-            acquisitionServiceMod.clearBox(boxId);
-        })
-    }
-
-    successLoadAcquisitions(response) {
-
-        // Acknowledge the successful retrieval of downlink operations
-        var rows = format_response(response);
-        console.info('Acquisitions successfully retrieved');
-        console.info("Number of acquisitions: " + rows.length);
-
-        // Parse response
-        for (var i = 0 ; i < rows.length ; ++i) {
-
-            // Auxiliary variables
-            var element = rows[i]['_source'];
-
-            // Skip S5P passes, not managed in the framework of Coord Desk
-            if (element['satellite_id'] === 'S5P') continue ;
-
-            // Parse the downlink operation
-            var downlink = {};
-            downlink['satellite_id'] = element['satellite_id'];
-            downlink['station'] = this.getStationName(element);
-            downlink['acq_start'] = moment(element['first_frame_start'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
-            downlink['acq_stop'] = moment(element['last_frame_stop'], 'yyyy-MM-DDTHH:mm:ss.SSSZ').toDate();
-            downlink['antenna_id'] = element['antenna_id'];
-            downlink['front_end_status'] = element['front_end_status'];
-            downlink['antenna_status'] = element['antenna_status'];
-            downlink['delivery_push_status'] = element['delivery_push_status'];
-            downlink['fer_data'] = element['fer_data'];
-            downlink['acquisition_service_status'] = (downlink['antenna_status'] === 'OK'
-                && downlink['delivery_push_status'] === 'OK' && downlink['front_end_status']) ? 'OK' : 'NOK';
-
-            // Retrieve the CAMS origin of the anomaly, plus description and notes
-            try {
-                downlink['origin'] = element['cams_origin'];
-                downlink['description'] = element['cams_description'];
-                downlink['notes'] = element['notes'];
-                downlink['last_attached_ticket'] = element['last_attached_ticket']
-            } catch (exception) {
-                downlink['origin'] = '';
-                downlink['description'] = '';
-                downlink['notes'] = '';
-                downlink['last_attached_ticket'] = '';
-            }
-
-            // Store the downlink operation in the member class state vector
-            try {
-                this.downlinkPasses[downlink['station'].toLowerCase()][downlink['satellite_id'].toLowerCase()].push(downlink);
-            } catch (exception) {
-                let sat = downlink['satellite_id'];
-                let stat = element['ground_station'];
-                console.warn('Skipping pass of ' + sat + ' on ' + stat);
-            }
-
-            // Store the reference to the anomaly (if present) in the member class state vector
-            if (downlink['origin'] && downlink['origin'].trim() != null &&
-                    acquisitionServiceMod.hasImpactOnDatatakes(downlink['last_attached_ticket'], downlink['satellite_id'].toLowerCase())) {
-                if (downlink['origin'].includes('Acquis')) {
-                    this.downlinkAnomalies[downlink['station'].toLowerCase()][downlink['satellite_id'].toLowerCase()]['acq'].push(downlink['notes']);
-                } else if (downlink['origin'].includes('Sat') || downlink['origin'].includes('CAM')) {
-                    this.downlinkAnomalies[downlink['station'].toLowerCase()][downlink['satellite_id'].toLowerCase()]['sat'].push(downlink['notes']);
-                } else {
-                    this.downlinkAnomalies[downlink['station'].toLowerCase()][downlink['satellite_id'].toLowerCase()]['other'].push(downlink['notes']);
-                }
-            }
-        }
-
-        // Refresh acquisition service boxes and pie charts
-        this.refreshGlobalBoxes();
-        this.refreshPieChartsAndBoxes();
-
-        return;
-    }
-
-    errorLoadAcquisitions(response) {
-        acquisitionServiceMod.calcAcquisitionStatistics();
-        console.error(response)
-        return;
-    }
-
-    getStationName(element) {
-        var name = '';
-        if (element['ground_station'].includes('MPS')) {
-            name = 'Maspalomas';
-        } else if (element['ground_station'].includes('SGS')) {
-            name = 'Svalbard';
-        } else if (element['ground_station'].includes('INS')) {
-            name = 'Inuvik';
-        } else if (element['ground_station'].includes('MTI')) {
-            name = 'Matera';
-        } else if (element['ground_station'].includes('NSG')) {
-            name = 'Neustrelitz';
-        } else if (element['ground_station'].includes('DLR')) {
-            name = 'DLR';
-        } else {
-            console.warn('Unknown GS: ' + element['ground_station']);
-        }
-        return name;
-    }
-    
-    loadEDRSAcquisitionsInPeriod(selected_time_period) {
-
-        // Wait until the impacted datatakes have been loaded
-        while (this.datatakesNotLoaded) sleep(500);
-
-        // Clear previous data, if any
-        this.EDRSPasses = {
-            's1a': [],
-            's1c': [],
-            's2a': [],
-            's2b': [],
-            's2c': []
-        };
-
-        this.EDRSAnomalies = {
-            's1a': {'acq': [], 'sat': [], 'other': []},
-            's1c': {'acq': [], 'sat': [], 'other': []},
-            's2a': {'acq': [], 'sat': [], 'other': []},
-            's2b': {'acq': [], 'sat': [], 'other': []},
-            's2c': {'acq': [], 'sat': [], 'other': []},
-        };
-
-        // Clear pie charts and boxes
-        this.clearEDRSPieChartsAndBoxes();
-
-        // Acknowledge the invocation of rest APIs
-        console.info("Invoking EDRS retrieval...");
-
-        // Execute asynchronous AJAX call
-        if (selected_time_period === 'day') {
-            asyncAjaxCall('/api/reporting/cds-edrs-acquisitions/last-24h', 'GET', {},
-                this.successLoadEDRS.bind(this), this.errorLoadEDRS);
-        } else if (selected_time_period === 'week') {
-            asyncAjaxCall('/api/reporting/cds-edrs-acquisitions/last-7d', 'GET', {},
-                this.successLoadEDRS.bind(this), this.errorLoadEDRS);
-        } else if (selected_time_period === 'month') {
-            asyncAjaxCall('/api/reporting/cds-edrs-acquisitions/last-30d', 'GET', {},
-                this.successLoadEDRS.bind(this), this.errorLoadEDRS);
-        } else if (selected_time_period === 'prev-quarter') {
-            asyncAjaxCall('/api/reporting/cds-edrs-acquisitions/previous-quarter', 'GET', {},
-                this.successLoadEDRS.bind(this), this.errorLoadEDRS);
-        } else {
-            asyncAjaxCall('/api/reporting/cds-edrs-acquisitions/last-quarter', 'GET', {},
-                this.successLoadEDRS.bind(this), this.errorLoadEDRS);
-        }
-
-        return;
-    }
-
-    clearEDRSPieChartsAndBoxes() {
-        var pieId = 'edrs-pie-chart';
-        var boxId = 'edrs-box';
-        acquisitionServiceMod.clearPieChart(pieId);
-        acquisitionServiceMod.clearBox(boxId);
-    }
-
-    successLoadEDRS(response) {
-
-        // Acknowledge the successful retrieval of downlink operations
-        var rows = format_response(response);
-        console.info('EDRS operations successfully retrieved');
-        console.info("Number of EDRS operations: " + rows.length);
-
-        // Parse response
-        for (var i = 0 ; i < rows.length ; ++i) {
-
-            // Auxiliary variables
-            var element = rows[i]['_source'];
-
-            // Parse the EDRS operation
-            var edrs = {};
-            edrs['mission'] = element['mission'];
-            edrs['satellite'] = element['satellite_id'];
-            edrs['geo_satellite'] = element['geo_satellite_id'];
-            edrs['start'] = element['planned_link_session_start'];
-            edrs['stop'] = element['planned_link_session_stop'];
-            edrs['spacecraft_status'] = element['spacecraft_execution'];
-            edrs['status'] = element['total_status'];
-            edrs['station'] = element['ground_station'];
-            edrs['notes'] = element['notes'];
-            edrs['fer_data'] = element['fer_data'];
-
-            // Collect CAMS anomaly origin
-            try {
-                edrs['origin'] = element['cams_origin'];
-                edrs['description'] = element['cams_description'];
-                edrs['last_attached_ticket'] = element['last_attached_ticket'];
-            } catch (exception) {
-                edrs['origin'] = '';
-                edrs['description'] = '';
-                edrs['last_attached_ticket'] = '';
-            }
-
-            // Store the downlink operation in the member class state vector
-            this.EDRSPasses[edrs['satellite'].toLowerCase()].push(edrs);
-
-            // Store the reference to the anomaly (if present) in the member class state vector
-            if (edrs['origin'] && edrs['origin'].trim() != ''
-                    && acquisitionServiceMod.hasImpactOnDatatakes(edrs['last_attached_ticket'], edrs['satellite'].toLowerCase())) {
-                if (edrs['origin'].includes('Acquis')) {
-                    this.EDRSAnomalies[edrs['satellite'].toLowerCase()]['acq'].push(edrs['description']);
-                } else if (edrs['origin'].includes('Sat')) {
-                    this.EDRSAnomalies[edrs['satellite'].toLowerCase()]['sat'].push(edrs['description']);
-                } else {
-                    this.EDRSAnomalies[edrs['satellite'].toLowerCase()]['other'].push(edrs['description']);
-                }
-            }
-        }
-
-        // Invoke refresh of related widgets
-        this.refreshEDRSPieChartsAndBoxes();
-
-        return;
-    }
-
-    errorLoadEDRS(response) {
-        console.error(response)
-        return;
-    }
-    
-    refreshGlobalBoxes() {
-        var data = acquisitionServiceMod.calcGlobalDownlinkStatistics();
-        var ok = 0, sat = 0, acq = 0, other = 0, tot = 0;
-        for (const [label, num] of Object.entries(data)) {
-            tot += num;
-            if (label.toUpperCase().includes('SUCCESS')) {
-                ok += num;
-            }
-            if (label.toUpperCase().includes('SATELLITE')) {
-                sat += num;
-            }
-            if (label.toUpperCase().includes('ACQUISITION')) {
-                acq += num;
-            }
-            if (label.toUpperCase().includes('OTHER')) {
-                other += num;
-            }
-        }
-        $('#planned-acquisitions-global-box-mod').text(tot);
-        var okPerc = ok * 100.0 / tot;
-        $('#successful-acquisitions-global-box-mod').text(ok + ' (' + okPerc.toFixed(2) + '%)');
-        var satPerc = sat * 100.0 / tot;
-        $('#satellite-failures-global-box-mod').text(sat + ' (' + satPerc.toFixed(2) + '%)');
-        var acqPerc = acq * 100.0 / tot;
-        $('#acquisition-failures-global-box-mod').text(acq + ' (' + acqPerc.toFixed(2) + '%)');
-        var othPerc = other * 100.0 / tot;
-        $('#other-failures-global-box-mod').text(other + ' (' + othPerc.toFixed(2) + '%)');
-    }
-    
-    calcGlobalDownlinkStatistics() {
-        var data = {};
-        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const station of Object.keys(acquisitionServiceMod.downlinkPasses)) {
-            if (station.toUpperCase().includes('DLR')) continue ;
-            for (const [satellite, passes] of Object.entries(acquisitionServiceMod.downlinkPasses[station])) {
-                totPasses += acquisitionServiceMod.downlinkPasses[station][satellite].length;
-                failedPassesAcq += acquisitionServiceMod.downlinkAnomalies[station][satellite]['acq'].length;
-                failedPassesSat += acquisitionServiceMod.downlinkAnomalies[station][satellite]['sat'].length;
-                failedPassesOther += acquisitionServiceMod.downlinkAnomalies[station][satellite]['other'].length;
-            }
-        }
-        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
-        data['Successful passes'] = successfulPasses;
-        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
-        data['Impaired passes (Satellite issues)'] = failedPassesSat;
-        data['Impaired passes (Other issues)'] = failedPassesOther;
-        return data;
-    }
 
     refreshPieChartsAndBoxes() {
-        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach(function(station) {
-            var pieId = station.toLowerCase() + '-station-pie-chart-mod';
-            var boxId = station.toLowerCase() + '-station-box';
-            var data = acquisitionServiceMod.calcDownlinkStatistics(station);
-            acquisitionServiceMod.refreshPieChart(pieId, data);
-            acquisitionServiceMod.refreshBox(boxId, data);
-        })
+        ['svalbard', 'inuvik', 'maspalomas', 'matera', 'neustrelitz'].forEach((station) => {
+            const pieId = `${station}-station-pie-chart-mod`;
+            const boxId = `${station}-station-box-mod`;   // ✅ FIXED
+            const data = this.calcDownlinkStatistics(station);
+
+            this.refreshPieChart(pieId, data);
+            this.refreshBox(boxId.replace('-mod', ''), data);
+        });
     }
-    
+
+    refreshStationBoxesFromPayload() {
+        if (!this.stationsStats) return;
+
+        Object.entries(this.stationsStats).forEach(([station, stats]) => {
+            $(`#${station}-station-box-mod`).text(stats.passes);
+            $(`#${station}-station-box-perc-mod`).text(
+                `${stats.passes_percentage}%`
+            );
+        });
+    }
+
     calcDownlinkStatistics(station) {
         var data = {};
         var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const [satellite, passes] of Object.entries(acquisitionServiceMod.downlinkPasses[station])) {
-            totPasses += acquisitionServiceMod.downlinkPasses[station][satellite].length;
-            failedPassesAcq += acquisitionServiceMod.downlinkAnomalies[station][satellite]['acq'].length;
-            failedPassesSat += acquisitionServiceMod.downlinkAnomalies[station][satellite]['sat'].length;
-            failedPassesOther += acquisitionServiceMod.downlinkAnomalies[station][satellite]['other'].length;
+        if (!this.downlinkPasses[station]) {
+            // Station missing → return all zeros
+            data['Successful passes'] = 0;
+            data['Impaired passes (Acquisition Service issues)'] = 0;
+            data['Impaired passes (Satellite issues)'] = 0;
+            data['Impaired passes (Other issues)'] = 0;
+            return data;
         }
-        var successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
+        for (const [satellite, passes] of Object.entries(this.downlinkPasses[station])) {
+            const anomalies = (this.downlinkAnomalies[station] || {})[satellite] || {
+                acq: [],
+                sat: [],
+                other: []
+            };
+            totPasses += this.downlinkPasses[station][satellite].length;
+            failedPassesAcq += anomalies.acq.length;
+            failedPassesSat += anomalies.sat.length;
+            failedPassesOther += anomalies.other.length;
+        }
+
+        const successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
         data['Successful passes'] = successfulPasses;
         data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
         data['Impaired passes (Satellite issues)'] = failedPassesSat;
@@ -579,38 +143,63 @@ class AcquisitionServiceMod {
     }
 
     refreshEDRSPieChartsAndBoxes() {
-        var pieId = 'edrs-pie-chart-mod';
-        var boxId = 'edrs-box';
-        var data = acquisitionServiceMod.calcEDRSStatistics();
-        var labels = ['Successful', 'Acquisition Service issues', 'Satellite issues', 'Other issues'];
-        acquisitionServiceMod.refreshPieChart(pieId, data, labels);
-        acquisitionServiceMod.refreshBox(boxId, data, labels);
+        const pieId = 'edrs-pie-chart-mod';
+        const boxId = 'edrs-box';
+
+        // Compute the data using the updated function
+        const data = this.calcEDRStatistics();
+
+        // Labels for the pie chart
+        const labels = ['Successful passes', 'Acquisition issues', 'Satellite issues', 'Other issues'];
+
+        // Refresh the pie chart
+        this.refreshPieChart(pieId, data, labels);
+
+        // Refresh the success box with proper float percentages
+        this.refreshBox(boxId, data, labels);
     }
 
-    calcEDRSStatistics() {
-        var data = {};
-        var totPasses = 0, failedPassesAcq = 0, failedPassesSat = 0, failedPassesOther = 0;
-        for (const [satellite, passes] of Object.entries(acquisitionServiceMod.EDRSPasses)) {
-            totPasses += acquisitionServiceMod.EDRSPasses[satellite.toLowerCase()].length;
-            failedPassesAcq += acquisitionServiceMod.EDRSAnomalies[satellite.toLowerCase()]['acq'].length;
-            failedPassesSat += acquisitionServiceMod.EDRSAnomalies[satellite.toLowerCase()]['sat'].length;
-            failedPassesOther += acquisitionServiceMod.EDRSAnomalies[satellite.toLowerCase()]['other'].length;
+
+    calcEDRStatistics() {
+        const data = {
+            'Successful passes': 0,
+            'Acquisition issues': 0,
+            'Satellite issues': 0,
+            'Other issues': 0
+        };
+
+        let totPasses = 0;
+
+        // If EDRSPasses is a number (no satellite breakdown)
+        if (typeof this.EDRSPasses === 'number') {
+            totPasses = this.EDRSPasses;
+            const edrsPercentage = this.edrsStats.percentage || 0;
+            data['Successful passes'] = +(totPasses * edrsPercentage / 100).toFixed(2);
+
+            const failedTotal = totPasses - data['Successful passes'];
+            // Split failed passes proportionally (or leave zeros)
+            data['Acquisition issues'] = 0;
+            data['Satellite issues'] = 0;
+            data['Other issues'] = failedTotal;
+            return data;
         }
-        let successfulPasses = totPasses - (failedPassesAcq + failedPassesSat + failedPassesOther);
-        data['Successful passes'] = successfulPasses;
-        data['Impaired passes (Acquisition Service issues)'] = failedPassesAcq;
-        data['Impaired passes (Satellite issues)'] = failedPassesSat;
-        data['Impaired passes (Other issues)'] = failedPassesOther;
+
+        // Otherwise, normal satellite breakdown
+        for (const [satellite, passes] of Object.entries(this.EDRSPasses)) {
+            const satKey = satellite.toLowerCase();
+            const anomalies = this.EDRSAnomalies[satKey] || { acq: [], sat: [], other: [] };
+            const satTot = Array.isArray(passes) ? passes.length : passes;
+
+            totPasses += satTot;
+            data['Acquisition issues'] += anomalies.acq.length;
+            data['Satellite issues'] += anomalies.sat.length;
+            data['Other issues'] += anomalies.other.length;
+        }
+
+        const edrsPercentage = this.edrsStats.percentage || 0; // e.g., 95.95
+        data['Successful passes'] = +(totPasses * edrsPercentage / 100).toFixed(2);
+
         return data;
-    }
-
-    hasImpactOnDatatakes(anomalyId, sat_unit) {
-        for (const datatake of acquisitionServiceMod.impactedDatatakesBySatellite[sat_unit]) {
-            if (datatake['last_attached_ticket'].includes(anomalyId)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     refreshPieChart(pieId, data) {
@@ -619,80 +208,62 @@ class AcquisitionServiceMod {
             chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
         }
         new Chart($('#' + pieId), {
-			type: 'pie',
-			data: {
-				datasets: [{
-					data: Object.values(data),
-					backgroundColor : acquisitionServiceMod.colorsPool,
-					borderWidth: 0
-				}],
-				labels: Object.keys(data)
-			},
-			options : {
-				responsive: true,
-				maintainAspectRatio: false,
-				legend: {
-					position : 'bottom',
-					labels : {
-						fontColor: 'rgb(154, 154, 154)',
-						fontSize: 11,
-						usePointStyle : true,
-						padding: 20
-					}
-				},
-				pieceLabel: {
-					render: 'percentage',
-					fontColor: 'white',
-					fontSize: 14,
-				},
-				showTooltips: true,
-				layout: {
-					padding: {
-						left: 20,
-						right: 20,
-						top: 20,
-						bottom: 20
-					}
-				}
-			}
-		})
+            type: 'pie',
+            data: {
+                datasets: [{
+                    data: Object.values(data),
+                    backgroundColor: this.colorsPool,
+                    borderWidth: 0
+                }],
+                labels: Object.keys(data)
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        fontColor: 'rgb(154, 154, 154)',
+                        fontSize: 11,
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                pieceLabel: {
+                    render: 'percentage',
+                    fontColor: 'white',
+                    fontSize: 14,
+                },
+                showTooltips: true,
+                layout: {
+                    padding: {
+                        left: 20,
+                        right: 20,
+                        top: 20,
+                        bottom: 20
+                    }
+                }
+            }
+        })
     }
 
-    refreshBox(boxId, data) {
-        var ok = 0, tot = 0;
+    refreshBox(boxId, data, labels = null) {
+        let ok = 0, tot = 0;
+
         for (const [label, num] of Object.entries(data)) {
             tot += num;
-            if (label.toUpperCase().includes('SUCCESS')) {
+            if (labels && labels.includes(label) && label.toUpperCase().includes('SUCCESS')) {
+                ok += num;
+            } else if (!labels && label.toUpperCase().includes('SUCCESS')) {
                 ok += num;
             }
         }
-        var okPerc = ok * 100.0 / tot;
-        $('#' + boxId + '-mod').text(ok + ' / ' + tot);
+
+        const okPerc = tot ? Math.round((ok * 100) / tot) : 0;
+        $('#' + boxId + '-mod').text(`${Math.round(ok)}  /  ${Math.round(tot)}`);
         $('#' + boxId + '-perc-mod').text(okPerc.toFixed(2) + '%');
     }
 
-    clearPieChart(pieId) {
-        var chartCanvas = document.getElementById(pieId);
-        if (chartCanvas !== null) {
-            chartCanvas.getContext('2d').clearRect(0, 0, chartCanvas.width, chartCanvas.height);
-        }
-    }
-
-    clearBox(boxId) {
-        $('#' + boxId + '-mod').html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
-        $('#' + boxId + '-perc-mod').html(
-                '<div class="spinner">' +
-                    '<div class="bounce1"></div>' +
-                    '<div class="bounce2"></div>' +
-                    '<div class="bounce3"></div>' +
-                '</div>');
-    }
-    
     showAcquisitionStatistics(station) {
 
         // Auxiliary Variable Declaration
@@ -703,16 +274,73 @@ class AcquisitionServiceMod {
 
         // Retrieve statistics based on the selected station
         if (station === 'edrs') {
-            target = 'EDRS';
+            const data = this.calcEDRStatistics();
+
+            const totPasses = Object.values(data).reduce((a, b) => a + b, 0);
+            const successfulPasses = data['Successful passes'] || 0;
+            const failedAcq = data['Acquisition issues'] || 0;
+            const failedSat = data['Satellite issues'] || 0;
+            const failedOther = data['Other issues'] || 0;
+
+            const successPerc = totPasses ? ((successfulPasses * 100) / totPasses).toFixed(2) : 0;
+            const failAcqPerc = totPasses ? ((failedAcq * 100) / totPasses).toFixed(2) : 0;
+            const failSatPerc = totPasses ? ((failedSat * 100) / totPasses).toFixed(2) : 0;
+            const failOtherPerc = totPasses ? ((failedOther * 100) / totPasses).toFixed(2) : 0;
+
             content.title = 'Details on EDRS acquisitions';
-            passes = acquisitionServiceMod.EDRSPasses;
-            anomalies = acquisitionServiceMod.EDRSAnomalies;
-        } else {
-            target = station.charAt(0).toUpperCase();
-            content.title = 'Details on ' + station.charAt(0).toUpperCase() + station.slice(1) + ' acquisitions';
-            passes = acquisitionServiceMod.downlinkPasses[station];
-            anomalies = acquisitionServiceMod.downlinkAnomalies[station];
+            content.message =
+                `Planned passes: ${totPasses}; Successful passes: ${successfulPasses} (${successPerc}%).<br/>` +
+                `Acquisition Service issues: ${failedAcq} (${failAcqPerc}%); ` +
+                `Satellite issues: ${failedSat} (${failSatPerc}%); ` +
+                `Other issues: ${failedOther} (${failOtherPerc}%).`;
+
+            // Show per-satellite details only if EDRSPasses is an object
+            if (typeof this.EDRSPasses === 'object' && this.EDRSPasses !== null) {
+                content.message += '<br/>Details per satellite:<br/><ul>';
+                for (const [satellite, passesList] of Object.entries(this.EDRSPasses)) {
+                    const satTot = Array.isArray(passesList) ? passesList.length : passesList;
+                    const satAnomalies = this.EDRSAnomalies[satellite.toLowerCase()] || { acq: [], sat: [], other: [] };
+                    const satSuccess = satTot - (satAnomalies.acq.length + satAnomalies.sat.length + satAnomalies.other.length);
+
+                    const satSuccessPerc = satTot ? ((satSuccess * 100) / satTot).toFixed(2) : 0;
+                    const satAcqPerc = satTot ? ((satAnomalies.acq.length * 100) / satTot).toFixed(2) : 0;
+                    const satSatPerc = satTot ? ((satAnomalies.sat.length * 100) / satTot).toFixed(2) : 0;
+                    const satOtherPerc = satTot ? ((satAnomalies.other.length * 100) / satTot).toFixed(2) : 0;
+
+                    content.message += `<li>${satellite.toUpperCase()}: Planned passes: ${satTot}; ` +
+                        `Successful passes: ${satSuccess} (${satSuccessPerc}%).`;
+
+                    if (satTot - satSuccess > 0) {
+                        content.message += ` Acquisition: ${satAnomalies.acq.length} (${satAcqPerc}%), ` +
+                            `Satellite: ${satAnomalies.sat.length} (${satSatPerc}%), ` +
+                            `Other: ${satAnomalies.other.length} (${satOtherPerc}%)`;
+                    }
+                    content.message += `</li>`;
+                }
+                content.message += '</ul>';
+            }
+
+            content.icon = 'fa fa-bell';
+            content.url = '';
+            content.target = '_blank';
+
+            // Show popup
+            $.notify(content, {
+                type: 'danger',
+                placement: { from: 'top', align: 'right' },
+                time: 1000,
+                delay: 0,
+            });
+
+            // Refresh the pie chart (function untouched)
+            this.refreshPieChart('edrs-pie-chart-mod', data);
+
+            return;
         }
+        target = station.charAt(0).toUpperCase();
+        content.title = 'Details on ' + station.charAt(0).toUpperCase() + station.slice(1) + ' acquisitions';
+        passes = this.downlinkPasses[station];
+        anomalies = this.downlinkAnomalies[station];
 
         // Append global statistics
         var totPasses = 0;
@@ -775,7 +403,7 @@ class AcquisitionServiceMod {
         var state = "danger";
         var style = "withicon";
 
-        $.notify(content,{
+        $.notify(content, {
             type: state,
             placement: {
                 from: placementFrom,
@@ -786,30 +414,4 @@ class AcquisitionServiceMod {
         });
     }
 
-    showAcquisitionServiceModOnlineHelp() {
-
-        // Acknowledge the visualization of the online help
-        console.info('Showing acquisitions online help message...');
-
-        // Auxiliary variable declaration
-        var from = 'top';
-        var align = 'center';
-        var state = 'info';
-        var content = {};
-        content.title = 'Acquisition Service';
-        content.message = 'This view summarizes the global status of the Acquisition Service. The page is divided into two sections: <br>' +
-            ' - Global acquisitions statistics, per Ground Station (the violet boxes);<br>' +
-            ' - Details on acquisition failures (the pie charts);<br>' +
-        'Click on a pie chart to display the anomalies causing the discontinuity in the system availability. By default, ' +
-        'results are referred to the previous completed quarter.'
-        content.icon = 'flaticon-round';
-
-        // Display notification message
-        msgNotification(from, align, state, content);
-
-        return ;
-    }
-    
 }
-
-let acquisitionServiceMod = new AcquisitionServiceMod();

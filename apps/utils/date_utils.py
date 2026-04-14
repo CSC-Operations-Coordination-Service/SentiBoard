@@ -17,6 +17,9 @@ from copy import copy
 from datetime import datetime
 
 from dateutil.relativedelta import relativedelta
+import pytz
+
+tz_rome = pytz.timezone("Europe/Rome")
 
 logger = logging.getLogger(__name__)
 
@@ -269,7 +272,6 @@ def get_whole_weeks_interval(start_date, end_date):
 
 
 class Quarter:
-
     # TODO: define a list of quarter first day, defined as month/day
     # or a dictionary (quarter_id : month/day)
     # to build the interval:
@@ -475,19 +477,10 @@ def get_past_day_str(past_num_days, day_format):
     return earliest_day_str
 
 
-def parse_dt(dt_str):
-    # Try with seconds
-    try:
-        return datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
-    except ValueError:
-        pass
-
-    # Try without seconds
-    try:
-        return datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
-    except ValueError:
-        pass
-
-    raise ValueError(
-        "Invalid publication date format (expected yyyy-mm-ddTHH:MM or yyyy-mm-ddTHH:MM:SS)"
-    )
+def format_pub_date(dt):
+    if not dt:
+        return ""
+    # convert to Europe/Rome
+    dt_rome = dt.astimezone(tz_rome)
+    # format as "YYYY-MM-DD HH:MM"
+    return dt_rome.strftime("%Y-%m-%d %H:%M")

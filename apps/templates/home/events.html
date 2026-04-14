@@ -86,13 +86,11 @@
 
       <!-- Calendar container -->
       <div class="row align-items-stretch">
-        <div id="calendarLoadingSpinner" style="display:none;">Loading...</div>
         <!-- Main timeline control -->
         <div class="col-12 calendar-window">
           <div class="card calendar-card" >
             <div class="card-body">
               <!-- The Calendar control -->
-              <!-- <div id="myCalendar" class="calendar"></div> -->
                 <div class="row  align-items-start">
                     <!-- Left Panel -->
                     <div class="col-12 col-lg-2 left-panel mb-4 mb-lg-0 matching-width">
@@ -149,19 +147,58 @@
                         </div>
                     </div>
                     <!-- Calendar Section -->
+                     <div
+                        id="anomalyData"
+                        data-anomalies-by-date='{{ anomalies_by_date | tojson | safe }}'
+                        data-anomalies='{{ json_anomalies | tojson | safe }}'
+                        data-datatakes='{{ json_datatakes | tojson | safe }}'
+                        data-quarter-authorized='{{ "true" if quarter_authorized else "false" }}'
+                        data-events='{{ json_events | tojson | safe }}'
+                      ></div>
                     <div class="col-12 col-lg-8 mb-4 mb-lg-0">
-                        <div class="calendar-container">
-                            <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
-                               <!--  <button id="prevMonth" class="btn">&lt;</button> -->
-                                <i id="prevMonth" class="fas fa-chevron-left fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
-                                <h1 id="monthYear" class="mb-0"></h1>
-                                <!-- <button id="nextMonth" class="btn">&gt;</button>-->
-                                <i id="nextMonth" class="fas fa-chevron-right fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
-                            </div>
-                            <div class="calendar-grid" id="calendarGrid"></div>
+                      <div class="calendar-container">
+                        <div class="calendar-header d-flex justify-content-between align-items-center mb-3">
+                          <i id="prevMonth" class="fas fa-chevron-left fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
+                          <h1 id="monthYear" class="mb-0">
+                            {{ current_month_name }} {{ current_year }}
+                          </h1>
+                          <i id="nextMonth" class="fas fa-chevron-right fa-lg" role="button" tabindex="0" style="cursor: pointer;"></i>
                         </div>
+
+                        <div class="calendar-grid" id="calendarGrid">
+                          {% for _ in range(first_day_offset) %}
+                            <div class="calendar-day empty"></div>
+                          {% endfor %}
+
+                          {% for day in range(1, days_in_month + 1) %}
+                            {% set date_str = "%04d-%02d-%02d" | format(current_year, current_month, day) %}
+                            {% set day_events = [] %}
+                            {% for e in json_events %}
+                              {% if e.from[:10] == date_str %}
+                                {% set _ = day_events.append(e) %}
+                              {% endif %}
+                            {% endfor %}
+
+                            <div
+                              class="calendar-day"
+                              data-date="{{ date_str }}"
+                              data-has-events="{{ 'true' if day_events else 'false' }}">
+                              <span>{{ day }}</span>
+
+                              {% if day_events %}
+                                <div class="event-container">
+                                  {% for e in day_events %}
+                                    <div class="event" style="background-color: {{ e.color }}; color: {{ e.colorText }}; border: 1px solid {{ e.colorBorder }};" title="{{ e.description }}">
+                                      <i class="fas fa-circle"></i> {{ e.title }}
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              {% endif %}
+                            </div>
+                          {% endfor %}
+                        </div>
+                      </div>
                     </div>
-                    
                     <div class="col-12 col-lg-2 mb-4 matching-width">
                       <!-- Completeness Status (Legend) -->
                       <div class="completeness-status mb-3">
@@ -204,43 +241,181 @@
           </div>
       </div>
     </div>
-
 {% endblock content %}
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
 
   <!-- Calendar plugin style -->
+   
     <link rel="stylesheet" href="/static/assets/lib/calendar/css/calendarjs.min.css">
     <link rel="stylesheet" href="/static/assets/css/dashboard.css">
     <link rel="stylesheet" href="/static/assets/css/events.css">
 
   <!-- Calendar plugin scripts -->
+  <script>
+    window.iconMap = {{ icon_map | tojson | safe}};
+    window.eventTypeMap = {{ event_type_map | tojson | safe}};
+    window.anomaliesByDate = {{anomalies_by_date | tojson | safe}};
+
+    const urlParams = new URLSearchParams(window.location.search);
+
+    const showDayEvents = urlParams.get('showDayEvents');
+    const yearParam = Number(urlParams.get('year'));
+    const monthParam = Number(urlParams.get('month'));
+
+     // ---- PARSE showDayEvents (if provided) ----
+    let forcedYear  = null;
+    let forcedMonth = null; // 0-based
+    let forcedDateISO = null;
+
+    if(showDayEvents){
+      const [dd, mm, yyyy] = showDayEvents.split("/");
+        forcedYear  = Number(yyyy);
+        forcedMonth = Number(mm) - 1;
+        forcedDateISO = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+    }
+    // ---- PRIORITY FOR INITIAL MONTH/YEAR ----
+    if (forcedYear !== null && forcedMonth !== null) {
+        window.currentYear  = forcedYear;
+        window.currentMonth = forcedMonth;
+    } else {
+        const defaultYear = Number({{ current_year | int }}) || new Date().getFullYear();
+        const defaultMonth = Number({{ current_month | int }}) || (new Date().getMonth() + 1);
+
+        window.currentYear  = (!isNaN(yearParam) && yearParam > 1970) ? yearParam : defaultYear;
+        window.currentMonth = (!isNaN(monthParam) && monthParam >= 1 && monthParam <= 12)
+            ? (monthParam - 1)
+            : (defaultMonth - 1);
+    }
+
+    console.log("[INIT PARAMS FIX]",
+        {year: window.currentYear, month: window.currentMonth+1, showDayEvents});
+  </script>
+  <script>
+    function showDayFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const showDayEvents = urlParams.get("showDayEvents");
+
+        if (!showDayEvents) return;
+        if (!calendar.anomaliesByDate) return;
+
+        const [dd, mm, yyyy] = showDayEvents.split("/");
+        const iso = `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+
+        if (!calendar.anomaliesByDate[iso]) {
+            console.warn("[SHOWDAY] No events on that date");
+            return;
+        }
+
+        // Set selected date
+        calendar.lastSelectedDate = iso;
+
+        // Open the details panel
+        calendar.showEventDetails(iso);
+        calendar.highlightCalendarDay(iso);
+
+        console.log("[SHOWDAY] Event auto-open:", iso);
+      }
+  </script>
+  <script>
+    function updateURL(year, month0, dropShowDayEvents=false) {
+        const params = new URLSearchParams(window.location.search);
+
+        params.set("year", year);
+        params.set("month", month0 + 1);
+
+        if (dropShowDayEvents) {
+            params.delete("showDayEvents");
+        }
+
+        history.replaceState(null, "", `?${params.toString()}`);
+      }
+  </script>
   <script src="/static/assets/lib/calendar/src/calendarjs.min.js"></script>
   <script src="/static/assets/js/events/calendar.js"></script>
-  <script defer type="text/javascript">
-    calendar.init()
-  </script>
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", async function() {
+    try{
+        await calendar.init();
+        
+        const fetchMonth = window.currentMonth + 1;
+        const fetchYear = window.currentYear;
 
+        const res = await fetch(`/events_data?year=${fetchYear}&month=${fetchMonth}`);
+
+        if (!res.ok) throw new Error("Failed to fetch initial events data");
+        const data = await res.json();
+
+        console.log(`[INIT] loaded ${data.count} anomalies for ${fetchMonth}/${data.year}`);
+
+        //populate calendar data
+        calendar.currentMonth = window.currentMonth;
+        calendar.currentYear = window.currentYear;
+        calendar.anomaliesByDate = data.anomalies_by_date || {};
+        calendar.anomalies = Object.values(calendar.anomaliesByDate).flat();
+
+        calendar.generateCalendar(calendar.currentMonth, calendar.currentYear); // JS months are 0-based
+        
+        updateURL(window.currentYear, window.currentMonth);
+        showDayFromURL();
+      }
+      catch(err){
+        console.error("Error fetching initial events:", err);
+      } 
+
+      async function reloadEvents(){
+        try{
+          const fetchMonth = window.currentMonth + 1;
+          const fetchYear = window.currentYear;
+          const res = await fetch(`/events_data?year=${fetchYear}&month=${fetchMonth}`);
+          if (!res.ok) throw new Error("Failed to fetch initial events data");
+
+          const data = await res.json();
+          calendar.anomaliesByDate = data.anomalies_by_date || {};
+          calendar.anomalies = Object.values(calendar.anomaliesByDate).flat();
+
+          calendar.generateCalendar(calendar.currentMonth, calendar.currentYear);
+          showDayFromURL();
+        } catch(err){
+          console.error("Error reloading events:", err);
+        } 
+      }
+      calendar.prevMonthButton.addEventListener("click", async () => {
+        calendar.navigateMonth(-1)
+        window.currentMonth = calendar.currentMonth;
+        window.currentYear = calendar.currentYear;
+        updateURL(window.currentYear, window.currentMonth, true);
+        await reloadEvents();
+      });
+
+      calendar.nextMonthButton.addEventListener("click", async () => {
+        calendar.navigateMonth(1)
+        window.currentMonth = calendar.currentMonth;
+        window.currentYear = calendar.currentYear;
+        updateURL(window.currentYear, window.currentMonth, true);
+        await reloadEvents();
+      
+      });
+      function normalizeDateString(dateStr) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const [d, m, y] = parts;
+          return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+        }
+        return dateStr;
+      }
+    });
+</script>
+  
   <!-- Timeline plugin style -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.css" />
   <link rel="stylesheet" href="/static/assets/css/dashboard.css" />
 
-  <!-- Timeline plugin scripts 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.8.2/vis.min.js"></script>
-  <script src="/static/assets/js/events/timeline.js"></script>
-  <script defer type="text/javascript">
-    timeline.init()
-  </script>-->
-
   <script>
 
     // Display selector
-        $('#event-display-select').change(function() {
-      if ($(this).val() === 'timeline') {
-                document.getElementById('myCalendar').style.display = 'none';
-                document.getElementById('myTimeline').style.display = 'block';
-      }
+    $('#event-display-select').change(function() {
       if ($(this).val() === 'calendar') {
                 document.getElementById('myCalendar').style.display = 'block';
                 document.getElementById('myTimeline').style.display = 'none';
@@ -248,10 +423,9 @@
     })
     
     // Filter anomalies
-        $('#anomalies_filter_search').on('input', function(event) {
-            calendar.filterEvents($(this).val());
-            timeline.filterEvents($(this).val());
-        });
+    $('#anomalies_filter_search').on('input', function(event) {
+        calendar.filterEvents($(this).val());
+    });
 
   </script>
 

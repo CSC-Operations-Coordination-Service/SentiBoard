@@ -55,35 +55,51 @@ window.addEventListener("load", function () {
             }
         },
         "onPopupOpen": function () {
+            const allowBtn = document.querySelector('.cc-allow');
+            const denyBtn = document.querySelector('.cc-deny');
             const acceptLink = document.getElementById("cookie-accept");
             const refuseLink = document.getElementById("cookie-refuse");
+            const statusDisplay = document.querySelector('.matomo-status');
+
+            const updateStatus = (status) => {
+                if (statusDisplay) statusDisplay.textContent = status;
+            }
 
             // Optional: Set initial state from localStorage (if you store consent state)
             const consent = localStorage.getItem("cookie-consent");
             if (consent === "accepted") {
-                acceptLink.classList.add("hide");
-                refuseLink.classList.remove("hide");
+                if (acceptLink) acceptLink.classList.add("hide");
+                if (refuseLink) refuseLink.classList.remove("hide");
+                updateStatus("Opted in");
             } else if (consent === "refused") {
-                refuseLink.classList.add("hide");
-                acceptLink.classList.remove("hide");
+                if (refuseLink) refuseLink.classList.add("hide");
+                if (acceptLink) acceptLink.classList.remove("hide");
+                updateStatus("Opted out");
             }
 
-            document.querySelector('.cc-allow').addEventListener("click", function () {
-                _paq.push(['rememberConsentGiven']);
-                acceptLink.classList.add("hide");
-                refuseLink.classList.remove("hide");
-                localStorage.setItem("cookie-consent", "accepted");
-            }, {
-                once: true
-            })
-            document.querySelector('.cc-deny').addEventListener("click", function () {
-                _paq.push(['forgetConsentGiven']);
-                refuseLink.classList.add("hide");
-                acceptLink.classList.remove("hide");
-                localStorage.setItem("cookie-consent", "refused");
-            }, {
-                once: true
-            })
+            if (allowBtn) {
+                allowBtn.addEventListener("click", function () {
+                    if (window._paq) _paq.push(['rememberConsentGiven']);
+                    localStorage.setItem("cookie-consent", "accepted");
+                    if (acceptLink) acceptLink.classList.add("hide");
+                    if (refuseLink) refuseLink.classList.remove("hide");
+                    updateStatus("Opted in");
+                }, {
+                    once: true
+                })
+            }
+
+            if (denyBtn) {
+                denyBtn.addEventListener("click", function () {
+                    if (window._paq) _paq.push(['forgetConsentGiven']);
+                    localStorage.setItem("cookie-consent", "refused");
+                    if (refuseLink) refuseLink.classList.add("hide");
+                    if (acceptLink) acceptLink.classList.remove("hide");
+                    updateStatus("Opted out");
+                }, {
+                    once: true
+                })
+            }
         }
     })
 });

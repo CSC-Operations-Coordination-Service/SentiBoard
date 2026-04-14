@@ -42,7 +42,7 @@
 		<!-- Datatake details panel -->
 		<div class="modal fade" id="showDatatakeDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
 			<div class="modal-dialog" role="document">
-				<div class="modal-content" style="background: #202940">
+				<div class="modal-content" style="background: #006B7C">
 					<div class="modal-header no-bd">
 						<h5 class="modal-title">
 							<span class="fw-mediumbold">View</span>
@@ -118,432 +118,57 @@
 
 		<!-- Instrument availability per Platform -->
 		<div class="row">
-
-			<!-- Sentinel-1A -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-1A</b></h5>
-								<p class="text-muted">Subsystems availability</p>
+			{% for sat, sat_data in satellites.items() %}
+				<div class="col-md-4">
+					<div class="card">
+						<div class="card-body">
+							<div class="d-flex justify-content-between">
+								<div>
+									<h5><b>{{ sat_data.fullname }}</b></h5>
+									<p class="text-muted">Subsystems availability</p>
+								</div>
+								<div class="calendar-details">
+									<i class="la flaticon-search-1" data-placement="bottom"
+									data-toggle="tooltip"
+									onclick="spaceSegment.showUnavailabilityEvents('{{ sat }}')"
+									title="Display the relevant unavailabilities"></i>
+								</div>
+								<h3 class="fw-bold text-info mb-3" style="display: none" id="{{ sat|lower }}-avail-perc">{{ "%.2f"|format(sat_data.success_percentage) }}%</h3>
 							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S1A')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-info fw-bold" id="s1a-avail-perc" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-info" id="s1a-sar-avail-bar" role="progressbar"
-								 style="width: 98%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">SAR</p>
-							<p class="text-muted mb-0" id="s1a-sar-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-info" id="s1a-pdht-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">PDHT</p>
-							<p class="text-muted mb-0" id="s1a-pdht-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-info" id="s1a-ocp-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OCP</p>
-							<p class="text-muted mb-0" id="s1a-ocp-avail-perc">100.0%</p>
+							{% for instr in sat_data.instruments %}
+								<div class="progress progress-sm {% if not loop.first %}mt-2{% endif %}">
+									<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="{{ instr.availability }}"
+										class="progress-bar bg-{{ space_segment_colors[sat]|default('info') }}" 
+										id="{{ sat|lower }}-{{ instr.name|lower }}-avail-bar" role="progressbar"
+										style="width: {{ "%.2f"|format(instr.availability) }}%;"></div>
+								</div>
+								<div class="d-flex justify-content-between">
+									<p class="text-muted mb-0">{{ instr.name }}</p>
+									<p class="text-muted mb-0" id="{{ sat|lower }}-{{ instr.name|lower }}-avail-perc">
+										{{ "%.2f"|format(instr.availability) }}%</p>
+								</div>
+							{% endfor %}
 						</div>
 					</div>
 				</div>
-			</div>
-
-			<!-- Sentinel-1C -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-1C</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S1C')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-info fw-bold" id="s1c-avail-perc" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-info" id="s1c-sar-avail-bar" role="progressbar"
-								 style="width: 98%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">SAR</p>
-							<p class="text-muted mb-0" id="s1c-sar-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-info" id="s1c-pdht-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">PDHT</p>
-							<p class="text-muted mb-0" id="s1c-pdht-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-info" id="s1c-ocp-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OCP</p>
-							<p class="text-muted mb-0" id="s1c-ocp-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sentinel-2A -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-2A</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S2A')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-success fw-bold" id="s2a-avail-perc" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-success" id="s2a-msi-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MSI</p>
-							<p class="text-muted mb-0" id="s2a-msi-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-success" id="s2a-mmfu-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MMFU</p>
-							<p class="text-muted mb-0" id="s2a-mmfu-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-success" id="s2a-ocp-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OCP</p>
-							<p class="text-muted mb-0" id="s2a-ocp-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-success" id="s2a-str-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">STAR TRACKER</p>
-							<p class="text-muted mb-0" id="s2a-str-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sentinel-2B -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-2B</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S2B')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-success fw-bold" id="s2b-avail-perc" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-success" id="s2b-msi-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MSI</p>
-							<p class="text-muted mb-0" id="s2b-msi-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-success" id="s2b-mmfu-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MMFU</p>
-							<p class="text-muted mb-0" id="s2b-mmfu-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-success" id="s2b-ocp-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OCP</p>
-							<p class="text-muted mb-0" id="s2b-ocp-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-success" id="s2b-str-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">STAR TRACKER</p>
-							<p class="text-muted mb-0" id="s2b-str-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sentinel-2C -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-2C</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S2C')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-success fw-bold" id="s2c-avail-perc" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-success" id="s2c-msi-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MSI</p>
-							<p class="text-muted mb-0" id="s2c-msi-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-success" id="s2c-mmfu-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MMFU</p>
-							<p class="text-muted mb-0" id="s2c-mmfu-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-success" id="s2c-ocp-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OCP</p>
-							<p class="text-muted mb-0" id="s2c-ocp-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-success" id="s2c-str-avail-bar" role="progressbar"
-								 style="width: 99%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">STAR TRACKER</p>
-							<p class="text-muted mb-0" id="s2c-str-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sentinel-3A -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-3A</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S3A')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-danger fw-bold" id="s3a-avail-perc" style="display:none">99%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-warning" id="s3a-olci-avail-bar" role="progressbar"
-								 style="width: 99.7%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OLCI</p>
-							<p class="text-muted mb-0" id="s3a-olci-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-warning" id="s3a-slstr-avail-bar" role="progressbar"
-								 style="width: 99.6%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">SLSTR</p>
-							<p class="text-muted mb-0" id="s3a-slstr-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-warning" id="s3a-sral-avail-bar" role="progressbar"
-								 style="width: 99.7%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">SRAL</p>
-							<p class="text-muted mb-0" id="s3a-sral-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-warning" id="s3a-mwr-avail-bar" role="progressbar"
-								 style="width: 99.77%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MWR</p>
-							<p class="text-muted mb-0" id="s3a-mwr-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sentinel-3B -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-3B</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S3B')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-danger fw-bold" id="s3b-avail-perc" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="98"
-								 class="progress-bar bg-warning" id="s3b-olci-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">OLCI</p>
-							<p class="text-muted mb-0" id="s3b-olci-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="100"
-								 class="progress-bar bg-warning" id="s3b-slstr-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">SLSTR</p>
-							<p class="text-muted mb-0" id="s3b-slstr-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-warning" id="s3b-sral-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">SRAL</p>
-							<p class="text-muted mb-0" id="s3b-sral-avail-perc">100.0%</p>
-						</div>
-						<div class="progress progress-sm mt-2">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-warning" id="s3b-mwr-avail-bar" role="progressbar"
-								 style="width: 100%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">MWR</p>
-							<p class="text-muted mb-0" id="s3b-mwr-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<!-- Sentinel-5P -->
-			<div class="col-md-4">
-				<div class="card">
-					<div class="card-body">
-						<div class="d-flex justify-content-between">
-							<div>
-								<h5><b>Copernicus Sentinel-5p</b></h5>
-								<p class="text-muted">Subsystems availability</p>
-							</div>
-							<div class="calendar-details">
-								<i class="la flaticon-search-1" data-placement="bottom"
-								   data-toggle="tooltip"
-								   onclick="spaceSegment.showUnavailabilityEvents('S5P')"
-								   title="Display the relevant unavailabilities"></i>
-							</div>
-							<h3 class="text-secondary fw-bold" style="display:none">100.0%</h3>
-						</div>
-						<div class="progress progress-sm">
-							<div aria-valuemax="100" aria-valuemin="0" aria-valuenow="99"
-								 class="progress-bar bg-secondary" id="s5p-tropomi-avail-bar" role="progressbar"
-								 style="width: 98.9%"></div>
-						</div>
-						<div class="d-flex justify-content-between">
-							<p class="text-muted mb-0">TROPOMI</p>
-							<p class="text-muted mb-0" id="s5p-tropomi-avail-perc">100.0%</p>
-						</div>
-					</div>
-				</div>
-			</div>
-
+			{% endfor %}
 		</div>
-
 		<!-- Successful vs failed scanning operations, per satellite (pie charts) -->
 		<div class="row">
-
 			<!-- Sentinel-1A -->
 			<div class="col-md-12">
 				<div class="card">
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-1A planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S1A')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+										data-toggle="tooltip"
+										data-placement="bottom"
+										title="Display the global sensing statistics"
+										onclick="spaceSegment.showSensingStatistics('S1A')">
+									<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -678,9 +303,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-1C planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S1C')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+											class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+											data-toggle="tooltip"
+											data-placement="bottom"
+											title="Display the global sensing statistics"
+											onclick="spaceSegment.showSensingStatistics('S1C')">
+										<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -815,9 +445,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-2A planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2A')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+												class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+												data-toggle="tooltip"
+												data-placement="bottom"
+												title="Display the global sensing statistics"
+												onclick="spaceSegment.showSensingStatistics('S2A')">
+											<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -952,9 +587,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-2B planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2B')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+													class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+													data-toggle="tooltip"
+													data-placement="bottom"
+													title="Display the global sensing statistics"
+													onclick="spaceSegment.showSensingStatistics('S2B')">
+												<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -1089,9 +729,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-2C planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S2C')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+										data-toggle="tooltip"
+										data-placement="bottom"
+										title="Display the global sensing statistics"
+										onclick="spaceSegment.showSensingStatistics('S2C')">
+									<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -1226,9 +871,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-3A planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S3A')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+										data-toggle="tooltip"
+										data-placement="bottom"
+										title="Display the global sensing statistics"
+										onclick="spaceSegment.showSensingStatistics('S3A')">
+									<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -1363,9 +1013,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-3B planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S3B')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+										data-toggle="tooltip"
+										data-placement="bottom"
+										title="Display the global sensing statistics"
+										onclick="spaceSegment.showSensingStatistics('S3B')">
+										<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -1500,9 +1155,14 @@
 					<div class="card-header">
 						<div class="row">
 							<div class="card-title ml-3">Copernicus Sentinel-5p planned vs archived L0 data</div>
-							<i class="la flaticon-search-1 ml-2 mt-1" data-placement="bottom"
-									   data-toggle="tooltip" onclick="spaceSegment.showSensingStatistics('S5P')"
-									   title="Display the global sensing statistics"></i>
+								<button type="button"
+										class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+										data-toggle="tooltip"
+										data-placement="bottom"
+										title="Display the global sensing statistics"
+										onclick="spaceSegment.showSensingStatistics('S5P')">
+										<i class="la flaticon-search-1"></i>
+								</button>
 						</div>
 					</div>
 					<div class="card-body">
@@ -1646,7 +1306,30 @@
 	<script src="/static/assets/js/plugin/chart.js/chart.min.js"></script>
 
 	<!-- Page related JS classes -->
+	<script>
+		window.SENSING_DATA = {
+			datatakes: {{ datatakes|tojson|safe }},
+			unavailability: {{ unavailability|tojson|safe }},
+			stats: {{ sensing_stats|tojson|safe }},
+			detailsAllowed : {{ details_allowed|tojson }},
+			start : {{ start|tojson}},
+			end : {{ end|tojson}}
+		};
+
+		if (!SENSING_DATA || !SENSING_DATA.stats) {
+			console.error("SENSING_DATA invalid:", window.SENSING_DATA);
+		}
+	</script>
+	<script>
+		window.SPACE_SEGMENT_COLORS = {{ space_segment_colors|tojson|safe }};
+	</script>
 	<script src="/static/assets/js/quarterly-reports/space-segment.js"></script>
-	<script defer type="text/javascript">spaceSegment.init();</script>
+	<script>
+		document.addEventListener("DOMContentLoaded", () =>{
+			window.spaceSegment = new SpaceSegment();
+			spaceSegment.init();
+
+		});
+	</script>
 
 {% endblock javascripts %}

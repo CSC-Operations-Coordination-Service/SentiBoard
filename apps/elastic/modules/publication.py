@@ -11,6 +11,7 @@ disclose in whole or in part, information contained herein except for or on
 behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
+
 import copy
 import logging
 from time import perf_counter
@@ -55,7 +56,7 @@ def get_cds_publication_size_by_mission(start_date, end_date, mission):
     api_start_time = perf_counter()
 
     for productLevel, level_value in productLevel_list.items():
-        logger.debug(
+        logger.info(
             "[INFO] productLevel=%s | type=%s | value=%s",
             productLevel,
             type(level_value),
@@ -100,7 +101,7 @@ def get_cds_publication_size_by_mission(start_date, end_date, mission):
                             }
                         )
                         query_end_time = perf_counter()
-                        logger.debug(
+                        logger.info(
                             f"Query for mission {mission}, product_type: {productType}, start: {start_date},  Query Execution Time : {query_end_time - query_start_time:0.6f}"
                         )
                     except Exception as ex:
@@ -148,7 +149,7 @@ def get_cds_publication_size_by_mission(start_date, end_date, mission):
                         }
                     )
                     query_end_time = perf_counter()
-                    logger.debug(
+                    logger.info(
                         f"Query for mission {mission}, product_type: {productType}, start: {start_date},  Query Execution Time : {query_end_time - query_start_time:0.6f}"
                     )
                 except Exception as ex:
