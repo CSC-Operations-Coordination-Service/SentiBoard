@@ -37,32 +37,40 @@
         success  →  fa-check-circle        green    (resolved)
         danger   →  fa-exclamation-triangle red     (disaster)
     -->
-    <div class="ne-flag-bar">
+        <div class="ne-flag-bar">
 
-        <!-- Live preview icon — updated by JS when a button is clicked -->
-        <div id="ne-flag-preview" style="font-size:1.8rem; color:#ffc107; min-width:32px; text-align:center;">
-            <i id="ne-flag-icon" class="fa fa-exclamation-circle"></i>
+            <!-- Left: live preview icon -->
+            <div id="ne-flag-preview" style="font-size:1.6rem; color:#ffc107; flex-shrink:0;">
+                <i id="ne-flag-icon" class="fa fa-exclamation-circle"></i>
+            </div>
+
+            <!-- Middle: title -->
+            <div style="flex:1;">
+                <div style="font-size:13px; font-weight:600; color:#495057;">Message status</div>
+            </div>
+
+            <!-- Right: info icon + buttons -->
+            <div style="flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                <i class="fa fa-info-circle"
+                style="font-size:0.85rem; color:#6c757d; cursor:default;"
+                title="Select the status that will be displayed on the news banner."></i>
+                <div class="ne-status-btns">
+                    <button type="button" class="ne-status-btn ne-btn-new"
+                            onclick="NewsEditor.setStatus('new')" title="Anomaly / New">
+                        <i class="fa fa-exclamation-circle" style="font-size:1.4rem; color:#ffc107;"></i>
+                    </button>
+                    <button type="button" class="ne-status-btn ne-btn-resolved"
+                            onclick="NewsEditor.setStatus('resolved')" title="Resolved">
+                        <i class="fa fa-check-circle" style="font-size:1.4rem; color:#28a745;"></i>
+                    </button>
+                    <button type="button" class="ne-status-btn ne-btn-disaster"
+                            onclick="NewsEditor.setStatus('disaster')" title="Disaster">
+                        <i class="fa fa-exclamation-triangle" style="font-size:1.4rem; color:#dc3545;"></i>
+                    </button>
+                </div>
+            </div>
+
         </div>
-
-        <!-- Type buttons — use the same fa icons as the news list -->
-        <div class="ne-status-btns">
-            <button type="button" class="ne-status-btn ne-btn-new"
-                    onclick="NewsEditor.setStatus('new')">
-                <i class="fa fa-exclamation-circle"></i> Anomaly / New
-            </button>
-            <button type="button" class="ne-status-btn ne-btn-resolved"
-                    onclick="NewsEditor.setStatus('resolved')">
-                <i class="fa fa-check-circle"></i> Resolved
-            </button>
-            <button type="button" class="ne-status-btn ne-btn-disaster"
-                    onclick="NewsEditor.setStatus('disaster')">
-                <i class="fa fa-exclamation-triangle"></i> Disaster
-            </button>
-        </div>
-
-        <!-- Current label -->
-        <span class="ne-status-badge" id="ne-status-badge">Anomaly / New</span>
-    </div>
 
     {% if not message %}
     <!-- ── Template selector ───────────────────────────────────────── -->
@@ -171,4 +179,10 @@
         const INITIAL_MESSAGE_TYPE = "{{ message['messageType'] if message else 'warning' }}";
     </script>
     <script src="/static/assets/js/messages/new-message.js"></script>
+
+    <script>
+		$(function () {
+				$('[data-toggle="tooltip"]').tooltip();
+		});
+	</script>
 {% endblock %}

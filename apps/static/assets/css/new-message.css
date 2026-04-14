@@ -130,13 +130,16 @@ a:hover,
 
 .ne-status-btn {
   font-size: 12px;
-  padding: 4px 12px;
+  padding: 4px 8px;
   border-radius: 6px;
   border: 1px solid transparent;
   cursor: pointer;
-  font-weight: 500;
-  transition: opacity .15s, transform .1s;
   background: transparent;
+  transition: opacity .15s, transform .1s;
+}
+
+.ne-status-btn:hover {
+  background: rgba(0, 0, 0, .06);
 }
 
 .ne-status-btn:active {
