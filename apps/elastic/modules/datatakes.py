@@ -128,14 +128,6 @@ def _get_cds_datatakes(start_date: datetime, end_date: datetime):
     return dt_interval
 
 
-def _build_cds_completeness_indices(mission, satellites, splitted=False):
-    """
-    Build CDS completeness index names dynamically
-    """
-    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
-    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
-
-
 def _get_cds_s1s2_datatakes(start_date, end_date):
     """
     Fetch the datatakes of S1 and S2 missions in the last 3 months from Elastic DB using the exposed REST APIs. The
@@ -292,6 +284,8 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         #        ),
         #    },
         # )
+
+        clean_results.append(dt)
 
     # Return the response
     return clean_results
@@ -1157,9 +1151,7 @@ def _get_cds_s3_datatake_details(datatake_id):
     datatake["product_level"] = (
         "L2"
         if any(k.startswith("L2_") for k in datatake)
-        else "L1"
-        if any(k.startswith("L1_") for k in datatake)
-        else "L0"
+        else "L1" if any(k.startswith("L1_") for k in datatake) else "L0"
     )
     datatake["final_completeness_percentage"] = max(
         [v for k, v in datatake.items() if k.endswith("_local_percentage")], default=0.0
@@ -1239,9 +1231,7 @@ def _get_cds_s5_datatake_details(datatake_id):
     datatake["product_level"] = (
         "L2"
         if any(k.startswith("L2_") for k in datatake)
-        else "L1"
-        if any(k.startswith("L1_") for k in datatake)
-        else "L0"
+        else "L1" if any(k.startswith("L1_") for k in datatake) else "L0"
     )
     datatake["final_completeness_percentage"] = max(
         [v for k, v in datatake.items() if k.endswith("_local_percentage")], default=0.0
