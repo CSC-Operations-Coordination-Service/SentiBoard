@@ -51,7 +51,7 @@
             },
             {
                 "question": "Can I export the charts or data?",
-                "answer": "While there's no dedicated export button, screenshots and browser-based print/save tools can be used. For bulk or raw data, refer to the <a target='_blank' href='http://scihub.copernicus.eu/'>Copernicus Open Access Hub</a> or the <a target='_blank' href='https://dataspace.copernicus.eu/'>Data Space Ecosystem</a>."
+                "answer": "While there's no dedicated export button, screenshots and browser-based print/save tools can be used. For bulk or raw data, refer to the <a target='_blank' href='https://dataspace.copernicus.eu/'>Data Space Ecosystem</a>."
             }
         ]
     },

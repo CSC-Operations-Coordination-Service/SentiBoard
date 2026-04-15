@@ -50,14 +50,17 @@ logger = logging.getLogger(__name__)
 def internal_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # 1. Check for AJAX header
         if request.headers.get("X-Requested-With") != "XMLHttpRequest":
             logger.warning(f"[BLOCKED] Non-AJAX access attempt to {request.path}")
             abort(403)
 
         # 2. Check Referer to prevent direct URL typing
-        referer = request.headers.get("Referer")
-        if not referer or urlparse(referer).netloc != request.host:
+        referer = request.headers.get("Referer", "")
+        parsed = urlparse(referer)
+
+        referer_host = parsed.hostname
+        request_host = request.host.split(":")[0]
+        if not referer or referer_host != request_host:
             logger.warning(
                 f"[BLOCKED] External/Direct access attempt to {request.path} from {referer}"
             )
