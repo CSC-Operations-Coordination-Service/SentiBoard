@@ -173,9 +173,8 @@ def update_instant_messages(
         db.session.commit()
         return msg
     except Exception as ex:
-        logger.error("update_instant_messages failed: %s", ex, exc_info=True)
         db.session.rollback()
-        logger.exception("Error updating instant message: %s", message_id)
+        logger.exception("Error updating instant message: %s", id)
     return None
 
 
