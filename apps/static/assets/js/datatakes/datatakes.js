@@ -517,8 +517,12 @@ class Datatakes {
             setTimeout(() => this.hideSpinner(), 0);
         }
 
-    } async renderInfoTable(dataInput, page = 1) {
+    }
+
+    async renderInfoTable(dataInput, page = 1) {
         this.showSpinner();
+        let dataArray = [];
+
         try {
             const tableBody = document.getElementById("modalInfoTableBody");
             const paginationControls = document.getElementById("modalPaginationControls");
@@ -602,7 +606,7 @@ class Datatakes {
                 addToMap(k, val, "-");
             });
 
-            let dataArray = Array.from(tempMap.values());
+            dataArray = Array.from(tempMap.values());
 
             if (mission === "S2") dataArray = dataArray.filter(item => item.productType.includes("MSI"));
 
@@ -681,6 +685,11 @@ class Datatakes {
         } finally {
             setTimeout(() => this.hideSpinner(), 0);
         }
+
+        this.currentDataArray = dataArray;
+        this.currentPage = page;
+
+        //console.log("[INFO TABLE] Finished rendering table. Current page:", page, "Total items:", dataArray.length);
     }
 
     renderInfoTableHeader(showTimeliness) {

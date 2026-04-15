@@ -13,7 +13,7 @@ delivered to him.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apps import db
 from apps.utils.db_utils import generate_uuid
@@ -175,6 +175,7 @@ def update_instant_messages(
     except Exception as ex:
         logger.error("update_instant_messages failed: %s", ex, exc_info=True)
         db.session.rollback()
+        logger.exception("Error updating instant message: %s", message_id)
     return None
 
 

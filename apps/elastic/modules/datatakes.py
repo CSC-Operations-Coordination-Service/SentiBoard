@@ -110,6 +110,14 @@ def fetch_datatake_details(datatake_id):
         return "Unrecongnized datatake ID: " + datatake_id
 
 
+def _build_cds_completeness_indices(mission, satellites, splitted=False):
+    """
+    Build CDS completeness index names dynamically
+    """
+    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
+    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
+
+
 def _get_cds_datatakes(start_date: datetime, end_date: datetime):
     end_date_str = end_date.strftime("%d-%m-%Y")
     start_date_str = start_date.strftime("%d-%m-%Y")
@@ -120,14 +128,6 @@ def _get_cds_datatakes(start_date: datetime, end_date: datetime):
     return dt_interval
 
 
-def _build_cds_completeness_indices(mission, satellites, splitted=False):
-    """
-    Build CDS completeness index names dynamically
-    """
-    prefix = "cds-completeness-splitted" if splitted else "cds-completeness"
-    return [f"{prefix}-{mission}-{sat}-dd-das" for sat in satellites]
-
-
 def _get_cds_s1s2_datatakes(start_date, end_date):
     """
     Fetch the datatakes of S1 and S2 missions in the last 3 months from Elastic DB using the exposed REST APIs. The
@@ -136,7 +136,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
 
     results = []
     try:
-
         # Define start and end dates range
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
@@ -149,6 +148,8 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
 
         logger.info("[CDS][S1S2] Querying indices: %s", indices)
         elastic = elastic_client.ElasticClient()
+
+        logger.info("[CDS][S1S2] Querying indexes:%s", indices)
 
         # Fetch results from Elastic database
         for index in indices:
@@ -199,6 +200,7 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         logger.error(ex)
 
     # Calculate completeness for every datatake
+    clean_results = []
     for dt in results:
         # logger.info(
         #    "[CDS][S1S2][LIST][BEFORE] datatake_id=%s keys=%s",
@@ -220,12 +222,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         for key in list(dt["_source"]):
             if key.endswith("local_percentage"):
                 dt["_source"].pop(key)
-
-        # logger.info(
-        #    "[CDS][S1S2][LIST][STRIPPED] datatake_id=%s remaining keys=%s",
-        #    dt_id,
-        #    sorted(dt["_source"].keys()),
-        # )
 
         dt["_source"]["datatake_id"] = dt_id
         for level in ("L0_", "L1_", "L2_"):
@@ -283,8 +279,10 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
         #    },
         # )
 
+        clean_results.append(dt)
+
     # Return the response
-    return results
+    return clean_results
 
 
 def _get_cds_s3_datatakes(start_date, end_date):
@@ -295,7 +293,6 @@ def _get_cds_s3_datatakes(start_date, end_date):
 
     results = []
     try:
-
         # Define start and end dates range
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
@@ -426,7 +423,6 @@ def _get_cds_s5_datatakes(start_date, end_date):
 
     results = []
     try:
-
         # Define start and end dates range
         start_date = datetime.strptime(start_date, "%d-%m-%Y")
         end_date = datetime.strptime(end_date, "%d-%m-%Y")
@@ -630,16 +626,26 @@ def _calc_s2_datatake_completeness(datatake):
     l1_perc = 0
     l2_count = 0
     l2_perc = 0
+
+    AGGREGATE_PREFIXES = ("L0_", "L1A_", "L1B_", "L1C_", "L2A_")
+
     for key in keys:
-        if ("L0_" in key) and ("percentage" in key):
+        if "percentage" not in key:
+            continue
+
+        if any(key.startswith(p) for p in AGGREGATE_PREFIXES):
+            continue
+
+        if "L0_" in key:
             l0_count += 1
             l0_perc += datatake["_source"][key]
-        elif ("L1B_" in key or "L1C_" in key) and ("percentage" in key):
+        elif ("L1A_" in key or "L1B_" in key or "L1C_" in key) and "percentage" in key:
             l1_count += 1
             l1_perc += datatake["_source"][key]
-        elif ("L2A_" in key or "_2S_" in key) and ("percentage" in key):
+        elif "L2A_" in key:
             l2_count += 1
             l2_perc += datatake["_source"][key]
+
     if l0_count != 0:
         completeness["L0_"] = l0_perc / l0_count
     if l1_count != 0:
@@ -1078,12 +1084,11 @@ def _get_cds_s1s2_datatake_details(datatake_id):
 
 def _get_cds_s3_datatake_details(datatake_id):
     """
-    Fetch the datatakes completeness information from the published products.
+    Fetch S3 datatake completeness info from published products.
+    Returns an object suitable for frontend mapS3Data().
     """
-
     results = []
     try:
-
         # Auxiliary variable declaration
         indices = _build_cds_completeness_indices(
             "s3", CDS_MISSIONS["s3"], splitted=True
@@ -1091,7 +1096,6 @@ def _get_cds_s3_datatake_details(datatake_id):
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S3] Querying indexes details:%s", indices)
 
-        # Fetch results (products) from Elastic database
         for index in indices:
             try:
                 results += elastic.query_scan(
@@ -1157,18 +1161,16 @@ def _get_cds_s3_datatake_details(datatake_id):
         [v for k, v in datatake.items() if k.endswith("_local_percentage")], default=0.0
     )
 
-    # Return the datatakes list
     return datatake
 
 
 def _get_cds_s5_datatake_details(datatake_id):
     """
-    Fetch the datatake information given the datatake ID.
+    Fetch S5 datatake completeness info from published products.
+    Returns a list of dictionaries suitable for frontend mapS5Data().
     """
-
     results = []
     try:
-
         # Auxiliary variable declaration
         # indices = ["cds-s5-completeness"]
         indices = _build_cds_completeness_indices(
@@ -1177,7 +1179,6 @@ def _get_cds_s5_datatake_details(datatake_id):
         elastic = elastic_client.ElasticClient()
         logger.info("[CDS][S5] Querying indexes:%s", indices)
 
-        # Fetch results from Elastic database
         for index in indices:
             try:
                 results += elastic.query_scan(

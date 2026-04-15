@@ -346,6 +346,17 @@ class AcquisitionPlansViewer {
         }
     }
 
+    waitForCesiumToolbar(viewer, callback, attempt = 0) {
+        const toolbar = viewer.container.querySelector('.cesium-viewer-toolbar');
+        if (toolbar) {
+            callback(); // safe to initialize plugin
+        } else if (attempt < 20) {
+            setTimeout(() => this.waitForCesiumToolbar(viewer, callback, attempt + 1), 100);
+        } else {
+            console.error('Cesium viewer toolbar not found after 2s.');
+        }
+    }
+
     // SatelliteChange: the event handler is attached to MissionAcquisitionDays object
     // event selection_change and received the couple satellite/day
     on_satellite_change(selectionEv) {
@@ -447,15 +458,23 @@ class AcquisitionPlansViewer {
         console.log("Parameters for API URL: " + urlParamString);
         var that = this;
         // accept = 'application/xml'
-        var ajaxPromises = asyncAjaxDownloadXml('/api/' + acq_plans_api_name + '/' + urlParamString, 'GET', {},
-            that.successLoadAcquisitionPlan.bind(that), that.errorLoadAcquisitionPlan);
-
-        // Execute asynchronous AJAX call
-        ajaxPromises.then(function () {
-            console.log("Received all results!");
-            that.removeSpinner();
-        }
-        );
+        $.ajax({
+            url: '/api/acquisitions/acquisition-plans/' + urlParamString,
+            method: 'GET',
+            dataType: 'text',           // ← get raw string, no jQuery parsing
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function (rawXml) {
+                console.log("[DEBUG] KML first 100:", rawXml.substring(0, 100));
+                that.successLoadAcquisitionPlan(rawXml);
+                that.removeSpinner();
+            },
+            error: function (xhr) {
+                that.errorLoadAcquisitionPlan(xhr);
+                that.removeSpinner();
+            }
+        });
     }
 
     showSpinner() {
@@ -491,12 +510,12 @@ class AcquisitionPlansViewer {
     }
 
     successLoadAcquisitionPlan(response) {
-
+        console.log("[DEBUG] KML response:", typeof response, "| first 100 chars:", String(response).substring(0, 100));
         // TODO: Modify response, to include parameters: Mission, satellite, day
         // Acknowledge the successful retrieval of downlink operations
         // var kml_result = format_response(response);
         var kml_result = response;
-        // console.log("received response:", json_resp);
+
         console.info('Acquisition Plan successfully retrieved');
 
         // Parse response
@@ -539,18 +558,20 @@ class AcquisitionPlansViewer {
         // Acknowledge drawing of KML
         console.log("Drawing KML for Acq Plan ");
 
-        var options = {
+        const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
+        const url = URL.createObjectURL(blob);
+
+        const options = {
             // camera : this.viewer_widget.scene.camera,
             // canvas : this.viewer_widget.scene.canvas,
             // clampToGround: true,
             credit: "ESA"
         };
         // Remove first previous loaded KML DSulian
-
-        var newAcqPlanDSpromise = Cesium.KmlDataSource.load(kmlString, options);
+        var newAcqPlanDSpromise = Cesium.KmlDataSource.load(url, options);
         var that = this;
         newAcqPlanDSpromise.then(function (kmlDS) {
-
+            URL.revokeObjectURL(url);
             // that.viewer_widget.flyTo(newAcqPlanDSpromise);
             console.log("Setting KML Datasource clock properties");
             kmlDS.clock.multiplier = 300; // Step are 10 minutes long

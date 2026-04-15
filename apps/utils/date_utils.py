@@ -272,7 +272,6 @@ def get_whole_weeks_interval(start_date, end_date):
 
 
 class Quarter:
-
     # TODO: define a list of quarter first day, defined as month/day
     # or a dictionary (quarter_id : month/day)
     # to build the interval:
