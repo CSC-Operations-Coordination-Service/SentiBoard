@@ -1199,10 +1199,6 @@ def data_availability():
             acq_status = status_obj["ACQ"]["status"]
             pub_status = status_obj["PUB"]["status"]
 
-            # These are the percentages calculated by the shared function
-            acq_p = status_obj["ACQ"]["percentage"]
-            pub_p = status_obj["PUB"]["percentage"]
-
             # --- START OF UPDATED PIECE ---
             raw_start = src.get("observation_time_start")
             raw_stop = src.get("observation_time_stop")
