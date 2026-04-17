@@ -157,6 +157,7 @@
 												{% if not mission or mission == 'S1' %}
 													<option value="S1A" {{ 'selected' if request.args.get('satellite')|upper == 'S1A' }}>S1A</option>
 													<option value="S1C" {{ 'selected' if request.args.get('satellite')|upper =='S1C' }}>S1C</option>
+													<option value="S1D" {{ 'selected' if request.args.get('satellite')|upper =='S1D' }}>S1D</option>
 												{% endif %}
 												{% if not mission or mission == 'S2' %}
 													<option value="S2A" {{ 'selected' if request.args.get('satellite')|upper =='S2A' }}>S2A</option>

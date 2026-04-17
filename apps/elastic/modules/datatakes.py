@@ -176,17 +176,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
                     ],
                 )
                 result = list(result_gen)
-                # Convert result into array
-                # logger.info(
-                #    "[CDS][S1S2][LIST] index=%s fetched=%d docs",
-                #    index,
-                #    len(result),
-                # )
-                # if result:
-                #    logger.debug(
-                #        "[CDS][S1S2][LIST][RAW] sample _source keys=%s",
-                #        sorted(result[0].get("_source", {}).keys()),
-                #    )
 
                 results.extend(result)
             except ConnectionError as cex:
@@ -202,21 +191,10 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
     # Calculate completeness for every datatake
     clean_results = []
     for dt in results:
-        # logger.info(
-        #    "[CDS][S1S2][LIST][BEFORE] datatake_id=%s keys=%s",
-        #    dt["_id"],
-        #    sorted(dt["_source"].keys()),
-        # )
         dt_id = dt["_id"]
         completeness = {}
-        if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C"]):
+        if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C", "S1D"]):
             completeness = _calc_s1_datatake_completeness(dt)
-            # logger.info(
-            #    "[CDS][S1S2][LIST][CALC] datatake_id=%s completeness=%s",
-            #    dt_id,
-            #    completeness,
-            # )
-
         elif any(s2_sat in dt_id for s2_sat in ["S2A", "S2B", "S2C"]):
             completeness = _calc_s2_datatake_completeness(dt)
         for key in list(dt["_source"]):
