@@ -629,7 +629,7 @@ def index():
     SATELLITE_DISPLAY_NAMES = {
         "S1A": "Copernicus Sentinel-1A",
         "S1C": "Copernicus Sentinel-1C",
-        "S1C": "Copernicus Sentinel-1D",
+        "S1D": "Copernicus Sentinel-1D",
         "S2A": "Copernicus Sentinel-2A",
         "S2B": "Copernicus Sentinel-2B",
         "S2C": "Copernicus Sentinel-2C",
