@@ -29,7 +29,7 @@ missionDatatakeId = {
 }
 
 satelliteNoradId = {
-    'S1A': 39634, 'S1B': 41456, 'S1C': 62261,
+    'S1A': 39634, 'S1B': 41456, 'S1C': 62261, 'S1D': 66315,
     'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
     'S3A': 41335, 'S3B': 43437,
     'S5P': 42969
@@ -57,6 +57,7 @@ class MissionAcquisitionDates extends EventTarget {
             'S1A': { label: 'Sentinel-1A', mission: 'S1', dates: [] },
             'S1B': { label: 'Sentinel-1B', mission: 'S1', dates: [] },
             'S1C': { label: 'Sentinel-1C', mission: 'S1', dates: [] },
+            'S1D': { label: 'Sentinel-1D', mission: 'S1', dates: [] },
             'S2A': { label: 'Sentinel-2A', mission: 'S2', dates: [] },
             'S2B': { label: 'Sentinel-2B', mission: 'S2', dates: [] },
             'S2C': { label: 'Sentinel-2C', mission: 'S2', dates: [] },
@@ -73,9 +74,7 @@ class MissionAcquisitionDates extends EventTarget {
 
         this._daySelectionId = useDatePicker ? 'datepicker' : 'acquisition-plans-day-select';
 
-        /*if (useDatePicker) {
-            this._daySelectionId = 'datepicker';
-        }*/
+
     }
 
     init() {

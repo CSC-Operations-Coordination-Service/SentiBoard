@@ -69,7 +69,7 @@ class CalendarWidget {
         this.selectedEventType = 'all';
         this.searchTerm = '';
         this.missionMap = {
-            's1': ['S1A', 'S1C'],
+            's1': ['S1A', 'S1C', 'S1D'],
             's2': ['S2A', 'S2B', 'S2C'],
             's3': ['S3A', 'S3B'],
             's5': ['S5P']
@@ -509,7 +509,7 @@ class CalendarWidget {
                 return `
             <li style="margin: 2px 0; list-style: none;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <a href="/data-availability.html?search=${displayId}&period=prev-quarter" target="_blank"
+                    <a href="/data-availability.html?search=${datatake_id}&period=prev-quarter" target="_blank"
                         style="color: #aad; text-decoration: underline; font-weight:500;">
                         ${displayId}
                     </a>
@@ -811,7 +811,7 @@ class CalendarWidget {
 
         const searchLower = (searchText || '').toLowerCase().trim();
         const missionMap = this.missionMap || {
-            's1': ['S1A', 'S1C'],
+            's1': ['S1A', 'S1C', 'S1D'],
             's2': ['S2A', 'S2B', 'S2C'],
             's3': ['S3A', 'S3B'],
             's5': ['S5P']
@@ -954,7 +954,7 @@ class CalendarWidget {
         if (!envStr) return '';
         if (envStr.includes('Data access')) return 'All Sentinels';
 
-        const sats = ['S1A', 'S1C', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+        const sats = ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
         return sats.filter(sat => envStr.includes(sat)).join(', ');
     }
 

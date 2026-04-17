@@ -565,6 +565,7 @@ def index():
     ALLOWED_SATELLITES = {
         "S1A",
         "S1C",
+        "S1D",
         "S2A",
         "S2B",
         "S2C",
@@ -628,6 +629,7 @@ def index():
     SATELLITE_DISPLAY_NAMES = {
         "S1A": "Copernicus Sentinel-1A",
         "S1C": "Copernicus Sentinel-1C",
+        "S1C": "Copernicus Sentinel-1D",
         "S2A": "Copernicus Sentinel-2A",
         "S2B": "Copernicus Sentinel-2B",
         "S2C": "Copernicus Sentinel-2C",
@@ -1137,7 +1139,7 @@ def data_availability():
             item_sat = (src.get("satellite_unit") or "").upper()
 
             if item_sat.startswith("S1"):
-                if item_sat not in ["S1A", "S1C"]:
+                if item_sat not in ["S1A", "S1C", "S1D"]:
                     continue
 
             if m_filter_upper and m_filter_upper not in item_sat:
@@ -1198,10 +1200,6 @@ def data_availability():
             status_obj = _calc_datatake_completeness_status(src)
             acq_status = status_obj["ACQ"]["status"]
             pub_status = status_obj["PUB"]["status"]
-
-            # These are the percentages calculated by the shared function
-            acq_p = status_obj["ACQ"]["percentage"]
-            pub_p = status_obj["PUB"]["percentage"]
 
             # --- START OF UPDATED PIECE ---
             raw_start = src.get("observation_time_start")

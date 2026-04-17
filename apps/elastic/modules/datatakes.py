@@ -176,17 +176,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
                     ],
                 )
                 result = list(result_gen)
-                # Convert result into array
-                # logger.info(
-                #    "[CDS][S1S2][LIST] index=%s fetched=%d docs",
-                #    index,
-                #    len(result),
-                # )
-                # if result:
-                #    logger.debug(
-                #        "[CDS][S1S2][LIST][RAW] sample _source keys=%s",
-                #        sorted(result[0].get("_source", {}).keys()),
-                #    )
 
                 results.extend(result)
             except ConnectionError as cex:
@@ -202,32 +191,15 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
     # Calculate completeness for every datatake
     clean_results = []
     for dt in results:
-        # logger.info(
-        #    "[CDS][S1S2][LIST][BEFORE] datatake_id=%s keys=%s",
-        #    dt["_id"],
-        #    sorted(dt["_source"].keys()),
-        # )
         dt_id = dt["_id"]
         completeness = {}
-        if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C"]):
+        if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C", "S1D"]):
             completeness = _calc_s1_datatake_completeness(dt)
-            # logger.info(
-            #    "[CDS][S1S2][LIST][CALC] datatake_id=%s completeness=%s",
-            #    dt_id,
-            #    completeness,
-            # )
-
         elif any(s2_sat in dt_id for s2_sat in ["S2A", "S2B", "S2C"]):
             completeness = _calc_s2_datatake_completeness(dt)
         for key in list(dt["_source"]):
             if key.endswith("local_percentage"):
                 dt["_source"].pop(key)
-
-        # logger.info(
-        #    "[CDS][S1S2][LIST][STRIPPED] datatake_id=%s remaining keys=%s",
-        #    dt_id,
-        #    sorted(dt["_source"].keys()),
-        # )
 
         dt["_source"]["datatake_id"] = dt_id
         for level in ("L0_", "L1_", "L2_"):
@@ -632,16 +604,26 @@ def _calc_s2_datatake_completeness(datatake):
     l1_perc = 0
     l2_count = 0
     l2_perc = 0
+
+    AGGREGATE_PREFIXES = ("L0_", "L1A_", "L1B_", "L1C_", "L2A_")
+
     for key in keys:
-        if ("L0_" in key) and ("percentage" in key):
+        if "percentage" not in key:
+            continue
+
+        if any(key.startswith(p) for p in AGGREGATE_PREFIXES):
+            continue
+
+        if "L0_" in key:
             l0_count += 1
             l0_perc += datatake["_source"][key]
-        elif ("L1B_" in key or "L1C_" in key) and ("percentage" in key):
+        elif ("L1A_" in key or "L1B_" in key or "L1C_" in key) and "percentage" in key:
             l1_count += 1
             l1_perc += datatake["_source"][key]
-        elif ("L2A_" in key or "_2S_" in key) and ("percentage" in key):
+        elif "L2A_" in key:
             l2_count += 1
             l2_perc += datatake["_source"][key]
+
     if l0_count != 0:
         completeness["L0_"] = l0_perc / l0_count
     if l1_count != 0:

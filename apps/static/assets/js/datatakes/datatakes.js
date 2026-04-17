@@ -259,7 +259,7 @@ class Datatakes {
     }
 
     getGroundStation(id) {
-        if (id.includes("S1A") || id.includes("S1C")) return "Sentinel 1";
+        if (id.includes("S1A") || id.includes("S1C") || id.includes("S1D")) return "Sentinel 1";
         if (id.includes("S2A") || id.includes("S2B")) return "Sentinel 2";
         if (id.includes("S3")) return "Sentinel 3";
         if (id.includes("S5P")) return "Sentinel 5P";
@@ -268,77 +268,6 @@ class Datatakes {
 
     populateDataList(append = false) {
         this.showSpinner();
-        /*try {
-            const dataList = document.getElementById("dataList");
-            const loadMoreBtn = document.getElementById("loadMoreBtn");
-
-            if (!dataList) return;
-
-            const data = this.filteredDataTakes && this.filteredDataTakes.length
-                ? this.filteredDataTakes
-                : this.mockDataTakes;
-
-            //console.log("[POPULATE] data used for sidebar:", data.map(t => t.id));
-
-            if (!append) {
-                dataList.innerHTML = "";
-                this.displayedCount = 0;
-            }
-
-            if (data.length === 0) {
-                const li = document.createElement("li");
-                li.textContent = " ";
-                li.style.color = "#aaa";
-                if (loadMoreBtn) {
-                    loadMoreBtn.style.display = "none"
-                }
-                return;
-            }
-
-            const nextItems = data.slice(this.displayedCount, this.displayedCount + this.itemsPerPage);
-            const fragment = document.createDocumentFragment();
-
-            nextItems.forEach(take => {
-                const li = document.createElement("li");
-                const containerDiv = document.createElement("div");
-                containerDiv.className = "container-border";
-
-                const a = document.createElement("a");
-                a.href = "#";
-                a.className = "filter-link";
-                a.dataset.filterType = "groundStation";
-                a.dataset.filterValue = this.getGroundStation(take.id);
-                a.textContent = take.id;
-
-                a.addEventListener("click", e => e.preventDefault());
-
-
-                const status = (take.acquisition_status || "unknown").toLowerCase();
-                const statusCircle = document.createElement("div");
-                statusCircle.className = `status-circle-dt-${status}`;
-
-                containerDiv.appendChild(a);
-                containerDiv.appendChild(statusCircle);
-                li.appendChild(containerDiv);
-                fragment.appendChild(li);
-            });
-
-            dataList.appendChild(fragment);
-            this.displayedCount += nextItems.length;
-
-            if (loadMoreBtn) {
-                loadMoreBtn.style.display = "block";
-                loadMoreBtn.disabled = this.displayedCount >= data.length;
-            }
-
-            if (!append && nextItems.length > 0) {
-                const first = dataList.querySelector(".container-border");
-                const a = first?.querySelector("a.filter-link");
-                if (first && a) this.handleItemClick(nextItems[0], first, a);
-            }
-        } finally {
-            setTimeout(() => this.hideSpinner(), 0);
-        }*/
     }
 
     attachItemListeners(listItems) {
