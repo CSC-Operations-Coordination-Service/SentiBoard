@@ -82,6 +82,9 @@
   <!-- Load main CSS deferred to improve LCP -->
   <link rel="stylesheet" href="/static/assets/css/dashboard.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="/static/assets/css/dashboard.css"></noscript>
+
+  <link rel="stylesheet" href="/static/assets/css/new-message.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="/static/assets/css/new-message.css"></noscript>
 {% endblock stylesheets %}
 
 {% block content %}
@@ -92,7 +95,7 @@
 <!-- Hero section -->
 <div class="content page-inner" style="background-color: #006B7C">
   <div style="width: 100%; position: relative;">
-    <h1 class="sr-only">Copernicus Sentinel Operations Dashboard</h1>
+      <h1 class="sr-only">Copernicus Sentinel Operations Dashboard — Real-Time Mission Monitoring</h1>
 
     <div id="hero-container" class="position-relative">
       <!-- LCP Poster Image -->
@@ -193,7 +196,12 @@
     {% if instant_messages and instant_messages|length > 0 %}
         {% for item in instant_messages %}
           <div class="news-card p-2 rounded shadow mb-2 text-white">
-            <div class="fw-bold">{{ item.title }}</div>
+            {# Flag + title row #}
+            <div class="d-flex align-items-center mb-1" style="gap:8px;">
+              <span class="ne-news-flag {{ flag_cls }}" title="{{ badge_txt }}">{{ flag_icon }}</span>
+              <span class="fw-bold" style="font-size:0.95rem;">{{ item.title }}</span>
+              <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
+            </div>
             <div class="text-muted small">{{ item.publicationDate }}</div>
             <div>{{ item.text }}</div>
 
@@ -231,6 +239,35 @@
     </button>
     <div class="collapse" id="customBannerMobile">
       <div id="custom-banner-mobile" class="bg-dark text-white p-3 rounded"></div>
+      {% if instant_messages and instant_messages|length > 0 %}
+        {% for item in instant_messages %}
+          <div class="news-card p-2 rounded shadow mb-2 text-white">
+            <div class="d-flex align-items-center mb-1" style="gap:8px;">
+              <span class="ne-news-flag {{ flag_cls }}" title="{{ badge_txt }}">{{ flag_icon }}</span>
+              <span class="fw-bold" style="font-size:0.95rem;">{{ item.title }}</span>
+              <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
+            </div>
+            <div class="text-muted small mb-1">{{ item.publicationDate }}</div>
+            <div style="font-size:0.88rem;">{{ item.text }}</div>
+            {% if item.link %}
+              <div class="mt-1">
+                <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">Read more</a>
+              </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+          {% if total_messages > 3 %}
+            <div class="text-center mt-2">
+              <a href="/newsList.html" class="btn btn-outline-light"
+                style="background-color:#FFC107; color:#212529;">
+                View all news
+              </a>
+            </div>
+          {% endif %}
+
+        {% else %}
+          <div class="text-center py-4">There are no news at the moment.</div>
+        {% endif %}
     </div>
   </div>
 </div>
