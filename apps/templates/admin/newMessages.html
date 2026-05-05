@@ -70,6 +70,7 @@
         <label class="ne-label" for="ne-template-select">Load template</label>
         <select class="form-control" id="ne-template-select" onchange="NewsEditor.applyTemplate()">
             <option value="">-- Select a template (optional) --</option>
+            <option value="__clear__"> x Clear template</option>
             <optgroup label="One Mission Impact">
                 <option value="one_anomaly">One Mission - Anomaly</option>
                 <option value="one_resolved">One Mission - Service Resumed</option>
@@ -107,20 +108,12 @@
                 </select>
             </div>
             <div>
-                <label class="ne-label" for="ne-start-date">Impact start date</label>
-                <input type="date" class="form-control ne-input-sm" id="ne-start-date" oninput="NewsEditor.fillDates()">
-            </div>
-            <div>
-                <label class="ne-label" for="ne-start-time">Impact start UTC</label>
-                <input type="time" class="form-control ne-input-sm" id="ne-start-time" oninput="NewsEditor.fillDates()">
+                <label class="ne-label" for="ne-start-dt">Impact start (UTC)</label>
+                <input type="datetime-local" class="form-control ne-input-sm" id="ne-start-dt" oninput="NewsEditor.fillDates()">
             </div>
             <div id="ne-end-date-group" style="display:none;">
-                <label class="ne-label" for="ne-end-date">Return to nominal date</label>
-                <input type="date" class="form-control ne-input-sm" id="ne-end-date" oninput="NewsEditor.fillDates()">
-            </div>
-            <div id="ne-end-time-group" style="display:none;">
-                <label class="ne-label" for="ne-end-time">Return to nominal UTC</label>
-                <input type="time" class="form-control ne-input-sm" id="ne-end-time" oninput="NewsEditor.fillDates()">
+                <label class="ne-label" for="ne-end-dt">Return to nominal (UTC)</label>
+                <input type="datetime-local" class="form-control ne-input-sm" id="ne-end-dt" oninput="NewsEditor.fillDates()">
             </div>
         </div>
     </div>

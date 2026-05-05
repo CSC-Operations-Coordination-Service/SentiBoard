@@ -126,21 +126,53 @@ const NewsEditor = (() => {
         const sel = ($id('ne-template-select') || {}).value || '';
         if (!sel) return;
 
+        // ── Clear template ──────────────────────────────────────────────
+        if (sel === '__clear__') {
+            // Reset select to placeholder
+            const selectEl = $id('ne-template-select');
+            if (selectEl) selectEl.value = '';
+
+            // Hide the entire template fields container and all sub-groups
+            const tplFields = $id('ne-tpl-fields');
+            const endDateGrp = $id('ne-end-date-group');
+            const sentGrp = $id('ne-sentinel-group');
+
+            if (tplFields) tplFields.style.display = 'none';  // ← hides the whole block
+            if (endDateGrp) endDateGrp.style.display = 'none';
+            if (sentGrp) sentGrp.style.display = 'none';
+
+            // Reset all inputs inside the template fields
+            const startDt = $id('ne-start-dt');
+            const endDt = $id('ne-end-dt');
+            const si = $id('ne-sentinel-id');
+            if (startDt) startDt.value = '';
+            if (endDt) endDt.value = '';
+            if (si) si.value = '';
+
+            // Clear the form fields that were populated by the template
+            const titleEl = $id('title');
+            const textEl = $id('text');
+            if (titleEl) titleEl.value = '';
+            if (textEl) textEl.value = '';
+
+            return;
+        }
+        // ── Normal template apply (rest of function unchanged) ─────────
+
         const tpl = TEMPLATES[sel];
         if (!tpl) return;
 
         const tplFields = $id('ne-tpl-fields');
         const endDateGrp = $id('ne-end-date-group');
-        const endTimeGrp = $id('ne-end-time-group');
         const sentGrp = $id('ne-sentinel-group');
 
         if (tplFields) tplFields.style.display = '';
         if (endDateGrp) endDateGrp.style.display = tpl.needsEnd ? '' : 'none';
-        if (endTimeGrp) endTimeGrp.style.display = tpl.needsEnd ? '' : 'none';
         if (sentGrp) sentGrp.style.display = tpl.needsSentinel ? '' : 'none';
 
         _fillDates(tpl);
     }
+
 
     function fillDates() {
         const sel = ($id('ne-template-select') || {}).value || '';
@@ -150,10 +182,15 @@ const NewsEditor = (() => {
     function _fillDates(tpl) {
         if (!tpl) return;
 
-        const sd = ($id('ne-start-date') || {}).value || 'XX-XX-XX';
-        const st = ($id('ne-start-time') || {}).value || 'XX:XX';
-        const ed = ($id('ne-end-date') || {}).value || 'XX-XX-XX';
-        const et = ($id('ne-end-time') || {}).value || 'XX:XX';
+        const startVal = ($id('ne-start-dt') || {}).value || '';
+        const startParts = startVal.split('T');
+        const sd = startParts[0] || 'XX-XX-XX';
+        const st = startParts[1] || 'XX:XX';
+
+        const endVal = ($id('ne-end-dt') || {}).value || '';
+        const endParts = endVal.split('T');
+        const ed = endParts[0] || 'XX-XX-XX';
+        const et = endParts[1] || 'XX:XX';
 
         let sentinel = 'XX';
         if (tpl.needsSentinel) {
