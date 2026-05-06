@@ -93,19 +93,38 @@
     <div id="ne-tpl-fields" class="ne-tpl-fields" style="display:none;">
         <div class="ne-row-2col">
             <div id="ne-sentinel-group" style="display:none;">
-                <label class="ne-label" for="ne-sentinel-id">Sentinel(s)</label>
-                <select class="form-control ne-input-sm" id="ne-sentinel-id" onchange="NewsEditor.fillDates()">
-                    <option value="">-- Select Sentinel --</option>
-                    <option value="1A">Sentinel 1A</option>
-                    <option value="1C">Sentinel 1C</option>
-                    <option value="1D">Sentinel 1D</option>
-                    <option value="2A">Sentinel 2A</option>
-                    <option value="2B">Sentinel 2B</option>
-                    <option value="2C">Sentinel 2C</option>
-                    <option value="3A">Sentinel 3A</option>
-                    <option value="3B">Sentinel 3B</option>
-                    <option value="5P">Sentinel 5P</option>
-                </select>
+                <!-- Single select — shown for one-mission and sentiboard_tech templates -->
+                <div id="ne-sentinel-single">
+                    <label class="ne-label" for="ne-sentinel-id">Sentinel</label>
+                    <select class="form-control ne-input-sm" id="ne-sentinel-id" onchange="NewsEditor.fillDates()">
+                        <option value="">-- Select Sentinel --</option>
+                        <option value="1A">Sentinel 1A</option>
+                        <option value="1C">Sentinel 1C</option>
+                        <option value="1D">Sentinel 1D</option>
+                        <option value="2A">Sentinel 2A</option>
+                        <option value="2B">Sentinel 2B</option>
+                        <option value="2C">Sentinel 2C</option>
+                        <option value="3A">Sentinel 3A</option>
+                        <option value="3B">Sentinel 3B</option>
+                        <option value="5P">Sentinel 5P</option>
+                    </select>
+                </div>
+                <!-- Multi select — shown for multi-mission templates -->
+                <div id="ne-sentinel-multi" style="display:none;">
+                    <label class="ne-label" for="ne-sentinel-multi-id">Sentinel(s) — hold Ctrl/Cmd to select multiple</label>
+                    <select class="form-control ne-input-sm" id="ne-sentinel-multi-id"
+                            multiple size="9" onchange="NewsEditor.fillDates()">
+                        <option value="1A">Sentinel 1A</option>
+                        <option value="1C">Sentinel 1C</option>
+                        <option value="1D">Sentinel 1D</option>
+                        <option value="2A">Sentinel 2A</option>
+                        <option value="2B">Sentinel 2B</option>
+                        <option value="2C">Sentinel 2C</option>
+                        <option value="3A">Sentinel 3A</option>
+                        <option value="3B">Sentinel 3B</option>
+                        <option value="5P">Sentinel 5P</option>
+                    </select>
+                </div>
             </div>
             <div>
                 <label class="ne-label" for="ne-start-dt">Impact start (UTC)</label>

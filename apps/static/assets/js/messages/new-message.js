@@ -28,14 +28,14 @@ const NewsEditor = (() => {
                 + 'Analysis is ongoing. The impact will be available on the Sentinel Operations '
                 + 'Dashboard Events Page on the next Nominal Working Day. We apologise for the '
                 + 'inconveniences the issue is causing.',
-            needsEnd: false, needsSentinel: true
+            needsEnd: false, needsSentinel: true, needsMulti: true
         },
         multi_resolved: {
             title: 'Copernicus Sentinel-{X} operation impacts',
             text: 'Sentinel {X} operations were impacted from date {SD} on UTC {ST}. Operations '
                 + 'return to nominal date {ED} on UTC {ET}. The impact will be available on the '
                 + 'Sentinel Operations Dashboard Events Page on the next Nominal Working Day.',
-            needsEnd: true, needsSentinel: true
+            needsEnd: true, needsSentinel: true, needsMulti: true
         },
         cdse_anomaly: {
             title: 'Copernicus CDSE operation impacts',
@@ -63,7 +63,6 @@ const NewsEditor = (() => {
 
     // ── messageType → preview icon config ─────────────────────────────────
     // fa icon class and colour match EXACTLY what newsList.html renders,
-    // so the editor preview shows what the list will look like after save.
     //
     //  messageType  │  fa icon                    │  colour   │  label
     //  ─────────────┼─────────────────────────────┼───────────┼──────────────
@@ -145,9 +144,16 @@ const NewsEditor = (() => {
             const startDt = $id('ne-start-dt');
             const endDt = $id('ne-end-dt');
             const si = $id('ne-sentinel-id');
+            const sm = $id('ne-sentinel-multi-id');
+            const sentSingle = $id('ne-sentinel-single');
+            const sentMulti = $id('ne-sentinel-multi');
+
             if (startDt) startDt.value = '';
             if (endDt) endDt.value = '';
             if (si) si.value = '';
+            if (sm) Array.from(sm.options).forEach(o => o.selected = false);
+            if (sentSingle) sentSingle.style.display = '';   // reset to default visible
+            if (sentMulti) sentMulti.style.display = 'none';
 
             // Clear the form fields that were populated by the template
             const titleEl = $id('title');
@@ -165,12 +171,28 @@ const NewsEditor = (() => {
         const tplFields = $id('ne-tpl-fields');
         const endDateGrp = $id('ne-end-date-group');
         const sentGrp = $id('ne-sentinel-group');
+        const sentSingle = $id('ne-sentinel-single');
+        const sentMulti = $id('ne-sentinel-multi');
 
         if (tplFields) tplFields.style.display = '';
         if (endDateGrp) endDateGrp.style.display = tpl.needsEnd ? '' : 'none';
         if (sentGrp) sentGrp.style.display = tpl.needsSentinel ? '' : 'none';
 
+        // Switch between single and multi sentinel selector
+        if (tpl.needsSentinel) {
+            const isMulti = tpl.needsMulti || false;
+            if (sentSingle) sentSingle.style.display = isMulti ? 'none' : '';
+            if (sentMulti) sentMulti.style.display = isMulti ? '' : 'none';
+
+            // Reset both selectors when switching templates
+            const si = $id('ne-sentinel-id');
+            const sm = $id('ne-sentinel-multi-id');
+            if (si) si.value = '';
+            if (sm) Array.from(sm.options).forEach(o => o.selected = false);
+        }
+
         _fillDates(tpl);
+
     }
 
 
@@ -194,8 +216,17 @@ const NewsEditor = (() => {
 
         let sentinel = 'XX';
         if (tpl.needsSentinel) {
-            const si = $id('ne-sentinel-id');
-            sentinel = (si && si.value) ? si.value : 'XX';
+            if (tpl.needsMulti) {
+                // Build XX/YY/ZZ string from all selected options
+                const sm = $id('ne-sentinel-multi-id');
+                if (sm) {
+                    const selected = Array.from(sm.selectedOptions).map(o => o.value);
+                    sentinel = selected.length > 0 ? selected.join('/') : 'XX';
+                }
+            } else {
+                const si = $id('ne-sentinel-id');
+                sentinel = (si && si.value) ? si.value : 'XX';
+            }
         }
 
         const title = tpl.title.replace(/\{X\}/g, sentinel);
@@ -211,6 +242,7 @@ const NewsEditor = (() => {
         if (titleEl) titleEl.value = title;
         if (textEl) textEl.value = text;
     }
+
 
     function init() {
         if (!$id('new-message-form')) return;
