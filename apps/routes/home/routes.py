@@ -635,7 +635,7 @@ def index():
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
-        page_size = 3  # number of messages to show on home page
+        page_size = 5  # number of messages to show on home page
 
         # sorting publicationDate descending
         query = db.session.query(instant_messages_model.InstantMessages).order_by(
@@ -650,7 +650,8 @@ def index():
             {
                 "id": msg.id,
                 "title": msg.title,
-                "text": msg.text,
+                "text": msg.text[:130]
+                + ("..." if msg.text and len(msg.text) > 130 else msg.text),
                 "messageType": msg.messageType,
                 "publicationDate": format_pub_date(msg.publicationDate),
                 "link": msg.link,
@@ -685,7 +686,6 @@ def index():
 
 @blueprint.route("/events")
 def events():
-
     try:
         metadata = get_metadata("events.html")
         metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
