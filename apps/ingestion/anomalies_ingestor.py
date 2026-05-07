@@ -77,7 +77,7 @@ class AnomaliesIngestor:
 
             # From tha anomaly title and description, try to retrieve the impacted satellite, item and the category
             title_tokenized = (
-                anomaly["title"]
+                (anomaly["title"] or "")
                 .replace("[", " ")
                 .replace("]", " ")
                 .replace("(", " ")
@@ -89,7 +89,7 @@ class AnomaliesIngestor:
                 .split()
             )
             text_tokenized = (
-                anomaly["text"]
+                (anomaly["text"] or "")
                 .replace("[", " ")
                 .replace("]", " ")
                 .replace("(", " ")
