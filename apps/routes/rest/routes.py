@@ -95,7 +95,7 @@ def roles_required(*roles):
     "/api/acquisitions/acquisition-datatakes/<mission>/<satellite>/<day>",
     methods=["GET"],
 )
-@internal_only
+@login_required
 def get_acquisition_datatakes(mission, satellite, day):
     satellite_day_datatakes = datatakes_cache.get_satellite_day_datatakes(
         satellite, day
@@ -111,7 +111,8 @@ def get_acquisition_datatakes(mission, satellite, day):
 @blueprint.route(
     "/api/acquisitions/acquisition-plans/<mission>/<satellite>/<day>", methods=["GET"]
 )
-@internal_only
+@login_required
+@roles_required("admin", "esauser", "ecuser", "guest")
 def get_acquisition_plans(mission, satellite, day):
     logger.debug("Called INTERNAL Acquisition Plan KML")
 
@@ -241,7 +242,8 @@ def get_news_previous_quarter():
 
 
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])
-@internal_only
+@login_required
+@roles_required("admin", "esauser", "ecuser", "guest")
 def get_cds_datatake(datatake_id):
     logger.info("[BEG] INTERNAL API GET Datatake info %s ", datatake_id)
 
