@@ -15,7 +15,7 @@ delivered to him.
 import logging
 from datetime import datetime, timedelta
 from time import perf_counter
-
+import math
 import pytz
 from czml import czml
 from satellite_czml import satellite
@@ -47,10 +47,132 @@ norad_id_map = {
 }
 
 
-def get_latest_tle(satellite):
-    # Otherwise retrieve from CACHE!
-    norad_id = norad_id_map[satellite]
-    return fetch_tle_from_celestrak(norad_id)
+def get_latest_tle(sat_id):
+    norad_id = norad_id_map[sat_id]
+    raw = fetch_tle_from_celestrak(norad_id)
+
+    # Celestrak now returns OMM CSV format instead of TLE
+    # raw is a tuple: (header_row, data_row, '')
+    if isinstance(raw, tuple) and len(raw) >= 2 and "," in raw[0]:
+        return _omm_csv_to_tle(raw[0], raw[1], sat_id)
+
+    return raw
+
+
+def _omm_csv_to_tle(header_row, data_row, sat_id):
+    headers = header_row.split(",")
+    values = data_row.split(",")
+    omm = dict(zip(headers, values))
+
+    name = omm.get("OBJECT_NAME", sat_id)
+
+    # --- Line 1 ---
+    norad = omm["NORAD_CAT_ID"].strip().zfill(5)
+    classification = omm.get("CLASSIFICATION_TYPE", "U").strip()
+
+    # International designator: "2014-016A" → "14016A  " (2-digit year + rest, 8 chars)
+    intl_raw = omm.get("OBJECT_ID", "").strip().replace("-", "")
+    intl_desig = (intl_raw[2:] if len(intl_raw) > 6 else intl_raw).ljust(8)
+    # correct format is YY + LLLPPP: 2-digit year + launch number + piece
+    # "2014-016A" → year=14, launch=016, piece=A → "14016A"
+    parts = omm.get("OBJECT_ID", "").strip().split("-")
+    if len(parts) == 3:
+        intl_desig = (parts[0][2:] + parts[1] + parts[2]).ljust(8)
+    elif len(parts) == 2:
+        intl_desig = (parts[0][2:] + parts[1]).ljust(8)
+
+    epoch_tle = _epoch_to_tle(omm.get("EPOCH", "").strip())
+    ndot = _format_ndot(omm.get("MEAN_MOTION_DOT", "0"))
+    nddot = _format_tle_decimal(omm.get("MEAN_MOTION_DDOT", "0"))
+    bstar = _format_tle_decimal(omm.get("BSTAR", "0"))
+    ephemeris = omm.get("EPHEMERIS_TYPE", "0").strip()
+    element_set = omm.get("ELEMENT_SET_NO", "999").strip().rjust(4)
+
+    # Strict column format — no checksum digit yet (it goes in position 68)
+    line1_body = f"1 {norad}{classification} {intl_desig} {epoch_tle} {ndot} {nddot} {bstar} {ephemeris}{element_set}"
+    line1 = line1_body + str(_tle_checksum(line1_body))
+
+    # --- Line 2 ---
+    inclination = f"{float(omm['INCLINATION']):8.4f}"
+    raan = f"{float(omm['RA_OF_ASC_NODE']):8.4f}"
+    # drop "0." prefix, pad to 7 digits
+    ecc_raw = omm["ECCENTRICITY"].strip().lstrip("0").lstrip(".")
+    eccentricity = ecc_raw.ljust(7, "0")[:7]
+    arg_perigee = f"{float(omm['ARG_OF_PERICENTER']):8.4f}"
+    mean_anomaly = f"{float(omm['MEAN_ANOMALY']):8.4f}"
+    mean_motion = f"{float(omm['MEAN_MOTION']):11.8f}"
+    rev_at_epoch = omm.get("REV_AT_EPOCH", "0").strip().rjust(5)
+
+    line2_body = f"2 {norad} {inclination} {raan} {eccentricity} {arg_perigee} {mean_anomaly} {mean_motion}{rev_at_epoch}"
+    line2 = line2_body + str(_tle_checksum(line2_body))
+
+    # logger.info(f"[TLE] Converted OMM→TLE for {sat_id}:\n  {line1}\n  {line2}")
+    return (name, line1, line2)
+
+
+def _epoch_to_tle(epoch_str):
+    """Convert ISO epoch to TLE format: YYDDD.DDDDDDDD"""
+    from datetime import datetime
+
+    dt = datetime.fromisoformat(epoch_str)
+    year = dt.year % 100
+    start_of_year = datetime(dt.year, 1, 1)
+    day_fraction = (dt - start_of_year).total_seconds() / 86400 + 1
+    return f"{year:02d}{day_fraction:012.8f}"
+
+
+def _format_ndot(val):
+    """
+    Format mean_motion_dot as +.NNNNNNNN (TLE assumed-decimal, signed).
+    e.g. 0.00000277 → '+.00000277', -0.00000277 → '-.00000277'
+    """
+    f = float(val)
+    sign = "+" if f >= 0 else "-"
+    # Remove leading zero: 0.00000277 → .00000277
+    abs_str = f"{abs(f):.8f}"[1:]  # strips the "0" before the "."
+    return f"{sign}{abs_str}"
+
+
+def _format_tle_decimal(val):
+    """
+    Format BSTAR / MEAN_MOTION_DDOT in TLE assumed-decimal notation.
+    e.g. '.68422E-4' → '+68422-4', '0' → '+00000-0'
+    """
+    s = str(val).strip().upper()
+
+    if s in ("0", "0.0", ".0", ""):
+        return "+00000-0"
+
+    # Already in TLE-ish form like '.68422E-4' or '1.234E-5'
+    if "E" in s:
+        mantissa_str, exp_str = s.split("E")
+        exp = int(exp_str)
+        # Remove sign, decimal point from mantissa, keep 5 digits
+        mantissa_str = mantissa_str.replace(".", "").replace("+", "").replace("-", "")
+        mantissa_str = mantissa_str.lstrip("0").ljust(5, "0")[:5]
+        sign = "-" if float(val) < 0 else "+"
+        return f"{sign}{mantissa_str}{exp:+d}".replace("+", "+").replace("+-", "-")
+
+    # Plain float fallback
+    f = float(val)
+    if f == 0:
+        return "+00000-0"
+
+    exp = math.floor(math.log10(abs(f))) + 1
+    mantissa = int(round(abs(f) * 10 ** (5 - exp)))
+    sign = "+" if f >= 0 else "-"
+    return f"{sign}{mantissa:05d}{exp-1:+d}"
+
+
+def _tle_checksum(line):
+    """TLE line checksum: sum all digits + 1 for each '-', mod 10."""
+    total = 0
+    for c in line[:-1]:  # exclude last char (the checksum slot)
+        if c.isdigit():
+            total += int(c)
+        elif c == "-":
+            total += 1
+    return total % 10
 
 
 def load_satellite_orbits():
@@ -97,6 +219,7 @@ def load_satellite_orbits():
 
             # Retrieve latest TLE
             tle = get_latest_tle(sat_id)
+            # logger.info(f"Latest TLE for {sat_id} : {tle}")
 
             # Build the CZML orbit data from TLE, in the specified time period
             sat = satellite(

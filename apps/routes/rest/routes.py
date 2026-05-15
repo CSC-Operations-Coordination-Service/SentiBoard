@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from functools import wraps
 
 from apps.utils.events_utils import make_json_safe
-from flask import request, Response
+from flask import jsonify, request, Response
 from flask_login import login_required
 
 import apps.cache.modules.acquisitions as acquisitions_cache
@@ -140,7 +140,18 @@ def get_satellites_orbits():
     # if not flask_cache.has(orbits_api_key):
     #    logger.debug("Loading Satellites Orbits from NORAD")
     #    acquisition_assets_cache.load_satellite_orbits()
-    return flask_cache.get(orbits_api_key)
+    cached = flask_cache.get(orbits_api_key)
+
+    if cached is None:
+        logger.info("Orbits cache miss — loading from NORAD")
+        acquisition_assets_cache.load_satellite_orbits()
+        cached = flask_cache.get(orbits_api_key)
+
+    if cached is None:
+        logger.error("Orbits cache still empty after load attempt")
+        return jsonify({"error": "Orbit data unavailable"}), 503
+
+    return cached
 
 
 @blueprint.route("/api/acquisitions/stations", methods=["GET"])
