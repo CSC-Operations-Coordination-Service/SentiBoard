@@ -29,6 +29,7 @@ from jinja2 import TemplateNotFound
 from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
+import re
 import apps.cache.modules.acquisitions as acquisitions_cache
 import apps.cache.modules.timeliness as timeliness_cache
 import apps.cache.modules.events as events_cache
@@ -907,6 +908,8 @@ def data_availability():
 
         sat_filter = request.args.get("satellite", "")
 
+        event_id = request.args.get("event_id", "").strip()
+
         if mission_filter == "S5":
             sat_filter = ""  # S5 has no sub-units
         elif sat_filter and not sat_filter.startswith(mission_filter):
@@ -918,15 +921,14 @@ def data_availability():
         selected_period = request.args.get("period") or session.get(
             "selected_period", "week"
         )
-
         if has_search and not request.args.get("period"):
             selected_period = "prev-quarter"
-
-        if bool(search_query) and not request.args.get("period"):
-            selected_period = "prev-quarter"
             current_app.logger.info("[LOG] Forcing prev-quarter due to search query.")
-
-        # Save user-selected period in session only if not search
+        if event_id and not request.args.get("period"):
+            selected_period = "prev-quarter"
+            current_app.logger.info(
+                f"[EVENT FILTER] Forcing prev-quarter for event_id={event_id}"
+            )
         if not has_search and "period" in request.args:
             session["selected_period"] = selected_period
 
@@ -941,17 +943,89 @@ def data_availability():
 
         datatakes_key = datatakes_cache_key_map.get(selected_period, "last-7d")
         anomalies_cache_uri = events_cache.anomalies_cache_key.format(
-            "last",
-            "last" if selected_period == "prev-quarter" else "7d",
+            "previous" if selected_period == "prev-quarter" else "last",
+            "quarter" if selected_period == "prev-quarter" else "7d",
         )
+
+        dt_suffix = datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d"
         datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
-            "last",
-            datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d",
+            "last", dt_suffix
         )
+
+        current_app.logger.info(
+            f"[EVENT FILTER DEBUG] anomalies_cache_key template: {events_cache.anomalies_cache_key!r}"
+        )
+        current_app.logger.info(
+            f"[EVENT FILTER DEBUG] resolved anomalies_cache_uri: {anomalies_cache_uri!r}"
+        )
+        current_app.logger.info(
+            f"[EVENT FILTER DEBUG] selected_period: {selected_period}"
+        )
+
+        try:
+            available_keys = (
+                events_cache.list_keys()
+            )  # adjust to whatever method your cache exposes
+            current_app.logger.info(
+                f"[EVENT FILTER DEBUG] available cache keys: {available_keys}"
+            )
+        except Exception as e:
+            current_app.logger.info(
+                f"[EVENT FILTER DEBUG] could not list cache keys: {e}"
+            )
 
         # --- Load caches ---
         anomalies_data = load_cache_as_list(anomalies_cache_uri, "anomalies") or []
         datatakes_data = load_cache_as_list(datatakes_cache_uri, "datatakes") or []
+
+        event_datatake_ids = set()
+        if event_id:
+            try:
+                # ── TEMP: inspect first few records to see actual structure ──
+                """for sample in anomalies_data[:5]:
+                current_app.logger.info(
+                    f"[EVENT FILTER SAMPLE] "
+                    f"id={sample.get('id')} | "
+                    f"key={sample.get('key')} | "
+                    f"registry={sample.get('registry')} | "
+                    f"title={sample.get('title', '')[:40]}"
+                )
+                """
+                matched = next(
+                    (
+                        a
+                        for a in anomalies_data
+                        if str(a.get("key", "")) == event_id
+                        or str(a.get("registry", "")) == event_id
+                    ),
+                    None,
+                )
+
+                if matched:
+                    # handle both flat (MySQL) and nested (ES) structures
+                    src = matched.get(
+                        "_source", matched
+                    )  # falls back to the record itself if no _source
+                    env = src.get("environment", "")
+                    event_datatake_ids = {
+                        v.strip().upper()
+                        for v in env.split(";")
+                        if v.strip()
+                        and v.strip()[0] == "S"
+                        and len(v.strip()) > 1
+                        and v.strip()[1].isdigit()
+                    }
+                    """current_app.logger.info(
+                        f"[EVENT FILTER] event_id={event_id} → "
+                        f"{len(event_datatake_ids)} IDs: {list(event_datatake_ids)[:5]}..."
+                    )"""
+                else:
+                    current_app.logger.warning(
+                        f"[EVENT FILTER] event_id={event_id} not found in "
+                        f"{anomalies_cache_uri} ({len(anomalies_data)} records)"
+                    )
+            except Exception as e:
+                current_app.logger.warning(f"[EVENT FILTER] lookup failed: {e}")
 
         # --- POST: datatake details ---
         datatake_details = None
@@ -969,11 +1043,6 @@ def data_availability():
             "esauser",
         )
 
-        dt_suffix = datatakes_key.split("-")[-1] if "-" in datatakes_key else "7d"
-        datatakes_cache_uri = datatakes_cache.datatakes_cache_key.format(
-            "last", dt_suffix
-        )
-
         filtered_raw = []
         mission_counts = {}
 
@@ -987,6 +1056,11 @@ def data_availability():
 
             if item_sat.startswith("S1"):
                 if item_sat not in ["S1A", "S1C", "S1D"]:
+                    continue
+
+            if event_datatake_ids:
+                item_dt_id = str(src.get("datatake_id") or src.get("id", "")).upper()
+                if item_dt_id not in event_datatake_ids:
                     continue
 
             if m_filter_upper and m_filter_upper not in item_sat:
@@ -1088,6 +1162,8 @@ def data_availability():
             "has_more": has_more,
             "BATCH_SIZE": BATCH_SIZE,
             "mission_counts": mission_counts,
+            "event_id": event_id,
+            "event_datatake_count": len(event_datatake_ids),
         }
 
         current_app.logger.info(f"[LOG] Final SSR list size: {len(datatakes_for_ssr)}")

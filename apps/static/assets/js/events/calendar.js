@@ -921,13 +921,33 @@ class CalendarWidget {
             /* const validDtList = dtList.filter(dt =>
                  dt.id.startsWith("S1") || dt.id.startsWith("S2") || dt.id.startsWith("S3") || dt.id.startsWith("S5")
              );*/
+            const INLINE_THRESHOLD = 5;
 
-            const datatakeHtml = dtList
-                ? `<div style="color: white; font-size: 14px;">
-                        <p style="margin-bottom: 4px;">List of impacted datatakes:</p>
-                        ${this.arrangeDatatakesList(event, dtList)}
-                    </div>`
-                : '';
+            const datatakeHtml = dtList.length === 0
+                ? ''
+                : (() => {
+                    const visibleItems = dtList.slice(0, INLINE_THRESHOLD);
+                    const remainingCount = dtList.length - INLINE_THRESHOLD;
+
+                    const visibleHtml = this.arrangeDatatakesList(event, visibleItems);
+
+
+                    const moreLink = remainingCount > 0
+                        ? `<p style="margin-top: 6px; margin-bottom: 0;">
+                   <a href="/data-availability?event_id=${encodeURIComponent(event.id)}"
+                          target="_blank"
+                        style="color: #90caf9; font-size: 13px;">
+                       + ${remainingCount} more — View all ${dtList.length} datatakes →
+                   </a>
+               </p>`
+                        : '';
+
+                    return `<div style="color: white; font-size: 14px;">
+                    <p style="margin-bottom: 4px;">List of impacted datatakes:</p>
+                    ${visibleHtml}
+                    ${moreLink}
+                </div>`;
+                })();
 
 
             const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');
