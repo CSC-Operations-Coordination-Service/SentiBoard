@@ -10,46 +10,37 @@ const NewsEditor = (() => {
         one_anomaly: {
             title: 'Copernicus Sentinel-{X} operation impacts',
             text: 'Sentinel {X} operations are impacted from date {SD} on estimated UTC {ST}. '
-                + 'Analysis is ongoing. The impact will be available on the Sentinel Operations '
-                + 'Dashboard Events Page on the next Nominal Working Day. We apologise for the '
-                + 'inconveniences the issue is causing.',
+                + 'Analysis is ongoing. We apologise for the inconveniences the issue is causing.',
             needsEnd: false, needsSentinel: true
         },
         one_resolved: {
             title: 'Copernicus Sentinel-{X} operation impacts',
             text: 'Sentinel {X} operations were impacted from date {SD} on UTC {ST}. Operations '
-                + 'return to nominal date {ED} on UTC {ET}. The impact will be available on the '
-                + 'Sentinel Operations Dashboard Events Page on the next Nominal Working Day.',
+                + 'return to nominal date {ED} on UTC {ET}.',
             needsEnd: true, needsSentinel: true
         },
         multi_anomaly: {
             title: 'Copernicus Sentinel-{X} operation impacts',
             text: 'Sentinel {X} operations are impacted from date {SD} on estimated UTC {ST}. '
-                + 'Analysis is ongoing. The impact will be available on the Sentinel Operations '
-                + 'Dashboard Events Page on the next Nominal Working Day. We apologise for the '
-                + 'inconveniences the issue is causing.',
+                + 'Analysis is ongoing. We apologise for the inconveniences the issue is causing.',
             needsEnd: false, needsSentinel: true, needsMulti: true
         },
         multi_resolved: {
             title: 'Copernicus Sentinel-{X} operation impacts',
             text: 'Sentinel {X} operations were impacted from date {SD} on UTC {ST}. Operations '
-                + 'return to nominal date {ED} on UTC {ET}. The impact will be available on the '
-                + 'Sentinel Operations Dashboard Events Page on the next Nominal Working Day.',
+                + 'return to nominal date {ED} on UTC {ET}.',
             needsEnd: true, needsSentinel: true, needsMulti: true
         },
         cdse_anomaly: {
             title: 'Copernicus CDSE operation impacts',
             text: 'CDSE data access operations are impacted from {SD} on UTC {ST}. Analysis is '
-                + 'ongoing. The impact will be available on the Sentinel Operations Dashboard '
-                + 'Events Page on the next Nominal Working Day. We apologise for the inconveniences '
-                + 'the issue is causing.',
+                + 'ongoing. We apologise for the inconveniences the issue is causing.',
             needsEnd: false, needsSentinel: false
         },
         cdse_resolved: {
             title: 'Copernicus CDSE operation impacts',
             text: 'CDSE data access operations were impacted from date {SD} on UTC {ST}. Operations '
-                + 'return to nominal date {ED} on UTC {ET}. The impact will be available on the '
-                + 'Sentinel Operations Dashboard Events Page on the next Nominal Working Day.',
+                + 'return to nominal date {ED} on UTC {ET}.',
             needsEnd: true, needsSentinel: false
         },
         sentiboard_tech: {
