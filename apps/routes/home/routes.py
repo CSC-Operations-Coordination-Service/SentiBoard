@@ -129,8 +129,8 @@ PAGE_METADATA = {
     "acquisitions-status.html": {
         "title": "Sentinel Acquisition Plans & Real-Time Status | Copernicus Dashboard",
         "description": (
-            "Explore past, current, and future Sentinel satellite acquisition plans on an interactive 3D globe. ",
-            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard.",
+            "Explore past, current, and future Sentinel satellite acquisition plans on an interactive 3D globe. "
+            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard."
         ),
         "page_keywords": [
             "Sentinel acquisition plans real-time map",
@@ -145,8 +145,8 @@ PAGE_METADATA = {
     "events.html": {
         "title": "Sentinel Mission Events & Anomalies | Copernicus Operations Dashboard",
         "description": (
-            "Browse Sentinel satellite events including anomalies, calibrations, manoeuvres, and production issues from the past 3 months. ",
-            "Understand how each event affects Copernicus data completeness and availability.",
+            "Browse Sentinel satellite events including anomalies, calibrations, manoeuvres, and production issues from the past 3 months. "
+            "Understand how each event affects Copernicus data completeness and availability."
         ),
         "page_keywords": [
             "Sentinel satellite anomalies and events",
@@ -161,8 +161,8 @@ PAGE_METADATA = {
     "data-availability.html": {
         "title": "Copernicus Sentinel Data Availability | Real-Time Datatake Monitor",
         "description": (
-            "Monitor real-time Copernicus Sentinel data availability, datatake delivery status, and publication completeness. ",
-            "Filter by mission (S1, S2, S3, S5P), satellite, date, and sensing mode on the official ESA operations dashboard.",
+            "Monitor real-time Copernicus Sentinel data availability, datatake delivery status, and publication completeness. "
+            "Filter by mission (S1, S2, S3, S5P), satellite, date, and sensing mode on the official ESA operations dashboard."
         ),
         "page_keywords": [
             "Copernicus Sentinel data availability real-time",
@@ -177,8 +177,8 @@ PAGE_METADATA = {
     "processors-viewer.html": {
         "title": "Copernicus Sentinel Processor Releases | Interactive Timeline",
         "description": (
-            "Explore the full history of Copernicus Sentinel processor releases on an interactive timeline. ",
-            "Track ESA processing baseline versions for Sentinel-1, -2, -3, and -5P and understand how each update affects satellite data products.",
+            "Explore the full history of Copernicus Sentinel processor releases on an interactive timeline. "
+            "Track ESA processing baseline versions for Sentinel-1, -2, -3, and -5P and understand how each update affects satellite data products."
         ),
         "page_keywords": [
             "Copernicus Sentinel processor releases timeline",
@@ -2547,7 +2547,7 @@ def route_template(template):
 
         # Get metadata safely
         metadata = get_metadata(template)
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/index.html"
+        metadata["page_url"] = f"https://operations.dashboard.copernicus.eu/{template}"
 
         if template in ["processors-viewer", "processors-viewer.html"]:
             return processors_page()
