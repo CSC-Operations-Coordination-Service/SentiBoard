@@ -315,7 +315,7 @@ def roles_page():
 
             elif action == "delete":
                 # Extra security check: ensure they aren't trying to delete protected roles
-                if role_name not in ["admin", "guest", "ecuser"]:
+                if role_name not in ["admin", "guest", "ecuser", "api_admin"]:
                     model_delete_role(role_name)
                 # Optional: flash(f"Role {role_name} deleted.", "info")
             return redirect(url_for("home_blueprint.roles_page"))
