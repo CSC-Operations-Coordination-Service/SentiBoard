@@ -688,7 +688,7 @@ def index():
 def events():
     try:
         metadata = get_metadata("events.html")
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events"
         segment = "events"
         today = datetime.today()
         year = request.args.get("year", type=int, default=today.year)
@@ -889,7 +889,7 @@ def to_utc_dt(value):
 def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = (
-        "https://operations.dashboard.copernicus.eu/data-availability.html"
+        "https://operations.dashboard.copernicus.eu/data-availability"
     )
     segment = "data-availability"
     BATCH_SIZE = 20
