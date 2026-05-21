@@ -316,7 +316,7 @@ def roles_page():
 
             elif action == "delete":
                 # Extra security check: ensure they aren't trying to delete protected roles
-                if role_name not in ["admin", "guest", "ecuser"]:
+                if role_name not in ["admin", "guest", "ecuser", "api_admin"]:
                     model_delete_role(role_name)
                 # Optional: flash(f"Role {role_name} deleted.", "info")
             return redirect(url_for("home_blueprint.roles_page"))
@@ -689,7 +689,7 @@ def index():
 def events():
     try:
         metadata = get_metadata("events.html")
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events"
         segment = "events"
         today = datetime.today()
         year = request.args.get("year", type=int, default=today.year)
@@ -890,7 +890,7 @@ def to_utc_dt(value):
 def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = (
-        "https://operations.dashboard.copernicus.eu/data-availability.html"
+        "https://operations.dashboard.copernicus.eu/data-availability"
     )
     segment = "data-availability"
     BATCH_SIZE = 20

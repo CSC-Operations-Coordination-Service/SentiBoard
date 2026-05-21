@@ -60,7 +60,7 @@
 											<td>{{ rname }}</td>
 											<td>{{ rdesc or '' }}</td>
 											<td class="text-center">
-												{% if rname not in ['admin', 'guest', 'ecuser'] %}
+												{% if rname not in ['admin', 'guest', 'ecuser', 'api_admin'] %}
 													<form method="POST" style="display:inline;" onsubmit="return confirm('Delete {{ rname }}?');">
 														<input type="hidden" name="action" value="delete">
             											<input type="hidden" name="name" value="{{ rname }}">

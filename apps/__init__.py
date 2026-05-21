@@ -375,7 +375,15 @@ def create_app(config):
         if "staging.sentiboard.onda-dias.com" in host:
             content = "# Robots.txt for Copernicus Sentinel Operations Dashboard (STAGING)\nUser-agent: *\nDisallow: /\n"
         else:
-            content = "# Robots.txt for Copernicus Sentinel Operations Dashboard (PRODUCTION)\nUser-agent: *\nAllow: /\nSitemap: https://operations.dashboard.copernicus.eu/sitemap.xml\n"
+            content = (
+                "# Robots.txt for Copernicus Sentinel Operations Dashboard (PRODUCTION)\n"
+                "User-agent: *\n"
+                "Allow: /\n"
+                "Disallow: /data-availability?*\n"
+                "Disallow: /events.html?*\n"
+                "Disallow: /newsList.html?*\n"
+                "Sitemap: https://operations.dashboard.copernicus.eu/sitemap.xml\n"
+            )
 
         return Response(content, mimetype="text/plain")
 
