@@ -692,6 +692,7 @@ def events():
         metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events"
         segment = "events"
         today = datetime.today()
+        three_months_ago = (today - relativedelta(months=3)).date()
         year = request.args.get("year", type=int, default=today.year)
         month = request.args.get("month", type=int, default=today.month)
 
@@ -739,6 +740,7 @@ def events():
             missing_datatakes_info=[],
             **metadata,
             segment=segment,
+            three_months_ago=three_months_ago.isoformat(),
         )
     except Exception as e:
         current_app.logger.error(f"Error rendering / events: {e}", exc_info=True)
@@ -760,14 +762,26 @@ def events_data():
         )
 
         if quarter_authorized:
-            events_cache.load_anomalies_cache_previous_quarter()
-            cache_key = events_cache.anomalies_cache_key.format("previous", "quarter")
+            events_cache.load_anomalies_cache_full_history()
+            cache_key = events_cache.anomalies_cache_key.format("full", "history")
         else:
-            events_cache.load_anomalies_cache_last_quarter()
-            cache_key = events_cache.anomalies_cache_key.format("last", "quarter")
+            events_cache.load_anomalies_cache_full_history()
+            cache_key = events_cache.anomalies_cache_key.format("full", "history")
+
+        current_app.logger.info(
+            f"[EVENTS DATA] requesting year={year} month={month} authorized={quarter_authorized}"
+        )
+        current_app.logger.info(f"[EVENTS DATA] cache_key={cache_key}")
 
         cache_entry = events_cache.flask_cache.get(cache_key)
+        current_app.logger.info(
+            f"[EVENTS DATA] cache_entry found: {cache_entry is not None}"
+        )
+
         raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
+        current_app.logger.info(
+            f"[EVENTS DATA] raw_anomalies count: {len(raw_anomalies)}"
+        )
 
         if not raw_anomalies:
             current_app.logger.info(f"[EVENTS DATA] no cache anomalies")

@@ -486,7 +486,17 @@ class CalendarWidget {
         return sum / validValues.length;
     }
 
-    arrangeDatatakesList(anomaly, dtList) {
+    arrangeDatatakesList(anomaly, dtList, normalizedDate) {
+        let isOldDate = false;
+        if (normalizedDate && window.threeMonthsCutoff) {
+            isOldDate = new Date(normalizedDate) < new Date(window.threeMonthsCutoff);
+        }
+
+        console.log("[DATATAKES] normalizedDate:", normalizedDate);
+        console.log("[DATATAKES] threeMonthsCutoff:", window.threeMonthsCutoff);
+
+        console.log("[DATATAKES] isOldDate:", isOldDate);
+
         const uniqueDtList = dtList.filter(
             (dt, idx, self) =>
                 idx === self.findIndex(t => t.datatake_id === dt.datatake_id)
@@ -506,13 +516,16 @@ class CalendarWidget {
                     ? this.overrideS1DatatakesId(datatake_id)
                     : datatake_id;
 
+
+                const idElement = isOldDate ? `<span style="color: #12b1bf; font-weight: 500;">${displayId}</span>`
+                    : `<a href="/data-availability.html?search=${datatake_id}&period=prev-quarter" target="_blank" 
+                            style="color: #aad; text-decoration: underline; font-weight:500;">${displayId}
+                        </a>`;
+
                 return `
             <li style="margin: 2px 0; list-style: none;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <a href="/data-availability.html?search=${datatake_id}&period=prev-quarter" target="_blank"
-                        style="color: #aad; text-decoration: underline; font-weight:500;">
-                        ${displayId}
-                    </a>
+                    ${idElement}
                     <div class="status-circle-dt-${status}" title="${status}"></div>
                 </div>
             </li>`;
@@ -581,20 +594,19 @@ class CalendarWidget {
         const displayedDate = new Date(this.currentYear, this.currentMonth, 1);
         displayedDate.setHours(0, 0, 0, 0);
 
-        const now = new Date();
-        const thresholdDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-        thresholdDate.setHours(0, 0, 0, 0);
+        const historyStartDate = new Date(window.historyStartDate || "2025-03-01");
+        historyStartDate.setHours(0, 0, 0, 0);
 
         const calendarDays = document.querySelectorAll('.calendar-day');
         const eventIcons = document.querySelectorAll('.calendar-day .event-container');
 
         const noVisibleEvents = calendarDays.length > 0 && eventIcons.length === 0;
 
-        if (displayedDate < thresholdDate && noVisibleEvents) {
+        if (displayedDate < historyStartDate && noVisibleEvents) {
             if (!this.noEventsBeforeDateMsgDisplayed) {
                 const content = {
                     title: 'Dashboard Events Viewer',
-                    message: `This view is intended to show only the most recent events.<br>No events are displayed before <b>${thresholdDate.toLocaleDateString()}</b>`,
+                    message: `This view displays only events occurring after <b>${historyStartDate.toLocaleDateString()}</b>`,
                     icon: 'fa fa-calendar'
                 };
 
@@ -929,10 +941,11 @@ class CalendarWidget {
                     const visibleItems = dtList.slice(0, INLINE_THRESHOLD);
                     const remainingCount = dtList.length - INLINE_THRESHOLD;
 
-                    const visibleHtml = this.arrangeDatatakesList(event, visibleItems);
+                    const isOldDate = window.threeMonthsCutoff ? new Date(normalizedDate) < new Date(window.threeMonthsCutoff) : false;
+                    const visibleHtml = this.arrangeDatatakesList(event, visibleItems, normalizedDate);
 
 
-                    const moreLink = remainingCount > 0
+                    const moreLink = remainingCount > 0 && !isOldDate
                         ? `<p style="margin-top: 6px; margin-bottom: 0;">
                    <a href="/data-availability?event_id=${encodeURIComponent(event.id)}"
                           target="_blank"
@@ -955,6 +968,7 @@ class CalendarWidget {
                 ? `<img src="${iconClass}" class="legend-icon image-icon event-${mappedType}" style="width: 1.2rem; height: 1.2rem; vertical-align: middle;">`
                 : `<i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i>`;
 
+            console.log("[DATATAKE HTML]", datatakeHtml);
             listItem.innerHTML = `
                     <small>
                         <span class="icon-bg">${iconHTML}</span>
