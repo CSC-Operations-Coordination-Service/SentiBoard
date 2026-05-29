@@ -230,8 +230,9 @@ const NewsEditor = (() => {
 
         const titleEl = $id('title');
         const textEl = $id('text');
-        if (titleEl) titleEl.value = title;
-        if (textEl) textEl.value = text;
+        const inEditMode = (typeof IS_EDIT !== 'undefined') && IS_EDIT;
+        if (titleEl && (!inEditMode || !titleEl.value.trim())) titleEl.value = title;
+        if (textEl && (!inEditMode || !textEl.value.trim())) textEl.value = text;
     }
 
 
@@ -351,7 +352,7 @@ class NewsMessages {
                   <div class="card-body" style="color:#eee;">
                     <p>${msg.text}</p>
                     ${msg.link ? `<a href="${msg.link}" target="_blank" class="read-more">Read more</a>` : ''}
-                    <br><small>Published: ${this.formatDateRome(msg.publicationDate)}</small>
+                    <br><small>Published: ${this.formatDateUTC(msg.publicationDate)}</small>
                   </div>
                 </div>
               </div>
@@ -361,12 +362,21 @@ class NewsMessages {
         });
     }
 
-    formatDateRome(utcString) {
+    formatDateUTC(utcString) {
         if (!utcString) return 'N/A';
         try {
-            const dateUtc = new Date(utcString);
+            let isoString = utcString;
+            console.log('[DateFormat] Original UTC string:', utcString);
+            const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2}(:\d{2})?)$/;
+            const match = utcString.match(ddmmyyyy);
+            if (match) {
+                // Rebuild as "YYYY-MM-DDTHH:MM:SSZ" so browser treats it as UTC
+                isoString = `${match[3]}-${match[2]}-${match[1]}T${match[4]}Z`;
+            }
+            const dateUtc = new Date(isoString);
+            console.log('[DateFormat] Formatted UTC date:', dateUtc);
             const dateRome = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'Europe/Rome',
+                timeZone: 'UTC',
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit'
             }).format(dateUtc);

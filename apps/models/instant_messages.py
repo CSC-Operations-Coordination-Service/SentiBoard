@@ -13,9 +13,10 @@ delivered to him.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apps import db
+import apps.cache.modules.events as events_cache
 from apps.utils.db_utils import generate_uuid
 
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ def save_instant_messages(
     or status ('new'/'resolved'/'disaster') — status takes priority if both.
     """
     if modify_date is None:
-        modify_date = datetime.now()
+        modify_date = datetime.now(timezone.utc)
     if status:
         message_type = status_to_message_type(status)
     try:
@@ -122,6 +123,15 @@ def save_instant_messages(
         )
         db.session.add(msg)
         db.session.commit()
+
+        from apps import flask_cache
+
+        flask_cache.delete(events_cache.news_cache_key.format("last", "24h"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "7d"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "30d"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "quarter"))
+        flask_cache.delete(events_cache.news_cache_key.format("previous", "quarter"))
+
         return msg
     except Exception as ex:
         logger.error("save_instant_messages failed: %s", ex, exc_info=True)
@@ -144,7 +154,7 @@ def update_instant_messages(
     Pass either message_type or status — status takes priority if both.
     """
     if modify_date is None:
-        modify_date = datetime.now()
+        modify_date = datetime.now(timezone.utc)
     if status:
         message_type = status_to_message_type(status)
     try:
@@ -171,6 +181,15 @@ def update_instant_messages(
             db.session.add(msg)
 
         db.session.commit()
+
+        from apps import flask_cache
+
+        flask_cache.delete(events_cache.news_cache_key.format("last", "24h"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "7d"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "30d"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "quarter"))
+        flask_cache.delete(events_cache.news_cache_key.format("previous", "quarter"))
+
         return msg
     except Exception as ex:
         logger.error("update_instant_messages failed: %s", ex, exc_info=True)
@@ -190,7 +209,7 @@ def get_instant_messages(start_date=None, end_date=None):
         return q.order_by(InstantMessages.publicationDate.asc()).all()
     except Exception as ex:
         logger.error("get_instant_messages failed: %s", ex, exc_info=True)
-        return None
+        return []
 
 
 def get_latest_instant_messages(limit=20):
@@ -206,6 +225,15 @@ def delete_instant_messages_by_id(uuid):
     try:
         db.session.query(InstantMessages).filter(InstantMessages.id == uuid).delete()
         db.session.commit()
+
+        from apps import flask_cache
+
+        flask_cache.delete(events_cache.news_cache_key.format("last", "24h"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "7d"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "30d"))
+        flask_cache.delete(events_cache.news_cache_key.format("last", "quarter"))
+        flask_cache.delete(events_cache.news_cache_key.format("previous", "quarter"))
+
     except Exception as ex:
         logger.error("delete_instant_messages_by_id failed: %s", ex, exc_info=True)
         db.session.rollback()
