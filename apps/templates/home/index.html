@@ -350,7 +350,7 @@
   <script>
     window.SSR_INSTANT_MESSAGES = {{ instant_messages_json | safe }};
     window.SSR_TOTAL_MESSAGES = {{ total_messages}};
-    window.useRole = {{ user_role | tojson}};
+    window.userRole = {{ user_role | tojson}};
   </script>
 
 
@@ -382,7 +382,7 @@
 
       if (isMobile) {
         // Mobile: user taps poster to start video
-          poster.addEventListener("click", startvideo, { once: true });
+          poster.addEventListener("click", startVideo, { once: true });
       } else {
         // Desktop: keep poster until video actually plays
         const events = ["click", "scroll", "keydown", "touchstart", "mousemove"];
@@ -401,7 +401,7 @@
 <script src="/static/assets/js/index/index.js" defer></script>
 
 <script>
-  document.addEventListener("load", () => {
+  window.addEventListener("load", () => {
     // Mobile fallback
     if (window.innerWidth <= 768) {
       document.querySelectorAll('#vertical-slider img').forEach(img => img.style.display = 'none');
@@ -412,14 +412,6 @@
       import("/static/assets/js/datatakes/datatakes.js")
         .then(() => console.log("datatakes.js loaded"))
         .catch(err => console.error("Failed to load datatakes.js", err));
-    }
-   
-    // Initialize Home (from index.js, already loaded with defer)
-    if (typeof Home !== "undefined") {
-      const home = new Home();
-      home.init();
-    }else {
-        console.error("Home class not found — check index.js loaded correctly");
     }
   });
 </script>
