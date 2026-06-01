@@ -63,7 +63,6 @@ class Home {
             $('#home-video').get(0).play();
         }
         this.handleResponsiveSliderLayout();
-        //this.initSlider();
         return;
     }
 
@@ -431,4 +430,8 @@ $('.chevron-down, .chevron-up').on('click', function (e) {
     }
 });
 
-let home = new Home();
+$(document).ready(function () {
+    const home = new Home();
+    home.init();
+
+});

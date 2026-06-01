@@ -858,10 +858,6 @@ button:focus {
   display: block;
 }
 
-.news-cards {
-  background-color: #12b1bf !important;
-
-}
 
 .page-item.active .page-link {
   color: #212529 !important;
@@ -875,6 +871,11 @@ a:focus,
 a:hover {
   color: #12b1bf !important;
   text-decoration: none !important;
+}
+
+#custom-banner-mobile:empty {
+  display: none;
+  padding: 0;
 }
 
 @media (max-width: 768px) {
@@ -936,6 +937,22 @@ a:hover {
     display: flex;
     flex-direction: column;
     height: auto;
+  }
+
+  #hero-poster,
+  #hero-container img,
+  #hero-container picture img {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  #home-video {
+    width: 100% !important;
+    height: auto !important;
+    display: block !important;
   }
 
   .left-slide,
@@ -1026,6 +1043,18 @@ a:hover {
     padding: 0.5rem 1rem;
   }
 
+  .banner-btn {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #ffc107;
+    color: #212529 !important;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    text-decoration: none;
+  }
+
   .mobile-slider {
     display: flex;
     flex-direction: column;
@@ -1064,13 +1093,6 @@ a:hover {
     margin-top: 38px;
   }
 
-  /*messages*/
-  #custom-banner-placeholder {
-    position: static !important;
-    width: 100% !important;
-    padding: 1rem;
-  }
-
 }
 
 @media (min-width: 992px) {
@@ -1082,8 +1104,6 @@ a:hover {
     z-index: 3;
   }
 }
-
-
 
 @media screen and (max-width: 991px) {
   .logo-header .more {
@@ -1105,5 +1125,56 @@ a:hover {
     position: relative;
     width: 100%;
     padding: 0.5rem;
+    display: block;
+  }
+
+  .content.page-inner {
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  #mobile-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -280px !important;
+    width: 260px !important;
+    height: 100vh !important;
+    transition: left 0.3s ease !important;
+    z-index: 1050 !important;
+    overflow-y: auto !important;
+    display: block !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  #mobile-sidebar.sidebar-open {
+    left: 0 !important;
+  }
+
+  /* Backdrop */
+  #sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1049;
+    /* just below sidebar */
+  }
+
+  /* Close button */
+  #sidebar-close-btn {
+    background-color: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    color: white !important;
+    padding: 4px 8px !important;
+    font-size: 14px !important;
+  }
+
+  #sidebar-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
   }
 }

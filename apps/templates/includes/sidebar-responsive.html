@@ -1,6 +1,13 @@
 <!-- Sidebar -->
-<!--AD previous version <div class="sidebar sidebar-style-2 d-lg-none" data-background-color="dark2"> -->
-<div class="sidebar sidebar-style-2 d-lg-none" style="background-color: #343a40 !important">
+<div id="sidebar-backdrop" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:998;"></div>
+<div id="mobile-sidebar" class="sidebar sidebar-style-2 d-lg-none" style="background-color: #343a40 !important">
+
+	<!-- Close button -->
+	<div class="d-flex justify-content-end p-2">
+		<button id="sidebar-close-btn" type="button" class="btn btn-sm btn-outline-light">
+		<i class="fas fa-times"></i>
+		</button>
+	</div>
 	<div class="sidebar-wrapper scrollbar scrollbar-inner">
 		<div class="sidebar-content" style="color:white !important">
 
