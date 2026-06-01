@@ -1101,6 +1101,23 @@ a:hover {
     left: 15px;
     width: 350px;
     z-index: 3;
+    max-height: calc(100% - 140px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+  }
+
+  #custom-banner-placeholder::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  #custom-banner-placeholder::-webkit-scrollbar-thumb {
+    background-color: transparent;
+  }
+
+  #custom-banner-placeholder:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
   }
 }
 
