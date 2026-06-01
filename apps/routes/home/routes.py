@@ -650,8 +650,11 @@ def index():
             {
                 "id": msg.id,
                 "title": msg.title,
-                "text": msg.text[:130]
-                + ("..." if msg.text and len(msg.text) > 130 else msg.text),
+                "text": (
+                    (msg.text[:130] + "...")
+                    if msg.text and len(msg.text) > 130
+                    else msg.text
+                ),
                 "messageType": msg.messageType,
                 "publicationDate": format_pub_date(msg.publicationDate),
                 "link": msg.link,

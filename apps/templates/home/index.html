@@ -46,7 +46,8 @@
     }
 
     #hero-container {
-    position: relative;
+      position: relative;
+      width:100%;
     }
 
   /* Poster starts visible above the video */
@@ -55,8 +56,9 @@
       top: 0;
       left: 0;
       width: 100%;
-      height: auto;
+      height: 100%;
       z-index: 2;
+      object-fit: cover;
       transition: opacity 1s ease;
     }
 
@@ -357,47 +359,40 @@
     document.addEventListener("DOMContentLoaded", function () {
       const poster = document.getElementById("hero-poster");
       const video = document.getElementById("home-video");
+      if(!poster || !video) return;
+
       const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+      function startVideo() {
+        video.muted = true;
+        video.classList.remove("d-none");
+        video.play().then(() => {
+          poster.style.transition = "opacity 1s ease";
+          poster.style.opacity = "0";
+          setTimeout(() => {
+            poster.classList.add("d-none");
+          }, 1000);
+        })
+        .catch(() => {
+          video.classList.add("d-none");
+          poster.style.opacity = "1";
+          poster.classList.remove("d-none");
+      });
+      } 
 
       if (isMobile) {
         // Mobile: user taps poster to start video
-        poster.addEventListener("click", function () {
-          poster.classList.add("d-none");
-          video.classList.remove("d-none");
-          video.play().catch(() => {
-            // fallback: keep poster if autoplay/play fails
-            poster.classList.remove("d-none");
-            video.classList.add("d-none");
-          });
-        });
+          poster.addEventListener("click", startvideo, { once: true });
       } else {
         // Desktop: keep poster until video actually plays
-        video.classList.remove("d-none");
-        video.autoplay = true;
+        const events = ["click", "scroll", "keydown", "touchstart", "mousemove"];
+        function onUserGesture() {
+          events.forEach(evt => window.removeEventListener(evt, onUserGesture));
+          startVideo();
+        }
 
-        let played = false;
-
-        video.addEventListener("canplay", () => {
-          video.play().catch(() => {
-            // fallback if autoplay blocked
-            console.warn("Autoplay blocked, keeping poster visible.");
-            video.classList.add("d-none");
-          });
-        });
-
-        video.addEventListener("playing", () => {
-          played = true;
-          poster.classList.add("d-none");
-        });
-
-        // fallback: if video never starts within 5s, keep poster visible
-        setTimeout(() => {
-          if (!played) {
-            console.warn("Video did not start, showing poster fallback.");
-            video.classList.add("d-none");
-            poster.classList.remove("d-none");
-          }
-        }, 5000);
+        events.forEach(e => window.addEventListener(e, onUserGesture, { once: true }));
+        startVideo(); //  attempt to start immediately in case of autoplay support
       }
     });
   </script>

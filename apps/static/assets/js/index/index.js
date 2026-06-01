@@ -59,9 +59,6 @@ class Home {
         })
 
         // Play video only after page loading
-        window.onload = function () {
-            $('#home-video').get(0).play();
-        }
         this.handleResponsiveSliderLayout();
         return;
     }
