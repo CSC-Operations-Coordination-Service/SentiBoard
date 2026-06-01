@@ -96,80 +96,25 @@
 	{% include 'includes/scripts.html' %}
 
 	<!-- Specific Page JS goes HERE  -->
-
-    {% block javascripts %}{% endblock javascripts %}
-
 	<script>
 		document.addEventListener("DOMContentLoaded", function () {
-
-			const sidebar = document.getElementById('mobile-sidebar');
-			const backdrop = document.getElementById('sidebar-backdrop');
-			const closeBtn = document.getElementById('sidebar-close-btn');
-			const toggler = document.querySelector('.navbar-toggler');
-
-			console.log('sidebar left:', window.getComputedStyle(sidebar).left);
-			console.log('sidebar display:', window.getComputedStyle(sidebar).display);
-			console.log('sidebar transform:', window.getComputedStyle(sidebar).transform);
-
-			if (!sidebar) return; // safety guard
-
-			function openSidebar() {
-				sidebar.style.display = 'block';        
-				sidebar.style.visibility = 'visible';   
-				sidebar.style.transform = 'none';       
-				requestAnimationFrame(() => {
-					sidebar.classList.add('sidebar-open');
-					backdrop.style.display = 'block';
-					document.body.style.overflow = 'hidden';
-				});
+		var toggler = document.querySelector('.navbar-toggler');
+		var sidebar = document.getElementById('mobile-sidebar');
+		if (!toggler || !sidebar) return;
+		toggler.addEventListener('click', function (e) {
+			e.stopPropagation();
+			if (sidebar.style.left === '0px') {
+			sidebar.style.left = '-280px';
+			} else {
+			sidebar.style.left = '0px';
 			}
-
-			function closeSidebar() {
-				sidebar.classList.remove('sidebar-open');
-				backdrop.style.display = 'none';
-				document.body.style.overflow = '';
-				// hide after transition completes
-				setTimeout(() => {
-					sidebar.style.display = '';
-					sidebar.style.visibility = '';
-					sidebar.style.transform = '';
-				}, 300); // match your CSS transition duration
-			}
-
-			// Open on hamburger click
-			if (toggler) {
-				const newToggler = toggler.cloneNode(true);
-				toggler.parentNode.replaceChild(newToggler, toggler); 
-				newToggler.addEventListener('click', function (e) {
-					e.preventDefault();
-					e.stopImmediatePropagation(); 
-					openSidebar();
-				});
-			}
-
-			// Close on X button
-			if (closeBtn) {
-				const newCloseBtn = closeBtn.cloneNode(true);
-				closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-				newCloseBtn.addEventListener('click', function (e) {
-					e.preventDefault();
-					e.stopImmediatePropagation();
-					closeSidebar();
-				});
-			}
-
-			// Close on backdrop click
-			if (backdrop) {
-				backdrop.addEventListener('click', closeSidebar);
-			}
-
-			// Close on Escape
-			document.addEventListener('keydown', function (e) {
-				if (e.key === 'Escape') closeSidebar();
-			});
-
+		});
 		});
 	</script>
+
+
+
+    {% block javascripts %}{% endblock javascripts %}
 
 </body>
 </html>

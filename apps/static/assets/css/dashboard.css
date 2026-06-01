@@ -1144,53 +1144,8 @@ a:hover {
     display: block;
   }
 
-  .content.page-inner {
-    padding-bottom: 0 !important;
-    margin-bottom: 0 !important;
+  .main-panel {
+    overflow: visible !important;
   }
 
-  #mobile-sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: -280px !important;
-    width: 260px !important;
-    height: 100vh !important;
-    transition: left 0.3s ease !important;
-    z-index: 1050 !important;
-    overflow-y: auto !important;
-    display: block !important;
-    visibility: visible !important;
-    transform: none !important;
-  }
-
-  #mobile-sidebar.sidebar-open {
-    left: 0 !important;
-  }
-
-  /* Backdrop */
-  #sidebar-backdrop {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 1049;
-    /* just below sidebar */
-  }
-
-  /* Close button */
-  #sidebar-close-btn {
-    background-color: transparent !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    color: white !important;
-    padding: 4px 8px !important;
-    font-size: 14px !important;
-  }
-
-  #sidebar-close-btn:hover {
-    background-color: rgba(255, 255, 255, 0.1) !important;
-    color: white !important;
-  }
 }

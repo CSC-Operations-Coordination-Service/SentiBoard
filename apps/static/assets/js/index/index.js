@@ -63,6 +63,8 @@ class Home {
         return;
     }
 
+
+
     succesLoadAnomalies(response) {
         var rows = format_response(response);
         console.info('Events loaded. Num of events: ' + rows.length);

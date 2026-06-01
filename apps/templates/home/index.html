@@ -47,8 +47,11 @@
 
     #hero-container {
       position: relative;
-      width:100%;
-    }
+        width: 100%;
+        padding-bottom: 56.25%;
+        height: 0;    
+      
+      }
 
   /* Poster starts visible above the video */
     #hero-poster {
@@ -70,8 +73,11 @@
 
   /* Ensure video fills container */
     #home-video {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
-      height: auto;
+      height: 100%;
       display: block;
     }
   </style>
@@ -355,47 +361,37 @@
 
 
   <!-- Inline tiny script for faster mobile interactivity -->
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const poster = document.getElementById("hero-poster");
-      const video = document.getElementById("home-video");
-      if(!poster || !video) return;
+  
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const poster = document.getElementById("hero-poster");
+    const video = document.getElementById("home-video");
+    const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-      const isMobile = window.matchMedia("(max-width: 767px)").matches;
-
-      function startVideo() {
-        video.muted = true;
+    if (isMobile) {
+      poster.addEventListener("click", function () {
+        poster.classList.add("d-none");
         video.classList.remove("d-none");
-        video.play().then(() => {
-          poster.style.transition = "opacity 1s ease";
-          poster.style.opacity = "0";
-          setTimeout(() => {
-            poster.classList.add("d-none");
-          }, 1000);
-        })
-        .catch(() => {
-          video.classList.add("d-none");
-          poster.style.opacity = "1";
+        video.play().catch(() => {
           poster.classList.remove("d-none");
+          video.classList.add("d-none");
+        });
       });
-      } 
+    } else {
+      video.classList.remove("d-none");
+      video.autoplay = true;
+      video.addEventListener("canplay", () => {
+        video.play().catch(() => {
+          video.classList.add("d-none");
+        });
+      });
+      video.addEventListener("playing", () => {
+        poster.classList.add("d-none");
+      });
+    }
+  });
+</script>
 
-      if (isMobile) {
-        // Mobile: user taps poster to start video
-          poster.addEventListener("click", startVideo, { once: true });
-      } else {
-        // Desktop: keep poster until video actually plays
-        const events = ["click", "scroll", "keydown", "touchstart", "mousemove"];
-        function onUserGesture() {
-          events.forEach(evt => window.removeEventListener(evt, onUserGesture));
-          startVideo();
-        }
-
-        events.forEach(e => window.addEventListener(e, onUserGesture, { once: true }));
-        startVideo(); //  attempt to start immediately in case of autoplay support
-      }
-    });
-  </script>
 
   <!-- Keep index.js deferred -->
 <script src="/static/assets/js/index/index.js" defer></script>
@@ -412,6 +408,14 @@
       import("/static/assets/js/datatakes/datatakes.js")
         .then(() => console.log("datatakes.js loaded"))
         .catch(err => console.error("Failed to load datatakes.js", err));
+    }
+   
+    // Initialize Home (from index.js, already loaded with defer)
+    if (typeof Home !== "undefined") {
+      const home = new Home();
+      home.init();
+    }else {
+        console.error("Home class not found — check index.js loaded correctly");
     }
   });
 </script>
