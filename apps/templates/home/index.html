@@ -182,7 +182,7 @@
                   <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
                 </div>
                 <div class="text-muted small">{{ item.publicationDate }}</div>
-                <div>{{ item.text }}</div>
+                <div>{{ item.text | safe }}</div>
 
                 {% if item.link %}
                   <div>
@@ -259,7 +259,7 @@
                   <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
                 </div>
                 <div class="text-muted small mb-1">{{ item.publicationDate }}</div>
-                <div style="font-size:0.88rem;">{{ item.text }}</div>
+                <div style="font-size:0.88rem;">{{ item.text | safe }}</div>
                 {% if item.link %}
                   <div class="mt-1">
                     <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">Read more</a>

@@ -651,7 +651,8 @@ def index():
                 "id": msg.id,
                 "title": msg.title,
                 "text": (
-                    (msg.text[:130] + "...")
+                    msg.text[:130]
+                    + ' <a href="/newsList.html" style="color:#ffc107;">Read More</a>'
                     if msg.text and len(msg.text) > 130
                     else msg.text
                 ),
