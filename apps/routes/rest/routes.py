@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from functools import wraps
 
 from apps.utils.events_utils import make_json_safe
-from flask import jsonify, request, Response
+from flask import jsonify, request, Response, render_template
 from flask_login import login_required
 
 import apps.cache.modules.acquisitions as acquisitions_cache
