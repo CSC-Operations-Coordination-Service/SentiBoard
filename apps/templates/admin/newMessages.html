@@ -29,22 +29,10 @@
     {% endwith %}
 
     <!-- ── Message type selector ────────────────────────────────────── -->
-    <!--
-        Each button sets the messageType directly via NewsEditor.setStatus().
-        The fa icon + colour mirrors exactly what will appear in the news list.
-
-        warning  →  fa-exclamation-circle  yellow   (anomaly / new)
-        success  →  fa-check-circle        green    (resolved)
-        danger   →  fa-exclamation-triangle red     (disaster)
-    -->
     <div class="ne-flag-bar">
-
-        <!-- Live preview icon — updated by JS when a button is clicked -->
         <div id="ne-flag-preview" style="font-size:1.8rem; color:#ffc107; min-width:32px; text-align:center;">
             <i id="ne-flag-icon" class="fa fa-exclamation-circle"></i>
         </div>
-
-        <!-- Type buttons — use the same fa icons as the news list -->
         <div class="ne-status-btns">
             <button type="button" class="ne-status-btn ne-btn-new"
                     onclick="NewsEditor.setStatus('new')">
@@ -59,29 +47,26 @@
                 <i class="fa fa-exclamation-triangle"></i> Disaster
             </button>
         </div>
-
-        <!-- Current label -->
         <span class="ne-status-badge" id="ne-status-badge">Anomaly / New</span>
     </div>
 
-    {% if not message %}
-    <!-- ── Template selector ───────────────────────────────────────── -->
+    <!-- ── Template selector — always visible on both create and edit ── -->
     <div class="mb-3">
         <label class="ne-label" for="ne-template-select">Load template</label>
         <select class="form-control" id="ne-template-select" onchange="NewsEditor.applyTemplate()">
             <option value="">-- Select a template (optional) --</option>
-            <option value="__clear__"> x Clear template</option>
+            <option value="__clear__">✕ Clear template</option>
             <optgroup label="One Mission Impact">
-                <option value="one_anomaly">One Mission - Anomaly</option>
-                <option value="one_resolved">One Mission - Service Resumed</option>
+                <option value="one_anomaly">One Mission – Anomaly</option>
+                <option value="one_resolved">One Mission – Service Resumed</option>
             </optgroup>
             <optgroup label="Multi-Mission Impact">
-                <option value="multi_anomaly">Multi-Mission - Anomaly</option>
-                <option value="multi_resolved">Multi-Mission - Service Resumed</option>
+                <option value="multi_anomaly">Multi-Mission – Anomaly</option>
+                <option value="multi_resolved">Multi-Mission – Service Resumed</option>
             </optgroup>
             <optgroup label="CDSE">
-                <option value="cdse_anomaly">CDSE - Anomaly</option>
-                <option value="cdse_resolved">CDSE - Service Resumed</option>
+                <option value="cdse_anomaly">CDSE – Anomaly</option>
+                <option value="cdse_resolved">CDSE – Service Resumed</option>
             </optgroup>
             <optgroup label="Technical">
                 <option value="sentiboard_tech">SentiBoard Technical Issues</option>
@@ -93,7 +78,7 @@
     <div id="ne-tpl-fields" class="ne-tpl-fields" style="display:none;">
         <div class="ne-row-2col">
             <div id="ne-sentinel-group" style="display:none;">
-                <!-- Single select — shown for one-mission and sentiboard_tech templates -->
+                <!-- Single select — one-mission and sentiboard_tech -->
                 <div id="ne-sentinel-single">
                     <label class="ne-label" for="ne-sentinel-id">Sentinel</label>
                     <select class="form-control ne-input-sm" id="ne-sentinel-id" onchange="NewsEditor.fillDates()">
@@ -109,9 +94,9 @@
                         <option value="5P">Sentinel 5P</option>
                     </select>
                 </div>
-                <!-- Multi select — shown for multi-mission templates -->
+                <!-- Multi select — multi-mission templates -->
                 <div id="ne-sentinel-multi" style="display:none;">
-                    <label class="ne-label" for="ne-sentinel-multi-id">Sentinel(s) — hold Ctrl/Cmd to select multiple</label>
+                    <label class="ne-label">Sentinel(s) — hold Ctrl/Cmd to select multiple</label>
                     <select class="form-control ne-input-sm" id="ne-sentinel-multi-id"
                             multiple size="9" onchange="NewsEditor.fillDates()">
                         <option value="1A">Sentinel 1A</option>
@@ -128,22 +113,23 @@
             </div>
             <div>
                 <label class="ne-label" for="ne-start-dt">Impact start (UTC)</label>
-                <input type="datetime-local" class="form-control ne-input-sm" id="ne-start-dt" oninput="NewsEditor.fillDates()">
+                <input type="datetime-local" class="form-control ne-input-sm" id="ne-start-dt"
+                       oninput="NewsEditor.fillDates()">
             </div>
             <div id="ne-end-date-group" style="display:none;">
                 <label class="ne-label" for="ne-end-dt">Return to nominal (UTC)</label>
-                <input type="datetime-local" class="form-control ne-input-sm" id="ne-end-dt" oninput="NewsEditor.fillDates()">
+                <input type="datetime-local" class="form-control ne-input-sm" id="ne-end-dt"
+                       oninput="NewsEditor.fillDates()">
             </div>
         </div>
     </div>
-    {% endif %}
 
+    <!-- ── Main form ───────────────────────────────────────────────── -->
     <form id="new-message-form" method="POST"
           action="{{ '/admin/instant-messages/update' if message else '/admin/instant-messages/add' }}">
 
         <input type="hidden" id="id"   name="id"   value="{{ message['id'] if message }}">
         <input type="hidden" name="next" value="/newsList.html">
-
         <input type="hidden" id="hdn-messageType" name="messageType"
                value="{{ message['messageType'] if message else 'warning' }}">
 
