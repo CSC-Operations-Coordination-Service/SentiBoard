@@ -1,71 +1,38 @@
-<!-- Sidebar -->
-<!--AD previous version <div class="sidebar sidebar-style-2 d-lg-none" data-background-color="dark2"> -->
-<div class="sidebar sidebar-style-2 d-lg-none" style="background-color: #343a40 !important">
-	<div class="sidebar-wrapper scrollbar scrollbar-inner">
-		<div class="sidebar-content" style="color:white !important">
-
-			<ul class="nav nav-primary" id="sidebar-tree-paths">
-
-				<!-- Home section -->
-				<li class="nav-item {% if 'index' in segment %} active {% endif %}">
-					<a href="/index.html">
-						<i class="fas fa-home"></i>
-						<p>Home</p>
-					</a>
-				</li>
-
-				<!-- About section -->
-				<li class="nav-item {% if 'about' in segment %} active {% endif %}">
-					<a href="/about.html">
-						<i class="fas fa-table"></i>
-						<p>About</p>
-					</a>
-				</li>
-
-				<!-- Acquisition Plans -->
-				<li class="nav-item {% if 'acquisition' in segment %} active {% endif %}">
-					<a href="/acquisitions-status.html">
-						<i class="fas fa-chart-line"></i>
-						<p>Acquisitions Status</p>
-					</a>
-				</li>
-
-				<!-- Events / anomalies section -->
-				<li class="nav-item {% if 'events' in segment %} active {% endif %}">
-					<a href="/events.html">
-						<i class="fas fa-table"></i>
-						<p>Events</p>
-					</a>
-				</li>
-
-				<!-- Data takes section -->
-				<li class="nav-item {% if 'data-' in segment %} active {% endif %}">
-					<a href="/data-availability.html">
-						<i class="fas fa-chart-pie"></i>
-						<p>Data Availability</p>
-					</a>
-				</li>
-
-				<!-- Public Statistics -->
-				<!--<li class="nav-item {% if 'publication' in segment %} active {% endif %}">
-					<a href="/publication-statistics.html">
-						<i class="fas fa-chart-line"></i>
-						<p>Statistics</p>
-					</a>
-				</li>-->
-
-				<!-- Processors Releases -->
-				<li class="nav-item {% if 'processors' in segment %} active {% endif %}">
-					<a href="/processors-viewer.html">
-						<i class="fas fa-industry"></i>
-						<p>Processors</p>
-					</a>
-				</li>
-
-			</ul>
-
-		</div>
-	</div>
+<div id="mobile-sidebar" class="sidebar sidebar-style-2 d-lg-none" style="background-color: #343a40 !important; left: -280px; position: fixed; width: 260px; height: 100vh; z-index: 1050; overflow-y: auto; transition: left 0.3s ease-in-out;">
+    <div class="sidebar-wrapper scrollbar scrollbar-inner">
+        <div class="sidebar-content" style="color:white !important">
+            <ul class="nav nav-primary" id="sidebar-tree-paths">
+                <li class="nav-item {% if 'index' in segment %} active {% endif %}">
+                    <a href="/index.html" onclick="$('body').addClass('sidebar_minimize')">
+                        <i class="fas fa-home"></i><p>Home</p>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'about' in segment %} active {% endif %}">
+                    <a href="/about.html">
+                        <i class="fas fa-table"></i><p>About</p>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'acquisition' in segment %} active {% endif %}">
+                    <a href="/acquisitions-status.html">
+                        <i class="fas fa-chart-line"></i><p>Acquisitions Status</p>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'events' in segment %} active {% endif %}">
+                    <a href="/events.html">
+                        <i class="fas fa-table"></i><p>Events</p>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'data-' in segment %} active {% endif %}">
+                    <a href="/data-availability.html">
+                        <i class="fas fa-chart-pie"></i><p>Data Availability</p>
+                    </a>
+                </li>
+                <li class="nav-item {% if 'processors' in segment %} active {% endif %}">
+                    <a href="/processors-viewer.html">
+                        <i class="fas fa-industry"></i><p>Processors</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
 </div>
-<!-- End Sidebar -->
-        

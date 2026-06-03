@@ -59,13 +59,11 @@ class Home {
         })
 
         // Play video only after page loading
-        window.onload = function () {
-            $('#home-video').get(0).play();
-        }
         this.handleResponsiveSliderLayout();
-        //this.initSlider();
         return;
     }
+
+
 
     succesLoadAnomalies(response) {
         var rows = format_response(response);
@@ -431,4 +429,8 @@ $('.chevron-down, .chevron-up').on('click', function (e) {
     }
 });
 
-let home = new Home();
+$(document).ready(function () {
+    const home = new Home();
+    home.init();
+
+});

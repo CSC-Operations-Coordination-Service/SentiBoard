@@ -52,15 +52,6 @@ const NewsEditor = (() => {
         }
     };
 
-    // ── messageType → preview icon config ─────────────────────────────────
-    // fa icon class and colour match EXACTLY what newsList.html renders,
-    //
-    //  messageType  │  fa icon                    │  colour   │  label
-    //  ─────────────┼─────────────────────────────┼───────────┼──────────────
-    //  warning      │  fa-exclamation-circle       │  #ffc107  │  Anomaly/New
-    //  info         │  fa-info-circle              │  #17a2b8  │  Info
-    //  success      │  fa-check-circle             │  #28a745  │  Resolved
-    //  danger       │  fa-exclamation-triangle     │  #dc3545  │  Disaster
     const TYPE_CFG = {
         warning: { faClass: 'fa fa-exclamation-circle', color: '#ffc107', label: 'Anomaly / New', msgType: 'warning' },
         info: { faClass: 'fa fa-info-circle', color: '#17a2b8', label: 'Info', msgType: 'info' },
@@ -68,22 +59,30 @@ const NewsEditor = (() => {
         danger: { faClass: 'fa fa-exclamation-triangle', color: '#dc3545', label: 'Disaster', msgType: 'danger' },
     };
 
-    // Status button name → messageType stored in DB
     const STATUS_TO_TYPE = {
         new: 'warning',
         resolved: 'success',
         disaster: 'danger',
     };
 
+    // Tracks whether the user has actively chosen a template.
+    // false → leave existing title/text alone (DB content in edit mode)
+    // true  → template text is appended below the user's own content
+    let _templateActive = false;
+
+    // The user's own title/text captured at the moment a template is first
+    // applied. The rendered template is always appended AFTER this base, so
+    // changing the dates re-renders only the template part and never wipes
+    // what the user already wrote.
+    let _baseTitle = '';
+    let _baseText = '';
+
     function $id(id) { return document.getElementById(id); }
 
-    // ── Update the preview icon, label badge, and hidden form field ────────
     function setStatus(status) {
-        const msgType = STATUS_TO_TYPE[status] || 'warning';
-        _applyType(msgType);
+        _applyType(STATUS_TO_TYPE[status] || 'warning');
     }
 
-    // Called on init with the raw messageType string from the DB
     function setFromMessageType(msgType) {
         _applyType((msgType || 'warning').toLowerCase());
     }
@@ -91,23 +90,19 @@ const NewsEditor = (() => {
     function _applyType(msgType) {
         const cfg = TYPE_CFG[msgType] || TYPE_CFG.warning;
 
-        // Update preview icon — change fa class and colour
         const iconEl = $id('ne-flag-icon');
         if (iconEl) {
             iconEl.className = cfg.faClass;
             iconEl.parentElement.style.color = cfg.color;
         }
 
-        // Update label badge
         const badge = $id('ne-status-badge');
         if (badge) {
             badge.textContent = cfg.label;
-            // Keep badge colour in sync with icon colour
             badge.style.borderColor = cfg.color;
             badge.style.color = cfg.color;
         }
 
-        // Update the hidden field that gets submitted with the form
         const hdnMsgType = $id('hdn-messageType');
         if (hdnMsgType) hdnMsgType.value = cfg.msgType;
     }
@@ -116,22 +111,17 @@ const NewsEditor = (() => {
         const sel = ($id('ne-template-select') || {}).value || '';
         if (!sel) return;
 
-        // ── Clear template ──────────────────────────────────────────────
+        // ── Clear option ────────────────────────────────────────────────
         if (sel === '__clear__') {
-            // Reset select to placeholder
-            const selectEl = $id('ne-template-select');
-            if (selectEl) selectEl.value = '';
+            // User explicitly stopped using a template → hand text back to them
+            _templateActive = false;
+            _baseTitle = '';
+            _baseText = '';
 
-            // Hide the entire template fields container and all sub-groups
+            const selectEl = $id('ne-template-select');
             const tplFields = $id('ne-tpl-fields');
             const endDateGrp = $id('ne-end-date-group');
             const sentGrp = $id('ne-sentinel-group');
-
-            if (tplFields) tplFields.style.display = 'none';  // ← hides the whole block
-            if (endDateGrp) endDateGrp.style.display = 'none';
-            if (sentGrp) sentGrp.style.display = 'none';
-
-            // Reset all inputs inside the template fields
             const startDt = $id('ne-start-dt');
             const endDt = $id('ne-end-dt');
             const si = $id('ne-sentinel-id');
@@ -139,25 +129,41 @@ const NewsEditor = (() => {
             const sentSingle = $id('ne-sentinel-single');
             const sentMulti = $id('ne-sentinel-multi');
 
+            if (selectEl) selectEl.value = '';
+            if (tplFields) tplFields.style.display = 'none';
+            if (endDateGrp) endDateGrp.style.display = 'none';
+            if (sentGrp) sentGrp.style.display = 'none';
             if (startDt) startDt.value = '';
             if (endDt) endDt.value = '';
             if (si) si.value = '';
             if (sm) Array.from(sm.options).forEach(o => o.selected = false);
-            if (sentSingle) sentSingle.style.display = '';   // reset to default visible
+            if (sentSingle) sentSingle.style.display = '';
             if (sentMulti) sentMulti.style.display = 'none';
 
-            // Clear the form fields that were populated by the template
-            const titleEl = $id('title');
-            const textEl = $id('text');
-            if (titleEl) titleEl.value = '';
-            if (textEl) textEl.value = '';
-
+            // Only clear title/text when NOT editing
+            const inEditMode = (typeof IS_EDIT !== 'undefined') && IS_EDIT;
+            if (!inEditMode) {
+                const titleEl = $id('title');
+                const textEl = $id('text');
+                if (titleEl) titleEl.value = '';
+                if (textEl) textEl.value = '';
+            }
             return;
         }
-        // ── Normal template apply (rest of function unchanged) ─────────
 
+        // ── Normal template ─────────────────────────────────────────────
         const tpl = TEMPLATES[sel];
         if (!tpl) return;
+
+        // First time a template is picked, remember whatever the user
+        // already had so we can append the template below it (and re-append
+        // cleanly whenever the dates change). Switching directly between two
+        // templates keeps the same base.
+        if (!_templateActive) {
+            _baseTitle = ($id('title') || {}).value || '';
+            _baseText = ($id('text') || {}).value || '';
+            _templateActive = true;
+        }
 
         const tplFields = $id('ne-tpl-fields');
         const endDateGrp = $id('ne-end-date-group');
@@ -169,13 +175,11 @@ const NewsEditor = (() => {
         if (endDateGrp) endDateGrp.style.display = tpl.needsEnd ? '' : 'none';
         if (sentGrp) sentGrp.style.display = tpl.needsSentinel ? '' : 'none';
 
-        // Switch between single and multi sentinel selector
         if (tpl.needsSentinel) {
             const isMulti = tpl.needsMulti || false;
             if (sentSingle) sentSingle.style.display = isMulti ? 'none' : '';
             if (sentMulti) sentMulti.style.display = isMulti ? '' : 'none';
-
-            // Reset both selectors when switching templates
+            // Reset selectors on template switch
             const si = $id('ne-sentinel-id');
             const sm = $id('ne-sentinel-multi-id');
             if (si) si.value = '';
@@ -183,9 +187,7 @@ const NewsEditor = (() => {
         }
 
         _fillDates(tpl);
-
     }
-
 
     function fillDates() {
         const sel = ($id('ne-template-select') || {}).value || '';
@@ -195,24 +197,19 @@ const NewsEditor = (() => {
     function _fillDates(tpl) {
         if (!tpl) return;
 
+        // Parse datetime-local values into date + time parts
         const startVal = ($id('ne-start-dt') || {}).value || '';
-        const startParts = startVal.split('T');
-        const sd = startParts[0] || 'XX-XX-XX';
-        const st = startParts[1] || 'XX:XX';
-
+        const [sd, st] = startVal ? startVal.split('T') : ['XX-XX-XX', 'XX:XX'];
         const endVal = ($id('ne-end-dt') || {}).value || '';
-        const endParts = endVal.split('T');
-        const ed = endParts[0] || 'XX-XX-XX';
-        const et = endParts[1] || 'XX:XX';
+        const [ed, et] = endVal ? endVal.split('T') : ['XX-XX-XX', 'XX:XX'];
 
         let sentinel = 'XX';
         if (tpl.needsSentinel) {
             if (tpl.needsMulti) {
-                // Build XX/YY/ZZ string from all selected options
                 const sm = $id('ne-sentinel-multi-id');
                 if (sm) {
                     const selected = Array.from(sm.selectedOptions).map(o => o.value);
-                    sentinel = selected.length > 0 ? selected.join('/') : 'XX';
+                    sentinel = selected.length ? selected.join('/') : 'XX';
                 }
             } else {
                 const si = $id('ne-sentinel-id');
@@ -222,28 +219,44 @@ const NewsEditor = (() => {
 
         const title = tpl.title.replace(/\{X\}/g, sentinel);
         const text = tpl.text
-            .replace(/\{SD\}/g, sd)
-            .replace(/\{ST\}/g, st)
-            .replace(/\{ED\}/g, ed)
-            .replace(/\{ET\}/g, et)
+            .replace(/\{SD\}/g, sd || 'XX-XX-XX')
+            .replace(/\{ST\}/g, st || 'XX:XX')
+            .replace(/\{ED\}/g, ed || 'XX-XX-XX')
+            .replace(/\{ET\}/g, et || 'XX:XX')
             .replace(/\{X\}/g, sentinel);
 
         const titleEl = $id('title');
         const textEl = $id('text');
-        if (titleEl) titleEl.value = title;
-        if (textEl) textEl.value = text;
-    }
 
+        // Only write to the fields when a template is actively in use.
+        //
+        //   create mode → first template pick sets _templateActive = true, so
+        //                 everything fills and keeps updating with the dates.
+        //   edit mode   → _templateActive starts false, so the DB text is left
+        //                 untouched on load. As soon as the user picks a template
+        //                 it becomes true, and from then on changing the date
+        //                 fields DOES update the text.
+        //   clear       → sets it back to false, handing editing to the user.
+        if (!_templateActive) return;
+
+        // TITLE: only fill when there is no existing title (create mode).
+        // In edit mode the user's title is left completely untouched.
+        if (titleEl && !_baseTitle) {
+            titleEl.value = title;
+        }
+
+        // TEXT: append the rendered template AFTER the user's own content.
+        // If the base is empty (create mode) this is just the template.
+        const sep = '\n\n';
+        if (textEl) {
+            textEl.value = _baseText ? (_baseText + sep + text) : text;
+        }
+    }
 
     function init() {
         if (!$id('new-message-form')) return;
-
-        // Set the preview icon to match the existing messageType (edit mode)
-        // or default to 'warning' for a new message.
         const initialType = (typeof INITIAL_MESSAGE_TYPE !== 'undefined')
-            ? INITIAL_MESSAGE_TYPE
-            : 'warning';
-
+            ? INITIAL_MESSAGE_TYPE : 'warning';
         setFromMessageType(initialType);
         console.log('[NewsEditor] Initialised. messageType:', initialType);
     }
@@ -253,7 +266,7 @@ const NewsEditor = (() => {
 
 
 /* ═══════════════════════════════════════════════════════════════════════
-   NEWS MESSAGES LIST  (SSR — renderNews only used if called directly)
+   NEWS MESSAGES LIST  (SSR — renderNews used only if called directly)
    ═══════════════════════════════════════════════════════════════════════ */
 
 class NewsMessages {
@@ -278,7 +291,6 @@ class NewsMessages {
         });
     }
 
-    // Same icon/colour logic as newsList.html Jinja maps
     getBorderColor(messageType) {
         switch ((messageType || '').toLowerCase()) {
             case 'success': return '#28a745';
@@ -351,7 +363,7 @@ class NewsMessages {
                   <div class="card-body" style="color:#eee;">
                     <p>${msg.text}</p>
                     ${msg.link ? `<a href="${msg.link}" target="_blank" class="read-more">Read more</a>` : ''}
-                    <br><small>Published: ${this.formatDateRome(msg.publicationDate)}</small>
+                    <br><small>Published: ${this.formatDateUTC(msg.publicationDate)}</small>
                   </div>
                 </div>
               </div>
@@ -361,12 +373,18 @@ class NewsMessages {
         });
     }
 
-    formatDateRome(utcString) {
+    formatDateUTC(utcString) {
         if (!utcString) return 'N/A';
         try {
-            const dateUtc = new Date(utcString);
+            let isoString = utcString;
+            const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2}(:\d{2})?)$/;
+            const match = utcString.match(ddmmyyyy);
+            if (match) {
+                isoString = `${match[3]}-${match[2]}-${match[1]}T${match[4]}Z`;
+            }
+            const dateUtc = new Date(isoString);
             const dateRome = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'Europe/Rome',
+                timeZone: 'UTC',
                 year: 'numeric', month: '2-digit', day: '2-digit',
                 hour: '2-digit', minute: '2-digit'
             }).format(dateUtc);

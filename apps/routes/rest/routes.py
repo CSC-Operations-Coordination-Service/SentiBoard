@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 from functools import wraps
 
 from apps.utils.events_utils import make_json_safe
-from flask import jsonify, request, Response
+from flask import jsonify, request, Response, render_template
 from flask_login import login_required
 
 import apps.cache.modules.acquisitions as acquisitions_cache
@@ -237,10 +237,15 @@ def get_news_last(period_id):
     logger.info("Called API News last %s", period_id)
     news_api_uri = events_cache.news_cache_key.format("last", period_id)
     logger.debug("URI cache key: %s", news_api_uri)
-    # if not flask_cache.has(news_api_uri):
-    #    logger.info("Loading News Cache from API News last %s", period_id)
-    #    events_cache.load_news_cache_last_quarter()
-    return flask_cache.get(news_api_uri)
+    if not flask_cache.has(news_api_uri):
+        logger.info("Loading News Cache from API News last %s", period_id)
+        events_cache.load_news_cache_last_quarter()
+    data = flask_cache.get(news_api_uri)
+    if data is None:
+        logger.warning("No data found in cache for key: %s", news_api_uri)
+        return jsonify({"message": "No data available for the last-" + period_id}), 200
+
+    return data
 
 
 @blueprint.route("/api/events/news/previous-quarter", methods=["GET"])
@@ -250,10 +255,15 @@ def get_news_previous_quarter():
     logger.info("Called API News previous quarter")
     news_api_uri = events_cache.news_cache_key.format("previous", "quarter")
     logger.debug("URI cache key: %s", news_api_uri)
-    # if not flask_cache.has(news_api_uri):
-    #    logger.info("Loading News Cache from API News previous quarter")
-    #    events_cache.load_news_cache_previous_quarter()
-    return flask_cache.get(news_api_uri)
+    if not flask_cache.has(news_api_uri):
+        logger.info("Loading News Cache from API News previous quarter")
+        events_cache.load_news_cache_previous_quarter()
+    data = flask_cache.get(news_api_uri)
+    if data is None:
+        logger.warning("No data found in cache for key: %s", news_api_uri)
+        return jsonify({"message": "No data available for the previous quarter"}), 200
+
+    return data
 
 
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])

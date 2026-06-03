@@ -96,6 +96,23 @@
 	{% include 'includes/scripts.html' %}
 
 	<!-- Specific Page JS goes HERE  -->
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+		var toggler = document.querySelector('.navbar-toggler');
+		var sidebar = document.getElementById('mobile-sidebar');
+		if (!toggler || !sidebar) return;
+		toggler.addEventListener('click', function (e) {
+			e.stopPropagation();
+			if (sidebar.style.left === '0px') {
+			sidebar.style.left = '-280px';
+			} else {
+			sidebar.style.left = '0px';
+			}
+		});
+		});
+	</script>
+
+
 
     {% block javascripts %}{% endblock javascripts %}
 

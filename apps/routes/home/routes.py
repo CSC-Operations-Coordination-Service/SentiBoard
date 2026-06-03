@@ -651,8 +651,11 @@ def index():
             {
                 "id": msg.id,
                 "title": msg.title,
-                "text": msg.text[:130]
-                + ("..." if msg.text and len(msg.text) > 130 else msg.text),
+                "text": (
+                    (msg.text[:130] + "...")
+                    if msg.text and len(msg.text) > 130
+                    else msg.text
+                ),
                 "messageType": msg.messageType,
                 "publicationDate": format_pub_date(msg.publicationDate),
                 "link": msg.link,
@@ -1323,9 +1326,9 @@ def news_list_ssr():
             pub_str = None
             if m.publicationDate:
                 pub_str = (
-                    m.publicationDate.replace(tzinfo=timezone.utc)
-                    .astimezone(LOCAL_TZ)
-                    .strftime("%Y-%m-%d %H:%M")
+                    m.publicationDate.strftime("%Y-%m-%d %H:%M")
+                    if m.publicationDate
+                    else None
                 )
 
             messages.append(
@@ -1379,13 +1382,11 @@ def message_form_ssr():
             if not message:
                 abort(404)
 
-            pub_str = ""
-            if message.publicationDate:
-                pub_str = (
-                    message.publicationDate.replace(tzinfo=timezone.utc)
-                    .astimezone(LOCAL_TZ)
-                    .strftime("%Y-%m-%dT%H:%M")
-                )
+            pub_str = (
+                message.publicationDate.strftime("%Y-%m-%dT%H:%M")
+                if message.publicationDate
+                else ""
+            )
 
             message_data = {
                 "id": message.id,
@@ -1427,10 +1428,9 @@ def add_instant_message_ssr():
             flash("Missing required fields", "danger")
             return redirect(next_url)
 
-        local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
-            tzinfo=LOCAL_TZ
-        )
-        publication_date = local_dt.astimezone(timezone.utc)
+        publication_date = datetime.strptime(
+            publication_date_str, "%Y-%m-%dT%H:%M"
+        ).replace(tzinfo=timezone.utc)
 
         instant_messages_model.save_instant_messages(
             title=title,
@@ -1470,10 +1470,9 @@ def update_instant_message_ssr():
         publication_date_str = request.form.get("publicationDate", "").strip()
         message_type = request.form.get("messageType", "warning").strip()
 
-        local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
-            tzinfo=LOCAL_TZ
-        )
-        new_pub_dt_utc = local_dt.astimezone(timezone.utc)
+        new_pub_dt_utc = datetime.strptime(
+            publication_date_str, "%Y-%m-%dT%H:%M"
+        ).replace(tzinfo=timezone.utc)
 
         message = (
             db.session.query(instant_messages_model.InstantMessages)
