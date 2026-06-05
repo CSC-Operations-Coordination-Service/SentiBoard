@@ -77,7 +77,7 @@ class CalendarWidget {
 
         this.eventTypeMap = {
             'Acquisition': 'acquisition',
-            'calibration': 'calibration',
+            'Calibration': 'calibration',
             'Data access': 'data-access',
             'Manoeuvre': 'manoeuvre',
             'Production': 'production',
@@ -122,6 +122,7 @@ class CalendarWidget {
 
         this.currentMonth = newMonth;
         this.currentYear = newYear;
+        this.generateCalendar(this.currentMonth, this.currentYear);
     }
 
     buildAnomaliesByDate(anomaliesArray) {
@@ -842,7 +843,6 @@ class CalendarWidget {
 
             if (eventType && eventType !== 'all') {
                 const category = event.category === 'Platform' ? 'Satellite' : event.category;
-                const matchesType = category.toLowerCase() === eventType.toLowerCase();
                 if (category.toLowerCase() !== eventType.toLowerCase()) return false;
             }
 
@@ -1084,7 +1084,7 @@ class CalendarWidget {
 
         if (targetDate) {
             // Set calendar month/year to target date
-            calendar.gotoMonth(targetDate.getFullYear(), targetDate.getMonth());
+            calendar.generateCalendar(targetDate.getMonth(), targetDate.getFullYear());
 
             // If we have a specific day, show it
             if (showDayEvents) {

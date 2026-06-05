@@ -759,33 +759,12 @@ def events_data():
         return jsonify({"error": "Missing year or month"}), 400
 
     try:
-        quarter_authorized = current_user.is_authenticated and current_user.role in (
-            "admin",
-            "ecuser",
-            "esauser",
-        )
-
-        if quarter_authorized:
-            events_cache.load_anomalies_cache_full_history()
-            cache_key = events_cache.anomalies_cache_key.format("full", "history")
-        else:
-            events_cache.load_anomalies_cache_full_history()
-            cache_key = events_cache.anomalies_cache_key.format("full", "history")
-
-        current_app.logger.info(
-            f"[EVENTS DATA] requesting year={year} month={month} authorized={quarter_authorized}"
-        )
-        current_app.logger.info(f"[EVENTS DATA] cache_key={cache_key}")
+        events_cache.load_anomalies_cache_full_history()
+        cache_key = events_cache.anomalies_cache_key.format("full", "history")
 
         cache_entry = events_cache.flask_cache.get(cache_key)
-        current_app.logger.info(
-            f"[EVENTS DATA] cache_entry found: {cache_entry is not None}"
-        )
 
         raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
-        current_app.logger.info(
-            f"[EVENTS DATA] raw_anomalies count: {len(raw_anomalies)}"
-        )
 
         if not raw_anomalies:
             current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
@@ -826,6 +805,8 @@ def events_data():
                 "category": src.get("category") or src.get("type") or "Unknown",
                 "environment": src.get("environment", ""),
                 "publicationDate": date_str,
+                "start": src.get("start"),
+                "end": src.get("end"),
                 "description": src.get("description", ""),
                 "impactedSatellite": impacted_satellite,
                 "datatakes_completeness": datatakes_completeness,
@@ -836,13 +817,13 @@ def events_data():
             serialized = serialize_anomalie(a)
             if serialized:
                 anomalies.append(serialized)
-            else:
-                current_app.logger.info("[SKIPPED] anomaly filtered by prefix")
+            
 
         events = []
         anomalies_by_date = {}
         skipped_full = 0
         kept_partial = 0
+        skipped_no_date = 0
 
         for a in anomalies:
             instance = build_event_instance(a, current_app.logger)
@@ -856,6 +837,7 @@ def events_data():
 
             date_str = instance.get("from") or instance.get("publicationDate")
             if not date_str:
+                skipped_no_date += 1
                 current_app.logger.info(f"Skipping instance without 'from': {instance}")
                 continue
 

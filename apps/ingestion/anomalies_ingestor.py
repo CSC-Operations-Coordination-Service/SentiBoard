@@ -33,9 +33,13 @@ class AnomaliesIngestor:
     def __int__(self):
         return
 
-    def get_anomalies_elastic(self, start=None):
+    def get_anomalies_elastic(self, start=None, end=None):
         anomalies = []
-        records = anomalies_elastic_client.fetch_anomalies_last_quarter()
+        if start and end:
+            records = anomalies_elastic_client.fetch_anomalies_by_range(start, end)
+        else:
+            records = anomalies_elastic_client.fetch_anomalies_last_quarter()
+        
         logger.info("fetched %d anomalies from elastic", len(records))
         for extract in records:
             src = extract.get("_source", {})
@@ -239,3 +243,19 @@ class AnomaliesIngestor:
             "is",
         ]
         return token.isdigit() or len(token) == 1 or token in excluded_tokens
+    
+    def ingest_anomalies_range(self, start, end):
+        list_anomalies = self.get_anomalies_elastic(start=start, end=end)
+        for anomaly in list_anomalies:
+            anomalies_model.update_anomaly(
+                title=anomaly["title"],
+                key=anomaly["key"],
+                text=anomaly["text"],
+                publication_date=anomaly["publicationDate"],
+                category=anomaly["category"],
+                impacted_satellite=anomaly["impactedSatellite"],
+                impacted_item=anomaly["impactedItem"],
+                start=anomaly["start"],
+                end=anomaly["end"],
+                environment=anomaly.get("environment"),
+            )

@@ -114,7 +114,7 @@ def update_anomaly(
             anomaly.start = start
             anomaly.end = end
             anomaly.environment = environment
-            anomaly.modify_date = modify_date
+            anomaly.modifyDate = modify_date
         else:
             datatakes_completeness = []
             if environment is not None and len(environment) > 0:
@@ -196,8 +196,8 @@ def get_anomalies(start_date=None, end_date=None):
             return Anomalies.query.order_by(Anomalies.publicationDate.desc()).all()
         else:
             return (
-                Anomalies.query.filter(Anomalies.start is not None)
-                .filter(Anomalies.end is not None)
+                Anomalies.query.filter(Anomalies.start != None)
+                .filter(Anomalies.end != None)
                 .filter(Anomalies.start >= start_date)
                 .filter(Anomalies.start <= end_date)
                 .order_by(Anomalies.publicationDate.asc())
