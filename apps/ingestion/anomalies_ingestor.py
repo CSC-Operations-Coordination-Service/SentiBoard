@@ -131,12 +131,6 @@ class AnomaliesIngestor:
             # origin = getattr(extract["_source"], "origin", None)
             origin = extract["_source"].get("origin")
 
-            if origin == "Dashboard":
-                logger.info(
-                    "Skipping anomaly with Dashboard correlation: %s", src.get("key")
-                )
-                continue
-
             if origin == "Satellite":
                 anomaly["category"] = "Platform"
             elif origin == "Production":
