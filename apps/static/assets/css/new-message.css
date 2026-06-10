@@ -285,3 +285,16 @@ a:hover,
   border-color: #dc3545;
   color: #721c24;
 }
+
+.news-card-title {
+  background-color: rgba(255, 255, 255, 0.06);
+  transition: background-color 0.15s ease;
+}
+
+.news-card-title:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+
+.news-card-title a:hover .fw-bold {
+  color: #12b1bf !important;
+}
