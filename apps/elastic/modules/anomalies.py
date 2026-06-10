@@ -175,6 +175,8 @@ def fetch_anomalies_by_range(start_date, end_date):
 
 def serialize_anomalie(anomaly):
     source = anomaly.get("_source", anomaly)
+    if source.get("origin") == "Dashboard":
+        return None
 
     normalized = {
         "key": source.get("key"),

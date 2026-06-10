@@ -772,6 +772,8 @@ def events_data():
 
         def serialize_anomalie(a):
             src = a.get("_source", a)
+            if src.get("origin") == "Dashboard":
+                return None
             date_str = (
                 src.get("occurence_date")
                 or src.get("occurrence_date")

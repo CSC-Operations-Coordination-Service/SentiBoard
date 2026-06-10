@@ -172,25 +172,29 @@
       <div class="bg-dark p-3 rounded">
         <h4 class="card-title text-white text-center mb-3">News</h4>
 
-        {% if instant_messages and instant_messages|length > 0 %}
+          {% if instant_messages and instant_messages|length > 0 %}
+            {% set icon_map = {
+            'success': 'fa-check-circle',
+            'info':    'fa-info-circle',
+            'warning': 'fa-exclamation-circle',
+            'danger':  'fa-exclamation-triangle'
+            } %}
+            {% set color_map = {
+              'success': '#28a745',
+              'info':    '#17a2b8',
+              'warning': '#ffc107',
+              'danger':  '#dc3545'
+            } %}
             {% for item in instant_messages %}
+              {% set mt = (item.messageType or 'warning')|lower %}
               <div class="news-card p-2 rounded shadow mb-2 text-white">
-                {# Flag + title row #}
-                <div class="d-flex align-items-center mb-1" style="gap:8px;">
-                  <span class="ne-news-flag {{ flag_cls }}" title="{{ badge_txt }}">{{ flag_icon }}</span>
-                  <span class="fw-bold" style="font-size:0.95rem;">{{ item.title }}</span>
-                  <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
-                </div>
-                <div class="text-muted small">{{ item.publicationDate }}</div>
-                <div>{{ item.text | safe }}</div>
-
-                {% if item.link %}
-                  <div>
-                    <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">
-                      Read more
-                    </a>
-                  </div>
-                {% endif %}
+                <a href="/newsList.html"
+                  class="d-flex align-items-center text-white text-decoration-none"
+                  style="gap:8px; color:#fff !important;">
+                  <i class="fas {{ icon_map.get(mt, 'fa-bullhorn') }}"
+                    style="color:{{ color_map.get(mt, '#006B7C') }}; font-size:1.1rem; flex-shrink:0;"></i>
+                  <span class="fw-bold" style="font-size:0.95rem; line-height:1.3;">{{ item.title }}</span>
+                </a>
               </div>
             {% endfor %}
 
@@ -251,30 +255,38 @@
     <div class="collapse" id="customBannerMobile">
       <div id="custom-banner-mobile" class="bg-dark text-white p-3 rounded">
         {% if instant_messages and instant_messages|length > 0 %}
-            {% for item in instant_messages %}
-              <div class="news-card p-2 rounded shadow mb-2 text-white bg-secondary">
-                <div class="d-flex align-items-center mb-1" style="gap:8px;">
-                  <span class="ne-news-flag {{ flag_cls }}" title="{{ badge_txt }}">{{ flag_icon }}</span>
-                  <span class="fw-bold" style="font-size:0.95rem;">{{ item.title }}</span>
-                  <span class="ne-card-badge {{ badge_cls }}" style="margin-left:auto; flex-shrink:0;">{{ badge_txt }}</span>
-                </div>
-                <div class="text-muted small mb-1">{{ item.publicationDate }}</div>
-                <div style="font-size:0.88rem;">{{ item.text | safe }}</div>
-                {% if item.link %}
-                  <div class="mt-1">
-                    <a href="{{ item.link }}" target="_blank" style="color:#ffc107;">Read more</a>
-                  </div>
-                {% endif %}
-              </div>
-            {% endfor %}
-            {% if total_messages > 5 %}
-              <div class="text-center mt-2">
-                <a href="/newsList.html" class="btn btn-outline-light"
-                  style="background-color:#FFC107; color:#212529;">
-                  View all news
-                </a>
-              </div>
-            {% endif %}
+          {% set icon_map = {
+            'success': 'fa-check-circle',
+            'info':    'fa-info-circle',
+            'warning': 'fa-exclamation-circle',
+            'danger':  'fa-exclamation-triangle'
+          } %}
+          {% set color_map = {
+            'success': '#28a745',
+            'info':    '#17a2b8',
+            'warning': '#ffc107',
+            'danger':  '#dc3545'
+          } %}
+          {% for item in instant_messages %}
+            {% set mt = (item.messageType or 'warning')|lower %}
+            <div class="news-card p-2 rounded shadow mb-2 text-white bg-secondary">
+              <a href="/newsList.html"
+                 class="d-flex align-items-center text-white text-decoration-none"
+                 style="gap:8px; color:#fff !important;">
+                <i class="fas {{ icon_map.get(mt, 'fa-bullhorn') }}"
+                   style="color:{{ color_map.get(mt, '#006B7C') }}; font-size:1.1rem; flex-shrink:0;"></i>
+                <span class="fw-bold" style="font-size:0.95rem; line-height:1.3;">{{ item.title }}</span>
+              </a>
+            </div>
+          {% endfor %}
+          {% if total_messages > 5 %}
+            <div class="text-center mt-2">
+              <a href="/newsList.html" class="btn btn-outline-light"
+                style="background-color:#FFC107; color:#212529;">
+                View all news
+              </a>
+            </div>
+          {% endif %}
         {% else %}
           <div class="text-center py-4">There are no news at the moment.</div>
         {% endif %}

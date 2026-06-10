@@ -341,28 +341,31 @@ class Home {
             return;
         }
 
-        // --- Desktop overlay ---
+        // ── Build the title-only list ─────────────────────────────────────
+        const buildTitleList = (icons) => {
+            let rows = '';
+            instantMessages.forEach(item => {
+                const icon = this.getIcon(item.messageType);
+                const color = this.getTypeColor(item.messageType);
+                const safeTitle = this.escapeHtml(item.title);
+                rows += `
+                <div class="news-card-title p-2 rounded mb-2">
+                    <a href="/newsList.html"
+                       class="d-flex align-items-center text-white text-decoration-none"
+                       style="gap:8px; color:#fff !important;">
+                        <i class="fas ${icon}" style="color:${color}; font-size:1.1rem; flex-shrink:0;"></i>
+                        <span class="fw-bold" style="font-size:0.95rem; line-height:1.3;">${safeTitle}</span>
+                    </a>
+                </div>`;
+            });
+            return rows;
+        };
+
+        // ── Desktop overlay ──────────────────────────────────────────────
         let desktopHtml = `
         <div class="bg-dark p-3 rounded">
-            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>`;
-
-        instantMessages.forEach(item => {
-            const icon = this.getIcon(item.messageType);
-            const borderColor = this.getTypeColor(item.messageType);
-            desktopHtml += `
-                <div class="news-card p-2 rounded shadow mb-2" style="color: white;">
-                <div class="d-flex align-items-start">
-                    <i class="fas ${icon}" 
-                    style="color: ${borderColor}; font-size: 1.2rem; margin-right: 8px; margin-top: 2px;"></i>
-                    <div>
-                    <div class="fw-bold">${item.title}</div>
-                    <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
-                    <div>${item.text || ''}</div>
-                    ${item.link ? `<div><a href="${item.link}" target="_blank" style="color: #ffc107;">Read more</a></div>` : ''}
-                    </div>
-                </div>
-                </div>`;
-        });
+            <h4 class="card-title text-white text-center mb-3" style="font-weight: 500;">News</h4>
+            ${buildTitleList(true)}`;
 
         if (totalMessages > 3) {
             desktopHtml += `
@@ -375,17 +378,8 @@ class Home {
         $('#custom-banner-placeholder').html(desktopHtml);
 
 
-        // --- Mobile collapsible ---
-        let mobileHtml = '';
-        instantMessages.forEach(item => {
-            mobileHtml += `
-            <div class="news-card p-2 rounded shadow mb-2">
-                <div class="fw-bold">${item.title}</div>
-                <div class="text-muted small">${this.formatDate(item.publicationDate)}</div>
-                <div>${item.text || ''}</div>
-                ${item.link ? `<div><a href="${item.link}" target="_blank" style="color: #ffc107;">Read more</a></div>` : ''}
-            </div>`;
-        });
+        // ── Mobile collapsible ───────────────────────────────────────────
+        let mobileHtml = buildTitleList(true);
 
         if (totalMessages > 3) {
             mobileHtml += `
@@ -416,6 +410,26 @@ class Home {
             case 'danger': return '#dc3545';
             default: return '#006B7C';
         }
+    }
+
+    escapeHtml(str) {
+        if (typeof str !== 'string') {
+            return str;
+        }
+
+        const htmlEntities = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+        };
+
+        // Use a regular expression to match the dangerous characters and replace them
+        return str.replace(/[&<>"'`=\/]/g, (match) => htmlEntities[match]);
     }
 
 }
