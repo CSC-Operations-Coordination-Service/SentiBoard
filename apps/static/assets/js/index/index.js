@@ -347,7 +347,7 @@ class Home {
             instantMessages.forEach(item => {
                 const icon = this.getIcon(item.messageType);
                 const color = this.getTypeColor(item.messageType);
-                const safeTitle = item.title;
+                const safeTitle = this.escapeHtml(item.title);
                 rows += `
                 <div class="news-card-title p-2 rounded mb-2">
                     <a href="/newsList.html"
@@ -410,6 +410,26 @@ class Home {
             case 'danger': return '#dc3545';
             default: return '#006B7C';
         }
+    }
+
+    escapeHtml(str) {
+        if (typeof str !== 'string') {
+            return str;
+        }
+
+        const htmlEntities = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+            '/': '&#x2F;',
+            '`': '&#x60;',
+            '=': '&#x3D;'
+        };
+
+        // Use a regular expression to match the dangerous characters and replace them
+        return str.replace(/[&<>"'`=\/]/g, (match) => htmlEntities[match]);
     }
 
 }
