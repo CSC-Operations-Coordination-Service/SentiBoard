@@ -138,7 +138,7 @@ def fetch_anomalies_prev_quarter(normalize=True):
         logger.error(ex)
 
     if normalize:
-        anomalies = [serialize_anomalie(e) for e in anomalies]
+          anomalies = [a for e in anomalies if (a := serialize_anomalie(e)) is not None]
 
     # Return the complete and normalized set of datatakes
     return anomalies
@@ -153,7 +153,7 @@ def serialize_anomalie(anomaly):
         "key": source.get("key"),
         "datatake_ids": (
             source.get("datatake_ids", "").split(";")
-            if anomaly.get("datatake_ids")
+            if source.get("datatake_ids")
             else []
         ),
         "description": anomaly.get("description", ""),
