@@ -631,6 +631,21 @@ class AcquisitionPlansViewer {
         var seen = new Set();
         var result = [];
 
+        var geometryEntityMap = new Map();
+        if (this.currentMission === 'S3' || this.currentMission === 'S5') {
+            kmlSource.entities.values.forEach(function (val) {
+                if (!val.kml || !val.kml.extendedData) return;
+                var dtIdData = val.kml.extendedData[dtIdProperty];
+                if (!dtIdData) return;
+                var dtId = dtIdData.value;
+
+                if (!geometryEntityMap.has(dtId) && val.polygon) {
+                    geometryEntityMap.set(dtId, val);
+                }
+            });
+            console.debug("S3/S5 geometry entities found:", geometryEntityMap.size);
+        }
+
         kmlSource.entities.values.forEach(function (val) {
             if (!val.kml || !val.kml.extendedData) return;
 
@@ -638,9 +653,6 @@ class AcquisitionPlansViewer {
             if (!dtIdData) return;
             var dtId = dtIdData.value;
 
-            // A MultiGeometry placemark (S3/S5 swath quads) expands into many
-            // Cesium entities that all share the same DatatakeId. Keep only the
-            // first one so each datatake appears once in the dropdown.
             if (seen.has(dtId)) return;
             seen.add(dtId);
 
@@ -649,7 +661,12 @@ class AcquisitionPlansViewer {
                 dtLabel = dtLabel + " (" + val.kml.extendedData['Mode'].value + ")";
             }
 
-            that.datatakes_list.set(dtId, val);
+            // For S3/S5: store geometry child for flyTo; otherwise store parent
+            if ((that.currentMission === 'S3' || that.currentMission === 'S5') && geometryEntityMap.has(dtId)) {
+                that.datatakes_list.set(dtId, geometryEntityMap.get(dtId));
+            } else {
+                that.datatakes_list.set(dtId, val);
+            }
 
             var dt_publicationStatus = val.kml.extendedData['Publication Status'];
             if (dt_publicationStatus) {
@@ -662,6 +679,7 @@ class AcquisitionPlansViewer {
 
         return result;
     }
+
 
     extractAcquisitionDatatakeIdList(acq_datatakes) {
         console.debug("Extracting Datatakes from Acquisition Datatakes");
@@ -783,87 +801,69 @@ class AcquisitionPlansViewer {
 
         if (mission === 'S3' || mission === 'S5') {
             const extData = dt_entity.kml && dt_entity.kml.extendedData;
-            const satUnit = extData && extData['SatelliteUnit'] && extData['SatelliteUnit'].value;
             const obsStart = extData && extData['ObservationTimeStart'] && extData['ObservationTimeStart'].value;
             const obsStop = extData && extData['ObservationTimeStop'] && extData['ObservationTimeStop'].value;
 
-            if (!satUnit || !obsStart) {
-                console.warn("flyToDatatake: missing SatelliteUnit or ObservationTimeStart for", datatake_id);
+            if (!obsStart) {
+                console.warn("flyToDatatake: missing ObservationTimeStart for", datatake_id);
                 return;
             }
 
-            // Use midpoint time so camera flies to center of swath, not start/end
             let obsMidTime;
             if (obsStop) {
                 const startMs = new Date(obsStart).getTime();
                 const stopMs = new Date(obsStop).getTime();
-                const midMs = startMs + (stopMs - startMs) / 2;
-                obsMidTime = new Date(midMs).toISOString();
+                obsMidTime = new Date(startMs + (stopMs - startMs) / 2).toISOString();
             } else {
                 obsMidTime = obsStart;
             }
 
             const obsMidJulian = Cesium.JulianDate.fromIso8601(obsMidTime);
-
-            // Set clock to midpoint time so polygon is visible
             this.viewer_widget.clock.currentTime = obsMidJulian;
-
-            // Highlight the polygon without tracking it
             this.viewer_widget.selectedEntity = dt_entity;
             this.viewer_widget.trackedEntity = undefined;
 
-            // Find satellite entity by scanning all datasources
-            const satNoradId = satelliteNoradId[satUnit];
-            if (!satNoradId) {
-                console.warn("flyToDatatake: unknown satellite unit", satUnit);
-                return;
-            }
-            // Find the CZML datasource by scanning all datasources for the satellite entity
-            let satEntity = null;
-            for (let i = 0; i < this.viewer_widget.dataSources.length; i++) {
-                const ds = this.viewer_widget.dataSources.get(i);
-                const found = ds.entities.getById(satNoradId);
-                if (found) {
-                    satEntity = found;
-                    break;
+            // Primary: polygon centroid — always correct, no clock/orbit dependency
+            if (dt_entity.polygon && dt_entity.polygon.hierarchy) {
+                const hierarchy = dt_entity.polygon.hierarchy.getValue(obsMidJulian)
+                    || dt_entity.polygon.hierarchy.getValue(Cesium.Iso8601.MAXIMUM_VALUE);
+                const positions = hierarchy ? hierarchy.positions : null;
+
+                if (positions && positions.length > 0) {
+                    const quarter = Math.floor(positions.length / 4);
+                    const sample = positions.slice(quarter, positions.length - quarter);
+                    const pts = sample.length > 0 ? sample : positions;
+                    let sumX = 0, sumY = 0, sumZ = 0;
+                    for (const pos of pts) { sumX += pos.x; sumY += pos.y; sumZ += pos.z; }
+                    const centroid = new Cesium.Cartesian3(sumX / pts.length, sumY / pts.length, sumZ / pts.length);
+                    const carto = Cesium.Cartographic.fromCartesian(centroid);
+                    const camAltitude = (mission === 'S5') ? 3500000 : 2000000;
+                    this.viewer_widget.camera.flyTo({
+                        destination: Cesium.Cartesian3.fromDegrees(
+                            Cesium.Math.toDegrees(carto.longitude),
+                            Cesium.Math.toDegrees(carto.latitude),
+                            camAltitude
+                        ),
+                        duration: 2,
+                        complete: () => { this.viewer_widget.clock.shouldAnimate = true; }
+                    });
+                    return;
                 }
             }
 
-            if (!satEntity) {
-                console.warn("flyToDatatake: satellite entity not found for NORAD ID", satNoradId);
-                this.viewer_widget.flyTo(dt_entity);
-                return;
-            }
-
-            // Get satellite position at midpoint time
-            const position = satEntity.position.getValue(obsMidJulian);
-            if (!position) {
-                console.warn("flyToDatatake: no position for satellite at", obsMidTime);
-                return;
-            }
-
-            // Convert to cartographic to get lat/lon/alt for camera
-            const cartographic = Cesium.Cartographic.fromCartesian(position);
-            const lon = Cesium.Math.toDegrees(cartographic.longitude);
-            const lat = Cesium.Math.toDegrees(cartographic.latitude);
-
-            // Fly camera to satellite position at 3000km altitude to show the full swath
-            const camAltitude = (mission === 'S5') ? 3500000 : 2000000
-            this.viewer_widget.camera.flyTo({
-                destination: Cesium.Cartesian3.fromDegrees(lon, lat, camAltitude),
-                duration: 2
+            // Fallback: last resort
+            this.viewer_widget.flyTo(dt_entity).then(() => {
+                this.viewer_widget.clock.shouldAnimate = true;
             });
-
             return;
         }
 
+
         // S1 and S2 — standard KML flyTo
         this.selectViewerTarget(dt_entity);
-
         if (dt_entity.availability) {
             this.viewer_widget.clock.currentTime = dt_entity.availability.start;
         }
-
         var flyPromise = this.viewer_widget.flyTo(dt_entity);
         var that = this;
         flyPromise.then(function (result) {
@@ -876,7 +876,6 @@ class AcquisitionPlansViewer {
             console.error("flyToDatatake error:", error);
         });
     }
-
 
     flyToSatellite(satellite_id, satellite_timestamp) {
         // Find satellite entity by scanning all datasources
