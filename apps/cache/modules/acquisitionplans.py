@@ -184,8 +184,8 @@ def load_all_acquisition_plans():
     logger.info("[END] Load Acquisition Plan KML data for up to %d days in the past", acq_past_num_days)
 
 
-#def update_acquisition_completeness():
-#    logger.info("[BEG] Update Acquisition Plan KML data with datatakes completeness")
+def update_acquisition_completeness():
+    logger.info("Acquisition Plan KML data with datatakes completeness: is handled by load_all_acquisition_plans, skipping")
 #    mission_fragments_retriever_fun = _get_mission_fragments
 #    _set_update_acquisition_completeness(mission_fragments_retriever_fun)
 #    logger.info("[END] Update Acquisition Plan KML data with datatakes completeness")
