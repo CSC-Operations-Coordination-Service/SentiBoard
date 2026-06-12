@@ -1241,6 +1241,10 @@ def acquisitions_status():
                 plans_raw = {}  # fallback to empty dict
 
         plans_coverage = make_json_safe(plans_raw)
+        logger.debug("SSR_ACQ_PLAN_DAYS missions available: %s", list(plans_coverage.keys()))
+        for mission, sats in plans_coverage.items():
+            for sat, days in sats.items():
+                logger.debug("  %s/%s: %d days available", mission, sat, len(days))
         logger.info(f"[INFO] Retrieved {len(plans_coverage)} plans coverage items")
 
         logger.info("[BEG] Retrieve Satellite Orbits (SSR)")
