@@ -318,6 +318,25 @@ class Home {
         });
     }
 
+    formatPublicationDate(dateString) {
+        if (!dateString) return '';
+
+        const date = new Date(dateString);
+
+        if (isNaN(date)) {
+            return dateString;
+        }
+
+        const months = [
+            "Jan", "Feb", "Mar", "Apr",
+            "May", "Jun", "Jul", "Aug",
+            "Sep", "Oct", "Nov", "Dec"
+        ];
+
+        return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()} at ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    }
+
+
     renderInstantMessageCards(instantMessages, totalMessages) {
         const allowedRoles = ['admin', 'esauser', 'ecuser'];
         const isPrivilegedUser = allowedRoles.includes(window.userRole);
@@ -341,20 +360,25 @@ class Home {
             return;
         }
 
-        // ── Build the title-only list ─────────────────────────────────────
         const buildTitleList = (icons) => {
             let rows = '';
             instantMessages.forEach(item => {
                 const icon = this.getIcon(item.messageType);
                 const color = this.getTypeColor(item.messageType);
                 const safeTitle = this.escapeHtml(item.title);
+                const dateStr = item.publicationDate
+                    ? this.escapeHtml(this.formatPublicationDate(item.publicationDate))
+                    : '';
                 rows += `
                 <div class="news-card-title p-2 rounded mb-2">
                     <a href="/newsList.html"
-                       class="d-flex align-items-center text-white text-decoration-none"
+                       class="d-flex align-items-start text-white text-decoration-none"
                        style="gap:8px; color:#fff !important;">
-                        <i class="fas ${icon}" style="color:${color}; font-size:1.1rem; flex-shrink:0;"></i>
-                        <span class="fw-bold" style="font-size:0.95rem; line-height:1.3;">${safeTitle}</span>
+                        <i class="fas ${icon}" style="color:${color}; font-size:1.1rem; flex-shrink:0; margin-top:2px;"></i>
+                        <div>
+                            <div class="fw-bold" style="font-size:0.95rem; line-height:1.3;">${safeTitle}</div>
+                            ${dateStr ? `<div class="text-muted small" style="font-size:0.78rem;">${dateStr}</div>` : ''}
+                        </div>
                     </a>
                 </div>`;
             });

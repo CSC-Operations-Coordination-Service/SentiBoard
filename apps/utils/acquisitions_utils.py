@@ -1025,3 +1025,29 @@ def compute_availability_from_events(interface_status_map, period_start, period_
         availability[service] = round((up_seconds / total_period_seconds) * 100, 6)
 
     return availability
+
+SATELLITE_DATA_CUTOFFS = {
+    "S1D": dt(2026, 4, 17, tzinfo=timezone.utc),
+}
+
+def passes_satellite_cutoff(record, date_field):
+    """
+    Returns True if this record should be kept.
+    Excludes records for satellites with a configured cutoff
+    whose date_field is before that cutoff.
+    """
+    cutoff = SATELLITE_DATA_CUTOFFS.get(record.get("satellite_unit"))
+    if cutoff is None:
+        return True
+
+    ts = record.get(date_field)
+    if not ts:
+        return True
+
+    try:
+        ts_dt = dt.fromisoformat(ts.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return True
+
+    return ts_dt >= cutoff
+

@@ -45,7 +45,7 @@ class SpaceSegment {
 
         this.satUnavailabilities = {};
         this.impactedDatatakesBySatellite = {
-            'S1A': [], 'S1C': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
+            'S1A': [], 'S1C': [], 'S1D': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
         };
         this.impactedDatatakesTablesBySatellite = {};
         this.satellites = {}; // To store SENSING_DATA.stats
@@ -92,7 +92,7 @@ class SpaceSegment {
 
     loadDatatakesFromSSR(datatakes) {
         this.impactedDatatakesBySatellite = {
-            'S1A': [], 'S1C': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
+            'S1A': [], 'S1C': [], 'S1D': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
         };
 
         const stats = window.SENSING_DATA.stats || {};
@@ -135,7 +135,7 @@ class SpaceSegment {
 
 
     toggleDatatakesUI(showTables) {
-        const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
+        const sats = ['s1a', 's1c', 's1d', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
         sats.forEach(sat => {
             const table = document.getElementById(`${sat}-table-container`);
             const boxes = document.getElementById(`${sat}-boxes-container`);
@@ -296,7 +296,7 @@ class SpaceSegment {
 
 
     refreshPieChartsAndBoxesSSR() {
-        const sats = ['s1a', 's1c', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
+        const sats = ['s1a', 's1c', 's1d', 's2a', 's2b', 's2c', 's3a', 's3b', 's5p'];
         sats.forEach(sat => {
             const key = sat.toUpperCase();
             const d = this.satellites[key];
@@ -470,7 +470,7 @@ class SpaceSegment {
     refreshDatatakesTablesSSR() {
         console.log("[SSR] Rendering impacted datatakes tables using DataTables");
 
-        const sats = ['S1A', 'S1C', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+        const sats = ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
 
         sats.forEach(sat => {
             const tableId = `${sat.toLowerCase()}-impacted-datatakes-table`;

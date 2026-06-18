@@ -125,7 +125,7 @@
                 <a href="{{ msg['link'] }}" target="_blank" class="read-more">Read more</a>
               {% endif %}
               <br>
-              <small>Published: {{ msg['publicationDate'] }}</small>
+              <small>Published: <span class="pub-date" data-utc="{{ msg['publicationDate'] }}">{{ msg['publicationDate'] }}</span></small>
             </div>
           </div>
 

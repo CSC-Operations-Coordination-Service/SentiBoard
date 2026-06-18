@@ -1721,6 +1721,15 @@ def admin_space_segment():
     unavailability_sources = [
         it.get("_source", it) for it in unavailability_json if isinstance(it, dict)
     ]
+    
+    datatakes_sources = [
+        rec for rec in datatakes_sources
+        if acquisitions_utils.passes_satellite_cutoff(rec, "observation_time_start")
+    ]
+    unavailability_sources = [
+        rec for rec in unavailability_sources
+        if acquisitions_utils.passes_satellite_cutoff(rec, "start_time")
+    ]
 
     # ---- build SSR object
     satellites = acquisitions_utils.build_space_segment_ssr(
@@ -1765,6 +1774,7 @@ def admin_space_segment():
     space_segment_colors = {
         "S1A": "info",
         "S1C": "info",
+        "S1D": "info",
         "S2A": "success",
         "S2B": "success",
         "S2C": "success",
