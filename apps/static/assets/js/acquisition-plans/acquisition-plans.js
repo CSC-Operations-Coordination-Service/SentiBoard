@@ -191,14 +191,17 @@ class MissionAcquisitionDates extends EventTarget {
 
 
     onSatelliteSelectChange(ev) {
-        if (this._suppressEvents) return;
         const satellite = ev.target.value;
         this.selectedParams.satellite = satellite;
         this.selectedParams.mission = this.acqplansDates[satellite].mission;
 
-        const dayList = this.acqplansDates[satellite].dates;
-        const daySelectItems = dayList.map(day => [day, moment(day, 'YYYY-MM-DD').format("DD MMM yyyy")]);
+        const today = moment().format('YYYY-MM-DD');
 
+        // Filter out future days
+        const dayList = this.acqplansDates[satellite].dates
+            .filter(day => day <= today);
+
+        const daySelectItems = dayList.map(day => [day, moment(day, 'YYYY-MM-DD').format("DD MMM YYYY")]);
         this.setAvailableDays(daySelectItems);
     }
 
@@ -223,14 +226,25 @@ class MissionAcquisitionDates extends EventTarget {
 
     selectDefaultDay(date_sel) {
         const todayItem = moment().format('YYYY-MM-DD');
-        const exists = Array.from(date_sel.options).some(opt => opt.value === todayItem);
+        const options = Array.from(date_sel.options).map(opt => opt.value);
 
-        if (exists) {
+        if (options.includes(todayItem)) {
+            // Today is available, select it
             this._select_element(date_sel, todayItem);
-        } else if (date_sel.options.length > 0) {
-            this._select_element(date_sel, date_sel.options[date_sel.options.length - 1].value);
+        } else if (options.length > 0) {
+            // Find the closest past day to today
+            const pastDays = options.filter(d => d <= todayItem);
+            if (pastDays.length > 0) {
+                // Pick the most recent past day
+                const closest = pastDays[pastDays.length - 1];
+                this._select_element(date_sel, closest);
+            } else {
+                // No past days at all, fall back to first available
+                this._select_element(date_sel, options[0]);
+            }
         }
     }
+
     onPlanDaySelectChange(ev) {
         if (this._suppressEvents) return;
         this.selectedParams.day = ev.target.value;
