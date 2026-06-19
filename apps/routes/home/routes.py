@@ -636,10 +636,14 @@ def index():
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
+        NEWS_HOME_MAX_AGE_DAYS = 30
         page_size = 5  # number of messages to show on home page
 
-        # sorting publicationDate descending
-        query = db.session.query(instant_messages_model.InstantMessages).order_by(
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=NEWS_HOME_MAX_AGE_DAYS)
+
+        query = db.session.query(instant_messages_model.InstantMessages).filter(
+            instant_messages_model.InstantMessages.publicationDate >= cutoff_date
+        ).order_by(
             instant_messages_model.InstantMessages.publicationDate.desc()
         )
 
