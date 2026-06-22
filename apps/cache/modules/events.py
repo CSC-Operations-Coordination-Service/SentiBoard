@@ -44,7 +44,10 @@ def load_anomalies_cache_last_quarter():
     The start time is set at 00:00 of the first day of the temporal interval; the stop time is set at 23:59
     """
 
-    # Log an acknowledgement message
+    cache_key = anomalies_cache_key.format("last", "quarter")
+    if flask_cache.get(cache_key):
+        return  
+
     logger.info("[BEG] Loading Anomalies Cache in the last quarter...")
     cache_start_time = perf_counter()
 
@@ -88,7 +91,10 @@ def load_anomalies_cache_previous_quarter():
     interval; the stop time is set at 23:59:59 of today
     """
 
-    # Log an acknowledgement message
+    cache_key = anomalies_cache_key.format("previous", "quarter")
+    if flask_cache.get(cache_key):
+        return 
+    
     logger.info("[BEG] Loading Anomalies Cache since the previous quarter...")
     cache_start_time = perf_counter()
 
@@ -131,8 +137,14 @@ def load_anomalies_cache_previous_quarter():
 
 
 def load_anomalies_cache_full_history():
+    cache_key = anomalies_cache_key.format("full", "history")
+    if flask_cache.get(cache_key):
+        logger.debug("[SKIP] full history cache already warm")
+        return
+
     logger.info("[BEG] Loading Anomalies Cache full history...")
     cache_start_time = perf_counter()
+
 
     start_date = datetime(2025, 3, 1, 0, 0, 0)
     end_date = datetime.today().replace(hour=23, minute=59, second=59)

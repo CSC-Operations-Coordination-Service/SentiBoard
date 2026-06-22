@@ -829,7 +829,6 @@ def events_data():
         anomalies_by_date = {}
         skipped_full = 0
         kept_partial = 0
-        skipped_no_date = 0
 
         for a in anomalies:
             instance = build_event_instance(a, current_app.logger)
@@ -843,7 +842,6 @@ def events_data():
 
             date_str = instance.get("from") or instance.get("publicationDate")
             if not date_str:
-                skipped_no_date += 1
                 current_app.logger.info(f"Skipping instance without 'from': {instance}")
                 continue
 
