@@ -493,11 +493,6 @@ class CalendarWidget {
             isOldDate = new Date(normalizedDate) < new Date(window.threeMonthsCutoff);
         }
 
-        console.log("[DATATAKES] normalizedDate:", normalizedDate);
-        console.log("[DATATAKES] threeMonthsCutoff:", window.threeMonthsCutoff);
-
-        console.log("[DATATAKES] isOldDate:", isOldDate);
-
         const uniqueDtList = dtList.filter(
             (dt, idx, self) =>
                 idx === self.findIndex(t => t.datatake_id === dt.datatake_id)
@@ -968,7 +963,6 @@ class CalendarWidget {
                 ? `<img src="${iconClass}" class="legend-icon image-icon event-${mappedType}" style="width: 1.2rem; height: 1.2rem; vertical-align: middle;">`
                 : `<i class="${iconClass} event-${mappedType}" style="font-size: 1.2rem"></i>`;
 
-            console.log("[DATATAKE HTML]", datatakeHtml);
             listItem.innerHTML = `
                     <small>
                         <span class="icon-bg">${iconHTML}</span>
