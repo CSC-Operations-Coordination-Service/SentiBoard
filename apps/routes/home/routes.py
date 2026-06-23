@@ -638,7 +638,7 @@ def index():
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
-        NEWS_HOME_MAX_AGE_DAYS = 30
+        NEWS_HOME_MAX_AGE_DAYS = 3650
         page_size = 5  # number of messages to show on home page
 
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=NEWS_HOME_MAX_AGE_DAYS)
