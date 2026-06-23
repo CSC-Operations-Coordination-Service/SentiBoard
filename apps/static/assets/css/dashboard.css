@@ -858,6 +858,33 @@ button:focus {
   display: block;
 }
 
+.news-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.news-toggle {
+  gap: 8px;
+  cursor: pointer;
+  flex-wrap: nowrap;
+}
+
+.news-toggle .news-chevron {
+  min-width: 14px;
+  text-align: center;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.news-toggle>div {
+  min-width: 0;
+  /* allows text to shrink below content size */
+  overflow: hidden;
+}
+
+.news-toggle .fw-bold {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
 
 .page-item.active .page-link {
   color: #212529 !important;

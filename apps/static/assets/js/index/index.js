@@ -353,30 +353,35 @@ class Home {
             return;
         }
 
-        const buildTitleList = (icons) => {
+        const buildTitleList = () => {
             let rows = '';
             instantMessages.forEach(item => {
                 const icon = this.getIcon(item.messageType);
                 const color = this.getTypeColor(item.messageType);
                 const safeTitle = this.escapeHtml(item.title);
+                const rawText = item.text || '';
                 const dateStr = item.publicationDate
                     ? this.escapeHtml(this.formatPublicationDate(item.publicationDate))
                     : '';
                 rows += `
-                <div class="news-card-title p-2 rounded mb-2">
-                    <a href="/newsList.html"
-                       class="d-flex align-items-start text-white text-decoration-none"
-                       style="gap:8px; color:#fff !important;">
-                        <i class="fas ${icon}" style="color:${color}; font-size:1.1rem; flex-shrink:0; margin-top:2px;"></i>
-                        <div>
-                            <div class="fw-bold" style="font-size:0.95rem; line-height:1.3;">${safeTitle}</div>
-                            ${dateStr ? `<div class="text-muted small" style="font-size:0.78rem;">${dateStr}</div>` : ''}
+                    <div class="news-card-title p-2 rounded mb-2">
+                        <div class="d-flex align-items-start text-white news-toggle"
+                            style="gap:8px; cursor:pointer;">
+                            <i class="fas ${icon}" style="color:${color}; font-size:1.1rem; flex-shrink:0; margin-top:2px;"></i>
+                            <div style="flex:1; min-width:0;">
+                                <div class="fw-bold" style="font-size:0.95rem; line-height:1.3;">${safeTitle}</div>
+                                ${dateStr ? `<div class="text-muted small" style="font-size:0.78rem;">${dateStr}</div>` : ''}
+                            </div>
+                            <i class="fas fa-chevron-down news-chevron" style="font-size:0.7rem; margin-top:5px; transition:transform .2s; flex-shrink:0;"></i>
                         </div>
-                    </a>
-                </div>`;
+                        <div class="news-expand" style="display:none; padding:8px 8px 4px 28px; font-size:0.85rem; line-height:1.45; color:#ccc;">
+                            ${rawText}
+                        </div>
+                    </div>`;
             });
             return rows;
         };
+
 
         // ── Desktop overlay ──────────────────────────────────────────────
         let desktopHtml = `
@@ -407,6 +412,13 @@ class Home {
 
         mobileHtml += adminLinkHtml;
         $('#custom-banner-mobile').html(mobileHtml);
+
+        $('.news-toggle').on('click', function () {
+            const $expand = $(this).next('.news-expand');
+            const $chevron = $(this).find('.news-chevron');
+            $expand.slideToggle(200);
+            $chevron.toggleClass('rotated');
+        });
     }
 
     getIcon(type) {
