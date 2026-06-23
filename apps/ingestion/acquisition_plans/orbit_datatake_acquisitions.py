@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 import logging
@@ -29,15 +29,14 @@ from apps.elastic.modules.datatakes import ELASTIC_TIME_FORMAT
 
 logger = logging.getLogger(__name__)
 
-DATATAKE_ID_KEY = 'datatake_id'
-OBSERVATION_START_KEY = 'observation_time_start'
-OBSERVATION_END_KEY = 'observation_time_stop'
+DATATAKE_ID_KEY = "datatake_id"
+OBSERVATION_START_KEY = "observation_time_start"
+OBSERVATION_END_KEY = "observation_time_stop"
 
 # SWATHS for Satellites
 # IN Km
 
-swaths = {'S3A': 1270, 'S3B': 1270,
-          'S5P': 2600}
+swaths = {"S3A": 1270, "S3B": 1270, "S5P": 2600}
 
 
 @dataclass
@@ -61,6 +60,7 @@ class GeographicGeoPoint:
     def radians_to_degree(self):
         self.lat = math.radians(self.lat)
         self.lon = math.radians(self.lon)
+
 
 class DatatakeAcquisition:
     def __init__(self, datatake):
@@ -108,19 +108,30 @@ class OrbitPropagatorSkyfield:
         self._step = step
         self._add_extra_point = extra_point
         self._timescale = sky_load.timescale()
-        self._satellite = EarthSatellite(tle_data[1], tle_data[2], tle_data[0], self._timescale)
-        logger.debug("Orbit Propagator (Skyfield) - step: %s, satellite: %s",
-                     step, self._satellite)
+        self._satellite = EarthSatellite(
+            tle_data[1], tle_data[2], tle_data[0], self._timescale
+        )
+        logger.debug(
+            "Orbit Propagator (Skyfield) - step: %s, satellite: %s",
+            step,
+            self._satellite,
+        )
 
     # Request positions from start to end included, plus an optional additional one
     # positions shall be timed (to allow for transformation to LLA)
     def _generate_orbit_ecef_positions(self, start_time: datetime, end_time: datetime):
-        logger.debug("Propagating orbit for satellite %s, from %s, to %s, with step %s sec, add extra point: %s",
-                     self._satellite.name, start_time, end_time,
-                     self._step,
-                     self._add_extra_point)
+        logger.debug(
+            "Propagating orbit for satellite %s, from %s, to %s, with step %s sec, add extra point: %s",
+            self._satellite.name,
+            start_time,
+            end_time,
+            self._step,
+            self._add_extra_point,
+        )
         # Include start point, and a point at end time
-        number_of_positions = int((end_time - start_time).total_seconds() / self._step) + 2
+        number_of_positions = (
+            int((end_time - start_time).total_seconds() / self._step) + 2
+        )
 
         time_step = 0
         positions = []
@@ -154,7 +165,7 @@ class OrbitPropagatorSkyfield:
         self._add_extra_point = flag
 
     @staticmethod
-    def _orb_ecef_2_lla_points( ecef_points):
+    def _orb_ecef_2_lla_points(ecef_points):
         """
         Converts a list of ECEF points to a list o fLLA points
         LLA points are computed by taking the SubPoint of the c
@@ -172,7 +183,7 @@ class OrbitPropagatorSkyfield:
         # return map(sky_wgs84.subpoint_of, ecef_points)
         return lla_points
 
-    def get_orbit_lla_points(self, start_time: datetime, end_time: datetime ):
+    def get_orbit_lla_points(self, start_time: datetime, end_time: datetime):
         """
 
         Args:
@@ -185,7 +196,9 @@ class OrbitPropagatorSkyfield:
             a list of LLA points, plus an extra optional point (if requested when instattating th eclass)
 
         """
-        num_samples, orb_ecef_positions_list = self._generate_orbit_ecef_positions(start_time, end_time)
+        num_samples, orb_ecef_positions_list = self._generate_orbit_ecef_positions(
+            start_time, end_time
+        )
         return num_samples, self._orb_ecef_2_lla_points(orb_ecef_positions_list)
 
 
@@ -194,11 +207,13 @@ class OrbitPropagator:
         self.tle_obj = twoline2rv(tle_data[1], tle_data[2], wgs72)
         self.step = step
         self._add_extra_point = extra_point
-        self._interpolation_algorithm = "LAGRANGE",
-        self._interpolation_degree = 5,
-        self._reference_frame = "INERTIAL",
+        self._interpolation_algorithm = ("LAGRANGE",)
+        self._interpolation_degree = (5,)
+        self._reference_frame = ("INERTIAL",)
 
-    def _generate_orbit_positions(self, start_time: datetime, end_time: datetime, extra_point=False):
+    def _generate_orbit_positions(
+        self, start_time: datetime, end_time: datetime, extra_point=False
+    ):
         # czmlPosition = Position()
         # czmlPosition.interpolationAlgorithm = self._interpolation_algorithm
         # czmlPosition.interpolationDegree = self._interpolation_degree
@@ -216,23 +231,41 @@ class OrbitPropagator:
         # current_time = start_time
         for _ in range(number_of_positions):
             current_time = start_time + timedelta(seconds=time_step)
-            eci_position, eci_velocity = self.tle_obj.propagate(current_time.year, current_time.month,
-                                                                current_time.day, current_time.hour,
-                                                                current_time.minute, current_time.second)
+            eci_position, eci_velocity = self.tle_obj.propagate(
+                current_time.year,
+                current_time.month,
+                current_time.day,
+                current_time.hour,
+                current_time.minute,
+                current_time.second,
+            )
 
             # Build a Skyfield GeographicPosition
             # converts km's to m's
-            orb_point = TimedCartesianGeoPoint(eci_position[0] * 1000,
-                                               eci_position[1] * 1000,
-                                               eci_position[2] * 1000,
-                                               time_step)
-            orb_vel = TimedCartesianGeoPoint(eci_velocity[0] * 1000,
-                                             eci_velocity[1] * 1000,
-                                             eci_velocity[2] * 1000,
-                                             time_step)
-            logger.debug("Angle between 0 and 1: %s", math.degrees(math.atan2(eci_velocity[0], eci_position[1])))
-            logger.debug("Angle between 0 and 2: %s", math.degrees(math.atan2(eci_velocity[0], eci_position[2])))
-            logger.debug("Angle between 1 and 2: %s", math.degrees(math.atan2(eci_velocity[1], eci_position[2])))
+            orb_point = TimedCartesianGeoPoint(
+                eci_position[0] * 1000,
+                eci_position[1] * 1000,
+                eci_position[2] * 1000,
+                time_step,
+            )
+            orb_vel = TimedCartesianGeoPoint(
+                eci_velocity[0] * 1000,
+                eci_velocity[1] * 1000,
+                eci_velocity[2] * 1000,
+                time_step,
+            )
+            logger.debug(
+                "Angle between 0 and 1: %s",
+                math.degrees(math.atan2(eci_velocity[0], eci_position[1])),
+            )
+            logger.debug(
+                "Angle between 0 and 2: %s",
+                math.degrees(math.atan2(eci_velocity[0], eci_position[2])),
+            )
+            logger.debug(
+                "Angle between 1 and 2: %s",
+                math.degrees(math.atan2(eci_velocity[1], eci_position[2])),
+            )
             positions.append(orb_point)
             velocities.append(orb_vel)
             time_step += self.step
@@ -244,8 +277,11 @@ class OrbitPropagator:
     def add_extra_point(self, flag):
         self._add_extra_point = flag
 
-
-    def get_orbit_lla_points(self, start_time, end_time, ):
+    def get_orbit_lla_points(
+        self,
+        start_time,
+        end_time,
+    ):
         """
 
         Args:
@@ -255,7 +291,9 @@ class OrbitPropagator:
         Returns: a list of LLA points, with time informaiton (relatie)
 
         """
-        orb_positions_list, orb_velocities_list = self._generate_orbit_positions(start_time, end_time)
+        orb_positions_list, orb_velocities_list = self._generate_orbit_positions(
+            start_time, end_time
+        )
         return self._orbit_points_to_points(start_time, orb_positions_list)
 
     def _orbit_points_to_points(self, start_time, orbit_eci_points_list):
@@ -287,9 +325,8 @@ class AcquisitionLineProfileFromOrbit:
     # builds list of orbit positions at N intervals
     # builds polyline for acquisition
     needs_extra_point = False
-    def __init__(self,
-                 orbit_propagator,
-                 swath_wid):
+
+    def __init__(self, orbit_propagator, swath_wid):
         self._orbit_propagator = orbit_propagator
 
     def build_image_profile(self, start_time, end_time):
@@ -302,26 +339,34 @@ class AcquisitionLineProfileFromOrbit:
         Returns: a list of GeographicGeoPoint (in degree, altitude in metres)
 
         """
-        logger.debug("Computing Line Image Profile - start: %s, end: %s",
-                     start_time, end_time)
+        logger.debug(
+            "Computing Line Image Profile - start: %s, end: %s", start_time, end_time
+        )
         # Generate Acquisition from Swath and OrbitPositions list
         # NOTE: It could be requested to generate extra orbit position at end and/or start
         # But these extra point should not be part of out
         # For Line Profile, we are not asking for extra points
-        num_points, lla_points = self._orbit_propagator.get_orbit_lla_points(start_time, end_time)
+        num_points, lla_points = self._orbit_propagator.get_orbit_lla_points(
+            start_time, end_time
+        )
         logger.debug("Line Image Profile Builder: computed %d points", num_points)
-        return list(map(lambda geop: GeographicGeoPoint(geop.latitude.degrees,
-                                                        geop.longitude.degrees,
-                                                        geop.elevation.m),
-                        lla_points))
+        return list(
+            map(
+                lambda geop: GeographicGeoPoint(
+                    geop.latitude.degrees, geop.longitude.degrees, geop.elevation.m
+                ),
+                lla_points,
+            )
+        )
 
 
 class GeoPointOperations:
-    EarthRadius = 6378100   # metres
+    EarthRadius = 6378100  # metres
     PiCircle = 2.0 * math.pi
     """
 
     """
+
     def __init__(self, point: GeographicPosition):
         """
 
@@ -351,9 +396,11 @@ class GeoPointOperations:
         delta_lat = lat2_rad - lat1_rad
         delta_lon = lon2_rad - lon1_rad
         a = math.sin(delta_lon) * math.cos(lat2_rad)
-        b = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lon)
+        b = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(
+            lat2_rad
+        ) * math.cos(delta_lon)
         theta = math.atan2(a, b)
-#                           math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat1_rad) * math.cos(delta_lon))
+        #                           math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat1_rad) * math.cos(delta_lon))
         return Angle(radians=theta)
 
     # TODO: to be replaced by a call to a Library function
@@ -385,27 +432,40 @@ class GeoPointOperations:
         fix_angle_domain = False
         if fix_angle_domain:
             if bearing_rad > math.pi:
-                logger.debug("Fixed Bearing from %f to %f",
-                             bearing_rad, bearing_rad - self.PiCircle)
+                logger.debug(
+                    "Fixed Bearing from %f to %f",
+                    bearing_rad,
+                    bearing_rad - self.PiCircle,
+                )
                 bearing_rad -= self.PiCircle
             elif bearing_rad < -math.pi:
-                logger.debug("Fixed Bearing from %f to %f (Degrees: %s)",
-                             bearing_rad, bearing_rad + self.PiCircle, math.degrees(bearing_rad+self.PiCircle))
+                logger.debug(
+                    "Fixed Bearing from %f to %f (Degrees: %s)",
+                    bearing_rad,
+                    bearing_rad + self.PiCircle,
+                    math.degrees(bearing_rad + self.PiCircle),
+                )
                 bearing_rad += self.PiCircle
-        lat2 = math.asin(point_lat_sin * math.cos(distance_arc) +
-                         point_lat_cos * distance_arc_sin * math.cos(bearing_rad))
-        lon2 = lon1 + math.atan2(math.sin(bearing_rad) * distance_arc_sin * point_lat_cos,
-                                 distance_arc_cos - point_lat_sin * math.sin(lat2))
+        lat2 = math.asin(
+            point_lat_sin * math.cos(distance_arc)
+            + point_lat_cos * distance_arc_sin * math.cos(bearing_rad)
+        )
+        lon2 = lon1 + math.atan2(
+            math.sin(bearing_rad) * distance_arc_sin * point_lat_cos,
+            distance_arc_cos - point_lat_sin * math.sin(lat2),
+        )
         fix_lon_domain = False
         if fix_lon_domain:
             if lon2 > math.pi:
-                logger.debug("Fixed Longitude from %f to %f",
-                             lon2, lon2 - self.PiCircle)
+                logger.debug(
+                    "Fixed Longitude from %f to %f", lon2, lon2 - self.PiCircle
+                )
 
                 lon2 = lon2 - self.PiCircle
             elif lon2 < -math.pi:
-                logger.debug("Fixed Longitude from %f to %f",
-                             lon2, lon2 + self.PiCircle)
+                logger.debug(
+                    "Fixed Longitude from %f to %f", lon2, lon2 + self.PiCircle
+                )
                 lon2 = lon2 + self.PiCircle
         # Return a point, after converting radians to Degrees
         return GeographicGeoPoint(math.degrees(lat2), math.degrees(lon2), 0)
@@ -418,9 +478,7 @@ class AcquisitionPolygonProfileFromOrbit:
     # Receives: start, end time, interval length
     # builds list of orbit positions at N intervals
     # builds polyline for acquisition
-    def __init__(self,
-                 orbit_propagator,
-                 swath_wid):
+    def __init__(self, orbit_propagator, swath_wid):
         """
 
         Args:
@@ -438,8 +496,9 @@ class AcquisitionPolygonProfileFromOrbit:
         # Find East/West points at half Swath distance
         # NOTE: It could be requested to generate extra orbit position at end and/or start
         # But these extra point should not be part of out
-        num_samples, orb_positions_list = self._orbit_propagator.get_orbit_lla_points(start_time,
-                                                                                      end_time)
+        num_samples, orb_positions_list = self._orbit_propagator.get_orbit_lla_points(
+            start_time, end_time
+        )
         return self._get_acquisition_boundaries(orb_positions_list, num_samples)
 
     def _get_acquisition_boundaries(self, points_list, num_samples):
@@ -466,15 +525,18 @@ class AcquisitionPolygonProfileFromOrbit:
         for index in range(num_samples):
             # point_vel = velocity_list[index]
             curr_point = points_list[index]
-            next_point = points_list[index+1]
+            next_point = points_list[index + 1]
             point_ops = GeoPointOperations(curr_point)
             point_north_heading = point_ops.get_point_north_bearing(next_point)
             swath_ends = self._get_swath_ends(point_ops, point_north_heading)
-            logger.debug("Computed  orbit point %s, east: %s, west: %s",
-                         curr_point, swath_ends['east'],
-                         swath_ends['west'])
-            west_points.append(swath_ends.get('west'))
-            east_points.append(swath_ends.get('east'))
+            logger.debug(
+                "Computed  orbit point %s, east: %s, west: %s",
+                curr_point,
+                swath_ends["east"],
+                swath_ends["west"],
+            )
+            west_points.append(swath_ends.get("west"))
+            east_points.append(swath_ends.get("east"))
         # Combine east and reversed west points in a single list
         # West points are reversed, since the last east point is followed by
         # last west point, and continues in the reverse direction
@@ -482,8 +544,7 @@ class AcquisitionPolygonProfileFromOrbit:
         west_points.reverse()
         return east_points + west_points
 
-    def _get_swath_ends(self, point_ops: GeoPointOperations,
-                        north_bearing: Angle):
+    def _get_swath_ends(self, point_ops: GeoPointOperations, north_bearing: Angle):
         """
 
         Args:
@@ -494,13 +555,17 @@ class AcquisitionPolygonProfileFromOrbit:
         Returns:
 
         """
-        logger.debug("Computing West target  for point %s", point_ops._point.target_name)
+        logger.debug(
+            "Computing West target  for point %s", point_ops._point.target_name
+        )
         w_brng = self._get_west_bearing(north_bearing)
         west_end_point = point_ops.get_target(w_brng, self.half_swath)
-        logger.debug("Computing East target  for point %s", point_ops._point.target_name)
+        logger.debug(
+            "Computing East target  for point %s", point_ops._point.target_name
+        )
         e_brng = self._get_east_bearing(north_bearing)
         east_end_point = point_ops.get_target(e_brng, self.half_swath)
-        return {'west': west_end_point, 'east': east_end_point}
+        return {"west": west_end_point, "east": east_end_point}
 
     def _get_east_bearing(self, north_b):
         east_rad = north_b.radians + self.HalphPi
@@ -509,7 +574,6 @@ class AcquisitionPolygonProfileFromOrbit:
     def _get_west_bearing(self, north_b):
         west_rad = north_b.radians - self.HalphPi
         return Angle(radians=west_rad)
-
 
     @staticmethod
     def _normalize_longitude_degrees(lon):
@@ -533,7 +597,11 @@ class OrbitAcquisitionsBuilder:
         orbit_propagator = OrbitPropagatorSkyfield(tle_data, step, extra_point)
         # Instantiate the Profile Builder, that creates a list of points
         # for a time interval, using the passed orbit propagator
-        self._acquisition_profile_builder = acquisition_profile_builder_class(orbit_propagator, swath_width_km)
+        self._acquisition_profile_builder = acquisition_profile_builder_class(
+            orbit_propagator, swath_width_km
+        )
 
     def compute_acquisition_points(self, start_time, end_time):
-        return self._acquisition_profile_builder.build_image_profile(start_time, end_time)
+        return self._acquisition_profile_builder.build_image_profile(
+            start_time, end_time
+        )

@@ -18,11 +18,13 @@ from apps import flask_cache
 from apps.cache.loader.cache_loader import RestCacheLoader
 
 logger = logging.getLogger(__name__)
-archive_size_api_format = '/api/reporting/cds-product-archive-volume/{}-{}/'
+archive_size_api_format = "/api/reporting/cds-product-archive-volume/{}-{}/"
 
-archive_cache_loader = RestCacheLoader("Long Term Archive Volume Statistics",
-                                       archive_size_api_format,
-                                       elastic_archive.get_cds_archive_size_by_mission)
+archive_cache_loader = RestCacheLoader(
+    "Long Term Archive Volume Statistics",
+    archive_size_api_format,
+    elastic_archive.get_cds_archive_size_by_mission,
+)
 
 
 def archive_load_cache(period_id):
@@ -53,10 +55,12 @@ def get_archive_cached_data(period_type, period_id):
     archive_api_uri = archive_size_api_format.format(period_type, period_id)
     logger.debug("Uri cache key: %s", archive_api_uri)
     if not flask_cache.has(archive_api_uri):
-        logger.debug("Loading Cache from API Long Term Archive Volume Last %s", period_id)
-        if period_type == 'last':
+        logger.debug(
+            "Loading Cache from API Long Term Archive Volume Last %s", period_id
+        )
+        if period_type == "last":
             archive_load_cache(period_id)
-        elif period_type == 'all':
+        elif period_type == "all":
             load_archive_cache_lifetime()
         else:
             load_archive_cache_previous_quarter()

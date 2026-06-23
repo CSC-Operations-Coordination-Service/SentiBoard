@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 class ScarperHtml:
 
     def __init__(self, html_text):
-        self.__soup = BeautifulSoup(html_text, 'html.parser')
+        self.__soup = BeautifulSoup(html_text, "html.parser")
         return
 
     def html_format(self):
@@ -28,14 +28,14 @@ class ScarperHtml:
         return self.__soup.findAll(type)
 
     def get_element_by_id(self, element_type, element_id):
-        return self.__soup.find(element_type, {'id': element_id})
+        return self.__soup.find(element_type, {"id": element_id})
 
     def get_element_by_class(self, element_type, element_id):
-        return self.__soup.find(element_type, {'class': element_id})
+        return self.__soup.find(element_type, {"class": element_id})
 
     def get_elements_by_class(self, element_type, element_id):
-        return self.__soup.findAll(element_type, {'class': element_id})
+        return self.__soup.findAll(element_type, {"class": element_id})
 
     def ingestion_by_string(self, html_text):
-        self.__soup = BeautifulSoup(html_text, 'html.parser')
+        self.__soup = BeautifulSoup(html_text, "html.parser")
         return

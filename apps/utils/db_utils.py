@@ -35,7 +35,9 @@ class AlchemyEncoder(json.JSONEncoder):
     def cast(self, obj):
         if isinstance(obj.__class__, DeclarativeMeta):
             fields = {}
-            for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+            for field in [
+                x for x in dir(obj) if not x.startswith("_") and x != "metadata"
+            ]:
                 data = obj.__getattribute__(field)
                 try:
                     if isinstance(data, datetime):
@@ -50,4 +52,4 @@ class AlchemyEncoder(json.JSONEncoder):
 
 
 def generate_uuid():
-    return str(uuid.uuid1()).replace('-', '_')
+    return str(uuid.uuid1()).replace("-", "_")

@@ -5,10 +5,10 @@ Copernicus Operations Dashboard
 Copyright (C) - ${startYear}-${currentYear} ${Telespazio}
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -21,19 +21,23 @@ from apps.utils.date_utils import PeriodID
 
 logger = logging.getLogger(__name__)
 
-timeliness_cache_key_format = '/api/reports/cds-product-timeliness/{}-{}/'
+timeliness_cache_key_format = "/api/reports/cds-product-timeliness/{}-{}/"
 
-timeliness_stats_cache_key_format = '/api/reports/cds-timeliness-statistics/{}-{}/'
+timeliness_stats_cache_key_format = "/api/reports/cds-timeliness-statistics/{}-{}/"
 
-old_timeliness_cache_key_format = '/api/reports/cds-product-old-timeliness/{}-{}/'
+old_timeliness_cache_key_format = "/api/reports/cds-product-old-timeliness/{}-{}/"
 
-timeliness_cache_loader = RestCacheLoader("Timeliness",
-                                          timeliness_cache_key_format,
-                                          elastic_timeliness.get_cds_mission_product_timeliness)
+timeliness_cache_loader = RestCacheLoader(
+    "Timeliness",
+    timeliness_cache_key_format,
+    elastic_timeliness.get_cds_mission_product_timeliness,
+)
 
-timeliness_stats_cache_loader: RestCacheLoader = RestCacheLoader("Timeliness Statistics",
-                                                                 timeliness_stats_cache_key_format,
-                                                                 elastic_timeliness_stats.get_cds_mission_timeliness_statistics)
+timeliness_stats_cache_loader: RestCacheLoader = RestCacheLoader(
+    "Timeliness Statistics",
+    timeliness_stats_cache_key_format,
+    elastic_timeliness_stats.get_cds_mission_timeliness_statistics,
+)
 
 
 def timeliness_load_cache(period_id):
@@ -78,8 +82,7 @@ def load_timeliness_cache_previous_quarter():
 
 
 def load_all_periods_timeliness_cache():
-    periods = [PeriodID.DAY, PeriodID.WEEK,
-               PeriodID.MONTH, PeriodID.QUARTER]
+    periods = [PeriodID.DAY, PeriodID.WEEK, PeriodID.MONTH, PeriodID.QUARTER]
     for period in periods:
         timeliness_load_cache(period)
         timeliness_stats_load_cache(period)
