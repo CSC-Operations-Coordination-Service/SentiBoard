@@ -590,7 +590,7 @@ class CalendarWidget {
         const displayedDate = new Date(this.currentYear, this.currentMonth, 1);
         displayedDate.setHours(0, 0, 0, 0);
 
-        const historyStartDate = new Date(window.historyStartDate || "2025-03-01");
+        const historyStartDate = new Date(window.historyStartDate || "2022-01-01");
         historyStartDate.setHours(0, 0, 0, 0);
 
         const calendarDays = document.querySelectorAll('.calendar-day');

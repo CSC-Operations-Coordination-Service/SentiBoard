@@ -146,7 +146,7 @@ def load_anomalies_cache_full_history():
     cache_start_time = perf_counter()
 
 
-    start_date = datetime(2025, 3, 1, 0, 0, 0)
+    start_date = datetime(2022, 1, 1, 0, 0, 0)
     end_date = datetime.today().replace(hour=23, minute=59, second=59)
 
     anomalies_full = anomalies_model.get_anomalies(start_date, end_date)

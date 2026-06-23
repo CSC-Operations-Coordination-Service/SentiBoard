@@ -115,6 +115,9 @@ def update_anomaly(
             anomaly.end = end
             anomaly.environment = environment
             anomaly.modifyDate = modify_date
+            anomaly.category = category
+            anomaly.impactedSatellite = impacted_satellite
+            anomaly.impactedItem = impacted_item
         else:
             datatakes_completeness = []
             if environment is not None and len(environment) > 0:
