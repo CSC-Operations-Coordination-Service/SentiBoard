@@ -441,9 +441,11 @@ def index():
     # Build the cache key
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
     current_app.logger.info(f"[INDEX] starting here")
-    # current_app.logger.info(f"[INDEX] using cache key: {anomalies_api_uri}")
 
-    # Get and inspect cache content
+    if not flask_cache.get(anomalies_api_uri):
+        events_cache.load_anomalies_cache_last_quarter()
+
+    raw_cache = flask_cache.get(anomalies_api_uri)
     raw_cache = flask_cache.get(anomalies_api_uri)
     current_app.logger.info(f"[INDEX] Cache content raw type: {type(raw_cache)}")
     current_app.logger.info(

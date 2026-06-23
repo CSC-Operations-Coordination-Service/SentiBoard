@@ -166,7 +166,12 @@ def _set_anomalies_cache(period_id, period_data):
     # Log an acknowledgement message
     logger.debug("Caching anomalies in period: %s", period_id)
 
-    seconds_validity = events_cache_duration
+    if period_id == "24h":
+        seconds_validity = 3600          # 1 hour
+    elif period_id in ("7d", "30d"):
+        seconds_validity = 43200         # 12 hours
+    else:
+        seconds_validity = events_cache_duration  # 7 days for quarter/history
     if period_id == "previous-quarter":
         api_prefix = anomalies_cache_key.format("previous", "quarter")
     elif period_id == "full-history":
