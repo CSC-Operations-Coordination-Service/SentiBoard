@@ -52,6 +52,7 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ page_url }}">
     <meta property="og:locale" content="en_GB">
+
     {% if image_url %}
       <meta property="og:image" content="{{ image_url }}">
       <meta property="og:image:width" content="{{ image_width }}">
@@ -100,11 +101,6 @@
                 "width": 60,
                 "height": 60
               }
-            },
-            "potentialAction": {
-              "@type": "SearchAction",
-              "target": {{ ("https://operations.dashboard.copernicus.eu/search?q={search_term_string}") | tojson }},
-              "query-input": "required name=search_term_string"
             }
           },
           {

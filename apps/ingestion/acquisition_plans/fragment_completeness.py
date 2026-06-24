@@ -2,29 +2,29 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 import logging
 
-from apps.ingestion.acquisition_plans.acq_plan_fragments import AcqPlanDayFragment, AcqDatatake, DatatakeCompleteness
+from apps.ingestion.acquisition_plans.acq_plan_fragments import (
+    AcqPlanDayFragment,
+    AcqDatatake,
+    DatatakeCompleteness,
+)
 
 logger = logging.getLogger(__name__)
 
 
 PLANNED_COMPLETENESS = {
-    'ACQ': {
-        'status': DatatakeCompleteness.PLANNED_STATUS, 'percentage': 0
-    },
-    'PUB': {
-        'status': DatatakeCompleteness.PLANNED_STATUS, 'percentage': 0
-    }
+    "ACQ": {"status": DatatakeCompleteness.PLANNED_STATUS, "percentage": 0},
+    "PUB": {"status": DatatakeCompleteness.PLANNED_STATUS, "percentage": 0},
 }
 
 
@@ -38,19 +38,11 @@ def datatake_id_hex_to_dec(hex_dt_id):
     return dec_dt_id
 
 
-datatake_id_decoders = {
-    'S1': datatake_id_hex_to_dec,
-    'S2': datatake_id_identity
-}
+datatake_id_decoders = {"S1": datatake_id_hex_to_dec, "S2": datatake_id_identity}
 
 
 class MissionDatatakeIdHandler:
-    _id_keys = {
-        'S1': 'DatatakeId',
-        'S2': 'ID',
-        'S3': 'DatatakeId',
-        'S5': 'DatatakeId'
-    }
+    _id_keys = {"S1": "DatatakeId", "S2": "ID", "S3": "DatatakeId", "S5": "DatatakeId"}
 
     def __init__(self, mission):
         self._dt_id_decoder = datatake_id_decoders.get(mission)
@@ -62,7 +54,10 @@ class MissionDatatakeIdHandler:
         if mission in cls._id_keys:
             return cls._id_keys.get(mission)
         else:
-            raise Exception("Trying to retrieve unknown Datatake ID KML Extended Data name for mission " + mission)
+            raise Exception(
+                "Trying to retrieve unknown Datatake ID KML Extended Data name for mission "
+                + mission
+            )
 
     @property
     def datatake_id_key(self):
@@ -83,16 +78,15 @@ def _format_completeness_status(status_dict):
 
     """
     # Float value is formatted to 2 decimal digits
-    perc_str = f"({status_dict['percentage']:.2f}%)" if 'percentage' in status_dict else ''
+    perc_str = (
+        f"({status_dict['percentage']:.2f}%)" if "percentage" in status_dict else ""
+    )
     return f"{status_dict['status']} {perc_str}"
 
 
 # TODO Build tests for this class method
 class FragmentCompletenessHandler:
-    def __init__(self,
-                 mission,
-                 fragments_table: dict,
-                 daily_datatakes: dict):
+    def __init__(self, mission, fragments_table: dict, daily_datatakes: dict):
         """
 
         Args:
@@ -113,11 +107,13 @@ class FragmentCompletenessHandler:
         # AcqDatatake.CompletenessFormatFun = _format_completeness_status
 
     @staticmethod
-    def _load_datatake_completeness_on_placemarks(datatake_table,
-                                                  day_fragment: AcqPlanDayFragment,
-                                                  datatake_id_prefix,
-                                                  datatake_id_key,
-                                                  datatake_id_decoder):
+    def _load_datatake_completeness_on_placemarks(
+        datatake_table,
+        day_fragment: AcqPlanDayFragment,
+        datatake_id_prefix,
+        datatake_id_key,
+        datatake_id_decoder,
+    ):
         """
         Sets the Acquisition/Publication completeness values of the corresponding
         Datatake, by adding/updating the corresponding Extended data record in the
@@ -150,24 +146,29 @@ class FragmentCompletenessHandler:
         for pm in day_fragment.placemark_list:
             acq_dt = AcqDatatake(pm, datatake_id_key)
             dt_id = acq_dt.add_id_prefix(datatake_id_prefix, datatake_id_decoder)
-            logger.debug("Placemark with datatake id %s is object with id %s",
-                         dt_id, id(pm))
+            logger.debug(
+                "Placemark with datatake id %s is object with id %s", dt_id, id(pm)
+            )
             # Search for completeness in Datatake Table
-            datatake_data = datatake_table.get(dt_id, None) if datatake_table is not None else None
+            datatake_data = (
+                datatake_table.get(dt_id, None) if datatake_table is not None else None
+            )
             if datatake_data is not None:
                 logger.debug("Adding Completeness data to Placemark")
                 logger.debug("Datatake data: %s", datatake_data)
                 # Extract completeness information from datatake_data
-                completeness = datatake_data.get('completeness_status')
+                completeness = datatake_data.get("completeness_status")
             else:
                 logger.debug("No datatake data found for Datatake id: %s", dt_id)
                 # Check if Placemark has a date in the future
                 if day_fragment.is_future:
                     completeness = PLANNED_COMPLETENESS
                 else:
-                    logger.warning("Placemark with ID %s, day %s: no datatake found in Datatake cache.",
-                                   dt_id,
-                                   day_fragment.day)
+                    logger.warning(
+                        "Placemark with ID %s, day %s: no datatake found in Datatake cache.",
+                        dt_id,
+                        day_fragment.day,
+                    )
                     # Remove placemark from Fragment
                     pm_to_remove.append(pm)
                     continue
@@ -175,35 +176,42 @@ class FragmentCompletenessHandler:
             # TODO: Move to acq_dt.set_completeness(completeness) or to self.add_datatake_completeness
             FragmentCompletenessHandler.add_datatake_completeness(acq_dt, completeness)
             # logger.debug("Placemark after update: %s", acq_dt)
-        logger.debug("Removing from Fragment %s placemarks not found in Datatakes cache",
-                     day_fragment.day)
+        logger.debug(
+            "Removing from Fragment %s placemarks not found in Datatakes cache",
+            day_fragment.day,
+        )
         day_fragment.remove_placemarks(pm_to_remove)
 
     @staticmethod
     def add_datatake_completeness(acq_dt, completeness):
-        if 'ACQ' in completeness:
-            acq_completeness = completeness['ACQ']
+        if "ACQ" in completeness:
+            acq_completeness = completeness["ACQ"]
             acq_status = _format_completeness_status(acq_completeness)
             acq_dt.add_update_data_record(acq_dt.ACQ_STATUS_LABEL, acq_status)
-        if 'PUB' in completeness:
-            pub_completeness = completeness['PUB']
+        if "PUB" in completeness:
+            pub_completeness = completeness["PUB"]
             pub_status = _format_completeness_status(pub_completeness)
             acq_dt.add_update_data_record(acq_dt.PUB_STATUS_LABEL, pub_status)
-            acq_dt.set_status_style(pub_completeness['status'])
-            logger.debug("Set completeness status %s for Placemark with ID %s",
-                         pub_completeness['status'], acq_dt.datatake_id)
+            acq_dt.set_status_style(pub_completeness["status"])
+            logger.debug(
+                "Set completeness status %s for Placemark with ID %s",
+                pub_completeness["status"],
+                acq_dt.datatake_id,
+            )
 
     # TODO: Extend to extract from day list
     # only days not older than N days ago, up to today
     def set_completeness(self):
-        logger.debug("Loading Completeness values on Fragments for mission %s",
-                     self.mission)
+        logger.debug(
+            "Loading Completeness values on Fragments for mission %s", self.mission
+        )
         # For each Placemark in mission fragments, look for
         # completeness retrieved in Datatake completeness cache
         # Apply to fragments a function with arguments acq_day, day_fragment
         for satellite, sat_fragments in self.mission_fragments.items():
-            logger.debug("Setting Completeness on fragments for satellite: %s",
-                         satellite)
+            logger.debug(
+                "Setting Completeness on fragments for satellite: %s", satellite
+            )
             # browse sat fragments
             fragment_days = sat_fragments.day_list
             # TODO: Receive notification if fragments needs to be removed!
@@ -211,12 +219,18 @@ class FragmentCompletenessHandler:
 
     def _set_completeness_day_list(self, day_list, sat_fragments, satellite):
         for acq_day in day_list:
-            logger.debug("Setting completeness for Fragment of satellite %s, day %s",
-                         satellite, acq_day)
+            logger.debug(
+                "Setting completeness for Fragment of satellite %s, day %s",
+                satellite,
+                acq_day,
+            )
             # each sat_fragment is a folder related to a single day
             day_fragment = sat_fragments.get_fragment(acq_day)
-            logger.debug("Day fragment for day %s - name: %s",
-                         acq_day, day_fragment.folder_kml.name)
+            logger.debug(
+                "Day fragment for day %s - name: %s",
+                acq_day,
+                day_fragment.folder_kml.name,
+            )
 
             # Extract datatakes with completeness data
             # from  cache
@@ -225,23 +239,28 @@ class FragmentCompletenessHandler:
                 day_sat_datatakes = day_datatakes.get(satellite)
                 # logger.debug("From Cache, datatakes for day %s: and sat %s: %s",
                 #             acq_day, satellite, day_sat_datatakes)
-                self._load_datatake_completeness_on_placemarks(day_sat_datatakes,
-                                                               day_fragment,
-                                                               satellite,
-                                                               self.datatake_id_key,
-                                                               self.datatake_id_decoder)
+                self._load_datatake_completeness_on_placemarks(
+                    day_sat_datatakes,
+                    day_fragment,
+                    satellite,
+                    self.datatake_id_key,
+                    self.datatake_id_decoder,
+                )
             else:
                 # if folder in the future,  set  PLANNED COMPLETENESS on all Placemarks
-                logger.debug("No datatakes found for day %s and sat %s",
-                             acq_day, satellite)
+                logger.debug(
+                    "No datatakes found for day %s and sat %s", acq_day, satellite
+                )
                 if day_fragment.is_future:
-                    self._load_completeness_on_placemarks(PLANNED_COMPLETENESS,
-                                                          satellite,
-                                                          day_fragment.placemark_list)
+                    self._load_completeness_on_placemarks(
+                        PLANNED_COMPLETENESS, satellite, day_fragment.placemark_list
+                    )
                 else:
                     # TODO : Remove the whole folder if in the past,
-                    logger.debug("Removing from Fragment %s placemarks not found in Datatakes cache",
-                                 day_fragment.day)
+                    logger.debug(
+                        "Removing from Fragment %s placemarks not found in Datatakes cache",
+                        day_fragment.day,
+                    )
 
     def _load_completeness_on_placemarks(self, completeness, id_prefix, placemarks):
         for pm in placemarks:

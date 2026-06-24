@@ -43,6 +43,11 @@ class AnomaliesIngestor:
                 logger.warning("Skipping anomaly without _source: %s", extract)
                 continue
 
+            origin = src.get("origin")
+            if origin == "Dashboard":
+                logger.info("Skipping Dashboard-correlate anomaly: %s", src.get("key"))
+                continue
+
             # Create the anomaly record with baseline properties
             public_date = date_utils.format_date_to_str(
                 extract["_source"]["occurence_date"], "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -72,7 +77,7 @@ class AnomaliesIngestor:
 
             # From tha anomaly title and description, try to retrieve the impacted satellite, item and the category
             title_tokenized = (
-                anomaly["title"]
+                (anomaly["title"] or "")
                 .replace("[", " ")
                 .replace("]", " ")
                 .replace("(", " ")
@@ -84,7 +89,7 @@ class AnomaliesIngestor:
                 .split()
             )
             text_tokenized = (
-                anomaly["text"]
+                (anomaly["text"] or "")
                 .replace("[", " ")
                 .replace("]", " ")
                 .replace("(", " ")
@@ -161,8 +166,8 @@ class AnomaliesIngestor:
                     if category is not None:
                         anomaly["category"] = category.name
                         break
-                    else:
-                        anomaly["category"] = "Acquisition"
+                if not anomaly["category"]:
+                    anomaly["category"] = "Acquisition"
 
             for token in title_tokenized:
                 token = str(token)

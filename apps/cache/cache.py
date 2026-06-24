@@ -51,7 +51,9 @@ class PublicationProductTreeCacheSingleton:
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
-                    cls._instance = super(PublicationProductTreeCacheSingleton, cls).__new__(cls)
+                    cls._instance = super(
+                        PublicationProductTreeCacheSingleton, cls
+                    ).__new__(cls)
         return cls._instance
 
     def store_object(self, key, value):
@@ -78,7 +80,9 @@ class MissionTimelinessCacheSingleton:
         if not cls._instance:
             with cls._lock:
                 if not cls._instance:
-                    cls._instance = super(MissionTimelinessCacheSingleton, cls).__new__(cls)
+                    cls._instance = super(MissionTimelinessCacheSingleton, cls).__new__(
+                        cls
+                    )
         return cls._instance
 
     def store_object(self, key, value):

@@ -23,13 +23,17 @@ class JiraClient:
         self.__client = None
         if jira_host is None and jira_user is None and jira_password is None:
             jira_config = ConfigCache.load_object("cams_issues_config")
-            self.init(jira_config['jira_host'], jira_config['jira_user'], jira_config['jira_password'])
+            self.init(
+                jira_config["jira_host"],
+                jira_config["jira_user"],
+                jira_config["jira_password"],
+            )
         else:
             self.init(jira_host, jira_user, jira_password)
         return
 
     def init(self, jira_host, jira_user, jira_password):
-        jira_server = {'server': jira_host, 'verify': False}
+        jira_server = {"server": jira_host, "verify": False}
         self.__client = JIRA(options=jira_server, basic_auth=(jira_user, jira_password))
         return
 
@@ -58,5 +62,7 @@ class JiraClient:
         return total
 
     def search_issue_by_project(self, project, start_at=0, max_results=50):
-        res = self.search('project=' + project, start_at=start_at, max_results=max_results)
+        res = self.search(
+            "project=" + project, start_at=start_at, max_results=max_results
+        )
         return res

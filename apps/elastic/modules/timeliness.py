@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -27,16 +27,20 @@ from apps.utils import elastic_utils
 logger = logging.getLogger(__name__)
 
 
-def get_cds_product_timeliness(start_date: datetime, end_date: datetime, mission: str, timeliness: str, published):
+def get_cds_product_timeliness(
+    start_date: datetime, end_date: datetime, mission: str, timeliness: str, published
+):
     use_publication = True
 
-    index_name = 'cds-publication' if use_publication else 'cds-product'
+    index_name = "cds-publication" if use_publication else "cds-product"
     # Use multiple month-based indices if interval is long than 1 month and half
     date_delta = relativedelta(end_date, start_date)
     interval_day_len = date_delta.months * 30 + date_delta.days
     logger.debug("Interval is %d days long", interval_day_len)
     if (interval_day_len > 45 or mission == "S2") and not use_publication:
-        indices = elastic_utils.get_month_index_name_from_interval_date(index_name, start_date, end_date)
+        indices = elastic_utils.get_month_index_name_from_interval_date(
+            index_name, start_date, end_date
+        )
         logger.debug("Query will be performed on indices: %s", indices)
     else:
         logger.debug("Query will be performed on main index: %s", index_name)
@@ -46,8 +50,13 @@ def get_cds_product_timeliness(start_date: datetime, end_date: datetime, mission
     time_subintervals = []
 
     elastic = elastic_client.ElasticClient()
-    logger.debug("Retrieving Product timeliness for mission %s, timeliness %s, start date: %s, end date: %s",
-                 mission, timeliness, start_date, end_date)
+    logger.debug(
+        "Retrieving Product timeliness for mission %s, timeliness %s, start date: %s, end date: %s",
+        mission,
+        timeliness,
+        start_date,
+        end_date,
+    )
 
     results = []
     # Extract configuration for Mission Timeliness query parameters
@@ -64,8 +73,9 @@ def get_cds_product_timeliness(start_date: datetime, end_date: datetime, mission
 
     timeliness_cfg = mission_timeliness_cfg.get(timeliness, None)
     if timeliness_cfg is None:
-        logging.error("Requested unknown %s timeliness type for mission %s",
-                      timeliness, mission)
+        logging.error(
+            "Requested unknown %s timeliness type for mission %s", timeliness, mission
+        )
         return results
 
     query_builder = TimelinessElasticQuery(mission, timeliness_cfg, use_publication)
@@ -81,7 +91,9 @@ def get_cds_product_timeliness(start_date: datetime, end_date: datetime, mission
     #   ========    Exclusion specification
     # logger.debug("Total Must list: %s", must_list)
     #  On Time selection needs a prip_publicaiton_date field set
-    pub_field_exist_condition = {"exists": {"field": query_builder.range_time_attribute}}
+    pub_field_exist_condition = {
+        "exists": {"field": query_builder.range_time_attribute}
+    }
 
     # Query section: includes must clauses,
     total_query = query_builder.create_query("count")
@@ -116,87 +128,121 @@ def get_cds_product_timeliness(start_date: datetime, end_date: datetime, mission
     # Build query and execute
     for threshold_cfg in thresholds_list:
         logger.debug("Executing request for Timeliness parameters: %s", threshold_cfg)
-        timeliness_value = threshold_cfg.get('threshold')
-        level = threshold_cfg.get('product_level', '')
-        sensor = threshold_cfg.get('sensor', '')
+        timeliness_value = threshold_cfg.get("threshold")
+        level = threshold_cfg.get("product_level", "")
+        sensor = threshold_cfg.get("sensor", "")
         sensor_cfg = {}
         if sensors_cfg is not None and sensor and sensor in sensors_cfg:
             # check if sensor is requested;
             # if yes, check the sensor configuration
             # add product type list to must
             sensor_cfg = sensors_cfg.get(sensor)
-        count_query_body = query_builder._get_timeliness_product_count_query(total_query,
-                                                                             threshold_cfg, sensor_cfg)
-        ontime_query_body = query_builder._get_ontime_product_count_query(ontime_query,
-                                                                          threshold_cfg, sensor_cfg)
+        count_query_body = query_builder._get_timeliness_product_count_query(
+            total_query, threshold_cfg, sensor_cfg
+        )
+        ontime_query_body = query_builder._get_ontime_product_count_query(
+            ontime_query, threshold_cfg, sensor_cfg
+        )
 
         total_value = on_time = 0
         try:
             # logger.debug("Counting with query %s", count_query_body)
             # Loop through indices
             for index in indices:
-                #logger.debug("Querying the index %s", index)
-                queries = [{
-                    # 'count': count_query_body,
-                    'ontime': ontime_query_body}]
-                if mission == 'S2' and interval_day_len > 12 and not use_publication:
-                    time_subintervals = elastic_utils._get_month_subperiods(start_date, end_date, index)
-                    logger.debug("S2 Subintervals for index %s: %s",
-                                 index, time_subintervals)
+                # logger.debug("Querying the index %s", index)
+                queries = [
+                    {
+                        # 'count': count_query_body,
+                        "ontime": ontime_query_body
+                    }
+                ]
+                if mission == "S2" and interval_day_len > 12 and not use_publication:
+                    time_subintervals = elastic_utils._get_month_subperiods(
+                        start_date, end_date, index
+                    )
+                    logger.debug(
+                        "S2 Subintervals for index %s: %s", index, time_subintervals
+                    )
                     if len(time_subintervals):
                         queries = []
                         for subinterval in time_subintervals:
                             # build a pair of queries for each subnterval
-                            query_builder.update_query_time_range(ontime_query_body['query'], subinterval)
+                            query_builder.update_query_time_range(
+                                ontime_query_body["query"], subinterval
+                            )
                             ontime_q = copy.deepcopy(ontime_query_body)
-                            queries.append({
-                                # 'count': cnt_q,
-                                'ontime': ontime_q})
+                            queries.append(
+                                {
+                                    # 'count': cnt_q,
+                                    "ontime": ontime_q
+                                }
+                            )
 
                 elastic_query_start_time = perf_counter()
                 # TIme request
                 count_query_start_time = perf_counter()
-                logger.debug("Counting Total on index %s with body: %s", index, count_query_body)
-                result = elastic.count(index=index, body=count_query_body)['count']
+                logger.debug(
+                    "Counting Total on index %s with body: %s", index, count_query_body
+                )
+                result = elastic.count(index=index, body=count_query_body)["count"]
                 total_value += result
                 lapse_query_end_time = perf_counter()
                 logger.debug(
-                    f"Count Query Execution Time (index: {index}) on mission {mission}, timeliness {timeliness}, level {level}, sensor {sensor}: {lapse_query_end_time - count_query_start_time:0.6f}")
+                    f"Count Query Execution Time (index: {index}) on mission {mission}, timeliness {timeliness}, level {level}, sensor {sensor}: {lapse_query_end_time - count_query_start_time:0.6f}"
+                )
                 for period_query in queries:
                     # logger.debug("Counting with query timeliness %s", ontime_query_body)
-                    logger.debug("Counting Timeliness products on index %s, with body: %s",
-                                 index, period_query['ontime'])
-                    result = elastic.count(index=index, body=period_query['ontime'])['count']
+                    logger.debug(
+                        "Counting Timeliness products on index %s, with body: %s",
+                        index,
+                        period_query["ontime"],
+                    )
+                    result = elastic.count(index=index, body=period_query["ontime"])[
+                        "count"
+                    ]
                     on_time += result
                     lapse1_query_end_time = perf_counter()
                     logger.debug(
-                        f"On time Query Execution Time (index: {index}) on mission {mission}, timeliness {timeliness}, level {level}, sensor {sensor} : {lapse1_query_end_time - lapse_query_end_time:0.6f}")
+                        f"On time Query Execution Time (index: {index}) on mission {mission}, timeliness {timeliness}, level {level}, sensor {sensor} : {lapse1_query_end_time - lapse_query_end_time:0.6f}"
+                    )
 
                 lapse2_query_end_time = perf_counter()
                 logger.debug(
-                    f"Total Timeliness Query Execution Time on mission {mission}, timeliness {timeliness}, level {level}, sensor {sensor} : {lapse2_query_end_time - elastic_query_start_time:0.6f}")
+                    f"Total Timeliness Query Execution Time on mission {mission}, timeliness {timeliness}, level {level}, sensor {sensor} : {lapse2_query_end_time - elastic_query_start_time:0.6f}"
+                )
 
-            json_result = {'mission': mission, 'timeliness': timeliness,
-                           'threshold': timeliness_value,
-                           'total_count': total_value, 'on_time': on_time}
+            json_result = {
+                "mission": mission,
+                "timeliness": timeliness,
+                "threshold": timeliness_value,
+                "total_count": total_value,
+                "on_time": on_time,
+            }
             if level is not None and len(level):
                 # remove any trailing _ from level
-                level = level.strip('_')
-                json_result.update({'level': level})
+                level = level.strip("_")
+                json_result.update({"level": level})
             if sensor is not None and len(sensor):
-                json_result.update({'product_group': sensor})
+                json_result.update({"product_group": sensor})
             results.append(json_result)
 
         except Exception as ex:
             results = []
-            logger.error("Failure of Elastic queries for mission %s, timeliness type %s, level: %s, sensor: %s",
-                         mission, timeliness, level, sensor)
+            logger.error(
+                "Failure of Elastic queries for mission %s, timeliness type %s, level: %s, sensor: %s",
+                mission,
+                timeliness,
+                level,
+                sensor,
+            )
             logger.error(ex)
 
     return results
 
 
-def get_cds_mission_product_timeliness(start_date: datetime, end_date: datetime, mission: str):
+def get_cds_mission_product_timeliness(
+    start_date: datetime, end_date: datetime, mission: str
+):
     """
 
     Args:
@@ -210,18 +256,23 @@ def get_cds_mission_product_timeliness(start_date: datetime, end_date: datetime,
     results = []
     # Extract list of timeliness types for this mission
     mission_timeliness_cfg = MissionTimelinessCache.load_object(mission)
-    timeliness_types = MissionTimelinessCache.load_object('timeliness_types')
-    mission_timeliness_types = [typ
-                                for typ in timeliness_types
-                                if typ in mission_timeliness_cfg
-                                ]
+    timeliness_types = MissionTimelinessCache.load_object("timeliness_types")
+    mission_timeliness_types = [
+        typ for typ in timeliness_types if typ in mission_timeliness_cfg
+    ]
     # TODO: Make results a Dictionary, and add Start/end date
-    logger.debug("Querying timeliness for mission %s from %s to %s excluded",
-                 mission, start_date, end_date)
+    logger.debug(
+        "Querying timeliness for mission %s from %s to %s excluded",
+        mission,
+        start_date,
+        end_date,
+    )
     # If interval length >= 20 days and mission = S2,
     # split interval in periods of 10 days each, and accumulate results
     for tim_type in mission_timeliness_types:
-        results.extend(get_cds_product_timeliness(start_date, end_date,
-                                                  mission, tim_type,
-                                                  published=True))
+        results.extend(
+            get_cds_product_timeliness(
+                start_date, end_date, mission, tim_type, published=True
+            )
+        )
     return results

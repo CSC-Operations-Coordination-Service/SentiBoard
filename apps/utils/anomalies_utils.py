@@ -7,7 +7,11 @@ def normalize_anomalie(anomaly):
         "key": anomaly.get("key"),
         "title": anomaly.get("title"),
         "text": anomaly.get("text"),
-        "publicationDate": anomaly.get("publicationDate").isoformat() if anomaly.get("publicationDate") else None,
+        "publicationDate": (
+            anomaly.get("publicationDate").isoformat()
+            if anomaly.get("publicationDate")
+            else None
+        ),
         "category": anomaly.get("category"),
         "impactedSatellite": anomaly.get("impactedSatellite"),
         "impactedItem": anomaly.get("impactedItem"),
@@ -17,18 +21,21 @@ def normalize_anomalie(anomaly):
         "datatakesCompleteness": anomaly.get("datatakes_completeness"),
         "newsLink": anomaly.get("newsLink"),
         "newsTitle": anomaly.get("newsTitle"),
-        "modifyDate": anomaly.get("modifyDate").isoformat() if anomaly.get("modifyDate") else None
+        "modifyDate": (
+            anomaly.get("modifyDate").isoformat() if anomaly.get("modifyDate") else None
+        ),
     }
-    
+
+
 def model_to_dict(obj, exclude=None):
     """Convert SQLAlchemy or dataclass-like objects into JSON-safe dicts."""
-    
+
     if obj is None:
         return None
-    
+
     if exclude is None:
         exclude = set()
-        
+
     if isinstance(obj, (str, int, float, bool)):
         return obj
     if isinstance(obj, datetime.datetime):
@@ -38,7 +45,9 @@ def model_to_dict(obj, exclude=None):
         return obj.strftime("%Y-%m-%d")
 
     if isinstance(obj, dict):
-        return {k: model_to_dict(v, exclude) for k, v in obj.items() if k not in exclude}
+        return {
+            k: model_to_dict(v, exclude) for k, v in obj.items() if k not in exclude
+        }
 
     if isinstance(obj, (list, tuple, set)):
         return [model_to_dict(item, exclude) for item in obj]

@@ -20,11 +20,23 @@ from flask import Response, send_file
 
 import apps.cache.modules.datatakes as datatakes_cache
 from apps import flask_cache
+
 # 1 day and some more time
-from apps.ingestion.acquisition_plans.acq_plan_fragments import AcqPlanFragments, AcqPlanDayFragment
-from apps.ingestion.acq_plan_ingestor import AcqPlanIngestor, acq_plans_mission_satellites, \
-    kml_acq_plans_missions, orbit_kml_acq_plans_missions, acq_plans_missions, kml_from_orbits
-from apps.ingestion.acquisition_plans.fragment_completeness import FragmentCompletenessHandler
+from apps.ingestion.acquisition_plans.acq_plan_fragments import (
+    AcqPlanFragments,
+    AcqPlanDayFragment,
+)
+from apps.ingestion.acq_plan_ingestor import (
+    AcqPlanIngestor,
+    acq_plans_mission_satellites,
+    kml_acq_plans_missions,
+    orbit_kml_acq_plans_missions,
+    acq_plans_missions,
+    kml_from_orbits,
+)
+from apps.ingestion.acquisition_plans.fragment_completeness import (
+    FragmentCompletenessHandler,
+)
 from apps.ingestion.kml_processor import AcqPlanKmlBuilder
 from apps.utils.date_utils import get_past_day_str
 
@@ -39,7 +51,11 @@ def get_acquisition_plan_key(mission):
 
 
 def get_acquisition_plan(mission, satellite, day_str):
-    logger.info("[BEG] - Build and download Acq Plan for satellite %s, on day %s", satellite, day_str)
+    logger.info(
+        "[BEG] - Build and download Acq Plan for satellite %s, on day %s",
+        satellite,
+        day_str,
+    )
     # mission_fragments = self._acqplans.get(mission)
     # satellite_fragments = mission_fragments.get(satellite)
     # TODO: Check key exists
@@ -61,11 +77,15 @@ def get_acquisition_plan(mission, satellite, day_str):
     # }
     # return Response(json.dumps(acq_plan_data),
     #               mimetype="application/json", status=200),
-    logger.info("[END] - Build and download Acq Plan for satellite %s, on day %s", satellite, day_str)
+    logger.info(
+        "[END] - Build and download Acq Plan for satellite %s, on day %s",
+        satellite,
+        day_str,
+    )
     return send_file(
         io.BytesIO(kml_string),
         # download_name=f'{kml_title}.kml',
-        mimetype='application/octet-stream'
+        mimetype="application/octet-stream",
     )
 
 
@@ -94,14 +114,12 @@ def get_acquisition_plans_coverage():
     plans_coverage = {}
     for mission in kml_acq_plans_missions:
         sat_list = acq_plans_mission_satellites.get(mission)
-        _load_mission_acquisition_coverage(plans_coverage,
-                                           mission, sat_list)
+        _load_mission_acquisition_coverage(plans_coverage, mission, sat_list)
     if kml_from_orbits:
         # Load plans coverage for KML files of Orbit derived KML
         for mission in orbit_kml_acq_plans_missions:
             sat_list = acq_plans_mission_satellites.get(mission)
-            _load_mission_acquisition_coverage(plans_coverage,
-                                               mission, sat_list)
+            _load_mission_acquisition_coverage(plans_coverage, mission, sat_list)
     else:
         # Temporary: to be done according to configuration
         # and/or presence of missions in orbit_kml_acq_plans_missions
@@ -119,7 +137,9 @@ def get_datatake_acquisitions_coverage(datatake_plans_coverage):
     daily_datatakes = datatakes_cache.get_daily_datatakes()
     datatakes_day_list = list(sorted(daily_datatakes.keys()))
     # Look for past_num days, and set as first item in list
-    earliest_day_str = get_past_day_str(acq_past_num_days, AcqPlanDayFragment.FOLDER_DAY_FMT)
+    earliest_day_str = get_past_day_str(
+        acq_past_num_days, AcqPlanDayFragment.FOLDER_DAY_FMT
+    )
     index = datatakes_day_list.index(earliest_day_str)
     for mission in orbit_kml_acq_plans_missions:
         mission_coverage = datatake_plans_coverage.setdefault(mission, {})
@@ -144,14 +164,21 @@ def load_all_acquisition_plans():
 
     """
     # TODO: Read past num days from configuration
-    logger.info("[BEG] Load Acquisition Plan KML data for up to %d days in the past", acq_past_num_days)
+    logger.info(
+        "[BEG] Load Acquisition Plan KML data for up to %d days in the past",
+        acq_past_num_days,
+    )
     ingestor = AcqPlanIngestor(past_num_days=acq_past_num_days)
 
     # Selection of links shall include up to past_num_days
-    earliest_day_str = get_past_day_str(acq_past_num_days, AcqPlanDayFragment.FOLDER_DAY_FMT)
+    earliest_day_str = get_past_day_str(
+        acq_past_num_days, AcqPlanDayFragment.FOLDER_DAY_FMT
+    )
     ingestor.retrieve_acq_plans(earliest_day_str)
 
-    logger.info("Updating Publication Completeness on Acquisition Plan Fragments in Cache")
+    logger.info(
+        "Updating Publication Completeness on Acquisition Plan Fragments in Cache"
+    )
     mission_fragments_retriever_fun = ingestor.get_fragments
     _set_update_acquisition_completeness(mission_fragments_retriever_fun)
 
@@ -163,7 +190,10 @@ def load_all_acquisition_plans():
     # _set_update_acquisition_completeness(orbit_fragments_retriever_fun)
 
     # update_acquisition_completeness()
-    logger.info("[END] Load Acquisition Plan KML data for up to %d days in the past", acq_past_num_days)
+    logger.info(
+        "[END] Load Acquisition Plan KML data for up to %d days in the past",
+        acq_past_num_days,
+    )
 
 
 def update_acquisition_completeness():
@@ -193,26 +223,35 @@ def _set_update_acquisition_completeness(mission_fragments_retriever_fun):
     daily_datatakes = datatakes_cache.get_daily_datatakes()
 
     for mission in acq_plans_missions:
-        logger.debug("[BEG] Setting on Acquisition Plans Completeness Status for mission %s",
-                     mission)
+        logger.debug(
+            "[BEG] Setting on Acquisition Plans Completeness Status for mission %s",
+            mission,
+        )
         mission_fragments = mission_fragments_retriever_fun(mission)
         if mission_fragments is None:
-            logger.warning("Tried to load on Cache not acquired Acquisition Plans for mission %s", mission)
+            logger.warning(
+                "Tried to load on Cache not acquired Acquisition Plans for mission %s",
+                mission,
+            )
         # LOad Completeness on Cache Fragments
-        completeness_hnd = FragmentCompletenessHandler(mission,
-                                                       mission_fragments,
-                                                       daily_datatakes)
+        completeness_hnd = FragmentCompletenessHandler(
+            mission, mission_fragments, daily_datatakes
+        )
         completeness_hnd.set_completeness()
         # Save back thMission Fragments
         save_acquisition_plans_to_cache(mission, mission_fragments)
-        logger.debug("[END] Setting on Acquisition Plans Completeness Status for mission %s",
-                     mission)
+        logger.debug(
+            "[END] Setting on Acquisition Plans Completeness Status for mission %s",
+            mission,
+        )
     logger.debug("[END] Setting on Acquisition Plans Completeness Status")
 
 
 def _get_fragments(mission, satellite):
     mission_fragments = _get_mission_fragments(mission)
-    satellite_fragments = mission_fragments.get(satellite) if mission_fragments else None
+    satellite_fragments = (
+        mission_fragments.get(satellite) if mission_fragments else None
+    )
     return satellite_fragments
 
 
@@ -222,6 +261,9 @@ def _get_mission_fragments(mission):
     if not flask_cache.has(acq_plan_key):
         logger.debug("Fragments not found, start acquisition of plans")
         load_all_acquisition_plans()
-        logger.debug("After All Plans acquisition, Retrieving KML fragment with key %s", acq_plan_key)
+        logger.debug(
+            "After All Plans acquisition, Retrieving KML fragment with key %s",
+            acq_plan_key,
+        )
     mission_fragments = flask_cache.get(acq_plan_key)
     return mission_fragments

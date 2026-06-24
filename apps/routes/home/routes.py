@@ -160,8 +160,8 @@ PAGE_METADATA = {
     "data-availability.html": {
         "title": "Copernicus Sentinel Data Availability | Real-Time Datatake Monitor",
         "description": (
-            "Monitor real-time Copernicus Sentinel data availability, datatake delivery status, and publication completeness. ",
-            "Filter by mission (S1, S2, S3, S5P), satellite, date, and sensing mode on the official ESA operations dashboard.",
+            "Monitor real-time Copernicus Sentinel data availability, datatake delivery status, and publication completeness. "
+            "Filter by mission (S1, S2, S3, S5P), satellite, date, and sensing mode on the official ESA operations dashboard."
         ),
         "page_keywords": [
             "Copernicus Sentinel data availability real-time",
@@ -176,8 +176,8 @@ PAGE_METADATA = {
     "processors-viewer.html": {
         "title": "Copernicus Sentinel Processor Releases | Interactive Timeline",
         "description": (
-            "Explore the full history of Copernicus Sentinel processor releases on an interactive timeline. ",
-            "Track ESA processing baseline versions for Sentinel-1, -2, -3, and -5P and understand how each update affects satellite data products.",
+            "Explore the full history of Copernicus Sentinel processor releases on an interactive timeline. "
+            "Track ESA processing baseline versions for Sentinel-1, -2, -3, and -5P and understand how each update affects satellite data products."
         ),
         "page_keywords": [
             "Copernicus Sentinel processor releases timeline",
@@ -315,7 +315,7 @@ def roles_page():
 
             elif action == "delete":
                 # Extra security check: ensure they aren't trying to delete protected roles
-                if role_name not in ["admin", "guest", "ecuser"]:
+                if role_name not in ["admin", "guest", "ecuser", "api_admin"]:
                     model_delete_role(role_name)
                 # Optional: flash(f"Role {role_name} deleted.", "info")
             return redirect(url_for("home_blueprint.roles_page"))
@@ -428,6 +428,7 @@ def index():
     ALLOWED_SATELLITES = {
         "S1A",
         "S1C",
+        "S1D",
         "S2A",
         "S2B",
         "S2C",
@@ -491,6 +492,7 @@ def index():
     SATELLITE_DISPLAY_NAMES = {
         "S1A": "Copernicus Sentinel-1A",
         "S1C": "Copernicus Sentinel-1C",
+        "S1D": "Copernicus Sentinel-1D",
         "S2A": "Copernicus Sentinel-2A",
         "S2B": "Copernicus Sentinel-2B",
         "S2C": "Copernicus Sentinel-2C",
@@ -633,7 +635,7 @@ def index():
 
     # ---- SSR: Load Instant Messages for Home ----
     try:
-        page_size = 3  # number of messages to show on home page
+        page_size = 5  # number of messages to show on home page
 
         # sorting publicationDate descending
         query = db.session.query(instant_messages_model.InstantMessages).order_by(
@@ -648,7 +650,12 @@ def index():
             {
                 "id": msg.id,
                 "title": msg.title,
-                "text": msg.text,
+                "text": (
+                    msg.text[:130]
+                    + ' <a href="/newsList.html" style="color:#ffc107;">Read More</a>'
+                    if msg.text and len(msg.text) > 130
+                    else msg.text
+                ),
                 "messageType": msg.messageType,
                 "publicationDate": format_pub_date(msg.publicationDate),
                 "link": msg.link,
@@ -683,10 +690,9 @@ def index():
 
 @blueprint.route("/events")
 def events():
-
     try:
         metadata = get_metadata("events.html")
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events"
         segment = "events"
         today = datetime.today()
         year = request.args.get("year", type=int, default=today.year)
@@ -787,6 +793,8 @@ def events_data():
 
         def serialize_anomalie(a):
             src = a.get("_source", a)
+            if src.get("origin") == "Dashboard":
+                return None
             date_str = (
                 src.get("occurence_date")
                 or src.get("occurrence_date")
@@ -902,7 +910,7 @@ def to_utc_dt(value):
 def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = (
-        "https://operations.dashboard.copernicus.eu/data-availability.html"
+        "https://operations.dashboard.copernicus.eu/data-availability"
     )
     segment = "data-availability"
     BATCH_SIZE = 20
@@ -999,7 +1007,7 @@ def data_availability():
             item_sat = (src.get("satellite_unit") or "").upper()
 
             if item_sat.startswith("S1"):
-                if item_sat not in ["S1A", "S1C"]:
+                if item_sat not in ["S1A", "S1C", "S1D"]:
                     continue
 
             if m_filter_upper and m_filter_upper not in item_sat:
@@ -1243,20 +1251,21 @@ def news_list_ssr():
 
         messages = []
         for m in messages_raw:
+            pub_str = None
             if m.publicationDate:
-                pub_dt_rome = m.publicationDate.replace(tzinfo=timezone.utc).astimezone(
-                    LOCAL_TZ
+                pub_str = (
+                    m.publicationDate.strftime("%Y-%m-%d %H:%M")
+                    if m.publicationDate
+                    else None
                 )
-                pub_str = pub_dt_rome.strftime("%Y-%m-%d %H:%M")
-            else:
-                pub_str = None
+
             messages.append(
                 {
                     "id": m.id,
                     "title": m.title,
                     "text": m.text,
                     "link": m.link,
-                    "messageType": m.messageType,
+                    "messageType": m.messageType or "warning",
                     "publicationDate": pub_str,
                     "publicationDateUtc": (
                         m.publicationDate.isoformat() if m.publicationDate else None
@@ -1264,13 +1273,12 @@ def news_list_ssr():
                 }
             )
 
-        total_pages = math.ceil(total_messages / page_size)
-
+        total_pages = math.ceil(total_messages / page_size) if total_messages else 1
         user_role = getattr(current_user, "role", "guest")
 
         return render_template(
             "home/newsList.html",
-            messages=make_json_safe(messages),
+            messages=messages,
             total_pages=total_pages,
             current_page=page,
             user_role=user_role,
@@ -1290,7 +1298,6 @@ def message_form_ssr():
 
         message_id = request.args.get("id")
         next_url = request.args.get("next", "/newsList.html")
-
         message_data = None
 
         if message_id:
@@ -1303,13 +1310,11 @@ def message_form_ssr():
             if not message:
                 abort(404)
 
-            if message.publicationDate:
-                pub_dt_rome = message.publicationDate.replace(
-                    tzinfo=timezone.utc
-                ).astimezone(LOCAL_TZ)
-                pub_str = pub_dt_rome.strftime("%Y-%m-%dT%H:%M")
-            else:
-                pub_str = ""
+            pub_str = (
+                message.publicationDate.strftime("%Y-%m-%dT%H:%M")
+                if message.publicationDate
+                else ""
+            )
 
             message_data = {
                 "id": message.id,
@@ -1343,29 +1348,25 @@ def add_instant_message_ssr():
         title = request.form.get("title", "").strip()
         text = request.form.get("text", "").strip()
         link = request.form.get("link", "").strip()
-        message_type = request.form.get("messageType", "").strip()
         publication_date_str = request.form.get("publicationDate", "").strip()
+
+        message_type = request.form.get("messageType", "warning").strip()
 
         if not title or not text or not publication_date_str:
             flash("Missing required fields", "danger")
             return redirect(next_url)
 
-        local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
-            tzinfo=LOCAL_TZ
-        )
+        publication_date = datetime.strptime(
+            publication_date_str, "%Y-%m-%dT%H:%M"
+        ).replace(tzinfo=timezone.utc)
 
-        publication_date = local_dt.astimezone(timezone.utc)
-
-        modify_date = datetime.now(timezone.utc)
-
-        # Save the message
         instant_messages_model.save_instant_messages(
             title=title,
             text=text,
             link=link,
             publication_date=publication_date,
             message_type=message_type,
-            modify_date=modify_date,
+            modify_date=datetime.now(timezone.utc),
         )
 
         flash("News added successfully!", "success")
@@ -1380,7 +1381,6 @@ def add_instant_message_ssr():
 @blueprint.route("/admin/instant-messages/update", methods=["POST"])
 @login_required
 def update_instant_message_ssr():
-
     try:
         if not auth_utils.is_user_authorized(["admin", "ecuser", "esauser"]):
             abort(403)
@@ -1395,14 +1395,12 @@ def update_instant_message_ssr():
         title = request.form.get("title", "").strip()
         text = request.form.get("text", "").strip()
         link = request.form.get("link", "").strip()
-        message_type = request.form.get("messageType", "").strip()
         publication_date_str = request.form.get("publicationDate", "").strip()
+        message_type = request.form.get("messageType", "warning").strip()
 
-        local_dt = datetime.strptime(publication_date_str, "%Y-%m-%dT%H:%M").replace(
-            tzinfo=LOCAL_TZ
-        )
-
-        new_pub_dt_utc = local_dt.astimezone(timezone.utc)
+        new_pub_dt_utc = datetime.strptime(
+            publication_date_str, "%Y-%m-%dT%H:%M"
+        ).replace(tzinfo=timezone.utc)
 
         message = (
             db.session.query(instant_messages_model.InstantMessages)
@@ -1443,7 +1441,6 @@ def delete_instant_message_modal():
 
         message_id = request.form.get("id", "").strip()
         next_url = request.form.get("next", "/newsList.html")
-        # logger.info(f"Message ID to delete: {message_id}, next: {next_url}")
 
         if not message_id:
             flash("Missing news ID", "danger")
@@ -1467,7 +1464,7 @@ def delete_instant_message_modal():
         flash("News successfully deleted", "success")
         return redirect(next_url)
 
-    except Exception as ex:
+    except Exception:
         logger.exception("Error deleting News post")
         db.session.rollback()
         flash("Delete failed", "danger")
@@ -2491,7 +2488,7 @@ def route_template(template):
 
         # Get metadata safely
         metadata = get_metadata(template)
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/index.html"
+        metadata["page_url"] = f"https://operations.dashboard.copernicus.eu/{template}"
 
         if template in ["processors-viewer", "processors-viewer.html"]:
             return processors_page()

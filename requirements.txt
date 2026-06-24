@@ -1,3 +1,4 @@
+setuptools==80.10.2
 pykml==0.2.0
 skyfield==1.46
 time-machine==2.10.0

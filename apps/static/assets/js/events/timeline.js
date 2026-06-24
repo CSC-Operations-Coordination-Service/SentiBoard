@@ -1,13 +1,13 @@
 /*
 Copernicus Operations Dashboard
 
-Copyright (C) ${startYear}-${currentYear} ${Telespazio}
+Copyright (C) ${startYear}-${currentYear} ${SERCO}
 All rights reserved.
 
-This document discloses subject matter in which TPZ has
+This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of TPZ to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 */
 
@@ -68,16 +68,16 @@ class Timeline {
         // beginning of the previous quarter
         console.info('Loading events up to the previous quarter...');
         asyncAjaxCall('/api/events/anomalies/previous-quarter', 'GET', {},
-                timeline.succesLoadAnomalies, timeline.errorLoadAnomalies);
-        }
+            timeline.succesLoadAnomalies, timeline.errorLoadAnomalies);
+    }
 
-        loadEventsGuestUser() {
+    loadEventsGuestUser() {
 
         // Guest Users are allowed to access events / anomalies up to 3
         // months before the current date
         console.info('Loading events in the last quarter...');
         asyncAjaxCall('/api/events/anomalies/last-quarter', 'GET', {},
-                timeline.succesLoadAnomalies, timeline.errorLoadAnomalies);
+            timeline.succesLoadAnomalies, timeline.errorLoadAnomalies);
     }
 
     succesLoadAnomalies(response) {
@@ -90,7 +90,7 @@ class Timeline {
         var datatakeList = new Array();
 
         // Define the events
-        for(var i = 0 ; i < rows.length ; ++i){
+        for (var i = 0; i < rows.length; ++i) {
 
             // Auxiliary variable
             var anomaly = rows[i];
@@ -98,7 +98,7 @@ class Timeline {
             // Check if an anomaly with the same impacted datatake is already displayed. If so,
             // skip the new anomaly
             if (datatakeList.indexOf(anomaly['environment']) > -1) {
-                continue ;
+                continue;
             } else {
                 datatakeList.push(anomaly['environment']);
             }
@@ -166,7 +166,7 @@ class Timeline {
         return;
     }
 
-    errorLoadAnomalies(response){
+    errorLoadAnomalies(response) {
         return;
     }
 
@@ -184,23 +184,23 @@ class Timeline {
         var cssClass;
         var category_id;
         var category = anomaly["category"];
-        if (category == 'Platform'){
+        if (category == 'Platform') {
             title = 'Satellite';
             category_id = 1;
             cssClass = 'production';
             end_time.setTime(start_time.getTime() + 3 * 60 * 60 * 1000);
-        } else if(category == 'Acquisition'){
+        } else if (category == 'Acquisition') {
             title = 'Acquisition';
             category_id = 2;
             cssClass = 'production';
             end_time.setTime(start_time.getTime() + 15 * 60 * 1000);
-        } else if(category == 'Production'){
+        } else if (category == 'Production') {
             title = 'Production';
             // category_id = 3;
             category_id = 2;
             cssClass = 'production';
             end_time.setTime(start_time.getTime() + 120 * 60 * 1000);
-        } else{
+        } else {
             title = 'Data Access';
             // category_id = 4;
             category_id = 2;
@@ -216,7 +216,7 @@ class Timeline {
         var allRecovered = true;
         for (var index = 0; index < datatakes_completeness.length; ++index) {
             try {
-                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'','\"')))) {
+                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
                     var objValues = Object.values(value);
                     completeness = timeline.calcDatatakeCompleteness(objValues);
                     if (completeness < threshold) {
@@ -230,14 +230,14 @@ class Timeline {
 
         // Return the event instance
         return {
-          id: anomaly['key'],
-          group: category_id,
-          start: start_time,
-          end: end_time,
-          className: cssClass,
-          fullRecover: allRecovered
-          // content: picture,
-          // type: 'box'
+            id: anomaly['key'],
+            group: category_id,
+            start: start_time,
+            end: end_time,
+            className: cssClass,
+            fullRecover: allRecovered
+            // content: picture,
+            // type: 'box'
         }
     }
 
@@ -284,26 +284,26 @@ class Timeline {
 
         // Choose an appropriate picture
         var picture;
-        if(category == 'Platform') {
+        if (category == 'Platform') {
             title = "Satellite / Instrument";
             if (item == 'Copernicus Sentinel-1A') {
                 picture = '<img src="/static/assets/img/s-1a_warning.png" style="width: 36px; height: 36px;">';
             } else if (item == 'Copernicus Sentinel-2A' || item == 'Copernicus Sentinel-2B') {
                 picture = '<img src="/static/assets/img/s-2a_warning.png" style="width: 36px; height: 36px;">';
-            }  else if (item == 'Copernicus Sentinel-3A' || item == 'Copernicus Sentinel-3B') {
+            } else if (item == 'Copernicus Sentinel-3A' || item == 'Copernicus Sentinel-3B') {
                 picture = '<img src="/static/assets/img/s-3a_warning.png" style="width: 36px; height: 36px;">';
-            }  else if (item == 'Copernicus Sentinel-5p') {
+            } else if (item == 'Copernicus Sentinel-5p') {
                 picture = '<img src="/static/assets/img/s5p_warning.png" style="width: 36px; height: 36px;">';
             } else {
                 picture = '<img src="/static/assets/img/maintenance.png" style="width: 36px; height: 36px;">';
             }
-        } else if (category == 'Acquisition'){
+        } else if (category == 'Acquisition') {
             title = "Acquisition";
             picture = '<img src="/static/assets/img/maintenance.png" style="width: 36px; height: 36px;">';
-        } else if (category == 'Production'){
+        } else if (category == 'Production') {
             title = "Production";
             picture = '<img src="/static/assets/img/maintenance.png" style="width: 36px; height: 36px;">';
-        } else if (category == 'Data access'){
+        } else if (category == 'Data access') {
             title = "Data Access";
             picture = '<img src="/static/assets/img/maintenance.png" style="width: 36px; height: 36px;">';
         } else {
@@ -314,15 +314,15 @@ class Timeline {
         // Every impacted datatake shall be linked to the Datatake table
         var detailsContent =
             '<div>' +
-                '<p style="color: white; font-size: 14px">Occurrence date:  ' +
-                    '<span style="font-weight: bold">' + start_time + '</span></p>' +
-                '<p></p>' +
-                '<p style="color: white; font-size: 14px">Impacted satellite(s):  ' +
-                    '<span style="font-weight: bold">' + item + '</span></p>' +
-                '<p></p>' +
-                '<p style="color: white; font-size: 14px">Issue type:  ' +
-                    '<span style="font-weight: bold">' + category + '</span></p>' +
-                '<p></p>';
+            '<p style="color: white; font-size: 14px">Occurrence date:  ' +
+            '<span style="font-weight: bold">' + start_time + '</span></p>' +
+            '<p></p>' +
+            '<p style="color: white; font-size: 14px">Impacted satellite(s):  ' +
+            '<span style="font-weight: bold">' + item + '</span></p>' +
+            '<p></p>' +
+            '<p style="color: white; font-size: 14px">Issue type:  ' +
+            '<span style="font-weight: bold">' + category + '</span></p>' +
+            '<p></p>';
 
         // Append the list of impacted data takes
         if (anomaly["environment"]) {
@@ -345,22 +345,26 @@ class Timeline {
 
     arrangeDatatakesList(anomaly, dtList) {
         var content = '<div class="row col-md-12" style="list-style-type: none;">';
-        dtList.forEach(function(value, index, array) {
+        dtList.forEach(function (value, index, array) {
             if (value) {
                 var dtStatus = calendar.calcDatatakeStatus(anomaly, value);
                 let hexaVal = value;
                 if (value.includes('S1')) {
                     hexaVal = calendar.overrideS1DatatakesId(value)
                 }
-                content +=
-                    '<li class="ml-5">' +
+                if (dtStatus) {
+                    content +=
+                        '<li class="ml-5">' +
                         '<div style="display: flex">' +
-                            '<a href="/data-availability.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
-                            '<div class="status-circle-dt-' + dtStatus + '"></div>' +
+                        '<a href="/data-availability.html?search=' + value + '" target="_blank">' + hexaVal + '</a>' +
+                        '<div class="status-circle-dt-' + dtStatus + '"></div>' +
                         '</di>' +
-                    '</li>';
+                        '</li>';
+                } else {
+                    console.debug('Skipping datatake with no status', value);
+                }
             }
-        });
+        }.bind(this));
         content += '</ul></div></p><p></p></div>';
         return content;
     }
@@ -378,28 +382,24 @@ class Timeline {
         var completeness = 0;
         for (var index = 0; index < datatakes_completeness.length; ++index) {
             try {
-                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'','\"')))) {
+                for (const [key, value] of Object.entries(JSON.parse(datatakes_completeness[index].replaceAll('\'', '\"')))) {
                     var objValues = Object.values(value);
                     if (objValues[0] == datatake_id) {
                         completeness = timeline.calcDatatakeCompleteness(objValues);
-                        if (completeness >= 90) {
-                            return 'ok';
-                        } else if (completeness >= 10 && completeness < 90) {
-                            return 'partial';
-                        } else if (completeness < 10) {
-                            return 'failed';
-                        } else {
-                            return 'undef';
-                        }
+                        if (completeness >= 90) { return 'ok'; }
+                        if (completeness >= 10 && completeness < 90) { return 'partial'; }
+                        if (completeness < 10) { return 'failed'; }
+
+                        return null;
                     }
                 }
             } catch (ex) {
-                return 'undef';
+                return null;
             }
         }
 
         // If the datatake cannot be found, assume that the status is "undef"
-        return 'undef';
+        return null;
     }
 
     calcDatatakeCompleteness(dtCompleteness) {
@@ -419,7 +419,7 @@ class Timeline {
 
         // If the filter is not empty, loop over the anomalies, and display the
         // anomalies matching the filter
-        timeline.events.forEach(function(event) {
+        timeline.events.forEach(function (event) {
             if (filter) {
                 if (timeline.details[event.id].toUpperCase().includes(filter.toUpperCase())) {
                     timeline.filteredEvents.add(event);
@@ -451,7 +451,7 @@ class Timeline {
 
                     // Set the content of the panel details
                     $('.timeline-event-details').append(calendar.details['day-' + anomaly['key']] +
-                    '</br><hr class="solid" style="background-color: grey">');
+                        '</br><hr class="solid" style="background-color: grey">');
                 }
             }
         }
