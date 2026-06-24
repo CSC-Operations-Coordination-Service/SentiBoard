@@ -146,7 +146,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
             "s1", CDS_MISSIONS["s1"]
         ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
 
-        logger.info("[CDS][S1S2] Querying indices: %s", indices)
         elastic = elastic_client.ElasticClient()
 
         logger.info("[CDS][S1S2] Querying indexes:%s", indices)
