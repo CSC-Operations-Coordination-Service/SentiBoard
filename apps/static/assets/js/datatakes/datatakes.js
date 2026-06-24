@@ -258,14 +258,6 @@ class Datatakes {
         return (datatake_id + ' (' + hexaNum + ')');
     }
 
-    getGroundStation(id) {
-        if (id.includes("S1A") || id.includes("S1C") || id.includes("S1D")) return "Sentinel 1";
-        if (id.includes("S2A") || id.includes("S2B")) return "Sentinel 2";
-        if (id.includes("S3")) return "Sentinel 3";
-        if (id.includes("S5P")) return "Sentinel 5P";
-        return "Sentinel";
-    }
-
     populateDataList(append = false) {
         this.showSpinner();
     }

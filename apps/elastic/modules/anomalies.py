@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) -
+Copyright (C) - 2026 -Serco
 All rights reserved.
 
 This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of  to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -138,7 +138,7 @@ def fetch_anomalies_prev_quarter(normalize=True):
         logger.error(ex)
 
     if normalize:
-          anomalies = [a for e in anomalies if (a := serialize_anomalie(e)) is not None]
+        anomalies = [a for e in anomalies if (a := serialize_anomalie(e)) is not None]
 
     # Return the complete and normalized set of datatakes
     return anomalies
