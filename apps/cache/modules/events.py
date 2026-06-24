@@ -23,6 +23,9 @@ from flask import Response
 import apps.ingestion.news_ingestor as news_ingestor
 import apps.models.anomalies as anomalies_model
 import apps.models.news as news_model
+from apps.models.instant_messages import (
+    get_instant_messages,
+)
 from apps import flask_cache
 from apps.utils import db_utils, date_utils
 
@@ -127,6 +130,22 @@ def load_anomalies_cache_previous_quarter():
     )
 
 
+def load_anomalies_cache_full_history():
+    logger.info("[BEG] Loading Anomalies Cache full history...")
+    cache_start_time = perf_counter()
+
+    start_date = datetime(2025, 3, 1, 0, 0, 0)
+    end_date = datetime.today().replace(hour=23, minute=59, second=59)
+
+    anomalies_full = anomalies_model.get_anomalies(start_date, end_date)
+    _set_anomalies_cache("full-history", anomalies_full)
+
+    cache_end_time = perf_counter()
+    logger.info(
+        f"[END] Loading Anomalies Cache full history - Execution Time: {cache_end_time - cache_start_time:0.6f}"
+    )
+
+
 def _set_anomalies_cache(period_id, period_data):
     """
     Store in cache the provided results, and set the validity time of cache according to the data period.
@@ -138,6 +157,8 @@ def _set_anomalies_cache(period_id, period_data):
     seconds_validity = events_cache_duration
     if period_id == "previous-quarter":
         api_prefix = anomalies_cache_key.format("previous", "quarter")
+    elif period_id == "full-history":
+        api_prefix = anomalies_cache_key.format("full", "history")
     else:
         api_prefix = anomalies_cache_key.format("last", period_id)
 
@@ -154,8 +175,7 @@ def _set_anomalies_cache(period_id, period_data):
 
 def load_news_cache_last_quarter():
     """
-    Fetch the news in the last 3 months from Elastic DB using the exposed REST APIs, and store results
-    in cache for future reuse. The start time is set at 00:00 of the first day of the temporal interval; the
+    Fetch the news in the last 3 months from DB. The start time is set at 00:00 of the first day of the temporal interval; the
     stop time is set at 23:59
     """
 
@@ -167,27 +187,44 @@ def load_news_cache_last_quarter():
     start_date = datetime.today() - relativedelta(months=3)
     end_date = datetime.today()
     end_date = end_date.replace(hour=23, minute=59, second=59)
-    news_last_quarter = news_model.get_news(start_date, end_date)
+    messages_last_quarter = get_instant_messages(start_date, end_date)
+    if messages_last_quarter is None:
+        logger.error("Failed to fetch instant messages for the last quarter")
+        return
+    logger.info(
+        "DB returned %d messages (start=%s, end=%s) for the last quarter",
+        len(messages_last_quarter),
+        start_date,
+        end_date,
+    )
 
     # Populate cache: results for sub-periods can be deduced from results in the last quarter
     now = datetime.now()
-    news_last_24h = []
-    news_last_7d = []
-    news_last_30d = []
-    for news in news_last_quarter:
+    logger.info("now=%s, 24h boundary=%s", now, now - timedelta(hours=24))
 
-        # Populate cache
-        if now - timedelta(hours=24) <= news.occurrenceDate:
-            news_last_24h.append(news)
-        if now - timedelta(days=7) <= news.occurrenceDate:
-            news_last_7d.append(news)
-        if now - timedelta(days=30) <= news.occurrenceDate:
-            news_last_30d.append(news)
+    msgs_last_24h, msgs_last_7d, msgs_last_30d = [], [], []
+    try:
+        for msg in messages_last_quarter:
+            logger.info("msg id=%d, publication date: %s", msg.id, msg.publicationDate)
 
-    _set_news_cache("24h", news_last_24h)
-    _set_news_cache("7d", news_last_7d)
-    _set_news_cache("30d", news_last_30d)
-    _set_news_cache("quarter", news_last_quarter)
+            # Populate cache
+            if now - timedelta(hours=24) <= msg.publicationDate:
+                msgs_last_24h.append(msg)
+            if now - timedelta(days=7) <= msg.publicationDate:
+                msgs_last_7d.append(msg)
+            if now - timedelta(days=30) <= msg.publicationDate:
+                msgs_last_30d.append(msg)
+    except Exception as ex:
+        logger.error(
+            "Error while processing messages for cache population: %s",
+            ex,
+            exc_info=True,
+        )
+
+    _set_news_cache("24h", msgs_last_24h)
+    _set_news_cache("7d", msgs_last_7d)
+    _set_news_cache("30d", msgs_last_30d)
+    _set_news_cache("quarter", messages_last_quarter)
 
     # Log an acknowledgement message
     cache_end_time = perf_counter()
@@ -198,8 +235,7 @@ def load_news_cache_last_quarter():
 
 def load_news_cache_previous_quarter():
     """
-    Fetch the news in the last 3 months from Elastic DB using the exposed REST APIs, and store results
-    in cache for future reuse. The start time is set at 00:00 of the first day of the temporal interval; the
+    Fetch the news in the last 3 months from DB. The start time is set at 00:00 of the first day of the temporal interval; the
     stop time is set at 23:59 of today
     """
 
@@ -213,30 +249,38 @@ def load_news_cache_previous_quarter():
     end_date = end_date.replace(hour=23, minute=59, second=59)
 
     # Retrieve anomalies up to the previous completed quarter from CAMS
-    news_prev_quarter = news_model.get_news(start_date, end_date)
+    messages_prev_quarter = get_instant_messages(start_date, end_date)
+
+    if messages_prev_quarter is None:
+        logger.error("Failed to fetch instant messages for the previous quarter")
+        return
+
+    logger.info(
+        "Fetched %d instant messages for previous quarter", len(messages_prev_quarter)
+    )
 
     # Populate cache: results for sub-periods can be deduced from results in the last quarter
     now = datetime.now()
-    news_last_24h = []
-    news_last_7d = []
-    news_last_30d = []
-    news_last_quarter = []
-    for news in news_prev_quarter:
+    msgs_last_24h = []
+    msgs_last_7d = []
+    msgs_last_30d = []
+    msgs_last_quarter = []
+    for msg in messages_prev_quarter:
 
         # Populate cache
-        if now - timedelta(hours=24) <= news.occurrenceDate:
-            news_last_24h.append(news)
-        if now - timedelta(days=7) <= news.occurrenceDate:
-            news_last_7d.append(news)
-        if now - timedelta(days=30) <= news.occurrenceDate:
-            news_last_30d.append(news)
-        if now - relativedelta(months=3) <= news.occurrenceDate:
-            news_last_quarter.append(news)
-    _set_news_cache("24h", news_last_24h)
-    _set_news_cache("7d", news_last_7d)
-    _set_news_cache("30d", news_last_30d)
-    _set_news_cache("quarter", news_last_quarter)
-    _set_news_cache("previous-quarter", news_prev_quarter)
+        if now - timedelta(hours=24) <= msg.publicationDate:
+            msgs_last_24h.append(msg)
+        if now - timedelta(days=7) <= msg.publicationDate:
+            msgs_last_7d.append(msg)
+        if now - timedelta(days=30) <= msg.publicationDate:
+            msgs_last_30d.append(msg)
+        if now - relativedelta(months=3) <= msg.publicationDate:
+            msgs_last_quarter.append(msg)
+    _set_news_cache("24h", msgs_last_24h)
+    _set_news_cache("7d", msgs_last_7d)
+    _set_news_cache("30d", msgs_last_30d)
+    _set_news_cache("quarter", msgs_last_quarter)
+    _set_news_cache("previous-quarter", messages_prev_quarter)
 
     # Log an acknowledgement message
     cache_end_time = perf_counter()
