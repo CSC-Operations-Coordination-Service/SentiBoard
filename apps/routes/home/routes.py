@@ -772,21 +772,6 @@ def events_data():
         cache_entry = events_cache.flask_cache.get(cache_key)
         raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
 
-        for a in raw_anomalies:
-            src = a.get("_source", a)
-            datatake_ids = src.get("datatake_ids") or src.get("environment", "")
-            targets = ["S3B-118-234", "S3B-118-237", "S3B-118-238"]
-            if any(d in str(datatake_ids) for d in targets):
-                current_app.logger.info(
-                    "CACHE DEBUG | keys=%s | category=%s | type=%s | origin=%s | environment=%s | datatake_ids=%s",
-                    list(src.keys()),
-                    src.get("category"),
-                    src.get("type"),
-                    src.get("origin"),
-                    src.get("environment"),
-                    src.get("datatake_ids"),
-                )
-
         if not raw_anomalies:
             current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
             return jsonify({"anomalies": [], "anomalies_by_date": {}, "events": []})
