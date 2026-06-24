@@ -128,8 +128,8 @@ PAGE_METADATA = {
     "acquisitions-status.html": {
         "title": "Sentinel Acquisition Plans & Real-Time Status | Copernicus Dashboard",
         "description": (
-            "Explore past, current, and future Sentinel satellite acquisition plans on an interactive 3D globe. "
-            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard."
+            "Explore past, current, and future Sentinel satellite acquisition plans on an interactive 3D globe. ",
+            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard.",
         ),
         "page_keywords": [
             "Sentinel acquisition plans real-time map",
@@ -144,8 +144,8 @@ PAGE_METADATA = {
     "events.html": {
         "title": "Sentinel Mission Events & Anomalies | Copernicus Operations Dashboard",
         "description": (
-            "Browse Sentinel satellite events including anomalies, calibrations, manoeuvres, and production issues from the past 3 months. "
-            "Understand how each event affects Copernicus data completeness and availability."
+            "Browse Sentinel satellite events including anomalies, calibrations, manoeuvres, and production issues from the past 3 months. ",
+            "Understand how each event affects Copernicus data completeness and availability.",
         ),
         "page_keywords": [
             "Sentinel satellite anomalies and events",

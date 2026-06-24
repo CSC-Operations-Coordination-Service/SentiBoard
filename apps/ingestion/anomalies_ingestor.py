@@ -128,8 +128,8 @@ class AnomaliesIngestor:
                     if impacted_satellite is not None:
                         anomaly["impactedSatellite"] = impacted_satellite.name
                         break
-            # origin = getattr(extract["_source"], "origin", None)
-            origin = extract["_source"].get("origin")
+
+            origin = extract["_source"].get("origin", None)
 
             if origin == "Satellite":
                 anomaly["category"] = "Platform"
@@ -148,7 +148,7 @@ class AnomaliesIngestor:
             # nothing mapping directly to Calibration
             # in case of Other, keep as '', let the rest of the code handle it
 
-            if anomaly["category"] is None or len(anomaly["category"]) == 0:
+            if not anomaly["category"]:
                 for token in title_tokenized:
                     token = str(token)
                     if self.not_consistent(token):
@@ -158,7 +158,7 @@ class AnomaliesIngestor:
                         anomaly["category"] = category.name
                         break
 
-            if anomaly["category"] is None or len(anomaly["category"]) == 0:
+            if not anomaly["category"]:
                 for token in text_tokenized:
                     token = str(token)
                     if self.not_consistent(token):
