@@ -11,8 +11,10 @@ disclose in whole or in part, information contained herein except for or on
 behalf of ${ownerShort} to fulfill the purpose for which the document was
 delivered to him.
 """
+
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -58,6 +60,8 @@ class SatelliteAcqPlanLink:
         end_date_str = name_components[-1]
         start_date_str = name_components[-2]
         # # fromisoformat
+        end_date_str = re.split(r"-\d+$", end_date_str)[0]
+        start_date_str = re.split(r"-\d+$", start_date_str)[0]
         self.end_date = datetime.strptime(end_date_str, date_fmt)
         self.start_date = datetime.strptime(start_date_str, date_fmt)
 

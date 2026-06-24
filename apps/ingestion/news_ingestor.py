@@ -26,6 +26,7 @@ from apps.cache.cache import ConfigCache
 # Ingestion is done in 2 times: at first, the HTML of the events is saved;
 # then, the text of the news is parsed and the content is processed.
 
+
 class NewsIngestor:
 
     def __int__(self):
@@ -37,23 +38,46 @@ class NewsIngestor:
         news_list = []
         i = 0
         while i < pages:
-            url = ConfigCache.load_object('news_config')['url'].replace('cur=0', 'cur=' + str(i))
+            url = ConfigCache.load_object("news_config")["url"].replace(
+                "cur=0", "cur=" + str(i)
+            )
             html_page = scraper.ScarperHtml(html_utils.get_html_page(url))
-            elements_list = html_page.get_elements_by_class('div', 'journal-content-article')
+            elements_list = html_page.get_elements_by_class(
+                "div", "journal-content-article"
+            )
             for news in elements_list:
                 try:
                     html_page.ingestion_by_string(news.prettify())
-                    title_news = html_page.get_element_by_class('h3', 'asset-title content').text.strip()
-                    link_news = html_page.get_element_by_class('h3', 'asset-title content').contents[1].attrs[
-                        'href'].strip()
-                    text_news = html_page.get_element_by_class('div', 'asset-summary').text.strip()
-                    publication_date_news = html_page.get_element_by_class('h4',
-                                                                           'asset-title-date content').text.strip()
-                    publication_date = datetime.strptime(publication_date_news, '%d %B %Y')
+                    title_news = html_page.get_element_by_class(
+                        "h3", "asset-title content"
+                    ).text.strip()
+                    link_news = (
+                        html_page.get_element_by_class("h3", "asset-title content")
+                        .contents[1]
+                        .attrs["href"]
+                        .strip()
+                    )
+                    text_news = html_page.get_element_by_class(
+                        "div", "asset-summary"
+                    ).text.strip()
+                    publication_date_news = html_page.get_element_by_class(
+                        "h4", "asset-title-date content"
+                    ).text.strip()
+                    publication_date = datetime.strptime(
+                        publication_date_news, "%d %B %Y"
+                    )
 
-                    news_item = {'title': title_news, 'text': text_news, 'link': link_news,
-                                 'publicationDate': publication_date, 'occurrenceDate': publication_date, 'category': '',
-                                 'impactedSatellite': '', 'environment': '', 'datatakes_completeness': ''}
+                    news_item = {
+                        "title": title_news,
+                        "text": text_news,
+                        "link": link_news,
+                        "publicationDate": publication_date,
+                        "occurrenceDate": publication_date,
+                        "category": "",
+                        "impactedSatellite": "",
+                        "environment": "",
+                        "datatakes_completeness": "",
+                    }
                     news_list.append(news_item)
                 except:
                     pass
@@ -62,35 +86,75 @@ class NewsIngestor:
         # After having retrieved the news, parse the relevant text and set the proper categories
         # Keep only the news associated to maintenance activities, downtime, manoeuvres and calibrations
         final_news_list = []
-        news_keywords = ['MANOEUVRE', 'MANEUVER', 'UNAVAILABILITY', 'INFRASTRUCTURE', 'DOWNTIME',
-                         'MAINTENANCE', 'CALIBRATION', 'DEGRADED', 'DELAY']
+        news_keywords = [
+            "MANOEUVRE",
+            "MANEUVER",
+            "UNAVAILABILITY",
+            "INFRASTRUCTURE",
+            "DOWNTIME",
+            "MAINTENANCE",
+            "CALIBRATION",
+            "DEGRADED",
+            "DELAY",
+        ]
 
         for news in news_list:
-            if any(word in news['title'].upper() for word in news_keywords):
+            if any(word in news["title"].upper() for word in news_keywords):
                 categorized_news = news
 
-                title_tokenized = news['title'].replace('[', ' ').replace(']', ' ').replace('(', ' ').replace(')', ' ') \
-                    .replace('_', ' ').replace(':', ' ').replace('/', ' ').replace('*', ' ').split()
-                text_tokenized = news['text'].replace('[', ' ').replace(']', ' ').replace('(', ' ').replace(')', ' ') \
-                    .replace('_', ' ').replace(':', ' ').replace('/', ' ').replace('*', ' ').split()
+                title_tokenized = (
+                    news["title"]
+                    .replace("[", " ")
+                    .replace("]", " ")
+                    .replace("(", " ")
+                    .replace(")", " ")
+                    .replace("_", " ")
+                    .replace(":", " ")
+                    .replace("/", " ")
+                    .replace("*", " ")
+                    .split()
+                )
+                text_tokenized = (
+                    news["text"]
+                    .replace("[", " ")
+                    .replace("]", " ")
+                    .replace("(", " ")
+                    .replace(")", " ")
+                    .replace("_", " ")
+                    .replace(":", " ")
+                    .replace("/", " ")
+                    .replace("*", " ")
+                    .split()
+                )
 
                 for token in title_tokenized:
                     token = str(token)
                     if self.not_consistent(token):
                         continue
-                    impacted_satellite = impacted_satellite_model.get_impacted_satellite_by_synonymous(token)
+                    impacted_satellite = (
+                        impacted_satellite_model.get_impacted_satellite_by_synonymous(
+                            token
+                        )
+                    )
                     if impacted_satellite is not None:
-                        categorized_news['impactedSatellite'] = impacted_satellite.name
+                        categorized_news["impactedSatellite"] = impacted_satellite.name
                         break
 
-                if categorized_news['impactedSatellite'] is None or len(categorized_news['impactedSatellite']) == 0:
+                if (
+                    categorized_news["impactedSatellite"] is None
+                    or len(categorized_news["impactedSatellite"]) == 0
+                ):
                     for token in text_tokenized:
                         token = str(token)
                         if self.not_consistent(token):
                             continue
-                        impacted_satellite = impacted_satellite_model.get_impacted_satellite_by_synonymous(token)
+                        impacted_satellite = impacted_satellite_model.get_impacted_satellite_by_synonymous(
+                            token
+                        )
                         if impacted_satellite is not None:
-                            categorized_news['impactedSatellite'] = impacted_satellite.name
+                            categorized_news["impactedSatellite"] = (
+                                impacted_satellite.name
+                            )
                             break
 
                 for token in title_tokenized:
@@ -99,20 +163,23 @@ class NewsIngestor:
                         continue
                     category = categories_model.get_category_by_synonymous(token)
                     if category is not None:
-                        categorized_news['category'] = category.name
+                        categorized_news["category"] = category.name
                         break
 
-                if categorized_news['category'] is None or len(categorized_news['category']) == 0:
+                if (
+                    categorized_news["category"] is None
+                    or len(categorized_news["category"]) == 0
+                ):
                     for token in text_tokenized:
                         token = str(token)
                         if self.not_consistent(token):
                             continue
                         category = categories_model.get_category_by_synonymous(token)
                         if category is not None:
-                            categorized_news['category'] = category.name
+                            categorized_news["category"] = category.name
                             break
                         else:
-                            categorized_news['category'] = 'Production'
+                            categorized_news["category"] = "Production"
 
                 final_news_list.append(categorized_news)
             else:
@@ -125,11 +192,30 @@ class NewsIngestor:
 
         # Loop over all retrieved anomalies, and save or update them
         for news in list_news:
-            news_model.update_news(title=news['title'], text=news['text'], link=news['link'],
-                                   publication_date=news['publicationDate'], occurrence_date=news['occurrenceDate'],
-                                   category=news['category'], impacted_satellite=news['impactedSatellite'],
-                                   environment=news['environment'])
+            news_model.update_news(
+                title=news["title"],
+                text=news["text"],
+                link=news["link"],
+                publication_date=news["publicationDate"],
+                occurrence_date=news["occurrenceDate"],
+                category=news["category"],
+                impacted_satellite=news["impactedSatellite"],
+                environment=news["environment"],
+            )
 
     def not_consistent(self, token):
-        excluded_tokens = ['-', 'in', 'and', 'or', 'the', 'of', 'to', 'due', 'ok', 'i.e', 'i.e.', 'is']
+        excluded_tokens = [
+            "-",
+            "in",
+            "and",
+            "or",
+            "the",
+            "of",
+            "to",
+            "due",
+            "ok",
+            "i.e",
+            "i.e.",
+            "is",
+        ]
         return token.isdigit() or len(token) == 1 or token in excluded_tokens

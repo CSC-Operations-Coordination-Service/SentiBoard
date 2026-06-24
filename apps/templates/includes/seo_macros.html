@@ -18,7 +18,8 @@
     manifest_url='/manifest.json'
 ) %}
 
-    <title>{{ title }} | Copernicus Dashboard</title>
+    {# --- Use passed description if available, otherwise use SEO description --- #}
+    <title>{{ title }}</title>
     <meta name="description" content="{{ description }}">
 
     {# Keywords can be a string or a callable that returns a string #}

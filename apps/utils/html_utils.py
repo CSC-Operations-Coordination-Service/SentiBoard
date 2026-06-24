@@ -21,12 +21,14 @@ logger = logging.getLogger(__name__)
 def get_html_page(url, decode_utf=True):
     try:
         ctx = ssl.create_default_context()
-        
+
         with urllib.request.urlopen(url, context=ctx) as fp:
             mybytes = fp.read()
-            html_page = mybytes.decode('utf-8', 'ignore') if decode_utf else mybytes
+            html_page = mybytes.decode("utf-8", "ignore") if decode_utf else mybytes
         # fp.close()
         return html_page
     except Exception as ex:
-        logger.error("While invoking url: %s, received error: %s", url, ex, exc_info=True)
+        logger.error(
+            "While invoking url: %s, received error: %s", url, ex, exc_info=True
+        )
         return None
