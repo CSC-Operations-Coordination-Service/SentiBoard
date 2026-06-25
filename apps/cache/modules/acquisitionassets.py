@@ -21,6 +21,7 @@ from czml import czml
 from satellite_czml import satellite
 from satellite_czml import satellite_czml
 from satellite_tle import fetch_tle_from_celestrak
+from apps.utils.tle_fetcher import get_latest_tle
 
 from apps import flask_cache
 
@@ -47,7 +48,7 @@ norad_id_map = {
 }
 
 
-def get_latest_tle(sat_id):
+""" def get_latest_tle(sat_id):
     norad_id = norad_id_map[sat_id]
     raw = fetch_tle_from_celestrak(norad_id)
 
@@ -57,9 +58,9 @@ def get_latest_tle(sat_id):
         return _omm_csv_to_tle(raw[0], raw[1], sat_id)
 
     return raw
+"""
 
-
-def _omm_csv_to_tle(header_row, data_row, sat_id):
+""" def _omm_csv_to_tle(header_row, data_row, sat_id):
     headers = header_row.split(",")
     values = data_row.split(",")
     omm = dict(zip(headers, values))
@@ -108,10 +109,10 @@ def _omm_csv_to_tle(header_row, data_row, sat_id):
 
     # logger.info(f"[TLE] Converted OMM→TLE for {sat_id}:\n  {line1}\n  {line2}")
     return (name, line1, line2)
+"""
 
-
-def _epoch_to_tle(epoch_str):
-    """Convert ISO epoch to TLE format: YYDDD.DDDDDDDD"""
+""" def _epoch_to_tle(epoch_str):
+    #Convert ISO epoch to TLE format: YYDDD.DDDDDDDD
     from datetime import datetime
 
     dt = datetime.fromisoformat(epoch_str)
@@ -119,25 +120,23 @@ def _epoch_to_tle(epoch_str):
     start_of_year = datetime(dt.year, 1, 1)
     day_fraction = (dt - start_of_year).total_seconds() / 86400 + 1
     return f"{year:02d}{day_fraction:012.8f}"
+"""
 
 
-def _format_ndot(val):
-    """
-    Format mean_motion_dot as +.NNNNNNNN (TLE assumed-decimal, signed).
-    e.g. 0.00000277 → '+.00000277', -0.00000277 → '-.00000277'
-    """
+""" def _format_ndot(val):
+    #    Format mean_motion_dot as +.NNNNNNNN (TLE assumed-decimal, signed).
+    # e.g. 0.00000277 → '+.00000277', -0.00000277 → '-.00000277'
+
     f = float(val)
     sign = "+" if f >= 0 else "-"
     # Remove leading zero: 0.00000277 → .00000277
     abs_str = f"{abs(f):.8f}"[1:]  # strips the "0" before the "."
     return f"{sign}{abs_str}"
+"""
 
-
-def _format_tle_decimal(val):
-    """
-    Format BSTAR / MEAN_MOTION_DDOT in TLE assumed-decimal notation.
-    e.g. '.68422E-4' → '+68422-4', '0' → '+00000-0'
-    """
+""" def _format_tle_decimal(val):
+    # Format BSTAR / MEAN_MOTION_DDOT in TLE assumed-decimal notation.
+    # e.g. '.68422E-4' → '+68422-4', '0' → '+00000-0'
     s = str(val).strip().upper()
 
     if s in ("0", "0.0", ".0", ""):
@@ -162,10 +161,10 @@ def _format_tle_decimal(val):
     mantissa = int(round(abs(f) * 10 ** (5 - exp)))
     sign = "+" if f >= 0 else "-"
     return f"{sign}{mantissa:05d}{exp-1:+d}"
+"""
 
-
-def _tle_checksum(line):
-    """TLE line checksum: sum all digits + 1 for each '-', mod 10."""
+""" def _tle_checksum(line):
+    # TLE line checksum: sum all digits + 1 for each '-', mod 10.
     total = 0
     for c in line[:-1]:  # exclude last char (the checksum slot)
         if c.isdigit():
@@ -173,7 +172,7 @@ def _tle_checksum(line):
         elif c == "-":
             total += 1
     return total % 10
-
+"""
 
 def load_satellite_orbits():
     """
@@ -216,39 +215,29 @@ def load_satellite_orbits():
 
         # Calculate orbits for each satellite
         for sat_id in sat_ids:
-
-            # Retrieve latest TLE
-            tle = get_latest_tle(sat_id)
-            # logger.info(f"Latest TLE for {sat_id} : {tle}")
-
-            # Build the CZML orbit data from TLE, in the specified time period
-            sat = satellite(
-                tle,
-                description="Satellite: " + tle[0],
-                marker_scale=1,
-                image=marker_map[sat_id],
-                use_default_image=False,
-                start_time=pytz.utc.localize(datetime.now() - timedelta(days=20)),
-                end_time=pytz.utc.localize(datetime.now() + timedelta(days=20)),
-                show_label=True,
-                show_path=True,
-            )
-
-            # Customize orbit path features
-            sat.build_path(rebuild=True, show=True, color=color_map[sat_id], width=2)
-
-            # Customize the satellite label
-            sat.build_label(
-                rebuild=True,
-                show=True,
-                font="12pt Lato",
-                color=color_map[sat_id],
-                outlineColor=color_map[sat_id],
-                outlineWidth=3,
-            )
-
-            # Generate the CZML object
-            multiple_sats.append(sat)
+            try:
+                # get_latest_tle is now imported from apps.utils.tle_fetcher
+                tle = get_latest_tle(norad_id_map[sat_id], sat_id)
+                sat = satellite(
+                    tle,
+                    description="Satellite: " + tle[0],
+                    marker_scale=1,
+                    image=marker_map[sat_id],
+                    use_default_image=False,
+                    start_time=pytz.utc.localize(datetime.now() - timedelta(days=20)),
+                    end_time=pytz.utc.localize(datetime.now() + timedelta(days=20)),
+                    show_label=True,
+                    show_path=True,
+                )
+                sat.build_path(rebuild=True, show=True, color=color_map[sat_id], width=2)
+                sat.build_label(rebuild=True, show=True, font="12pt Lato",
+                                color=color_map[sat_id],
+                                outlineColor=color_map[sat_id],
+                                outlineWidth=3)
+                multiple_sats.append(sat)
+            except Exception as ex:
+                logger.error("Failed to load orbit for satellite %s: %s", sat_id, ex, exc_info=True)
+                continue  # skip this satellite, load the rest
 
         # Convert the satellites in CZML objects
         czml_obj = satellite_czml(satellite_list=multiple_sats)

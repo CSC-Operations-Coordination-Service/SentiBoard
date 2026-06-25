@@ -374,25 +374,52 @@ class NewsMessages {
     }
 
     formatDateUTC(utcString) {
+        console.log("im a here " + utcString);
+
         if (!utcString) return 'N/A';
+
         try {
             let isoString = utcString;
+
             const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2}(:\d{2})?)$/;
             const match = utcString.match(ddmmyyyy);
+
             if (match) {
                 isoString = `${match[3]}-${match[2]}-${match[1]}T${match[4]}Z`;
             }
-            const dateUtc = new Date(isoString);
-            const dateRome = new Intl.DateTimeFormat('en-GB', {
-                timeZone: 'UTC',
-                year: 'numeric', month: '2-digit', day: '2-digit',
-                hour: '2-digit', minute: '2-digit'
-            }).format(dateUtc);
-            return dateRome.replace(',', '');
+
+            const date = new Date(isoString);
+
+            const months = [
+                "Jan", "Feb", "Mar", "Apr",
+                "May", "Jun", "Jul", "Aug",
+                "Sep", "Oct", "Nov", "Dec"
+            ];
+
+            return `${String(date.getUTCDate()).padStart(2, '0')}-${months[date.getUTCMonth()]}-${date.getUTCFullYear()} at ${String(date.getUTCHours()).padStart(2, '0')}:${String(date.getUTCMinutes()).padStart(2, '0')}`;
+
         } catch (e) {
             console.error('[DateFormat] Error:', e, utcString);
             return utcString;
         }
+    }
+}
+
+function formatDateUTC(utcString) {
+    if (!utcString) return 'N/A';
+    try {
+        let isoString = utcString;
+        const ddmmyyyy = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}:\d{2}(:\d{2})?)$/;
+        const match = utcString.match(ddmmyyyy);
+        if (match) {
+            isoString = `${match[3]}-${match[2]}-${match[1]}T${match[4]}`;
+        }
+        const date = new Date(isoString);
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return `${String(date.getDate()).padStart(2, '0')}-${months[date.getMonth()]}-${date.getFullYear()} at ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+    } catch (e) {
+        console.error('[DateFormat] Error:', e, utcString);
+        return utcString;
     }
 }
 
@@ -402,6 +429,11 @@ class NewsMessages {
    ═══════════════════════════════════════════════════════════════════════ */
 
 $(document).ready(() => {
+
+    document.querySelectorAll('.pub-date[data-utc]').forEach(el => {
+        el.textContent = formatDateUTC(el.dataset.utc);
+    });
+
     NewsEditor.init();
 
     new NewsMessages('news-card-container', 'pagination-controls');

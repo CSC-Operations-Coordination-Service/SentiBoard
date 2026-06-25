@@ -51,51 +51,46 @@ def get_acquisition_plan_key(mission):
 
 
 def get_acquisition_plan(mission, satellite, day_str):
-    logger.info(
-        "[BEG] - Build and download Acq Plan for satellite %s, on day %s",
-        satellite,
-        day_str,
-    )
-    # mission_fragments = self._acqplans.get(mission)
-    # satellite_fragments = mission_fragments.get(satellite)
-    # TODO: Check key exists
-    satellite_fragments = _get_fragments(mission, satellite)
-    kml_title = f"{mission}_{satellite}_{day_str}"
-    logger.debug("Building Result KML file string")
-    kml_builder = AcqPlanKmlBuilder(kml_title, mission)
-    try:
-        kml_builder.add_folder(satellite_fragments.get_fragment(day_str))
-    except Exception as ex:
-        return Response(str(ex))
-    kml_string = kml_builder.to_string()
-    # logger.debug("Building response from KML string")
-    # acq_plan_data = {
-    #     'mission': mission,
-    #     'satellite': satellite,
-    #     'plan_day': day_str,
-    #     'kml_acqplan': kml_string.decode('utf-8-sig')
-    # }
-    # return Response(json.dumps(acq_plan_data),
-    #               mimetype="application/json", status=200),
-    logger.info(
-        "[END] - Build and download Acq Plan for satellite %s, on day %s",
-        satellite,
-        day_str,
-    )
+    logger.info("[BEG] - Build and download Acq Plan for satellite %s, on day %s", satellite, day_str)
+
+    acq_plan_key = get_acquisition_plan_key(mission)
+    mission_cache = flask_cache.get(acq_plan_key)
+    if mission_cache is None:
+        logger.warning("No cached acquisition plans for mission %s", mission)
+        return Response(f"No acquisition plan data available for mission {mission}", status=503)
+
+    sat_cache = mission_cache.get(satellite)
+    if sat_cache is None:
+        logger.warning("No cached acquisition plans for satellite %s", satellite)
+        return Response(f"No acquisition plan data available for satellite {satellite}", status=404)
+
+    kml_bytes = sat_cache.get(day_str)
+    if kml_bytes is None:
+        logger.warning("No cached acquisition plan for %s day %s", satellite, day_str)
+        return Response(f"No data for day {day_str}", status=404)
+
+    pm_count = kml_bytes.count(b'<Placemark')
+    logger.warning("Fragment for %s day %s has %d placemarks", satellite, day_str, pm_count)
+
+    logger.info("[END] - Build and download Acq Plan for satellite %s, on day %s", satellite, day_str)
     return send_file(
-        io.BytesIO(kml_string),
-        # download_name=f'{kml_title}.kml',
-        mimetype="application/octet-stream",
+        io.BytesIO(kml_bytes),
+        mimetype='application/octet-stream'
     )
 
 
 def _load_mission_acquisition_coverage(plans_coverage, mission, sat_list):
     mission_coverage = plans_coverage.setdefault(mission, {})
+    acq_plan_key = get_acquisition_plan_key(mission)
+    mission_cache = flask_cache.get(acq_plan_key)
+    if mission_cache is None:
+        logger.warning("No cached fragments for mission %s", mission)
+        return
     for satellite in sat_list:
         logger.debug("Getting Day Coverage for satellite %s", satellite)
-        satellite_fragments = _get_fragments(mission, satellite)
-        if satellite_fragments is not None:
-            mission_coverage[satellite] = satellite_fragments.day_list
+        sat_cache = mission_cache.get(satellite)
+        if sat_cache:
+            mission_coverage[satellite] = sorted(sat_cache.keys())
 
 
 def get_acquisition_plans_coverage():
@@ -150,11 +145,11 @@ def get_datatake_acquisitions_coverage(datatake_plans_coverage):
     logger.info("[END] Retrieve Acquisition Datatakes Coverage ")
 
 
-def save_acquisition_plans_to_cache(mission, kml_fragments: AcqPlanFragments):
-    acq_plan_key = get_acquisition_plan_key(mission)
+# def save_acquisition_plans_to_cache(mission, kml_fragments: AcqPlanFragments):
+  #  acq_plan_key = get_acquisition_plan_key(mission)
     # Acquisition Plans are saved on cache, indexing by Mission.
     # Retrieving Cache, extract satellite data (in _get_fragments)
-    flask_cache.set(acq_plan_key, kml_fragments, acq_plan_cache_duration)
+   # flask_cache.set(acq_plan_key, kml_fragments, acq_plan_cache_duration)
 
 
 def load_all_acquisition_plans():
@@ -182,88 +177,70 @@ def load_all_acquisition_plans():
     mission_fragments_retriever_fun = ingestor.get_fragments
     _set_update_acquisition_completeness(mission_fragments_retriever_fun)
 
-    # # Load fragments for Acquisition for S3/S5 (computed from Orbit + Datatakes)
-    # orbit_ingestor = OrbitDatatakeAcquisitionIngestor(acq_past_num_days)
-    # orbit_ingestor.retrieve_aq_plans(earliest_day_str)
-    # orbit_fragments_retriever_fun = orbit_ingestor.get_fragments
-    # # TODO: CHECK: we need to update completeness on all fragments together
-    # _set_update_acquisition_completeness(orbit_fragments_retriever_fun)
+    # Serialize fragments to KML strings and write to cache
+    for mission in acq_plans_missions:
+        sat_fragments_map = ingestor.get_fragments(mission)
+        if sat_fragments_map is None:
+            logger.warning("No fragments for mission %s, skipping cache write", mission)
+            continue
+        serialized = {}
+        for sat, fragments in sat_fragments_map.items():
+            serialized[sat] = {}
+            for day in fragments.day_list:
+                try:
+                    fragment = fragments.get_fragment(day)
+                    builder = AcqPlanKmlBuilder(f"{mission}_{sat}_{day}", mission)
+                    builder.add_folder_copy(fragment)   # deep copy — don't gut the fragment
+                    serialized[sat][day] = builder.to_string()
+                except Exception as ex:
+                    logger.error("Failed to serialize fragment %s/%s/%s: %s",
+                                mission, sat, day, ex, exc_info=True)
+        acq_plan_key = get_acquisition_plan_key(mission)
+        flask_cache.set(acq_plan_key, serialized, acq_plan_cache_duration)
+        total = sum(len(v) for v in serialized.values())
+        logger.info("Cached %d fragments for mission %s", total, mission)
 
-    # update_acquisition_completeness()
-    logger.info(
-        "[END] Load Acquisition Plan KML data for up to %d days in the past",
-        acq_past_num_days,
-    )
+    logger.info("[END] Load Acquisition Plan KML data for up to %d days in the past", acq_past_num_days)
 
 
 def update_acquisition_completeness():
-    logger.info("[BEG] Update Acquisition Plan KML data with datatakes completeness")
-    mission_fragments_retriever_fun = _get_mission_fragments
-    _set_update_acquisition_completeness(mission_fragments_retriever_fun)
-    logger.info("[END] Update Acquisition Plan KML data with datatakes completeness")
+    logger.info("Acquisition Plan KML data with datatakes completeness: is handled by load_all_acquisition_plans, skipping")
+#    mission_fragments_retriever_fun = _get_mission_fragments
+#    _set_update_acquisition_completeness(mission_fragments_retriever_fun)
+#    logger.info("[END] Update Acquisition Plan KML data with datatakes completeness")
 
 
 def _set_update_acquisition_completeness(mission_fragments_retriever_fun):
-    """
-
-    Args:
-        mission_fragments_retriever_fun ():
-
-    Returns:
-
-    """
-
     logger.debug("[BEG] Setting on Acquisition Plans Completeness Status")
-    # Save  KML Fragments table in Cache
-    # on a Per Mission basis
-    # Completeness updates are done on Cache contents
-    # and are better done on a Per Mission basis
-    # This leads to organize cache with a Mission only key
-    # and access Sat portions accessing the stored dictionary
     daily_datatakes = datatakes_cache.get_daily_datatakes()
 
     for mission in acq_plans_missions:
-        logger.debug(
-            "[BEG] Setting on Acquisition Plans Completeness Status for mission %s",
-            mission,
-        )
+        logger.debug("[BEG] Setting completeness for mission %s", mission)
         mission_fragments = mission_fragments_retriever_fun(mission)
         if mission_fragments is None:
-            logger.warning(
-                "Tried to load on Cache not acquired Acquisition Plans for mission %s",
-                mission,
-            )
-        # LOad Completeness on Cache Fragments
-        completeness_hnd = FragmentCompletenessHandler(
-            mission, mission_fragments, daily_datatakes
-        )
+            logger.warning("Tried to load on Cache not acquired Acquisition Plans for mission %s", mission)
+            return
+        completeness_hnd = FragmentCompletenessHandler(mission,
+                                                       mission_fragments,
+                                                       daily_datatakes)
         completeness_hnd.set_completeness()
-        # Save back thMission Fragments
-        save_acquisition_plans_to_cache(mission, mission_fragments)
-        logger.debug(
-            "[END] Setting on Acquisition Plans Completeness Status for mission %s",
-            mission,
-        )
+        logger.debug("[END] Setting completeness for mission %s", mission)
     logger.debug("[END] Setting on Acquisition Plans Completeness Status")
 
 
-def _get_fragments(mission, satellite):
-    mission_fragments = _get_mission_fragments(mission)
-    satellite_fragments = (
-        mission_fragments.get(satellite) if mission_fragments else None
-    )
-    return satellite_fragments
+#def _get_fragments(mission, satellite):
+#    mission_fragments = _get_mission_fragments(mission)
+#    satellite_fragments = mission_fragments.get(satellite) if mission_fragments else None
+#    return satellite_fragments
 
 
-def _get_mission_fragments(mission):
-    acq_plan_key = get_acquisition_plan_key(mission)
-    logger.debug("Retrieving KML fragments with key %s", acq_plan_key)
-    if not flask_cache.has(acq_plan_key):
-        logger.debug("Fragments not found, start acquisition of plans")
-        load_all_acquisition_plans()
-        logger.debug(
-            "After All Plans acquisition, Retrieving KML fragment with key %s",
-            acq_plan_key,
-        )
-    mission_fragments = flask_cache.get(acq_plan_key)
-    return mission_fragments
+#def _get_mission_fragments(mission):
+#    acq_plan_key = get_acquisition_plan_key(mission)
+#    logger.debug("Retrieving KML fragments with key %s", acq_plan_key)
+#    if not flask_cache.has(acq_plan_key):
+#        logger.warning("Fragments not in cache for mission %s - cache may still be loading", mission)
+        # load_all_acquisition_plans() <--to not uncomment
+        # logger.debug("After All Plans acquisition, Retrieving KML fragment with key %s", acq_plan_key)
+#        return None
+#    mission_fragments = flask_cache.get(acq_plan_key)
+#    return mission_fragments

@@ -40,7 +40,6 @@ satellites_mission_map = {
     "S2D": "S2",
     "S3A": "S3",
     "S3B": "S3",
-    "S3C": "S3",
     "S3D": "S3",
     "S5P": "S5",
 }

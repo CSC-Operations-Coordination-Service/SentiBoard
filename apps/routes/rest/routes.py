@@ -18,7 +18,7 @@ from datetime import datetime, timezone, timedelta
 from os import abort
 from urllib.parse import urlparse
 from functools import wraps
-
+from apps.ingestion.anomalies_ingestor import AnomaliesIngestor
 from apps.utils.events_utils import make_json_safe
 from flask import jsonify, request, Response, render_template
 from flask_login import login_required
@@ -265,6 +265,111 @@ def get_news_previous_quarter():
 
     return data
 
+@blueprint.route("/admin/backfill_anomalies")
+@login_required
+def backfill_anomalies():
+    if current_user.role not in ("admin",):
+        abort(403)
+
+    start_str = request.args.get("start")  # e.g. 2025-04-23
+    end_str = request.args.get("end")      # e.g. 2026-03-15
+
+    if not start_str or not end_str:
+        return jsonify({"error": "Missing 'start' or 'end' query params (format: YYYY-MM-DD)"}), 400
+
+    try:
+        start_date = datetime.strptime(start_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError:
+        return jsonify({"error": "Invalid date format, use YYYY-MM-DD"}), 400
+
+    if start_date >= end_date:
+        return jsonify({"error": "'start' must be before 'end'"}), 400
+
+    try:
+        logger.info(f"[BACKFILL] Starting anomaly backfill from {start_date} to {end_date}")
+        ingestor = AnomaliesIngestor()
+        ingestor.ingest_anomalies_range(start=start_date, end=end_date)
+        logger.info(f"[BACKFILL] Completed anomaly backfill from {start_date} to {end_date}")
+
+        return jsonify({
+            "status": "ok",
+            "message": f"Backfill completed for {start_str} → {end_str}",
+        })
+
+    except Exception as e:
+        logger.error(f"[BACKFILL] Error during backfill: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+    
+
+@blueprint.route("/admin/delete_anomalies")
+@login_required
+def delete_anomalies():
+    if current_user.role not in ("admin",):
+        abort(403)
+
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+
+    if not start_str or not end_str:
+        return jsonify({"error": "Missing 'start' or 'end' query params (format: YYYY-MM-DD)"}), 400
+
+    try:
+        start_date = datetime.strptime(start_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError:
+        return jsonify({"error": "Invalid date format, use YYYY-MM-DD"}), 400
+
+    if start_date >= end_date:
+        return jsonify({"error": "'start' must be before 'end'"}), 400
+
+    try:
+        from apps.models.anomalies import Anomalies
+        from apps import db
+
+        deleted = (
+            db.session.query(Anomalies)
+            .filter(Anomalies.start >= start_date)
+            .filter(Anomalies.start <= end_date)
+            .delete(synchronize_session=False)
+        )
+        db.session.commit()
+
+        logger.info(f"[DELETE] Removed {deleted} anomalies from {start_date} to {end_date}")
+
+        return jsonify({
+            "status": "ok",
+            "deleted": deleted,
+            "message": f"Deleted {deleted} anomalies between {start_str} and {end_str}",
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"[DELETE] Error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+    
+    
+@blueprint.route("/admin/invalidate_events_cache")
+@login_required
+def invalidate_events_cache():
+    if current_user.role not in ("admin",):
+        abort(403)
+    try:
+        from apps import flask_cache as fc
+        keys_cleared = []
+
+        for period in [("full", "history"), ("last", "quarter"), ("previous", "quarter"),
+                       ("last", "24h"), ("last", "7d"), ("last", "30d")]:
+            key = events_cache.anomalies_cache_key.format(*period)
+            fc.delete(key)
+            keys_cleared.append(key)
+
+        logger.info(f"[CACHE INVALIDATE] Cleared: {keys_cleared}")
+        return jsonify({"status": "ok", "cleared": keys_cleared})
+
+    except Exception as e:
+        logger.error(f"[CACHE INVALIDATE] Error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])
 @internal_only

@@ -25,17 +25,22 @@ from apps.models import categories as categories_model
 from apps.models import impacted_item as impacted_item_model
 from apps.models import impacted_satellite as impacted_satellite_model
 from apps.utils import date_utils
+from apps.utils.acquisitions_utils import SATELLITE_DATA_CUTOFFS
 
 logger = logging.getLogger(__name__)
 
 
 class AnomaliesIngestor:
-    def __int__(self):
+    def __init__(self):
         return
 
-    def get_anomalies_elastic(self, start=None):
+    def get_anomalies_elastic(self, start=None, end=None):
         anomalies = []
-        records = anomalies_elastic_client.fetch_anomalies_last_quarter()
+        if start and end:
+            records = anomalies_elastic_client.fetch_anomalies_by_range(start, end)
+        else:
+            records = anomalies_elastic_client.fetch_anomalies_last_quarter()
+        
         logger.info("fetched %d anomalies from elastic", len(records))
         for extract in records:
             src = extract.get("_source", {})
@@ -145,6 +150,12 @@ class AnomaliesIngestor:
                 anomaly["category"] = "Acquisition"
             elif origin == "CAM":
                 anomaly["category"] = "Manoeuvre"
+            elif origin == "MP":                  
+                anomaly["category"] = "Acquisition"
+                logger.info("[ORIGIN_MAP] MP anomaly found: key=%s title=%s", src.get("key"), src.get("title"))
+            elif origin in ("IPF", "ADGS"):      
+                anomaly["category"] = "Production"
+                logger.info("[ORIGIN_MAP] MP anomaly found: key=%s title=%s", src.get("key"), src.get("title"))
             # nothing mapping directly to Calibration
             # in case of Other, keep as '', let the rest of the code handle it
 
@@ -233,3 +244,58 @@ class AnomaliesIngestor:
             "is",
         ]
         return token.isdigit() or len(token) == 1 or token in excluded_tokens
+    
+    def ingest_anomalies_range(self, start, end):
+        list_anomalies = self.get_anomalies_elastic(start=start, end=end)
+        ingested = 0
+        skipped = 0
+    
+        S1D_CUTOFF = datetime(2026, 4, 17)  # naive, local comparison
+
+        for anomaly in list_anomalies:
+            satellite = anomaly.get("impactedSatellite", "") or ""
+            environment = anomaly.get("environment", "") or ""
+
+            satellite_upper = satellite.upper()
+            environment_upper = environment.upper()
+            is_s1d = "1D" in satellite_upper or "S1D" in environment_upper
+
+            if is_s1d:
+                pub_date = anomaly.get("publicationDate")
+                if pub_date:
+                    try:
+                        if isinstance(pub_date, str):
+                            pub_dt = datetime.fromisoformat(pub_date.replace("Z", ""))
+                        else:
+                            # already a datetime — strip timezone unconditionally
+                            pub_dt = pub_date.replace(tzinfo=None)
+
+                        if pub_dt < S1D_CUTOFF:
+                            logger.debug(
+                                "[BACKFILL SKIP] S1D anomaly %s dated %s before cutoff, skipping",
+                                anomaly.get("key"), pub_dt
+                            )
+                            skipped += 1
+                            continue
+                    except Exception as ex:
+                        logger.warning("[BACKFILL] Date parse failed for %s: %s — skipping", anomaly.get("key"), ex)
+                        skipped += 1
+                        continue
+
+            anomalies_model.update_anomaly(
+                title=anomaly["title"],
+                key=anomaly["key"],
+                text=anomaly["text"],
+                publication_date=anomaly["publicationDate"],
+                category=anomaly["category"],
+                impacted_satellite=anomaly["impactedSatellite"],
+                impacted_item=anomaly["impactedItem"],
+                start=anomaly["start"],
+                end=anomaly["end"],
+                environment=anomaly.get("environment"),
+            )
+            ingested += 1
+
+        logger.info("[BACKFILL] Done — ingested: %d, skipped: %d", ingested, skipped)
+        return ingested, skipped
+

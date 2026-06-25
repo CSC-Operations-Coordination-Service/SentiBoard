@@ -14,6 +14,7 @@ delivered to him.
 
 from pykml.factory import KML_ElementMaker as KML
 from lxml import etree
+import copy
 
 from apps.ingestion.acquisition_plans.acq_plan_fragments import DatatakeCompleteness
 
@@ -40,8 +41,11 @@ class AcqPlanKmlBuilder:
     """
 
     def __init__(self, title, mission):
-        self._kmldoc = KML.kml(KML.Document(KML.name(title)))
-        polygon_fill = 0 if mission in ["S3", "S5"] else 1
+        self._kmldoc = KML.kml(KML.Document(
+            KML.name(title)
+        )
+        )
+        polygon_fill = 1
         # Add Styles
         for status, color in status_colors.items():
             # TODO: keep KML Styles in Class variables
@@ -63,6 +67,10 @@ class AcqPlanKmlBuilder:
         # return tuples: interval start/stop, folder string
         # NOTE: we should be able to parse folder string and retrieve its Placemarks
         self._kmldoc.Document.append(kml_fragment.folder_kml)
+        
+    def add_folder_copy(self, kml_fragment):
+        """Add a deep copy of the fragment folder, leaving the original intact."""
+        self._kmldoc.Document.append(copy.deepcopy(kml_fragment.folder_kml))
 
     def to_string(self):
         return etree.tostring(self._kmldoc)

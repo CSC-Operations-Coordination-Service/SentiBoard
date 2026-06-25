@@ -44,7 +44,10 @@ def load_anomalies_cache_last_quarter():
     The start time is set at 00:00 of the first day of the temporal interval; the stop time is set at 23:59
     """
 
-    # Log an acknowledgement message
+    cache_key = anomalies_cache_key.format("last", "quarter")
+    if flask_cache.get(cache_key):
+        return  
+
     logger.info("[BEG] Loading Anomalies Cache in the last quarter...")
     cache_start_time = perf_counter()
 
@@ -88,7 +91,10 @@ def load_anomalies_cache_previous_quarter():
     interval; the stop time is set at 23:59:59 of today
     """
 
-    # Log an acknowledgement message
+    cache_key = anomalies_cache_key.format("previous", "quarter")
+    if flask_cache.get(cache_key):
+        return 
+    
     logger.info("[BEG] Loading Anomalies Cache since the previous quarter...")
     cache_start_time = perf_counter()
 
@@ -131,10 +137,16 @@ def load_anomalies_cache_previous_quarter():
 
 
 def load_anomalies_cache_full_history():
+    cache_key = anomalies_cache_key.format("full", "history")
+    if flask_cache.get(cache_key):
+        logger.debug("[SKIP] full history cache already warm")
+        return
+
     logger.info("[BEG] Loading Anomalies Cache full history...")
     cache_start_time = perf_counter()
 
-    start_date = datetime(2025, 3, 1, 0, 0, 0)
+
+    start_date = datetime(2022, 1, 1, 0, 0, 0)
     end_date = datetime.today().replace(hour=23, minute=59, second=59)
 
     anomalies_full = anomalies_model.get_anomalies(start_date, end_date)
@@ -154,7 +166,12 @@ def _set_anomalies_cache(period_id, period_data):
     # Log an acknowledgement message
     logger.debug("Caching anomalies in period: %s", period_id)
 
-    seconds_validity = events_cache_duration
+    if period_id == "24h":
+        seconds_validity = 3600          # 1 hour
+    elif period_id in ("7d", "30d"):
+        seconds_validity = 43200         # 12 hours
+    else:
+        seconds_validity = events_cache_duration  # 7 days for quarter/history
     if period_id == "previous-quarter":
         api_prefix = anomalies_cache_key.format("previous", "quarter")
     elif period_id == "full-history":

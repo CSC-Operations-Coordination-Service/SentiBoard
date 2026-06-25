@@ -170,8 +170,8 @@ class FragmentCompletenessHandler:
                         day_fragment.day,
                     )
                     # Remove placemark from Fragment
-                    pm_to_remove.append(pm)
-                    continue
+                    # pm_to_remove.append(pm)
+                    completeness = PLANNED_COMPLETENESS
             # Otherwise, if placemark is in teh paste, the status is N/A and no percentage is given
             # TODO: Move to acq_dt.set_completeness(completeness) or to self.add_datatake_completeness
             FragmentCompletenessHandler.add_datatake_completeness(acq_dt, completeness)
@@ -202,9 +202,12 @@ class FragmentCompletenessHandler:
     # TODO: Extend to extract from day list
     # only days not older than N days ago, up to today
     def set_completeness(self):
-        logger.debug(
-            "Loading Completeness values on Fragments for mission %s", self.mission
-        )
+        if self.mission_fragments is None:
+            logger.warning("set_completeness: mission_fragments is None - skipping")
+            return
+        
+        logger.debug("Loading Completeness values on Fragments for mission %s",
+                     self.mission)
         # For each Placemark in mission fragments, look for
         # completeness retrieved in Datatake completeness cache
         # Apply to fragments a function with arguments acq_day, day_fragment
@@ -219,48 +222,33 @@ class FragmentCompletenessHandler:
 
     def _set_completeness_day_list(self, day_list, sat_fragments, satellite):
         for acq_day in day_list:
-            logger.debug(
-                "Setting completeness for Fragment of satellite %s, day %s",
-                satellite,
-                acq_day,
-            )
-            # each sat_fragment is a folder related to a single day
             day_fragment = sat_fragments.get_fragment(acq_day)
-            logger.debug(
-                "Day fragment for day %s - name: %s",
-                acq_day,
-                day_fragment.folder_kml.name,
-            )
+            before = len(day_fragment.placemark_list)
+            in_cache = self.daily_datatakes.get(acq_day) is not None
+            sat_in_cache = (in_cache and
+                        self.daily_datatakes.get(acq_day).get(satellite) is not None)
 
-            # Extract datatakes with completeness data
-            # from  cache
-            day_datatakes = self.daily_datatakes.get(acq_day)
-            if day_datatakes is not None:
-                day_sat_datatakes = day_datatakes.get(satellite)
-                # logger.debug("From Cache, datatakes for day %s: and sat %s: %s",
-                #             acq_day, satellite, day_sat_datatakes)
-                self._load_datatake_completeness_on_placemarks(
-                    day_sat_datatakes,
-                    day_fragment,
-                    satellite,
-                    self.datatake_id_key,
-                    self.datatake_id_decoder,
-                )
-            else:
-                # if folder in the future,  set  PLANNED COMPLETENESS on all Placemarks
-                logger.debug(
-                    "No datatakes found for day %s and sat %s", acq_day, satellite
-                )
-                if day_fragment.is_future:
-                    self._load_completeness_on_placemarks(
-                        PLANNED_COMPLETENESS, satellite, day_fragment.placemark_list
-                    )
+            try:
+                day_datatakes = self.daily_datatakes.get(acq_day)
+                if day_datatakes is not None:
+                    day_sat_datatakes = day_datatakes.get(satellite)
+                    if day_sat_datatakes is None:
+                        self._load_completeness_on_placemarks(
+                            PLANNED_COMPLETENESS, satellite, day_fragment.placemark_list)
+                    else:
+                        self._load_datatake_completeness_on_placemarks(
+                            day_sat_datatakes, day_fragment,
+                            satellite, self.datatake_id_key, self.datatake_id_decoder)
                 else:
-                    # TODO : Remove the whole folder if in the past,
-                    logger.debug(
-                        "Removing from Fragment %s placemarks not found in Datatakes cache",
-                        day_fragment.day,
-                    )
+                    if day_fragment.is_future:
+                        self._load_completeness_on_placemarks(
+                            PLANNED_COMPLETENESS, satellite, day_fragment.placemark_list)
+            except Exception as ex:
+                logger.error("COMPLETENESS FAILED sat=%s day=%s: %s",
+                            satellite, acq_day, ex, exc_info=1)
+            after = len(day_fragment.placemark_list)
+            logger.warning("COMPLETENESS sat=%s day=%s in_cache=%s sat_in_cache=%s  %d -> %d",
+                       satellite, acq_day, in_cache, sat_in_cache, before, after)
 
     def _load_completeness_on_placemarks(self, completeness, id_prefix, placemarks):
         for pm in placemarks:

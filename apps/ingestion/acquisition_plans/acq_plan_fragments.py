@@ -16,7 +16,7 @@ import datetime
 import logging
 from dataclasses import dataclass
 from sys import stdout
-
+from apps.utils.date_utils import get_past_day_str
 from lxml import etree
 from pykml.factory import KML_ElementMaker as KML
 
@@ -405,51 +405,50 @@ class AcqPlanDayFragment:
         self._compute_coverage_interval()
 
     def _save_not_existent_placemarks(self, other_fragm):
-        # append to self placemarks placemarks from other_fragm
         other_place_folder = other_fragm.placemarks_folder
-        logger.debug(
-            "Adding to folder day %s not already existing placemarks from other folder",
-            self.day,
-        )
-
-        # Integrate presence of Placemark attribute, with length of corresponding array
-        if hasattr(other_place_folder, "Placemark"):
-            for pm in other_place_folder.Placemark:
-                if pm.name.text not in self.placemark_names:
-                    logger.debug("Adding not existent Placemark %s", pm.name.text)
+        logger.debug("Adding to folder day %s not already existing placemarks from other folder",
+                    self.day)
+        if hasattr(other_place_folder, 'Placemark'):
+            # Snapshot the list first — iterating a live lxml element list while
+            # appending to another tree causes elements to be skipped (lxml moves
+            # elements on append, shrinking the source list mid-iteration)
+            placemarks_to_add = list(other_place_folder.Placemark)
+            existing_names = set(self.placemark_names)
+            for pm in placemarks_to_add:
+                if pm.name.text not in existing_names:
                     self._add_placemark(pm)
-                # else:
-                #    logger.debug("Placemark already existing: %s in folder %s",
-                #                 pm.name.text, self.day)
         else:
-            logger.warning(
-                "While merging fragments for day %s, older folder had no Placemark",
-                self.day,
-            )
+            logger.warning("While merging fragments for day %s, older folder had no Placemark",
+                        self.day)
 
     def sort_placemarks(self):
         # TODO Unit test to be defined
         pm_folder = self.placemarks_folder
         # TODO: USE DIRECTLY self.placemark_list
-        if hasattr(pm_folder, "Placemark"):
-
+        if hasattr(pm_folder, 'Placemark'):
             placemarks = list(pm_folder.Placemark)
-
-            placemarks.sort(key=lambda plm: plm.TimeSpan.end)
+            before_count = len(placemarks)
+            try:
+                placemarks.sort(key=lambda plm: plm.TimeSpan.end)
+            except Exception as ex:
+                logger.error("sort_placemarks failed for day %s: %s", self.day, ex, exc_info=1)
             self.remove_placemarks(placemarks)
             for pm in placemarks:
                 pm_folder.append(pm)
+            after_count = len(self.placemark_list)
+            if before_count != after_count:
+                logger.error("sort_placemarks LOST PLACEMARKS day %s: %d -> %d", self.day, before_count, after_count)
         else:
             logger.warning(
                 "Tried to sort not existent Placemarks for Fragment %s", self.day
             )
 
-
+"""
 def get_past_day_str(max_age, date_format):
     today_day = datetime.datetime.today()
     _earliest_day = today_day - datetime.timedelta(days=max_age)
     return _earliest_day.strftime(date_format)
-
+"""
 
 class AcqPlanFragments:
     """

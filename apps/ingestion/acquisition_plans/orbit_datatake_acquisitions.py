@@ -392,15 +392,16 @@ class GeoPointOperations:
         lon1_rad = self._point.longitude.radians
         lon2_rad = point2.longitude.radians
 
-        # Calculate the differences between the latitudes and longitudes
-        delta_lat = lat2_rad - lat1_rad
+        # Guard: if points are identical, bearing is undefined
+        if abs(lat1_rad - lat2_rad) < 1e-10 and abs(lon1_rad - lon2_rad) < 1e-10:
+            logger.warning("get_point_north_bearing: identical points, returning zero bearing")
+            return Angle(radians=0.0)
+
         delta_lon = lon2_rad - lon1_rad
         a = math.sin(delta_lon) * math.cos(lat2_rad)
-        b = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(
-            lat2_rad
-        ) * math.cos(delta_lon)
+        b = (math.cos(lat1_rad) * math.sin(lat2_rad) -
+            math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lon))
         theta = math.atan2(a, b)
-        #                           math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat1_rad) * math.cos(delta_lon))
         return Angle(radians=theta)
 
     # TODO: to be replaced by a call to a Library function

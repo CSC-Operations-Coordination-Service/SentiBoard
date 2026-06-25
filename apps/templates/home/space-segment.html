@@ -438,6 +438,148 @@
 					</div>
 				</div>
 			</div>
+			
+			<!-- Sentinel-1D -->
+			<div class="col-md-12">
+				<div class="card">
+					<div class="card-header">
+						<div class="row">
+							<div class="card-title ml-3">Copernicus Sentinel-1D planned vs archived L0 data</div>
+								<button type="button"
+											class="btn btn-icon btn-light-primary btn-round btn-sm ml-2"
+											data-toggle="tooltip"
+											data-placement="bottom"
+											title="Display the global sensing statistics"
+											onclick="spaceSegment.showSensingStatistics('S1D')">
+										<i class="la flaticon-search-1"></i>
+								</button>
+						</div>
+					</div>
+					<div class="card-body">
+						<div class="row">
+							<div class="chart-container col-md-3">
+								<canvas id="s1d-sensing-statistics-pie-chart"></canvas>
+							</div>
+							<div class="row col-md-8" id="s1d-boxes-container" style="display: none">
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body ">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-success text-success"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Successful sensing [hours]</p>
+															<h4 class="card-title" id="s1d-successful-datatakes-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Satellite issues [hours]</p>
+															<h4 class="card-title" id="s1d-satellite-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Acquisition Service issues [hours]</p>
+															<h4 class="card-title" id="s1d-acquisition-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+								<div class="col-md-4">
+										<div class="card card-stats card-round">
+											<div class="card-body">
+												<div class="row">
+													<div class="col-5">
+														<div class="icon-big text-center">
+															<i class="flaticon-error text-danger"></i>
+														</div>
+													</div>
+													<div class="col-7 col-stats">
+														<div class="numbers">
+															<p class="card-category">Sensing failed due to Other causes (RFI, bad weather, MPS) [hours]</p>
+															<h4 class="card-title" id="s1d-other-failures-box">
+																<div class="spinner">
+																	<div class="bounce1"></div>
+																	<div class="bounce2"></div>
+																	<div class="bounce3"></div>
+																</div>
+															</h4>
+														</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									</div>
+							</div>
+							<div class="table-responsive col-md-8" id="s1d-table-container" style="display: none">
+								<table id="s1d-impacted-datatakes-table" class="display table table-striped table-hover" >
+									<thead>
+										<tr>
+											<th style="max-width: 120px">Data Take ID</th>
+											<th>Date</th>
+											<th style="max-width: 100px">Issue type</th>
+											<th style="max-width: 100px">Issue link</th>
+											<th style="max-width: 100px">L0 Completeness</th>
+											<th style="max-width: 60px">Actions</th>
+										</tr>
+									</thead>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 
 			<!-- Sentinel-2A -->
 			<div class="col-md-12">

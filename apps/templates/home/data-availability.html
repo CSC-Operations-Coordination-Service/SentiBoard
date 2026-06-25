@@ -144,6 +144,11 @@
 											<input type="hidden" name="period" value="{{ selected_period }}">
 											<input type="hidden" name="limit" value="{{ current_limit }}">
 
+											{# ── preserve event filter across form submits ── #}
+											{% if event_id %}
+											<input type="hidden" name="event_id" value="{{ event_id }}">
+											{% endif %}
+
 											<select id="mission-select" name="mission" class="form-control" onchange="this.form.submit()">
 												<option value="">All Missions</option>
 												<option value="S1" {{ 'selected' if mission=='S1' }}>Sentinel 1</option>
@@ -215,7 +220,8 @@
 															satellite=request.args.get('satellite',''),
 															search=request.args.get('search',''),
 															fromdate=request.args.get('fromdate',''),
-															todate=request.args.get('todate','')) }}" 
+															todate=request.args.get('todate',''),
+															event_id=event_id if event_id else '') }}" 
 												class="btn btn-outline-primary w-100">
 												Load More
 												</a>
@@ -490,7 +496,9 @@
 				"quarter_authorized": quarter_authorized,
 				"selected_period": selected_period,
 				"generated_at": generated_at,
-				"search_query":search_query
+				"search_query":search_query,
+				"event_id": event_id,
+				"event_datatake_count": event_datatake_count
 			} | tojson }}
 	</script>	
 	<script>

@@ -257,6 +257,8 @@
     window.iconMap = {{ icon_map | tojson | safe}};
     window.eventTypeMap = {{ event_type_map | tojson | safe}};
     window.anomaliesByDate = {{anomalies_by_date | tojson | safe}};
+    window.threeMonthsCutoff = "{{ three_months_ago }}";
+    window.historyStartDate = "2022-01-01";
 
     const urlParams = new URLSearchParams(window.location.search);
 
@@ -288,9 +290,6 @@
             ? (monthParam - 1)
             : (defaultMonth - 1);
     }
-
-    console.log("[INIT PARAMS FIX]",
-        {year: window.currentYear, month: window.currentMonth+1, showDayEvents});
   </script>
   <script>
     function showDayFromURL() {

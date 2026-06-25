@@ -144,6 +144,35 @@ def fetch_anomalies_prev_quarter(normalize=True):
     return anomalies
 
 
+def fetch_anomalies_by_range(start_date, end_date):
+    """
+    Fetch anomalies for a custom date range from Elastic.
+    """
+    logger.debug("Fetching Anomalies from %s to %s", start_date, end_date)
+   
+    start_str = start_date.strftime("%Y-%m-%d") if hasattr(start_date, 'strftime') else start_date
+    end_str = end_date.strftime("%Y-%m-%d") if hasattr(end_date, 'strftime') else end_date
+
+    anomalies = []
+    indices = ["cds-cams-tickets-static"]
+    elastic = elastic_client.ElasticClient()
+
+    for index in indices:
+        try:
+            results = elastic.query_scan_date_range(
+                index=index,
+                date_key="occurence_date",
+                from_date=start_str,
+                to_date=end_str,
+                query={"exists": {"field": "datatake_ids"}},
+            )
+            anomalies += results
+        except Exception as ex:
+            logger.error("Error fetching anomalies from %s: %s", index, ex)
+
+    return anomalies
+
+
 def serialize_anomalie(anomaly):
     source = anomaly.get("_source", anomaly)
     if source.get("origin") == "Dashboard":

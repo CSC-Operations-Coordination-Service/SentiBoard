@@ -20,21 +20,12 @@ import logging
 # from apps.elastic.modules.datatakes import OBSERVATION_START_KEY, OBSERVATION_END_KEY
 # from apps.elastic.modules.datatakes import DATATAKE_ID_KEY
 from apps.cache.modules.acquisitionassets import norad_id_map
-from apps.ingestion.acquisition_plans.fragment_completeness import (
-    MissionDatatakeIdHandler,
-)
-from apps.ingestion.acquisition_plans.orbit_acquisitions_kml import (
-    OrbitAcquisitionKmlFragmentBuilder,
-    _build_datatake_placemark,
-    build_acquisition_line_placemark,
-    build_acquisition_polygon_placemark,
-)
-from apps.ingestion.acquisition_plans.orbit_datatake_acquisitions import (
-    OrbitAcquisitionsBuilder,
-    AcquisitionLineProfileFromOrbit,
-    DatatakeAcquisition,
-    AcquisitionPolygonProfileFromOrbit,
-)
+from apps.ingestion.acquisition_plans.fragment_completeness import MissionDatatakeIdHandler
+from apps.ingestion.acquisition_plans.orbit_acquisitions_kml import OrbitAcquisitionKmlFragmentBuilder, \
+    _build_datatake_placemark, build_acquisition_line_placemark, build_acquisition_polygon_placemark
+from apps.ingestion.acquisition_plans.orbit_datatake_acquisitions import OrbitAcquisitionsBuilder, \
+    AcquisitionLineProfileFromOrbit, DatatakeAcquisition, AcquisitionPolygonProfileFromOrbit
+from apps.utils.tle_fetcher import get_latest_tle
 
 logger = logging.getLogger(__name__)
 
@@ -45,26 +36,54 @@ local_tle_files = {
 }
 
 
-def get_latest_tle(satellite):
-    # Otherwise retrieve from CACHE!
+""" def get_latest_tle(satellite):
     norad_id = norad_id_map[satellite]
     try:
-        return fetch_tle_from_celestrak(norad_id)
+        tle = _fetch_tle_classic_format(norad_id)
+        logger.info("TLE for %s fetched OK, name: %s, line1 epoch: %s",
+                    satellite, tle[0], tle[1][18:32])
+        return tle
     except Exception as ex:
-        tle_path = "test/unit_tests/test_tles"
-        # Retrieve Last TLE from file
+        logger.error("Celestrak fetch FAILED for %s: %s — falling back to local file", satellite, ex)
+        tle_path = 'test/unit_tests/test_tles'
         tle_file = local_tle_files.get(satellite, None)
         if tle_file is not None:
             tle_full = os.path.join(tle_path, tle_file)
             with open(tle_full, "r") as tle_in:
                 lines = tle_in.readlines()
-                for line in lines:
-                    line.strip()
-            return lines
+            logger.warning("Using LOCAL TLE file %s — may be stale!", tle_file)
+            return [lines[0].strip(), lines[1].strip(), lines[2].strip()]
         raise ex
+"""
+    
+""" def _fetch_tle_classic_format(norad_cat_id, verify=True):
+    # Fetch classic 3-line TLE from Celestrak, forcing TLE format explicitly.
+    # Celestrak's gp.php now returns OMM/CSV by default — FORMAT=TLE forces classic format.
+    import requests
+    url = f'https://celestrak.org/NORAD/elements/gp.php?CATNR={norad_cat_id}&FORMAT=TLE'
+    logger.info("Fetching TLE from: %s", url)
+    r = requests.get(url, verify=True, timeout=20)
+    r.raise_for_status()
 
+    if 'No TLE found' in r.text:
+        raise LookupError(f"No TLE found for NORAD ID {norad_cat_id}")
 
-# ORBIT_PROPAGATION_STEP = 60
+    tle = r.text.strip().split('\n')
+    if len(tle) < 3:
+        raise ValueError(f"Unexpected TLE response format: {r.text[:200]}")
+
+    name = tle[0].strip()
+    line1 = tle[1].strip()
+    line2 = tle[2].strip()
+
+    # Validate it looks like a real TLE
+    if not line1.startswith('1 ') or not line2.startswith('2 '):
+        raise ValueError(f"Response does not look like classic TLE: {line1[:40]}")
+
+    return [name, line1, line2]
+"""
+
+#ORBIT_PROPAGATION_STEP = 60
 ORBIT_PROPAGATION_STEP = 90
 
 
@@ -160,7 +179,7 @@ class AcquisitionPlanOrbitDatatakeBuilder:
             fragment_days = self._daily_datatakes.keys()
             # 1. instantiate an Orbit Acquisitions Builder (it needs a TLE or a list of TLE for the period)
             # Retrieve latest TLE
-            sat_tle_data = get_latest_tle(satellite)
+            sat_tle_data = get_satellite_tle(satellite)
             logger.warning(sat_tle_data)
 
             # Use a Builder that creates acquisitions from Orbit points
@@ -243,6 +262,21 @@ class AcquisitionPlanOrbitDatatakeBuilder:
 
 acq_orbit_mission_satellites = {"S3": ["S3A", "S3B"], "S5": ["S5P"]}
 
+def get_satellite_tle(satellite):
+    norad_id = norad_id_map[satellite]
+    try:
+        return get_latest_tle(norad_id, satellite)
+    except Exception as ex:
+        logger.error("Celestrak fetch FAILED for %s: %s — falling back to local file", satellite, ex)
+        tle_path = 'test/unit_tests/test_tles'
+        tle_file = local_tle_files.get(satellite, None)
+        if tle_file is not None:
+            tle_full = os.path.join(tle_path, tle_file)
+            with open(tle_full, 'r') as tle_in:
+                lines = tle_in.readlines()
+            logger.warning("Using LOCAL TLE file %s for %s — may be stale!", tle_file, satellite)
+            return lines[0].strip(), lines[1].strip(), lines[2].strip()
+        raise ex
 
 # class OrbitDatatakeAcquisitionIngestor:
 #     def __init__(self, past_num_days):
