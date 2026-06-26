@@ -12,6 +12,7 @@ behalf of TPZ to fulfill the purpose for which the document was
 delivered to him.
 """
 
+import ast
 import logging
 from datetime import datetime
 
@@ -19,6 +20,20 @@ from apps import db
 from apps.utils.db_utils import generate_uuid
 
 logger = logging.getLogger(__name__)
+
+# The upstream anomaly feed renamed the key prefix "PDGSANOM-" to "GSANOM-" for
+# the same anomalies. Both forms refer to one logical anomaly, so we canonicalize
+# every key to the "GSANOM-" form before lookups/inserts. This keeps a single row
+# per anomaly and prevents the old/new prefixes from creating duplicate rows.
+_LEGACY_KEY_PREFIX = "PDGSANOM"
+_CANONICAL_KEY_PREFIX = "GSANOM"
+
+
+def normalize_anomaly_key(key):
+    """Return the canonical form of an anomaly key (PDGSANOM-* -> GSANOM-*)."""
+    if key and key.startswith(_LEGACY_KEY_PREFIX):
+        return _CANONICAL_KEY_PREFIX + key[len(_LEGACY_KEY_PREFIX):]
+    return key
 
 
 class Anomalies(db.Model):
@@ -62,8 +77,11 @@ def save_anomaly(
     datatakes_completeness,
     newsLink=None,
     newsTitle=None,
-    modify_date=datetime.now(),
+    modify_date=None,
 ):
+    key = normalize_anomaly_key(key)
+    if modify_date is None:
+        modify_date = datetime.now()
     try:
         anomalies = Anomalies(
             id=str(generate_uuid()),
@@ -90,6 +108,40 @@ def save_anomaly(
     return None
 
 
+def _build_datatakes_completeness(environment, existing=None):
+    """Build the datatakes_completeness entries from the ``environment`` string.
+
+    When ``existing`` (the current stored value, either a list or its string
+    repr) is provided, already-computed completeness counters are preserved for
+    every datatake ID that is still present, so re-ingesting an anomaly does not
+    reset the L0_/L1_/L2_ values populated by the completeness refresh job.
+    """
+    existing_by_id = {}
+    if existing:
+        if isinstance(existing, str):
+            try:
+                existing = ast.literal_eval(existing)
+            except (ValueError, SyntaxError):
+                existing = []
+        if isinstance(existing, list):
+            for entry in existing:
+                if isinstance(entry, dict) and entry.get("datatakeID"):
+                    existing_by_id[entry["datatakeID"]] = entry
+
+    datatakes_completeness = []
+    if environment is not None and len(environment) > 0:
+        for datatake_id in environment.split(";"):
+            if datatake_id is None or len(datatake_id) == 0:
+                continue
+            if datatake_id in existing_by_id:
+                datatakes_completeness.append(existing_by_id[datatake_id])
+            else:
+                datatakes_completeness.append(
+                    {"datatakeID": datatake_id, "L0_": 0, "L1_": 0, "L2_": 0}
+                )
+    return datatakes_completeness
+
+
 def update_anomaly(
     title,
     key,
@@ -103,8 +155,11 @@ def update_anomaly(
     environment,
     newsLink=None,
     newsTitle=None,
-    modify_date=datetime.now(),
+    modify_date=None,
 ):
+    key = normalize_anomaly_key(key)
+    if modify_date is None:
+        modify_date = datetime.now()
     try:
         anomaly = db.session.query(Anomalies).filter(Anomalies.key == key).first()
         if anomaly is not None:
@@ -118,15 +173,13 @@ def update_anomaly(
             anomaly.category = category
             anomaly.impactedSatellite = impacted_satellite
             anomaly.impactedItem = impacted_item
+            anomaly.datatakes_completeness = str(
+                _build_datatakes_completeness(
+                    environment, existing=anomaly.datatakes_completeness
+                )
+            )
         else:
-            datatakes_completeness = []
-            if environment is not None and len(environment) > 0:
-                datatake_ids = environment.split(";")
-                for datatake_id in datatake_ids:
-                    if datatake_id is None or len(datatake_id) == 0:
-                        continue
-                    entry = {"datatakeID": datatake_id, "L0_": 0, "L1_": 0, "L2_": 0}
-                    datatakes_completeness.append(entry)
+            datatakes_completeness = _build_datatakes_completeness(environment)
             anomaly = Anomalies(
                 id=str(generate_uuid()),
                 key=key,
@@ -199,10 +252,9 @@ def get_anomalies(start_date=None, end_date=None):
             return Anomalies.query.order_by(Anomalies.publicationDate.desc()).all()
         else:
             return (
-                Anomalies.query.filter(Anomalies.start != None)
-                .filter(Anomalies.end != None)
-                .filter(Anomalies.start >= start_date)
-                .filter(Anomalies.start <= end_date)
+                Anomalies.query.filter(Anomalies.publicationDate != None)
+                .filter(Anomalies.publicationDate >= start_date)
+                .filter(Anomalies.publicationDate <= end_date)
                 .order_by(Anomalies.publicationDate.asc())
                 .all()
             )

@@ -327,10 +327,10 @@ def delete_anomalies():
         from apps.models.anomalies import Anomalies
         from apps import db
 
-        deleted = (
+        deleted = ( 
             db.session.query(Anomalies)
-            .filter(Anomalies.start >= start_date)
-            .filter(Anomalies.start <= end_date)
+            .filter(Anomalies.publicationDate >= start_date)
+            .filter(Anomalies.publicationDate <= end_date)
             .delete(synchronize_session=False)
         )
         db.session.commit()
