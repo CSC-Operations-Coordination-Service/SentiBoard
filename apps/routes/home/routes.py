@@ -74,6 +74,7 @@ import math
 import ast
 from zoneinfo import ZoneInfo
 from collections import defaultdict
+from apps.utils.satellite_registry import (ALLOWED_SATELLITES, SATELLITE_DISPLAY_NAMES, space_segment_colors, get_satellites_by_mission)
 
 logger = logging.getLogger(__name__)
 
@@ -130,7 +131,7 @@ PAGE_METADATA = {
         "title": "Sentinel Acquisition Plans & Real-Time Status | Copernicus Dashboard",
         "description": (
             "Explore past, current, and future Sentinel satellite acquisition plans on an interactive 3D globe. "
-            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard.",
+            "Filter datatakes by mission, satellite, sensing mode, and date. Part of the official ESA Copernicus Sentinel Operations Dashboard."
         ),
         "page_keywords": [
             "Sentinel acquisition plans real-time map",
@@ -146,7 +147,7 @@ PAGE_METADATA = {
         "title": "Sentinel Mission Events & Anomalies | Copernicus Operations Dashboard",
         "description": (
             "Browse Sentinel satellite events including anomalies, calibrations, manoeuvres, and production issues from the past 3 months. "
-            "Understand how each event affects Copernicus data completeness and availability.",
+            "Understand how each event affects Copernicus data completeness and availability."
         ),
         "page_keywords": [
             "Sentinel satellite anomalies and events",
@@ -426,18 +427,6 @@ def index():
     segment = "index"
     period_id = "24h"
 
-    ALLOWED_SATELLITES = {
-        "S1A",
-        "S1C",
-        "S1D",
-        "S2A",
-        "S2B",
-        "S2C",
-        "S3A",
-        "S3B",
-        "S5P",
-    }
-
     # Build the cache key
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
     current_app.logger.info(f"[INDEX] starting here")
@@ -491,18 +480,6 @@ def index():
 
     now = datetime.now(timezone.utc)
     anomalies_details = []
-
-    SATELLITE_DISPLAY_NAMES = {
-        "S1A": "Copernicus Sentinel-1A",
-        "S1C": "Copernicus Sentinel-1C",
-        "S1D": "Copernicus Sentinel-1D",
-        "S2A": "Copernicus Sentinel-2A",
-        "S2B": "Copernicus Sentinel-2B",
-        "S2C": "Copernicus Sentinel-2C",
-        "S3A": "Copernicus Sentinel-3A",
-        "S3B": "Copernicus Sentinel-3B",
-        "S5P": "Copernicus Sentinel-5P",
-    }
 
     for idx, item in enumerate(anomalies_data):
         if not isinstance(item, dict):
@@ -1056,7 +1033,7 @@ def data_availability():
             item_sat = (src.get("satellite_unit") or "").upper()
 
             if item_sat.startswith("S1"):
-                if item_sat not in ["S1A", "S1C", "S1D"]:
+                if item_sat not in ALLOWED_SATELLITES:
                     continue
 
             if event_datatake_ids:
@@ -1146,6 +1123,7 @@ def data_availability():
                 item_normalized["is_lightweight"] = True
                 datatakes_for_ssr.append(item_normalized)
 
+        satellites_by_mission = get_satellites_by_mission()
         payload = {
             "anomalies": replace_undefined(anomalies_data),
             "datatakes": datatakes_for_ssr,
@@ -1165,6 +1143,7 @@ def data_availability():
             "mission_counts": mission_counts,
             "event_id": event_id,
             "event_datatake_count": len(event_datatake_ids),
+            "satellites_by_mission":satellites_by_mission
         }
 
         current_app.logger.info(f"[LOG] Final SSR list size: {len(datatakes_for_ssr)}")
@@ -1768,18 +1747,6 @@ def admin_space_segment():
             "events": satellites[sat].get("events", {}),
         }
         for sat in satellites
-    }
-
-    space_segment_colors = {
-        "S1A": "info",
-        "S1C": "info",
-        "S1D": "info",
-        "S2A": "success",
-        "S2B": "success",
-        "S2C": "success",
-        "S3A": "warning",
-        "S3B": "warning",
-        "S5P": "secondary",
     }
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()

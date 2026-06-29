@@ -250,7 +250,10 @@ class AnomaliesIngestor:
         ingested = 0
         skipped = 0
     
-        S1D_CUTOFF = datetime(2026, 4, 17)  # naive, local comparison
+        # S1D operational cutoff (naive, local comparison) — sourced from the
+        # central satellite registry so the date lives in one place.
+        _s1d_cutoff = SATELLITE_DATA_CUTOFFS.get("S1D")
+        S1D_CUTOFF = _s1d_cutoff.replace(tzinfo=None) if _s1d_cutoff else None
 
         for anomaly in list_anomalies:
             satellite = anomaly.get("impactedSatellite", "") or ""
@@ -270,7 +273,7 @@ class AnomaliesIngestor:
                             # already a datetime — strip timezone unconditionally
                             pub_dt = pub_date.replace(tzinfo=None)
 
-                        if pub_dt < S1D_CUTOFF:
+                        if S1D_CUTOFF and pub_dt < S1D_CUTOFF:
                             logger.debug(
                                 "[BACKFILL SKIP] S1D anomaly %s dated %s before cutoff, skipping",
                                 anomaly.get("key"), pub_dt

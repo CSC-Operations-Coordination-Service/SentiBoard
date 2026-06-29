@@ -23,6 +23,7 @@ from apps.ingestion.acquisition_plans.acq_plan_kml_loader import (
 )
 from apps.ingestion.orbit_acquisitions import AcquisitionPlanOrbitDatatakeBuilder
 from apps.cache.cache import ConfigCache
+from apps.utils.satellite_registry import get_mission_satellites
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,9 @@ logger = logging.getLogger(__name__)
 #    Latest Ingestor
 #    PreviousYears Ingestor
 
-acq_plans_mission_satellites = ConfigCache.load_object("acq_plans_mission_satellites")
+# Active satellites with a published acquisition plan, per mission — sourced
+# from the central satellite registry (was config: acq_plans_mission_satellites).
+acq_plans_mission_satellites = get_mission_satellites(active_only=True)
 
 # Missions whose KML Acq Plan is retrieved from ESA
 kml_acq_plans_missions = ["S1", "S2"]

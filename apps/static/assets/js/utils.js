@@ -370,6 +370,17 @@ function get_mission_colors() {
     }
 }
 function get_satellite_colors() {
+    // Sourced from the central satellite registry (window.SATELLITE_DATA,
+    // injected on every page from apps/utils/satellite_registry.py).
+    var data = window.SATELLITE_DATA && window.SATELLITE_DATA.satellites;
+    if (data) {
+        var colors = {};
+        for (var id in data) {
+            colors[id] = data[id].chartColor;
+        }
+        return colors;
+    }
+    // Fallback if the registry was not injected on this page.
     return {
         'S1A': "#1d7af3",
         'S1B': "#3399ff",

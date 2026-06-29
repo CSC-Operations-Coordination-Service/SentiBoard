@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import date, datetime as dt, timezone, timedelta
 from flask_login import current_user
 from dateutil.relativedelta import relativedelta
+from apps.utils.satellite_registry import SATELLITE_INFO, SATELLITE_DATA_CUTOFFS, satellites_mission_map
 import datetime
 
 
@@ -18,18 +19,6 @@ STATION_MAP = {
     "MPS": "maspalomas",  # Maspalomas
     "NSG": "neustrelitz",  # Neustrelitz
     "INS": "inuvik",  # Inuvik
-}
-
-SATELLITE_INFO = {
-    "S1A": ("Copernicus Sentinel-1A", ["SAR", "PDHT", "OCP", "EDDS"]),
-    "S1C": ("Copernicus Sentinel-1C", ["SAR", "PDHT", "OCP", "EDDS"]),
-    "S1D": ("Copernicus Sentinel-1D", ["SAR", "PDHT", "OCP", "EDDS"]),
-    "S2A": ("Copernicus Sentinel-2A", ["MSI", "MMFU", "OCP", "EDDS", "STR"]),
-    "S2B": ("Copernicus Sentinel-2B", ["MSI", "MMFU", "OCP", "EDDS", "STR"]),
-    "S2C": ("Copernicus Sentinel-2C", ["MSI", "MMFU", "OCP", "EDDS", "STR"]),
-    "S3A": ("Copernicus Sentinel-3A", ["OLCI", "SLSTR", "SRAL", "MWR", "EDDS"]),
-    "S3B": ("Copernicus Sentinel-3B", ["OLCI", "SLSTR", "SRAL", "MWR", "EDDS"]),
-    "S5P": ("Copernicus Sentinel-5P", ["TROPOMI", "EDDS"]),
 }
 
 SERVICES = [
@@ -358,10 +347,9 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
     satellites = {}
     JS_THRESHOLD = 0.9999
 
+    # SATELLITE_INFO is derived from the registry's active satellites only,
+    # so decommissioned units (e.g. S1B) are already excluded.
     for sat, (fullname, instruments_list) in SATELLITE_INFO.items():
-        if sat == "S1B":
-            continue
-
         table_datatakes = []
         totSensing = 0.0
         failedSensingAcq = 0.0
@@ -601,7 +589,7 @@ def compute_availability_single_sat(
             availability["TROPOMI"] -= impact_pct
 
         # S3 Mission Instrument Logic (Looking into comments)
-        elif satellite in ("S3A", "S3B"):
+        elif satellites_mission_map.get(satellite) == "S3":
             for inst_name in ["OLCI", "SLSTR", "SRAL", "MWR"]:
                 if inst_name in availability and inst_name in comment:
                     availability[inst_name] -= impact_pct
@@ -1026,10 +1014,6 @@ def compute_availability_from_events(interface_status_map, period_start, period_
 
     return availability
 
-SATELLITE_DATA_CUTOFFS = {
-    "S1D": dt(2026, 4, 17, tzinfo=timezone.utc),
-}
-
 def passes_satellite_cutoff(record, date_field):
     """
     Returns True if this record should be kept.
@@ -1050,4 +1034,3 @@ def passes_satellite_cutoff(record, date_field):
         return True
 
     return ts_dt >= cutoff
-

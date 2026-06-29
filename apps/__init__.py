@@ -504,6 +504,15 @@ def create_app(config):
             page_url=page_url,
         )
 
+    # Expose the centralized satellite registry to every template so the
+    # frontend reads satellite metadata from a single source of truth
+    # (apps/utils/satellite_registry.py) instead of hardcoded JS lists.
+    @app.context_processor
+    def inject_satellite_registry():
+        from apps.utils.satellite_registry import to_js_registry
+
+        return dict(satellite_registry_js=to_js_registry())
+
     print("Starting Cache ...")
     flask_cache.init_app(app)
     print("Starting Database ...")
