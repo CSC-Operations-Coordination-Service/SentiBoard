@@ -91,7 +91,7 @@ def fetch_anomalies_prev_quarter(normalize=True):
     exposed REST APIs. The start time is set at 00:00:00 of the first day of the temporal interval; the stop time
     is set at 23:59:59 of the day after.
     """
-    logger.debug("Fetching Anomalies in the last Quarter")
+    logger.debug("Fetching Anomalies in the previous Quarter")
 
     # Retrieve data takes in the previous, completed quarter and store results of query in cache
     start_date, end_date = date_utils.prev_quarter_interval_from_date(datetime.today())
