@@ -159,20 +159,13 @@
 
 											<select id="satellite-select" name="satellite" class="form-control" onchange="this.form.submit()">
 												<option value="">All Satellites</option>
-												{% if not mission or mission == 'S1' %}
-													<option value="S1A" {{ 'selected' if request.args.get('satellite')|upper == 'S1A' }}>S1A</option>
-													<option value="S1C" {{ 'selected' if request.args.get('satellite')|upper =='S1C' }}>S1C</option>
-													<option value="S1D" {{ 'selected' if request.args.get('satellite')|upper =='S1D' }}>S1D</option>
-												{% endif %}
-												{% if not mission or mission == 'S2' %}
-													<option value="S2A" {{ 'selected' if request.args.get('satellite')|upper =='S2A' }}>S2A</option>
-													<option value="S2B" {{ 'selected' if request.args.get('satellite')|upper =='S2B' }}>S2B</option>
-													<option value="S2C" {{ 'selected' if request.args.get('satellite')|upper =='S2C' }}>S2C</option>
-												{% endif %}
-												{% if not mission or mission == 'S3' %}
-													<option value="S3A" {{ 'selected' if request.args.get('satellite')|upper =='S3A' }}>S3A</option>
-													<option value="S3B" {{ 'selected' if request.args.get('satellite')|upper =='S3B' }}>S3B</option>
-												{% endif %}
+												{% for m, sats in satellites_by_mission.items() %}
+													{% if not mission or mission == m %}
+														{% for sat_id in sats %}
+														<option value="{{ sat_id }}" {{ 'selected' if request.args.get('satellite')|upper == sat_id }}>{{ sat_id }}</option>
+														{% endfor %}
+													{% endif %}
+												{% endfor %}
 											</select>
 
 											<div class="d-flex flex-column gap-2">
@@ -486,6 +479,9 @@
 	<!-- Datatables -->
 	<script src="/static/assets/js/plugin/datatables/datatables.min.js"></script>
 
+	<script>
+		window.SATELLITE_REGISTRY = {{ satellites_by_mission | tojson}};
+	</script>
 	<!-- Page related JS Class -->
 	<script src="/static/assets/js/datatakes/datatakes.js"></script>
 	<script id="server-data" type="application/json">

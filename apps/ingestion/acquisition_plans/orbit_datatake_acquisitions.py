@@ -26,6 +26,7 @@ import pytz
 from skyfield.units import Angle
 
 from apps.elastic.modules.datatakes import ELASTIC_TIME_FORMAT
+from apps.utils.satellite_registry import swaths
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +34,7 @@ DATATAKE_ID_KEY = "datatake_id"
 OBSERVATION_START_KEY = "observation_time_start"
 OBSERVATION_END_KEY = "observation_time_stop"
 
-# SWATHS for Satellites
-# IN Km
-
-swaths = {"S3A": 1270, "S3B": 1270, "S5P": 2600}
+# SWATHS for Satellites (km) — sourced from apps.utils.satellite_registry.
 
 
 @dataclass

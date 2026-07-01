@@ -258,6 +258,21 @@ class Datatakes {
         return (datatake_id + ' (' + hexaNum + ')');
     }
 
+    getGroundStation(id) {
+        var registry = window.SATELLITE_REGISTRY || {};
+        for (var mission in registry) {
+            var sats = registry[mission];
+            for (var i = 0; i < sats.length; i++) {
+                if (id.includes(sats[i])) {
+                    // "S5" → "Sentinel 5P", everything else → "Sentinel 1", "Sentinel 2", etc.
+                    var missionNumber = mission.substring(1);  // "1", "2", "3", "5"
+                    return mission === "S5" ? "Sentinel 5P" : "Sentinel " + missionNumber;
+                }
+            }
+        }
+        return "Sentinel";
+    }
+
     populateDataList(append = false) {
         this.showSpinner();
     }

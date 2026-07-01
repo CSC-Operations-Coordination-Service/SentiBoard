@@ -20,6 +20,7 @@ import logging
 # from apps.elastic.modules.datatakes import OBSERVATION_START_KEY, OBSERVATION_END_KEY
 # from apps.elastic.modules.datatakes import DATATAKE_ID_KEY
 from apps.cache.modules.acquisitionassets import norad_id_map
+from apps.utils.satellite_registry import local_tle_files, get_mission_satellites
 from apps.ingestion.acquisition_plans.fragment_completeness import MissionDatatakeIdHandler
 from apps.ingestion.acquisition_plans.orbit_acquisitions_kml import OrbitAcquisitionKmlFragmentBuilder, \
     _build_datatake_placemark, build_acquisition_line_placemark, build_acquisition_polygon_placemark
@@ -29,11 +30,7 @@ from apps.utils.tle_fetcher import get_latest_tle
 
 logger = logging.getLogger(__name__)
 
-local_tle_files = {
-    "S3A": "S3A_20231012.tle",
-    "S3B": "S3B_20231017.tle",
-    "S5P": "S5P_20231017.tle",
-}
+# local_tle_files is sourced from apps.utils.satellite_registry (imported above).
 
 
 """ def get_latest_tle(satellite):
@@ -260,7 +257,13 @@ class AcquisitionPlanOrbitDatatakeBuilder:
                 )
 
 
-acq_orbit_mission_satellites = {"S3": ["S3A", "S3B"], "S5": ["S5P"]}
+# Orbit-based acquisition plans cover the S3 and S5 missions; derived from the
+# central registry so a new unit (e.g. S3C) is picked up automatically.
+acq_orbit_mission_satellites = {
+    m: sats
+    for m, sats in get_mission_satellites(active_only=True).items()
+    if m in ("S3", "S5")
+}
 
 def get_satellite_tle(satellite):
     norad_id = norad_id_map[satellite]

@@ -28,6 +28,7 @@ import apps.utils.db_utils as db_utils
 import apps.utils.elastic_utils as elastic_utils
 from apps import flask_cache
 from apps.utils.date_utils import Quarter
+from apps.utils.satellite_registry import satellites_mission_map
 from . import blueprint
 
 logger = logging.getLogger(__name__)
@@ -51,14 +52,8 @@ mission_pub_extra_must_not_criteria = {
 
 fname_ends = {"S1": "SAFE.zip", "S2": "tar", "S3": "SEN3.zip", "S5": "nc"}
 
-platform_missions = {
-    "S1A": "S1",
-    "S2A": "S2",
-    "S2B": "S2",
-    "S3A": "S3",
-    "S3B": "S3",
-    "S5P": "S5",
-}
+# Satellite-unit → mission code, sourced from the central registry.
+platform_missions = satellites_mission_map
 
 
 @blueprint.route(

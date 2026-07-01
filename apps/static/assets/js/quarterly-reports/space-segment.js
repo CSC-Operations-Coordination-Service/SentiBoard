@@ -13,6 +13,21 @@ delivered to him.
 
 class SpaceSegment {
 
+    // Active satellite IDs from the central registry (window.SATELLITE_DATA),
+    // with a hardcoded fallback if the registry was not injected.
+    static _activeSatellites() {
+        return (window.SATELLITE_DATA && window.SATELLITE_DATA.active) ||
+            ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+    }
+
+    // Fresh { satId: [] } map keyed by every active satellite.
+    static _emptyDatatakesBySatellite() {
+        return SpaceSegment._activeSatellites().reduce(function (acc, s) {
+            acc[s] = [];
+            return acc;
+        }, {});
+    }
+
     constructor() {
 
         // Start - stop time range
@@ -31,22 +46,25 @@ class SpaceSegment {
             "#ff00cc", "#f57d05", "#fa001d"
         ];
 
-        // Set of colors associated to satellite
-        this.satUnavailabilitiesColorMap = {
-            'S1A': 'info',
-            'S1C': 'info',
-            'S2A': 'success',
-            'S2B': 'success',
-            'S2C': 'success',
-            'S3A': 'warning',
-            'S3B': 'warning',
-            'S5P': 'secondary'
-        };
+        // Bootstrap color class per satellite, sourced from the central
+        // registry (window.SATELLITE_DATA) — active satellites only.
+        this.satUnavailabilitiesColorMap = (function () {
+            var out = {};
+            var data = (window.SATELLITE_DATA && window.SATELLITE_DATA.satellites) || {};
+            for (var id in data) {
+                if (data[id].active) {
+                    out[id] = data[id].colorClass;
+                }
+            }
+            return Object.keys(out).length ? out : {
+                'S1A': 'info', 'S1C': 'info',
+                'S2A': 'success', 'S2B': 'success', 'S2C': 'success',
+                'S3A': 'warning', 'S3B': 'warning', 'S5P': 'secondary'
+            };
+        })();
 
         this.satUnavailabilities = {};
-        this.impactedDatatakesBySatellite = {
-            'S1A': [], 'S1C': [], 'S1D': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
-        };
+        this.impactedDatatakesBySatellite = SpaceSegment._emptyDatatakesBySatellite();
         this.impactedDatatakesTablesBySatellite = {};
         this.satellites = {}; // To store SENSING_DATA.stats
     }
@@ -91,9 +109,7 @@ class SpaceSegment {
     }
 
     loadDatatakesFromSSR(datatakes) {
-        this.impactedDatatakesBySatellite = {
-            'S1A': [], 'S1C': [], 'S1D': [], 'S2A': [], 'S2B': [], 'S2C': [], 'S3A': [], 'S3B': [], 'S5P': []
-        };
+        this.impactedDatatakesBySatellite = SpaceSegment._emptyDatatakesBySatellite();
 
         const stats = window.SENSING_DATA.stats || {};
 
@@ -470,7 +486,7 @@ class SpaceSegment {
     refreshDatatakesTablesSSR() {
         console.log("[SSR] Rendering impacted datatakes tables using DataTables");
 
-        const sats = ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+        const sats = SpaceSegment._activeSatellites();
 
         sats.forEach(sat => {
             const tableId = `${sat.toLowerCase()}-impacted-datatakes-table`;

@@ -16,6 +16,7 @@ import logging
 from time import perf_counter
 
 from apps.cache.cache import PublicationProductTreeCache, ConfigCache
+from apps.utils.satellite_registry import get_mission_satellites
 from apps.elastic import client as elastic_client
 from apps.utils import date_utils as utils
 
@@ -30,9 +31,9 @@ def get_cds_archive_size_by_mission(start_date, end_date, mission):
         f"[BEG] CDS LONG TERM ARCHIVE VOLUME for mission {mission}, start: {start_date}, end: {end_date}"
     )
     results = []
-    cfg = ConfigCache.load_object("archive_config")
-    mission_satellites = cfg.get("mission_satellites")
-    # archive_levels = cfg.get('statistics_levels')
+    # Long-term archive includes decommissioned units (e.g. S1B), so use the
+    # full registry list rather than only active satellites.
+    mission_satellites = get_mission_satellites(active_only=False)
     archive_levels = ["L0_"]
 
     for satellite in mission_satellites.get(mission):

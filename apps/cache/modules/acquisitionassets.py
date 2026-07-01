@@ -22,7 +22,7 @@ from satellite_czml import satellite
 from satellite_czml import satellite_czml
 from satellite_tle import fetch_tle_from_celestrak
 from apps.utils.tle_fetcher import get_latest_tle
-
+from apps.utils.satellite_registry import sat_ids, norad_id_map, color_map, marker_map
 from apps import flask_cache
 
 logger = logging.getLogger(__name__)
@@ -32,20 +32,6 @@ orbits_cache_key = "/api/acquisition/satellite/orbits"
 stations_cache_key = "/api/acquisition/stations"
 
 assets_cache_duration = 604800
-
-sat_ids = ["S1A", "S1C", "S1D", "S2A", "S2B", "S2C", "S3A", "S3B", "S5P"]
-norad_id_map = {
-    "S1A": 39634,
-    "S1B": 41456,
-    "S1C": 62261,
-    "S1D": 66315,
-    "S2A": 40697,
-    "S2B": 42063,
-    "S2C": 60989,
-    "S3A": 41335,
-    "S3B": 43437,
-    "S5P": 42969,
-}
 
 
 """ def get_latest_tle(sat_id):
@@ -185,31 +171,7 @@ def load_satellite_orbits():
 
     # Init satellite and color maps
     multiple_sats = []
-    color_map = {
-        "S1A": [72, 171, 247, 255],
-        "S1B": [72, 171, 247, 255],
-        "S1C": [72, 171, 247, 255],
-        "S1D": [72, 171, 247, 255],
-        "S2A": [49, 206, 54, 255],
-        "S2B": [49, 206, 54, 255],
-        "S2C": [49, 206, 54, 255],
-        "S3A": [255, 173, 70, 255],
-        "S3B": [255, 173, 70, 255],
-        "S5P": [104, 97, 206, 255],
-    }
-    marker_map = {
-        "S1A": "static/assets/img/sentinel-1.png",
-        "S1B": "static/assets/img/sentinel-1.png",
-        "S1C": "static/assets/img/sentinel-1.png",
-        "S1D": "static/assets/img/sentinel-1.png",
-        "S2A": "static/assets/img/sentinel-2.png",
-        "S2B": "static/assets/img/sentinel-2.png",
-        "S2C": "static/assets/img/sentinel-2.png",
-        "S3A": "static/assets/img/sentinel-3.png",
-        "S3B": "static/assets/img/sentinel-3.png",
-        "S5P": "static/assets/img/sentinel-5p.png",
-    }
-
+   
     # To avoid breaking the scheduler, protect the connection loop in a try-except block
     try:
 
