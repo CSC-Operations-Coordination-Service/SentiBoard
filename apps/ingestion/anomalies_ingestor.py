@@ -155,7 +155,7 @@ class AnomaliesIngestor:
                 logger.info("[ORIGIN_MAP] MP anomaly found: key=%s title=%s", src.get("key"), src.get("title"))
             elif origin in ("IPF", "ADGS"):
                 anomaly["category"] = "Production"
-                logger.info("[ORIGIN_MAP] %s anomaly found: key=%s title=%s", origin, src.get("key"), src.get("title"))
+                logger.info("[ORIGIN_MAP] IPF/ADGS anomaly found: key=%s title=%s", src.get("key"), src.get("title"))
             # nothing mapping directly to Calibration
             # in case of Other, keep as '', let the rest of the code handle it
 

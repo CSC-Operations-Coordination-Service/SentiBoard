@@ -750,8 +750,10 @@ def events_data():
 
         def serialize_anomalie(a):
             src = a.get("_source", a)
-            if src.get("origin") == "Dashboard":
-                return None
+            # NOTE: Dashboard-origin anomalies are dropped upstream at ingestion
+            # (apps/ingestion/anomalies_ingestor.py), so they never reach the DB
+            # this cache is built from. The stored Anomalies rows carry no "origin"
+            # field, hence there is no origin filter to apply here.
             date_str = (
                 src.get("occurence_date")
                 or src.get("occurrence_date")
