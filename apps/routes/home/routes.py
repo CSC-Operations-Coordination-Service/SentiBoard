@@ -1725,6 +1725,26 @@ def admin_space_segment():
         for dt in sat.get("datatakes", []):
             dt["completeness"] = acquisitions_utils.recalc_completeness(dt)
 
+    acq_key = acquisitions_cache.acquisitions_cache_key.format(cache_prefix, cache_range)
+    acq_sources = acquisitions_utils._cache_to_list(flask_cache.get(acq_key))
+    acq_stats = acquisitions_utils.compute_acquisition_stats(acq_sources)
+    for sat_id, sat_data in satellites.items():
+        a = acq_stats.get(sat_id)
+        if not a or a["total"] <= 0 or a["failed_acq"] <= 0:
+            continue
+        unavail = sat_data["unavailability"]
+        planned = (
+            sat_data["success"] + unavail["sat"] + unavail["acq"] + unavail["other"]
+        )
+        acq_hours = (a["failed_acq"] / a["total"]) * planned
+        unavail["acq"] += acq_hours
+        sat_data["success"] = max(
+            0.0, planned - (unavail["sat"] + unavail["acq"] + unavail["other"])
+        )
+        sat_data["events"]["acq_events"] = sorted(
+            a["events"].values(), key=lambda x: x["date"]
+        )
+
     for sat_id, sat_data in satellites.items():
 
         # Calculate % based on total planned hours vs success hours

@@ -244,47 +244,53 @@ class SpaceSegment {
             return isNaN(d.getTime()) ? null : d;
         };
 
-        const periodStart = parseDate(startStr);
+        let periodStart = parseDate(startStr);
         const periodEnd = parseDate(endStr);
+
+        // Per-satellite operational cutoff: for S1D only consider events from its
+        // TTO date (17 Apr 2026), regardless of the selected quarter start.
+        const SAT_CUTOFFS = { 'S1D': '2026-04-17T00:00:00Z' };
+        const cutoff = parseDate(SAT_CUTOFFS[satellite]);
+        if (cutoff && (!periodStart || cutoff > periodStart)) {
+            periodStart = cutoff;
+        }
+
         const isRangeValid = !!(periodStart && periodEnd);
 
         var count = 0;
         var content = {};
         content.title = 'Unavailability events';
-        content.message = '<ul>';
-        var hasEvents = false;
 
-        // Use 'this' to access the class property
+        // Collect matching events first so we can sort them by occurrence date.
+        const events = [];
         Object.keys(this.satUnavailabilities).forEach((ref) => {
             var unav = this.satUnavailabilities[ref];
+            if (unav['satellite'] !== satellite || unav['item'] === 'EDDS') return;
 
-            if (unav['satellite'] === satellite && unav['item'] !== 'EDDS') {
+            const eventStart = new Date(unav.start);
+            const isWithinTime = !isRangeValid || (eventStart >= periodStart && eventStart <= periodEnd);
+            if (!isWithinTime) return;
 
-                // SSR Date Filter
-                const eventStart = new Date(unav.start);
-                const isWithinTime = !isRangeValid || (eventStart >= periodStart && eventStart <= periodEnd);
-
-                if (isWithinTime) {
-                    // Convert Seconds to Hours (matches your original code)
-                    var durationHours = unav['duration'] / (60 * 60);
-
-                    if (durationHours > 0.1) {
-                        hasEvents = true;
-                        var durationFormatted = durationHours.toFixed(1);
-
-                        // Exact string replication from your previous version
-                        content.message += '<li>Ref: ' + unav['reference'] + ' (' + unav['item'] + '); ' +
-                            'type: ' + unav['type'] + '; occurrence date: ' +
-                            unav['start'].replace('.000Z', '').replace('Z', '') +
-                            '; duration[h]: ' + durationFormatted + '</li>';
-                    } else {
-                        count++;
-                    }
-                }
+            // Convert Seconds to Hours (matches the original code)
+            const durationHours = unav['duration'] / (60 * 60);
+            if (durationHours > 0.1) {
+                events.push({
+                    start: eventStart,
+                    html: 'Ref: ' + unav['reference'] + ' (' + unav['item'] + '); ' +
+                        'type: ' + unav['type'] + '; occurrence date: ' +
+                        unav['start'].replace('.000Z', '').replace('Z', '') +
+                        '; duration[h]: ' + durationHours.toFixed(1)
+                });
+            } else {
+                count++;
             }
         });
 
-        content.message += '</ul>';
+        // Sort by occurrence date (ascending)
+        events.sort((a, b) => a.start - b.start);
+
+        var hasEvents = events.length > 0;
+        content.message = '<ul>' + events.map((e) => '<li>' + e.html + '</li>').join('') + '</ul>';
 
         // Footer logic for "No Events" or "Omitted"
         if (!hasEvents) {
@@ -472,9 +478,12 @@ class SpaceSegment {
 
             if (events.length > 0) {
                 content.message += 'Events list:<br /><ul>';
-                (Array.isArray(events) ? events : Object.values(events)).forEach(ev => {
-                    content.message += `<li>${ev.date}: ${ev.description}</li>`;
-                });
+                // Sort by date ascending (dates are ISO YYYY-MM-DD -> lexicographic = chronological)
+                (Array.isArray(events) ? events.slice() : Object.values(events))
+                    .sort((a, b) => (a.date || '').localeCompare(b.date || ''))
+                    .forEach(ev => {
+                        content.message += `<li>${ev.date}: ${ev.description}</li>`;
+                    });
                 content.message += '</ul>';
             }
         });
