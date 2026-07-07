@@ -22,6 +22,14 @@
   		{% endif %}
 	</script>
 
+	<!-- Centralized satellite registry — single source of truth:
+	     apps/utils/satellite_registry.py (injected via inject_satellite_registry) -->
+	<script>
+		window.SATELLITE_DATA = {{ satellite_registry_js | tojson }};
+		// Backwards-compatible alias: { mission: [sat_ids] } for active satellites
+		window.SATELLITE_REGISTRY = window.SATELLITE_DATA.byMission;
+	</script>
+
 	<!-- Fonts and icons -->
 	<script src="/static/assets/js/plugin/webfont/webfont.min.js" defer onload="
 		WebFont.load({
@@ -57,7 +65,7 @@
 	  _paq.push(['trackPageView']);
 	  _paq.push(['enableLinkTracking']);
 	  (function() {
-	    var u="//ocs.staging.sentiboard.onda-dias.com/matomo/";
+	    var u="//operations.dashboard.copernicus.eu/matomo/";
 	    _paq.push(['setTrackerUrl', u+'matomo.php']);
 	    _paq.push(['setSiteId', '1']);
 	    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
@@ -96,6 +104,23 @@
 	{% include 'includes/scripts.html' %}
 
 	<!-- Specific Page JS goes HERE  -->
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+		var toggler = document.querySelector('.navbar-toggler');
+		var sidebar = document.getElementById('mobile-sidebar');
+		if (!toggler || !sidebar) return;
+		toggler.addEventListener('click', function (e) {
+			e.stopPropagation();
+			if (sidebar.style.left === '0px') {
+			sidebar.style.left = '-280px';
+			} else {
+			sidebar.style.left = '0px';
+			}
+		});
+		});
+	</script>
+
+
 
     {% block javascripts %}{% endblock javascripts %}
 

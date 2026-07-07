@@ -21,37 +21,13 @@ import apps.ingestion.anomalies_ingestor as anomalies_ingestor
 from apps.elastic import client as elastic_client
 from apps.models import anomalies as anomalies_model
 from apps.utils import date_utils
+from apps.utils.satellite_registry import satellites_mission_map, CDS_MISSIONS, mission_time_thresholds, ids_for_mission
 
 logger = logging.getLogger(__name__)
 
 level_ids = {
     "S3": {"L0_": "L0_", "L1_": "L1_", "L2_": "L2_"},
     "S5": {"L0_": "L0_", "L1_": "L1B", "L2_": "L2_"},
-}
-
-satellites_mission_map = {
-    "S1A": "S1",
-    "S1B": "S1",
-    "S1C": "S1",
-    "S1D": "S1",
-    "S2A": "S2",
-    "S2B": "S2",
-    "S2C": "S2",
-    "S2D": "S2",
-    "S3A": "S3",
-    "S3B": "S3",
-    "S3C": "S3",
-    "S3D": "S3",
-    "S5P": "S5",
-}
-
-mission_time_thresholds = {"S1": 8, "S2": 10, "S3": 696, "S5": 48}
-
-CDS_MISSIONS = {
-    "s1": ["s1a", "s1c", "s1d"],
-    "s2": ["s2a", "s2b", "s2c"],
-    "s3": ["s3a", "s3b"],
-    "s5": ["s5p"],
 }
 
 ELASTIC_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -146,7 +122,6 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
             "s1", CDS_MISSIONS["s1"]
         ) + _build_cds_completeness_indices("s2", CDS_MISSIONS["s2"])
 
-        logger.info("[CDS][S1S2] Querying indices: %s", indices)
         elastic = elastic_client.ElasticClient()
 
         logger.info("[CDS][S1S2] Querying indexes:%s", indices)
@@ -188,14 +163,18 @@ def _get_cds_s1s2_datatakes(start_date, end_date):
     except Exception as ex:
         logger.error(ex)
 
-    # Calculate completeness for every datatake
+    # Calculate completeness for every datatake. Use all known mission units
+    # (including decommissioned ones such as S1B) so historical datatakes are
+    # still classified correctly.
+    s1_sats = ids_for_mission("S1", active_only=False)
+    s2_sats = ids_for_mission("S2", active_only=False)
     clean_results = []
     for dt in results:
         dt_id = dt["_id"]
         completeness = {}
-        if any(s1_sat in dt_id for s1_sat in ["S1A", "S1B", "S1C", "S1D"]):
+        if any(s1_sat in dt_id for s1_sat in s1_sats):
             completeness = _calc_s1_datatake_completeness(dt)
-        elif any(s2_sat in dt_id for s2_sat in ["S2A", "S2B", "S2C"]):
+        elif any(s2_sat in dt_id for s2_sat in s2_sats):
             completeness = _calc_s2_datatake_completeness(dt)
         for key in list(dt["_source"]):
             if key.endswith("local_percentage"):

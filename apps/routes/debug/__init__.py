@@ -8,7 +8,7 @@ from flask import Blueprint
 from apps.cache.cache import ConfigCache
 
 blueprint = Blueprint(
-    'elastic_blueprint',
+    "elastic_blueprint",
     __name__,
-    url_prefix=ConfigCache.load_object('application_root')
+    url_prefix=ConfigCache.load_object("application_root"),
 )

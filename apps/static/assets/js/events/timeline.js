@@ -254,27 +254,14 @@ class Timeline {
         if (anomaly["category"] === "Data access") {
             item = "All Sentinels";
         } else {
-            if (anomaly["environment"].includes('S1A')) {
-                item += "S1A, "
-            }
-            if (anomaly["environment"].includes('S2A')) {
-                item += "S2A, "
-            }
-            if (anomaly["environment"].includes('S2B')) {
-                item += "S2B, "
-            }
-            if (anomaly["environment"].includes('S2C')) {
-                item += "S2C, "
-            }
-            if (anomaly["environment"].includes('S3A')) {
-                item += "S3A, "
-            }
-            if (anomaly["environment"].includes('S3B')) {
-                item += "S3B, "
-            }
-            if (anomaly["environment"].includes('S5P')) {
-                item += "S5P, "
-            }
+            // Active satellites from the central registry (window.SATELLITE_DATA).
+            var sats = (window.SATELLITE_DATA && window.SATELLITE_DATA.active) ||
+                ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+            sats.forEach(function (sat) {
+                if (anomaly["environment"].includes(sat)) {
+                    item += sat + ", ";
+                }
+            });
             item = item.substring(0, item.length - 2);
         }
 

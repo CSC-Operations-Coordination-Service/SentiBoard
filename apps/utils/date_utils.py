@@ -14,7 +14,7 @@ delivered to him.
 import logging
 import re
 from copy import copy
-from datetime import datetime
+from datetime import datetime, timezone
 
 from dateutil.relativedelta import relativedelta
 import pytz
@@ -480,7 +480,9 @@ def get_past_day_str(past_num_days, day_format):
 def format_pub_date(dt):
     if not dt:
         return ""
-    # convert to Europe/Rome
-    dt_rome = dt.astimezone(tz_rome)
-    # format as "YYYY-MM-DD HH:MM"
-    return dt_rome.strftime("%Y-%m-%d %H:%M")
+    # Ensure UTC, strip tzinfo, format as ISO string with Z suffix
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    else:
+        dt = dt.astimezone(timezone.utc)
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")

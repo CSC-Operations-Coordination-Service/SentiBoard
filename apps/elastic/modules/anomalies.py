@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) -
+Copyright (C) - 2026 -Serco
 All rights reserved.
 
 This document discloses subject matter in which SERCO has
 proprietary rights. Recipient of the document shall not duplicate, use or
 disclose in whole or in part, information contained herein except for or on
-behalf of  to fulfill the purpose for which the document was
+behalf of SERCO to fulfill the purpose for which the document was
 delivered to him.
 """
 
@@ -91,7 +91,7 @@ def fetch_anomalies_prev_quarter(normalize=True):
     exposed REST APIs. The start time is set at 00:00:00 of the first day of the temporal interval; the stop time
     is set at 23:59:59 of the day after.
     """
-    logger.debug("Fetching Anomalies in the last Quarter")
+    logger.debug("Fetching Anomalies in the previous Quarter")
 
     # Retrieve data takes in the previous, completed quarter and store results of query in cache
     start_date, end_date = date_utils.prev_quarter_interval_from_date(datetime.today())
@@ -138,20 +138,51 @@ def fetch_anomalies_prev_quarter(normalize=True):
         logger.error(ex)
 
     if normalize:
-        anomalies = [serialize_anomalie(e) for e in anomalies]
+        anomalies = [a for e in anomalies if (a := serialize_anomalie(e)) is not None]
 
     # Return the complete and normalized set of datatakes
     return anomalies
 
 
+def fetch_anomalies_by_range(start_date, end_date):
+    """
+    Fetch anomalies for a custom date range from Elastic.
+    """
+    logger.debug("Fetching Anomalies from %s to %s", start_date, end_date)
+   
+    start_str = start_date.strftime("%Y-%m-%d") if hasattr(start_date, 'strftime') else start_date
+    end_str = end_date.strftime("%Y-%m-%d") if hasattr(end_date, 'strftime') else end_date
+
+    anomalies = []
+    indices = ["cds-cams-tickets-static"]
+    elastic = elastic_client.ElasticClient()
+
+    for index in indices:
+        try:
+            results = elastic.query_scan_date_range(
+                index=index,
+                date_key="occurence_date",
+                from_date=start_str,
+                to_date=end_str,
+                query={"exists": {"field": "datatake_ids"}},
+            )
+            anomalies += results
+        except Exception as ex:
+            logger.error("Error fetching anomalies from %s: %s", index, ex)
+
+    return anomalies
+
+
 def serialize_anomalie(anomaly):
     source = anomaly.get("_source", anomaly)
+    if source.get("origin") == "Dashboard":
+        return None
 
     normalized = {
         "key": source.get("key"),
         "datatake_ids": (
             source.get("datatake_ids", "").split(";")
-            if anomaly.get("datatake_ids")
+            if source.get("datatake_ids")
             else []
         ),
         "description": anomaly.get("description", ""),

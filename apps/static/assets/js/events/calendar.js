@@ -68,16 +68,25 @@ class CalendarWidget {
         this.selectedMission = 'all';
         this.selectedEventType = 'all';
         this.searchTerm = '';
-        this.missionMap = {
-            's1': ['S1A', 'S1C', 'S1D'],
-            's2': ['S2A', 'S2B', 'S2C'],
-            's3': ['S3A', 'S3B'],
-            's5': ['S5P']
-        };
+        // Derived from the central satellite registry (window.SATELLITE_DATA);
+        // keys are lowercased mission codes to match the existing filter logic.
+        this.missionMap = (function () {
+            var by = (window.SATELLITE_DATA && window.SATELLITE_DATA.byMission) || {};
+            var out = {};
+            for (var m in by) {
+                out[m.toLowerCase()] = by[m];
+            }
+            return Object.keys(out).length ? out : {
+                's1': ['S1A', 'S1C', 'S1D'],
+                's2': ['S2A', 'S2B', 'S2C'],
+                's3': ['S3A', 'S3B'],
+                's5': ['S5P']
+            };
+        })();
 
         this.eventTypeMap = {
             'Acquisition': 'acquisition',
-            'calibration': 'calibration',
+            'Calibration': 'calibration',
             'Data access': 'data-access',
             'Manoeuvre': 'manoeuvre',
             'Production': 'production',
@@ -122,6 +131,7 @@ class CalendarWidget {
 
         this.currentMonth = newMonth;
         this.currentYear = newYear;
+        this.generateCalendar(this.currentMonth, this.currentYear);
     }
 
     buildAnomaliesByDate(anomaliesArray) {
@@ -486,7 +496,12 @@ class CalendarWidget {
         return sum / validValues.length;
     }
 
-    arrangeDatatakesList(anomaly, dtList) {
+    arrangeDatatakesList(anomaly, dtList, normalizedDate) {
+        let isOldDate = false;
+        if (normalizedDate && window.threeMonthsCutoff) {
+            isOldDate = new Date(normalizedDate) < new Date(window.threeMonthsCutoff);
+        }
+
         const uniqueDtList = dtList.filter(
             (dt, idx, self) =>
                 idx === self.findIndex(t => t.datatake_id === dt.datatake_id)
@@ -506,13 +521,16 @@ class CalendarWidget {
                     ? this.overrideS1DatatakesId(datatake_id)
                     : datatake_id;
 
+
+                const idElement = isOldDate ? `<span style="color: #12b1bf; font-weight: 500;">${displayId}</span>`
+                    : `<a href="/data-availability.html?search=${datatake_id}&period=prev-quarter" target="_blank" 
+                            style="color: #aad; text-decoration: underline; font-weight:500;">${displayId}
+                        </a>`;
+
                 return `
             <li style="margin: 2px 0; list-style: none;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <a href="/data-availability.html?search=${datatake_id}&period=prev-quarter" target="_blank"
-                        style="color: #aad; text-decoration: underline; font-weight:500;">
-                        ${displayId}
-                    </a>
+                    ${idElement}
                     <div class="status-circle-dt-${status}" title="${status}"></div>
                 </div>
             </li>`;
@@ -581,20 +599,19 @@ class CalendarWidget {
         const displayedDate = new Date(this.currentYear, this.currentMonth, 1);
         displayedDate.setHours(0, 0, 0, 0);
 
-        const now = new Date();
-        const thresholdDate = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-        thresholdDate.setHours(0, 0, 0, 0);
+        const historyStartDate = new Date(window.historyStartDate || "2022-01-01");
+        historyStartDate.setHours(0, 0, 0, 0);
 
         const calendarDays = document.querySelectorAll('.calendar-day');
         const eventIcons = document.querySelectorAll('.calendar-day .event-container');
 
         const noVisibleEvents = calendarDays.length > 0 && eventIcons.length === 0;
 
-        if (displayedDate < thresholdDate && noVisibleEvents) {
+        if (displayedDate < historyStartDate && noVisibleEvents) {
             if (!this.noEventsBeforeDateMsgDisplayed) {
                 const content = {
                     title: 'Dashboard Events Viewer',
-                    message: `This view is intended to show only the most recent events.<br>No events are displayed before <b>${thresholdDate.toLocaleDateString()}</b>`,
+                    message: `This view displays only events occurring after <b>${historyStartDate.toLocaleDateString()}</b>`,
                     icon: 'fa fa-calendar'
                 };
 
@@ -810,12 +827,7 @@ class CalendarWidget {
         const events = (this.anomaliesByDate && this.anomaliesByDate[targetDate]) ? this.anomaliesByDate[targetDate] : [];
 
         const searchLower = (searchText || '').toLowerCase().trim();
-        const missionMap = this.missionMap || {
-            's1': ['S1A', 'S1C', 'S1D'],
-            's2': ['S2A', 'S2B', 'S2C'],
-            's3': ['S3A', 'S3B'],
-            's5': ['S5P']
-        };
+        const missionMap = this.missionMap;
         return events.filter(event => {
             if (['archive', 'data access', 'data-access'].includes((event.category || '').toLowerCase())) {
                 return false;
@@ -830,7 +842,6 @@ class CalendarWidget {
 
             if (eventType && eventType !== 'all') {
                 const category = event.category === 'Platform' ? 'Satellite' : event.category;
-                const matchesType = category.toLowerCase() === eventType.toLowerCase();
                 if (category.toLowerCase() !== eventType.toLowerCase()) return false;
             }
 
@@ -921,13 +932,34 @@ class CalendarWidget {
             /* const validDtList = dtList.filter(dt =>
                  dt.id.startsWith("S1") || dt.id.startsWith("S2") || dt.id.startsWith("S3") || dt.id.startsWith("S5")
              );*/
+            const INLINE_THRESHOLD = 5;
 
-            const datatakeHtml = dtList
-                ? `<div style="color: white; font-size: 14px;">
-                        <p style="margin-bottom: 4px;">List of impacted datatakes:</p>
-                        ${this.arrangeDatatakesList(event, dtList)}
-                    </div>`
-                : '';
+            const datatakeHtml = dtList.length === 0
+                ? ''
+                : (() => {
+                    const visibleItems = dtList.slice(0, INLINE_THRESHOLD);
+                    const remainingCount = dtList.length - INLINE_THRESHOLD;
+
+                    const isOldDate = window.threeMonthsCutoff ? new Date(normalizedDate) < new Date(window.threeMonthsCutoff) : false;
+                    const visibleHtml = this.arrangeDatatakesList(event, visibleItems, normalizedDate);
+
+
+                    const moreLink = remainingCount > 0 && !isOldDate
+                        ? `<p style="margin-top: 6px; margin-bottom: 0;">
+                   <a href="/data-availability?event_id=${encodeURIComponent(event.id)}"
+                          target="_blank"
+                        style="color: #90caf9; font-size: 13px;">
+                       + ${remainingCount} more — View all ${dtList.length} datatakes →
+                   </a>
+               </p>`
+                        : '';
+
+                    return `<div style="color: white; font-size: 14px;">
+                    <p style="margin-bottom: 4px;">List of impacted datatakes:</p>
+                    ${visibleHtml}
+                    ${moreLink}
+                </div>`;
+                })();
 
 
             const isImage = iconClass.startsWith('/') || iconClass.endsWith('.png') || iconClass.endsWith('.jpg');
@@ -954,7 +986,8 @@ class CalendarWidget {
         if (!envStr) return '';
         if (envStr.includes('Data access')) return 'All Sentinels';
 
-        const sats = ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
+        const sats = (window.SATELLITE_DATA && window.SATELLITE_DATA.active) ||
+            ['S1A', 'S1C', 'S1D', 'S2A', 'S2B', 'S2C', 'S3A', 'S3B', 'S5P'];
         return sats.filter(sat => envStr.includes(sat)).join(', ');
     }
 
@@ -1050,7 +1083,7 @@ class CalendarWidget {
 
         if (targetDate) {
             // Set calendar month/year to target date
-            calendar.gotoMonth(targetDate.getFullYear(), targetDate.getMonth());
+            calendar.generateCalendar(targetDate.getMonth(), targetDate.getFullYear());
 
             // If we have a specific day, show it
             if (showDayEvents) {

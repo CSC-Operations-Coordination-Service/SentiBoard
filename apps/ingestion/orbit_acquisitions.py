@@ -2,13 +2,13 @@
 """
 Copernicus Operations Dashboard
 
-Copyright (C) - 
+Copyright (C) -
 All rights reserved.
 
-This document discloses subject matter in which  has 
-proprietary rights. Recipient of the document shall not duplicate, use or 
-disclose in whole or in part, information contained herein except for or on 
-behalf of  to fulfill the purpose for which the document was 
+This document discloses subject matter in which  has
+proprietary rights. Recipient of the document shall not duplicate, use or
+disclose in whole or in part, information contained herein except for or on
+behalf of  to fulfill the purpose for which the document was
 delivered to him.
 """
 import os
@@ -17,42 +17,68 @@ from satellite_tle import fetch_tle_from_celestrak
 
 import logging
 
-#from apps.elastic.modules.datatakes import OBSERVATION_START_KEY, OBSERVATION_END_KEY
-#from apps.elastic.modules.datatakes import DATATAKE_ID_KEY
+# from apps.elastic.modules.datatakes import OBSERVATION_START_KEY, OBSERVATION_END_KEY
+# from apps.elastic.modules.datatakes import DATATAKE_ID_KEY
 from apps.cache.modules.acquisitionassets import norad_id_map
+from apps.utils.satellite_registry import local_tle_files, get_mission_satellites
 from apps.ingestion.acquisition_plans.fragment_completeness import MissionDatatakeIdHandler
 from apps.ingestion.acquisition_plans.orbit_acquisitions_kml import OrbitAcquisitionKmlFragmentBuilder, \
     _build_datatake_placemark, build_acquisition_line_placemark, build_acquisition_polygon_placemark
 from apps.ingestion.acquisition_plans.orbit_datatake_acquisitions import OrbitAcquisitionsBuilder, \
     AcquisitionLineProfileFromOrbit, DatatakeAcquisition, AcquisitionPolygonProfileFromOrbit
+from apps.utils.tle_fetcher import get_latest_tle
 
 logger = logging.getLogger(__name__)
 
-local_tle_files = {
-    "S3A": "S3A_20231012.tle",
-    "S3B": "S3B_20231017.tle",
-    "S5P": "S5P_20231017.tle"
-}
+# local_tle_files is sourced from apps.utils.satellite_registry (imported above).
 
 
-def get_latest_tle(satellite):
-    # Otherwise retrieve from CACHE!
+""" def get_latest_tle(satellite):
     norad_id = norad_id_map[satellite]
     try:
-        return fetch_tle_from_celestrak(norad_id)
+        tle = _fetch_tle_classic_format(norad_id)
+        logger.info("TLE for %s fetched OK, name: %s, line1 epoch: %s",
+                    satellite, tle[0], tle[1][18:32])
+        return tle
     except Exception as ex:
+        logger.error("Celestrak fetch FAILED for %s: %s — falling back to local file", satellite, ex)
         tle_path = 'test/unit_tests/test_tles'
-        # Retrieve Last TLE from file
         tle_file = local_tle_files.get(satellite, None)
         if tle_file is not None:
             tle_full = os.path.join(tle_path, tle_file)
-            with open(tle_full, 'r') as tle_in:
+            with open(tle_full, "r") as tle_in:
                 lines = tle_in.readlines()
-                for line in lines:
-                    line.strip()
-            return lines
+            logger.warning("Using LOCAL TLE file %s — may be stale!", tle_file)
+            return [lines[0].strip(), lines[1].strip(), lines[2].strip()]
         raise ex
+"""
+    
+""" def _fetch_tle_classic_format(norad_cat_id, verify=True):
+    # Fetch classic 3-line TLE from Celestrak, forcing TLE format explicitly.
+    # Celestrak's gp.php now returns OMM/CSV by default — FORMAT=TLE forces classic format.
+    import requests
+    url = f'https://celestrak.org/NORAD/elements/gp.php?CATNR={norad_cat_id}&FORMAT=TLE'
+    logger.info("Fetching TLE from: %s", url)
+    r = requests.get(url, verify=True, timeout=20)
+    r.raise_for_status()
 
+    if 'No TLE found' in r.text:
+        raise LookupError(f"No TLE found for NORAD ID {norad_cat_id}")
+
+    tle = r.text.strip().split('\n')
+    if len(tle) < 3:
+        raise ValueError(f"Unexpected TLE response format: {r.text[:200]}")
+
+    name = tle[0].strip()
+    line1 = tle[1].strip()
+    line2 = tle[2].strip()
+
+    # Validate it looks like a real TLE
+    if not line1.startswith('1 ') or not line2.startswith('2 '):
+        raise ValueError(f"Response does not look like classic TLE: {line1[:40]}")
+
+    return [name, line1, line2]
+"""
 
 #ORBIT_PROPAGATION_STEP = 60
 ORBIT_PROPAGATION_STEP = 90
@@ -87,18 +113,22 @@ class OrbitBuilderFactory:
 
 
 orbit_builder_factory = OrbitBuilderFactory()
-orbit_builder_factory.register_acquisition_image_builder("Line", AcquisitionLineProfileFromOrbit)
-orbit_builder_factory.register_acquisition_image_builder("Polygon", AcquisitionPolygonProfileFromOrbit)
+orbit_builder_factory.register_acquisition_image_builder(
+    "Line", AcquisitionLineProfileFromOrbit
+)
+orbit_builder_factory.register_acquisition_image_builder(
+    "Polygon", AcquisitionPolygonProfileFromOrbit
+)
 orbit_builder_factory.register_kml_builder("Line", build_acquisition_line_placemark)
-orbit_builder_factory.register_kml_builder("Polygon", build_acquisition_polygon_placemark)
+orbit_builder_factory.register_kml_builder(
+    "Polygon", build_acquisition_polygon_placemark
+)
 
 
 class AcquisitionPlanOrbitDatatakeBuilder:
-    """
+    """ """
 
-    """
-    def __init__(self, mission, mission_fragments, daily_datatakes,
-                 profile="Polygon"):
+    def __init__(self, mission, mission_fragments, daily_datatakes, profile="Polygon"):
         """
 
         Args:
@@ -112,8 +142,12 @@ class AcquisitionPlanOrbitDatatakeBuilder:
         # Acquisition Type (Line/Polygon)
         placemark_profile = profile
 
-        self._acquisition_image_builder_class = orbit_builder_factory.get_acquisition_image_builder(placemark_profile)
-        self._placemark_geometry_builder_fun = orbit_builder_factory.get_kml_builder(placemark_profile)
+        self._acquisition_image_builder_class = (
+            orbit_builder_factory.get_acquisition_image_builder(placemark_profile)
+        )
+        self._placemark_geometry_builder_fun = orbit_builder_factory.get_kml_builder(
+            placemark_profile
+        )
         # TODO: For Test purposes, mock this function to get test datatakes
         self._daily_datatakes = daily_datatakes
         if self._daily_datatakes is None:
@@ -128,8 +162,11 @@ class AcquisitionPlanOrbitDatatakeBuilder:
         Returns:
 
         """
-        logger.info("[BEG] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
-                    self._mission, from_date)
+        logger.info(
+            "[BEG] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
+            self._mission,
+            from_date,
+        )
         orbit_step = ORBIT_PROPAGATION_STEP  # Propagation at 10 seconds
 
         # For each satellite for mission
@@ -139,17 +176,23 @@ class AcquisitionPlanOrbitDatatakeBuilder:
             fragment_days = self._daily_datatakes.keys()
             # 1. instantiate an Orbit Acquisitions Builder (it needs a TLE or a list of TLE for the period)
             # Retrieve latest TLE
-            sat_tle_data = get_latest_tle(satellite)
+            sat_tle_data = get_satellite_tle(satellite)
             logger.warning(sat_tle_data)
 
             # Use a Builder that creates acquisitions from Orbit points
-            sat_orbit_builder = OrbitAcquisitionsBuilder(satellite, sat_tle_data,
-                                                         orbit_step,
-                                                         self._acquisition_image_builder_class)
+            sat_orbit_builder = OrbitAcquisitionsBuilder(
+                satellite,
+                sat_tle_data,
+                orbit_step,
+                self._acquisition_image_builder_class,
+            )
             #  Instantiate the KML Fragments Builder
             self._build_satellite_fragments(fragment_days, sat_orbit_builder, satellite)
-        logger.info("[END] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
-                    self._mission, from_date)
+        logger.info(
+            "[END] Retrieving from internet Acquisition Plan KML files for mission %s, date %s",
+            self._mission,
+            from_date,
+        )
 
     # TODO: Either use constants for Dictionary keys,
     #   or define a dataclass to be imported from datatakes
@@ -158,11 +201,14 @@ class AcquisitionPlanOrbitDatatakeBuilder:
     def _acquisition_from_datatake(datatake, sat_orbit_builder):
         acq = DatatakeAcquisition(datatake)
         # NOTE: DT Has no Start/End Time
-        acq.acquisition_points = sat_orbit_builder.compute_acquisition_points(acq.start_time,
-                                                                              acq.end_time)
-        logger.debug("Datatake %s: Computed %d points for acquisition profile",
-                     acq.datatake_id,
-                     len(acq.acquisition_points))
+        acq.acquisition_points = sat_orbit_builder.compute_acquisition_points(
+            acq.start_time, acq.end_time
+        )
+        logger.debug(
+            "Datatake %s: Computed %d points for acquisition profile",
+            acq.datatake_id,
+            len(acq.acquisition_points),
+        )
         return acq
 
     def _build_satellite_fragments(self, fragment_days, sat_orbit_builder, satellite):
@@ -177,8 +223,11 @@ class AcquisitionPlanOrbitDatatakeBuilder:
 
         """
         for acq_day in fragment_days:
-            logger.debug("Building Fragments from Orbit/datatakes - satellite: %s, day: %s",
-                         satellite, acq_day)
+            logger.debug(
+                "Building Fragments from Orbit/datatakes - satellite: %s, day: %s",
+                satellite,
+                acq_day,
+            )
             # Instantiate a KML Builder for each Day
             # Each builder creates a KML Fragment
             #      Let the KML Fragments Builder create a Fragment for current day
@@ -197,19 +246,40 @@ class AcquisitionPlanOrbitDatatakeBuilder:
                         acq = self._acquisition_from_datatake(dt, sat_orbit_builder)
                         acq_placemark = _build_datatake_placemark(acq, self._id_key)
                         acq_placemark.append(self._placemark_geometry_builder_fun(acq))
-                        sat_kml_builder.add_to_daily_folder(acq_day, satellite,
-                                                            acq_placemark)
+                        sat_kml_builder.add_to_daily_folder(
+                            acq_day, satellite, acq_placemark
+                        )
 
                 # Add the P Mist to current Fragment
                 # Save the KML Fragments on the Mission Acqplan Fragments Area.
-                self._mission_acqplan_fragments[satellite].process_kml_folder(sat_kml_builder.fragment)
+                self._mission_acqplan_fragments[satellite].process_kml_folder(
+                    sat_kml_builder.fragment
+                )
 
 
+# Orbit-based acquisition plans cover the S3 and S5 missions; derived from the
+# central registry so a new unit (e.g. S3C) is picked up automatically.
 acq_orbit_mission_satellites = {
-    "S3": ["S3A", "S3B"],
-    "S5": ["S5P"]
+    m: sats
+    for m, sats in get_mission_satellites(active_only=True).items()
+    if m in ("S3", "S5")
 }
 
+def get_satellite_tle(satellite):
+    norad_id = norad_id_map[satellite]
+    try:
+        return get_latest_tle(norad_id, satellite)
+    except Exception as ex:
+        logger.error("Celestrak fetch FAILED for %s: %s — falling back to local file", satellite, ex)
+        tle_path = 'test/unit_tests/test_tles'
+        tle_file = local_tle_files.get(satellite, None)
+        if tle_file is not None:
+            tle_full = os.path.join(tle_path, tle_file)
+            with open(tle_full, 'r') as tle_in:
+                lines = tle_in.readlines()
+            logger.warning("Using LOCAL TLE file %s for %s — may be stale!", tle_file, satellite)
+            return lines[0].strip(), lines[1].strip(), lines[2].strip()
+        raise ex
 
 # class OrbitDatatakeAcquisitionIngestor:
 #     def __init__(self, past_num_days):

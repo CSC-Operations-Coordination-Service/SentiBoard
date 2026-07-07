@@ -11,8 +11,10 @@ disclose in whole or in part, information contained herein except for or on
 behalf of ${ownerShort} to fulfill the purpose for which the document was
 delivered to him.
 """
+
 import logging
 import os
+import re
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -21,6 +23,7 @@ from typing import List
 from urllib.parse import urljoin, urlparse
 
 from apps.cache.cache import ConfigCache
+from apps.utils.satellite_registry import get_acqplan_div_map
 from apps.ingestion import news_scraper as scraper
 from apps.utils import html_utils as html_utils
 
@@ -58,6 +61,8 @@ class SatelliteAcqPlanLink:
         end_date_str = name_components[-1]
         start_date_str = name_components[-2]
         # # fromisoformat
+        end_date_str = re.split(r"-\d+$", end_date_str)[0]
+        start_date_str = re.split(r"-\d+$", start_date_str)[0]
         self.end_date = datetime.strptime(end_date_str, date_fmt)
         self.start_date = datetime.strptime(start_date_str, date_fmt)
 
@@ -264,7 +269,9 @@ class AcqPlanKmlRetriever:
         page_contents = html_utils.get_html_page(url)
         html_page = scraper.ScarperHtml(page_contents)
         # For each platform in platform list
-        acqplan_div = mission_cfg["acqplan_div"]
+        # acqplan_div now comes from the central satellite registry; the
+        # scraper URLs still come from config (acqplans_config).
+        acqplan_div = get_acqplan_div_map().get(self._mission, {})
         logger.debug("Scraping from page div: %s", acqplan_div)
         acqplan_config = {"acqplan_div": acqplan_div}
         plan_retriever = AcqPlanLinksPageParser(

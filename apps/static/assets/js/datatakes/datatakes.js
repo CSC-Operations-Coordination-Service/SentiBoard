@@ -259,10 +259,17 @@ class Datatakes {
     }
 
     getGroundStation(id) {
-        if (id.includes("S1A") || id.includes("S1C") || id.includes("S1D")) return "Sentinel 1";
-        if (id.includes("S2A") || id.includes("S2B")) return "Sentinel 2";
-        if (id.includes("S3")) return "Sentinel 3";
-        if (id.includes("S5P")) return "Sentinel 5P";
+        var registry = window.SATELLITE_REGISTRY || {};
+        for (var mission in registry) {
+            var sats = registry[mission];
+            for (var i = 0; i < sats.length; i++) {
+                if (id.includes(sats[i])) {
+                    // "S5" → "Sentinel 5P", everything else → "Sentinel 1", "Sentinel 2", etc.
+                    var missionNumber = mission.substring(1);  // "1", "2", "3", "5"
+                    return mission === "S5" ? "Sentinel 5P" : "Sentinel " + missionNumber;
+                }
+            }
+        }
         return "Sentinel";
     }
 

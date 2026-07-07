@@ -28,12 +28,22 @@ missionDatatakeId = {
     'S5': "datatake_id"
 }
 
-satelliteNoradId = {
-    'S1A': 39634, 'S1B': 41456, 'S1C': 62261, 'S1D': 66315,
-    'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
-    'S3A': 41335, 'S3B': 43437,
-    'S5P': 42969
-};
+// NORAD ids sourced from the central satellite registry (window.SATELLITE_DATA).
+satelliteNoradId = (function () {
+    var out = {};
+    var data = (window.SATELLITE_DATA && window.SATELLITE_DATA.satellites) || {};
+    for (var id in data) {
+        if (data[id].noradId != null) {
+            out[id] = data[id].noradId;
+        }
+    }
+    return Object.keys(out).length ? out : {
+        'S1A': 39634, 'S1B': 41456, 'S1C': 62261, 'S1D': 66315,
+        'S2A': 40697, 'S2B': 42063, 'S2C': 60989,
+        'S3A': 41335, 'S3B': 43437,
+        'S5P': 42969
+    };
+})();
 
 useDatePicker = false;
 
@@ -53,24 +63,34 @@ class MissionAcquisitionDates extends EventTarget {
 
         super();
 
-        this.acqplansDates = {
-            'S1A': { label: 'Sentinel-1A', mission: 'S1', dates: [] },
-            'S1B': { label: 'Sentinel-1B', mission: 'S1', dates: [] },
-            'S1C': { label: 'Sentinel-1C', mission: 'S1', dates: [] },
-            'S1D': { label: 'Sentinel-1D', mission: 'S1', dates: [] },
-            'S2A': { label: 'Sentinel-2A', mission: 'S2', dates: [] },
-            'S2B': { label: 'Sentinel-2B', mission: 'S2', dates: [] },
-            'S2C': { label: 'Sentinel-2C', mission: 'S2', dates: [] },
-            'S3A': { label: 'Sentinel-3A', mission: 'S3', dates: [] },
-            'S3B': { label: 'Sentinel-3B', mission: 'S3', dates: [] },
-            'S5P': { label: 'Sentinel-5P', mission: 'S5', dates: [] },
-        };
+        // Built from the central satellite registry (window.SATELLITE_DATA).
+        this.acqplansDates = (function () {
+            var out = {};
+            var data = (window.SATELLITE_DATA && window.SATELLITE_DATA.satellites) || {};
+            for (var id in data) {
+                out[id] = { label: data[id].label, mission: data[id].mission, dates: [] };
+            }
+            return Object.keys(out).length ? out : {
+                'S1A': { label: 'Sentinel-1A', mission: 'S1', dates: [] },
+                'S1B': { label: 'Sentinel-1B', mission: 'S1', dates: [] },
+                'S1C': { label: 'Sentinel-1C', mission: 'S1', dates: [] },
+                'S1D': { label: 'Sentinel-1D', mission: 'S1', dates: [] },
+                'S2A': { label: 'Sentinel-2A', mission: 'S2', dates: [] },
+                'S2B': { label: 'Sentinel-2B', mission: 'S2', dates: [] },
+                'S2C': { label: 'Sentinel-2C', mission: 'S2', dates: [] },
+                'S3A': { label: 'Sentinel-3A', mission: 'S3', dates: [] },
+                'S3B': { label: 'Sentinel-3B', mission: 'S3', dates: [] },
+                'S5P': { label: 'Sentinel-5P', mission: 'S5', dates: [] },
+            };
+        })();
 
         this.selectedParams = {
             'mission': null,
             'satellite': null,
             'day': null
         };
+
+        this._suppressEvents = false;
 
         this._daySelectionId = useDatePicker ? 'datepicker' : 'acquisition-plans-day-select';
 
@@ -136,7 +156,6 @@ class MissionAcquisitionDates extends EventTarget {
             return;
         }
 
-        // Populate internal structure
         for (const [mission, satellites] of Object.entries(SSR_ACQ_PLAN_DAYS)) {
             for (const [satellite, dayList] of Object.entries(satellites)) {
                 if (this.acqplansDates[satellite]) {
@@ -145,35 +164,62 @@ class MissionAcquisitionDates extends EventTarget {
             }
         }
 
-        // Fill satellite select options
         const satelliteSel = document.getElementById('acquisition-plans-satellite-select');
         const satelliteLabels = Object.keys(this.acqplansDates)
-            .filter(sat => this.acqplansDates[sat].dates.length > 0) // only with available days
+            .filter(sat => this.acqplansDates[sat].dates.length > 0)
             .map(sat => [sat, this.acqplansDates[sat].label]);
 
         this._fill_select_element(satelliteSel, satelliteLabels);
 
-        // Auto-select the first satellite with available days
-        if (satelliteLabels.length > 0) {
-            this._select_element(satelliteSel, satelliteLabels[0][0]);
-        }
+        if (satelliteLabels.length === 0) return;
+
+        // Set the first satellite as selected
+        const firstSat = satelliteLabels[0][0];
+        satelliteSel.value = firstSat;  // set value without dispatching change event
+
+        // Manually update selectedParams
+        this.selectedParams.satellite = firstSat;
+        this.selectedParams.mission = this.acqplansDates[firstSat].mission;
+
+        // Manually populate the date dropdown for the first satellite
+        const dayList = this.acqplansDates[firstSat].dates;
+        const daySelectItems = dayList.map(day => [day, moment(day, 'YYYY-MM-DD').format("DD MMM yyyy")]);
+        const dateSel = document.getElementById(this._daySelectionId);
+        this._fill_select_element(dateSel, daySelectItems);
+
+        // Select the default day (today or last available)
+        const todayItem = moment().format('YYYY-MM-DD');
+        const exists = Array.from(dateSel.options).some(opt => opt.value === todayItem);
+        const defaultDay = exists ? todayItem : (dateSel.options.length > 0 ? dateSel.options[dateSel.options.length - 1].value : null);
+
+        if (!defaultDay) return;
+
+        dateSel.value = defaultDay;
+        this.selectedParams.day = defaultDay;
+
+        // Fire exactly one load after a short delay to let Cesium initialize
         setTimeout(() => {
-            const dateSel = document.getElementById(this._daySelectionId);
-            if (dateSel && dateSel.value) {
-                //console.info("[SSR] Forcing initial plan load for day: ", dateSel.value);
-                dateSel.dispatchEvent(new Event('change'));
-            }
+            const planDayEvent = new CustomEvent('changeDate', {
+                detail: { ...this.selectedParams },
+                cancelable: true
+            });
+            this.dispatchEvent(planDayEvent);
         }, 0);
     }
+
 
     onSatelliteSelectChange(ev) {
         const satellite = ev.target.value;
         this.selectedParams.satellite = satellite;
         this.selectedParams.mission = this.acqplansDates[satellite].mission;
 
-        const dayList = this.acqplansDates[satellite].dates;
-        const daySelectItems = dayList.map(day => [day, moment(day, 'YYYY-MM-DD').format("DD MMM yyyy")]);
+        const today = moment().format('YYYY-MM-DD');
 
+        // Filter out future days
+        const dayList = this.acqplansDates[satellite].dates
+            .filter(day => day <= today);
+
+        const daySelectItems = dayList.map(day => [day, moment(day, 'YYYY-MM-DD').format("DD MMM YYYY")]);
         this.setAvailableDays(daySelectItems);
     }
 
@@ -198,15 +244,27 @@ class MissionAcquisitionDates extends EventTarget {
 
     selectDefaultDay(date_sel) {
         const todayItem = moment().format('YYYY-MM-DD');
-        const exists = Array.from(date_sel.options).some(opt => opt.value === todayItem);
+        const options = Array.from(date_sel.options).map(opt => opt.value);
 
-        if (exists) {
+        if (options.includes(todayItem)) {
+            // Today is available, select it
             this._select_element(date_sel, todayItem);
-        } else if (date_sel.options.length > 0) {
-            this._select_element(date_sel, date_sel.options[date_sel.options.length - 1].value);
+        } else if (options.length > 0) {
+            // Find the closest past day to today
+            const pastDays = options.filter(d => d <= todayItem);
+            if (pastDays.length > 0) {
+                // Pick the most recent past day
+                const closest = pastDays[pastDays.length - 1];
+                this._select_element(date_sel, closest);
+            } else {
+                // No past days at all, fall back to first available
+                this._select_element(date_sel, options[0]);
+            }
         }
     }
+
     onPlanDaySelectChange(ev) {
+        if (this._suppressEvents) return;
         this.selectedParams.day = ev.target.value;
 
         const planDayEvent = new CustomEvent('changeDate', {
@@ -331,17 +389,6 @@ class AcquisitionPlansViewer {
             this.successLoadAcquisitionStations(SSR_ACQUISITION_STATIONS);
         } else {
             console.error("[SSR] Missing SSR_ACQUISITION_STATIONS payload!");
-        }
-    }
-
-    waitForCesiumToolbar(viewer, callback, attempt = 0) {
-        const toolbar = viewer.container.querySelector('.cesium-viewer-toolbar');
-        if (toolbar) {
-            callback(); // safe to initialize plugin
-        } else if (attempt < 20) {
-            setTimeout(() => this.waitForCesiumToolbar(viewer, callback, attempt + 1), 100);
-        } else {
-            console.error('Cesium viewer toolbar not found after 2s.');
         }
     }
 
@@ -553,94 +600,118 @@ class AcquisitionPlansViewer {
      * @returns N/A
      */
     drawAcquisitionPlan(kmlString) {
-
-        // Acknowledge drawing of KML
-        console.log("Drawing KML for Acq Plan ");
-
+        console.log("Drawing KML for Acq Plan");
         const blob = new Blob([kmlString], { type: 'application/vnd.google-earth.kml+xml' });
         const url = URL.createObjectURL(blob);
+        const options = { credit: "ESA" };
 
-        const options = {
-            // camera : this.viewer_widget.scene.camera,
-            // canvas : this.viewer_widget.scene.canvas,
-            // clampToGround: true,
-            credit: "ESA"
-        };
-        // Remove first previous loaded KML DSulian
         var newAcqPlanDSpromise = Cesium.KmlDataSource.load(url, options);
         var that = this;
         newAcqPlanDSpromise.then(function (kmlDS) {
             URL.revokeObjectURL(url);
-            // that.viewer_widget.flyTo(newAcqPlanDSpromise);
-            console.log("Setting KML Datasource clock properties");
-            kmlDS.clock.multiplier = 300; // Step are 10 minutes long
-            kmlDS.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER;
-            kmlDS.clock.clockRange = Cesium.ClockRange.CLAMPED;
+            console.log("kmlDS.clock:", kmlDS.clock);
+            console.log("entity count:", kmlDS.entities.values.length);
+
+            if (kmlDS.entities.values.length > 0) {
+                const e = kmlDS.entities.values[0];
+                console.log("first entity availability:", e.availability ?
+                    e.availability.start.toString() + ' → ' + e.availability.stop.toString() : 'NONE');
+            }
+            if (kmlDS.clock) {
+                that.viewer_widget.clock.startTime = kmlDS.clock.startTime.clone();
+                that.viewer_widget.clock.stopTime = kmlDS.clock.stopTime.clone();
+                that.viewer_widget.clock.currentTime = kmlDS.clock.startTime.clone();
+                that.viewer_widget.clock.clockRange = Cesium.ClockRange.CLAMPED;
+                that.viewer_widget.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER;
+                that.viewer_widget.clock.multiplier = 300;
+            } else {
+                console.warn("KML datasource has no clock — applying settings to viewer clock only");
+                that.viewer_widget.clock.multiplier = 300;
+                that.viewer_widget.clock.clockStep = Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER;
+                that.viewer_widget.clock.clockRange = Cesium.ClockRange.CLAMPED;
+            }
+
             kmlDS.entities.values.forEach(function (kmlEntity) {
                 kmlEntity.show = true;
             });
             kmlDS.entities.show = true;
+
             if (that.currentKMLDatasources.length > 0) {
                 that.viewer_widget.dataSources.remove(that.currentKMLDatasources[0], true);
                 that.currentKMLDatasources.pop();
             }
             that.currentKMLDatasources.push(kmlDS);
-            //that.viewer_widget.clock.canAnimate = true;
+
             that.viewer_widget.clock.shouldAnimate = true;
             console.log("Adding KML Source to Viewer");
-            that.viewer_widget.dataSources.add(kmlDS).then(
-                function (data) {
-                    //data.clock.shouldAnimate = true;
-                    console.log("Completed loading KML Source on Viewr");
-                    // var dtListAttrs =
-                    var dtList = that.extractDatatakeIdList(data);
-                    that.writeDatatakesList(dtList); // (dtListAttrs)
-                    that._isInitialLoad = false;
-                });
+            that.viewer_widget.dataSources.add(kmlDS).then(function (data) {
+                console.log("Completed loading KML Source on Viewer");
+                var dtList = that.extractDatatakeIdList(data);
+                that.writeDatatakesList(dtList);
+                that._isInitialLoad = false;
+            });
         });
     }
 
     extractDatatakeIdList(kmlSource) {
-
-        // Acknowledge the creation of the datatakes list
         console.debug("Extracting Datatakes from Datasource");
 
-        // Note: we need a pointer to the entity in addition to the name
-        // saves the list of DataTake ID, associated with the parent Entity name
         var dtIdProperty = missionKmlDatatakeId[this.currentMission];
         var that = this;
         this.datatakes_list = new Map();
 
-        // Map on Entities on KML Source (i.e. Placemark elements,
-        // loaded with metadata (extendedData) )
-        var dtIdValues = kmlSource.entities.values.map(function (val) {
-            if (val.kml.extendedData) {
-                var dtId = val.kml.extendedData[dtIdProperty].value;
-                var dtLabel = dtId;
-                if (that.currentMission === 'S2') {
+        var seen = new Set();
+        var result = [];
 
-                    // Extract Mode and append to label
-                    dtLabel = dtLabel + " (" + val.kml.extendedData['Mode'].value + ")";
-                }
+        var geometryEntityMap = new Map();
+        if (this.currentMission === 'S3' || this.currentMission === 'S5') {
+            kmlSource.entities.values.forEach(function (val) {
+                if (!val.kml || !val.kml.extendedData) return;
+                var dtIdData = val.kml.extendedData[dtIdProperty];
+                if (!dtIdData) return;
+                var dtId = dtIdData.value;
 
-                // Datatakes: map Datatake ID to Datatake Entity
-                // It was Label to [ ID, Entity ]
-                that.datatakes_list.set(dtId, val);
-                var dt_publicationStatus = val.kml.extendedData['Publication Status'];
-                if (dt_publicationStatus) {
-                    dt_publicationStatus = dt_publicationStatus['value'];
+                if (!geometryEntityMap.has(dtId) && val.polygon) {
+                    geometryEntityMap.set(dtId, val);
                 }
-                var dt_status = that.decodeDatatakeCompletenessStatus(dt_publicationStatus);
-                // TODO: Change: insert val (whole entity) instead of dtId
-                // Do not create and fill datatakes_list
-                return [dtLabel, dtId, dt_status];
+            });
+            console.debug("S3/S5 geometry entities found:", geometryEntityMap.size);
+        }
+
+        kmlSource.entities.values.forEach(function (val) {
+            if (!val.kml || !val.kml.extendedData) return;
+
+            var dtIdData = val.kml.extendedData[dtIdProperty];
+            if (!dtIdData) return;
+            var dtId = dtIdData.value;
+
+            if (seen.has(dtId)) return;
+            seen.add(dtId);
+
+            var dtLabel = dtId;
+            if (that.currentMission === 'S2' && val.kml.extendedData['Mode']) {
+                dtLabel = dtLabel + " (" + val.kml.extendedData['Mode'].value + ")";
             }
+
+            // For S3/S5: store geometry child for flyTo; otherwise store parent
+            if ((that.currentMission === 'S3' || that.currentMission === 'S5') && geometryEntityMap.has(dtId)) {
+                that.datatakes_list.set(dtId, geometryEntityMap.get(dtId));
+            } else {
+                that.datatakes_list.set(dtId, val);
+            }
+
+            var dt_publicationStatus = val.kml.extendedData['Publication Status'];
+            if (dt_publicationStatus) {
+                dt_publicationStatus = dt_publicationStatus['value'];
+            }
+            var dt_status = that.decodeDatatakeCompletenessStatus(dt_publicationStatus);
+
+            result.push([dtLabel, dtId, dt_status]);
         });
 
-        // this.datatakes_list = new Map(dtIdValues.filter(n=> n));
-        // Return list without None elements!
-        return dtIdValues.filter(n => n);
+        return result;
     }
+
 
     extractAcquisitionDatatakeIdList(acq_datatakes) {
         console.debug("Extracting Datatakes from Acquisition Datatakes");
@@ -668,18 +739,9 @@ class AcquisitionPlansViewer {
         console.debug("Building dropdown menu with the Datatakes List");
 
         const $select = $('#acq-datatakes-select');
-
-        //Clear old options
         $select.find('option').remove();
 
-        // Write on the proper panel a list of links, with label the Datatake Id
-        // and associated a reference (or the name) of the datatake Entity
-        // An event is registered on the list, that flies to the selected entity
-        console.debug("Datatakes table on class: ", this.datatakes_list);
-
-        // Loop over each data take and append the corresponding entry
         datatakesList.forEach(function (value) {
-            // TODO: CHange: pass directly the DT Entity as value to the option
             const [dt_label, dt_id, dt_status] = value;
             let escape_circle_status = '&#9899';
             if (dt_status === 'ok') escape_circle_status = '&#128994';
@@ -692,25 +754,48 @@ class AcquisitionPlansViewer {
             );
         });
 
-        // Manage selection changes
         const that = this;
         $select.off('change').on('change', function () {
-            // Read current selected value of select element
             const dt = $(this).val();
             if (!dt) return;
             that.stopKmlAnimation();
             that.flyToDatatake(dt);
         });
 
-        // Trigger change manually after populating the list
         if ($select[0].options.length > 0) {
             const firstValue = $select[0].options[0].value;
-            //console.info("[AUTO] Triggering change to first datatake: ", firstValue);
-            $select.val(firstValue).trigger('change');
+            this._flyToWithRetry(firstValue, 0);
         }
 
-        // Acknowledge the completion of the drop-down datatake list
         console.debug("Completed building dropdown menu with Datatakes List");
+    }
+
+    _flyToWithRetry(datatake_id, attempt) {
+        const MAX_ATTEMPTS = 5;
+        const RETRY_DELAY = 600; // ms between attempts
+
+        const that = this;
+        setTimeout(() => {
+            const dt_entity = that.datatakes_list.get(datatake_id);
+            if (!dt_entity) {
+                console.warn("_flyToWithRetry: entity not in datatakes_list", datatake_id);
+                return;
+            }
+
+            // Check entity is actually in the viewer scene
+            const inScene = that.currentKMLDatasources.length > 0 &&
+                that.currentKMLDatasources[0].entities.contains(dt_entity);
+
+            if (!inScene && attempt < MAX_ATTEMPTS) {
+                console.debug(`_flyToWithRetry: entity not in scene yet, attempt ${attempt + 1}/${MAX_ATTEMPTS}`);
+                that._flyToWithRetry(datatake_id, attempt + 1);
+                return;
+            }
+
+            // Select in dropdown and trigger flyTo
+            $('#acq-datatakes-select').val(datatake_id).trigger('change');
+
+        }, RETRY_DELAY);
     }
 
     // Or just perform on this.viewer_widget.camera flyToHome!
@@ -739,54 +824,119 @@ class AcquisitionPlansViewer {
 
     flyToDatatake(datatake_id) {
         var dt_entity = this.datatakes_list.get(datatake_id);
-        var dt_name = dt_entity.name; // this.datatakes_list.get(datatake_id); // dt_entity.name;
-        if (acquisitionKmlMissions.some(word => datatake_id.startsWith(word))) {
-            //if (datatake_id.startsWith('S1') || datatake_id.startsWith('S2') || datatake_id.startsWith('S3')) {
-
-            // TODO : handle non existing entity
-            // Find entity in KML Source Collection with specified name
-            //console.log("Entity with id ", datatake_id, ", name ", dt_name, ":", dt_entity);
-            this.selectViewerTarget(dt_entity);
-            this.viewer_widget.clock.currentTime = dt_entity.availability.start;
-            var flyPromise = this.viewer_widget.flyTo(dt_entity);
-            var that = this;
-            flyPromise.then(function (result) {
-                if (result) {
-                    // console.log("Displaying details");
-                    that.viewer_widget.scene.requestRender();
-                }
-                else {
-                    console.log('Flyto was canceled or entity not in scene: ', result);
-                }
-            }).catch(function (error) {
-                console.log(error);
-            });
-
-        } else {
-
-            // TEMPORARY: For S3/S5: set time,
-            // Satellite is defined by first 3 chars in datatake id
-            var dt_satellite = datatake_id.substring(0, 2);
-            this.flyToSatellite(dt_satellite, dt_entity.observation_time_start)
+        if (!dt_entity) {
+            console.warn("flyToDatatake: no entity found for", datatake_id);
+            return;
         }
+
+        const mission = this.currentMission;
+
+        if (mission === 'S3' || mission === 'S5') {
+            const extData = dt_entity.kml && dt_entity.kml.extendedData;
+            const obsStart = extData && extData['ObservationTimeStart'] && extData['ObservationTimeStart'].value;
+            const obsStop = extData && extData['ObservationTimeStop'] && extData['ObservationTimeStop'].value;
+
+            if (!obsStart) {
+                console.warn("flyToDatatake: missing ObservationTimeStart for", datatake_id);
+                return;
+            }
+
+            let obsMidTime;
+            if (obsStop) {
+                const startMs = new Date(obsStart).getTime();
+                const stopMs = new Date(obsStop).getTime();
+                obsMidTime = new Date(startMs + (stopMs - startMs) / 2).toISOString();
+            } else {
+                obsMidTime = obsStart;
+            }
+
+            const obsMidJulian = Cesium.JulianDate.fromIso8601(obsMidTime);
+            this.viewer_widget.clock.currentTime = obsMidJulian;
+            this.viewer_widget.selectedEntity = dt_entity;
+            this.viewer_widget.trackedEntity = undefined;
+
+            // Primary: polygon centroid — always correct, no clock/orbit dependency
+            if (dt_entity.polygon && dt_entity.polygon.hierarchy) {
+                const hierarchy = dt_entity.polygon.hierarchy.getValue(obsMidJulian)
+                    || dt_entity.polygon.hierarchy.getValue(Cesium.Iso8601.MAXIMUM_VALUE);
+                const positions = hierarchy ? hierarchy.positions : null;
+
+                if (positions && positions.length > 0) {
+                    const quarter = Math.floor(positions.length / 4);
+                    const sample = positions.slice(quarter, positions.length - quarter);
+                    const pts = sample.length > 0 ? sample : positions;
+                    let sumX = 0, sumY = 0, sumZ = 0;
+                    for (const pos of pts) { sumX += pos.x; sumY += pos.y; sumZ += pos.z; }
+                    const centroid = new Cesium.Cartesian3(sumX / pts.length, sumY / pts.length, sumZ / pts.length);
+                    const carto = Cesium.Cartographic.fromCartesian(centroid);
+                    const camAltitude = (mission === 'S5') ? 3500000 : 2000000;
+                    this.viewer_widget.camera.flyTo({
+                        destination: Cesium.Cartesian3.fromDegrees(
+                            Cesium.Math.toDegrees(carto.longitude),
+                            Cesium.Math.toDegrees(carto.latitude),
+                            camAltitude
+                        ),
+                        duration: 2,
+                        complete: () => { this.viewer_widget.clock.shouldAnimate = true; }
+                    });
+                    return;
+                }
+            }
+
+            // Fallback: last resort
+            this.viewer_widget.flyTo(dt_entity).then(() => {
+                this.viewer_widget.clock.shouldAnimate = true;
+            });
+            return;
+        }
+
+
+        // S1 and S2 — standard KML flyTo
+        this.selectViewerTarget(dt_entity);
+        if (dt_entity.availability) {
+            this.viewer_widget.clock.currentTime = dt_entity.availability.start;
+        }
+        var flyPromise = this.viewer_widget.flyTo(dt_entity);
+        var that = this;
+        flyPromise.then(function (result) {
+            if (result) {
+                that.viewer_widget.scene.requestRender();
+            } else {
+                console.warn('flyToDatatake: flyTo canceled:', datatake_id);
+            }
+        }).catch(function (error) {
+            console.error("flyToDatatake error:", error);
+        });
     }
 
     flyToSatellite(satellite_id, satellite_timestamp) {
-        // TODO: Find another way to select Orbit Datasource
-        var czmlDs = this.viewer_widget.dataSources.get(1);
-        var satNoradId = satelliteNoradId[satellite_id];
-        var dt_sat_entity = czmlDs.entities.getById(satNoradId);
+        // Find satellite entity by scanning all datasources
+        const satNoradId = satelliteNoradId[satellite_id];
+        if (!satNoradId) {
+            console.warn("flyToSatellite: unknown satellite_id", satellite_id);
+            return;
+        }
 
-        // Find Satellite for this Datatake
-        // select CZML orbit for S3/S5, rotate to center the satellite,
-        // Keep view Height
-        // 2023-10-10T00:21:00.331Z
+        let dt_sat_entity = null;
+        for (let i = 0; i < this.viewer_widget.dataSources.length; i++) {
+            const ds = this.viewer_widget.dataSources.get(i);
+            const found = ds.entities.getById(satNoradId);
+            if (found) {
+                dt_sat_entity = found;
+                break;
+            }
+        }
+
+        if (!dt_sat_entity) {
+            console.warn("flyToSatellite: entity not found for NORAD ID", satNoradId);
+            return;
+        }
+
         var dt_start_julian = Cesium.JulianDate.fromIso8601(satellite_timestamp);
-
-        // Convert time string to current Time object
         this.viewer_widget.clock.currentTime = dt_start_julian;
         this.selectViewerTarget(dt_sat_entity);
     }
+
 
     selectViewerTarget(entity) {
         this.viewer_widget.trackedEntity = entity;

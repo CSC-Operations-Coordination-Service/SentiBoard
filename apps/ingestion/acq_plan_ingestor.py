@@ -17,9 +17,13 @@ import logging
 from apps.cache.modules.datatakes import get_daily_datatakes
 from apps.ingestion.acquisition_plans.acq_link_page import AcqPlanKmlLinkIngestor
 from apps.ingestion.acquisition_plans.acq_plan_fragments import AcqPlanFragments
-from apps.ingestion.acquisition_plans.acq_plan_kml_loader import S1MissionAcqPlanLoader, S2MissionAcqPlanLoader
+from apps.ingestion.acquisition_plans.acq_plan_kml_loader import (
+    S1MissionAcqPlanLoader,
+    S2MissionAcqPlanLoader,
+)
 from apps.ingestion.orbit_acquisitions import AcquisitionPlanOrbitDatatakeBuilder
 from apps.cache.cache import ConfigCache
+from apps.utils.satellite_registry import get_mission_satellites
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +39,10 @@ logger = logging.getLogger(__name__)
 #    Archive ingestor
 #    Latest Ingestor
 #    PreviousYears Ingestor
-        
-acq_plans_mission_satellites = ConfigCache.load_object('acq_plans_mission_satellites')
+
+# Active satellites with a published acquisition plan, per mission — sourced
+# from the central satellite registry (was config: acq_plans_mission_satellites).
+acq_plans_mission_satellites = get_mission_satellites(active_only=True)
 
 # Missions whose KML Acq Plan is retrieved from ESA
 kml_acq_plans_missions = ["S1", "S2"]
@@ -48,10 +54,13 @@ orbit_kml_acq_plans_missions = ["S3", "S5"]
 # shall not be included
 
 kml_from_orbits = True
-acq_plans_missions = kml_acq_plans_missions + (orbit_kml_acq_plans_missions if kml_from_orbits else [])
+acq_plans_missions = kml_acq_plans_missions + (
+    orbit_kml_acq_plans_missions if kml_from_orbits else []
+)
 
 
 # AcquisitionPlansManager:
+
 
 class AcqPlanIngestor:
     """
@@ -88,28 +97,32 @@ class AcqPlanIngestor:
             mission: {
                 sat: AcqPlanFragments(sat, sat, past_num_days)
                 for sat in acq_plans_mission_satellites[mission]
-            } for mission in kml_acq_plans_missions
+            }
+            for mission in kml_acq_plans_missions
         }
         # Pass AcqPlanKmlLoader to MissionIngestor
         # ingestor classes for each mission, to be  instantiated for each satellite
-        # TODO: instantiate ingestor class according to 
+        # TODO: instantiate ingestor class according to
         # presence of acq link page configuration
         # And configuration of usage of Acquisition From Orbit Datatake
         # Or from only datatake (just coverage, and different call from JS)
         self._mission_ingestors = {
-            'S1': AcqPlanKmlLinkIngestor('S1',
-                                         self.acqplan_fragments.get('S1'),
-                                         kml_loader=S1MissionAcqPlanLoader),
-            'S2': AcqPlanKmlLinkIngestor('S2',
-                                         self.acqplan_fragments.get('S2'),
-                                         kml_loader=S2MissionAcqPlanLoader),
+            "S1": AcqPlanKmlLinkIngestor(
+                "S1",
+                self.acqplan_fragments.get("S1"),
+                kml_loader=S1MissionAcqPlanLoader,
+            ),
+            "S2": AcqPlanKmlLinkIngestor(
+                "S2",
+                self.acqplan_fragments.get("S2"),
+                kml_loader=S2MissionAcqPlanLoader,
+            ),
             # 'S3': AcquisitionPlanOrbitDatatakeBuilder('S3',
             #                                           self.acqplan_fragments.get('S3'),
             #                                           daily_datatakes=curr_daily_datatakes),
             # 'S5': AcquisitionPlanOrbitDatatakeBuilder('S5',
             #                                           self.acqplan_fragments.get('S5'),
             #                                           daily_datatakes=curr_daily_datatakes),
-
         }
         if kml_from_orbits:
             curr_daily_datatakes = get_daily_datatakes()
@@ -121,10 +134,12 @@ class AcqPlanIngestor:
                 }
                 logger.debug("Creating Mission Ingestor for mission %s", mission)
                 acquisition_shape = "Polygon"  # "Line"
-                self._mission_ingestors[mission] = AcquisitionPlanOrbitDatatakeBuilder(mission,
-                                                                                       self.acqplan_fragments.get(mission),
-                                                                                       daily_datatakes=curr_daily_datatakes,
-                                                                                       profile=acquisition_shape)
+                self._mission_ingestors[mission] = AcquisitionPlanOrbitDatatakeBuilder(
+                    mission,
+                    self.acqplan_fragments.get(mission),
+                    daily_datatakes=curr_daily_datatakes,
+                    profile=acquisition_shape,
+                )
 
     # Get links to acqplans from specified date (last date of stored KML acqplans
 
@@ -138,21 +153,21 @@ class AcqPlanIngestor:
         Returns:
 
         """
-        logger.info("[BEG] Ingestion of Acq Plans for all missions from date %s",
-                    from_date)
+        logger.info(
+            "[BEG] Ingestion of Acq Plans for all missions from date %s", from_date
+        )
         # for each mission
         # ["S1A", "S1B"],
         # Move Retrieve Mission Acq Plans to Mission Ingestor!
         # TODO: Remove when acq plan from only datatake will no more be used
         for mission in acq_plans_missions:
-            logger.info("[BEG] Ingestion of Acq Plans for mission %s",
-                        mission)
+            logger.info("[BEG] Ingestion of Acq Plans for mission %s", mission)
             mission_ingestor = self._mission_ingestors.get(mission)
             mission_ingestor.retrieve_mission_acq_plans(from_date)
-            logger.info("[END] Ingestion of Acq Plans for mission %s",
-                        mission)
-        logger.info("[END] Ingestion of Acq Plans for all missions from date %s",
-                    from_date)
+            logger.info("[END] Ingestion of Acq Plans for mission %s", mission)
+        logger.info(
+            "[END] Ingestion of Acq Plans for all missions from date %s", from_date
+        )
 
         # At the end we have a table of KML Fragments (N daily folders for each satellite for each mission)
         # That have to be loaded on the Cache Tables
@@ -160,12 +175,10 @@ class AcqPlanIngestor:
     def get_fragments(self, mission):
         mission_fragments = self.acqplan_fragments.get(mission, None)
         if mission_fragments is None:
-            logger.warning("No Acquisition Plan KML Fragments for mission %s",
-                           mission)
+            logger.warning("No Acquisition Plan KML Fragments for mission %s", mission)
         return mission_fragments
 
     def get_kml_fragments(self, mission, satellite, date_list):
         fragments = self.get_fragments(mission)
         sat_fragments = fragments.get(satellite, {})
-        return [sat_fragments.get_fragment(day)
-                for day in date_list]
+        return [sat_fragments.get_fragment(day) for day in date_list]

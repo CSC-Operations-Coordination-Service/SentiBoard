@@ -240,7 +240,7 @@ def calc_completeness(values):
 def build_event_instance(a, logger=None):
 
     # Parse start/end time from publicationDate
-    date_str = a.get("publicationDate")
+    date_str = a.get("publicationDate") or a.get("start")
     start_date = None
     if date_str:
         start_date = to_utc(date_str)

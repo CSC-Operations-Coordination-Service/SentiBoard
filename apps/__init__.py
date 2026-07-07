@@ -7,7 +7,7 @@ import os
 import socket
 from importlib import import_module
 from pathlib import Path
-
+from datetime import date
 from flask import Flask, request, send_from_directory, Response
 from flask_caching import Cache
 from flask_login import LoginManager
@@ -373,16 +373,17 @@ def create_app(config):
         host = request.host.lower()
 
         if "staging.sentiboard.onda-dias.com" in host:
-            content = """# Robots.txt for Copernicus Sentinel Operations Dashboard (STAGING)
-            User-agent: *
-            Disallow: /
-            """
+            content = "# Robots.txt for Copernicus Sentinel Operations Dashboard (STAGING)\nUser-agent: *\nDisallow: /\n"
         else:
-            content = """# Robots.txt for Copernicus Sentinel Operations Dashboard (PRODUCTION)
-            User-agent: *
-            Allow: /
-            Sitemap: https://operations.dashboard.copernicus.eu/sitemap.xml
-            """
+            content = (
+                "# Robots.txt for Copernicus Sentinel Operations Dashboard (PRODUCTION)\n"
+                "User-agent: *\n"
+                "Allow: /\n"
+                "Disallow: /data-availability?*\n"
+                "Disallow: /events.html?*\n"
+                "Disallow: /newsList.html?*\n"
+                "Sitemap: https://operations.dashboard.copernicus.eu/sitemap.xml\n"
+            )
 
         return Response(content, mimetype="text/plain")
 
@@ -427,11 +428,60 @@ def create_app(config):
     # --- Sitemap.xml route ---
     @app.route("/sitemap.xml")
     def sitemap():
-        return send_from_directory(
-            os.path.join(app.root_path, "static"),
-            "sitemap.xml",
-            mimetype="application/xml",
+        today = date.today().isoformat()
+
+        pages = [
+            ("https://operations.dashboard.copernicus.eu/index", today, "daily", "1.0"),
+            (
+                "https://operations.dashboard.copernicus.eu/about.html",
+                "2025-06-18",
+                "monthly",
+                "0.5",
+            ),
+            (
+                "https://operations.dashboard.copernicus.eu/acquisitions-status.html",
+                today,
+                "daily",
+                "0.9",
+            ),
+            (
+                "https://operations.dashboard.copernicus.eu/events.html",
+                today,
+                "daily",
+                "0.9",
+            ),
+            (
+                "https://operations.dashboard.copernicus.eu/data-availability.html",
+                today,
+                "daily",
+                "0.8",
+            ),
+            (
+                "https://operations.dashboard.copernicus.eu/processors-viewer.html",
+                today,
+                "weekly",
+                "0.7",
+            ),
+            (
+                "https://operations.dashboard.copernicus.eu/newsList.html",
+                today,
+                "daily",
+                "0.6",
+            ),
+        ]
+
+        urls = "\n".join(
+            f"  <url>\n    <loc>{loc}</loc>\n    <lastmod>{lm}</lastmod>\n"
+            f"    <changefreq>{cf}</changefreq>\n    <priority>{p}</priority>\n  </url>"
+            for loc, lm, cf, p in pages
         )
+        xml = (
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+            f"{urls}\n"
+            "</urlset>"
+        )
+        return Response(xml, mimetype="application/xml")
 
     # ------------------------
     print("Configuring Application ...")
@@ -453,6 +503,15 @@ def create_app(config):
         return dict(
             page_url=page_url,
         )
+
+    # Expose the centralized satellite registry to every template so the
+    # frontend reads satellite metadata from a single source of truth
+    # (apps/utils/satellite_registry.py) instead of hardcoded JS lists.
+    @app.context_processor
+    def inject_satellite_registry():
+        from apps.utils.satellite_registry import to_js_registry
+
+        return dict(satellite_registry_js=to_js_registry())
 
     print("Starting Cache ...")
     flask_cache.init_app(app)

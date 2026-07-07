@@ -7,6 +7,7 @@ from collections import defaultdict
 from datetime import date, datetime as dt, timezone, timedelta
 from flask_login import current_user
 from dateutil.relativedelta import relativedelta
+from apps.utils.satellite_registry import SATELLITE_INFO, SATELLITE_DATA_CUTOFFS, satellites_mission_map
 import datetime
 
 
@@ -20,18 +21,6 @@ STATION_MAP = {
     "INS": "inuvik",  # Inuvik
 }
 
-SATELLITE_INFO = {
-    "S1A": ("Copernicus Sentinel-1A", ["SAR", "PDHT", "OCP", "EDDS"]),
-    "S1C": ("Copernicus Sentinel-1C", ["SAR", "PDHT", "OCP", "EDDS"]),
-    "S1D": ("Copernicus Sentinel-1D", ["SAR", "PDHT", "OCP", "EDDS"]),
-    "S2A": ("Copernicus Sentinel-2A", ["MSI", "MMFU", "OCP", "EDDS", "STR"]),
-    "S2B": ("Copernicus Sentinel-2B", ["MSI", "MMFU", "OCP", "EDDS", "STR"]),
-    "S2C": ("Copernicus Sentinel-2C", ["MSI", "MMFU", "OCP", "EDDS", "STR"]),
-    "S3A": ("Copernicus Sentinel-3A", ["OLCI", "SLSTR", "SRAL", "MWR", "EDDS"]),
-    "S3B": ("Copernicus Sentinel-3B", ["OLCI", "SLSTR", "SRAL", "MWR", "EDDS"]),
-    "S5P": ("Copernicus Sentinel-5P", ["TROPOMI", "EDDS"]),
-}
-
 SERVICES = [
     "ACRI",
     "CLOUDFERRO",
@@ -40,6 +29,18 @@ SERVICES = [
     "EXPRIVIA",
     "WERUM",
 ]
+
+# Satellite subsystems (platform + instruments). An UNPLANNED unavailability on
+# any of these is counted as a "satellite issue" in the space-segment report,
+# matching the CAMS satellite-unavailability report. Ground-segment subsystems
+# (EDDS DARC, GFTS, External Server, MCS, ...) are intentionally excluded — those
+# belong to the acquisition service, not the satellite.
+SATELLITE_SUBSYSTEMS = {
+    # platform / payload
+    "SAR", "PDHT", "OCP", "AIS", "MMFU", "STR", "STR-1", "STR-2",
+    # instruments
+    "MSI", "OLCI", "SLSTR", "SRAL", "MWR", "TROPOMI",
+}
 
 
 def build_acquisition_payload(acquisitions, edrs_acquisitions, period_id=""):
@@ -312,6 +313,70 @@ def previous_quarter_label(today=None):
     return f"{start.strftime('%b')} - {end.strftime('%b %Y')}"
 
 
+def compute_acquisition_stats(acquisitions):
+    """
+    Per-satellite acquisition (downlink pass) failure stats, read from the
+    cds-cadip-acquisition-pass-status cache. A pass is "failed" when any of the
+    antenna / delivery-push / front-end statuses is not OK. We keep only failures
+    whose cams_origin is an acquisition-service cause ('Acquis'), since satellite
+    causes are already accounted for via the unavailability report and RFI/other
+    causes belong to the "Other" bucket.
+
+    Returns: {sat_id: {"total": int, "failed_acq": int, "events": {ref: event}}}
+    The caller converts failed_acq into "lost sensing hours" proportionally
+    (failed_acq / total * planned_sensing_hours), keeping the page's hour-based
+    accounting consistent.
+    """
+    stats = {}
+    for row in acquisitions or []:
+        src = row.get("_source", row) if isinstance(row, dict) else {}
+        sat = (src.get("satellite_id") or src.get("satellite_unit") or "")[:3].upper()
+        if not sat:
+            continue
+
+        # Apply the per-satellite operational cutoff (e.g. S1D from 17 Apr 2026)
+        # consistently with datatakes/unavailability: pre-TTO passes are excluded
+        # from BOTH the failed count and the total.
+        cutoff = SATELLITE_DATA_CUTOFFS.get(sat)
+        if cutoff is not None:
+            ts = src.get("planned_data_start")
+            if ts:
+                try:
+                    if dt.fromisoformat(ts.replace("Z", "+00:00")) < cutoff:
+                        continue
+                except (ValueError, TypeError):
+                    pass
+
+        s = stats.setdefault(sat, {"total": 0, "failed_acq": 0, "events": {}})
+        s["total"] += 1
+
+        ok = (
+            src.get("antenna_status") in (True, "OK")
+            and src.get("delivery_push_status") in (True, "OK")
+            and src.get("front_end_status") in (True, "OK")
+        )
+        if ok:
+            continue
+
+        if "Acquis" in (src.get("cams_origin") or ""):
+            s["failed_acq"] += 1
+            ref = (
+                src.get("last_attached_ticket")
+                or src.get("planned_data_start")
+                or f"{sat}-acq-{s['failed_acq']}"
+            )
+            station = src.get("ground_station") or "ground station"
+            desc = f"Acquisition issue at {station}"
+            if src.get("cams_description"):
+                desc += f". {src.get('cams_description')}"
+            s["events"][ref] = {
+                "date": (src.get("planned_data_start") or "0000-00-00")[:10],
+                "description": desc,
+                "type": "Acquisition",
+            }
+    return stats
+
+
 def build_space_segment_ssr(datatakes, unavailability, period_start, period_end):
     # print(f"\n--- DEBUG START ---")
     # print(f"Total Datatakes Received: {len(datatakes)}")
@@ -358,10 +423,9 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
     satellites = {}
     JS_THRESHOLD = 0.9999
 
+    # SATELLITE_INFO is derived from the registry's active satellites only,
+    # so decommissioned units (e.g. S1B) are already excluded.
     for sat, (fullname, instruments_list) in SATELLITE_INFO.items():
-        if sat == "S1B":
-            continue
-
         table_datatakes = []
         totSensing = 0.0
         failedSensingAcq = 0.0
@@ -381,7 +445,7 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
         for datatake in current_dt_list:
             origin = datatake.get("cams_origin") or ""
 
-            compl_val = recalc_completeness(datatake)
+            compl_val = recalc_acq_completeness(datatake)
             ticket = datatake.get("last_attached_ticket")
 
             if not ticket and compl_val == 0.0:
@@ -449,35 +513,32 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
                     }
 
                     # --- Categorization Logic ---
+                    # Restored to match the original (pre-refactor) space-segment.js:
+                    # Acquisition is checked FIRST, then Satellite, then Other, using
+                    # the same case-sensitive substrings on the raw cams_origin value.
+                    # Acquisition origins also contain the "CAM"/CAMS token, so checking
+                    # Satellite first (as the refactor did) misclassified acquisition
+                    # issues as satellite issues (and zeroed out the acquisition figure).
                     category_key = "other_events"
                     issue_type_label = "Other"
 
-                    if "OCM" in desc_upper or any(
-                        x in origin_str for x in ["SAT", "CAM", "INSTRUMENT"]
-                    ):
-                        failedSensingSat += lost_hrs
-                        issue_type_label = "Satellite"
-                        category_key = "sat_events"
-
-                    # Acquisition Logic
-                    elif any(
-                        x in origin_str
-                        for x in ["ACQUIS", "X-BAND", "ANTENNA", "GROUND"]
-                    ) or any(x in desc_upper for x in ["FIBER", "NETWORK", "STATION"]):
+                    if "Acquis" in raw_origin:
                         failedSensingAcq += lost_hrs
                         issue_type_label = "Acquisition"
                         category_key = "acq_events"
 
-                    # Other Logic
+                    elif "CAM" in raw_origin or "Sat" in raw_origin:
+                        # Satellite issues are re-sourced from the UNPLANNED
+                        # unavailability records after this loop (see below), so
+                        # skip the datatake-level satellite signal here to avoid
+                        # double-counting. The datatake itself still appears in the
+                        # impacted-datatakes table (built separately).
+                        continue
+
                     else:
                         failedSensingOther += lost_hrs
+                        issue_type_label = "Other"
                         category_key = "other_events"
-                        if "RFI" in desc_upper:
-                            issue_type_label = "RFI"
-                        elif "PRODUCTION" in desc_upper:
-                            issue_type_label = "Production"
-                        else:
-                            issue_type_label = "Other"
 
                     display_label = raw_origin if raw_origin else issue_type_label
                     formatted_description = f"{display_label} issue. {final_desc}"
@@ -497,6 +558,44 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             #    print(
             #        f"DEBUG [{sat}]: Ignoring Ticket {ticket} because completeness is {compl_val}%"
             #    )
+
+        # --- Satellite issues: sourced from the UNPLANNED satellite-subsystem
+        # unavailability records (SAR/PDHT/OCP/instruments), grouped by
+        # unavailability_reference. This matches the CAMS satellite-unavailability
+        # report (S1A = 4, S1C = 2, S1D = 2 for Apr-Jun 2026), which the datatake
+        # /L0 signal alone cannot reproduce (recovered downlinks leave L0 at 100%).
+        # A single reference has one row per affected subsystem sharing the same
+        # duration, so we de-duplicate by reference. Hours use the unavailability
+        # duration (microseconds -> hours), matching the CAMS report's durations.
+        sat_unavail_events = {}
+        for u in unavail_by_sat.get(sat, []):
+            if (u.get("type") or "").strip().lower() != "unplanned":
+                continue
+            subsystem = (u.get("subsystem") or u.get("instrument") or "").upper()
+            if subsystem not in SATELLITE_SUBSYSTEMS:
+                continue
+            ref = u.get("unavailability_reference") or u.get("key")
+            if not ref or ref in sat_unavail_events:
+                continue
+            dur_h = (u.get("unavailability_duration") or 0) / 3_600_000_000.0
+            comment = u.get("comment") or u.get("cams_description") or ""
+            desc = f"{subsystem} unavailability {ref}"
+            if comment:
+                desc += f". {comment}"
+            sat_unavail_events[ref] = {
+                "hours": dur_h,
+                "date": (u.get("start_time") or "0000-00-00")[:10],
+                "description": desc,
+                "type": "Satellite",
+            }
+
+        failedSensingSat = sum(e["hours"] for e in sat_unavail_events.values())
+        # Replace any datatake-derived satellite events with the unavailability
+        # ones (drop the internal "hours" helper key before exposing them).
+        categorized_events["sat_events"] = {
+            ref: {k: v for k, v in e.items() if k != "hours"}
+            for ref, e in sat_unavail_events.items()
+        }
 
         totSuccessSensing = totSensing - (
             failedSensingAcq + failedSensingSat + failedSensingOther
@@ -601,7 +700,7 @@ def compute_availability_single_sat(
             availability["TROPOMI"] -= impact_pct
 
         # S3 Mission Instrument Logic (Looking into comments)
-        elif satellite in ("S3A", "S3B"):
+        elif satellites_mission_map.get(satellite) == "S3":
             for inst_name in ["OLCI", "SLSTR", "SRAL", "MWR"]:
                 if inst_name in availability and inst_name in comment:
                     availability[inst_name] -= impact_pct
@@ -722,6 +821,28 @@ def build_sensing_statistics(datatakes, completeness_threshold=0.99):
     data["categorizedAnomalies"] = categorizedAnomalies
 
     return data
+
+
+def recalc_acq_completeness(datatake):
+    """
+    Faithful port of the original space-segment.js recalcDatatakeAcqCompleteness():
+    return the first *truthy* value among L0_ -> L1_ -> L2_, else 0.0.
+
+    Unlike recalc_completeness(), this does NOT fall back to
+    final_completeness_percentage. That fallback made anomalous datatakes (whose
+    L0_ was low/absent but whose PUB percentage was high) read as ~100% complete,
+    hiding their lost sensing hours from the space-segment statistics.
+    """
+    for key in ("L0_", "L1_", "L2_"):
+        val = datatake.get(key)
+        if val:  # truthy -> matches the original JS (0 / None / "" are skipped)
+            try:
+                if isinstance(val, str):
+                    val = val.replace("%", "").strip()
+                return float(val)
+            except (ValueError, TypeError):
+                continue
+    return 0.0
 
 
 def recalc_completeness(datatake):
@@ -1025,3 +1146,24 @@ def compute_availability_from_events(interface_status_map, period_start, period_
         availability[service] = round((up_seconds / total_period_seconds) * 100, 6)
 
     return availability
+
+def passes_satellite_cutoff(record, date_field):
+    """
+    Returns True if this record should be kept.
+    Excludes records for satellites with a configured cutoff
+    whose date_field is before that cutoff.
+    """
+    cutoff = SATELLITE_DATA_CUTOFFS.get(record.get("satellite_unit"))
+    if cutoff is None:
+        return True
+
+    ts = record.get(date_field)
+    if not ts:
+        return True
+
+    try:
+        ts_dt = dt.fromisoformat(ts.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return True
+
+    return ts_dt >= cutoff

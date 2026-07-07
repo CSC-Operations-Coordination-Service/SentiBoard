@@ -18,9 +18,9 @@ from datetime import datetime, timezone, timedelta
 from os import abort
 from urllib.parse import urlparse
 from functools import wraps
-
+from apps.ingestion.anomalies_ingestor import AnomaliesIngestor
 from apps.utils.events_utils import make_json_safe
-from flask import request, Response
+from flask import jsonify, request, Response, render_template
 from flask_login import login_required
 
 import apps.cache.modules.acquisitions as acquisitions_cache
@@ -50,6 +50,11 @@ logger = logging.getLogger(__name__)
 def internal_only(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
+        ALLOWED_ROLES = {"admin", "esauser", "ecuser", "api_admin"}
+
+        if current_user.is_authenticated and current_user.role in ALLOWED_ROLES:
+            return f(*args, **kwargs)
+
         logger.warning(
             f"[DEBUG-ENTRY] internal_only hit for  {request.path} | XRW= {request.headers.get('X-Requested-With')!r} | All headers: {dict(request.headers)}"
         )
@@ -120,7 +125,7 @@ def get_acquisition_plans(mission, satellite, day):
 
 @blueprint.route("/api/acquisitions/acquisition-plan-days", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_acquisition_plan_days():
     logger.info("[BEG] API Get Acquisition Plan Coverage")
     return acquisition_plans_cache.get_acquisition_plans_coverage()
@@ -128,19 +133,30 @@ def get_acquisition_plan_days():
 
 @blueprint.route("/api/acquisitions/satellite/orbits", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_satellites_orbits():
     logger.debug("Called API Satellites Orbits")
     orbits_api_key = acquisition_assets_cache.orbits_cache_key
     # if not flask_cache.has(orbits_api_key):
     #    logger.debug("Loading Satellites Orbits from NORAD")
     #    acquisition_assets_cache.load_satellite_orbits()
-    return flask_cache.get(orbits_api_key)
+    cached = flask_cache.get(orbits_api_key)
+
+    if cached is None:
+        logger.info("Orbits cache miss — loading from NORAD")
+        acquisition_assets_cache.load_satellite_orbits()
+        cached = flask_cache.get(orbits_api_key)
+
+    if cached is None:
+        logger.error("Orbits cache still empty after load attempt")
+        return jsonify({"error": "Orbit data unavailable"}), 503
+
+    return cached
 
 
 @blueprint.route("/api/acquisitions/stations", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_acquisitions_stations():
     logger.debug("Called API Acquisition Stations")
     stations_api_key = acquisition_assets_cache.stations_cache_key
@@ -152,7 +168,7 @@ def get_acquisitions_stations():
 
 @blueprint.route("/api/events/anomalies/update", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def update_anomalies():
     logger.info("Called API Update Anomalies")
     anomalies_ingestor.AnomaliesIngestor().ingest_anomalies()
@@ -161,7 +177,7 @@ def update_anomalies():
 
 @blueprint.route("/api/events/anomalies/last-<period_id>", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_anomalies_last(period_id):
     logger.info("Called API Anomalies last %s", period_id)
     anomalies_api_uri = events_cache.anomalies_cache_key.format("last", period_id)
@@ -174,7 +190,7 @@ def get_anomalies_last(period_id):
 
 @blueprint.route("/api/events/anomalies/previous-quarter", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_anomalies_previous_quarter():
     logger.info("Called API Anomalies previous quarter")
     anomalies_api_uri = events_cache.anomalies_cache_key.format("previous", "quarter")
@@ -187,7 +203,7 @@ def get_anomalies_previous_quarter():
 
 @blueprint.route("/api/events/anomalies/<date_from>/<date_to>", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_anomalies_in_range(date_from, date_to):
     logger.info("Called API Anomalies in date range")
     start_date = datetime.strptime(date_from, "%Y-%m-%d")
@@ -207,7 +223,7 @@ def get_anomalies_in_range(date_from, date_to):
 
 @blueprint.route("/api/events/news/update", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def update_news():
     logger.info("Called API Update News")
     news_ingestor.NewsIngestor().ingest_news()
@@ -216,29 +232,144 @@ def update_news():
 
 @blueprint.route("/api/events/news/last-<period_id>", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_news_last(period_id):
     logger.info("Called API News last %s", period_id)
     news_api_uri = events_cache.news_cache_key.format("last", period_id)
     logger.debug("URI cache key: %s", news_api_uri)
-    # if not flask_cache.has(news_api_uri):
-    #    logger.info("Loading News Cache from API News last %s", period_id)
-    #    events_cache.load_news_cache_last_quarter()
-    return flask_cache.get(news_api_uri)
+    if not flask_cache.has(news_api_uri):
+        logger.info("Loading News Cache from API News last %s", period_id)
+        events_cache.load_news_cache_last_quarter()
+    data = flask_cache.get(news_api_uri)
+    if data is None:
+        logger.warning("No data found in cache for key: %s", news_api_uri)
+        return jsonify({"message": "No data available for the last-" + period_id}), 200
+
+    return data
 
 
 @blueprint.route("/api/events/news/previous-quarter", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_news_previous_quarter():
     logger.info("Called API News previous quarter")
     news_api_uri = events_cache.news_cache_key.format("previous", "quarter")
     logger.debug("URI cache key: %s", news_api_uri)
-    # if not flask_cache.has(news_api_uri):
-    #    logger.info("Loading News Cache from API News previous quarter")
-    #    events_cache.load_news_cache_previous_quarter()
-    return flask_cache.get(news_api_uri)
+    if not flask_cache.has(news_api_uri):
+        logger.info("Loading News Cache from API News previous quarter")
+        events_cache.load_news_cache_previous_quarter()
+    data = flask_cache.get(news_api_uri)
+    if data is None:
+        logger.warning("No data found in cache for key: %s", news_api_uri)
+        return jsonify({"message": "No data available for the previous quarter"}), 200
 
+    return data
+
+@blueprint.route("/admin/backfill_anomalies")
+@login_required
+def backfill_anomalies():
+    if current_user.role not in ("admin",):
+        abort(403)
+
+    start_str = request.args.get("start")  # e.g. 2025-04-23
+    end_str = request.args.get("end")      # e.g. 2026-03-15
+
+    if not start_str or not end_str:
+        return jsonify({"error": "Missing 'start' or 'end' query params (format: YYYY-MM-DD)"}), 400
+
+    try:
+        start_date = datetime.strptime(start_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError:
+        return jsonify({"error": "Invalid date format, use YYYY-MM-DD"}), 400
+
+    if start_date >= end_date:
+        return jsonify({"error": "'start' must be before 'end'"}), 400
+
+    try:
+        logger.info(f"[BACKFILL] Starting anomaly backfill from {start_date} to {end_date}")
+        ingestor = AnomaliesIngestor()
+        ingestor.ingest_anomalies_range(start=start_date, end=end_date)
+        logger.info(f"[BACKFILL] Completed anomaly backfill from {start_date} to {end_date}")
+
+        return jsonify({
+            "status": "ok",
+            "message": f"Backfill completed for {start_str} → {end_str}",
+        })
+
+    except Exception as e:
+        logger.error(f"[BACKFILL] Error during backfill: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+    
+
+@blueprint.route("/admin/delete_anomalies")
+@login_required
+def delete_anomalies():
+    if current_user.role not in ("admin",):
+        abort(403)
+
+    start_str = request.args.get("start")
+    end_str = request.args.get("end")
+
+    if not start_str or not end_str:
+        return jsonify({"error": "Missing 'start' or 'end' query params (format: YYYY-MM-DD)"}), 400
+
+    try:
+        start_date = datetime.strptime(start_str, "%Y-%m-%d")
+        end_date = datetime.strptime(end_str, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError:
+        return jsonify({"error": "Invalid date format, use YYYY-MM-DD"}), 400
+
+    if start_date >= end_date:
+        return jsonify({"error": "'start' must be before 'end'"}), 400
+
+    try:
+        from apps.models.anomalies import Anomalies
+        from apps import db
+
+        deleted = ( 
+            db.session.query(Anomalies)
+            .filter(Anomalies.publicationDate >= start_date)
+            .filter(Anomalies.publicationDate <= end_date)
+            .delete(synchronize_session=False)
+        )
+        db.session.commit()
+
+        logger.info(f"[DELETE] Removed {deleted} anomalies from {start_date} to {end_date}")
+
+        return jsonify({
+            "status": "ok",
+            "deleted": deleted,
+            "message": f"Deleted {deleted} anomalies between {start_str} and {end_str}",
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"[DELETE] Error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+    
+    
+@blueprint.route("/admin/invalidate_events_cache")
+@login_required
+def invalidate_events_cache():
+    if current_user.role not in ("admin",):
+        abort(403)
+    try:
+        from apps import flask_cache as fc
+        keys_cleared = []
+
+        for period in [("full", "history"), ("last", "quarter"), ("previous", "quarter"),
+                       ("last", "24h"), ("last", "7d"), ("last", "30d")]:
+            key = events_cache.anomalies_cache_key.format(*period)
+            fc.delete(key)
+            keys_cleared.append(key)
+
+        logger.info(f"[CACHE INVALIDATE] Cleared: {keys_cleared}")
+        return jsonify({"status": "ok", "cleared": keys_cleared})
+
+    except Exception as e:
+        logger.error(f"[CACHE INVALIDATE] Error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 @blueprint.route("/api/worker/cds-datatake/<datatake_id>", methods=["GET"])
 @internal_only
@@ -254,7 +385,7 @@ def get_cds_datatake(datatake_id):
 
 @blueprint.route("/api/worker/cds-datatakes/last-<period_id>", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_datatakes_last(period_id):
     logger.info("Called API CDS Datatakes last %s", period_id)
     datatakes_api_uri = datatakes_cache.datatakes_cache_key.format("last", period_id)
@@ -267,7 +398,7 @@ def get_cds_datatakes_last(period_id):
 
 @blueprint.route("/api/worker/cds-datatakes/previous-quarter", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_datatakes_previous_quarter():
     logger.info("Called API CDS Datatakes previous quarter")
     datatakes_api_uri = datatakes_cache.datatakes_cache_key.format(
@@ -284,7 +415,7 @@ def get_cds_datatakes_previous_quarter():
     "/api/statistics/cds-product-publication-volume/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_size_statistics_last(period_id):
     logger.debug("Called API Publication Volume Statistics Last %s", period_id)
     publication_api_uri = publication_cache.publication_size_api_format.format(
@@ -303,7 +434,7 @@ def get_cds_product_publication_size_statistics_last(period_id):
     "/api/statistics/cds-product-publication-volume/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_size_statistics_previous_quarter():
     logger.debug("Called API Publication Volume Stastistics Previous Quarter")
     publication_api_uri = publication_cache.publication_size_api_format.format(
@@ -320,7 +451,7 @@ def get_cds_product_publication_size_statistics_previous_quarter():
     "/api/statistics/cds-product-publication-count/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_count_statistics_last(period_id):
     logger.debug("Called API Publication Statistics Last %s", period_id)
     publication_api_uri = publication_cache.publication_count_api_format.format(
@@ -337,7 +468,7 @@ def get_cds_product_publication_count_statistics_last(period_id):
     "/api/statistics/cds-product-publication-count/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_count_statistics_previous_quarter():
     logger.debug("Called API Publication Stastistics Previous Quarter")
     publication_api_uri = publication_cache.publication_count_api_format.format(
@@ -352,7 +483,7 @@ def get_cds_product_publication_count_statistics_previous_quarter():
 
 @blueprint.route("/api/events/anomalies/add", methods=["POST"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def add_anomaly():
     logger.info("Called API Add Anomaly")
     try:
@@ -396,7 +527,7 @@ def add_anomaly():
 
 @blueprint.route("/api/events/anomalies/update", methods=["PUT"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def update_anomaly():
     logger.info("Called API Update Anomaly")
     try:
@@ -429,7 +560,7 @@ def update_anomaly():
 
 @blueprint.route("/api/events/news/update", methods=["POST"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def update_news_item():
     logger.info("Called API Update News")
     try:
@@ -460,7 +591,7 @@ def update_news_item():
 
 @blueprint.route("/api/reporting/cds-acquisitions/last-<period_id>", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_acquisitions_last(period_id):
     logger.info("Called API CDS Acquisitions last %s", period_id)
     acquisitions_api_uri = acquisitions_cache.acquisitions_cache_key.format(
@@ -475,7 +606,7 @@ def get_cds_acquisitions_last(period_id):
 
 @blueprint.route("/api/reporting/cds-acquisitions/previous-quarter", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_acquisitions_previous_quarter():
     logger.info("Called API CDS Acquisitions previous quarter")
     acquisitions_api_uri = acquisitions_cache.acquisitions_cache_key.format(
@@ -492,7 +623,7 @@ def get_cds_acquisitions_previous_quarter():
     "/api/reporting/cds-edrs-acquisitions/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_edrs_acquisitions_last(period_id):
     logger.info("Called API CDS EDRS Acquisitions last %s", period_id)
     edrs_acquisitions_api_uri = acquisitions_cache.edrs_acquisitions_cache_key.format(
@@ -509,7 +640,7 @@ def get_cds_edrs_acquisitions_last(period_id):
     "/api/reporting/cds-edrs-acquisitions/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_edrs_acquisitions_previous_quarter():
     logger.info("Called API CDS EDRS Acquisitions previous quarter")
     edrs_acquisitions_api_uri = acquisitions_cache.edrs_acquisitions_cache_key.format(
@@ -526,7 +657,7 @@ def get_cds_edrs_acquisitions_previous_quarter():
     "/api/reporting/cds-sat-unavailability/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_sat_unavailability_last(period_id):
     logger.info("Called API CDS Sat Unavailability last %s", period_id)
     sat_unavailability_api_uri = unavailability_cache.unavailability_cache_key.format(
@@ -543,7 +674,7 @@ def get_cds_sat_unavailability_last(period_id):
     "/api/reporting/cds-sat-unavailability/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_sat_unavailability_previous_quarter():
     logger.info("Called API CDS Sat Unavailability previous quarter")
     sat_unavailability_api_uri = unavailability_cache.unavailability_cache_key.format(
@@ -561,7 +692,7 @@ def get_cds_sat_unavailability_previous_quarter():
     methods=["GET"],
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_interface_status_monitoring_last(period_id, service_name):
     logger.info("Called API CDS Interface Status Monitoring last %s", period_id)
     interface_monitoring_api_uri = (
@@ -581,7 +712,7 @@ def get_cds_interface_status_monitoring_last(period_id, service_name):
     methods=["GET"],
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_interface_status_monitoring_previous_quarter(service_name):
     logger.info("Called API CDS Interface Status Monitoring previous quarter")
     interface_monitoring_api_uri = (
@@ -601,7 +732,7 @@ def get_cds_interface_status_monitoring_previous_quarter(service_name):
     "/api/reporting/cds-product-archive-volume/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_archive_size_last(period_id):
     logger.debug("Called API Long Term Archive Volume Last %s", period_id)
     # TODO: Add check on period id vality!
@@ -612,7 +743,7 @@ def get_cds_product_archive_size_last(period_id):
     "/api/reporting/cds-product-archive-volume/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_archive_size_previous_quarter():
     logger.debug("Called API Long Term Archive Volume Previous Quarter")
     return archive_cache.get_archive_cached_data("previous", "quarter")
@@ -620,7 +751,7 @@ def get_cds_product_archive_size_previous_quarter():
 
 @blueprint.route("/api/reporting/cds-product-archive-volume/lifetime", methods=["GET"])
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_archive_size_lifetime():
     logger.debug("Called API Long Term Archive Volume Lifetime")
     return archive_cache.get_archive_cached_data("all", "lifetime")
@@ -630,7 +761,7 @@ def get_cds_product_archive_size_lifetime():
     "/api/reports/cds-timeliness-statistics/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_timeliness_statistics_last(period_id):
     logger.debug("Called API Timeliness Statistics Last %s", period_id)
     timeliness_api_uri = timeliness_cache.timeliness_stats_cache_key_format.format(
@@ -647,7 +778,7 @@ def get_cds_timeliness_statistics_last(period_id):
     "/api/reports/cds-timeliness-statistics/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_timeliness_statistics_previous_quarter():
     logger.debug("Called API Timeliness Statistics Previous Quarter")
     timeliness_api_uri = timeliness_cache.timeliness_stats_cache_key_format.format(
@@ -664,7 +795,7 @@ def get_cds_timeliness_statistics_previous_quarter():
     "/api/reports/cds-product-timeliness/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_timeliness_last(period_id):
     logger.debug("Called API Timeliness Last %s", period_id)
     timeliness_api_uri = timeliness_cache.timeliness_cache_key_format.format(
@@ -681,7 +812,7 @@ def get_cds_product_timeliness_last(period_id):
     "/api/reports/cds-product-timeliness/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_timeliness_previous_quarter():
     logger.debug("Called API Timeliness Previous Quarter")
     timeliness_api_uri = timeliness_cache.timeliness_cache_key_format.format(
@@ -698,7 +829,7 @@ def get_cds_product_timeliness_previous_quarter():
     "/api/statistics/cds-product-publication-trend/last-<period_id>", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_trend_statistics_last(period_id):
     logger.info("[BEG] API Publication Trend Statistics Last %s", period_id)
     publication_api_uri = publication_cache.publication_trend_api_format.format(
@@ -715,7 +846,7 @@ def get_cds_product_publication_trend_statistics_last(period_id):
     "/api/statistics/cds-product-publication-trend/previous-quarter", methods=["GET"]
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_trend_statistics_previous_quarter():
     logger.debug("Called API Publication Stastistics Previous Quarter")
     publication_api_uri = publication_cache.publication_trend_api_format.format(
@@ -732,7 +863,7 @@ def get_cds_product_publication_trend_statistics_previous_quarter():
     methods=["GET"],
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_volume_trend_statistics_last(period_id):
     logger.info("[BEG] API Publication Volume Trend Stastistics Last %s", period_id)
     publication_api_uri = publication_cache.publication_volume_trend_api_format.format(
@@ -750,7 +881,7 @@ def get_cds_product_publication_volume_trend_statistics_last(period_id):
     methods=["GET"],
 )
 @login_required
-@roles_required("admin", "esauser", "ecuser")
+@roles_required("admin", "esauser", "ecuser", "api_admin")
 def get_cds_product_publication_volume_trend_statistics_previous_quarter():
     logger.debug("Called API Publication Volume Trend Previous Quarter")
     publication_api_uri = publication_cache.publication_volume_trend_api_format.format(
