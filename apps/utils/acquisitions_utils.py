@@ -316,11 +316,12 @@ def previous_quarter_label(today=None):
 def compute_acquisition_stats(acquisitions):
     """
     Per-satellite acquisition (downlink pass) failure stats, read from the
-    cds-cadip-acquisition-pass-status cache. A pass is "failed" when any of the
-    antenna / delivery-push / front-end statuses is not OK. We keep only failures
-    whose cams_origin is an acquisition-service cause ('Acquis'), since satellite
-    causes are already accounted for via the unavailability report and RFI/other
-    causes belong to the "Other" bucket.
+    cds-cadip-acquisition-pass-status cache. A pass counts as an acquisition
+    ISSUE only when it actually impacted completeness — aligned with the
+    Acquisition-Service page (acquisition-service.js): real frame errors
+    (fer_data > 1e-6) AND an acquisition origin ('Acquis'), EXCLUDING passes
+    explicitly flagged as having no impact. Satellite causes are accounted for
+    via the unavailability report; RFI/other causes belong to the "Other" bucket.
 
     Returns: {sat_id: {"total": int, "failed_acq": int, "events": {ref: event}}}
     The caller converts failed_acq into "lost sensing hours" proportionally
@@ -350,15 +351,21 @@ def compute_acquisition_stats(acquisitions):
         s = stats.setdefault(sat, {"total": 0, "failed_acq": 0, "events": {}})
         s["total"] += 1
 
-        ok = (
-            src.get("antenna_status") in (True, "OK")
-            and src.get("delivery_push_status") in (True, "OK")
-            and src.get("front_end_status") in (True, "OK")
+        # Count only acquisition issues that actually impacted completeness —
+        # same criterion as the Acquisition-Service page (acquisition-service.js:210):
+        # real frame errors (fer_data > 1e-6) + acquisition origin, excluding
+        # passes explicitly flagged as having no impact.
+        origin = src.get("cams_origin") or ""
+        raw_desc = (src.get("cams_description") or src.get("notes") or "").lower()
+        try:
+            fer = float(src.get("fer_data") or 0)
+        except (ValueError, TypeError):
+            fer = 0.0
+        no_impact = (
+            "no impact on completeness" in raw_desc or "without impact" in raw_desc
         )
-        if ok:
-            continue
 
-        if "Acquis" in (src.get("cams_origin") or ""):
+        if fer > 1e-6 and "Acquis" in origin and not no_impact:
             s["failed_acq"] += 1
             ref = (
                 src.get("last_attached_ticket")
