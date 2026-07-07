@@ -223,10 +223,6 @@ class FragmentCompletenessHandler:
     def _set_completeness_day_list(self, day_list, sat_fragments, satellite):
         for acq_day in day_list:
             day_fragment = sat_fragments.get_fragment(acq_day)
-            before = len(day_fragment.placemark_list)
-            in_cache = self.daily_datatakes.get(acq_day) is not None
-            sat_in_cache = (in_cache and
-                        self.daily_datatakes.get(acq_day).get(satellite) is not None)
 
             try:
                 day_datatakes = self.daily_datatakes.get(acq_day)
@@ -246,9 +242,6 @@ class FragmentCompletenessHandler:
             except Exception as ex:
                 logger.error("COMPLETENESS FAILED sat=%s day=%s: %s",
                             satellite, acq_day, ex, exc_info=1)
-            after = len(day_fragment.placemark_list)
-            logger.warning("COMPLETENESS sat=%s day=%s in_cache=%s sat_in_cache=%s  %d -> %d",
-                       satellite, acq_day, in_cache, sat_in_cache, before, after)
 
     def _load_completeness_on_placemarks(self, completeness, id_prefix, placemarks):
         for pm in placemarks:
