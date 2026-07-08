@@ -36,10 +36,19 @@ SERVICES = [
 # (EDDS DARC, GFTS, External Server, MCS, ...) are intentionally excluded — those
 # belong to the acquisition service, not the satellite.
 SATELLITE_SUBSYSTEMS = {
-    # platform / payload
-    "SAR", "PDHT", "OCP", "AIS", "MMFU", "STR", "STR-1", "STR-2",
-    # instruments
-    "MSI", "OLCI", "SLSTR", "SRAL", "MWR", "TROPOMI",
+    # Subsystems whose unavailability actually affects L0 acquisition/downlink:
+    # the platform/downlink chain (SAR is S1's L0 instrument, PDHT/OCP downlink,
+    # MMFU onboard memory) plus the primary EO instruments whose raw data IS the
+    # L0 product (MSI for S2, TROPOMI for S5P).
+    "SAR", "PDHT", "OCP", "MMFU", "MSI", "TROPOMI",
+    # Deliberately EXCLUDED (grounded in the original space-segment.js, which only
+    # ever tracked the subsystems above for availability and computed satellite
+    # issues from datatakes — never from these):
+    #   - S3 instruments OLCI/SLSTR/SRAL/MWR -> degrade L1/L2 products, not L0
+    #     (e.g. an SLSTR outage from a CAM manoeuvre leaves L0 at 100%);
+    #   - STR (star tracker) -> geolocation/L1, not L0;
+    #   - AIS -> S1 secondary payload, not the L0 SAR product.
+    # A genuine L0 loss on any satellite still comes through PDHT/OCP above.
 }
 
 
