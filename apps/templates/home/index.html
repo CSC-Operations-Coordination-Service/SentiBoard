@@ -32,6 +32,14 @@
     }
     .main-panel > .content {
       margin-top: 65px !important;
+      /* Hug the hero content. The global atlantis rule forces
+         min-height: calc(100% - 123px) (≈ 100vh - 123px, since .main-panel is
+         height:100vh). The hero row uses align-items-start, so its columns never
+         stretch to fill that height — whenever the hero is shorter than the
+         viewport (few news items, narrow/tall windows like 960x1080, or mobile
+         where the side columns are hidden) the teal .content background shows
+         through as an empty bar between the video and the carousel. */
+      min-height: auto !important;
     }
     @media (min-width: 1600px) {
       #tutorial > div {
