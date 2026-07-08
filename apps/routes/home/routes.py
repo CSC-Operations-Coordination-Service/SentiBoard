@@ -1824,6 +1824,29 @@ def admin_space_segment():
         for _d in datatakes_sources
         if _d.get("datatake_id")
     }
+
+    # Satellite issues are re-sourced from this same anomaly join (matching the
+    # events page): a Platform-category anomaly with >=1 L0-impacted datatake in
+    # the period. Hours = the datatakes' actual L0-lost hours. This supersedes the
+    # unavailability-based figure computed in build_space_segment_ssr, so the popup,
+    # the impacted-DT table and the events page are all consistent.
+    _sat_hours = {}
+    _sat_events = {}  # sat -> {anomaly_key: event}
+
+    def _dt_hours(dt):
+        dur = dt.get("l0_sensing_duration")
+        if dur:
+            return dur / 3_600_000_000.0
+        s, e = dt.get("observation_time_start"), dt.get("observation_time_stop")
+        if s and e:
+            try:
+                return (
+                    datetime.fromisoformat(e.replace("Z", "+00:00"))
+                    - datetime.fromisoformat(s.replace("Z", "+00:00"))
+                ).total_seconds() / 3600.0
+            except (ValueError, TypeError):
+                return 0.0
+        return 0.0
     for _anom in (anomalies_model.get_anomalies() or []):
         _raw = _anom.datatakes_completeness
         if not _raw:
@@ -1859,7 +1882,38 @@ def admin_space_segment():
                 _origin, _anom.key, _compl,
             )
 
+            # Accumulate satellite issues from Platform-category anomalies.
+            if _anom.category == "Platform" and _sat in stats:
+                _sat_hours[_sat] = _sat_hours.get(_sat, 0.0) + _dt_hours(_dt) * (
+                    1.0 - _compl / 100.0
+                )
+                _date = (_dt.get("observation_time_start") or "0000-00-00")[:10]
+                _evs = _sat_events.setdefault(_sat, {})
+                _ev = _evs.get(_anom.key)
+                if _ev is None:
+                    _evs[_anom.key] = {
+                        "date": _date,
+                        "description": f"{_anom.key}: {_anom.title or 'Satellite issue'}",
+                        "type": "Satellite",
+                    }
+                elif _date < _ev["date"]:
+                    _ev["date"] = _date
+
     for _sat in stats:
+        # Override satellite issues with the anomaly-based figure (keeping the
+        # planned total constant), and expose the events + impacted datatakes.
+        _u = stats[_sat]["unavailability"]
+        _planned = stats[_sat]["success"] + _u["sat"] + _u["acq"] + _u["other"]
+        _u["sat"] = _sat_hours.get(_sat, 0.0)
+        stats[_sat]["success"] = max(
+            0.0, _planned - (_u["sat"] + _u["acq"] + _u["other"])
+        )
+        stats[_sat]["success_percentage"] = (
+            100.0 * stats[_sat]["success"] / _planned if _planned else 100.0
+        )
+        stats[_sat].setdefault("events", {})["sat_events"] = sorted(
+            _sat_events.get(_sat, {}).values(), key=lambda x: x["date"]
+        )
         stats[_sat]["impacted_datatakes"] = list(
             _impacted_by_sat.get(_sat, {}).values()
         )
