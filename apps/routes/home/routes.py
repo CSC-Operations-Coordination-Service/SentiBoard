@@ -1771,6 +1771,99 @@ def admin_space_segment():
         for sat in satellites
     }
 
+    # ---- Impacted-datatakes table: UNION of two sources, deduped by datatake.
+    # (1) ES completeness feed via last_attached_ticket (the original behaviour) —
+    #     covers S1A/S2/S3/S5P, whose datatakes carry the CAMS ticket linkage.
+    # (2) Ingested CAMS anomalies (anomalies.datatakes_completeness) joined against
+    #     the period datatakes cache — recovers S1C/S1D, whose datatakes reach us
+    #     WITHOUT the ES ticket linkage.
+    # Both keep only datatakes with L0 completeness < 100%. Issue type: source (1)
+    # uses the datatake cams_origin; source (2) maps the anomaly category to the
+    # old 3-bucket vocabulary (Platform->Satellite, Acquisition->Acquisition, else
+    # "Other (<category>)"). Client-side rendering is unchanged.
+    import ast
+
+    _impacted_by_sat = {}
+
+    def _add_impacted(sat, did, ts, origin, ticket, compl):
+        if not sat or sat not in stats or not did:
+            return
+        bucket = _impacted_by_sat.setdefault(sat, {})
+        prev = bucket.get(did)
+        # Dedup by datatake: keep the worst (lowest) completeness.
+        if prev is None or compl < prev["completeness"]:
+            bucket[did] = {
+                "datatake_id": did,
+                "observation_time_start": ts,
+                "cams_origin": origin,
+                "last_attached_ticket": ticket,
+                "completeness": compl,
+            }
+
+    # (1) ES-ticketed datatakes (preserves the previous S1A/S2/S3/S5P behaviour).
+    for _d in datatakes_sources:
+        _tkt = _d.get("last_attached_ticket")
+        if not _tkt:
+            continue
+        _compl = acquisitions_utils.recalc_completeness(_d)
+        if _compl >= 100.0:
+            continue
+        _did = _d.get("datatake_id")
+        if not _did:
+            continue
+        _sat = (_d.get("satellite_unit") or _did.split("-")[0]).upper().replace("SNP", "S5P")
+        _add_impacted(
+            _sat, _did, _d.get("observation_time_start"),
+            _d.get("cams_origin") or "", _tkt, _compl,
+        )
+
+    # (2) Anomaly-linked datatakes (recovers S1C/S1D missing the ES linkage).
+    _category_origin = {"Platform": "Satellite", "Acquisition": "Acquisition"}
+    _dt_lookup = {
+        _d.get("datatake_id"): _d
+        for _d in datatakes_sources
+        if _d.get("datatake_id")
+    }
+    for _anom in (anomalies_model.get_anomalies() or []):
+        _raw = _anom.datatakes_completeness
+        if not _raw:
+            continue
+        try:
+            _entries = ast.literal_eval(_raw) if isinstance(_raw, str) else _raw
+        except (ValueError, SyntaxError):
+            continue
+        if not isinstance(_entries, list):
+            continue
+        _origin = _category_origin.get(_anom.category, _anom.category or "Other")
+        for _e in _entries:
+            if not isinstance(_e, dict):
+                continue
+            _did = _e.get("datatakeID")
+            _dt = _dt_lookup.get(_did) if _did else None
+            if not _dt:
+                continue
+            # Skip only true no-data rows (no completeness at ANY level). S2/S5P
+            # track completeness at L1/L2 (no L0), so we must not require L0 here
+            # or every S2/S5P datatake would be dropped.
+            if all(
+                _dt.get(_k) is None
+                for _k in ("L0_", "L1_", "L2_", "final_completeness_percentage")
+            ):
+                continue
+            _compl = acquisitions_utils.recalc_completeness(_dt)
+            if _compl >= 100.0:
+                continue
+            _sat = _did.split("-")[0].upper().replace("SNP", "S5P")
+            _add_impacted(
+                _sat, _did, _dt.get("observation_time_start"),
+                _origin, _anom.key, _compl,
+            )
+
+    for _sat in stats:
+        stats[_sat]["impacted_datatakes"] = list(
+            _impacted_by_sat.get(_sat, {}).values()
+        )
+
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
     return render_template(

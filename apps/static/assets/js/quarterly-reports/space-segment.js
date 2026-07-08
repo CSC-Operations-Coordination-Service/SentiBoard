@@ -115,16 +115,15 @@ class SpaceSegment {
 
 
         Object.keys(this.impactedDatatakesBySatellite).forEach(sat => {
-            if (stats[sat] && stats[sat].datatakes) {
-                this.impactedDatatakesBySatellite[sat] = stats[sat].datatakes.filter(dt => {
-                    // Replication of logic: Impacted = Ticket exists AND completeness < 99.9
-                    return dt.last_attached_ticket && dt.completeness < 100.0;
-                }).map(dt => {
-                    // Convert string dates to JS Date objects for the table sorting
-                    dt.observation_time_start = new Date(dt.observation_time_start);
-                    return dt;
-                });
-            }
+            // Impacted datatakes are now built server-side from the anomaly linkage
+            // (stats[sat].impacted_datatakes), already filtered to real, impacted
+            // datatakes below 100% L0 — including S1C/S1D, which lack the ES ticket
+            // linkage. Just convert the date for table sorting.
+            const impacted = (stats[sat] && stats[sat].impacted_datatakes) || [];
+            this.impactedDatatakesBySatellite[sat] = impacted.map(dt => {
+                dt.observation_time_start = new Date(dt.observation_time_start);
+                return dt;
+            });
         });
 
         console.info(`[SSR] Data loading complete.`);
@@ -503,8 +502,10 @@ class SpaceSegment {
 
             if (!tableEl.length) return;
 
-            // Build datatakes rows
+            // Build datatakes rows (dedup by Data Take ID as a safety net so a
+            // datatake never renders more than once, whatever the source).
             const rows = this.impactedDatatakesBySatellite[sat] || [];
+            const seenIds = new Set();
             const data = rows.map(dt => {
                 const key = dt.datatake_id;
                 const issueDate = dt.observation_time_start
@@ -525,6 +526,10 @@ class SpaceSegment {
                     : "-";
                 const completeness = dt.completeness !== undefined ? dt.completeness.toFixed(2) : "-";
                 return [key, issueDate, issueType, issueLink, completeness, null];
+            }).filter(row => {
+                if (seenIds.has(row[0])) return false;
+                seenIds.add(row[0]);
+                return true;
             });
 
             // Initialize DataTable if not already
