@@ -373,26 +373,42 @@
     const video = document.getElementById("home-video");
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
+    // Hide the poster once real frames are rolling.
+    video.addEventListener("playing", () => {
+      poster.classList.add("d-none");
+    });
+
+    // Start (or restart) playback; used both for autoplay and click fallback.
+    const startPlayback = () => {
+      video.classList.remove("d-none");
+      video.muted = true;        // muted is required for autoplay to be allowed
+      return video.play();
+    };
+
+    // Fallback when the browser blocks autoplay (e.g. Edge's default "Limit"
+    // policy): keep the poster visible and let a click start the video.
+    const enableClickToPlay = () => {
+      poster.style.cursor = "pointer";
+      poster.addEventListener("click", () => {
+        startPlayback().catch(() => {});
+      }, { once: true });
+    };
+
     if (isMobile) {
       poster.addEventListener("click", function () {
-        poster.classList.add("d-none");
-        video.classList.remove("d-none");
-        video.play().catch(() => {
+        startPlayback().catch(() => {
           poster.classList.remove("d-none");
           video.classList.add("d-none");
         });
       });
     } else {
-      video.classList.remove("d-none");
+      // preload="none" means Chrome/Edge fetch nothing until asked, so the
+      // "canplay" event never fires on its own and the video appears stuck.
+      // (Firefox loads eagerly, which is why it happened to work there.)
+      // Calling play() directly kicks off the load; if the browser still
+      // refuses to autoplay, fall back to click-to-play instead of freezing.
       video.autoplay = true;
-      video.addEventListener("canplay", () => {
-        video.play().catch(() => {
-          video.classList.add("d-none");
-        });
-      });
-      video.addEventListener("playing", () => {
-        poster.classList.add("d-none");
-      });
+      startPlayback().catch(enableClickToPlay);
     }
   });
 </script>
