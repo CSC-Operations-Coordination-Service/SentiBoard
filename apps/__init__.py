@@ -445,13 +445,13 @@ def create_app(config):
                 "0.9",
             ),
             (
-                "https://operations.dashboard.copernicus.eu/events.html",
+                "https://operations.dashboard.copernicus.eu/events",
                 today,
                 "daily",
                 "0.9",
             ),
             (
-                "https://operations.dashboard.copernicus.eu/data-availability.html",
+                "https://operations.dashboard.copernicus.eu/data-availability",
                 today,
                 "daily",
                 "0.8",

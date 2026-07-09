@@ -28,7 +28,9 @@ from apps.utils.auth_utils import verify_pass
 
 @blueprint.route("/")
 def route_default():
-    return redirect(url_for("home_blueprint.index"))
+    # Permanent redirect so the bare root consolidates onto the canonical
+    # /index URL (the client requires "index" to appear in the indexed URL).
+    return redirect(url_for("home_blueprint.index"), code=301)
 
 
 # Login
@@ -49,7 +51,7 @@ def login():
         # Check the password
         if user and verify_pass(password, user.password):
             login_user(user)
-            return redirect(url_for("auth_blueprint.route_default"))
+            return redirect(url_for("home_blueprint.index"))
 
         # Something (user or pass) is not ok
         return render_template(
@@ -108,7 +110,7 @@ def register():
 @blueprint.route("/logout")
 def logout():
     logout_user()
-    return redirect(url_for("auth_blueprint.route_default"))
+    return redirect(url_for("home_blueprint.index"))
 
 
 # Users management
