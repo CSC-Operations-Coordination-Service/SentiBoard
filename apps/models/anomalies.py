@@ -16,10 +16,32 @@ import ast
 import logging
 from datetime import datetime
 
+from sqlalchemy import func, or_
+
 from apps import db
 from apps.utils.db_utils import generate_uuid
 
 logger = logging.getLogger(__name__)
+
+# Dashboard-correlated anomalies must never be surfaced to end users (events
+# calendar/timeline, REST endpoints). They are already skipped at ingestion, but
+# a stale row ingested before that filter existed can still carry a "Dashboard"
+# category, which the UI shows as "Issue type: Dashboard". Filtering here — the
+# single query every anomaly consumer reads through — guarantees such rows can
+# never be served, regardless of how they entered the DB.
+_EXCLUDED_CATEGORY = "dashboard"
+
+
+def _exclude_dashboard(query):
+    """Drop rows whose category is 'Dashboard' (case-insensitive), keeping rows
+    with a NULL/empty category (SQL comparisons against NULL are not TRUE, so the
+    NULL case must be preserved explicitly)."""
+    return query.filter(
+        or_(
+            Anomalies.category.is_(None),
+            func.lower(Anomalies.category) != _EXCLUDED_CATEGORY,
+        )
+    )
 
 # The upstream anomaly feed renamed the key prefix "PDGSANOM-" to "GSANOM-" for
 # the same anomalies. Both forms refer to one logical anomaly, so we canonicalize
@@ -249,12 +271,18 @@ def update_datatakes_completeness(key, datatakes_completeness):
 def get_anomalies(start_date=None, end_date=None):
     try:
         if start_date is None or end_date is None:
-            return Anomalies.query.order_by(Anomalies.publicationDate.desc()).all()
+            return (
+                _exclude_dashboard(Anomalies.query)
+                .order_by(Anomalies.publicationDate.desc())
+                .all()
+            )
         else:
             return (
-                Anomalies.query.filter(Anomalies.publicationDate != None)
-                .filter(Anomalies.publicationDate >= start_date)
-                .filter(Anomalies.publicationDate <= end_date)
+                _exclude_dashboard(
+                    Anomalies.query.filter(Anomalies.publicationDate != None)
+                    .filter(Anomalies.publicationDate >= start_date)
+                    .filter(Anomalies.publicationDate <= end_date)
+                )
                 .order_by(Anomalies.publicationDate.asc())
                 .all()
             )
