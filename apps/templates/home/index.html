@@ -32,6 +32,14 @@
     }
     .main-panel > .content {
       margin-top: 65px !important;
+      /* Hug the hero content. The global atlantis rule forces
+         min-height: calc(100% - 123px) (≈ 100vh - 123px, since .main-panel is
+         height:100vh). The hero row uses align-items-start, so its columns never
+         stretch to fill that height — whenever the hero is shorter than the
+         viewport (few news items, narrow/tall windows like 960x1080, or mobile
+         where the side columns are hidden) the teal .content background shows
+         through as an empty bar between the video and the carousel. */
+      min-height: auto !important;
     }
     @media (min-width: 1600px) {
       #tutorial > div {
@@ -69,6 +77,31 @@
     #hero-poster.hidden {
       opacity: 0;
       pointer-events: none;
+    }
+
+  /* Play-button overlay, shown only when autoplay is blocked */
+    #hero-play {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      width: 76px;
+      height: 76px;
+      padding-left: 4px; /* optically centre the triangle */
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .2s ease, transform .2s ease;
+    }
+    #hero-play:hover {
+      background: rgba(0, 0, 0, 0.75);
+      transform: translate(-50%, -50%) scale(1.06);
     }
 
   /* Ensure video fills container */
@@ -174,6 +207,13 @@
             >
               <source src="/static/assets/mv/home_v4.mp4" type="video/mp4">
             </video>
+            <!-- Shown only when the browser blocks autoplay (e.g. Edge) so the
+                 poster reads as clickable instead of a frozen video. -->
+            <button id="hero-play" type="button" class="d-none" aria-label="Play video">
+              <svg viewBox="0 0 24 24" width="34" height="34" aria-hidden="true">
+                <path d="M8 5v14l11-7z" fill="currentColor"/>
+              </svg>
+            </button>
           </div>
         </div>
         <!-- RIGHT: Real-time events (2 cols on lg+, hidden on mobile → shown below) -->
@@ -363,28 +403,59 @@
   document.addEventListener("DOMContentLoaded", function () {
     const poster = document.getElementById("hero-poster");
     const video = document.getElementById("home-video");
+    const playBtn = document.getElementById("hero-play");
     const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-    if (isMobile) {
-      poster.addEventListener("click", function () {
-        poster.classList.add("d-none");
-        video.classList.remove("d-none");
-        video.play().catch(() => {
-          poster.classList.remove("d-none");
-          video.classList.add("d-none");
-        });
-      });
-    } else {
+    // Hide the poster and play button once real frames are rolling.
+    video.addEventListener("playing", () => {
+      poster.classList.add("d-none");
+      playBtn.classList.add("d-none");
+    });
+
+    // Start (or restart) playback; used both for autoplay and click fallback.
+    const startPlayback = () => {
       video.classList.remove("d-none");
+      video.muted = true;        // muted is required for autoplay to be allowed
+      // If data is already available, just play.
+      if (video.readyState >= 3 /* HAVE_FUTURE_DATA */) {
+        return video.play();
+      }
+      // Otherwise force the download and play once it's ready. With
+      // preload="none" some browsers (Edge) never start loading on their own,
+      // so canplay never fires and the video looks frozen; calling load() kicks
+      // it off. Playing on canplay (instead of right after load()) avoids the
+      // load()/play() race that leaves the video paused.
+      return new Promise((resolve, reject) => {
+        video.addEventListener("canplay", () => {
+          video.play().then(resolve, reject);
+        }, { once: true });
+        if (video.preload === "none") {
+          video.preload = "auto";
+        }
+        video.load();
+      });
+    };
+
+    // Show the play-button overlay and let a click (on the button or the
+    // poster) start the video. Used on mobile and whenever a browser blocks
+    // autoplay — e.g. Microsoft Edge, whose autoplay policy refuses even a
+    // muted video without a user gesture (NotAllowedError), unlike Chrome.
+    const enableClickToPlay = () => {
+      playBtn.classList.remove("d-none");
+      poster.style.cursor = "pointer";
+      const start = () => startPlayback().catch(() => {});
+      playBtn.addEventListener("click", start, { once: true });
+      poster.addEventListener("click", start, { once: true });
+    };
+
+    if (isMobile) {
+      // Don't autoplay on mobile (saves data): wait for a tap.
+      enableClickToPlay();
+    } else {
+      // Try to autoplay; if the browser refuses (Edge), fall back to
+      // click-to-play instead of showing a frozen-looking poster.
       video.autoplay = true;
-      video.addEventListener("canplay", () => {
-        video.play().catch(() => {
-          video.classList.add("d-none");
-        });
-      });
-      video.addEventListener("playing", () => {
-        poster.classList.add("d-none");
-      });
+      startPlayback().catch(enableClickToPlay);
     }
   });
 </script>
