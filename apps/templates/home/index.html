@@ -79,6 +79,14 @@
       pointer-events: none;
     }
 
+  /* dashboard.css force-shows #hero-poster at <=768px with an ID + !important
+     rule, which otherwise keeps the poster on top of the already-playing video
+     (looks like the video "stops" when the window narrows). #hero-poster.d-none
+     is more specific than #hero-poster, so this wins and lets JS hide it. */
+    #hero-poster.d-none {
+      display: none !important;
+    }
+
   /* Play-button overlay, shown only when autoplay is blocked */
     #hero-play {
       position: absolute;
@@ -200,9 +208,9 @@
             </picture>
             <video
               id="home-video"
-              class="img-fluid w-100 d-none"
+              class="img-fluid w-100"
               poster="/static/assets/img/home_preview.webp"
-              preload="none" muted playsinline loop
+              autoplay muted playsinline loop preload="auto"
               width="1920" height="1080"
             >
               <source src="/static/assets/mv/home_v4.mp4" type="video/mp4">
@@ -404,58 +412,36 @@
     const poster = document.getElementById("hero-poster");
     const video = document.getElementById("home-video");
     const playBtn = document.getElementById("hero-play");
-    const isMobile = window.matchMedia("(max-width: 767px)").matches;
 
-    // Hide the poster and play button once real frames are rolling.
-    video.addEventListener("playing", () => {
+    // The video plays underneath the poster; reveal it once playback starts.
+    const reveal = () => {
       poster.classList.add("d-none");
       playBtn.classList.add("d-none");
-    });
-
-    // Start (or restart) playback; used both for autoplay and click fallback.
-    const startPlayback = () => {
-      video.classList.remove("d-none");
-      video.muted = true;        // muted is required for autoplay to be allowed
-      // If data is already available, just play.
-      if (video.readyState >= 3 /* HAVE_FUTURE_DATA */) {
-        return video.play();
-      }
-      // Otherwise force the download and play once it's ready. With
-      // preload="none" some browsers (Edge) never start loading on their own,
-      // so canplay never fires and the video looks frozen; calling load() kicks
-      // it off. Playing on canplay (instead of right after load()) avoids the
-      // load()/play() race that leaves the video paused.
-      return new Promise((resolve, reject) => {
-        video.addEventListener("canplay", () => {
-          video.play().then(resolve, reject);
-        }, { once: true });
-        if (video.preload === "none") {
-          video.preload = "auto";
-        }
-        video.load();
-      });
     };
+    video.addEventListener("playing", reveal);
 
-    // Show the play-button overlay and let a click (on the button or the
-    // poster) start the video. Used on mobile and whenever a browser blocks
-    // autoplay — e.g. Microsoft Edge, whose autoplay policy refuses even a
-    // muted video without a user gesture (NotAllowedError), unlike Chrome.
-    const enableClickToPlay = () => {
+    // Fallback for browsers that refuse muted autoplay (e.g. Edge's default
+    // "Limit" policy): show a play button. A click/tap is a user gesture, so
+    // play() is permitted then.
+    const showPlayButton = () => {
       playBtn.classList.remove("d-none");
       poster.style.cursor = "pointer";
-      const start = () => startPlayback().catch(() => {});
-      playBtn.addEventListener("click", start, { once: true });
-      poster.addEventListener("click", start, { once: true });
+      const start = () => {
+        video.muted = true;
+        video.play().then(reveal).catch(() => {});
+      };
+      playBtn.addEventListener("click", start);
+      poster.addEventListener("click", start);
     };
 
-    if (isMobile) {
-      // Don't autoplay on mobile (saves data): wait for a tap.
-      enableClickToPlay();
-    } else {
-      // Try to autoplay; if the browser refuses (Edge), fall back to
-      // click-to-play instead of showing a frozen-looking poster.
-      video.autoplay = true;
-      startPlayback().catch(enableClickToPlay);
+    // The <video> carries autoplay + muted + playsinline, which every current
+    // browser allows to play automatically — this is the standard mobile hero
+    // pattern. We still nudge play() to catch the promise: if a browser refuses
+    // (Edge), fall back to click-to-play instead of a frozen-looking poster.
+    video.muted = true;
+    const attempt = video.play();
+    if (attempt && typeof attempt.then === "function") {
+      attempt.then(reveal).catch(showPlayButton);
     }
   });
 </script>
