@@ -1725,25 +1725,23 @@ def admin_space_segment():
         for dt in sat.get("datatakes", []):
             dt["completeness"] = acquisitions_utils.recalc_completeness(dt)
 
-    acq_key = acquisitions_cache.acquisitions_cache_key.format(cache_prefix, cache_range)
-    acq_sources = acquisitions_utils._cache_to_list(flask_cache.get(acq_key))
-    acq_stats = acquisitions_utils.compute_acquisition_stats(acq_sources)
-    for sat_id, sat_data in satellites.items():
-        a = acq_stats.get(sat_id)
-        if not a or a["total"] <= 0 or a["failed_acq"] <= 0:
-            continue
-        unavail = sat_data["unavailability"]
-        planned = (
-            sat_data["success"] + unavail["sat"] + unavail["acq"] + unavail["other"]
-        )
-        acq_hours = (a["failed_acq"] / a["total"]) * planned
-        unavail["acq"] += acq_hours
-        sat_data["success"] = max(
-            0.0, planned - (unavail["sat"] + unavail["acq"] + unavail["other"])
-        )
-        sat_data["events"]["acq_events"] = sorted(
-            a["events"].values(), key=lambda x: x["date"]
-        )
+    # Acquisition and "Other" event lists and lost-sensing hours are computed
+    # from the datatakes feed in build_space_segment_ssr (categorized by
+    # cams_origin: "Acquis" -> Acquisition, else -> Other), matching the original
+    # pre-SSR space-segment.js logic (showSensingStatistics).
+    #
+    # The CADIP pass-status feed override (compute_acquisition_stats) was removed:
+    # it flagged a downlink as an "Acquisition issue" from its frame-error rate
+    # alone (fer_data > 1e-6), independently of whether any L0 completeness
+    # actually dropped. That surfaced non-impactful passes such as the
+    # SGS/GSANOM-22873 duplicate (OPSOCS-915) and diverged from both the original
+    # page and the quarterly report. Sourcing acquisition issues from the
+    # datatakes (which carry the real completeness) restores the original
+    # behaviour and inherently drops the phantom events.
+    #
+    # Satellite events remain re-sourced from the anomaly linkage below (Platform
+    # category), matching the events page.
+    _all_anomalies = anomalies_model.get_anomalies() or []
 
     for sat_id, sat_data in satellites.items():
 
@@ -1847,7 +1845,7 @@ def admin_space_segment():
             except (ValueError, TypeError):
                 return 0.0
         return 0.0
-    for _anom in (anomalies_model.get_anomalies() or []):
+    for _anom in _all_anomalies:
         _raw = _anom.datatakes_completeness
         if not _raw:
             continue
