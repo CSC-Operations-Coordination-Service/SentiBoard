@@ -315,6 +315,11 @@ def compute_acquisition_stats(acquisitions):
     The caller converts failed_acq into "lost sensing hours" proportionally
     (failed_acq / total * planned_sensing_hours), keeping the page's hour-based
     accounting consistent.
+
+    NOTE: as of the space-segment popup alignment to the original pre-SSR logic,
+    acquisition issues are sourced from the datatakes feed (by cams_origin) in
+    build_space_segment_ssr, and this pass-status helper is no longer wired into
+    the space-segment route. It is retained for potential reuse.
     """
     stats = {}
     for row in acquisitions or []:
