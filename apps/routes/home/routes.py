@@ -191,6 +191,21 @@ PAGE_METADATA = {
             "Copernicus processor version tracker",
         ],
     },
+    "newsList.html": {
+        "title": "Copernicus Sentinel Operations News & Announcements | Sentiboard",
+        "description": (
+            "Latest news, service notices, and operational announcements for the Copernicus Sentinel missions. "
+            "Stay up to date with data availability updates and events from the official ESA Sentinel Operations Dashboard (Sentiboard)."
+        ),
+        "page_keywords": [
+            "Copernicus Sentinel operations news",
+            "Sentinel mission announcements",
+            "ESA Sentinel service notices",
+            "Copernicus data availability updates",
+            "Sentiboard news feed",
+            "Sentinel operational status updates",
+        ],
+    },
 }
 # Default fallback metadata for any page not listed above:
 DEFAULT_PAGE_METADATA = {
@@ -416,7 +431,8 @@ def admin_users_page():
 
 @blueprint.route("/index.html")
 def index_html_redirect():
-    return redirect(url_for("home_blueprint.index"))
+    # Permanent redirect so /index.html consolidates onto the canonical /index.
+    return redirect(url_for("home_blueprint.index"), code=301)
 
 
 @blueprint.route("/index")
@@ -671,7 +687,7 @@ def index():
 def events():
     try:
         metadata = get_metadata("events.html")
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events"
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
         segment = "events"
         today = datetime.today()
         three_months_ago = (today - relativedelta(months=3)).date()
@@ -870,7 +886,7 @@ def to_utc_dt(value):
 def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = (
-        "https://operations.dashboard.copernicus.eu/data-availability"
+        "https://operations.dashboard.copernicus.eu/data-availability.html"
     )
     segment = "data-availability"
     BATCH_SIZE = 20
@@ -1279,6 +1295,11 @@ def acquisitions_status():
 @blueprint.route("/newsList.html")
 def news_list_ssr():
     try:
+        metadata = get_metadata("newsList.html")
+        metadata["page_url"] = (
+            "https://operations.dashboard.copernicus.eu/newsList.html"
+        )
+
         page = int(request.args.get("page", 1))
         page_size = 6
         offset = (page - 1) * page_size
@@ -1323,6 +1344,7 @@ def news_list_ssr():
             total_pages=total_pages,
             current_page=page,
             user_role=user_role,
+            **metadata,
         )
 
     except Exception:

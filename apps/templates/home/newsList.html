@@ -1,5 +1,16 @@
 {% extends "layouts/base-responsive.html" %}
+{% from 'includes/seo_macros.html' import seo_meta %}
 {% block title %}News{% endblock %}
+
+{% block head_meta %}
+  {{ seo_meta(
+    title=title,
+    description=description,
+    keywords=page_keywords,
+    image_url=request.host_url ~ 'static/assets/img/favicon.png',
+    page_url=page_url
+  ) }}
+{% endblock %}
 
 {% block stylesheets %}
   <link rel="stylesheet" href="/static/assets/css/dashboard.css">
