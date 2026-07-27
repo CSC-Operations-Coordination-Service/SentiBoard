@@ -53,7 +53,12 @@ class SatelliteAcqPlanLink:
         # Get filename
         # Split and get latest two parts of the name
         # logger.debug("Parsing Url: %s", self.ref_url)
-        basename = os.path.basename(self.ref_url)
+        # Drop any query string / fragment first (e.g. "?download=true"): without
+        # this, a URL like "..._20230615t194000?download=true" leaks the suffix
+        # into the date token and strptime fails with
+        # "unconverted data remains: ?download=true".
+        url_path = urlparse(self.ref_url).path
+        basename = os.path.basename(url_path)
         basename_noext = os.path.splitext(basename)[0]
         name_components = basename_noext.split("_")
         logger.debug("Name components: %s", name_components)
@@ -227,16 +232,28 @@ class AcqPlanLinksPageParser:
                 html_link_list = sat_acqplan_links_element.find_all("a", href=True)
                 ref_links = [link_el["href"] for link_el in html_link_list]
                 logger.debug("Retrieved links from page: %s", ref_links)
-                # Retrieve the list of urls sorted by end date
-                list_of_acq_link_urls = list(
-                    sorted(
-                        [
+                # Build link objects one-by-one and tolerate individual failures.
+                # The href values come from an external page (ESA) whose filename
+                # convention can drift; parsing one unexpected link must NOT abort
+                # the whole acquisition-plans ingestion (and, via the scheduler's
+                # run_all, every job registered after it). Skip and log the odd
+                # ones, keep the parseable ones.
+                list_of_acq_link_urls = []
+                for ref_link in ref_links:
+                    try:
+                        list_of_acq_link_urls.append(
                             SatelliteAcqPlanLink(ref_link, self.base_url)
-                            for ref_link in ref_links
-                        ],
-                        key=lambda x: x.end_date,
-                    )
-                )
+                        )
+                    except Exception as ex:
+                        logger.warning(
+                            "Skipping unparseable acq-plan link for satellite %s: "
+                            "%r (%s)",
+                            sat,
+                            ref_link,
+                            ex,
+                        )
+                # Sort by end date (all retained links parsed successfully)
+                list_of_acq_link_urls.sort(key=lambda x: x.end_date)
                 self._acq_link_objs.add_acq_link_url_list(sat, list_of_acq_link_urls)
 
     @property

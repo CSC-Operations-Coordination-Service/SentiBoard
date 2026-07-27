@@ -30,18 +30,6 @@ SERVICES = [
     "WERUM",
 ]
 
-# Satellite subsystems (platform + instruments). An UNPLANNED unavailability on
-# any of these is counted as a "satellite issue" in the space-segment report,
-# matching the CAMS satellite-unavailability report. Ground-segment subsystems
-# (EDDS DARC, GFTS, External Server, MCS, ...) are intentionally excluded — those
-# belong to the acquisition service, not the satellite.
-SATELLITE_SUBSYSTEMS = {
-    # platform / payload
-    "SAR", "PDHT", "OCP", "AIS", "MMFU", "STR", "STR-1", "STR-2",
-    # instruments
-    "MSI", "OLCI", "SLSTR", "SRAL", "MWR", "TROPOMI",
-}
-
 
 def build_acquisition_payload(acquisitions, edrs_acquisitions, period_id=""):
     payload = {
@@ -316,16 +304,22 @@ def previous_quarter_label(today=None):
 def compute_acquisition_stats(acquisitions):
     """
     Per-satellite acquisition (downlink pass) failure stats, read from the
-    cds-cadip-acquisition-pass-status cache. A pass is "failed" when any of the
-    antenna / delivery-push / front-end statuses is not OK. We keep only failures
-    whose cams_origin is an acquisition-service cause ('Acquis'), since satellite
-    causes are already accounted for via the unavailability report and RFI/other
-    causes belong to the "Other" bucket.
+    cds-cadip-acquisition-pass-status cache. A pass counts as an acquisition
+    ISSUE only when it actually impacted completeness — aligned with the
+    Acquisition-Service page (acquisition-service.js): real frame errors
+    (fer_data > 1e-6) AND an acquisition origin ('Acquis'), EXCLUDING passes
+    explicitly flagged as having no impact. Satellite causes are accounted for
+    via the unavailability report; RFI/other causes belong to the "Other" bucket.
 
     Returns: {sat_id: {"total": int, "failed_acq": int, "events": {ref: event}}}
     The caller converts failed_acq into "lost sensing hours" proportionally
     (failed_acq / total * planned_sensing_hours), keeping the page's hour-based
     accounting consistent.
+
+    NOTE: as of the space-segment popup alignment to the original pre-SSR logic,
+    acquisition issues are sourced from the datatakes feed (by cams_origin) in
+    build_space_segment_ssr, and this pass-status helper is no longer wired into
+    the space-segment route. It is retained for potential reuse.
     """
     stats = {}
     for row in acquisitions or []:
@@ -350,15 +344,21 @@ def compute_acquisition_stats(acquisitions):
         s = stats.setdefault(sat, {"total": 0, "failed_acq": 0, "events": {}})
         s["total"] += 1
 
-        ok = (
-            src.get("antenna_status") in (True, "OK")
-            and src.get("delivery_push_status") in (True, "OK")
-            and src.get("front_end_status") in (True, "OK")
+        # Count only acquisition issues that actually impacted completeness —
+        # same criterion as the Acquisition-Service page (acquisition-service.js:210):
+        # real frame errors (fer_data > 1e-6) + acquisition origin, excluding
+        # passes explicitly flagged as having no impact.
+        origin = src.get("cams_origin") or ""
+        raw_desc = (src.get("cams_description") or src.get("notes") or "").lower()
+        try:
+            fer = float(src.get("fer_data") or 0)
+        except (ValueError, TypeError):
+            fer = 0.0
+        no_impact = (
+            "no impact on completeness" in raw_desc or "without impact" in raw_desc
         )
-        if ok:
-            continue
 
-        if "Acquis" in (src.get("cams_origin") or ""):
+        if fer > 1e-6 and "Acquis" in origin and not no_impact:
             s["failed_acq"] += 1
             ref = (
                 src.get("last_attached_ticket")
@@ -559,44 +559,10 @@ def build_space_segment_ssr(datatakes, unavailability, period_start, period_end)
             #        f"DEBUG [{sat}]: Ignoring Ticket {ticket} because completeness is {compl_val}%"
             #    )
 
-        # --- Satellite issues: sourced from the UNPLANNED satellite-subsystem
-        # unavailability records (SAR/PDHT/OCP/instruments), grouped by
-        # unavailability_reference. This matches the CAMS satellite-unavailability
-        # report (S1A = 4, S1C = 2, S1D = 2 for Apr-Jun 2026), which the datatake
-        # /L0 signal alone cannot reproduce (recovered downlinks leave L0 at 100%).
-        # A single reference has one row per affected subsystem sharing the same
-        # duration, so we de-duplicate by reference. Hours use the unavailability
-        # duration (microseconds -> hours), matching the CAMS report's durations.
-        sat_unavail_events = {}
-        for u in unavail_by_sat.get(sat, []):
-            if (u.get("type") or "").strip().lower() != "unplanned":
-                continue
-            subsystem = (u.get("subsystem") or u.get("instrument") or "").upper()
-            if subsystem not in SATELLITE_SUBSYSTEMS:
-                continue
-            ref = u.get("unavailability_reference") or u.get("key")
-            if not ref or ref in sat_unavail_events:
-                continue
-            dur_h = (u.get("unavailability_duration") or 0) / 3_600_000_000.0
-            comment = u.get("comment") or u.get("cams_description") or ""
-            desc = f"{subsystem} unavailability {ref}"
-            if comment:
-                desc += f". {comment}"
-            sat_unavail_events[ref] = {
-                "hours": dur_h,
-                "date": (u.get("start_time") or "0000-00-00")[:10],
-                "description": desc,
-                "type": "Satellite",
-            }
-
-        failedSensingSat = sum(e["hours"] for e in sat_unavail_events.values())
-        # Replace any datatake-derived satellite events with the unavailability
-        # ones (drop the internal "hours" helper key before exposing them).
-        categorized_events["sat_events"] = {
-            ref: {k: v for k, v in e.items() if k != "hours"}
-            for ref, e in sat_unavail_events.items()
-        }
-
+        # Satellite issues are computed in the space-segment route from the anomaly
+        # linkage (Platform-category anomalies with L0-impacted datatakes), so
+        # failedSensingSat stays 0 here and is overridden downstream. Keeping it in
+        # the sum below preserves the planned-vs-success arithmetic.
         totSuccessSensing = totSensing - (
             failedSensingAcq + failedSensingSat + failedSensingOther
         )

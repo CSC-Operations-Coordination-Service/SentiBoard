@@ -191,6 +191,21 @@ PAGE_METADATA = {
             "Copernicus processor version tracker",
         ],
     },
+    "newsList.html": {
+        "title": "Copernicus Sentinel Operations News & Announcements | Sentiboard",
+        "description": (
+            "Latest news, service notices, and operational announcements for the Copernicus Sentinel missions. "
+            "Stay up to date with data availability updates and events from the official ESA Sentinel Operations Dashboard (Sentiboard)."
+        ),
+        "page_keywords": [
+            "Copernicus Sentinel operations news",
+            "Sentinel mission announcements",
+            "ESA Sentinel service notices",
+            "Copernicus data availability updates",
+            "Sentiboard news feed",
+            "Sentinel operational status updates",
+        ],
+    },
 }
 # Default fallback metadata for any page not listed above:
 DEFAULT_PAGE_METADATA = {
@@ -416,7 +431,8 @@ def admin_users_page():
 
 @blueprint.route("/index.html")
 def index_html_redirect():
-    return redirect(url_for("home_blueprint.index"))
+    # Permanent redirect so /index.html consolidates onto the canonical /index.
+    return redirect(url_for("home_blueprint.index"), code=301)
 
 
 @blueprint.route("/index")
@@ -671,7 +687,7 @@ def index():
 def events():
     try:
         metadata = get_metadata("events.html")
-        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events"
+        metadata["page_url"] = "https://operations.dashboard.copernicus.eu/events.html"
         segment = "events"
         today = datetime.today()
         three_months_ago = (today - relativedelta(months=3)).date()
@@ -870,7 +886,7 @@ def to_utc_dt(value):
 def data_availability():
     metadata = get_metadata("data-availability.html")
     metadata["page_url"] = (
-        "https://operations.dashboard.copernicus.eu/data-availability"
+        "https://operations.dashboard.copernicus.eu/data-availability.html"
     )
     segment = "data-availability"
     BATCH_SIZE = 20
@@ -1279,6 +1295,11 @@ def acquisitions_status():
 @blueprint.route("/newsList.html")
 def news_list_ssr():
     try:
+        metadata = get_metadata("newsList.html")
+        metadata["page_url"] = (
+            "https://operations.dashboard.copernicus.eu/newsList.html"
+        )
+
         page = int(request.args.get("page", 1))
         page_size = 6
         offset = (page - 1) * page_size
@@ -1323,6 +1344,7 @@ def news_list_ssr():
             total_pages=total_pages,
             current_page=page,
             user_role=user_role,
+            **metadata,
         )
 
     except Exception:
@@ -1725,25 +1747,23 @@ def admin_space_segment():
         for dt in sat.get("datatakes", []):
             dt["completeness"] = acquisitions_utils.recalc_completeness(dt)
 
-    acq_key = acquisitions_cache.acquisitions_cache_key.format(cache_prefix, cache_range)
-    acq_sources = acquisitions_utils._cache_to_list(flask_cache.get(acq_key))
-    acq_stats = acquisitions_utils.compute_acquisition_stats(acq_sources)
-    for sat_id, sat_data in satellites.items():
-        a = acq_stats.get(sat_id)
-        if not a or a["total"] <= 0 or a["failed_acq"] <= 0:
-            continue
-        unavail = sat_data["unavailability"]
-        planned = (
-            sat_data["success"] + unavail["sat"] + unavail["acq"] + unavail["other"]
-        )
-        acq_hours = (a["failed_acq"] / a["total"]) * planned
-        unavail["acq"] += acq_hours
-        sat_data["success"] = max(
-            0.0, planned - (unavail["sat"] + unavail["acq"] + unavail["other"])
-        )
-        sat_data["events"]["acq_events"] = sorted(
-            a["events"].values(), key=lambda x: x["date"]
-        )
+    # Acquisition and "Other" event lists and lost-sensing hours are computed
+    # from the datatakes feed in build_space_segment_ssr (categorized by
+    # cams_origin: "Acquis" -> Acquisition, else -> Other), matching the original
+    # pre-SSR space-segment.js logic (showSensingStatistics).
+    #
+    # The CADIP pass-status feed override (compute_acquisition_stats) was removed:
+    # it flagged a downlink as an "Acquisition issue" from its frame-error rate
+    # alone (fer_data > 1e-6), independently of whether any L0 completeness
+    # actually dropped. That surfaced non-impactful passes such as the
+    # SGS/GSANOM-22873 duplicate (OPSOCS-915) and diverged from both the original
+    # page and the quarterly report. Sourcing acquisition issues from the
+    # datatakes (which carry the real completeness) restores the original
+    # behaviour and inherently drops the phantom events.
+    #
+    # Satellite events remain re-sourced from the anomaly linkage below (Platform
+    # category), matching the events page.
+    _all_anomalies = anomalies_model.get_anomalies() or []
 
     for sat_id, sat_data in satellites.items():
 
@@ -1770,6 +1790,153 @@ def admin_space_segment():
         }
         for sat in satellites
     }
+
+    # ---- Impacted-datatakes table: UNION of two sources, deduped by datatake.
+    # (1) ES completeness feed via last_attached_ticket (the original behaviour) —
+    #     covers S1A/S2/S3/S5P, whose datatakes carry the CAMS ticket linkage.
+    # (2) Ingested CAMS anomalies (anomalies.datatakes_completeness) joined against
+    #     the period datatakes cache — recovers S1C/S1D, whose datatakes reach us
+    #     WITHOUT the ES ticket linkage.
+    # Both keep only datatakes with L0 completeness < 100%. Issue type: source (1)
+    # uses the datatake cams_origin; source (2) maps the anomaly category to the
+    # old 3-bucket vocabulary (Platform->Satellite, Acquisition->Acquisition, else
+    # "Other (<category>)"). Client-side rendering is unchanged.
+    import ast
+
+    _impacted_by_sat = {}
+
+    def _add_impacted(sat, did, ts, origin, ticket, compl):
+        if not sat or sat not in stats or not did:
+            return
+        bucket = _impacted_by_sat.setdefault(sat, {})
+        prev = bucket.get(did)
+        # Dedup by datatake: keep the worst (lowest) completeness.
+        if prev is None or compl < prev["completeness"]:
+            bucket[did] = {
+                "datatake_id": did,
+                "observation_time_start": ts,
+                "cams_origin": origin,
+                "last_attached_ticket": ticket,
+                "completeness": compl,
+            }
+
+    # (1) ES-ticketed datatakes (preserves the previous S1A/S2/S3/S5P behaviour).
+    for _d in datatakes_sources:
+        _tkt = _d.get("last_attached_ticket")
+        if not _tkt:
+            continue
+        _compl = acquisitions_utils.recalc_completeness(_d)
+        if _compl >= 100.0:
+            continue
+        _did = _d.get("datatake_id")
+        if not _did:
+            continue
+        _sat = (_d.get("satellite_unit") or _did.split("-")[0]).upper().replace("SNP", "S5P")
+        _add_impacted(
+            _sat, _did, _d.get("observation_time_start"),
+            _d.get("cams_origin") or "", _tkt, _compl,
+        )
+
+    # (2) Anomaly-linked datatakes (recovers S1C/S1D missing the ES linkage).
+    _category_origin = {"Platform": "Satellite", "Acquisition": "Acquisition"}
+    _dt_lookup = {
+        _d.get("datatake_id"): _d
+        for _d in datatakes_sources
+        if _d.get("datatake_id")
+    }
+
+    # Satellite issues are re-sourced from this same anomaly join (matching the
+    # events page): a Platform-category anomaly with >=1 L0-impacted datatake in
+    # the period. Hours = the datatakes' actual L0-lost hours. This supersedes the
+    # unavailability-based figure computed in build_space_segment_ssr, so the popup,
+    # the impacted-DT table and the events page are all consistent.
+    _sat_hours = {}
+    _sat_events = {}  # sat -> {anomaly_key: event}
+
+    def _dt_hours(dt):
+        dur = dt.get("l0_sensing_duration")
+        if dur:
+            return dur / 3_600_000_000.0
+        s, e = dt.get("observation_time_start"), dt.get("observation_time_stop")
+        if s and e:
+            try:
+                return (
+                    datetime.fromisoformat(e.replace("Z", "+00:00"))
+                    - datetime.fromisoformat(s.replace("Z", "+00:00"))
+                ).total_seconds() / 3600.0
+            except (ValueError, TypeError):
+                return 0.0
+        return 0.0
+    for _anom in _all_anomalies:
+        _raw = _anom.datatakes_completeness
+        if not _raw:
+            continue
+        try:
+            _entries = ast.literal_eval(_raw) if isinstance(_raw, str) else _raw
+        except (ValueError, SyntaxError):
+            continue
+        if not isinstance(_entries, list):
+            continue
+        _origin = _category_origin.get(_anom.category, _anom.category or "Other")
+        for _e in _entries:
+            if not isinstance(_e, dict):
+                continue
+            _did = _e.get("datatakeID")
+            _dt = _dt_lookup.get(_did) if _did else None
+            if not _dt:
+                continue
+            # Skip only true no-data rows (no completeness at ANY level). S2/S5P
+            # track completeness at L1/L2 (no L0), so we must not require L0 here
+            # or every S2/S5P datatake would be dropped.
+            if all(
+                _dt.get(_k) is None
+                for _k in ("L0_", "L1_", "L2_", "final_completeness_percentage")
+            ):
+                continue
+            _compl = acquisitions_utils.recalc_completeness(_dt)
+            if _compl >= 100.0:
+                continue
+            _sat = _did.split("-")[0].upper().replace("SNP", "S5P")
+            _add_impacted(
+                _sat, _did, _dt.get("observation_time_start"),
+                _origin, _anom.key, _compl,
+            )
+
+            # Accumulate satellite issues from Platform-category anomalies.
+            if _anom.category == "Platform" and _sat in stats:
+                _sat_hours[_sat] = _sat_hours.get(_sat, 0.0) + _dt_hours(_dt) * (
+                    1.0 - _compl / 100.0
+                )
+                _date = (_dt.get("observation_time_start") or "0000-00-00")[:10]
+                _evs = _sat_events.setdefault(_sat, {})
+                _ev = _evs.get(_anom.key)
+                if _ev is None:
+                    _evs[_anom.key] = {
+                        "date": _date,
+                        "description": f"{_anom.key}: {_anom.title or 'Satellite issue'}",
+                        "type": "Satellite",
+                    }
+                elif _date < _ev["date"]:
+                    _ev["date"] = _date
+
+    for _sat in stats:
+        # Override satellite issues with the anomaly-based figure (keeping the
+        # planned total constant), and expose the events + impacted datatakes.
+        _u = stats[_sat]["unavailability"]
+        _planned = stats[_sat]["success"] + _u["sat"] + _u["acq"] + _u["other"]
+        _u["sat"] = _sat_hours.get(_sat, 0.0)
+        stats[_sat]["success"] = max(
+            0.0, _planned - (_u["sat"] + _u["acq"] + _u["other"])
+        )
+        stats[_sat]["success_percentage"] = (
+            100.0 * stats[_sat]["success"] / _planned if _planned else 100.0
+        )
+        stats[_sat].setdefault("events", {})["sat_events"] = sorted(
+            _sat_events.get(_sat, {}).values(), key=lambda x: x["date"]
+        )
+        stats[_sat]["impacted_datatakes"] = list(
+            _impacted_by_sat.get(_sat, {}).values()
+        )
 
     prev_quarter_label = acquisitions_utils.previous_quarter_label()
 
