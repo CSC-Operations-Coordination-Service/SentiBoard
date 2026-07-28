@@ -828,8 +828,13 @@ const IPF_DESC: Record<string, string> = {
 // release_notes and target_ipfs[]. We fan each release out across its target IPFs, group by IPF
 // into lanes, and let the client place the dots against the zoomed viewport.
 export async function getProcessors(): Promise<{ rows: ProcRow[]; win: ProcWindow }> {
-  // Conor's FastAPI processors service (DEVOCS-220). Override with PROCESSORS_API_URL if the host/port
-  // differ; defaults to the local uvicorn from apps/sentiboard_backend on :8000.
+  // Conor's FastAPI processors service (DEVOCS-220) is the only source of release data.
+  // The `||` picks the URL, not the service: PROCESSORS_API_URL when set (e.g. a container name on
+  // a docker network), otherwise the local uvicorn from apps/sentiboard_backend on :8000. Both
+  // address the same service.
+  // If that call fails — unreachable, non-2xx, or a payload with no usable releases — the catch at
+  // the bottom falls back to MOCK_RELEASES so the page still renders. Watch the log line below to
+  // tell which one you are looking at.
   const url = process.env.PROCESSORS_API_URL || "http://127.0.0.1:8000/api/v1/processors/releases";
   console.log("[data] getProcessors → fetching from backend:", url);
   try {
