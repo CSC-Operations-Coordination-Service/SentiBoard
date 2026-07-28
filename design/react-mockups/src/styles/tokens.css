@@ -1,0 +1,91 @@
+/* ============================================================
+   SentiBoard v2 — Design tokens
+   SpaceX-inspired: near-black canvas, cinematic imagery, thin
+   uppercase type, restrained accents. Two themes share one set
+   of semantic variable names so components never hard-code color.
+   Dark is the default; light is a first-class toggle.
+   ============================================================ */
+
+:root {
+  /* Type */
+  --font-sans: "Inter", "Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
+  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
+
+  /* Brand accent (shared across themes) — SentiBoard telemetry blue→cyan */
+  --accent: #2e7df6;
+  --accent-2: #12b1bf;
+  --accent-grad: linear-gradient(90deg, #2e7df6, #36d0e0);
+
+  /* Semantic status (shared) */
+  --ok: #34d399;
+  --warn: #f5b544;
+  --crit: #ef5b6e;
+  --info: #4ea8ff;
+
+  /* Motion + shape */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur: 0.45s;
+  --wrap: 1320px;
+  --nav-h: 68px;
+
+  /* Uppercase "mission" label treatment (SpaceX-like) */
+  --track: 0.18em;
+}
+
+/* -------------------- DARK (default) -------------------- */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #05070c;
+  /* ground */
+  --bg-1: #0a0e16;
+  /* raised surface */
+  --bg-2: #10151f;
+  /* card */
+  --bg-3: #171d29;
+  /* hover / input */
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.16);
+
+  --text: #eef2f8;
+  --text-dim: #aab4c5;
+  --text-mute: #6c778a;
+
+  --veil: linear-gradient(180deg, rgba(5, 7, 12, 0) 0%, rgba(5, 7, 12, 0.65) 60%, rgba(5, 7, 12, 0.96) 100%);
+  --glass: rgba(10, 14, 22, 0.72);
+  --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
+  --grid-line: rgba(255, 255, 255, 0.04);
+
+  --pill-bg: rgba(255, 255, 255, 0.06);
+  --on-accent: #04101f;
+  --hpanel-divider: rgba(255, 255, 255, 0.06);
+}
+
+/* -------------------- LIGHT -------------------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #f4f6fa;
+  --bg-1: #ffffff;
+  --bg-2: #ffffff;
+  --bg-3: #eef1f6;
+  --line: rgba(9, 20, 40, 0.10);
+  --line-strong: rgba(9, 20, 40, 0.18);
+
+  --text: #0c1524;
+  --text-dim: #45536b;
+  --text-mute: #8a94a6;
+
+  --veil: linear-gradient(180deg, rgba(244, 246, 250, 0) 0%, rgba(244, 246, 250, 0.55) 55%, rgba(244, 246, 250, 0.92) 100%);
+  --glass: rgba(255, 255, 255, 0.78);
+  --shadow: 0 18px 50px -24px rgba(20, 40, 80, 0.35);
+  --grid-line: rgba(9, 20, 40, 0.05);
+
+  --pill-bg: rgba(9, 20, 40, 0.05);
+  --on-accent: #ffffff;
+  --hpanel-divider: rgba(9, 20, 40, 0.07);
+}

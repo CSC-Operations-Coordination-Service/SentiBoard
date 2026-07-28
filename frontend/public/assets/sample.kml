@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Sample acquisition plan</name>
+    <Style id="station">
+      <IconStyle><scale>1.1</scale></IconStyle>
+    </Style>
+
+    <Placemark>
+      <name>Svalbard</name>
+      <styleUrl>#station</styleUrl>
+      <Point><coordinates>15.399,78.229,0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Matera</name>
+      <styleUrl>#station</styleUrl>
+      <Point><coordinates>16.704,40.649,0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Maspalomas</name>
+      <styleUrl>#station</styleUrl>
+      <Point><coordinates>-15.634,27.763,0</coordinates></Point>
+    </Placemark>
+    <Placemark>
+      <name>Inuvik</name>
+      <styleUrl>#station</styleUrl>
+      <Point><coordinates>-133.523,68.360,0</coordinates></Point>
+    </Placemark>
+
+    <Placemark>
+      <name>Sample ground track</name>
+      <LineString>
+        <tessellate>1</tessellate>
+        <coordinates>
+          -60,-40,0
+          -20,10,0
+          15,40,0
+          40,60,0
+          80,70,0
+        </coordinates>
+      </LineString>
+    </Placemark>
+  </Document>
+</kml>

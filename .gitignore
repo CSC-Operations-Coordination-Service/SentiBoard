@@ -1,5 +1,9 @@
 *.pyc
 **/__pycache__/
 venv
+.venv
 apps/logs
 apps/config
+
+# Build artifacts
+*.tsbuildinfo
