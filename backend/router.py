@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
-from sentiboard_backend.cache import TTLCache
-from sentiboard_backend.schemas import ProcessorsError, ProcessorsResponse
-from sentiboard_backend.service import ProcessorsService
-from sentiboard_backend.settings import settings
+from cache import TTLCache
+from schemas import ProcessorsError, ProcessorsResponse
+from service import ProcessorsService
+from settings import settings
 
 
 router = APIRouter(prefix="/api/v1/processors", tags=["processors"])
