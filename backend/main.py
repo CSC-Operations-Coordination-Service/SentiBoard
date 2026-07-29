@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from router import router as processors_router
-from settings import settings
+from sentiboard_backend.router import router as processors_router
+from sentiboard_backend.settings import settings
 
 app = FastAPI(title="SentiBoard Backend API", version="0.1.0")
 

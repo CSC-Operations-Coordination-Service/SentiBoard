@@ -1,8 +1,8 @@
 import json
 from datetime import datetime, timezone
 import httpx
-from settings import settings
-from schemas import ProcessorsData, ProcessorsError, ProcessorsMeta, ProcessorsResponse
+from sentiboard_backend.settings import settings
+from sentiboard_backend.schemas import ProcessorsData, ProcessorsError, ProcessorsMeta, ProcessorsResponse
 
 class ProcessorsService:
     async def fetch_upstream(self) -> list[dict]:
