@@ -11,6 +11,7 @@ import About from "./pages/About";
 import { SimplePage, StatPage } from "./pages/Simple";
 import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
+import EventsLog from "./pages/EventsLog";
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -32,12 +33,13 @@ export default function App() {
           <Route path="/processors" element={<Processors />} />
           <Route path="/about" element={<About />} />
 
-          {/* Index-page PROPOSAL examples (do not affect the real Home at "/") */}
+          {/* PROPOSAL examples (do not affect the real pages above) */}
           <Route path="/examples" element={<ExamplesHome />} />
           <Route path="/examples/fleet" element={<IndexFleet />} />
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route path="/examples/reveal" element={<IndexReveal />} />
           <Route path="/examples/about" element={<AboutRedesign />} />
+          <Route path="/examples/events-log" element={<EventsLog />} />
 
           {/* Remaining functional pages — styled placeholders carrying the real feature copy */}
           <Route path="/product-timeliness" element={<StatPage crumb="Product Timeliness" title="Product Timeliness"

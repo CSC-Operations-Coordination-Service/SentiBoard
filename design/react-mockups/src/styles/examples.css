@@ -1289,6 +1289,7 @@
   --warn: #f5b544;
   --crit: #ff5c5c;
   --info: #4ea8ff;
+  --planned: #9e9e9e;
 }
 
 .vhero .vhero-bar.top {

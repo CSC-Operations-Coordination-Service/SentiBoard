@@ -1,0 +1,408 @@
+/* ============================================================
+   Events page PROPOSAL — chronological mission log (/examples/events-log)
+   Alternative to the calendar-grid Events page at /events.
+
+   Everything below is driven by the shared semantic tokens in tokens.css
+   (--bg-*, --line, --text-*, --ok/--warn/--crit/--info), so the page renders
+   correctly in BOTH themes through the global nav toggle — no per-theme
+   overrides needed except where a value can't be expressed semantically.
+   ============================================================ */
+
+/* ---------- telemetry strip ---------- */
+.evl-head {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* faint grid, as on the other mockup headers */
+.evl-head::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  pointer-events: none;
+}
+
+.evl-head .wrap {
+  position: relative;
+  padding-block: 36px 26px;
+}
+
+.evl-head .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.evl-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.evl-title-row h1 {
+  font-size: clamp(28px, 4.4vw, 44px);
+}
+
+.evl-clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.evl-clock i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 8px var(--ok);
+  animation: evl-blink 1.8s ease-in-out infinite;
+}
+
+@keyframes evl-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .evl-clock i { animation: none; }
+}
+
+.evl-sub {
+  color: var(--text-dim);
+  margin: 12px 0 0;
+  max-width: 760px;
+  font-size: 15px;
+}
+
+/* ---------- month navigation ---------- */
+.evl-monthnav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.evl-monthnav button {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.evl-monthnav button:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+
+.evl-monthnav .label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  min-width: 132px;
+  text-align: center;
+  color: var(--text);
+}
+
+/* ---------- counters ---------- */
+.evl-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  background: var(--bg-2);
+}
+
+.evl-stat {
+  padding: 13px 16px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.evl-stat:last-child { border-right: 0; }
+
+.evl-stat .n {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.evl-stat .l {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+@media (max-width: 760px) {
+  .evl-stats { grid-template-columns: repeat(2, 1fr); }
+  .evl-stat:nth-child(2n) { border-right: 0; }
+  .evl-stat { border-top: 1px solid var(--line); }
+  .evl-stat:nth-child(-n + 2) { border-top: 0; }
+}
+
+/* ---------- per-day activity pulse ---------- */
+.evl-pulse {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 40px;
+  margin-top: 18px;
+  padding-top: 6px;
+}
+
+.evl-pulse .bar {
+  flex: 1;
+  min-height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  transition: background 0.2s;
+}
+
+.evl-pulse .bar.on { background: var(--accent-2); }
+.evl-pulse .bar.crit { background: var(--crit); }
+
+/* ---------- filter bar ---------- */
+.evl-filterbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-top: 28px;
+}
+
+/* the shared .filters bottom margin is not wanted inside this row */
+.evl-filterbar .filters { margin-bottom: 0; }
+
+.evl-sw {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 7px;
+  vertical-align: middle;
+}
+
+/* ---------- day-grouped log ---------- */
+.evl-log {
+  padding-block: 28px clamp(56px, 8vw, 110px);
+}
+
+.evl-empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  text-align: center;
+  padding: 56px 0;
+}
+
+.evl-day {
+  display: flex;
+  gap: 24px;
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+}
+
+.evl-day:first-child { border-top: 0; }
+
+.evl-daynum {
+  width: 66px;
+  flex: 0 0 66px;
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+}
+
+.evl-daynum .n {
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.evl-daynum .wd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-top: 5px;
+}
+
+.evl-cards {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evl-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s var(--ease);
+}
+
+.evl-card:hover {
+  border-top-color: var(--line-strong);
+  border-right-color: var(--line-strong);
+  border-bottom-color: var(--line-strong);
+  background: var(--bg-3);
+}
+
+/* the header row is the disclosure control — reset the button chrome */
+.evl-card-top {
+  all: unset;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  cursor: pointer;
+}
+
+/* `all: unset` above also drops the focus ring — put a visible one back */
+.evl-card-top:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+  border-radius: var(--r-sm);
+}
+
+.evl-card-top .tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.evl-card-top .ts {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.evl-card-top .st {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.evl-card-title {
+  font-size: 16px;
+  margin: 10px 0 0;
+  line-height: 1.35;
+}
+
+.evl-card-desc {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.55;
+  margin: 5px 0 0;
+}
+
+.evl-products {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.evl-products .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-right: 4px;
+}
+
+.evl-products .p {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  background: var(--bg-1);
+}
+
+/* ---------- expanded detail ---------- */
+.evl-more {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+}
+
+@media (max-width: 620px) {
+  .evl-more { grid-template-columns: 1fr; }
+  .evl-day { gap: 14px; }
+  .evl-daynum { position: static; width: 54px; flex-basis: 54px; }
+}
+
+.evl-field {
+  font-size: 13.5px;
+  color: var(--text);
+  display: flex;
+  gap: 8px;
+}
+
+.evl-field .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  flex: 0 0 96px;
+  padding-top: 3px;
+}

@@ -319,14 +319,40 @@ const CARDS = [
   { to: "/examples/reveal", img: SCENES[0], title: "C · Editorial + reveal", desc: "Editorial first section (auto-scrolling Sentinel scenes + news + live rail, no globe) → pages revealed on scroll." },
 ];
 
+// Proposals for pages other than the index — same idea, grouped separately so
+// it stays clear which real page each one is an alternative to.
+const PAGE_CARDS = [
+  {
+    to: "/examples/events-log", img: MOD_IMG[2], title: "Events · Chronological log",
+    desc: "The month as an operations log instead of a calendar grid: telemetry strip with counters and a per-day activity pulse, mission + status filters, then events grouped by day with the advisory copy and impacted products in view.",
+  },
+];
+
 export function ExamplesHome() {
   return (
     <>
-      <PageHeader crumb="Index proposals" title="Index page — proposal options"
-        sub="Alternative index layouts. Each treats the News + Real-Time Events section differently and keeps the dashboard pages front-and-centre. The real Home page is unchanged." />
+      <PageHeader crumb="Proposals" title="Page proposals"
+        sub="Alternative layouts for the dashboard pages. The index options each treat the News + Real-Time Events section differently; the page proposals rework a single existing page. The real pages are unchanged." />
       <section className="wrap pad">
+        <div className="section-head" style={{ marginBottom: 24 }}>
+          <div><h2 style={{ fontSize: 24 }}>Index page</h2></div>
+          <span className="meta">3 options</span>
+        </div>
         <div className="ex-list">
           {CARDS.map((c) => (
+            <Link className="ex-card" to={c.to} key={c.to}>
+              <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
+              <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="section-head" style={{ margin: "56px 0 24px" }}>
+          <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
+          <span className="meta">Alternative to /events</span>
+        </div>
+        <div className="ex-list">
+          {PAGE_CARDS.map((c) => (
             <Link className="ex-card" to={c.to} key={c.to}>
               <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
               <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>
