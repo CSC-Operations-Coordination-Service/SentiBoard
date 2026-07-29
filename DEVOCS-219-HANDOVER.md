@@ -146,9 +146,30 @@ small change — worth deciding together before Thursday.
 | [frontend/components/ProcessorsView.tsx](frontend/components/ProcessorsView.tsx) | search — narrows whole lanes, not individual releases |
 | [design/processors-viewer-design.md](design/processors-viewer-design.md) | why any of it looks like this |
 
+## 4. Deployment
+
+See **[infra/README.md](infra/README.md)** for the runbook. Short version:
+
+- **The mockups are ready to deploy** — a static build behind nginx, no API, no database, no
+  config, and the `patch/` folder the Flask deployment needs is not required. One decision first:
+  own subdomain, a path on the existing domain, or a raw port. The path case needs
+  `--build-arg VITE_BASE=/mockups/`, because asset URLs and the router basename are baked at
+  build time.
+- **The frontend + processors API is not deployable yet**, and deliberately so — it needs a
+  multi-service arrangement that does not exist here, and three open questions answered first
+  (pipeline capability, image ownership, whether it warrants its own ticket). Demonstrated
+  locally in the meantime, per section 1.
+
+Nothing in `infra/` touches the existing Flask deployment: the root `Dockerfile`,
+`docker-compose.yml` and `gunicorn-cfg.py` are unchanged.
+
 ## Status
 
 - `npx tsc --noEmit` clean; `npm run build` clean on both the live and fallback paths.
+- Mockups build clean at the repo root and under `VITE_BASE=/mockups/`.
 - Verified against the live backend (373 dots / 41 processors) and the offline fixture.
 - Not yet done: no automated tests, no visual regression check, and the page has not been exercised
   on a real mobile viewport — the lane gutter narrows at 900px but that is untested on a device.
+- **No container image has been built on the staging host.** The Dockerfiles are written and the
+  builds work locally, but `npm ci` has never run through that proxy. Expect the first build there
+  to need a look.
