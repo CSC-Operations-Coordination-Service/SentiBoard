@@ -8,7 +8,7 @@
    overrides needed except where a value can't be expressed semantically.
    ============================================================ */
 
-/* ---------- telemetry strip ---------- */
+/* ---------- page header ---------- */
 .evl-head {
   border-bottom: 1px solid var(--line);
   background: var(--bg-1);
@@ -16,12 +16,6 @@
 
 .evl-head .wrap {
   padding-block: 36px 26px;
-}
-
-.evl-head .eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .evl-title-row {
@@ -34,34 +28,6 @@
 
 .evl-title-row h1 {
   font-size: clamp(28px, 4.4vw, 44px);
-}
-
-.evl-clock {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  color: var(--text-dim);
-}
-
-.evl-clock i {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 8px var(--ok);
-  animation: evl-blink 1.8s ease-in-out infinite;
-}
-
-@keyframes evl-blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .evl-clock i { animation: none; }
 }
 
 .evl-sub {
@@ -108,71 +74,6 @@
   color: var(--text);
 }
 
-/* ---------- counters ---------- */
-.evl-stats {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  margin-top: 20px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  overflow: hidden;
-  background: var(--bg-2);
-}
-
-.evl-stat {
-  padding: 13px 16px;
-  border-right: 1px solid var(--line);
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.evl-stat:last-child { border-right: 0; }
-
-.evl-stat .n {
-  font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.evl-stat .l {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-}
-
-@media (max-width: 760px) {
-  .evl-stats { grid-template-columns: repeat(2, 1fr); }
-  .evl-stat:nth-child(2n) { border-right: 0; }
-  .evl-stat { border-top: 1px solid var(--line); }
-  .evl-stat:nth-child(-n + 2) { border-top: 0; }
-}
-
-/* ---------- per-day activity pulse ---------- */
-.evl-pulse {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 40px;
-  margin-top: 18px;
-  padding-top: 6px;
-}
-
-.evl-pulse .bar {
-  flex: 1;
-  min-height: 3px;
-  border-radius: 2px;
-  background: var(--line);
-  transition: background 0.2s;
-}
-
-.evl-pulse .bar.on { background: var(--accent-2); }
-.evl-pulse .bar.crit { background: var(--crit); }
-
 /* ---------- filter bar ---------- */
 .evl-filterbar {
   display: flex;
@@ -184,7 +85,9 @@
 }
 
 /* the shared .filters bottom margin is not wanted inside this row */
-.evl-filterbar .filters { margin-bottom: 0; }
+.evl-filterbar .filters {
+  margin-bottom: 0;
+}
 
 .evl-sw {
   width: 8px;
@@ -217,7 +120,9 @@
   border-top: 1px solid var(--line);
 }
 
-.evl-day:first-child { border-top: 0; }
+.evl-day:first-child {
+  border-top: 0;
+}
 
 .evl-daynum {
   width: 66px;
@@ -270,7 +175,8 @@
   background: var(--bg-3);
 }
 
-/* the header row is the disclosure control — reset the button chrome */
+/* the header row carries the kind / time / status chips; `all: unset` keeps it
+   free of inherited paragraph spacing before the flex layout is applied */
 .evl-card-top {
   all: unset;
   display: flex;
@@ -278,14 +184,6 @@
   gap: 10px;
   flex-wrap: wrap;
   width: 100%;
-  cursor: pointer;
-}
-
-/* `all: unset` above also drops the focus ring — put a visible one back */
-.evl-card-top:focus-visible {
-  outline: 2px solid var(--accent-2);
-  outline-offset: 3px;
-  border-radius: var(--r-sm);
 }
 
 .evl-card-top .tag {
@@ -300,6 +198,13 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+/* kind tag now carries its own color (via inline style from ISSUE_COLORS),
+   so give it a colored border to match instead of the neutral --line one */
+.evl-card-top .tag.kind {
+  border-width: 1px;
+  border-style: solid;
 }
 
 .evl-card-top .ts {
@@ -320,75 +225,86 @@
   text-transform: uppercase;
 }
 
-.evl-card-title {
-  font-size: 16px;
-  margin: 10px 0 0;
-  line-height: 1.35;
-}
-
 .evl-card-desc {
   color: var(--text-dim);
   font-size: 14px;
   line-height: 1.55;
-  margin: 5px 0 0;
+  margin: 10px 0 0;
 }
 
-.evl-products {
+/* ---------- impacted datatakes, grouped by mission ---------- */
+.evl-groups {
+  margin-top: 12px;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.evl-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.evl-group-mission {
+  display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 12px;
-}
-
-.evl-products .k {
   font-family: var(--font-mono);
   font-size: 10px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-mute);
-  margin-right: 4px;
 }
 
-.evl-products .p {
+.evl-group-mission .sw {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.evl-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding-left: 12px;
+}
+
+.evl-item {
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  padding: 3px 7px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  color: var(--text-dim);
-  background: var(--bg-1);
+  font-size: 12.5px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: opacity 0.15s;
 }
 
-/* ---------- expanded detail ---------- */
-.evl-more {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px dashed var(--line);
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px 24px;
+.evl-item:hover {
+  opacity: 0.75;
+}
+
+.evl-item .hash {
+  color: var(--text-mute);
+  text-decoration: none;
+}
+
+.evl-item .dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 @media (max-width: 620px) {
-  .evl-more { grid-template-columns: 1fr; }
-  .evl-day { gap: 14px; }
-  .evl-daynum { position: static; width: 54px; flex-basis: 54px; }
-}
+  .evl-day {
+    gap: 14px;
+  }
 
-.evl-field {
-  font-size: 13.5px;
-  color: var(--text);
-  display: flex;
-  gap: 8px;
-}
-
-.evl-field .k {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-  flex: 0 0 96px;
-  padding-top: 3px;
+  .evl-daynum {
+    position: static;
+    width: 54px;
+    flex-basis: 54px;
+  }
 }

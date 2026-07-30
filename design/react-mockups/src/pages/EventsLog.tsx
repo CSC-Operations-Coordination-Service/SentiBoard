@@ -1,23 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Activity } from "lucide-react";
+import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import EventIcon from "@/components/EventIcon";
-import type { IssueType } from "@/data/mock";
+import { ISSUE_COLORS, IssueType } from "@/data/mock";
 import "@/styles/events-log.css";
 
 /* Events page PROPOSAL — chronological mission log (ALTERNATIVE to the real
    calendar-grid Events page at "/events", which is untouched).
 
-   Idea: instead of a month grid where each day is a small cell, present the
-   month as an operations log — a telemetry strip (counts + a per-day "pulse"
-   sparkline) on top, then events grouped by day with the full advisory copy,
-   impacted products and status visible without a click. Same data the real
-   page consumes; different reading model.
-
-   Both themes are driven by the shared tokens in styles/tokens.css, so the
-   page follows the global light/dark toggle in the nav. */
+   v2: title is no longer a single string. Each event carries a list of
+   impacted datatakes; the card groups them by mission and renders them the
+   same way the real Event Details aside does (colored link chip + hash +
+   dot) instead of one plain heading. Kind tags now pull their color from the
+   same ISSUE_COLORS map the real page uses, so a "Manoeuvre" tag here is the
+   same orange as the "Manoeuvre" row in the Event Types legend everywhere
+   else in the app — no separate color list to keep in sync. */
 
 // ---------------------------------------------------------------------------
-// MOCK DATA — stand-in for the month payload the real page will be given.
+// MOCK DATA
 // ---------------------------------------------------------------------------
 const MISSIONS = {
   S1: { label: "Sentinel-1", color: "#4ea8ff" },
@@ -27,7 +26,6 @@ const MISSIONS = {
 } as const;
 type MissionKey = keyof typeof MISSIONS;
 
-// Statuses mirror prod's Instant-Message states (new / resolved / disaster).
 const STATUSES = {
   PLANNED: { label: "Planned", color: "var(--planned)" },
   ACQUIRED: { label: "Acquired", color: "var(--ok)" },
@@ -36,8 +34,6 @@ const STATUSES = {
 } as const;
 type StatusKey = keyof typeof STATUSES;
 
-// "kind" reuses the real page's issue types so the glyphs match the calendar
-// mockup and the filter chips at /events.
 const KIND_LABEL: Record<IssueType, string> = {
   acquisition: "Acquisition",
   calibration: "Calibration",
@@ -46,40 +42,104 @@ const KIND_LABEL: Record<IssueType, string> = {
   satellite: "Satellite",
 };
 
+// A single impacted datatake — this is what "title" used to be.
+interface ImpactedItem {
+  mission: MissionKey;
+  id: string;   // e.g. "S1D-25325"
+  hash: string; // e.g. "62ed"
+}
+
 interface LogEvent {
   id: number; day: number; time: string;
-  mission: MissionKey; status: StatusKey; kind: IssueType;
-  title: string; desc: string; products: string[];
+  status: StatusKey; kind: IssueType;
+  desc: string;
+  items: ImpactedItem[]; // grouped by mission at render time
 }
 
 const EVENTS: LogEvent[] = [
-  { id: 1, day: 2, time: "04:12", mission: "S1", status: "ACQUIRED", kind: "manoeuvre", title: "S1A in-plane orbit correction", desc: "Scheduled in-plane manoeuvre. No data gap expected.", products: ["GRD", "SLC"] },
-  { id: 2, day: 4, time: "18:40", mission: "S3", status: "UNAVAILABLE", kind: "acquisition", title: "S3B-121-380", desc: "Downlink interruption over Svalbard station; 41 min gap in OLCI/SLSTR delivery.", products: ["OL_1_EFR", "SL_1_RBT"] },
-  { id: 3, day: 4, time: "19:05", mission: "S3", status: "PLANNED", kind: "satellite", title: "S3B ground-segment investigation opened", desc: "Root-cause analysis in progress with the operations team.", products: ["OL_1_EFR", "SL_1_RBT"] },
-  { id: 4, day: 7, time: "09:00", mission: "S5P", status: "ACQUIRED", kind: "calibration", title: "TROPOMI solar calibration", desc: "Monthly radiometric calibration sequence, nominal.", products: ["L1B"] },
-  { id: 5, day: 9, time: "06:22", mission: "S3", status: "PLANNED", kind: "manoeuvre", title: "S3B unavailability notice — IP manoeuvre #163", desc: "Planned in-plane manoeuvre, ~35 min instrument outage window.", products: ["OL_1_EFR", "OL_2_LFR"] },
-  { id: 6, day: 12, time: "22:15", mission: "S1", status: "UNAVAILABLE", kind: "acquisition", title: "S1C acquisition-plan fragment loss", desc: "Acquisition-plan fragments not persisted for two consecutive passes.", products: ["Plan"] },
-  { id: 7, day: 13, time: "07:50", mission: "S1", status: "ACQUIRED", kind: "production", title: "S1C fragment persistence restored", desc: "Cache write path patched; backfill completed for the affected passes.", products: ["Plan"] },
-  { id: 8, day: 16, time: "11:30", mission: "S2", status: "PLANNED", kind: "calibration", title: "S2B MSI dark-signal calibration", desc: "Routine calibration slot; imaging suspended over the calibration site.", products: ["L1C"] },
-  { id: 9, day: 19, time: "03:05", mission: "S5P", status: "ACQUIRED", kind: "manoeuvre", title: "S5P orbit-maintenance burn", desc: "Nominal maintenance manoeuvre, sun-synchronous orbit correction.", products: ["L1B", "L2"] },
-  { id: 10, day: 22, time: "14:44", mission: "S3", status: "PLANNED", kind: "production", title: "S3A altimetry product delay", desc: "Processing backlog at the ground segment, ETA 3 h.", products: ["SR_1_SRA", "SR_2_LAN"] },
-  { id: 11, day: 25, time: "08:18", mission: "S2", status: "ACQUIRED", kind: "manoeuvre", title: "S2A collision-avoidance manoeuvre", desc: "Precautionary avoidance manoeuvre executed; orbit nominal post-burn.", products: ["L1C", "L2A"] },
-  { id: 12, day: 29, time: "20:02", mission: "S1", status: "PLANNED", kind: "acquisition", title: "S1A downlink station handover delay", desc: "Matera station handover delayed 12 min; minor queue backlog.", products: ["GRD"] },
+  {
+    id: 1, day: 2, time: "04:12", status: "ACQUIRED", kind: "manoeuvre",
+    desc: "Scheduled in-plane manoeuvre. No data gap expected.",
+    items: [
+      { mission: "S1", id: "S1A-25214", hash: "71ba" },
+      { mission: "S1", id: "S1A-25219", hash: "71c2" },
+    ],
+  },
+  {
+    id: 2, day: 4, time: "18:40", status: "UNAVAILABLE", kind: "acquisition",
+    desc: "Downlink interruption over Svalbard station; 41 min gap in OLCI/SLSTR delivery.",
+    items: [
+      { mission: "S3", id: "S3B-25325", hash: "62ed" },
+      { mission: "S3", id: "S3B-25311", hash: "62df" },
+      { mission: "S3", id: "S3B-25330", hash: "62f2" },
+      { mission: "S3", id: "S3B-25333", hash: "62f5" },
+    ],
+  },
+  {
+    id: 3, day: 4, time: "19:05", status: "PLANNED", kind: "satellite",
+    desc: "Root-cause analysis in progress with the operations team.",
+    items: [{ mission: "S3", id: "S3B-25341", hash: "630a" }],
+  },
+  {
+    id: 4, day: 7, time: "09:00", status: "ACQUIRED", kind: "calibration",
+    desc: "Monthly radiometric calibration sequence, nominal.",
+    items: [{ mission: "S5P", id: "S5P-88120", hash: "1a4c" }],
+  },
+  {
+    id: 5, day: 9, time: "06:22", status: "PLANNED", kind: "manoeuvre",
+    desc: "Planned in-plane manoeuvre, ~35 min instrument outage window.",
+    items: [
+      { mission: "S3", id: "S3B-25402", hash: "6390" },
+      { mission: "S3", id: "S3B-25406", hash: "6394" },
+    ],
+  },
+  {
+    id: 6, day: 12, time: "22:15", status: "UNAVAILABLE", kind: "acquisition",
+    desc: "Acquisition-plan fragments not persisted for two consecutive passes.",
+    items: [
+      { mission: "S1", id: "S1C-40118", hash: "9c21" },
+      { mission: "S1", id: "S1C-40122", hash: "9c25" },
+    ],
+  },
+  {
+    id: 7, day: 13, time: "07:50", status: "ACQUIRED", kind: "production",
+    desc: "Cache write path patched; backfill completed for the affected passes.",
+    items: [{ mission: "S1", id: "S1C-40118", hash: "9c21" }],
+  },
+  {
+    id: 8, day: 16, time: "11:30", status: "PLANNED", kind: "calibration",
+    desc: "Routine calibration slot; imaging suspended over the calibration site.",
+    items: [{ mission: "S2", id: "S2B-71209", hash: "3e88" }],
+  },
+  {
+    id: 9, day: 19, time: "03:05", status: "ACQUIRED", kind: "manoeuvre",
+    desc: "Nominal maintenance manoeuvre, sun-synchronous orbit correction.",
+    items: [{ mission: "S5P", id: "S5P-88204", hash: "1a77" }],
+  },
+  {
+    id: 10, day: 22, time: "14:44", status: "PLANNED", kind: "production",
+    desc: "Processing backlog at the ground segment, ETA 3 h.",
+    items: [
+      { mission: "S3", id: "S3A-25501", hash: "6412" },
+      { mission: "S3", id: "S3A-25505", hash: "6416" },
+    ],
+  },
+  {
+    id: 11, day: 25, time: "08:18", status: "ACQUIRED", kind: "manoeuvre",
+    desc: "Precautionary avoidance manoeuvre executed; orbit nominal post-burn.",
+    items: [{ mission: "S2", id: "S2A-71340", hash: "3f02" }],
+  },
+  {
+    id: 12, day: 29, time: "20:02", status: "PLANNED", kind: "acquisition",
+    desc: "Matera station handover delayed 12 min; minor queue backlog.",
+    items: [{ mission: "S1", id: "S1A-25612", hash: "72e0" }],
+  },
 ];
 
 const MONTH_LABEL = "July 2026";
-const DAYS_IN_MONTH = 31;
-const MONTH_INDEX = 6; // July, for weekday labels
-
-// Ink used on colour-filled chips — mid-bright status/mission hues need a dark
-// foreground in BOTH themes, so this is deliberately not --on-accent.
+const MONTH_INDEX = 6;
 const CHIP_INK = "#04101f";
 
-// Status glyphs mirror frontend/components/NewsStatus.tsx (filled circle "!",
-// filled circle check, filled warning triangle) so the proposal reads as the
-// same product, not a new icon set. The outer shape is currentColor; `ink` is
-// the surface it sits on, so the inner mark stays legible on a plain card and
-// on a colour-filled chip alike.
 function StatusIcon({ status, size = 12, ink = "var(--bg-2)" }: { status: StatusKey; size?: number; ink?: string }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", "aria-hidden": true } as const;
   if (status === "ACQUIRED")
@@ -106,31 +166,44 @@ function StatusIcon({ status, size = 12, ink = "var(--bg-2)" }: { status: Status
   );
 }
 
+// Groups an event's impacted items by mission, preserving mission order.
+function groupByMission(items: ImpactedItem[]) {
+  const order: MissionKey[] = [];
+  const map = new Map<MissionKey, ImpactedItem[]>();
+  items.forEach((it) => {
+    if (!map.has(it.mission)) { map.set(it.mission, []); order.push(it.mission); }
+    map.get(it.mission)!.push(it);
+  });
+  return order.map((m) => ({ mission: m, items: map.get(m)! }));
+}
+
 const MISSION_KEYS = Object.keys(MISSIONS) as MissionKey[];
 const STATUS_KEYS = Object.keys(STATUSES) as StatusKey[];
+const KIND_KEYS = Object.keys(KIND_LABEL) as IssueType[];
 
 export default function EventsLog() {
   const [missions, setMissions] = useState<MissionKey[]>([...MISSION_KEYS]);
   const [statuses, setStatuses] = useState<StatusKey[]>([...STATUS_KEYS]);
-  const [openId, setOpenId] = useState<number | null>(null);
-  const [clock, setClock] = useState(() => new Date().toISOString().slice(11, 19));
-
-  useEffect(() => {
-    const t = window.setInterval(() => setClock(new Date().toISOString().slice(11, 19)), 1000);
-    return () => window.clearInterval(t);
-  }, []);
+  const [kinds, setKinds] = useState<IssueType[]>([...KIND_KEYS]);
 
   const toggleMission = (m: MissionKey) =>
     setMissions((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
   const toggleStatus = (s: StatusKey) =>
     setStatuses((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
+  const toggleKind = (k: IssueType) =>
+    setKinds((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
 
   const shown = useMemo(
-    () => EVENTS.filter((e) => missions.includes(e.mission) && statuses.includes(e.status)),
-    [missions, statuses]
+    () =>
+      EVENTS.filter(
+        (e) =>
+          statuses.includes(e.status) &&
+          kinds.includes(e.kind) &&
+          e.items.some((it) => missions.includes(it.mission))
+      ),
+    [missions, statuses, kinds]
   );
 
-  // day → events, ordered by day then time
   const byDay = useMemo(() => {
     const map = new Map<number, LogEvent[]>();
     [...shown]
@@ -139,57 +212,22 @@ export default function EventsLog() {
     return [...map.entries()];
   }, [shown]);
 
-  // per-day activity sparkline for the whole month (unfiltered, so the strip
-  // always shows the month's real shape while you narrow the log below)
-  const pulse = useMemo(
-    () =>
-      Array.from({ length: DAYS_IN_MONTH }, (_, i) => {
-        const day = i + 1;
-        const evs = EVENTS.filter((e) => e.day === day);
-        return { day, count: evs.length, crit: evs.some((e) => e.status === "UNAVAILABLE") };
-      }),
-    []
-  );
-
-  const stats = [
-    { n: shown.length, label: "Events" },
-    { n: shown.filter((e) => e.kind === "manoeuvre").length, label: "Manoeuvres" },
-    { n: shown.filter((e) => e.kind === "calibration").length, label: "Calibrations" },
-    { n: shown.filter((e) => e.status === "ACQUIRED").length, label: "Acquired" },
-    { n: shown.filter((e) => e.status === "UNAVAILABLE").length, label: "Unavailable", crit: true },
-  ];
-
   const weekday = (d: number) =>
     new Date(2026, MONTH_INDEX, d).toLocaleDateString("en-GB", { weekday: "short" });
 
   return (
     <>
-      {/* ---------- telemetry strip ---------- */}
       <div className="evl-head">
         <div className="wrap">
-          <div className="evl-title-row">
-            <h1>Events</h1>
-          </div>
+          <div className="evl-title-row"><h1>Events</h1></div>
           <p className="evl-sub">
             Events over the past three months that could impede data production — planned
             calibration activities, manoeuvres or anomalies — with the products they impact.
           </p>
-
           <div className="evl-monthnav">
             <button aria-label="Previous month"><ChevronLeft size={15} /></button>
             <span className="label">{MONTH_LABEL}</span>
             <button aria-label="Next month"><ChevronRight size={15} /></button>
-          </div>
-
-          <div className="evl-stats">
-            {stats.map((s) => (
-              <div className="evl-stat" key={s.label}>
-                <span className="n" style={s.crit && s.n ? { color: "var(--crit)" } : undefined}>
-                  {s.n}
-                </span>
-                <span className="l">{s.label}</span>
-              </div>
-            ))}
           </div>
         </div>
       </div>
@@ -205,6 +243,21 @@ export default function EventsLog() {
                 style={on ? { background: MISSIONS[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
                 <span className="evl-sw" style={{ background: on ? CHIP_INK : MISSIONS[k].color }} />
                 {k}
+              </button>
+            );
+          })}
+        </div>
+        <div className="filters">
+          {KIND_KEYS.map((k) => {
+            const on = kinds.includes(k);
+            const color = ISSUE_COLORS[k];
+            return (
+              <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleKind(k)}
+                style={on ? { background: color, borderColor: "transparent", color: CHIP_INK } : {}}>
+                <span style={{ color: on ? CHIP_INK : color, display: "inline-flex" }}>
+                  <EventIcon type={k} size={12} />
+                </span>
+                {KIND_LABEL[k]}
               </button>
             );
           })}
@@ -237,43 +290,51 @@ export default function EventsLog() {
             </div>
             <div className="evl-cards">
               {evs.map((e) => {
-                const mission = MISSIONS[e.mission];
                 const st = STATUSES[e.status];
-                const open = openId === e.id;
+                const kindColor = ISSUE_COLORS[e.kind];
+                // Only the missions still selected in the filter bar are shown,
+                // so a mixed-mission event can't smuggle a deselected mission
+                // onto the card just because one of its siblings matched.
+                const groups = groupByMission(e.items.filter((it) => missions.includes(it.mission)));
+                if (groups.length === 0) return null; // no items, or none selected
+                const borderColor = MISSIONS[groups[0].mission].color;
                 return (
-                  <article className={"evl-card" + (open ? " open" : "")} key={e.id}
-                    style={{ borderLeftColor: mission.color }}>
-                    <button className="evl-card-top" onClick={() => setOpenId(open ? null : e.id)}
-                      aria-expanded={open}>
-                      <span className="tag" style={{ color: mission.color, borderColor: mission.color }}>
-                        {e.mission}
-                      </span>
-                      <span className="tag kind">
+                  <article className="evl-card" key={e.id} style={{ borderLeftColor: borderColor }}>
+                    <div className="evl-card-top">
+                      <span className="tag kind" style={{ color: kindColor, borderColor: kindColor }}>
                         <EventIcon type={e.kind} size={12} /> {KIND_LABEL[e.kind]}
                       </span>
                       <span className="ts">{e.time} UTC</span>
                       <span className="st" style={{ color: st.color }}>
                         <StatusIcon status={e.status} size={11} /> {st.label}
                       </span>
-                    </button>
-                    <h3 className="evl-card-title">{e.title}</h3>
-                    <p className="evl-card-desc">{e.desc}</p>
-                    <div className="evl-products">
-                      <span className="k">Impacted products</span>
-                      {e.products.map((p) => <span className="p" key={p}>{p}</span>)}
                     </div>
-                    {open && (
-                      <div className="evl-more">
-                        <div className="evl-field"><span className="k">Mission</span>{mission.label}</div>
-                        <div className="evl-field"><span className="k">Occurrence</span>
-                          {weekday(e.day)} {String(e.day).padStart(2, "0")} {MONTH_LABEL} {e.time}:00 UTC
+
+                    <p className="evl-card-desc">{e.desc}</p>
+
+                    <div className="evl-groups">
+                      {groups.map((g) => (
+                        <div className="evl-group" key={g.mission}>
+                          <span className="evl-group-mission" style={{ color: MISSIONS[g.mission].color }}>
+                            <span className="sw" style={{ background: MISSIONS[g.mission].color }} />
+                            {MISSIONS[g.mission].label}
+                          </span>
+                          <div className="evl-items">
+                            {g.items.map((it) => (
+                              <a
+                                key={it.id}
+                                className="evl-item"
+                                href={`#/datatakes/${it.id}`}
+                                style={{ color: MISSIONS[g.mission].color }}
+                              >
+                                {it.id} <span className="hash">({it.hash})</span>
+                                <span className="dot" style={{ background: MISSIONS[g.mission].color }} />
+                              </a>
+                            ))}
+                          </div>
                         </div>
-                        <div className="evl-field"><span className="k">Issue type</span>{KIND_LABEL[e.kind]}</div>
-                        <div className="evl-field"><span className="k">Status</span>
-                          <span style={{ color: st.color }}>{st.label}</span>
-                        </div>
-                      </div>
-                    )}
+                      ))}
+                    </div>
                   </article>
                 );
               })}
