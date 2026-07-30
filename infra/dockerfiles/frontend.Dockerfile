@@ -18,7 +18,10 @@ ARG HTTP_PROXY=""
 ARG HTTPS_PROXY=""
 ENV http_proxy=$HTTP_PROXY https_proxy=$HTTPS_PROXY
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+# --include=dev is required: `next build` needs typescript to compile a TS project, and
+# it is a devDependency. Build hosts and CI runners commonly set NODE_ENV=production,
+# which makes npm drop dev packages and the build fail on a missing compiler.
+RUN npm ci --include=dev
 
 # ---- build ---------------------------------------------------------------
 FROM node:20-slim AS build

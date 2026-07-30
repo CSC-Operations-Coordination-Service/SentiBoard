@@ -19,7 +19,11 @@ ARG HTTP_PROXY=""
 ARG HTTPS_PROXY=""
 ENV http_proxy=$HTTP_PROXY https_proxy=$HTTPS_PROXY
 COPY design/react-mockups/package.json design/react-mockups/package-lock.json ./
-RUN npm ci
+# --include=dev is required, not optional. The build needs typescript and vite, both
+# devDependencies, and npm drops those whenever NODE_ENV=production — which build
+# hosts and CI runners commonly set. Without the flag `npm ci` silently removes 62
+# packages and the next step fails with "sh: 1: tsc: not found".
+RUN npm ci --include=dev
 COPY design/react-mockups/ ./
 ARG VITE_BASE=/
 ENV VITE_BASE=$VITE_BASE

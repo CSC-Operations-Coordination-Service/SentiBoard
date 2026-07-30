@@ -10,7 +10,9 @@ ARG HTTP_PROXY=""
 ARG HTTPS_PROXY=""
 ENV http_proxy=$HTTP_PROXY https_proxy=$HTTPS_PROXY
 COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+# --include=dev regardless of NODE_ENV on the build host — `next dev` needs the dev
+# toolchain, and an inherited NODE_ENV=production would strip it.
+RUN npm ci --include=dev
 # Pre-create .next owned by `node` (uid 1000, matching the WSL2 host uid) so the
 # anonymous volume seeds with the right ownership. node_modules stays root-owned on
 # purpose — it is readable by uid 1000, and chown -R would double the layer size.
