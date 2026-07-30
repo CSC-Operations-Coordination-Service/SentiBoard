@@ -54,7 +54,7 @@ interface LogEvent {
 
 const EVENTS: LogEvent[] = [
   { id: 1, day: 2, time: "04:12", mission: "S1", status: "ACQUIRED", kind: "manoeuvre", title: "S1A in-plane orbit correction", desc: "Scheduled in-plane manoeuvre. No data gap expected.", products: ["GRD", "SLC"] },
-  { id: 2, day: 4, time: "18:40", mission: "S3", status: "UNAVAILABLE", kind: "acquisition", title: "S3B trickle-dump data gap", desc: "Downlink interruption over Svalbard station; 41 min gap in OLCI/SLSTR delivery.", products: ["OL_1_EFR", "SL_1_RBT"] },
+  { id: 2, day: 4, time: "18:40", mission: "S3", status: "UNAVAILABLE", kind: "acquisition", title: "S3B-121-380", desc: "Downlink interruption over Svalbard station; 41 min gap in OLCI/SLSTR delivery.", products: ["OL_1_EFR", "SL_1_RBT"] },
   { id: 3, day: 4, time: "19:05", mission: "S3", status: "PLANNED", kind: "satellite", title: "S3B ground-segment investigation opened", desc: "Root-cause analysis in progress with the operations team.", products: ["OL_1_EFR", "SL_1_RBT"] },
   { id: 4, day: 7, time: "09:00", mission: "S5P", status: "ACQUIRED", kind: "calibration", title: "TROPOMI solar calibration", desc: "Monthly radiometric calibration sequence, nominal.", products: ["L1B"] },
   { id: 5, day: 9, time: "06:22", mission: "S3", status: "PLANNED", kind: "manoeuvre", title: "S3B unavailability notice — IP manoeuvre #163", desc: "Planned in-plane manoeuvre, ~35 min instrument outage window.", products: ["OL_1_EFR", "OL_2_LFR"] },

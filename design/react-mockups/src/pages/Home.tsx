@@ -13,7 +13,7 @@ export default function Home() {
         <div className="hero-grid">
           {/* LEFT — Mission news */}
           <aside className="hpanel">
-            <div className="ph"><h3>Mission News</h3><Link className="meta" to="/news">All →</Link></div>
+            <div className="ph"><h3>Mission News</h3></div>
             <div className="pbody">
               {NEWS.map((n, i) => (
                 <details className="nitem" key={i} open={i === 0}>

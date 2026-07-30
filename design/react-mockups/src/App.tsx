@@ -57,7 +57,6 @@ export default function App() {
           <Route path="/data-access" element={<StatPage crumb="Data Access" title="Data Access"
             sub="Global and detailed data-access performance for the Copernicus Data Space Ecosystem download and streaming services."
             kpis={[["Uptime (30d)", "99.95", "%"], ["Avg throughput", "3.2", "GB/s"], ["Active nodes", "6", ""], ["Requests / day", "9.1", "M"]]} />} />
-          <Route path="/news" element={<SimplePage crumb="Mission News" title="Mission News" kind="news" />} />
           <Route path="/terms-conditions" element={<SimplePage crumb="Terms &amp; Conditions" title="Terms &amp; Conditions" kind="terms" />} />
           <Route path="/cookie-notice" element={<SimplePage crumb="Cookie Notice" title="Cookie Notice" kind="cookie" />} />
 

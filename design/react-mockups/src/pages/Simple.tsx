@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { PageHeader, Reveal } from "@/components/ui";
-import { NEWS } from "@/data/mock";
 
 /** Statistics-style page with a KPI row + chart placeholder. */
 export function StatPage({ crumb, title, sub, kpis }: {
@@ -54,27 +53,14 @@ const TERMS = `These Terms & Conditions govern the use of the Copernicus Sentine
 
 const COOKIE = `SentiBoard uses a minimal set of cookies strictly necessary for the dashboard to function, plus optional analytics cookies to help us understand how the dashboard is used. No personal data is sold or shared with third parties. You can accept or reject optional cookies at any time using the control below.`;
 
-/** News list / legal text / 404 — all share the same simple page frame. */
+/** Legal text / 404 — all share the same simple page frame. */
 export function SimplePage({ crumb, title, kind }: {
-  crumb: string; title: string; kind: "news" | "terms" | "cookie" | "404";
+  crumb: string; title: string; kind: "terms" | "cookie" | "404";
 }) {
   return (
     <>
       <PageHeader crumb={crumb} title={title} />
       <section className="wrap pad">
-        {kind === "news" && (
-          <div className="grid cols-2">
-            {NEWS.map((n, i) => (
-              <Reveal key={i}>
-                <article className="card">
-                  <div className="nmeta" style={{ marginBottom: 10 }}>{n.published}</div>
-                  <h3 style={{ fontSize: 18, marginBottom: 10 }}>{n.title}</h3>
-                  <p>{n.body}</p>
-                </article>
-              </Reveal>
-            ))}
-          </div>
-        )}
         {kind === "terms" && <Reveal className="card"><p style={{ color: "var(--text-dim)", maxWidth: "80ch" }}>{TERMS}</p></Reveal>}
         {kind === "cookie" && (
           <Reveal className="card" style={{ maxWidth: 720 }}>

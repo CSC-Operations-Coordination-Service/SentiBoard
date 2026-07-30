@@ -12,23 +12,9 @@
 .evl-head {
   border-bottom: 1px solid var(--line);
   background: var(--bg-1);
-  position: relative;
-  overflow: hidden;
-}
-
-/* faint grid, as on the other mockup headers */
-.evl-head::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 64px 64px;
-  pointer-events: none;
 }
 
 .evl-head .wrap {
-  position: relative;
   padding-block: 36px 26px;
 }
 

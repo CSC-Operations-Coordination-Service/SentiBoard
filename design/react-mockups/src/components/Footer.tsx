@@ -10,11 +10,6 @@ export default function Footer() {
             <div className="brand" style={{ marginBottom: 14 }}>
               <img className="brand-logo" src="/assets/img/sentiboard.png" alt="SentiBoard" />
             </div>
-            <p className="meta" style={{ lineHeight: 1.7, textTransform: "none", letterSpacing: 0 }}>
-              The Copernicus Sentinel Operations Dashboard — a central point of access for events impacting
-              data availability, real-time data collection insights, and key stats on products delivered.
-            </p>
-            <div className="partners-label meta">In partnership with</div>
             <Partners />
           </div>
           <div>
@@ -26,8 +21,6 @@ export default function Footer() {
           </div>
           <div>
             <h4>Information</h4>
-            <Link to="/about">About &amp; FAQ</Link>
-            <Link to="/news">Mission News</Link>
             <Link to="/terms-conditions">Terms &amp; Conditions</Link>
             <Link to="/cookie-notice">Cookie Notice</Link>
           </div>
