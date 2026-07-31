@@ -5,6 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SentiBoard — Copernicus Sentinel Operations Dashboard</title>
     <meta name="description" content="Real-time Copernicus Sentinel ground-segment operations dashboard." />
+
+    <!-- Condensed display face used only by the /examples/events-log-v3 proposal.
+         Deliberately just this one family: adding Inter or IBM Plex Mono here
+         would restyle every other page, which today falls back to system fonts.
+         If the network is unavailable the page falls back to Inter/sans-serif. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
     <script>
       // Apply the saved theme before first paint to avoid a flash.
       (function () {

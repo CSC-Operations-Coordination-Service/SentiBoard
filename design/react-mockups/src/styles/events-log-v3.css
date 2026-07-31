@@ -1,0 +1,478 @@
+/* ============================================================
+   Events page PROPOSAL v3 — mission manifest (/examples/events-log-v3)
+   Alternative to the calendar-grid Events page at /events.
+
+   A deliberately different look from the rest of the app: near-black canvas,
+   condensed display type and a single orange "signal" accent instead of the
+   telemetry blue in tokens.css. Those values are therefore declared locally
+   below rather than pulled from the shared tokens — this page is a proposal
+   for a different visual direction, so it is meant to diverge.
+
+   The two theme blocks hang off the GLOBAL `:root[data-theme]` attribute that
+   the nav toggle writes, so this page follows the app-wide light/dark switch
+   without shipping a second toggle of its own.
+   ============================================================ */
+
+.sb2-root {
+  --font-display: "Barlow Condensed", "Inter", sans-serif;
+  --font-mono-2: "IBM Plex Mono", ui-monospace, monospace;
+  --font-body: "Inter", sans-serif;
+
+  font-family: var(--font-body);
+  /* fills the viewport under the fixed nav so the dark canvas reaches the fold */
+  min-height: calc(100vh - var(--nav-h));
+  background: var(--sb-bg);
+  color: var(--sb-text);
+}
+
+:root[data-theme="dark"] .sb2-root {
+  --sb-bg: #0b0c0e;
+  --surface: #17191c;
+  --surface-2: #1e2124;
+  --hairline: rgba(255, 255, 255, 0.14);
+  --sb-text: #fafaf9;
+  --text-muted-2: #acb1b6;
+  --text-dim-2: #7d8288;
+  --signal: #ff9a52;
+  --signal-dim: rgba(255, 154, 82, 0.18);
+  --red: #ff6b6b;
+  --orange: #ffc24d;
+  --green: #3fe096;
+  --status-grey: #a6abb0;
+}
+
+:root[data-theme="light"] .sb2-root {
+  --sb-bg: #fafaf8;
+  --surface: #ffffff;
+  --surface-2: #efefec;
+  --hairline: rgba(10, 15, 20, 0.18);
+  --sb-text: #0e1012;
+  --text-muted-2: #43484d;
+  --text-dim-2: #6b7075;
+  --signal: #a65200;
+  --signal-dim: rgba(166, 82, 0, 0.13);
+  --red: #b92e24;
+  --orange: #96590a;
+  --green: #197a50;
+  --status-grey: #5c6166;
+}
+
+/* ---------- page header ---------- */
+.sb2-header {
+  padding: 20px 26px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 14px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sb2-eyebrow {
+  font-family: var(--font-mono-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--signal);
+}
+
+.sb2-h1 {
+  font-family: var(--font-display);
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 5px;
+}
+
+.sb2-monthnav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sb2-monthnav button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  border-radius: 3px;
+  color: var(--text-muted-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.sb2-monthnav .lbl {
+  font-family: var(--font-mono-2);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-muted-2);
+  width: 100px;
+  text-align: center;
+}
+
+/* ---------- filter rows ---------- */
+.sb2-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 26px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sb2-fgroup {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.sb2-flabel {
+  font-family: var(--font-mono-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--text-dim-2);
+  width: 78px;
+  flex-shrink: 0;
+  /* "COMPLETENESS STATUS" wraps to two lines; top-align it so both lines sit
+     level with the row rather than centring the block against it */
+  line-height: 1.5;
+  align-self: flex-start;
+}
+
+.sb2-ftab {
+  font-family: var(--font-mono-2);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--text-muted-2);
+  cursor: pointer;
+  padding: 3px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sb2-ftab.on {
+  color: var(--sb-text);
+}
+
+.sb2-dotlegend {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sb2-legend {
+  display: flex;
+  gap: 16px;
+  padding-top: 2px;
+  flex-wrap: wrap;
+}
+
+.sb2-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono-2);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted-2);
+}
+
+/* ---------- month grid + day panel ---------- */
+.sb2-body {
+  display: flex;
+}
+
+.sb2-grid {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 26px 30px;
+}
+
+.sb2-weekrow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sb2-weekrow div {
+  font-family: var(--font-mono-2);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim-2);
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.sb2-cellgrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.sb2-cell {
+  aspect-ratio: 1;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 8px;
+  cursor: pointer;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  transition: border-color 0.15s;
+  position: relative;
+}
+
+.sb2-cell:hover {
+  border-color: var(--text-dim-2);
+}
+
+.sb2-cell.empty {
+  background: transparent;
+  border: none;
+  cursor: default;
+}
+
+.sb2-cell.selected {
+  border-color: var(--signal);
+  box-shadow: 0 0 0 1px var(--signal);
+}
+
+/* only the two states that actually cost data get a stripe — Planned and
+   Processing days stay unmarked, since nothing has been lost there */
+.sb2-cell.status-unavailable {
+  border-top: 3px solid var(--red);
+}
+
+.sb2-cell.status-partial {
+  border-top: 3px solid var(--orange);
+}
+
+.sb2-cellnum {
+  font-family: var(--font-mono-2);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text-muted-2);
+}
+
+.sb2-cell.selected .sb2-cellnum {
+  color: var(--sb-text);
+}
+
+.sb2-dots {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* one tile per event on a day cell: the issue-type glyph over a wash of the
+   mission color, ringed in the same hue at half strength, so the cell says both
+   what happened and to which mission without a key */
+.sb2-typeicon {
+  width: 21px;
+  height: 21px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+
+.sb2-panel {
+  width: 370px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--hairline);
+  padding: 20px;
+  align-self: flex-start;
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  max-height: calc(100vh - var(--nav-h) - 32px);
+  overflow-y: auto;
+}
+
+.sb2-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+
+.sb2-panel-day {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.sb2-panel-sub {
+  font-family: var(--font-mono-2);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-dim-2);
+  letter-spacing: 0.08em;
+}
+
+.sb2-panel-close {
+  border: 0;
+  background: transparent;
+  color: var(--text-dim-2);
+  cursor: pointer;
+  display: inline-flex;
+  padding: 2px;
+}
+
+/* ---------- occurrences ---------- */
+.sb2-occ {
+  border-bottom: 1px solid var(--hairline);
+}
+
+.sb2-occ:last-child {
+  border-bottom: none;
+}
+
+.sb2-occ-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 0;
+  cursor: pointer;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+
+.sb2-occ-row:hover .sb2-occ-title {
+  color: var(--signal);
+}
+
+.sb2-sw {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.sb2-occ-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.sb2-occ-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: color 0.15s;
+}
+
+.sb2-occ-meta {
+  font-family: var(--font-mono-2);
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--text-dim-2);
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.sb2-occ-time {
+  font-family: var(--font-mono-2);
+  font-size: 11.5px;
+  color: var(--text-muted-2);
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.sb2-impactdot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sb2-chev {
+  transition: transform 0.15s;
+  color: var(--text-dim-2);
+  flex-shrink: 0;
+}
+
+.sb2-chev.open {
+  transform: rotate(90deg);
+}
+
+.sb2-datatakes {
+  padding: 0 0 14px 27px;
+}
+
+.sb2-occ-desc {
+  font-size: 12.5px;
+  color: var(--text-muted-2);
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+
+.sb2-dt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-family: var(--font-mono-2);
+  font-size: 11.5px;
+}
+
+.sb2-dt-id {
+  color: var(--text-muted-2);
+}
+
+.sb2-dt-pct {
+  margin-left: auto;
+  color: var(--text-dim-2);
+}
+
+.sb2-empty-panel {
+  color: var(--text-dim-2);
+  font-family: var(--font-mono-2);
+  font-size: 12.5px;
+  padding-top: 20px;
+  text-align: center;
+}
+
+/* ---------- narrow screens: panel drops under the grid ---------- */
+@media (max-width: 900px) {
+  .sb2-body {
+    flex-direction: column;
+  }
+
+  .sb2-panel {
+    width: auto;
+    border-left: 0;
+    border-top: 1px solid var(--hairline);
+    position: static;
+    max-height: none;
+  }
+
+  .sb2-header,
+  .sb2-filters,
+  .sb2-grid {
+    padding-inline: 16px;
+  }
+
+  .sb2-flabel {
+    width: 100%;
+  }
+}

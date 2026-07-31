@@ -326,6 +326,10 @@ const PAGE_CARDS = [
     to: "/examples/events-log", img: MOD_IMG[2], title: "Events · Chronological log",
     desc: "The month as an operations log instead of a calendar grid: telemetry strip with counters and a per-day activity pulse, mission + status filters, then events grouped by day with the advisory copy and impacted products in view.",
   },
+  {
+    to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · Mission manifest",
+    desc: "The month kept as a grid, but reduced to one dot per event per day and an impact stripe on the days that lost data; picking a day opens a panel where each occurrence expands into the datatakes it hit and how complete they are. Near-black canvas, condensed type, one signal accent.",
+  },
 ];
 
 export function ExamplesHome() {
@@ -349,7 +353,7 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
-          <span className="meta">Alternative to /events</span>
+          <span className="meta">2 alternatives to /events</span>
         </div>
         <div className="ex-list">
           {PAGE_CARDS.map((c) => (
