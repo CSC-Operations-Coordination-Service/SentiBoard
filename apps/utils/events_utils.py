@@ -260,7 +260,8 @@ def build_event_instance(a, logger=None):
 
     category = a.get("category", "Unknown")
 
-    datatakes_raw = parse_datatakes_completeness(a.get("datatakes_completeness"))
+    raw_completeness = a.get("datatakes_completeness")
+    datatakes_raw = parse_datatakes_completeness(raw_completeness)
     # current_app.logger.info(f"[PARSE DATATAKES COMPLETENESS]: {datatakes_raw}")
 
     datatake_ids = []
@@ -268,6 +269,17 @@ def build_event_instance(a, logger=None):
     all_recovered = True
     any_partial = False
     any_failed = False
+    # Tracks datatakes whose completeness could not be determined. Pre-SSR these
+    # produced an explicit "undef" dot (grey); they must not be silently dropped
+    # nor be reported as "failed".
+    any_unknown = False
+
+    # parse_datatakes_completeness() returns [] both when the field is absent and
+    # when it is present but malformed. A non-empty raw field that parses to
+    # nothing is undetermined, not absent.
+    if raw_completeness and not datatakes_raw:
+        all_recovered = False
+        any_unknown = True
 
     for dt_entry in datatakes_raw:
         try:
@@ -298,8 +310,21 @@ def build_event_instance(a, logger=None):
                 values = [dt_entry.get("L0_"), dt_entry.get("L1_"), dt_entry.get("L2_")]
                 values = [v for v in values if isinstance(v, (int, float))]
 
-                # no numeric values -> skip
+                # No numeric values -> status is undetermined, not "failed" and
+                # not "recovered". Emit an explicit "undef" record so the
+                # datatake still appears in the impacted list with a grey dot,
+                # instead of vanishing from the panel.
                 if not values:
+                    all_recovered = False
+                    any_unknown = True
+                    datatake_records.append(
+                        {
+                            "datatake_id": dtid,
+                            "values": [],
+                            "completeness": None,
+                            "status": "undef",
+                        }
+                    )
                     continue
 
                 completeness = calc_completeness(values)
@@ -390,49 +415,65 @@ def build_event_instance(a, logger=None):
                     )
 
             else:
-                # unknown entry type: skip but mark not all recovered to be safe
+                # unknown entry type: status undetermined, never "failed"
                 current_app.logger.debug(
                     f"[build_event_instance] Unknown datatake entry: {dt_entry}"
                 )
                 all_recovered = False
+                any_unknown = True
 
         except Exception as exc:
             current_app.logger.warning(
                 f"[build_event_instance] Parse error for entry {dt_entry}: {exc}"
             )
             all_recovered = False
+            any_unknown = True
             continue
 
-    # If there were datatake IDs but none produced valid completeness records -> skip event
-    if datatake_ids and not datatake_records:
+    # If there were datatake IDs but none produced valid completeness records -> skip event.
+    # Only suppress the event when the records were omitted because every datatake was
+    # complete; if we merely failed to parse them, keep the event visible with an
+    # undetermined status, as the pre-SSR calendar did.
+    if datatake_ids and not datatake_records and not any_unknown:
         #  if logger:
         #      logger.info(
         #          f"[SKIP EVENT] {a.get('key')} - has datatake id's but not completeness data (or all were 100%)."
         #      )
         return None
 
-    # If no datatake info at all -> skip
-    if not datatake_ids and not datatake_records:
+    # If no datatake info at all -> skip. A parse failure is not the same as
+    # "no information": it leaves the event visible with an undetermined status
+    # rather than dropping it off the calendar without trace.
+    if not datatake_ids and not datatake_records and not any_unknown:
         # if logger:
         #     logger.info(
         #         f"[SKIP EVENT] {a.get('key')} - no datatake id's information available"
         #     )
         return None
 
-    # overall_status: failed > partial > ok (JS-like semantics)
-    overall_status = "unknown"
+    # overall_status precedence: failed > partial > unknown > ok (JS-like semantics).
+    # "unknown" must keep its own slot: real severity outranks it, but it outranks
+    # "ok" so an unparseable entry can never let the event claim full recovery.
     if any_failed:
         overall_status = "failed"
     elif any_partial:
         overall_status = "partial"
-    elif all_recovered:
+    elif any_unknown or not all_recovered:
+        overall_status = "unknown"
+    else:
         overall_status = "ok"
 
     full_recover = overall_status == "ok"
     partial_recover = overall_status == "partial"
 
-    # color mapping (you can tune hexes)
-    color = "#31ce36" if full_recover else ("#F9A825" if partial_recover else "#D32F2F")
+    # Colours follow the Completeness Status legend (events.css): green acquired,
+    # amber partial, red unavailable, grey undetermined.
+    color = {
+        "ok": "#31ce36",
+        "partial": "#F9A825",
+        "failed": "#D32F2F",
+        "unknown": "#9e9e9e",
+    }[overall_status]
 
     instance = {
         "id": a.get("key"),
