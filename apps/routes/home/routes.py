@@ -753,15 +753,12 @@ def events_data():
         return jsonify({"error": "Missing year or month"}), 400
 
     try:
-        events_cache.load_anomalies_cache_full_history()
-        cache_key = events_cache.anomalies_cache_key.format("full", "history")
-
-        cache_entry = events_cache.flask_cache.get(cache_key)
-
-        raw_anomalies = json.loads(cache_entry.data) if cache_entry else []
+        # Recent months come from the hourly-refreshed previous-quarter cache;
+        # older months from the long-lived full-history cache.
+        raw_anomalies, cache_key = events_cache.load_anomalies_for_month(year, month)
 
         if not raw_anomalies:
-            current_app.logger.info(f"[EVENTS DATA] no cache anomalies")
+            current_app.logger.info(f"[EVENTS DATA] no cache anomalies in {cache_key}")
             return jsonify({"anomalies": [], "anomalies_by_date": {}, "events": []})
 
         def serialize_anomalie(a):
