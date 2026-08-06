@@ -95,7 +95,10 @@ def start_scheduler(app):
 
         def anomalies_cache_loader():
             with app.app_context():
-                events.load_anomalies_cache_previous_quarter()
+                # force=True: this key is warm almost all the time, so without it
+                # the reload is skipped and the events calendar keeps serving the
+                # snapshot taken the first time the key was populated.
+                events.load_anomalies_cache_previous_quarter(force=True)
 
         def datatakes_cache_loader():
             with app.app_context():
