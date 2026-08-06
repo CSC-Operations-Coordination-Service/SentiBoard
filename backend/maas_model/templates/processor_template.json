@@ -1,0 +1,49 @@
+{
+    "aliases": {
+        "processor": {}
+    },
+    "index_patterns": [
+        "processor-*"
+    ],
+    "settings": {
+        "index": {
+            "number_of_shards": 3,
+            "number_of_replicas": 1
+        }
+    },
+    "mappings": {
+        "properties": {
+            "id": {
+                "type": "keyword"
+            },
+            "mission": {
+                "type": "keyword"
+            },
+            "satellite_units": {
+                "type": "keyword"
+            },
+            "target_ipfs": {
+                "type": "keyword"
+            },
+            "processing_baseline": {
+                "type": "keyword"
+            },
+            "release_date": {
+                "type": "date"
+            },
+            "validity_start_date": {
+                "type": "date"
+            },
+            "validity_end_date": {
+                "type": "date"
+            },
+            "release_notes": {
+                "type": "text"
+            }
+        },
+        "_meta": {
+            "partition_field": "release_date",
+            "partition_format": "%Y-%m"
+        }
+    }
+}
