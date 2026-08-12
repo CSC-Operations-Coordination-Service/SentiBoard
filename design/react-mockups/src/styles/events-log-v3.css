@@ -68,6 +68,22 @@
   border-bottom: 1px solid var(--hairline);
 }
 
+/* The shared "Description" accordion (<PageDescription>) re-pointed at this canvas and inset to
+   the same 26px gutter as the header and filter rows. Only the palette and the placement differ,
+   so the rules themselves stay in global.css. */
+.sb2-root .page-desc {
+  --pd-line: var(--hairline);
+  --pd-bg: var(--surface);
+  --pd-label: var(--text-muted-2);
+  --pd-label-hover: var(--sb-text);
+  --pd-accent: var(--signal);
+  --pd-hover: var(--signal-dim);
+  --pd-body: var(--text-muted-2);
+
+  margin: 16px 26px 0;
+  max-width: 74ch;
+}
+
 .sb2-eyebrow {
   font-family: var(--font-mono-2);
   font-size: 12px;

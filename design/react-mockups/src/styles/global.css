@@ -506,6 +506,98 @@ a.card:hover {
   font-size: 15px;
 }
 
+/* Accordion slide, shared by every collapsible panel (see <Collapse> in components/ui.tsx).
+   0fr -> 1fr resolves to the content's own height, so one rule fits panels of any length. */
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.2s var(--ease);
+}
+
+.collapsible.open {
+  grid-template-rows: 1fr;
+}
+
+/* Hidden while closed so links inside a collapsed panel stay out of the tab order; the delay
+   holds visibility until the slide has finished. */
+.collapsible > .collapsible-inner {
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 0.2s;
+}
+
+.collapsible.open > .collapsible-inner {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible {
+    transition: none;
+  }
+}
+
+/* Collapsible page description — the legacy "Description" accordion, open by default. Sized for a
+   page header; driven by React state rather than <details> (see <PageDescription>). The colours
+   are indirected through --pd-* so proposals that carry their own canvas palette can re-point
+   them instead of restating the rules. */
+.page-desc {
+  --pd-line: var(--line);
+  --pd-bg: var(--bg-2);
+  --pd-label: var(--text-dim);
+  --pd-label-hover: var(--text);
+  --pd-accent: var(--accent-2);
+  --pd-hover: transparent;
+  --pd-body: var(--text-dim);
+
+  margin-top: 16px;
+  max-width: 720px;
+  border: 1px solid var(--pd-line);
+  border-radius: var(--r-md);
+  background: var(--pd-bg);
+  overflow: hidden;
+}
+
+.page-desc-head {
+  width: 100%;
+  cursor: pointer;
+  padding: 11px 16px;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--pd-label);
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.page-desc-head:hover {
+  color: var(--pd-label-hover);
+  background: var(--pd-hover);
+}
+
+.page-desc-head .chev {
+  flex: 0 0 auto;
+  color: var(--pd-accent);
+  transition: transform 0.2s var(--ease);
+}
+
+.page-desc-head[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+
+.page-desc .body {
+  padding: 0 16px 14px;
+  color: var(--pd-body);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
 /* ================= HOME HERO ================= */
 .hero {
   position: relative;

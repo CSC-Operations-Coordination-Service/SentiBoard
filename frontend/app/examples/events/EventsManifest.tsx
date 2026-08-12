@@ -46,6 +46,9 @@ import {
   type ManifestEvent,
   type Status,
 } from "./mock";
+import Collapse from "@/components/Collapse";
+import PageDescription from "@/components/PageDescription";
+import { EVENTS_DESCRIPTION } from "@/lib/copy";
 import s from "./manifest.module.css";
 
 // ---------------------------------------------------------------------------
@@ -118,7 +121,13 @@ function OccurrenceList({
 
         return (
           <li key={e.id} className={s.occ}>
-            <button type="button" className={s.occRow} onClick={() => onToggle(e.id)} aria-expanded={open}>
+            <button
+              type="button"
+              className={s.occRow}
+              onClick={() => onToggle(e.id)}
+              aria-expanded={open}
+              aria-controls={`occ-${e.id}`}
+            >
               <span className={s.occTime}>{e.time}</span>
               <ChevronRight size={13} className={`${s.chev} ${open ? s.chevOpen : ""}`} aria-hidden />
               <span className={s.occBody}>
@@ -130,7 +139,9 @@ function OccurrenceList({
               <StatusCircle status={status} />
             </button>
 
-            {open && (
+            {/* Rendered whether or not it is open, so the datatakes have a height to slide from —
+                mounting them on expand would make the panel appear at full size instead. */}
+            <Collapse open={open} id={`occ-${e.id}`}>
               <div className={s.occDetail}>
                 <p className={s.occSummary}>{e.summary}</p>
                 <div className={s.dtHead}>
@@ -145,7 +156,7 @@ function OccurrenceList({
                   ))}
                 </ul>
               </div>
-            )}
+            </Collapse>
           </li>
         );
       })}
@@ -247,6 +258,7 @@ export default function EventsManifest() {
               platform anomalies and ground-segment issues — with the datatakes each one impacts.
               Select a day to open its manifest.
             </p>
+            <PageDescription>{EVENTS_DESCRIPTION}</PageDescription>
           </div>
         </header>
 

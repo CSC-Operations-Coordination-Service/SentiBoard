@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, X, ChevronRight as ChevronRightSm } from "lucide-react";
 import EventIcon from "@/components/EventIcon";
+import { Collapse, PageDescription } from "@/components/ui";
+import { EVENTS_LOG_DESCRIPTION } from "@/data/copy";
 import type { IssueType } from "@/data/mock";
 import "@/styles/events-log-v3.css";
 
@@ -203,6 +205,8 @@ export default function EventsLogV3() {
         </div>
       </div>
 
+      <PageDescription>{EVENTS_LOG_DESCRIPTION}</PageDescription>
+
       <div className="sb2-filters">
         <div className="sb2-fgroup">
           <span className="sb2-flabel">MISSION</span>
@@ -314,6 +318,7 @@ export default function EventsLogV3() {
                   className="sb2-occ-row"
                   onClick={() => setOpenOccurrence(isOpen ? null : e.id)}
                   aria-expanded={isOpen}
+                  aria-controls={`sb2-occ-${e.id}`}
                 >
                   <ChevronRightSm size={13} className={`sb2-chev ${isOpen ? "open" : ""}`} />
                   <span className="sb2-sw" style={{ background: MISSIONS[e.mission].color }} />
@@ -330,7 +335,10 @@ export default function EventsLogV3() {
                   />
                   <span className="sb2-occ-time">{e.time}</span>
                 </button>
-                {isOpen && (
+                {/* Rendered whether or not it is open, so the datatakes have a height to
+                    slide from — mounting them on expand would make the panel appear at
+                    full size instead. */}
+                <Collapse open={isOpen} id={`sb2-occ-${e.id}`}>
                   <div className="sb2-datatakes">
                     <p className="sb2-occ-desc">{e.desc}</p>
                     {e.datatakes.map((dt) => (
@@ -347,14 +355,14 @@ export default function EventsLogV3() {
                       </div>
                     ))}
                   </div>
-                )}
+                </Collapse>
               </div>
             );
           })}
         </div>
       </div>
 
-      <span className="ex-badge">Events proposal v3 · Mission manifest</span>
+      <span className="ex-badge">Events proposal · Mission manifest — mission tiles + side panel</span>
     </div>
   );
 }

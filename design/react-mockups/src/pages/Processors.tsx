@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { PageHeader, Reveal } from "@/components/ui";
+import { PROCESSORS_DESCRIPTION } from "@/data/copy";
 import { PROCESSORS, STATUS_COLORS, Processor } from "@/data/mock";
 
 const MISSIONS = ["All", "S1 IPF", "S2 IPF", "S3 IPF", "S5P"];
@@ -13,7 +14,8 @@ export default function Processors() {
   return (
     <>
       <PageHeader crumb="Processors" title="Processors"
-        sub="The complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. Zoom in / out with the mouse wheel, drag left / right, and click a coloured box to display the details of the selected processor release." />
+        sub="The complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. Zoom in / out with the mouse wheel, drag left / right, and click a coloured box to display the details of the selected processor release."
+        desc={PROCESSORS_DESCRIPTION} />
 
       <section className="wrap pad">
         <div className="filters">

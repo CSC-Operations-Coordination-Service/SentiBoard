@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import EventIcon from "@/components/EventIcon";
+import { PageDescription } from "@/components/ui";
+import { EVENTS_LOG_DESCRIPTION } from "@/data/copy";
 import { ISSUE_COLORS, IssueType } from "@/data/mock";
 import "@/styles/events-log.css";
 
@@ -224,6 +226,7 @@ export default function EventsLog() {
             Events over the past three months that could impede data production — planned
             calibration activities, manoeuvres or anomalies — with the products they impact.
           </p>
+          <PageDescription>{EVENTS_LOG_DESCRIPTION}</PageDescription>
           <div className="evl-monthnav">
             <button aria-label="Previous month"><ChevronLeft size={15} /></button>
             <span className="label">{MONTH_LABEL}</span>

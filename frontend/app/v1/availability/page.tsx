@@ -1,5 +1,7 @@
 import AvailabilityView from "@/components/AvailabilityView";
+import PageDescription from "@/components/PageDescription";
 import { getAvailability } from "@/lib/data";
+import { AVAILABILITY_DESCRIPTION, AVAILABILITY_SUMMARY } from "@/lib/copy";
 
 export default async function AvailabilityPage() {
   const { acq, pub, datatakes } = await getAvailability(); // fetched on the server, falls back to mock
@@ -12,7 +14,7 @@ export default async function AvailabilityPage() {
           <span className="sep">/</span><span className="cur">Data Availability</span>
         </nav>
         <h1>Data Availability</h1>
-        <p>This page displays all datatakes from the past three months, including those scheduled up to 23:59:59 of the following day. For each datatake, key information is shown—such as the acquisition completeness (expressed as a percentage)—with updates refreshed hourly.</p>
+        <PageDescription>{AVAILABILITY_DESCRIPTION}</PageDescription>
       </div></div>
 
       <section className="wrap pad">

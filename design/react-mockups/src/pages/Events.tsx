@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { PageHeader, Reveal } from "@/components/ui";
 import EventIcon from "@/components/EventIcon";
+import { EVENTS_LIST_DESCRIPTION } from "@/data/copy";
 import { EVENTS, ISSUE_COLORS, IssueType, CalEvent } from "@/data/mock";
 
 const TYPES: IssueType[] = ["acquisition", "calibration", "manoeuvre", "production", "satellite"];
@@ -21,7 +22,8 @@ export default function Events() {
   return (
     <>
       <PageHeader crumb="Events" title="Events"
-        sub="Details of events over the past three months that could impede data production — planned calibration activities, manoeuvres, or anomalies — with information on the extent to which they affect data production and the products impacted." />
+        sub="Details of events over the past three months that could impede data production — planned calibration activities, manoeuvres, or anomalies — with information on the extent to which they affect data production and the products impacted."
+        desc={EVENTS_LIST_DESCRIPTION} />
 
       <section className="wrap pad">
         <div className="filters">

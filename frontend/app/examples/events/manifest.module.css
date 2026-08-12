@@ -49,6 +49,19 @@
   padding: 26px 28px 64px;
 }
 
+/* The shared "Description" accordion (components/PageDescription) re-pointed at this canvas —
+   only the palette differs, so the rules themselves stay in globals.css. */
+.page :global(.page-desc) {
+  --pd-line: var(--mf-line);
+  --pd-bg: var(--mf-panel);
+  --pd-label: var(--mf-muted);
+  --pd-label-hover: var(--mf-text);
+  --pd-accent: var(--mf-signal);
+  --pd-hover: var(--mf-signal-soft);
+  --pd-body: var(--mf-muted);
+  max-width: 74ch;
+}
+
 /* ---------------- header ---------------- */
 .head {
   display: flex;

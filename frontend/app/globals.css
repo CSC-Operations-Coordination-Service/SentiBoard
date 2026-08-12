@@ -58,6 +58,26 @@ nav.links a.active::after{content:"";position:absolute;left:0;right:0;bottom:-2p
 .crumbs .sep{color:var(--muted-2)}
 .crumbs .cur{color:var(--text);letter-spacing:.02em}
 
+/* accordion slide, shared by every collapsible panel (see components/Collapse).
+   0fr -> 1fr resolves to the content's own height, so one rule fits panels of any length. */
+.collapsible{display:grid;grid-template-rows:0fr;transition:grid-template-rows .2s ease}
+.collapsible.open{grid-template-rows:1fr}
+.collapsible>.collapsible-inner{overflow:hidden;visibility:hidden;transition:visibility 0s linear .2s}
+.collapsible.open>.collapsible-inner{visibility:visible;transition-delay:0s}
+@media (prefers-reduced-motion:reduce){.collapsible{transition:none}}
+
+/* collapsible page description — the legacy "Description" accordion, open by default.
+   Sized for a page header; driven by React state, not <details> (see components/PageDescription).
+   The colours are indirected through --pd-* so the mock-ups, which each carry their own canvas
+   palette, can re-point them instead of restating the rules. */
+.page-desc{--pd-line:var(--line-soft);--pd-bg:var(--ground-2);--pd-label:var(--muted);--pd-label-hover:var(--text);--pd-accent:var(--accent-cyan);--pd-hover:rgba(46,125,246,.05);--pd-body:var(--muted);
+  margin-top:18px;max-width:66ch;border:1px solid var(--pd-line);border-radius:12px;background:var(--pd-bg);overflow:hidden}
+.page-desc-head{width:100%;cursor:pointer;padding:11px 16px;border:0;background:none;display:flex;align-items:center;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--pd-label);transition:color .2s,background .2s}
+.page-desc-head:hover{color:var(--pd-label-hover);background:var(--pd-hover)}
+.page-desc-head .chev{flex:0 0 auto;color:var(--pd-accent);transition:transform .2s ease}
+.page-desc-head[aria-expanded="true"] .chev{transform:rotate(180deg)}
+.page-desc .body{padding:0 16px 15px;color:var(--pd-body);font-size:14px;line-height:1.7}
+
 /* section heads */
 .section-head{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin-bottom:22px}
 .section-head h2{font-size:clamp(20px,3vw,26px);letter-spacing:-.01em;margin:6px 0 0;font-weight:700}
