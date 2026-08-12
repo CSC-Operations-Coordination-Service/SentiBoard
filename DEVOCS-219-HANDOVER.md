@@ -64,6 +64,28 @@ Each links to the other, so you can flip between them without retyping URLs.
 The other `/examples/*` routes (`fleet`, `gallery`, `reveal`, indexed at `/examples`) are **index-page**
 proposals and are a separate question from the About layouts.
 
+**Three Events-page proposals to compare**, all alternatives to `/events` (the real calendar page is
+untouched). They answer the same question differently — how to show what an event cost in product
+completeness — so review them together:
+
+| URL | Treatment |
+| --- | --- |
+| `/examples/events-log` | the month as a chronological operations log: no grid, events grouped by day |
+| `/examples/events-log-v3` | grid kept, one tile per event per day, day panel beside it; local palette (near-black, condensed type, orange accent) |
+| `/examples/events-manifest` | grid kept, one dot per event, a completeness stripe only on days that lost data; mission / satellite / type / search filters, and day detail in an overlay **Day Manifest** drawer |
+
+All three use the same five completeness states as the production legend — Planned, Processing,
+Acquired, Partial, Unavailable — with one shared set of colours, and the same event-type glyphs as
+`/events` (`components/EventIcon.tsx`). A day is only marked when data was actually degraded or
+lost: Planned and Processing tie in the ranking, because not finished is not the same as degraded.
+
+`events-manifest` also exists in the **Next.js frontend** at `http://localhost:3000/examples/events`
+(source `frontend/app/examples/events/`), alongside a Data Availability proposal at
+`/examples/data-availability`. Both are prerendered from local mock data and fetch nothing. The
+duplication is deliberate for now — the mock-ups app is where proposals get browsed, the frontend is
+where the chosen one lands — but `mock.ts` is byte-identical in both copies, so **a change to one
+must be made in the other**. Worth collapsing to a single home once a layout is chosen.
+
 ---
 
 ## 2. What changed on the Processors page
@@ -145,6 +167,8 @@ small change — worth deciding together before Thursday.
 | [frontend/app/globals.css](frontend/app/globals.css) | `:root` tokens (site-wide), `.ptl-*` rules |
 | [frontend/components/ProcessorsView.tsx](frontend/components/ProcessorsView.tsx) | search — narrows whole lanes, not individual releases |
 | [design/processors-viewer-design.md](design/processors-viewer-design.md) | why any of it looks like this |
+| [design/react-mockups/src/pages/events-manifest/EventsManifest.tsx](design/react-mockups/src/pages/events-manifest/EventsManifest.tsx) | the Events proposal: grid density, filters, Day Manifest drawer |
+| [design/react-mockups/src/pages/events-manifest/mock.ts](design/react-mockups/src/pages/events-manifest/mock.ts) | the five completeness states, their ranking, and what marks a day |
 
 ## 4. Deployment
 

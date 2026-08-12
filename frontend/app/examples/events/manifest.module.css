@@ -1,0 +1,810 @@
+/* DEVOCS-219 — "Mission Manifest" Events mock-up, shared by both layout variants
+   rendered by EventsManifest.tsx.
+
+   This app has no Tailwind, so the utility classes of the original sketch are real rules here —
+   the same porting the Data Availability mock-up did.
+
+   The palette is deliberately NOT the one in globals.css: the brief asks for a near-black canvas
+   and a single signal accent. The accent is --accent-cyan (#00C7D6), which already means
+   "live / now / selected" app-wide, and the five completeness colours are lifted verbatim from the
+   Events log proposal — so nothing here invents a colour meaning. Type,
+   radii and the page width still come from globals.css (--sans, --mono, --display, --maxw). */
+
+.page {
+  /* canvas */
+  --mf-bg: #090a0f;
+  --mf-panel: #0e1017;
+  --mf-panel-2: #12151e;
+  --mf-line: rgba(255, 255, 255, 0.1);
+  --mf-line-strong: rgba(255, 255, 255, 0.2);
+
+  /* ink */
+  --mf-text: #eef1f6;
+  --mf-muted: #9aa4b4;
+  --mf-faint: #67707f;
+
+  /* the one accent */
+  --mf-signal: #00c7d6;
+  --mf-signal-soft: rgba(0, 199, 214, 0.13);
+
+  /* completeness status — the five states and the exact colours the Events log proposal uses
+     (/examples/events-log-v3), so the two proposals cannot disagree about what "Partial" means.
+     Planned and Processing share the neutral grey: not finished is not the same as degraded. */
+  --mf-grey: #a6abb0;
+  --mf-green: #3fe096;
+  --mf-orange: #ffc24d;
+  --mf-red: #ff6b6b;
+
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--mf-bg);
+  color: var(--mf-text);
+  font-family: var(--sans);
+}
+
+.inner {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 26px 28px 64px;
+}
+
+/* ---------------- header ---------------- */
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--mf-signal);
+}
+
+.eyebrow a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.eyebrow a:hover {
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--display);
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 8px 0 0;
+  max-width: 74ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mf-muted);
+}
+
+/* ---------------- month bar + legend ---------------- */
+.monthBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--mf-line);
+  border-bottom: 1px solid var(--mf-line);
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.monthNav button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--mf-line);
+  border-radius: 7px;
+  background: var(--mf-panel);
+  color: var(--mf-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.monthNav button:hover:not(:disabled) {
+  border-color: var(--mf-signal);
+  color: var(--mf-signal);
+}
+
+.monthNav button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.monthLabel {
+  min-width: 128px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.legendLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mf-muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* ---------------- filters ---------------- */
+.filters {
+  margin: 20px 0 18px;
+  padding: 16px;
+  border: 1px solid var(--mf-line);
+  border-radius: 14px;
+  background: var(--mf-panel);
+}
+
+.filtersHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--mf-faint);
+}
+
+.filtersLabel {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.count {
+  margin-left: 4px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--mf-muted);
+}
+
+.reset {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mf-signal);
+}
+
+.reset:hover {
+  text-decoration: underline;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.control {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--mf-line);
+  border-radius: 8px;
+  background: var(--mf-panel-2);
+  color: var(--mf-text);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.3;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--mf-line-strong);
+}
+
+.control:focus {
+  border-color: var(--mf-signal);
+  box-shadow: 0 0 0 3px var(--mf-signal-soft);
+}
+
+.control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* native select arrow drawn from two gradients, so no image asset is needed */
+select.control {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 32px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--mf-muted) 50%),
+    linear-gradient(135deg, var(--mf-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.withIcon {
+  position: relative;
+  display: flex;
+}
+
+.withIcon .control {
+  padding-left: 31px;
+}
+
+.lead {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+  color: var(--mf-faint);
+}
+
+.clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--mf-faint);
+}
+
+.clear:hover {
+  color: var(--mf-text);
+}
+
+.chipRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.chipRowLabel {
+  margin-right: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--mf-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--mf-faint);
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.chip:hover {
+  border-color: var(--mf-line-strong);
+  color: var(--mf-muted);
+}
+
+/* selected chips carry the accent, so "which types am I looking at" is answerable at a glance */
+.chipOn {
+  border-color: var(--mf-signal);
+  background: var(--mf-signal-soft);
+  color: var(--mf-signal);
+}
+
+/* ---------------- month grid ---------------- */
+.calWrap {
+  border: 1px solid var(--mf-line);
+  border-radius: 14px;
+  background: var(--mf-panel);
+  padding: 14px;
+}
+
+.dow,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.dow {
+  margin-bottom: 8px;
+}
+
+.dow span {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--mf-faint);
+}
+
+.cell {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  padding: 9px;
+  border: 1px solid var(--mf-line);
+  border-radius: 9px;
+  background: var(--mf-panel-2);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.cell:hover {
+  border-color: var(--mf-line-strong);
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--mf-signal);
+  outline-offset: 1px;
+}
+
+/* neighbouring-month padding: present so the weeks line up, and nothing more */
+.cellDim {
+  background: transparent;
+  border-color: transparent;
+  cursor: default;
+}
+
+.cellSel {
+  border-color: var(--mf-signal);
+  box-shadow: inset 0 0 0 1px var(--mf-signal);
+}
+
+.cellNum {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mf-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cellSel .cellNum {
+  color: var(--mf-text);
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 2px;
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--mf-faint);
+  flex: 0 0 auto;
+  transition: background 0.15s;
+}
+
+.cell:hover .dot,
+.cellSel .dot {
+  background: var(--mf-signal);
+}
+
+/* the loss stripe: bottom edge of the cell, colour set inline from the day's worst impact */
+.lossBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+}
+
+.hint {
+  margin: 12px 2px 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mf-faint);
+}
+
+/* ---------------- detail: shared type ---------------- */
+.detailEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mf-signal);
+}
+
+.detailDay {
+  margin: 6px 0 4px;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.detailSub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mf-faint);
+}
+
+.emptyDetail {
+  margin: 0;
+  padding: 32px 0;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--mf-faint);
+}
+
+/* ---------------- Option A: drawer ---------------- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border: 0;
+  padding: 0;
+  background: rgba(3, 5, 10, 0.62);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+.scrimOn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--mf-panel);
+  border-left: 1px solid var(--mf-line-strong);
+  box-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.75);
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawerOn {
+  transform: translateX(0);
+}
+
+.drawerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--mf-line);
+}
+
+.drawerBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 20px 24px;
+}
+
+.iconBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--mf-line);
+  border-radius: 8px;
+  background: var(--mf-panel-2);
+  color: var(--mf-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.iconBtn:hover {
+  border-color: var(--mf-signal);
+  color: var(--mf-signal);
+}
+
+/* ---------------- occurrences + datatakes ---------------- */
+.occList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.occ {
+  border-bottom: 1px solid var(--mf-line);
+}
+
+.occ:last-child {
+  border-bottom: 0;
+}
+
+.occRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 13px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.occRow:hover .occTitle {
+  color: var(--mf-signal);
+}
+
+.occTime {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--mf-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.chev {
+  flex: 0 0 auto;
+  color: var(--mf-faint);
+  transition: transform 0.15s;
+}
+
+.chevOpen {
+  transform: rotate(90deg);
+}
+
+.occBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.occTitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  transition: color 0.15s;
+}
+
+.occMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--mf-faint);
+}
+
+.circle {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.occDetail {
+  padding: 0 0 14px 20px;
+}
+
+.occSummary {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--mf-muted);
+}
+
+.dtHead {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--mf-line);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.dtList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.dtRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--mf-line);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.dtRow:last-child {
+  border-bottom: 0;
+}
+
+.dtId {
+  color: var(--mf-text);
+}
+
+/* product code and sensing window share the second row of the datatake cell, under the ID */
+.dtProduct {
+  grid-column: 2;
+  color: var(--mf-signal);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.dtTime {
+  grid-column: 2;
+  color: var(--mf-faint);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* status name over the percentage, right-aligned: with five states the colour alone no longer
+   identifies which one this is, so the label carries it and the colour reinforces it. */
+.dtStatus {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.dtStatusLabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dtPct {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 860px) {
+  .fieldRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fieldWide {
+    grid-column: 1 / -1;
+  }
+
+  .head {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 620px) {
+  .inner {
+    padding: 22px 16px 48px;
+  }
+
+  .calWrap {
+    padding: 10px;
+  }
+
+  .dow,
+  .grid {
+    gap: 5px;
+  }
+
+  .cell {
+    padding: 6px;
+    border-radius: 7px;
+  }
+
+  .cellNum {
+    font-size: 11px;
+  }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+  }
+}

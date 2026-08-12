@@ -330,6 +330,24 @@ const PAGE_CARDS = [
     to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · Mission manifest",
     desc: "The month kept as a grid, but reduced to one dot per event per day and an impact stripe on the days that lost data; picking a day opens a panel where each occurrence expands into the datatakes it hit and how complete they are. Near-black canvas, condensed type, one signal accent.",
   },
+  {
+    to: "/examples/events-manifest", img: MOD_IMG[3], title: "Events · Mission manifest",
+    desc: "The manifest with mission / satellite / type / search filters over the full-width grid: one dot per event, a completeness stripe only on days that lost data. Selecting a day opens the Day Manifest drawer — that day's occurrences in time order, each expanding into the datatakes it impacted with sensing windows and completeness status.",
+  },
+];
+
+const ACQ_CARDS = [
+  {
+    to: "/examples/acquisitions-globe", img: MOD_IMG[0], title: "Acquisitions · Demand-driven globe",
+    desc: "The same 3D globe, rebuilt underneath: frames are drawn on demand instead of on an unconditional animation loop, coastlines are cached in an OffscreenCanvas per resolution, and the canvas pauses when it scrolls out of view or the tab is hidden. Datatakes draw their acquired footprint rather than a bare point, the whole view is keyboard-operable with a live description for screen readers, and the day filter is bounded by the days that actually have coverage.",
+  },
+];
+
+const AVAIL_CARDS = [
+  {
+    to: "/examples/data-availability", img: MOD_IMG[1], title: "Data Availability · Filtered breakdown",
+    desc: "The datatake list led by three donuts — share by mission, acquisition status, sensor mode — that describe whatever the filters currently select, so the charts and the rows can never disagree. Mission, satellite, date-range and datatake-ID filters above a sortable table of platform, sensor mode, start time, status and publication completeness.",
+  },
 ];
 
 export function ExamplesHome() {
@@ -353,10 +371,36 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
-          <span className="meta">2 alternatives to /events</span>
+          <span className="meta">3 alternatives to /events</span>
         </div>
         <div className="ex-list">
           {PAGE_CARDS.map((c) => (
+            <Link className="ex-card" to={c.to} key={c.to}>
+              <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
+              <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="section-head" style={{ margin: "56px 0 24px" }}>
+          <div><h2 style={{ fontSize: 24 }}>Acquisitions page</h2></div>
+          <span className="meta">1 alternative to /acquisitions</span>
+        </div>
+        <div className="ex-list">
+          {ACQ_CARDS.map((c) => (
+            <Link className="ex-card" to={c.to} key={c.to}>
+              <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
+              <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="section-head" style={{ margin: "56px 0 24px" }}>
+          <div><h2 style={{ fontSize: 24 }}>Data Availability page</h2></div>
+          <span className="meta">1 alternative to /availability</span>
+        </div>
+        <div className="ex-list">
+          {AVAIL_CARDS.map((c) => (
             <Link className="ex-card" to={c.to} key={c.to}>
               <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
               <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>

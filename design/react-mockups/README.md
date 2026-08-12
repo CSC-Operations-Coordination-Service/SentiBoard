@@ -13,8 +13,9 @@ product keeps its Flask SSR backend (no browser-exposed JSON API).
   blue→cyan accent, scroll-reveal module scroller.
 - **All functional areas** from the current app are represented: Home, Acquisitions Status (3D globe),
   Events (calendar), Data Availability (donuts + datatake table), Processors (timeline), About + FAQ,
-  Product Timeliness, Publication Statistics, Data Archive, Space Segment, Data Access, News,
-  Terms & Conditions, Cookie Notice.
+  Product Timeliness, Publication Statistics, Data Archive, Space Segment, Data Access,
+  Terms & Conditions, Cookie Notice. There is no separate News page — news and real-time events are
+  sections of the index. See [Pages](#pages) for every route.
 - Client copy is taken verbatim from the current SentiBoard templates.
 
 ## Run
@@ -25,33 +26,100 @@ npm install
 npm run dev          # http://localhost:5180
 ```
 
-### Proposals with more than one option
+## Pages
 
-Some pages exist as competing layouts. These are the routes that are **not** reachable from the nav:
+Every route in the app, with how you get to it. Prefix each path with the dev origin
+(`http://localhost:5180`), or with `VITE_BASE` if the build was deployed under a sub-path.
 
-| Route | What it is |
+### Real pages — reachable from the header nav
+
+| Route | Page | Source |
+| --- | --- | --- |
+| `/` | Index — hero, module scroller, news + real-time events | `pages/Home.tsx` |
+| `/about` | About + FAQ — layout A, page-header led | `pages/About.tsx` |
+| `/acquisitions` | Acquisitions Status — interactive 3D globe, filters, datatake list | `pages/Acquisitions.tsx` |
+| `/events` | Events — month calendar | `pages/Events.tsx` |
+| `/availability` | Data Availability — donuts + datatake table | `pages/Availability.tsx` |
+| `/processors` | Processors — release timeline | `pages/Processors.tsx` |
+
+### Proposals — `/examples`, not reachable from the nav
+
+`/examples` is the proposal gallery: open it directly and every proposal below has a card there.
+The real pages above are unaffected by anything under `/examples`.
+
+| Route | Proposal | Alternative to | Source |
+| --- | --- | --- | --- |
+| `/examples` | Gallery of all proposals, grouped by the page each replaces | — | `pages/IndexExamples.tsx` |
+| `/examples/fleet` | Index A — news ticker over video + Sentinel fleet + page cards | `/` | `pages/IndexExamples.tsx` |
+| `/examples/gallery` | Index B — news + real-time console first, then a diagonal linkable gallery | `/` | `pages/IndexExamples.tsx` |
+| `/examples/reveal` | Index C — editorial first section, pages revealed on scroll | `/` | `pages/IndexExamples.tsx` |
+| `/examples/about` | About — layout B, hero led | `/about` | `pages/AboutRedesign.tsx` |
+| `/examples/events-log` | Events — the month as a chronological operations log | `/events` | `pages/EventsLog.tsx` |
+| `/examples/events-log-v3` | Events — mission manifest: grid kept, one dot per event, impacted datatakes per day | `/events` | `pages/EventsLogV3.tsx` |
+| `/examples/events-manifest` | Events — mission manifest with filters (mission / satellite / type / search) and a Day Manifest drawer | `/events` | `pages/events-manifest/EventsManifest.tsx` |
+| `/examples/acquisitions-globe` | Acquisitions — demand-driven globe (footprints, keyboard operation, sensing marks) + a "what changed" summary | `/acquisitions` | `pages/AcquisitionsGlobe.tsx` |
+| `/examples/data-availability` | Data Availability — three donuts describing the current filter selection, over a sortable datatake table | `/availability` | `pages/DataAvailability.tsx` |
+
+`/about` and `/examples/about` are cross-linked in both directions and render the same canonical
+text from `src/data/about.ts` — they differ only in presentation.
+
+### Direct-URL only — styled placeholders
+
+These carry the real feature copy and KPI framing but are not linked from the nav, the footer or any
+page. Type the path to reach them. All five render `StatPage` from `pages/Simple.tsx`, configured
+inline in `App.tsx`.
+
+| Route | Page |
 | --- | --- |
-| `/about` | About — layout A, page-header led |
-| `/examples/about` | About — layout B, hero led (cross-linked with A) |
-| `/examples` | index-page proposals, with cards for the three below |
-| `/examples/fleet` | index A — ticker over video + fleet |
-| `/examples/gallery` | index B — console + linkable gallery |
-| `/examples/reveal` | index C — editorial + reveal |
+| `/product-timeliness` | Product Timeliness |
+| `/publication-statistics` | Publication Statistics |
+| `/data-archive` | Data Archive |
+| `/space-segment` | Space Segment |
+| `/data-access` | Data Access |
 
-The two About layouts render the same canonical text from `src/data/about.ts` — they differ only in
-presentation. The real `/` Home page is untouched by the index proposals.
+### Utility pages — reachable from the footer
+
+| Route | Page | Source |
+| --- | --- | --- |
+| `/terms-conditions` | Terms & Conditions | `pages/Simple.tsx` |
+| `/cookie-notice` | Cookie Notice | `pages/Simple.tsx` |
+| any unmatched path | 404 — Page not found | `pages/Simple.tsx` |
 
 ## Structure
 
 ```
 src/
+  App.tsx                Route table — the authoritative list of paths
+  main.tsx               Entry point; feeds VITE_BASE to react-router as its basename
   theme.tsx              Theme provider + toggle (dark default, persisted)
   styles/tokens.css      Dark + light design tokens (semantic vars)
-  styles/global.css      Component styles (nav, hero, cards, table, calendar, timeline…)
+  styles/global.css      Component styles (nav, hero, cards, table, calendar, globe, timeline…)
+  styles/examples.css    Styles used only by the /examples proposals
+  styles/events-log.css        /examples/events-log
+  styles/events-log-v3.css     /examples/events-log-v3
+  styles/data-availability.css /examples/data-availability
   data/mock.ts           Static mock data mirroring the real domain shapes
-  components/            Nav, Footer, ThemeToggle, shared UI (Reveal, Pill, PageHeader)
-  pages/                 One file per route
+  data/about.ts          Canonical About copy, shared by both About layouts
+  data/land.ts           Natural Earth 110m land outlines, drawn as globe coastlines
+  components/            Nav, Footer, ThemeToggle, Partners, EventIcon, FeatureCard,
+                         FilterBar, AcquisitionGlobe, shared UI (Reveal, Pill, PageHeader)
+  pages/                 One file per route (IndexExamples.tsx holds four)
+  pages/events-manifest/ The one proposal kept in its own folder, because it is the only page
+                         that ships with its own data + stylesheet rather than reusing
+                         data/mock.ts and a file under styles/:
+                           EventsManifest.tsx      the page — filters, grid, Day Manifest drawer
+                           mock.ts                 August 2026 events + the pure helpers
+                           manifest.module.css     a CSS module, so its class names cannot
+                                                   collide with global.css
 ```
+
+The same proposal also exists in the Next.js frontend at
+`frontend/app/examples/events/` — see `frontend/README.md`. `mock.ts` is byte-identical between
+the two; the page differs only in routing (`react-router` vs `next/link`), the `"use client"`
+directive and nav-aware geometry. Edit both, or neither.
+
+`App.tsx` is the source of truth for routing — if the table above and `App.tsx` ever disagree,
+`App.tsx` is right.
 
 ## Image credits (module scroller)
 

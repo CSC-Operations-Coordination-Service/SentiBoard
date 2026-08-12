@@ -13,6 +13,9 @@ import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/Ind
 import AboutRedesign from "./pages/AboutRedesign";
 import EventsLog from "./pages/EventsLog";
 import EventsLogV3 from "./pages/EventsLogV3";
+import EventsManifest from "./pages/events-manifest/EventsManifest";
+import AcquisitionsGlobe from "./pages/AcquisitionsGlobe";
+import DataAvailability from "./pages/DataAvailability";
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -42,6 +45,9 @@ export default function App() {
           <Route path="/examples/about" element={<AboutRedesign />} />
           <Route path="/examples/events-log" element={<EventsLog />} />
           <Route path="/examples/events-log-v3" element={<EventsLogV3 />} />
+          <Route path="/examples/events-manifest" element={<EventsManifest />} />
+          <Route path="/examples/acquisitions-globe" element={<AcquisitionsGlobe />} />
+          <Route path="/examples/data-availability" element={<DataAvailability />} />
 
           {/* Remaining functional pages — styled placeholders carrying the real feature copy */}
           <Route path="/product-timeliness" element={<StatPage crumb="Product Timeliness" title="Product Timeliness"

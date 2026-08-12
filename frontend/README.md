@@ -47,6 +47,50 @@ lib/
 public/assets/      images, Font Awesome subset, joystick.svg, hero video
 ```
 
+## Mock-ups (`/examples`)
+
+Design proposals under review. They live **outside `app/v1`** on purpose: they carry no production
+chrome (no `Nav`, no `Footer`), run entirely on locally generated mock data, fetch nothing, and so
+can never be mistaken for the shipping pages. Nothing under `/examples` affects `/v1`.
+
+Not reachable from the nav — open `/examples` for the gallery, or type a path:
+
+| Route | Proposal | Proposal for | Source |
+| --- | --- | --- | --- |
+| `/examples` | Gallery — one card per proposal | — | `app/examples/page.tsx` |
+| `/examples/data-availability` | Datatake table with sortable columns and mission / satellite / date / ID filters, over three donut breakdowns. Carries a dark/light toggle the app itself does not have. | `/v1/availability` | `app/examples/data-availability/` |
+| `/examples/events` | "Mission Manifest" — month grid with one dot per event and a completeness stripe on days that lost data; selecting a day opens the Day Manifest drawer, whose occurrences expand into the datatakes they impacted. | `/v1/events` | `app/examples/events/` |
+
+```bash
+npm run dev
+# http://localhost:3000/examples
+```
+
+Each proposal is self-contained in its own folder — page, client component, mock data, stylesheet:
+
+```
+app/examples/events/
+  page.tsx               server component: metadata only, renders the client component
+  EventsManifest.tsx     "use client" — filters, month grid, Day Manifest drawer
+  mock.ts                August 2026 events + datatakes, and the pure helpers over them
+  manifest.module.css    CSS module (see the note below)
+```
+
+**Styling is CSS modules, not Tailwind.** This app has no Tailwind, and adding it would put
+Tailwind's base reset underneath the ~730-line design system every `/v1` page depends on. The
+mock-ups therefore port utility classes to real rules, reading type and width from `globals.css`
+(`--sans`, `--mono`, `--display`, `--maxw`) and defining only their own palette.
+
+**Mock data must stay deterministic** — no `Date.now()`, no `new Date()` without arguments, no
+un-seeded RNG. These pages are statically prerendered, so anything that differs between the server
+render and hydration shows up as a React mismatch. It is also why no calendar day is marked
+"today": the Events mock is pinned to August 2026.
+
+The Events proposal is mirrored in the Vite mock-ups app at
+`../design/react-mockups/src/pages/events-manifest/` (route `/examples/events-manifest`, port 5180).
+`mock.ts` is byte-identical; the component differs only in routing, the `"use client"` directive and
+nav-aware geometry. Changing one means changing the other.
+
 ## Server vs client components
 - **Server components** (default, e.g. `page.tsx`, `events/page.tsx`) fetch data and render HTML.
 - **Client components** (`"use client"`, e.g. clock, live feed) handle browser interactivity.

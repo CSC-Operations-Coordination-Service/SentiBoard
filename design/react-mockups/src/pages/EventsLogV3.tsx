@@ -1,16 +1,7 @@
 import { useState, useMemo } from "react";
-import {
-  ChevronLeft,
-  ChevronRight,
-  X,
-  Satellite,
-  Radio,
-  Rocket,
-  RadioTower,
-  Cpu,
-  ChevronRight as ChevronRightSm,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, X, ChevronRight as ChevronRightSm } from "lucide-react";
+import EventIcon from "@/components/EventIcon";
+import type { IssueType } from "@/data/mock";
 import "@/styles/events-log-v3.css";
 
 /* Events page PROPOSAL v3 — mission manifest (ALTERNATIVE to the real
@@ -45,12 +36,16 @@ const MISSIONS = {
 } as const;
 type MissionKey = keyof typeof MISSIONS;
 
-const TYPES: Record<string, { icon: LucideIcon }> = {
-  Satellite: { icon: Satellite },
-  Calibration: { icon: Cpu },
-  Manoeuvre: { icon: Rocket },
-  Acquisition: { icon: RadioTower },
-  Production: { icon: Radio },
+// Display label → the app's own issue type. The glyphs then come from
+// components/EventIcon, the same component the real /events page renders, so a
+// Manoeuvre here is the same joystick as a Manoeuvre there — for good, not just
+// until someone edits one of the two lists.
+const TYPES: Record<string, { issue: IssueType }> = {
+  Satellite: { issue: "satellite" },
+  Calibration: { issue: "calibration" },
+  Manoeuvre: { issue: "manoeuvre" },
+  Acquisition: { issue: "acquisition" },
+  Production: { issue: "production" },
 };
 type TypeKey = keyof typeof TYPES;
 
@@ -231,7 +226,6 @@ export default function EventsLogV3() {
         <div className="sb2-fgroup">
           <span className="sb2-flabel">TYPE</span>
           {TYPE_KEYS.map((key) => {
-            const Icon = TYPES[key].icon;
             const on = activeTypes.includes(key);
             return (
               <button
@@ -240,7 +234,7 @@ export default function EventsLogV3() {
                 onClick={() => toggleType(key)}
                 aria-pressed={on}
               >
-                <Icon size={11} /> {key}
+                <EventIcon type={TYPES[key].issue} size={12} /> {key}
               </button>
             );
           })}
@@ -277,7 +271,6 @@ export default function EventsLogV3() {
                   <div className="sb2-cellnum">{String(d).padStart(2, "0")}</div>
                   <div className="sb2-dots">
                     {events.map((e) => {
-                      const Icon = TYPES[e.type].icon;
                       const mColor = MISSIONS[e.mission].color;
                       return (
                         <span
@@ -286,7 +279,7 @@ export default function EventsLogV3() {
                           style={{ background: `${mColor}33`, color: mColor, borderColor: `${mColor}80` }}
                           title={`${e.mission} · ${e.type}`}
                         >
-                          <Icon size={13} strokeWidth={2.6} />
+                          <EventIcon type={TYPES[e.type].issue} size={13} />
                         </span>
                       );
                     })}
@@ -313,7 +306,6 @@ export default function EventsLogV3() {
           )}
 
           {dayEvents.map((e) => {
-            const Icon = TYPES[e.type].icon;
             const status = worstStatus(e.datatakes);
             const isOpen = openOccurrence === e.id;
             return (
@@ -328,7 +320,7 @@ export default function EventsLogV3() {
                   <div className="sb2-occ-body">
                     <div className="sb2-occ-title">{e.title}</div>
                     <div className="sb2-occ-meta">
-                      <Icon size={11} strokeWidth={2.4} style={{ verticalAlign: "-2px", marginRight: 5 }} />{e.mission} · {e.type}
+                      <EventIcon type={TYPES[e.type].issue} size={12} /> {e.mission} · {e.type}
                     </div>
                   </div>
                   <span
