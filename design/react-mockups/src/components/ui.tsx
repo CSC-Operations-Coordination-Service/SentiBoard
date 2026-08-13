@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import type { Status } from "@/data/mock";
+import { COMPLETENESS_LABEL, type Completeness, type Status } from "@/data/mock";
 
 /** Fade/slide element into view on scroll (SpaceX-style reveal). */
 export function Reveal({ children, as: Tag = "div", className = "", style }: {
@@ -19,11 +19,15 @@ export function Reveal({ children, as: Tag = "div", className = "", style }: {
   return <Tag ref={ref} className={`reveal ${seen ? "in" : ""} ${className}`} style={style}>{children}</Tag>;
 }
 
-const LABELS: Record<Status, string> = {
+// Pills carry two different vocabularies: mission/processor health (Status) and datatake
+// completeness (Completeness). Both key their own colour off the class name, so one component
+// serves both without either borrowing the other's wording.
+const LABELS: Record<Status | Completeness, string> = {
   nominal: "Nominal", degraded: "Degraded", critical: "Critical", info: "Processing", neutral: "Planned",
+  ...COMPLETENESS_LABEL,
 };
 
-export function Pill({ status, label }: { status: Status; label?: string }) {
+export function Pill({ status, label }: { status: Status | Completeness; label?: string }) {
   return <span className={`pill ${status}`}><span className="dot" />{label ?? LABELS[status]}</span>;
 }
 

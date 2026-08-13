@@ -1,0 +1,121 @@
+/* DEVOCS-219 — Data Availability mock-up.
+   This app has no Tailwind, so the original's utility classes are ported to real rules here.
+   Colours never hard-code a value: they read the --da-* custom properties the page sets from the
+   active palette (mock.ts), which is how the dark/light toggle works. Typography, radii and the
+   page width come straight from globals.css (--sans, --mono, --display, --maxw). */
+
+.page{min-height:100vh;width:100%;background:var(--da-bg);color:var(--da-text);font-family:var(--sans);transition:background .3s,color .3s}
+.inner{max-width:var(--maxw);margin:0 auto;padding:26px 28px 64px}
+
+/* ---- header ---- */
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:26px}
+.eyebrow{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--da-accent);margin-bottom:10px}
+.eyebrow a{color:inherit}
+.eyebrow a:hover{text-decoration:underline}
+.title{font-family:var(--display);font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.02em;margin:0}
+.sub{margin:8px 0 0;font-size:14px;line-height:1.6;max-width:74ch;color:var(--da-muted)}
+.themeBtn{flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;border:1px solid var(--da-line);background:var(--da-panel);color:var(--da-muted);cursor:pointer;transition:border-color .2s,color .2s}
+.themeBtn:hover{border-color:var(--da-accent);color:var(--da-accent)}
+
+/* ---- collapsible page description ---- */
+/* The shared "Description" accordion (components/PageDescription) re-pointed at this mock-up's
+   own light/dark palette. Only the colours differ from the global .page-desc, so the rules
+   themselves stay in globals.css — and the light theme is the reason this override exists at all,
+   since every other canvas in the app is dark. */
+.page :global(.page-desc) {
+  --pd-line: var(--da-line);
+  --pd-bg: var(--da-panel);
+  --pd-label: var(--da-muted);
+  --pd-label-hover: var(--da-text);
+  --pd-accent: var(--da-accent);
+  --pd-hover: var(--da-rowHover);
+  --pd-body: var(--da-muted);
+  margin-top: 16px;
+  max-width: 74ch;
+}
+
+/* ---- section label ---- */
+.sectionLabel{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--da-faint)}
+
+/* ---- panels ---- */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{border:1px solid var(--da-line);border-radius:16px;background:var(--da-panel);padding:16px}
+.cardHead{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:12px;font-weight:500;color:var(--da-muted)}
+.cardHead svg{color:var(--da-accent);flex:0 0 auto}
+.chartEmpty{height:220px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px;color:var(--da-faint)}
+
+/* ---- filters ---- */
+.filters{border:1px solid var(--da-line);border-radius:16px;background:var(--da-panel);padding:16px;margin:24px 0 18px}
+.filtersHead{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.filtersHead .label{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--da-faint)}
+.filtersHead svg{color:var(--da-faint)}
+.reset{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:none;border:0;padding:0;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--da-accent)}
+.reset:hover{text-decoration:underline}
+
+.fieldGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--da-faint)}
+.control{width:100%;font-family:var(--mono);font-size:13px;line-height:1.3;padding:9px 12px;border-radius:8px;border:1px solid var(--da-line);background:var(--da-inputBg);color:var(--da-text);outline:none;transition:border-color .2s,box-shadow .2s}
+.control:hover:not(:disabled){border-color:var(--da-accent)}
+.control:focus{border-color:var(--da-accent);box-shadow:0 0 0 3px var(--da-accentSoft)}
+.control:disabled{cursor:not-allowed;opacity:.5}
+select.control{appearance:none;cursor:pointer;padding-right:32px;background-image:linear-gradient(45deg,transparent 50%,var(--da-muted) 50%),linear-gradient(135deg,var(--da-muted) 50%,transparent 50%);background-position:calc(100% - 16px) center,calc(100% - 11px) center;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+.withIcon{position:relative;display:flex}
+.withIcon .control{padding-left:31px}
+.withIcon .lead{position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--da-faint);display:flex}
+.clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;padding:0;cursor:pointer;color:var(--da-faint);display:flex}
+.clear:hover{color:var(--da-text)}
+
+/* ---- result count ---- */
+.count{margin:0 2px 10px;font-family:var(--mono);font-size:11.5px;color:var(--da-muted)}
+
+/* ---- table (desktop) ---- */
+.tableWrap{border:1px solid var(--da-line);border-radius:16px;background:var(--da-panel);overflow:hidden}
+.table{width:100%;border-collapse:collapse}
+.table thead tr{background:var(--da-headerBg)}
+.table th{text-align:left;padding:12px 16px;font-weight:600}
+.table td{padding:12px 16px;vertical-align:middle}
+.table tbody tr{border-top:1px solid var(--da-line)}
+.table tbody tr.alt{background:var(--da-panelAlt)}
+.table tbody tr:hover{background:var(--da-rowHover)}
+.sortBtn{display:inline-flex;align-items:center;gap:5px;background:none;border:0;padding:0;cursor:pointer;user-select:none;font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--da-muted)}
+.sortBtn.on{color:var(--da-accent)}
+.sortBtn:hover{color:var(--da-text)}
+.sortBtn.on:hover{color:var(--da-accent)}
+.arrows{display:flex;flex-direction:column;line-height:0}
+.arrows svg:last-child{margin-top:-3px}
+.dim{opacity:.3}
+
+.idCell{font-family:var(--mono);font-size:11.5px;color:var(--da-text);word-break:break-all}
+.satPill{display:inline-flex;align-items:center;font-family:var(--mono);font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px;background:var(--da-accentSoft);color:var(--da-accent)}
+.modeCell{font-size:13px;color:var(--da-muted)}
+.timeCell{font-family:var(--mono);font-size:11.5px;color:var(--da-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.empty{padding:44px 16px;text-align:center;font-size:13.5px;color:var(--da-faint)}
+
+/* ---- status badge ---- */
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 9px;border-radius:7px;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.02em;white-space:nowrap;background:color-mix(in srgb,var(--badge-color) 14%,transparent);color:var(--badge-color);border:1px solid color-mix(in srgb,var(--badge-color) 32%,transparent)}
+
+/* ---- completeness meter ---- */
+.bar{display:flex;align-items:center;gap:9px;min-width:130px}
+.barTrack{position:relative;flex:1;height:6px;border-radius:3px;overflow:hidden;background:var(--da-lineSoft)}
+.barFill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.barValue{width:38px;text-align:right;font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;color:var(--da-muted)}
+
+/* ---- mobile cards ---- */
+.cards{display:none;flex-direction:column;gap:12px}
+.mcard{border:1px solid var(--da-line);border-radius:16px;background:var(--da-panel);padding:16px}
+.mcardHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px}
+.mcardMeta{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:12px}
+.mcardLabel{margin-bottom:5px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--da-faint)}
+
+/* ---- responsive ---- */
+@media (max-width:1080px){.fieldGrid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:980px){.grid3{grid-template-columns:1fr}}
+@media (max-width:900px){
+  .tableWrap{display:none}
+  .cards{display:flex}
+}
+@media (max-width:560px){
+  .inner{padding:22px 18px 48px}
+  .fieldGrid{grid-template-columns:1fr}
+}

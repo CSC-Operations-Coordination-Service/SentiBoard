@@ -19,9 +19,16 @@ const MOCKUPS = [
     replaces: "/v1/availability",
   },
   {
+    href: "/examples/data-availability-spacex",
+    idx: "03",
+    title: "Data Availability · Telemetry console",
+    desc: "The same page read as a launch console: hairline rules instead of panels, 2px radii, monospace for every identifier, timestamp and figure. Live UTC clock and datatake counters in the header, three SVG donut metrics, a filter bar, and a compact table whose rows open full telemetry — sensing window, orbit, footprint corners and the raw metadata record. Carries its own light/dark toggle.",
+    replaces: "/v1/availability",
+  },
+  {
     href: "/examples/events",
     idx: "02",
-    title: "Events · Mission Manifest",
+    title: "Events · Mission manifest — filters + day drawer",
     desc: "Month grid on the full width, one dot per event and a completeness stripe on days that lost data. Selecting a day opens the Day Manifest drawer: that day's occurrences in time order, each expanding into the datatakes it impacted, with sensing windows and completeness status.",
     replaces: "/v1/events",
   },

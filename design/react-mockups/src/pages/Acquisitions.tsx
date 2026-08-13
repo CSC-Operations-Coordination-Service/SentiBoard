@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { PageHeader, Reveal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import FilterBar from "@/components/FilterBar";
+import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES, type AcqDatatake } from "@/data/mock";
 
 // ids look like "S2A_20260716T104201" — pull YYYY-MM-DD out for the date filter
@@ -16,6 +17,13 @@ export default function Acquisitions() {
 
   const satellites = useMemo(
     () => Array.from(new Set(ACQ_DATATAKES.map((d) => d.sat))).sort(),
+    []
+  );
+
+  // Days that actually carry acquisitions — the day filter uses these as its bounds
+  // so it can never offer a future or empty date.
+  const coveredDates = useMemo(
+    () => Array.from(new Set(ACQ_DATATAKES.map(acquisitionDate).filter(Boolean))).sort(),
     []
   );
 
@@ -35,7 +43,8 @@ export default function Acquisitions() {
   return (
     <>
       <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
-        sub="Past, current and future Copernicus Sentinels' acquisitions on an interactive 3D globe. Inspect the status of a past acquisition, or explore the planned acquisitions for the mission of interest. By default, the real-time sensing scenario is displayed." />
+        sub="Past, current and future Copernicus Sentinels' acquisitions on an interactive 3D globe. Inspect the status of a past acquisition, or explore the planned acquisitions for the mission of interest. By default, the real-time sensing scenario is displayed."
+        desc={ACQUISITIONS_DESCRIPTION} />
 
       <section className="wrap pad">
         <Reveal>
@@ -47,6 +56,7 @@ export default function Acquisitions() {
             onDateChange={setDate}
             onReset={resetFilters}
             resultCount={filtered.length}
+            coveredDates={coveredDates}
           />
           {filtered.length > 0 ? (
             <AcquisitionGlobe stations={STATIONS} datatakes={filtered} />

@@ -1,6 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { PageHeader, Pill, Reveal } from "@/components/ui";
-import { AVAILABILITY, DATATAKES, STATUS_COLORS, Status } from "@/data/mock";
+import { Info } from "lucide-react";
+import {
+  AVAILABILITY, COMPLETENESS_COLOR, COMPLETENESS_LABEL, COMPLETENESS_ORDER, DATATAKES, STATUS_COLORS,
+  Status, type Completeness, type Datatake as DatatakeRow,
+} from "@/data/mock";
+import { AVAILABILITY_DESCRIPTION, AVAILABILITY_SUMMARY } from "@/data/copy";
+import { DEFAULT_PERIOD, PERIODS, inPeriod, type PeriodId } from "@/data/period";
+import { missionOfPlatform, type DatatakeSummary } from "@/data/datatake-details";
+import DatatakeModal from "@/components/DatatakeModal";
 
 function Donut({ pct, label, sub, status }: { pct: number; label: string; sub: string; status: Status }) {
   const r = 42, c = 2 * Math.PI * r;
@@ -22,17 +30,63 @@ function Donut({ pct, label, sub, status }: { pct: number; label: string; sub: s
   );
 }
 
-const FILTERS: (Status | "all")[] = ["all", "nominal", "info", "degraded", "critical"];
-const FILTER_LABEL: Record<string, string> = { all: "All", nominal: "Acquired", info: "Processing", degraded: "Partial", critical: "Unavailable" };
+/* All five completeness states, in the legend's order — the table previously offered four and
+   named them after mission health ("Nominal"), which is not what the dashboard calls them. */
+const FILTERS: (Completeness | "all")[] = ["all", ...COMPLETENESS_ORDER];
+const FILTER_LABEL: Record<string, string> = { all: "All", ...COMPLETENESS_LABEL };
+
+/* Maps a row of the availability table onto what the details modal needs. The datatake ID carries
+   the platform and the sensing start (S2A_20260716T104201), so nothing has to be invented here —
+   everything the modal shows beyond this is derived in data/datatake-details.ts. */
+function toSummary(d: DatatakeRow): DatatakeSummary {
+  const [platform, stamp] = d.id.split("_");
+  const iso = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(9, 11)}:${stamp.slice(
+    11,
+    13,
+  )}:${stamp.slice(13, 15)}Z`;
+  return {
+    id: d.id,
+    platform,
+    mission: missionOfPlatform(platform),
+    sensingStart: new Date(iso),
+    statusLabel: FILTER_LABEL[d.comp],
+    statusColor: COMPLETENESS_COLOR[d.comp],
+    completeness: d.pct,
+  };
+}
 
 export default function Availability() {
-  const [f, setF] = useState<Status | "all">("all");
-  const rows = f === "all" ? DATATAKES : DATATAKES.filter((d) => d.comp === f);
+  const [f, setF] = useState<Completeness | "all">("all");
+  // Production carries this control in the top navigation; the mock-up puts it beside the table
+  // it governs, which is the one place a reader looks when the row count changes.
+  const [period, setPeriod] = useState<PeriodId>(DEFAULT_PERIOD);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+
+  const rows = useMemo(() => {
+    let out = DATATAKES;
+    if (period === "custom") {
+      if (from) out = out.filter((d) => d.start >= new Date(`${from}T00:00:00Z`));
+      if (to) out = out.filter((d) => d.start <= new Date(`${to}T23:59:59Z`));
+    } else {
+      out = out.filter((d) => inPeriod(d.start, period));
+    }
+    return f === "all" ? out : out.filter((d) => d.comp === f);
+  }, [f, period, from, to]);
+
+  // Typing a date by hand is what "custom" means, so the selector follows the pickers.
+  const onCustomDate = (which: "from" | "to", value: string) => {
+    (which === "from" ? setFrom : setTo)(value);
+    setPeriod("custom");
+  };
+
+  // The page owns the selection; the modal owns everything else about being a dialog.
+  const [selected, setSelected] = useState<DatatakeSummary | null>(null);
 
   return (
     <>
       <PageHeader crumb="Data Availability" title="Data Availability"
-        sub="A real-time list of available collections delivered by the missions. Scan through these products to find data meeting your research requirements, verify whether specific data of interest is available, check its current status, and review key availability metrics such as availability percentage." />
+        desc={AVAILABILITY_DESCRIPTION} />
 
       <section className="wrap pad">
         <Reveal className="section-head"><div><div className="eyebrow">Global availability · last 24h</div><h2>By mission</h2></div></Reveal>
@@ -43,14 +97,56 @@ export default function Availability() {
 
       <section className="wrap" style={{ paddingBottom: "clamp(56px,8vw,120px)" }}>
         <Reveal className="section-head"><div><div className="eyebrow">Detail data availability</div><h2>Recent datatakes</h2></div></Reveal>
+        <div className="periodbar">
+          <div className="pb-field">
+            <label htmlFor="av-period">Period</label>
+            <select
+              id="av-period"
+              className="select"
+              value={period}
+              onChange={(e) => {
+                setPeriod(e.target.value as PeriodId);
+                setFrom("");
+                setTo("");
+              }}
+            >
+              {PERIODS.map((p) => (
+                <option key={p.id} value={p.id}>{p.label}</option>
+              ))}
+              <option value="custom">Custom range</option>
+            </select>
+          </div>
+          <div className="pb-field">
+            <label htmlFor="av-from">From</label>
+            <input id="av-from" className="select" type="date" value={from}
+              onChange={(e) => onCustomDate("from", e.target.value)} />
+          </div>
+          <div className="pb-field">
+            <label htmlFor="av-to">To</label>
+            <input id="av-to" className="select" type="date" value={to}
+              onChange={(e) => onCustomDate("to", e.target.value)} />
+          </div>
+          <span className="pb-count">
+            {rows.length} of {DATATAKES.length} datatakes
+          </span>
+        </div>
+
         <div className="filters">
           {FILTERS.map((k) => (
-            <button key={k} className={"chipbtn" + (f === k ? " on" : "")} onClick={() => setF(k)}>{FILTER_LABEL[k]}</button>
+            <button
+              key={k}
+              className={"chipbtn" + (f === k ? " on" : "")}
+              onClick={() => setF(k)}
+              style={k === "all" ? undefined : { ["--cmp" as string]: COMPLETENESS_COLOR[k] }}
+            >
+              {k !== "all" && <span className="dot" />}
+              {FILTER_LABEL[k]}
+            </button>
           ))}
         </div>
         <Reveal className="tbl-wrap">
           <table className="data">
-            <thead><tr><th>Datatake ID</th><th>Mission</th><th>Sensing</th><th>Completeness</th><th>Status</th></tr></thead>
+            <thead><tr><th>Datatake ID</th><th>Mission</th><th>Sensing</th><th>Completeness</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>
               {rows.map((d) => (
                 <tr key={d.id}>
@@ -60,18 +156,28 @@ export default function Availability() {
                   <td style={{ minWidth: 160 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <div style={{ flex: 1, height: 6, borderRadius: 4, background: "var(--bg-3)", overflow: "hidden" }}>
-                        <div style={{ width: `${d.pct}%`, height: "100%", background: STATUS_COLORS[d.comp] }} />
+                        <div style={{ width: `${d.pct}%`, height: "100%", background: COMPLETENESS_COLOR[d.comp] }} />
                       </div>
                       <span className="mono" style={{ fontSize: 12 }}>{d.pct}%</span>
                     </div>
                   </td>
                   <td><Pill status={d.comp} /></td>
+                  <td>
+                    <button className="dtm-trigger" onClick={() => setSelected(toSummary(d))}>
+                      <Info size={13} />View Details
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Reveal>
       </section>
+
+      {/* Compact variant: the percentages and nothing else, as production's dialog does today.
+          The identity panel is the /examples/data-availability proposal's idea, kept there so the
+          two can be compared side by side. */}
+      {selected && <DatatakeModal datatake={selected} onClose={() => setSelected(null)} variant="compact" />}
     </>
   );
 }

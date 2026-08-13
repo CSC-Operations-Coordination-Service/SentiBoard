@@ -327,11 +327,15 @@ const PAGE_CARDS = [
     desc: "The month as an operations log instead of a calendar grid: telemetry strip with counters and a per-day activity pulse, mission + status filters, then events grouped by day with the advisory copy and impacted products in view.",
   },
   {
-    to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · Mission manifest",
+    to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · mission tiles + side panel",
     desc: "The month kept as a grid, but reduced to one dot per event per day and an impact stripe on the days that lost data; picking a day opens a panel where each occurrence expands into the datatakes it hit and how complete they are. Near-black canvas, condensed type, one signal accent.",
   },
   {
-    to: "/examples/events-manifest", img: MOD_IMG[3], title: "Events · Mission manifest",
+    to: "/examples/events-spacex", img: MOD_IMG[0], title: "Events · timeline + heatmap (2 concepts)",
+    desc: "Two layouts behind one tab bar, sharing a period selector and one event register. A — an orbital Gantt ribbon with a track per mission and the month along the X axis, where each block opens a detail popover. B — 31 square day tiles carrying micro status pills, where picking a day slides over that day's UTC log and the datatakes it hit.",
+  },
+  {
+    to: "/examples/events-manifest", img: MOD_IMG[3], title: "Events · filters + day drawer",
     desc: "The manifest with mission / satellite / type / search filters over the full-width grid: one dot per event, a completeness stripe only on days that lost data. Selecting a day opens the Day Manifest drawer — that day's occurrences in time order, each expanding into the datatakes it impacted with sensing windows and completeness status.",
   },
 ];
@@ -344,6 +348,10 @@ const ACQ_CARDS = [
 ];
 
 const AVAIL_CARDS = [
+  {
+    to: "/examples/data-availability-spacex", img: MOD_IMG[3], title: "Data Availability · Telemetry console",
+    desc: "The same page read as a launch console: hairline rules instead of panels, 2px radii, and monospace for every identifier, timestamp and figure. A live UTC clock and datatake counters in the header, three donut metrics drawn as thin SVG rings, then a compact table whose rows open the full telemetry record — sensing window, orbit and track, pass direction, footprint corners and the raw metadata as the backend would return it. Its own pitch-dark palette with electric accents, rather than the shared tokens.",
+  },
   {
     to: "/examples/data-availability", img: MOD_IMG[1], title: "Data Availability · Filtered breakdown",
     desc: "The datatake list led by three donuts — share by mission, acquisition status, sensor mode — that describe whatever the filters currently select, so the charts and the rows can never disagree. Mission, satellite, date-range and datatake-ID filters above a sortable table of platform, sensor mode, start time, status and publication completeness.",
@@ -397,7 +405,7 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Data Availability page</h2></div>
-          <span className="meta">1 alternative to /availability</span>
+          <span className="meta">2 alternatives to /availability</span>
         </div>
         <div className="ex-list">
           {AVAIL_CARDS.map((c) => (

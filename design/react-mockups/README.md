@@ -55,8 +55,8 @@ The real pages above are unaffected by anything under `/examples`.
 | `/examples/reveal` | Index C — editorial first section, pages revealed on scroll | `/` | `pages/IndexExamples.tsx` |
 | `/examples/about` | About — layout B, hero led | `/about` | `pages/AboutRedesign.tsx` |
 | `/examples/events-log` | Events — the month as a chronological operations log | `/events` | `pages/EventsLog.tsx` |
-| `/examples/events-log-v3` | Events — mission manifest: grid kept, one dot per event, impacted datatakes per day | `/events` | `pages/EventsLogV3.tsx` |
-| `/examples/events-manifest` | Events — mission manifest with filters (mission / satellite / type / search) and a Day Manifest drawer | `/events` | `pages/events-manifest/EventsManifest.tsx` |
+| `/examples/events-log-v3` | Events — mission manifest, **mission tiles + side panel**: each event a mission-coloured tile on its day, day detail in a panel beside the grid | `/events` | `pages/EventsLogV3.tsx` |
+| `/examples/events-manifest` | Events — mission manifest, **filters + day drawer**: one neutral dot per event, mission / satellite / type / search filters, day detail in an overlay Day Manifest drawer | `/events` | `pages/events-manifest/EventsManifest.tsx` |
 | `/examples/acquisitions-globe` | Acquisitions — demand-driven globe (footprints, keyboard operation, sensing marks) + a "what changed" summary | `/acquisitions` | `pages/AcquisitionsGlobe.tsx` |
 | `/examples/data-availability` | Data Availability — three donuts describing the current filter selection, over a sortable datatake table | `/availability` | `pages/DataAvailability.tsx` |
 

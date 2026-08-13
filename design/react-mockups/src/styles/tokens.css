@@ -65,6 +65,30 @@
   --pill-bg: rgba(255, 255, 255, 0.06);
   --on-accent: #04101f;
   --hpanel-divider: rgba(255, 255, 255, 0.06);
+
+  /* Datatake completeness — production's five legend states
+     (apps/static/assets/css/dataAvailability.css → .status-circle-dt-*):
+     Planned #9e9e9e · Processing #9e9e9e · Acquired #0aa41b · Partial #bb8747 · Unavailable #FF0000.
+     Two adjustments: production paints Planned and Processing the SAME grey, which works beside a
+     label but not as a chart slice or a lone dot, so Processing is lifted a step; and #0aa41b /
+     #FF0000 go muddy and glaring on a near-black canvas, so both are lightened here. */
+  --cmp-planned: #8b9096;
+  --cmp-processing: #c3c9cf;
+  --cmp-acquired: #2fc04a;
+  --cmp-partial: #cc9a54;
+  --cmp-unavailable: #ff4d4d;
+
+  /* Event types — production's Event Types legend
+     (apps/static/assets/css/events.css → .event-acquisition etc.):
+     Acquisition #495057 · Calibration #B0DFE5 · Manoeuvre #FFAD00 · Production #7b1fa2 · Satellite #EE8216.
+     Same treatment as the completeness set: production is light-only, and its slate Acquisition and
+     deep-purple Production both vanish against a near-black card, so those two are lifted to the same
+     hue at a usable lightness. The other three are verbatim. */
+  --evt-acquisition: #aeb8c4;
+  --evt-calibration: #b0dfe5;
+  --evt-manoeuvre: #ffad00;
+  --evt-production: #c77dff;
+  --evt-satellite: #ee8216;
 }
 
 /* -------------------- LIGHT -------------------- */
@@ -90,4 +114,22 @@
   --pill-bg: rgba(9, 20, 40, 0.05);
   --on-accent: #ffffff;
   --hpanel-divider: rgba(9, 20, 40, 0.07);
+
+  /* Completeness on white. Production's palette was drawn for a dark panel, and these values also
+     colour label text, not just dots — so each hue is darkened until it is legible on white while
+     staying recognisably the same colour. */
+  --cmp-planned: #6b7075;
+  --cmp-processing: #949ba3;
+  --cmp-acquired: #0a8a17;
+  --cmp-partial: #8f6522;
+  --cmp-unavailable: #d30000;
+
+  /* Event types on white. Acquisition and Production are production's own values, which were drawn
+     for a light page and need no change. Calibration's pale cyan and the two warm hues do — they
+     colour tag text as well as glyphs, so each is darkened to hold contrast on white. */
+  --evt-acquisition: #495057;
+  --evt-calibration: #3f8c99;
+  --evt-manoeuvre: #b06f00;
+  --evt-production: #7b1fa2;
+  --evt-satellite: #c2660d;
 }

@@ -1,0 +1,397 @@
+/* ============================================================
+   Datatake details modal — see components/DatatakeModal.tsx
+   Structure follows production's #completenessTableModal (title, product table,
+   pagination, Close). The teal card of the legacy Bootstrap dialog is dropped in
+   favour of the shared tokens, so the panel matches the rest of v2 in both themes.
+   ============================================================ */
+
+.dtm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 6, 12, 0.62);
+  backdrop-filter: blur(3px);
+  animation: dtm-fade 0.18s var(--ease);
+}
+
+.dtm-dialog {
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  outline: none;
+  animation: dtm-rise 0.22s var(--ease);
+}
+
+/* The compact variant carries only the product percentages, so it keeps production's narrower
+   modal-md footprint instead of the proposal's wider identity panel. */
+.dtm-dialog.compact {
+  max-width: 520px;
+}
+
+@keyframes dtm-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dtm-rise {
+  from { opacity: 0; transform: translateY(12px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dtm-backdrop,
+  .dtm-dialog {
+    animation: none;
+  }
+}
+
+/* -------------------- header -------------------- */
+.dtm-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.dtm-head .eyebrow {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.dtm-head h3 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.dtm-x {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.dtm-x:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+/* -------------------- body -------------------- */
+.dtm-body {
+  padding: 18px 20px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.dtm-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.dtm-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--badge);
+  background: color-mix(in srgb, var(--badge) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge) 32%, transparent);
+}
+
+.dtm-meter {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.dtm-meter .track {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--pill-bg);
+}
+
+.dtm-meter .fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+.dtm-meter .val {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.dtm-meter-lab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* -------------------- identity grid -------------------- */
+.dtm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.dtm-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 14px;
+  background: var(--bg-2);
+}
+
+.dtm-kv .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.dtm-kv .v {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------- product table -------------------- */
+.dtm-tablehead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 22px 0 10px;
+}
+
+.dtm-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dtm-table th {
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 500;
+}
+
+.dtm-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+.dtm-table td.ty {
+  color: var(--text);
+}
+
+.dtm-table td.tl {
+  color: var(--accent-2);
+}
+
+.dtm-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* -------------------- pagination -------------------- */
+.dtm-pager {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.dtm-pager button {
+  min-width: 34px;
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.dtm-pager button:hover:not(:disabled):not(.on) {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.dtm-pager button.on {
+  background: var(--accent-grad);
+  border-color: transparent;
+  color: var(--on-accent);
+}
+
+.dtm-pager button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* -------------------- footer -------------------- */
+.dtm-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.dtm-act {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.dtm-act:hover {
+  color: var(--text);
+  border-color: var(--accent-2);
+}
+
+.dtm-close {
+  margin-left: auto;
+  padding: 8px 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid transparent;
+  background: var(--accent-grad);
+  color: var(--on-accent);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.dtm-close:hover {
+  filter: brightness(1.08);
+}
+
+/* -------------------- trigger in the datatake tables -------------------- */
+.dtm-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.dtm-trigger:hover {
+  border-color: var(--accent-2);
+  background: var(--pill-bg);
+}
+
+.dtm-trigger:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* Wordless variant for the proposal's table, where the row already carries six columns and the
+   action column should cost as little width as possible. The eye is the table convention for
+   "look at this row"; the label survives for screen readers and as a hover tooltip, so nothing
+   depends on recognising the glyph. */
+.dtm-trigger.icon {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  justify-content: center;
+  color: var(--text-mute);
+}
+
+.dtm-trigger.icon:hover {
+  color: var(--accent-2);
+}
+
+/* -------------------- responsive -------------------- */
+@media (max-width: 620px) {
+  .dtm-backdrop {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .dtm-dialog {
+    max-width: none;
+    max-height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .dtm-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dtm-foot {
+    flex-wrap: wrap;
+  }
+}

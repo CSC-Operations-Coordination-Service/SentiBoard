@@ -71,8 +71,8 @@ completeness — so review them together:
 | URL | Treatment |
 | --- | --- |
 | `/examples/events-log` | the month as a chronological operations log: no grid, events grouped by day |
-| `/examples/events-log-v3` | grid kept, one tile per event per day, day panel beside it; local palette (near-black, condensed type, orange accent) |
-| `/examples/events-manifest` | grid kept, one dot per event, a completeness stripe only on days that lost data; mission / satellite / type / search filters, and day detail in an overlay **Day Manifest** drawer |
+| `/examples/events-log-v3` | *mission tiles + side panel* — grid kept, each event a mission-coloured tile, day panel beside the grid; local palette (near-black, condensed type, orange accent) |
+| `/examples/events-manifest` | *filters + day drawer* — grid kept, one neutral dot per event and a completeness stripe only on days that lost data; mission / satellite / type / search filters, and day detail in an overlay **Day Manifest** drawer |
 
 All three use the same five completeness states as the production legend — Planned, Processing,
 Acquired, Partial, Unavailable — with one shared set of colours, and the same event-type glyphs as

@@ -28,13 +28,38 @@ const MISSIONS = {
 } as const;
 type MissionKey = keyof typeof MISSIONS;
 
+// Event status and datatake completeness share one vocabulary in production, so
+// they share one palette here too — the --cmp-* tokens, which carry
+// production's legend values adjusted per theme.
 const STATUSES = {
-  PLANNED: { label: "Planned", color: "var(--planned)" },
-  ACQUIRED: { label: "Acquired", color: "var(--ok)" },
-  UNAVAILABLE: { label: "Unavailable", color: "var(--crit)" },
-  PARTIAL: { label: "Partial", color: "var(--partial)" },
+  PLANNED: { label: "Planned", color: "var(--cmp-planned)" },
+  ACQUIRED: { label: "Acquired", color: "var(--cmp-acquired)" },
+  UNAVAILABLE: { label: "Unavailable", color: "var(--cmp-unavailable)" },
+  PARTIAL: { label: "Partial", color: "var(--cmp-partial)" },
 } as const;
 type StatusKey = keyof typeof STATUSES;
+
+// Completeness of a single datatake — production's five legend states. The
+// event-level status set above has no PROCESSING, because an event is never
+// "processing"; only the datatakes under it are.
+const COMPLETENESS = {
+  planned: { label: "Planned", color: "var(--cmp-planned)" },
+  processing: { label: "Processing", color: "var(--cmp-processing)" },
+  acquired: { label: "Acquired", color: "var(--cmp-acquired)" },
+  partial: { label: "Partial", color: "var(--cmp-partial)" },
+  unavailable: { label: "Unavailable", color: "var(--cmp-unavailable)" },
+} as const;
+type CompKey = keyof typeof COMPLETENESS;
+
+// An event's status implies its datatakes' completeness unless an item says
+// otherwise — so the mock data only spells `comp` out where a datatake
+// disagrees with its event (a partially recovered outage, say).
+const COMP_FROM_STATUS: Record<StatusKey, CompKey> = {
+  PLANNED: "planned",
+  ACQUIRED: "acquired",
+  UNAVAILABLE: "unavailable",
+  PARTIAL: "partial",
+};
 
 const KIND_LABEL: Record<IssueType, string> = {
   acquisition: "Acquisition",
@@ -49,6 +74,7 @@ interface ImpactedItem {
   mission: MissionKey;
   id: string;   // e.g. "S1D-25325"
   hash: string; // e.g. "62ed"
+  comp?: CompKey; // defaults to COMP_FROM_STATUS[event.status]
 }
 
 interface LogEvent {
@@ -71,8 +97,10 @@ const EVENTS: LogEvent[] = [
     id: 2, day: 4, time: "18:40", status: "UNAVAILABLE", kind: "acquisition",
     desc: "Downlink interruption over Svalbard station; 41 min gap in OLCI/SLSTR delivery.",
     items: [
-      { mission: "S3", id: "S3B-25325", hash: "62ed" },
-      { mission: "S3", id: "S3B-25311", hash: "62df" },
+      // The gap cut across the pass: the first two datatakes were recovered in
+      // part, the last two lost outright.
+      { mission: "S3", id: "S3B-25325", hash: "62ed", comp: "partial" },
+      { mission: "S3", id: "S3B-25311", hash: "62df", comp: "partial" },
       { mission: "S3", id: "S3B-25330", hash: "62f2" },
       { mission: "S3", id: "S3B-25333", hash: "62f5" },
     ],
@@ -100,7 +128,7 @@ const EVENTS: LogEvent[] = [
     desc: "Acquisition-plan fragments not persisted for two consecutive passes.",
     items: [
       { mission: "S1", id: "S1C-40118", hash: "9c21" },
-      { mission: "S1", id: "S1C-40122", hash: "9c25" },
+      { mission: "S1", id: "S1C-40122", hash: "9c25", comp: "partial" },
     ],
   },
   {
@@ -119,11 +147,14 @@ const EVENTS: LogEvent[] = [
     items: [{ mission: "S5P", id: "S5P-88204", hash: "1a77" }],
   },
   {
-    id: 10, day: 22, time: "14:44", status: "PLANNED", kind: "production",
-    desc: "Processing backlog at the ground segment, ETA 3 h.",
+    id: 10, day: 22, time: "14:44", status: "PARTIAL", kind: "production",
+    desc: "Processing backlog at the ground segment, ETA 3 h. Altimetry and atmospheric chains both queued behind it.",
+    // A ground-segment backlog is not mission-specific — this is the case the
+    // per-mission grouping exists for.
     items: [
-      { mission: "S3", id: "S3A-25501", hash: "6412" },
-      { mission: "S3", id: "S3A-25505", hash: "6416" },
+      { mission: "S3", id: "S3A-25501", hash: "6412", comp: "processing" },
+      { mission: "S3", id: "S3A-25505", hash: "6416", comp: "processing" },
+      { mission: "S5P", id: "S5P-88315", hash: "1ab4", comp: "processing" },
     ],
   },
   {
@@ -140,6 +171,7 @@ const EVENTS: LogEvent[] = [
 
 const MONTH_LABEL = "July 2026";
 const MONTH_INDEX = 6;
+const MONTH_YEAR = 2026;
 const CHIP_INK = "#04101f";
 
 function StatusIcon({ status, size = 12, ink = "var(--bg-2)" }: { status: StatusKey; size?: number; ink?: string }) {
@@ -166,6 +198,18 @@ function StatusIcon({ status, size = 12, ink = "var(--bg-2)" }: { status: Status
       <circle cx="12" cy="16.5" r="1.2" fill={ink} />
     </svg>
   );
+}
+
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+/** "02 Jul 2026 12:30:00 UTC" — the occurrence format the real Event Details uses. */
+function occurrence(day: number, time: string) {
+  return `${String(day).padStart(2, "0")} ${MONTH_ABBR[MONTH_INDEX]} ${MONTH_YEAR} ${time}:00 UTC`;
+}
+
+/** Satellite units touched by an event, from the datatake ids ("S1A-25214" → "S1A"). */
+function satellites(items: ImpactedItem[]) {
+  return [...new Set(items.map((it) => it.id.split("-")[0]))];
 }
 
 // Groups an event's impacted items by mission, preserving mission order.
@@ -281,6 +325,18 @@ export default function EventsLog() {
         </div>
       </section>
 
+      {/* The dot after each datatake carries its completeness, which is not the
+          same thing as the event's own status — so it needs a key. */}
+      <section className="wrap evl-legend">
+        <span className="k">Datatake completeness</span>
+        {(Object.keys(COMPLETENESS) as CompKey[]).map((c) => (
+          <span className="evl-legend-item" key={c}>
+            <span className="dot" style={{ background: COMPLETENESS[c].color }} />
+            {COMPLETENESS[c].label}
+          </span>
+        ))}
+      </section>
+
       {/* ---------- day-grouped log ---------- */}
       <section className="wrap evl-log">
         {byDay.length === 0 && <p className="evl-empty">No events match the current filters.</p>}
@@ -301,42 +357,63 @@ export default function EventsLog() {
                 const groups = groupByMission(e.items.filter((it) => missions.includes(it.mission)));
                 if (groups.length === 0) return null; // no items, or none selected
                 const borderColor = MISSIONS[groups[0].mission].color;
+                const shownItems = groups.flatMap((g) => g.items);
                 return (
                   <article className="evl-card" key={e.id} style={{ borderLeftColor: borderColor }}>
                     <div className="evl-card-top">
-                      <span className="tag kind" style={{ color: kindColor, borderColor: kindColor }}>
-                        <EventIcon type={e.kind} size={12} /> {KIND_LABEL[e.kind]}
-                      </span>
                       <span className="ts">{e.time} UTC</span>
                       <span className="st" style={{ color: st.color }}>
                         <StatusIcon status={e.status} size={11} /> {st.label}
                       </span>
                     </div>
 
-                    <p className="evl-card-desc">{e.desc}</p>
-
-                    <div className="evl-groups">
-                      {groups.map((g) => (
-                        <div className="evl-group" key={g.mission}>
-                          <span className="evl-group-mission" style={{ color: MISSIONS[g.mission].color }}>
-                            <span className="sw" style={{ background: MISSIONS[g.mission].color }} />
-                            {MISSIONS[g.mission].label}
-                          </span>
-                          <div className="evl-items">
-                            {g.items.map((it) => (
-                              <a
-                                key={it.id}
-                                className="evl-item"
-                                href={`#/datatakes/${it.id}`}
-                                style={{ color: MISSIONS[g.mission].color }}
-                              >
-                                {it.id} <span className="hash">({it.hash})</span>
-                                <span className="dot" style={{ background: MISSIONS[g.mission].color }} />
-                              </a>
-                            ))}
-                          </div>
+                    {/* Event Details, laid out like the real aside: the type glyph
+                        in a left gutter, top-aligned with the first field. */}
+                    <div className="evl-detail">
+                      <span className="evl-detail-ico" style={{ color: kindColor, borderColor: kindColor }}>
+                        <EventIcon type={e.kind} size={18} />
+                      </span>
+                      <div className="evl-detail-body">
+                        <div className="evl-field">
+                          <span className="k">Occurrence date:</span> {occurrence(e.day, e.time)}
                         </div>
-                      ))}
+                        <div className="evl-field">
+                          <span className="k">Impacted satellite(s):</span> {satellites(shownItems).join(" · ")}
+                        </div>
+                        <div className="evl-field">
+                          <span className="k">Issue type:</span>{" "}
+                          <span style={{ color: kindColor }}>{KIND_LABEL[e.kind]}</span>
+                        </div>
+                        <p className="evl-card-desc">{e.desc}</p>
+
+                        <div className="evl-field"><span className="k">List of impacted datatakes:</span></div>
+                        <div className="evl-groups">
+                          {groups.map((g) => (
+                            <div className="evl-group" key={g.mission}>
+                              <span className="evl-group-mission" style={{ color: MISSIONS[g.mission].color }}>
+                                <span className="sw" style={{ background: MISSIONS[g.mission].color }} />
+                                {MISSIONS[g.mission].label}
+                              </span>
+                              <div className="evl-items">
+                                {g.items.map((it) => {
+                                  const comp = COMPLETENESS[it.comp ?? COMP_FROM_STATUS[e.status]];
+                                  return (
+                                    <a
+                                      key={it.id}
+                                      className="evl-item"
+                                      href={`#/datatakes/${it.id}`}
+                                      title={`${it.id} — ${comp.label}`}
+                                    >
+                                      {it.id} <span className="hash">[{it.hash}]</span>
+                                      <span className="dot" style={{ background: comp.color }} />
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   </article>
                 );

@@ -175,8 +175,9 @@
   background: var(--bg-3);
 }
 
-/* the header row carries the kind / time / status chips; `all: unset` keeps it
-   free of inherited paragraph spacing before the flex layout is applied */
+/* the header row carries the time and status; the event type moved into the
+   Event Details block below it. `all: unset` keeps the row free of inherited
+   paragraph spacing before the flex layout is applied */
 .evl-card-top {
   all: unset;
   display: flex;
@@ -184,27 +185,6 @@
   gap: 10px;
   flex-wrap: wrap;
   width: 100%;
-}
-
-.evl-card-top .tag {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  color: var(--text-dim);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* kind tag now carries its own color (via inline style from ISSUE_COLORS),
-   so give it a colored border to match instead of the neutral --line one */
-.evl-card-top .tag.kind {
-  border-width: 1px;
-  border-style: solid;
 }
 
 .evl-card-top .ts {
@@ -270,9 +250,14 @@
   padding-left: 12px;
 }
 
+/* The mission heading above already carries the mission colour, and the trailing
+   dot carries completeness — so the link itself stays in the app's link accent.
+   Colouring it per mission as well made a row of four datatakes read as four
+   different states. */
 .evl-item {
   font-family: var(--font-mono);
   font-size: 12.5px;
+  color: var(--accent-2);
   text-decoration: underline;
   text-underline-offset: 3px;
   display: inline-flex;
@@ -290,11 +275,104 @@
   text-decoration: none;
 }
 
+/* completeness of this datatake — production's legend dot */
 .evl-item .dot {
-  width: 4px;
-  height: 4px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   display: inline-block;
+  flex: 0 0 7px;
+}
+
+/* ---------- Event Details block ---------- */
+.evl-detail {
+  display: flex;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+/* type glyph in a left gutter, top-aligned with the first field — the colour
+   and border colour come from the event type (inline, via ISSUE_COLORS) */
+.evl-detail-ico {
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid currentColor;
+  border-radius: var(--r-sm);
+  background: var(--bg-1);
+}
+
+.evl-detail-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.evl-field {
+  font-size: 13.5px;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.evl-field .k {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-right: 6px;
+}
+
+/* the description sits between the fields and the datatake list */
+.evl-detail-body .evl-card-desc {
+  margin: 8px 0 12px;
+}
+
+/* ---------- completeness legend ---------- */
+.evl-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding-top: 18px;
+}
+
+.evl-legend .k {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.evl-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.evl-legend-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+@media (max-width: 620px) {
+  .evl-detail {
+    gap: 10px;
+  }
+
+  .evl-detail-ico {
+    flex-basis: 30px;
+    width: 30px;
+    height: 30px;
+  }
 }
 
 @media (max-width: 620px) {

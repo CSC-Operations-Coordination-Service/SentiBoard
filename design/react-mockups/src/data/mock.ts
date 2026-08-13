@@ -39,15 +39,85 @@ export const MODULES: ModuleCard[] = [
   { idx: "04", href: "/processors", title: "Processors", img: "/assets/img/modules/processors.jpg", pill: { label: "Baseline 003.71", status: "info" }, metric: "47", unit: "releases tracked", desc: "The complete list of Copernicus Sentinel processor releases on an interactive, zoomable timeline." },
 ];
 
-export interface Datatake { id: string; mission: string; sensing: string; comp: Status; pct: number; }
-export const DATATAKES: Datatake[] = [
-  { id: "S2A_20260716T104201", mission: "Sentinel-2A", sensing: "16 Jul 10:42 UTC", comp: "nominal", pct: 100 },
-  { id: "S1A_20260716T093310", mission: "Sentinel-1A", sensing: "16 Jul 09:33 UTC", comp: "info", pct: 62 },
-  { id: "S3B_20260716T081145", mission: "Sentinel-3B", sensing: "16 Jul 08:11 UTC", comp: "degraded", pct: 78 },
-  { id: "S2B_20260716T072050", mission: "Sentinel-2B", sensing: "16 Jul 07:20 UTC", comp: "nominal", pct: 100 },
-  { id: "S5P_20260716T060012", mission: "Sentinel-5P", sensing: "16 Jul 06:00 UTC", comp: "nominal", pct: 96 },
-  { id: "S3A_20260715T221533", mission: "Sentinel-3A", sensing: "15 Jul 22:15 UTC", comp: "critical", pct: 0 },
+/* Datatake completeness — the five states of the production legend ("Completeness Status:" in
+   apps/templates/home/data-availability.html), in lifecycle order. Deliberately separate from
+   `Status` above, which carries mission and processor health: "nominal" is a claim about a
+   satellite, "acquired" is a claim about one datatake's products, and conflating the two is what
+   made the old table say "Nominal" where the dashboard says "Acquired".
+   Colours live in the --cmp-* tokens so both themes are handled in one place. */
+export type Completeness = "planned" | "processing" | "acquired" | "partial" | "unavailable";
+
+export const COMPLETENESS_ORDER: Completeness[] = ["planned", "processing", "acquired", "partial", "unavailable"];
+
+export const COMPLETENESS_LABEL: Record<Completeness, string> = {
+  planned: "Planned",
+  processing: "Processing",
+  acquired: "Acquired",
+  partial: "Partial",
+  unavailable: "Unavailable",
+};
+
+export const COMPLETENESS_COLOR: Record<Completeness, string> = {
+  planned: "var(--cmp-planned)",
+  processing: "var(--cmp-processing)",
+  acquired: "var(--cmp-acquired)",
+  partial: "var(--cmp-partial)",
+  unavailable: "var(--cmp-unavailable)",
+};
+
+export interface Datatake { id: string; mission: string; sensing: string; start: Date; comp: Completeness; pct: number; }
+
+/* The rows are placed RELATIVE to today rather than pinned to fixed dates. With fixed dates the
+   period selector was decorative — every row fell outside "Last 24 Hours" the moment the dates
+   aged, so no choice changed the table. Offsets keep at least one row inside every period and the
+   ids stay honest, because a datatake id encodes its own sensing time. */
+const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
+const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** "Sentinel-2A" from "S2A"; Sentinel-5P flies alone and keeps its name. */
+function platformLabel(sat: string): string {
+  return sat.startsWith("S5") ? "Sentinel-5P" : `Sentinel-${sat.slice(1)}`;
+}
+
+/** The id format the dashboard uses: S2A_20260813T104201. */
+function datatakeId(sat: string, d: Date): string {
+  const stamp = `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}`;
+  const time = `${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}`;
+  return `${sat}_${stamp}T${time}`;
+}
+
+function sensingLabel(d: Date): string {
+  return `${pad2(d.getUTCDate())} ${MONTH_ABBR[d.getUTCMonth()]} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
+}
+
+// [satellite, offset from now, completeness, %] — positive offsets are scheduled, not yet flown.
+// Percentages track the state: planned has flown nothing yet, processing is still publishing.
+const DATATAKE_SPEC: [string, number, Completeness, number][] = [
+  ["S1C", +14 * HOUR_MS, "planned", 0],
+  ["S2C", +3 * HOUR_MS, "planned", 0],
+  ["S2A", -1.5 * HOUR_MS, "processing", 41],
+  ["S1A", -5 * HOUR_MS, "processing", 62],
+  ["S3B", -11 * HOUR_MS, "acquired", 100],
+  ["S5P", -19 * HOUR_MS, "acquired", 96],
+  ["S2B", -2 * DAY_MS - 3 * HOUR_MS, "partial", 78],
+  ["S3A", -5 * DAY_MS - 9 * HOUR_MS, "acquired", 100],
+  ["S1A", -12 * DAY_MS - 2 * HOUR_MS, "unavailable", 0],
+  ["S2A", -21 * DAY_MS - 7 * HOUR_MS, "acquired", 99],
+  ["S3B", -44 * DAY_MS - 5 * HOUR_MS, "partial", 55],
+  ["S5P", -68 * DAY_MS - 16 * HOUR_MS, "acquired", 97],
 ];
+
+export const DATATAKES: Datatake[] = (() => {
+  // Seconds are zeroed so an id stays legible; the rest rides on the current instant, which is
+  // what keeps "Last 24 Hours" populated whatever time of day the page is opened.
+  const anchor = Math.floor(Date.now() / 60_000) * 60_000;
+  return DATATAKE_SPEC.map(([sat, offset, comp, pct]) => {
+    const start = new Date(anchor + offset);
+    return { id: datatakeId(sat, start), mission: platformLabel(sat), sensing: sensingLabel(start), start, comp, pct };
+  }).sort((a, b) => b.start.getTime() - a.start.getTime());
+})();
 
 export const AVAILABILITY = [
   { label: "Sentinel-1", sub: "C-band SAR", pct: 99.1, status: "nominal" as Status },
@@ -86,8 +156,18 @@ export const EVENTS: CalEvent[] = [
   { day: 24, type: "manoeuvre", occurrence: "Fri 24 Jul 2026 14:20:00 UTC", satellites: "S5P", impacted: [{ id: "S5P-06012", cls: "ok" }] },
 ];
 
+// Event-type colours now follow production's Event Types legend rather than a
+// mockup-only palette. They are CSS variables, not hexes, because two of
+// production's five values are unreadable on the dark canvas and need a
+// per-theme substitute — see the --evt-* block in styles/tokens.css. Every
+// consumer applies these through inline style / currentColor, so var() is
+// fine; anything painting to a <canvas> would need the resolved hex instead.
 export const ISSUE_COLORS: Record<IssueType, string> = {
-  acquisition: "#4ea8ff", calibration: "#a78bfa", manoeuvre: "#36d0e0", production: "#f5b544", satellite: "#ef5b6e",
+  acquisition: "var(--evt-acquisition)",
+  calibration: "var(--evt-calibration)",
+  manoeuvre: "var(--evt-manoeuvre)",
+  production: "var(--evt-production)",
+  satellite: "var(--evt-satellite)",
 };
 
 export const STATUS_COLORS: Record<Status, string> = {
@@ -100,10 +180,38 @@ export interface AcqProduct { lvl: string; sub: string; st: "Published" | "Proce
 export interface AcqDatatake {
   id: string; sat: string; station: string;
   lat: number; lon: number;            // acquisition footprint centre
+  footprint: [number, number][];       // closed [lon, lat] ring — the acquired swath
   cls: "ok" | "warn" | "crit";         // marker colour
   comp: number;                        // completeness %
   status: string;                      // human status
   prods: AcqProduct[];
+}
+
+// Builds a swath footprint around a centre point: `along` degrees down the ground
+// track, `across` degrees wide, rotated by the pass heading. Edges are subdivided
+// so the ring still follows the sphere's curvature once projected onto the globe.
+// The swath extents below are illustrative mock geometry chosen to look plausible
+// per instrument family — they are not taken from the mission specifications.
+function swath(lat: number, lon: number, along: number, across: number, heading: number): [number, number][] {
+  const h = (heading * Math.PI) / 180;
+  const cosLat = Math.max(0.2, Math.cos((lat * Math.PI) / 180)); // a longitude degree shrinks towards the poles
+  const at = (a: number, c: number): [number, number] => [
+    lon + (a * Math.sin(h) + c * Math.cos(h)) / cosLat,
+    lat + (a * Math.cos(h) - c * Math.sin(h)),
+  ];
+  const corners = [
+    [-along / 2, -across / 2], [along / 2, -across / 2],
+    [along / 2, across / 2], [-along / 2, across / 2],
+  ];
+  const ring: [number, number][] = [];
+  const SEG = 6;
+  for (let i = 0; i < 4; i++) {
+    const [a0, c0] = corners[i];
+    const [a1, c1] = corners[(i + 1) % 4];
+    for (let k = 0; k < SEG; k++) ring.push(at(a0 + ((a1 - a0) * k) / SEG, c0 + ((c1 - c0) * k) / SEG));
+  }
+  ring.push(ring[0]);
+  return ring;
 }
 
 // Copernicus core ground stations.
@@ -117,27 +225,33 @@ export const STATIONS: Station[] = [
 
 export const ACQ_DATATAKES: AcqDatatake[] = [
   {
-    id: "S2A_20260716T104201", sat: "Sentinel-2A", station: "Svalbard", lat: 48.2, lon: 11.6, cls: "ok", comp: 100, status: "Published",
+    id: "S2A_20260716T104201", sat: "Sentinel-2A", station: "Svalbard", lat: 48.2, lon: 11.6,
+    footprint: swath(48.2, 11.6, 10, 2.6, -12), cls: "ok", comp: 100, status: "Published",
     prods: [{ lvl: "L0", sub: "MSI raw", st: "Published" }, { lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }]
   },
   {
-    id: "S1A_20260716T093310", sat: "Sentinel-1A", station: "Matera", lat: 12.4, lon: 42.1, cls: "warn", comp: 62, status: "Processing",
+    id: "S1A_20260716T093310", sat: "Sentinel-1A", station: "Matera", lat: 12.4, lon: 42.1,
+    footprint: swath(12.4, 42.1, 13, 2.3, -11), cls: "warn", comp: 62, status: "Processing",
     prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "GRD", st: "Processing" }, { lvl: "L2", sub: "OCN", st: "Planned" }]
   },
   {
-    id: "S3B_20260716T081145", sat: "Sentinel-3B", station: "Maspalomas", lat: -22.9, lon: -45.2, cls: "warn", comp: 78, status: "Processing",
+    id: "S3B_20260716T081145", sat: "Sentinel-3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
+    footprint: swath(-22.9, -45.2, 20, 11.4, -13), cls: "warn", comp: 78, status: "Processing",
     prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }]
   },
   {
-    id: "S2B_20260716T072050", sat: "Sentinel-2B", station: "Inuvik", lat: 64.1, lon: -110.3, cls: "ok", comp: 100, status: "Published",
+    id: "S2B_20260716T072050", sat: "Sentinel-2B", station: "Inuvik", lat: 64.1, lon: -110.3,
+    footprint: swath(64.1, -110.3, 10, 2.6, -14), cls: "ok", comp: 100, status: "Published",
     prods: [{ lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }]
   },
   {
-    id: "S5P_20260716T060012", sat: "Sentinel-5P", station: "Neustrelitz", lat: 34.7, lon: 104.2, cls: "ok", comp: 96, status: "Published",
+    id: "S5P_20260716T060012", sat: "Sentinel-5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
+    footprint: swath(34.7, 104.2, 24, 23, -12), cls: "ok", comp: 96, status: "Published",
     prods: [{ lvl: "L1B", sub: "TROPOMI radiance", st: "Published" }, { lvl: "L2", sub: "NO₂ column", st: "Published" }]
   },
   {
-    id: "S3A_20260715T221533", sat: "Sentinel-3A", station: "Svalbard", lat: -35.6, lon: 138.9, cls: "crit", comp: 0, status: "Failed",
+    id: "S3A_20260715T221533", sat: "Sentinel-3A", station: "Svalbard", lat: -35.6, lon: 138.9,
+    footprint: swath(-35.6, 138.9, 20, 11.4, 13), cls: "crit", comp: 0, status: "Failed",
     prods: [{ lvl: "L0", sub: "SLSTR raw", st: "Planned" }]
   },
 ];

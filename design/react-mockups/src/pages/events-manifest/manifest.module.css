@@ -39,12 +39,55 @@
   --mf-orange: #ffc24d;
   --mf-red: #ff6b6b;
 
+  /* overlay chrome — variables rather than literals so the light theme can soften them */
+  --mf-scrim: rgba(3, 5, 10, 0.62);
+  --mf-drawer-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.75);
+
   position: relative;
   min-height: calc(100vh - var(--nav-h, 0px));
   width: 100%;
   background: var(--mf-bg);
   color: var(--mf-text);
   font-family: var(--font-sans, var(--sans));
+}
+
+/* LIGHT THEME.
+   Every colour on this page already flows from the --mf-* set above, so the light theme is that
+   set redefined once — no rule below this block needs to know which theme is running. The page
+   keeps its own identity rather than falling back to the shared tokens: same structure, same
+   meanings, inverted canvas.
+
+   The hues are not swapped, they are re-weighted for a white ground. #00c7d6 signal, #3fe096
+   green, #ffc24d amber and #ff6b6b coral all read as pastel washes on white — recognisable but
+   too faint to carry a status — so each is darkened until it holds against the background while
+   staying the same colour. The scrim goes the other way: a 62%-black veil is far heavier than a
+   light page needs to push the drawer forward. */
+:global(:root[data-theme="light"]) .page {
+  /* canvas */
+  --mf-bg: #f4f6f9;
+  --mf-panel: #ffffff;
+  --mf-panel-2: #eef1f6;
+  --mf-line: rgba(9, 20, 40, 0.12);
+  --mf-line-strong: rgba(9, 20, 40, 0.22);
+
+  /* ink */
+  --mf-text: #0d1220;
+  --mf-muted: #4b5768;
+  --mf-faint: #7c8798;
+
+  /* the one accent */
+  --mf-signal: #0a8b97;
+  --mf-signal-soft: rgba(10, 139, 151, 0.12);
+
+  /* completeness status */
+  --mf-grey: #6b7075;
+  --mf-green: #0f9257;
+  --mf-orange: #a86a06;
+  --mf-red: #d24343;
+
+  /* overlay chrome */
+  --mf-scrim: rgba(15, 23, 38, 0.42);
+  --mf-drawer-shadow: -24px 0 60px -24px rgba(20, 40, 80, 0.35);
 }
 
 .inner {
@@ -547,7 +590,7 @@ select.control {
   z-index: 200;
   border: 0;
   padding: 0;
-  background: rgba(3, 5, 10, 0.62);
+  background: var(--mf-scrim);
   cursor: pointer;
   opacity: 0;
   pointer-events: none;
@@ -570,7 +613,7 @@ select.control {
   flex-direction: column;
   background: var(--mf-panel);
   border-left: 1px solid var(--mf-line-strong);
-  box-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.75);
+  box-shadow: var(--mf-drawer-shadow);
   transform: translateX(100%);
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
