@@ -354,7 +354,7 @@ const AVAIL_CARDS = [
   },
   {
     to: "/examples/data-availability", img: MOD_IMG[1], title: "Data Availability · Filtered breakdown",
-    desc: "The datatake list led by three donuts — share by mission, acquisition status, sensor mode — that describe whatever the filters currently select, so the charts and the rows can never disagree. Mission, satellite, date-range and datatake-ID filters above a sortable table of platform, sensor mode, start time, status and publication completeness.",
+    desc: "The datatake list led by three donuts — share by mission, acquisition status, publication status — that describe whatever the filters currently select, so the charts and the rows can never disagree. Mission, satellite, date-range and datatake-ID filters above a sortable table of platform, sensor mode, start time, status and publication completeness.",
   },
 ];
 

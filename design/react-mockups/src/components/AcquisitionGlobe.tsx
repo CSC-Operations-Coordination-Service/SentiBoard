@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { Station, AcqDatatake } from "@/data/mock";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import type { Station, AcqDatatake, AcqLevel } from "@/data/mock";
+import { sensingMs, levelMean, missingSeconds, expectedTypes } from "@/data/mock";
+import { passesFor } from "@/data/downlink";
 import { LAND } from "@/data/land";
 
 // Self-contained interactive 3D globe (Canvas 2D — no external libraries):
@@ -59,12 +61,6 @@ function clockText(ms: number) {
 const hhmmss = (ms: number) => clockText(ms).slice(11);
 const latLonText = (lat: number, lon: number) =>
   `${Math.abs(lat).toFixed(1)}° ${lat >= 0 ? "north" : "south"}, ${Math.abs(lon).toFixed(1)}° ${lon >= 0 ? "east" : "west"}`;
-
-// ids look like "S2A_20260716T104201" — the sensing instant drives the timeline marks
-function sensingMs(id: string): number | null {
-  const m = id.match(/_(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
-  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
-}
 
 const unitVec = (lat: number, lon: number): [number, number, number] => {
   const la = lat * D, lo = lon * D, c = Math.cos(la);
@@ -140,7 +136,282 @@ function landVectors(decim: number): LandVectors {
 type Layer = { cv: HTMLCanvasElement; ctx: CanvasRenderingContext2D; key: string };
 type P = { x: number; y: number; z: number };
 
-export default function AcquisitionGlobe({ stations, datatakes }: { stations: Station[]; datatakes: AcqDatatake[] }) {
+/* ==========================================================================
+   Datatake rail — completeness plates + downlink passes
+   ==========================================================================
+   Isometric prisms: the SOLID volume is published sensing, the dashed CAGE above
+   it is what is still missing. Each product type of a level gets one prism,
+   marching along the plinth. Every prism is drawn to the same full height, because
+   each expected product type should cover the whole datatake — which is the same
+   assumption behind missingSeconds() in data/mock.ts.
+
+   This is SVG, redrawn only when the selected datatake changes, so it never
+   touches the canvas's demand-driven render loop.
+   ========================================================================== */
+const PW = 20;                 // prism half-width
+const PD = 11.55;              // isometric half-depth — PW / sqrt(3), a 30° ground plane
+const MARCH = 1.45;            // prism spacing, in units of the isometric axis
+const E1X = PW * MARCH, E1Y = PD * MARCH;
+const FULL = 58;               // prism height representing 100% of the expected sensing
+const CX0 = 44;                // first prism centre, leaving room for the plinth overhang
+const Y0 = FULL + PD + 10;     // first prism base, leaving room for the tallest cage
+const LABEL_W = 112;
+const LABEL_GAP = 17;
+const ALARM_BELOW = 95;        // a cage this incomplete is drawn as an alarm
+
+/* Status glyph for the native datatake dropdown. A native <option> cannot carry a
+   styled element, so the colour has to come from the character itself — which is
+   how the legacy Acquisitions page does it too. The percentage and status words
+   follow in the same label, so the glyph is redundant rather than load-bearing. */
+const OPT_DOT: Record<AcqDatatake["cls"], string> = { ok: "🟢", warn: "🟠", crit: "🔴" };
+
+/** "Sentinel-1A" -> "Sentinel-1"; Sentinel-5P flies alone and keeps its name. */
+const missionOf = (sat: string) => sat.replace(/[A-C]$/, "");
+
+const TONE: Record<AcqLevel["level"], string> = {
+  L0: "#4E6BE8",
+  L1: "#8B5CF6",
+  L2: "#0FA98C",
+};
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
+const poly = (...p: [number, number][]) => p.map(([x, y]) => `${r2(x)},${r2(y)}`).join(" ");
+const pctText = (p: number | null) => (p === null ? "n/a" : `${p.toFixed(1)}%`);
+
+/** "3m 25s", "49m 00s", "1h 12m" — durations as operators read them. */
+function dur(totalS: number) {
+  const s = Math.round(totalS);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${pad2(s % 60)}s`;
+  return `${Math.floor(s / 3600)}h ${pad2(Math.floor((s % 3600) / 60))}m`;
+}
+const groupMb = (n: number) => n.toLocaleString("en-GB");
+
+function Plate({ level }: { level: AcqLevel }) {
+  const products = level.products;
+  const n = products.length;
+  const mean = levelMean(level);
+
+  const base = (i: number): [number, number] => [CX0 + i * E1X, Y0 + i * E1Y];
+  const last = base(n - 1);
+  const gutterX = last[0] + 2.1 * PW + 16;
+  const width = gutterX + LABEL_W;
+  const height = Math.max(last[1] + 2.1 * PD + 8, 14 + n * LABEL_GAP + 8);
+
+  // Plinth: a parallelogram spanned by the two isometric ground axes.
+  const p0 = base(0);
+  const plinth = poly(
+    [p0[0] - 2.1 * PW, p0[1] - 0.1 * PD],
+    [p0[0] - 0.1 * PW, p0[1] - 2.1 * PD],
+    [last[0] + 2.1 * PW, last[1] + 0.1 * PD],
+    [last[0] + 0.1 * PW, last[1] + 2.1 * PD],
+  );
+  const plinthEdge = poly(
+    [p0[0] - 2.1 * PW, p0[1] - 0.1 * PD],
+    [last[0] + 0.1 * PW, last[1] + 2.1 * PD],
+    [last[0] + 0.1 * PW, last[1] + 2.1 * PD + 5],
+    [p0[0] - 2.1 * PW, p0[1] - 0.1 * PD + 5],
+  );
+
+  return (
+    <figure className="plate" style={{ ["--tone" as string]: TONE[level.level] }}>
+      <div className="plate-head">
+        <i aria-hidden="true" />
+        <span className="name">Level {level.level.slice(1)}</span>
+        <span className="pct num">{mean === null ? "not expected" : `${mean.toFixed(1)}%`}</span>
+      </div>
+      <svg
+        className="plate-svg"
+        viewBox={`0 0 ${r2(width)} ${r2(height)}`}
+        preserveAspectRatio="xMinYMin meet"
+        role="img"
+        aria-label={
+          `Level ${level.level.slice(1)} production completeness, ${n} product type${n === 1 ? "" : "s"}` +
+          (mean === null ? ", not expected for this datatake." : `, ${mean.toFixed(1)}% overall.`) +
+          " " + products.map((p) => `${p.type}: ${pctText(p.pct)}`).join(". ") + "."
+        }
+      >
+        <g aria-hidden="true">
+          <polygon className="plinth-edge" points={plinthEdge} />
+          <polygon className="plinth" points={plinth} />
+          {products.slice(0, -1).map((p, i) => {
+            const b = base(i);
+            const mx = b[0] + 0.725 * E1X, my = b[1] + 0.725 * E1Y;
+            return <line key={"r" + p.type} className="plinth-rule" x1={r2(mx + PW)} y1={r2(my - PD)} x2={r2(mx - PW)} y2={r2(my + PD)} />;
+          })}
+
+          {products.map((p, i) => {
+            const [cx, yb] = base(i);
+            const labelY = 14 + i * LABEL_GAP;
+            const leader = (
+              <>
+                <line className="leader" x1={r2(cx + PW)} y1={r2(labelY)} x2={r2(gutterX - 6)} y2={r2(labelY)} />
+                <text className="plate-label" x={r2(gutterX)} y={r2(labelY + 3.4)}>{p.type} {pctText(p.pct)}</text>
+              </>
+            );
+
+            // Not expected for this datatake: no volume at all, just its footprint
+            // on the plinth — visibly different from 0% of something expected.
+            if (p.pct === null) {
+              return (
+                <g className="prism-group void" key={p.type}>
+                  <polygon className="void-pad" points={poly([cx, yb - PD], [cx + PW, yb], [cx, yb + PD], [cx - PW, yb])} />
+                  {leader}
+                </g>
+              );
+            }
+
+            const solid = (p.pct / 100) * FULL;
+            const yTop = yb - solid;
+            const yCage = yb - FULL;
+            const alarm = p.pct < ALARM_BELOW ? " alarm" : "";
+            return (
+              <g className="prism-group" key={p.type}>
+                {solid > 0.4 && (
+                  <>
+                    <polygon className="prism-left" points={poly([cx - PW, yb], [cx, yb + PD], [cx, yTop + PD], [cx - PW, yTop])} />
+                    <polygon className="prism-right" points={poly([cx, yb + PD], [cx + PW, yb], [cx + PW, yTop], [cx, yTop + PD])} />
+                    <polygon className="prism-top" points={poly([cx, yTop - PD], [cx + PW, yTop], [cx, yTop + PD], [cx - PW, yTop])} />
+                  </>
+                )}
+                {solid < FULL - 0.4 && (
+                  <>
+                    <line className={"cage" + alarm} x1={r2(cx + PW)} y1={r2(yTop)} x2={r2(cx + PW)} y2={r2(yCage)} />
+                    <line className={"cage" + alarm} x1={r2(cx)} y1={r2(yTop + PD)} x2={r2(cx)} y2={r2(yCage + PD)} />
+                    <line className={"cage" + alarm} x1={r2(cx - PW)} y1={r2(yTop)} x2={r2(cx - PW)} y2={r2(yCage)} />
+                    <polygon className={"cage-cap" + alarm} points={poly([cx, yCage - PD], [cx + PW, yCage], [cx, yCage + PD], [cx - PW, yCage])} />
+                  </>
+                )}
+                {leader}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+    </figure>
+  );
+}
+
+/**
+ * Memoised on the selected datatake alone. The globe's own state — station contact
+ * flipping during the animation, play/pause, the roving tabindex, the measured
+ * track width — re-renders the parent many times over the life of the page; none of
+ * it changes `dt`, so none of it reaches the plates.
+ */
+const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
+  const m = useMemo(() => {
+    const startMs = sensingMs(dt.id);
+    const passes = passesFor(dt.id);
+    return {
+      startMs,
+      passes,
+      types: expectedTypes(dt.levels).length,
+      allTypes: dt.levels.flatMap((l) => l.products).length,
+      missingS: missingSeconds(dt),
+      totalMb: passes.reduce((n, p) => n + p.volumeMb, 0),
+    };
+  }, [dt]);
+
+  const pill = dt.status === "Published" ? "nominal" : dt.status === "Processing" ? "degraded" : "critical";
+
+  return (
+    <aside className="dtk-rail" aria-label={`Datatake ${dt.id}`}>
+      <div className="dtk-block">
+        <div className="dtk-head">
+          <span className="sel-id">
+            <span className="eyebrow">Datatake</span>
+            <span className="dtk-id num">{dt.id}</span>
+            <span className="mission">{dt.unit}</span>
+          </span>
+          <span className={"pill " + pill}>{dt.status}</span>
+        </div>
+
+        <div className="dtk-kpi">
+          <div className="big num">{dt.comp.toFixed(1)}<sup>%</sup></div>
+          <dl className="dtk-aside">
+            <div>
+              <dt>Sensing</dt>
+              <dd className="num">{dur(dt.sensingS)}</dd>
+            </div>
+            <div>
+              {/* Summed across product types, so it can exceed the sensing window —
+                  spelled out rather than left to be misread as an interval. */}
+              <dt title={`Missing sensing summed across ${m.types} expected product types`}>Missing</dt>
+              <dd className={"num" + (m.missingS > 0.5 ? " gap" : "")}>{m.missingS > 0.5 ? dur(m.missingS) : "none"}</dd>
+            </div>
+          </dl>
+        </div>
+        <p className="dtk-kpi-note">
+          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"}
+          {m.allTypes > m.types ? ` (${m.allTypes - m.types} not expected)` : ""} · missing time summed across types
+        </p>
+
+        <dl className="meta-grid">
+          <div><dt>Sensing start</dt><dd className="num">{m.startMs === null ? "—" : hhmmss(m.startMs) + "Z"}</dd></div>
+          <div><dt>Date</dt><dd className="num">{m.startMs === null ? "—" : clockText(m.startMs).slice(0, 10)}</dd></div>
+          <div><dt>Mode</dt><dd>{dt.mode}</dd></div>
+          <div><dt>Abs. orbit</dt><dd className="num">{dt.absOrbit}</dd></div>
+          <div><dt>Station</dt><dd>{dt.station}</dd></div>
+          <div><dt>Satellite</dt><dd>{dt.sat}</dd></div>
+        </dl>
+      </div>
+
+      <div className="dtk-block">
+        <div className="block-head">
+          <span className="lbl">Production completeness by level</span>
+          <span className="eyebrow">Volume = published / expected sensing</span>
+        </div>
+        <div className="levels-legend">
+          {dt.levels.map((l) => {
+            const v = levelMean(l);
+            return (
+              <span className="lvl-chip" key={l.level} style={{ ["--tone" as string]: TONE[l.level] }}>
+                <i aria-hidden="true" />Level {l.level.slice(1)} <b>{v === null ? "n/a" : `${v.toFixed(1)}%`}</b>
+              </span>
+            );
+          })}
+        </div>
+        {dt.levels.map((l) => <Plate key={l.level} level={l} />)}
+        <p className="plate-key" aria-hidden="true">
+          <span className="k-solid" />Published volume
+          <span className="k-void" />Missing volume
+        </p>
+      </div>
+
+      <div className="dtk-block">
+        <div className="block-head">
+          <span className="lbl">Downlink passes</span>
+          <span className="eyebrow">
+            {m.passes.length} pass{m.passes.length === 1 ? "" : "es"}
+            {m.passes.length > 0 ? ` · ${groupMb(m.totalMb)} Mb` : ""}
+          </span>
+        </div>
+        {m.passes.length === 0 ? (
+          <p className="dtk-empty">No downlink passes recorded for this datatake.</p>
+        ) : (
+          <div className="passes">
+            {m.passes.map((p, i) => (
+              <div className="pass" key={p.station + i} style={{ ["--c" as string]: TONE[(["L0", "L1", "L2"] as const)[i % 3]] }}>
+                <i aria-hidden="true" />
+                <span className="who">
+                  <b>{p.stationName}</b>
+                  <em>{p.station} · acquired {hhmmss(Date.parse(p.atIso))}Z</em>
+                </span>
+                <span className="fig">
+                  {groupMb(p.volumeMb)} Mb
+                  <em>{p.durationS}s downlink</em>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="dtk-note">Mock data — the backend has no datatake-to-pass join yet (see data/downlink.ts).</p>
+      </div>
+    </aside>
+  );
+});
+
+export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" }: { stations: Station[]; datatakes: AcqDatatake[]; rail?: "detail" | "plates" }) {
   const cvRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const clockRef = useRef<HTMLSpanElement>(null);
@@ -168,6 +439,7 @@ export default function AcquisitionGlobe({ stations, datatakes }: { stations: St
   const uid = useId();
   const helpId = `${uid}-help`;
   const trackHelpId = `${uid}-track-help`;
+  const selectId = `${uid}-datatake-select`;
 
   const invalidate = useCallback(() => invalidateRef.current(), []);
 
@@ -715,6 +987,12 @@ export default function AcquisitionGlobe({ stations, datatakes }: { stations: St
       cv.removeEventListener("keydown", onKeyDown);
       layers.clear();
     };
+    // INVARIANT — keep this dependency list free of anything that changes on
+    // selection, hover, playback or contact. `select` depends on [datatakes,
+    // invalidate] and `setZoom` on [invalidate], and `invalidate` is stable, so
+    // choosing a datatake never re-runs this effect: the canvas, its layer cache and
+    // all four observers survive untouched while the rail re-renders beside it.
+    // Adding rail state here would tear the canvas down on every click.
   }, [stations, datatakes, select, setZoom]);
 
   // ---- controls -------------------------------------------------------------
@@ -817,6 +1095,21 @@ export default function AcquisitionGlobe({ stations, datatakes }: { stations: St
 
   const dt = datatakes[sel] ?? datatakes[0];
 
+  // Every datatake in one dropdown, grouped by mission so all four constellations
+  // are reachable without a satellite filter in front of them. Mission order is
+  // numeric, so Sentinel-5P sorts after Sentinel-3 rather than between 1 and 2.
+  const missionGroups = useMemo(() => {
+    const byMission = new Map<string, { i: number; a: AcqDatatake }[]>();
+    datatakes.forEach((a, i) => {
+      const mission = missionOf(a.sat);
+      const bucket = byMission.get(mission);
+      if (bucket) bucket.push({ i, a }); else byMission.set(mission, [{ i, a }]);
+    });
+    return [...byMission.entries()]
+      .sort((x, y) => x[0].localeCompare(y[0], undefined, { numeric: true }))
+      .map(([mission, items]) => ({ mission, items: [...items].sort((p, q) => p.a.id.localeCompare(q.a.id)) }));
+  }, [datatakes]);
+
   // Live description of the canvas for assistive tech. Kept in sync with the
   // selection, playback and station-contact state, and mirrored into a polite live
   // region because a changing aria-label on a role="img" is not itself announced.
@@ -833,6 +1126,37 @@ export default function AcquisitionGlobe({ stations, datatakes }: { stations: St
   const pillFor = (st2: string) => (st2 === "Published" ? "nominal" : st2 === "Processing" ? "degraded" : "neutral");
 
   return (
+    <>
+      {/* Datatake selector for the proposal variant — replaces the satellite/day
+          filter bar and the right column's list panel with one dropdown over every
+          mission, the way the legacy Acquisitions page selects a datatake. */}
+      {rail === "plates" && (
+        <div className="dtk-select">
+          <label htmlFor={selectId}>List of Datatakes:</label>
+          <span className="dtk-select-field">
+            <span className={"dd-dot " + dt.cls} aria-hidden="true" />
+            <select
+              id={selectId}
+              value={sel}
+              onChange={(e) => select(Number(e.target.value))}
+            >
+              {missionGroups.map((g) => (
+                <optgroup label={g.mission} key={g.mission}>
+                  {g.items.map(({ i, a }) => (
+                    <option value={i} key={a.id}>
+                      {OPT_DOT[a.cls]}  {a.id} · {a.sat} · {a.comp.toFixed(1)}% · {a.status}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </span>
+          <span className="dtk-select-meta">
+            {datatakes.length} datatake{datatakes.length === 1 ? "" : "s"} · {missionGroups.length} mission{missionGroups.length === 1 ? "" : "s"}
+          </span>
+        </div>
+      )}
+
     <div className="acq-layout">
       <div className="globe-card">
         <div className="globe-stage" ref={stageRef}>
@@ -985,44 +1309,53 @@ export default function AcquisitionGlobe({ stations, datatakes }: { stations: St
         </div>
       </div>
 
-      <div className="acq-side">
-        <div className="acq-list">
-          <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
-          {datatakes.map((a, i) => (
-            <button
-              type="button"
-              key={a.id}
-              className={"acq-item" + (sel === i ? " sel" : "")}
-              aria-current={sel === i ? "true" : undefined}
-              onClick={() => select(i)}
-              onMouseEnter={() => { hoverRef.current = i; invalidate(); }}
-              onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
-              onFocus={() => { hoverRef.current = i; invalidate(); }}
-              onBlur={() => { hoverRef.current = -1; invalidate(); }}
-            >
-              <span className={"sd " + a.cls} aria-hidden="true" />
-              <span className="acq-item-text"><span className="id">{a.id}</span><span className="sub">{a.sat} · {a.station}</span></span>
-              <span className="pct">{a.comp}%</span>
-            </button>
-          ))}
-        </div>
-
-        <aside className="acq-detail" aria-label={`Details for datatake ${dt.id}`}>
-          <span className="eyebrow">Datatake details</span>
-          <h4>{dt.id}</h4>
-          <div className="acq-detail-kvs">
-            <div className="kv"><span>Satellite</span><span>{dt.sat}</span></div>
-            <div className="kv"><span>Station</span><span>{dt.station}</span></div>
-            <div className="kv"><span>Footprint</span><span>{Math.abs(dt.lat)}°{dt.lat >= 0 ? "N" : "S"} {Math.abs(dt.lon)}°{dt.lon >= 0 ? "E" : "W"}</span></div>
-            <div className="kv"><span>Completeness</span><span>{dt.comp} %</span></div>
-            <div className="kv"><span>Status</span><span>{dt.status}</span></div>
+      <div className={"acq-side" + (rail === "plates" ? " acq-side-scroll" : "")}>
+        {/* The plates variant selects from the dropdown above, so this panel would be
+            a second control called "List of Datatakes". */}
+        {rail === "detail" && (
+          <div className="acq-list">
+            <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
+            {datatakes.map((a, i) => (
+              <button
+                type="button"
+                key={a.id}
+                className={"acq-item" + (sel === i ? " sel" : "")}
+                aria-current={sel === i ? "true" : undefined}
+                onClick={() => select(i)}
+                onMouseEnter={() => { hoverRef.current = i; invalidate(); }}
+                onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
+                onFocus={() => { hoverRef.current = i; invalidate(); }}
+                onBlur={() => { hoverRef.current = -1; invalidate(); }}
+              >
+                <span className={"sd " + a.cls} aria-hidden="true" />
+                <span className="acq-item-text"><span className="id">{a.id}</span><span className="sub">{a.sat} · {a.station}</span></span>
+                <span className="pct">{a.comp}%</span>
+              </button>
+            ))}
           </div>
-          <div className="acq-prod-h">Products</div>
-          {dt.prods.map((p, i) => (
-            <div className="prod-row" key={i}><span><span className="lvl">{p.lvl}</span> · {p.sub}</span><span className={"pill " + pillFor(p.st)}>{p.st}</span></div>
-          ))}
-        </aside>
+        )}
+
+        {rail === "plates" ? (
+          <DatatakeRail dt={dt} />
+        ) : (
+          <aside className="acq-detail" aria-label={`Details for datatake ${dt.id}`}>
+            <span className="eyebrow">Datatake details</span>
+            <h4>{dt.id}</h4>
+            <div className="acq-detail-kvs">
+              <div className="kv"><span>Satellite</span><span>{dt.sat}</span></div>
+              <div className="kv"><span>Station</span><span>{dt.station}</span></div>
+              <div className="kv"><span>Footprint</span><span>{Math.abs(dt.lat)}°{dt.lat >= 0 ? "N" : "S"} {Math.abs(dt.lon)}°{dt.lon >= 0 ? "E" : "W"}</span></div>
+              <div className="kv"><span>Completeness</span><span>{dt.comp} %</span></div>
+              <div className="kv"><span>Status</span><span>{dt.status}</span></div>
+            </div>
+            <div className="acq-prod-h">Products</div>
+            {dt.prods.map((p, i) => (
+              <div className="prod-row" key={i}><span><span className="lvl">{p.lvl}</span> · {p.sub}</span><span className={"pill " + pillFor(p.st)}>{p.st}</span></div>
+            ))}
+          </aside>
+        )}
       </div>
     </div>
+    </>
   );
 }

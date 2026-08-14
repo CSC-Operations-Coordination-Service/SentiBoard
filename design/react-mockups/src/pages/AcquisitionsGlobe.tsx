@@ -1,20 +1,12 @@
-import { useMemo, useState } from "react";
 import { PageHeader, Reveal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
-import FilterBar from "@/components/FilterBar";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
-import { STATIONS, ACQ_DATATAKES, type AcqDatatake } from "@/data/mock";
+import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
 
 /* PROPOSAL — Acquisitions globe, rebuilt around demand-driven rendering.
    Same page composition as /acquisitions; what changes is underneath the canvas.
    This route exists so the upgrade can be reviewed next to the other proposals
    under /examples. */
-
-// ids look like "S2A_20260716T104201" — pull YYYY-MM-DD out for the date filter
-function acquisitionDate(dt: AcqDatatake): string {
-  const m = dt.id.match(/_(\d{4})(\d{2})(\d{2})T/);
-  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
-}
 
 const CHANGES: [string, string][] = [
   ["Demand-driven rendering",
@@ -39,39 +31,21 @@ const CHANGES: [string, string][] = [
     "The canvas is a focusable role=\"img\" with a live description and aria-keyshortcuts; arrow keys rotate, +/- zoom, brackets step through datatakes. Every footprint has a mirror button that highlights it on focus, and the datatake list is real buttons."],
   ["Sensing marks on the timeline",
     "The clock track carries one button per datatake at its acquisition time — a single tab stop with a roving tabindex, arrow keys between marks, Home and End to the ends. Activating a mark seeks the clock to it and selects it. Marks outside the simulated day are dropped, and ids are shown only where there is room."],
-  ["Coverage-aware day filter",
-    "The day picker is bounded by the days that actually carry acquisitions, so it can offer neither a future date nor an empty one."],
+  ["Completeness plates",
+    "The right column becomes the datatake rail: per-level isometric plates where the solid volume is published sensing and the dashed cage above it is what is still missing. One prism per product type, an alarm outline below 95%, and a flat dashed pad for a type that is not expected at all — which is not the same as 0%."],
+  ["Completeness is one number",
+    "The header KPI is the mean across expected product types, so it agrees with the plates. comp and the marker colour are derived from the same product data in mock.ts and cannot be hand-set out of step. Missing time is summed across product types, so it can exceed the sensing window — the rail says so rather than leaving it to be misread."],
+  ["Downlink passes (mock)",
+    "Station, volume and pass duration per datatake, isolated in data/downlink.ts because the backend has no datatake-to-pass join, no per-pass volume and no per-pass duration yet. Swap the body of passesFor() for the API call and nothing else moves."],
+  ["Rail isolated from the canvas",
+    "The rail is memoised on the selected datatake alone, so the globe's own churn — contact flipping mid-animation, playback, the roving tabindex — never re-renders the plates, and the canvas setup effect carries no rail state, so selecting never tears the canvas down."],
+  ["One dropdown, every mission",
+    "The satellite chips and day picker are gone. Selection is a single native dropdown over every datatake, grouped by mission so Sentinel-1, -2, -3 and -5P sit in one list — the way the legacy Acquisitions page picks a datatake. It also replaces the right column's list panel, which would otherwise be a second control with the same name. The coverage-aware day filter is still live on /acquisitions."],
   ["Three layout tiers",
     "560 / 780 / 980px breakpoints, with the canvas sized by a ResizeObserver on its stage rather than window resize events."],
 ];
 
 export default function AcquisitionsGlobe() {
-  const [selectedSats, setSelectedSats] = useState<string[]>([]);
-  const [date, setDate] = useState("");
-
-  const satellites = useMemo(
-    () => Array.from(new Set(ACQ_DATATAKES.map((d) => d.sat))).sort(),
-    []
-  );
-
-  const coveredDates = useMemo(
-    () => Array.from(new Set(ACQ_DATATAKES.map(acquisitionDate).filter(Boolean))).sort(),
-    []
-  );
-
-  const filtered = useMemo(() => {
-    return ACQ_DATATAKES.filter((d) => {
-      const satOk = selectedSats.length === 0 || selectedSats.includes(d.sat);
-      const dateOk = !date || acquisitionDate(d) === date;
-      return satOk && dateOk;
-    });
-  }, [selectedSats, date]);
-
-  const toggleSat = (sat: string) =>
-    setSelectedSats((prev) => (prev.includes(sat) ? prev.filter((s) => s !== sat) : [...prev, sat]));
-
-  const resetFilters = () => { setSelectedSats([]); setDate(""); };
-
   return (
     <>
       <PageHeader crumb="Acquisitions · Demand-driven globe" title="Acquisitions Status"
@@ -80,23 +54,7 @@ export default function AcquisitionsGlobe() {
 
       <section className="wrap pad">
         <Reveal>
-          <FilterBar
-            satellites={satellites}
-            selectedSats={selectedSats}
-            onToggleSat={toggleSat}
-            date={date}
-            onDateChange={setDate}
-            onReset={resetFilters}
-            resultCount={filtered.length}
-            coveredDates={coveredDates}
-          />
-          {filtered.length > 0 ? (
-            <AcquisitionGlobe stations={STATIONS} datatakes={filtered} />
-          ) : (
-            <div style={{ padding: "48px 0", textAlign: "center", color: "rgba(205,217,236,.55)" }}>
-              No datatakes match your filters.
-            </div>
-          )}
+          <AcquisitionGlobe stations={STATIONS} datatakes={ACQ_DATATAKES} rail="plates" />
         </Reveal>
       </section>
 

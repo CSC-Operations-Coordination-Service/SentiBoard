@@ -30,7 +30,9 @@ type MissionKey = keyof typeof MISSIONS;
 
 // Event status and datatake completeness share one vocabulary in production, so
 // they share one palette here too — the --cmp-* tokens, which carry
-// production's legend values adjusted per theme.
+// production's legend values adjusted per theme. This set is display-only now:
+// it labels the status chip on each card. Filtering is done on datatake
+// completeness (COMPLETENESS below), which is the finer of the two.
 const STATUSES = {
   PLANNED: { label: "Planned", color: "var(--cmp-planned)" },
   ACQUIRED: { label: "Acquired", color: "var(--cmp-acquired)" },
@@ -174,16 +176,16 @@ const MONTH_INDEX = 6;
 const MONTH_YEAR = 2026;
 const CHIP_INK = "#04101f";
 
-function StatusIcon({ status, size = 12, ink = "var(--bg-2)" }: { status: StatusKey; size?: number; ink?: string }) {
+function StatusIcon({ comp, size = 12, ink = "var(--bg-2)" }: { comp: CompKey; size?: number; ink?: string }) {
   const common = { width: size, height: size, viewBox: "0 0 24 24", "aria-hidden": true } as const;
-  if (status === "ACQUIRED")
+  if (comp === "acquired")
     return (
       <svg {...common}>
         <circle cx="12" cy="12" r="10" fill="currentColor" />
         <path d="M7.5 12.5l3 3 6-6.5" fill="none" stroke={ink} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
-  if (status === "UNAVAILABLE")
+  if (comp === "unavailable")
     return (
       <svg {...common}>
         <path d="M12 3l9.5 16.5H2.5z" fill="currentColor" />
@@ -224,18 +226,21 @@ function groupByMission(items: ImpactedItem[]) {
 }
 
 const MISSION_KEYS = Object.keys(MISSIONS) as MissionKey[];
-const STATUS_KEYS = Object.keys(STATUSES) as StatusKey[];
+const COMP_KEYS = Object.keys(COMPLETENESS) as CompKey[];
 const KIND_KEYS = Object.keys(KIND_LABEL) as IssueType[];
+
+/** A datatake states its own completeness only when it disagrees with its event. */
+const compOf = (e: LogEvent, it: ImpactedItem): CompKey => it.comp ?? COMP_FROM_STATUS[e.status];
 
 export default function EventsLog() {
   const [missions, setMissions] = useState<MissionKey[]>([...MISSION_KEYS]);
-  const [statuses, setStatuses] = useState<StatusKey[]>([...STATUS_KEYS]);
+  const [comps, setComps] = useState<CompKey[]>([...COMP_KEYS]);
   const [kinds, setKinds] = useState<IssueType[]>([...KIND_KEYS]);
 
   const toggleMission = (m: MissionKey) =>
     setMissions((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
-  const toggleStatus = (s: StatusKey) =>
-    setStatuses((p) => (p.includes(s) ? p.filter((x) => x !== s) : [...p, s]));
+  const toggleComp = (c: CompKey) =>
+    setComps((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]));
   const toggleKind = (k: IssueType) =>
     setKinds((p) => (p.includes(k) ? p.filter((x) => x !== k) : [...p, k]));
 
@@ -243,11 +248,13 @@ export default function EventsLog() {
     () =>
       EVENTS.filter(
         (e) =>
-          statuses.includes(e.status) &&
           kinds.includes(e.kind) &&
-          e.items.some((it) => missions.includes(it.mission))
+          e.items.some((it) => missions.includes(it.mission)) &&
+          // Completeness is a property of the datatakes, not of the event, so an
+          // event survives when any datatake under it carries a selected state.
+          e.items.some((it) => comps.includes(compOf(e, it)))
       ),
-    [missions, statuses, kinds]
+    [missions, comps, kinds]
   );
 
   const byDay = useMemo(() => {
@@ -310,31 +317,19 @@ export default function EventsLog() {
           })}
         </div>
         <div className="filters">
-          {STATUS_KEYS.map((k) => {
-            const on = statuses.includes(k);
+          {COMP_KEYS.map((k) => {
+            const on = comps.includes(k);
             return (
-              <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleStatus(k)}
-                style={on ? { background: STATUSES[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
-                <span style={{ color: on ? CHIP_INK : STATUSES[k].color, display: "inline-flex" }}>
-                  <StatusIcon status={k} ink={on ? STATUSES[k].color : "var(--bg-2)"} />
+              <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleComp(k)}
+                style={on ? { background: COMPLETENESS[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
+                <span style={{ color: on ? CHIP_INK : COMPLETENESS[k].color, display: "inline-flex" }}>
+                  <StatusIcon comp={k} ink={on ? COMPLETENESS[k].color : "var(--bg-2)"} />
                 </span>
-                {STATUSES[k].label}
+                {COMPLETENESS[k].label}
               </button>
             );
           })}
         </div>
-      </section>
-
-      {/* The dot after each datatake carries its completeness, which is not the
-          same thing as the event's own status — so it needs a key. */}
-      <section className="wrap evl-legend">
-        <span className="k">Datatake completeness</span>
-        {(Object.keys(COMPLETENESS) as CompKey[]).map((c) => (
-          <span className="evl-legend-item" key={c}>
-            <span className="dot" style={{ background: COMPLETENESS[c].color }} />
-            {COMPLETENESS[c].label}
-          </span>
-        ))}
       </section>
 
       {/* ---------- day-grouped log ---------- */}
@@ -363,7 +358,7 @@ export default function EventsLog() {
                     <div className="evl-card-top">
                       <span className="ts">{e.time} UTC</span>
                       <span className="st" style={{ color: st.color }}>
-                        <StatusIcon status={e.status} size={11} /> {st.label}
+                        <StatusIcon comp={COMP_FROM_STATUS[e.status]} size={11} /> {st.label}
                       </span>
                     </div>
 
@@ -396,7 +391,7 @@ export default function EventsLog() {
                               </span>
                               <div className="evl-items">
                                 {g.items.map((it) => {
-                                  const comp = COMPLETENESS[it.comp ?? COMP_FROM_STATUS[e.status]];
+                                  const comp = COMPLETENESS[compOf(e, it)];
                                   return (
                                     <a
                                       key={it.id}

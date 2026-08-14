@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   Activity, CalendarClock, Calendar, ChevronDown, ChevronUp, CircleCheckBig, CircleX, Eye,
-  LayoutDashboard, LoaderCircle, Radio, RotateCcw, Search, SlidersHorizontal, TrendingUp,
+  CloudUpload, LayoutDashboard, LoaderCircle, RotateCcw, Search, SlidersHorizontal, TrendingUp,
   TriangleAlert, X,
 } from "lucide-react";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
@@ -18,7 +18,7 @@ import "@/styles/data-availability.css";
 
    Where the real page opens with two big completeness donuts and a flat datatake list, this
    one leads with three breakdowns of whatever the filters currently select (mission share,
-   acquisition status, sensor mode) and then a sortable table underneath, so the charts and the
+   acquisition status, publication status) and then a sortable table underneath, so the charts and the
    rows always describe the same set of datatakes.
 
    Adapted from the standalone sketch the same way as the other proposals: the styles live in
@@ -74,6 +74,23 @@ const MISSION_OF: Record<string, string> = Object.fromEntries(
 );
 // Legend order: forward through the lifecycle, then the two failure states.
 const STATUS_ORDER: Status[] = ["Planned", "Processing", "Acquired", "Partial", "Unavailable"];
+
+/* Publication status — production shows this as a second badge on every row, beside the
+   acquisition one (apps/static/assets/js/datatakes/datatakes.js → publicationColor): PUBLISHED,
+   PARTIAL, UNAVAILABLE, and a grey state for anything not yet resolved. The two are different
+   questions: acquisition asks whether the pass was captured, publication whether the products
+   reached users. A datatake can be acquired in full and still be sitting unpublished. */
+type Publication = "Planned" | "Processing" | "Published" | "Partial" | "Unavailable";
+
+const PUBLICATION_ORDER: Publication[] = ["Planned", "Processing", "Published", "Partial", "Unavailable"];
+
+function publicationOf(d: Datatake): Publication {
+  if (d.status === "Planned") return "Planned"; // nothing acquired, so nothing to publish yet
+  if (d.status === "Processing") return "Processing";
+  if (d.completeness >= 100) return "Published";
+  if (d.completeness > 0) return "Partial";
+  return "Unavailable";
+}
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const fmtDate = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
@@ -190,6 +207,13 @@ const CHART = {
       Partial: "#CC9A54",
       Unavailable: "#FF4D4D",
     } as Record<Status, string>,
+    publication: {
+      Planned: "#8B9096",
+      Processing: "#C3C9CF",
+      Published: "#2FC04A",
+      Partial: "#CC9A54",
+      Unavailable: "#FF4D4D",
+    } as Record<Publication, string>,
     mission: ["#5AA9FF", "#6FCF97", "#F2C14E", "#D98CFF"],
     mode: {
       IW: "#5AA9FF", EW: "#85C3FF", SM: "#3D7FC4", WV: "#2A5A8F",
@@ -209,6 +233,15 @@ const CHART = {
       Partial: "#bb8747",
       Unavailable: "#FF0000",
     } as Record<Status, string>,
+    // Production's publication palette exactly: #0aa41b published, #bb8747 partial,
+    // #FF0000 unavailable, #818181 for the states it has not resolved yet.
+    publication: {
+      Planned: "#818181",
+      Processing: "#a5a5a5",
+      Published: "#0aa41b",
+      Partial: "#bb8747",
+      Unavailable: "#FF0000",
+    } as Record<Publication, string>,
     mission: ["#2E7DF6", "#3F9E72", "#C98A1E", "#9B5BC4"],
     mode: {
       IW: "#2E7DF6", EW: "#5AA9FF", SM: "#1F5DB8", WV: "#16457F",
@@ -252,18 +285,16 @@ function statusSlices(rows: Datatake[], palette: typeof CHART.dark): Slice[] {
   }));
 }
 
-function modeSlices(rows: Datatake[], palette: typeof CHART.dark): Slice[] {
-  const acc = new Map<string, number>();
-  rows.forEach((r) => acc.set(r.sensorMode, (acc.get(r.sensorMode) || 0) + 1));
+function publicationSlices(rows: Datatake[], palette: typeof CHART.dark): Slice[] {
+  const acc = Object.fromEntries(PUBLICATION_ORDER.map((p) => [p, 0])) as Record<Publication, number>;
+  rows.forEach((r) => (acc[publicationOf(r)] += 1));
   const total = rows.length || 1;
-  return [...acc.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([mode, count]) => ({
-      name: mode,
-      value: count,
-      color: palette.mode[mode] ?? "var(--accent)",
-      detail: `${Math.round((count / total) * 100)}%`,
-    }));
+  return PUBLICATION_ORDER.map((p) => ({
+    name: p,
+    value: acc[p],
+    color: palette.publication[p],
+    detail: `${Math.round((acc[p] / total) * 100)}%`,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -449,7 +480,7 @@ export default function DataAvailability() {
 
   const missions = useMemo(() => missionSlices(filtered, palette), [filtered, palette]);
   const statuses = useMemo(() => statusSlices(filtered, palette), [filtered, palette]);
-  const modes = useMemo(() => modeSlices(filtered, palette), [filtered, palette]);
+  const publications = useMemo(() => publicationSlices(filtered, palette), [filtered, palette]);
 
   return (
     <>
@@ -459,7 +490,6 @@ export default function DataAvailability() {
       <section className="wrap pad">
         <Reveal className="section-head">
           <div>
-            <div className="eyebrow">Overview{active ? " · filtered view" : ""}</div>
             <h2><LayoutDashboard size={19} style={{ verticalAlign: "-3px", marginRight: 9 }} />Datatake breakdown</h2>
           </div>
           <span className="meta">{filtered.length} DATATAKES</span>
@@ -468,7 +498,7 @@ export default function DataAvailability() {
         <Reveal className="da-grid3">
           <DonutCard title="Datatake share by mission" icon={<TrendingUp size={13} />} slices={missions} palette={palette} />
           <DonutCard title="Acquisition status breakdown" icon={<Activity size={13} />} slices={statuses} palette={palette} />
-          <DonutCard title="Active sensor mode distribution" icon={<Radio size={13} />} slices={modes} palette={palette} />
+          <DonutCard title="Publication status" icon={<CloudUpload size={13} />} slices={publications} palette={palette} />
         </Reveal>
 
         {/* Filters */}

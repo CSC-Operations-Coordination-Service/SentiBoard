@@ -89,14 +89,14 @@ export default function Availability() {
         desc={AVAILABILITY_DESCRIPTION} />
 
       <section className="wrap pad">
-        <Reveal className="section-head"><div><div className="eyebrow">Global availability · last 24h</div><h2>By mission</h2></div></Reveal>
+        <Reveal className="section-head"><div><h2>By mission</h2></div></Reveal>
         <Reveal className="donut-grid">
           {AVAILABILITY.map((a) => <Donut key={a.label} pct={a.pct} label={a.label} sub={a.sub} status={a.status} />)}
         </Reveal>
       </section>
 
       <section className="wrap" style={{ paddingBottom: "clamp(56px,8vw,120px)" }}>
-        <Reveal className="section-head"><div><div className="eyebrow">Detail data availability</div><h2>Recent datatakes</h2></div></Reveal>
+        <Reveal className="section-head"><div><h2>Recent datatakes</h2></div></Reveal>
         <div className="periodbar">
           <div className="pb-field">
             <label htmlFor="av-period">Period</label>

@@ -87,12 +87,30 @@ const MISSION_VAR: Record<string, string> = {
   "Sentinel-5P": "var(--sx-m5p)",
 };
 
-const MODE_VAR: Record<string, string> = {
-  IW: "var(--sx-m1)", EW: "var(--sx-m1-2)", SM: "var(--sx-m1-3)", WV: "var(--sx-m1-4)",
-  MSI: "var(--sx-m2)",
-  OLCI: "var(--sx-m3)", SLSTR: "var(--sx-m3-2)", SRAL: "var(--sx-m3-3)",
-  TROPOMI: "var(--sx-m5p)",
+/* Publication status — the second badge production carries on every datatake row, beside the
+   acquisition one (apps/static/assets/js/datatakes/datatakes.js → publicationColor): PUBLISHED,
+   PARTIAL, UNAVAILABLE, grey for anything unresolved. It answers a different question from the
+   acquisition donut beside it: whether the products reached users, not whether the pass was
+   captured. A datatake can be acquired in full and still be sitting unpublished. */
+type Publication = "PLANNED" | "PROCESSING" | "PUBLISHED" | "PARTIAL" | "UNAVAILABLE";
+
+const PUBLICATION_ORDER: Publication[] = ["PLANNED", "PROCESSING", "PUBLISHED", "PARTIAL", "UNAVAILABLE"];
+
+const PUBLICATION_VAR: Record<Publication, string> = {
+  PLANNED: "var(--sx-pub-planned)",
+  PROCESSING: "var(--sx-pub-processing)",
+  PUBLISHED: "var(--sx-pub-published)",
+  PARTIAL: "var(--sx-pub-partial)",
+  UNAVAILABLE: "var(--sx-pub-unavailable)",
 };
+
+function publicationOf(d: Datatake): Publication {
+  if (d.status === "Planned") return "PLANNED"; // nothing acquired, so nothing to publish yet
+  if (d.status === "Processing") return "PROCESSING";
+  if (d.completeness >= 100) return "PUBLISHED";
+  if (d.completeness > 0) return "PARTIAL";
+  return "UNAVAILABLE";
+}
 
 const GROUND_STATIONS = ["SVALBARD", "MATERA", "MASPALOMAS", "INUVIK", "NEUSTRELITZ", "KIRUNA"];
 /** Repeat-cycle length per mission — the range a relative orbit (track) number falls in. */
@@ -318,12 +336,10 @@ function statusSlices(rows: Datatake[]): Slice[] {
   return STATUS_ORDER.map((s) => ({ key: s, label: s.toUpperCase(), value: acc[s], color: STATUS_VAR[s] }));
 }
 
-function modeSlices(rows: Datatake[]): Slice[] {
-  const acc = new Map<string, number>();
-  rows.forEach((r) => acc.set(r.sensorMode, (acc.get(r.sensorMode) ?? 0) + 1));
-  return [...acc.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([mode, n]) => ({ key: mode, label: mode, value: n, color: MODE_VAR[mode] ?? "var(--sx-accent)" }));
+function publicationSlices(rows: Datatake[]): Slice[] {
+  const acc = Object.fromEntries(PUBLICATION_ORDER.map((p) => [p, 0])) as Record<Publication, number>;
+  rows.forEach((r) => (acc[publicationOf(r)] += 1));
+  return PUBLICATION_ORDER.map((p) => ({ key: p, label: p, value: acc[p], color: PUBLICATION_VAR[p] }));
 }
 
 // -----------------------------------------------------------------------------
@@ -696,7 +712,7 @@ export default function DataAvailabilitySpaceX() {
 
   const missions = useMemo(() => missionSlices(rows), [rows]);
   const statuses = useMemo(() => statusSlices(rows), [rows]);
-  const modes = useMemo(() => modeSlices(rows), [rows]);
+  const publications = useMemo(() => publicationSlices(rows), [rows]);
 
   const lost = rows.filter((r) => r.status === "Partial" || r.status === "Unavailable").length;
   const published = rows.length ? Math.round(rows.reduce((s, r) => s + r.completeness, 0) / rows.length) : 0;
@@ -780,13 +796,17 @@ export default function DataAvailabilitySpaceX() {
           </section>
 
           <section className="sx-card">
-            <h2 className="sx-card-t">ACTIVE SENSOR MODES</h2>
+            <h2 className="sx-card-t">PUBLICATION STATUS</h2>
             {rows.length === 0 ? (
               <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
             ) : (
               <>
-                <Donut slices={modes} total={modes.length} caption="MODES" />
-                <Legend slices={modes} total={rows.length} />
+                <Donut
+                  slices={publications}
+                  total={publications.find((p) => p.key === "PUBLISHED")?.value ?? 0}
+                  caption="PUBLISHED"
+                />
+                <Legend slices={publications} total={rows.length} />
               </>
             )}
           </section>
@@ -973,10 +993,16 @@ const CSS = `
   --sx-accent-soft: rgba(0, 229, 255, 0.1);
 
   --sx-st-planned: #6b7280;
-  --sx-st-processing: #00d4ff;
+  --sx-st-processing: #8a919d;
   --sx-st-acquired: #00e08a;
   --sx-st-partial: #ffb020;
   --sx-st-unavailable: #ff4d5e;
+
+  --sx-pub-planned: #6b7280;
+  --sx-pub-processing: #8a919d;
+  --sx-pub-published: #00e08a;
+  --sx-pub-partial: #ffb020;
+  --sx-pub-unavailable: #ff4d5e;
 
   --sx-m1: #4d8dff;
   --sx-m1-2: #7fb0ff;
@@ -1015,6 +1041,14 @@ const CSS = `
   --sx-st-acquired: #00875a;
   --sx-st-partial: #b45309;
   --sx-st-unavailable: #d92d3f;
+
+  /* production's own publication palette: #0aa41b published, #bb8747 partial, #FF0000
+     unavailable, #818181 for the states it has not resolved yet */
+  --sx-pub-awaiting: #818181;
+  --sx-pub-publishing: #0284a8;
+  --sx-pub-published: #0aa41b;
+  --sx-pub-partial: #bb8747;
+  --sx-pub-unavailable: #d92d3f;
 
   --sx-m1: #2563c9;
   --sx-m1-2: #5b8ee0;

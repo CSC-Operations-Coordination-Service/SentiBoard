@@ -275,7 +275,6 @@
   text-decoration: none;
 }
 
-/* completeness of this datatake — production's legend dot */
 .evl-item .dot {
   width: 7px;
   height: 7px;
@@ -328,39 +327,6 @@
 /* the description sits between the fields and the datatake list */
 .evl-detail-body .evl-card-desc {
   margin: 8px 0 12px;
-}
-
-/* ---------- completeness legend ---------- */
-.evl-legend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 18px;
-  padding-top: 18px;
-}
-
-.evl-legend .k {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-mute);
-}
-
-.evl-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.evl-legend-item .dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
 }
 
 @media (max-width: 620px) {

@@ -2098,6 +2098,499 @@ table.data td.mono {
   color: var(--accent-2);
 }
 
+/* ================= DATATAKE DROPDOWN =================
+   Single selector over every datatake, grouped by mission — the proposal variant's
+   replacement for the satellite/day filter bar. Deliberately a native <select>: it
+   is what the legacy page uses, it gets platform keyboard and touch behaviour and
+   type-ahead for free, and the option list scrolls itself however long it grows. */
+.dtk-select {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+}
+
+.dtk-select > label {
+  font-size: 11px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+.dtk-select-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 320px;
+  min-width: 0;
+  padding-left: 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg-3);
+}
+
+.dtk-select-field:focus-within {
+  border-color: var(--accent-2);
+  outline: 2px solid var(--accent-2);
+  outline-offset: 1px;
+}
+
+/* The closed control gets a real coloured dot; the option list has to make do with
+   a glyph, since a native <option> cannot carry an element. */
+.dtk-select-field .dd-dot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.dtk-select-field .dd-dot.ok {
+  background: var(--ok);
+}
+
+.dtk-select-field .dd-dot.warn {
+  background: var(--warn);
+}
+
+.dtk-select-field .dd-dot.crit {
+  background: var(--crit);
+}
+
+.dtk-select select {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px 7px 0;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.dtk-select select:focus {
+  outline: none;
+}
+
+.dtk-select select optgroup {
+  font-family: var(--font-sans);
+  color: var(--text-mute);
+}
+
+.dtk-select select option {
+  font-family: var(--font-mono);
+  color: var(--text);
+  background: var(--bg-2);
+}
+
+.dtk-select-meta {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .dtk-select {
+    align-items: flex-start;
+    padding: 10px 12px;
+  }
+
+  .dtk-select-field {
+    flex-basis: 100%;
+  }
+
+  .dtk-select-meta {
+    margin-left: 0;
+  }
+}
+
+/* ================= DATATAKE RAIL (completeness plates + downlink) =================
+   Proposal-only right column for /examples/acquisitions-globe. Everything is scoped
+   under .dtk-rail so it cannot leak into the /acquisitions rail. */
+.acq-side-scroll {
+  /* Matches .globe-stage so the two columns finish level; the rail scrolls rather
+     than stretching the page to three times the globe's height. */
+  max-height: min(72vh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+}
+
+.dtk-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dtk-block {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  padding: 18px;
+}
+
+.dtk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dtk-head .sel-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.dtk-id {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.dtk-head .mission {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-mute);
+}
+
+.dtk-kpi {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  margin-top: 14px;
+}
+
+.dtk-kpi .big {
+  font-family: var(--font-mono);
+  font-size: 44px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.dtk-kpi .big sup {
+  font-size: 17px;
+  margin-left: 2px;
+  color: var(--text-mute);
+}
+
+.dtk-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.dtk-aside > div {
+  display: flex;
+  gap: 8px;
+}
+
+.dtk-aside dt {
+  min-width: 58px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  align-self: center;
+}
+
+.dtk-aside dd {
+  margin: 0;
+  font-family: var(--font-mono);
+}
+
+.dtk-aside dd.gap {
+  color: var(--warn);
+}
+
+.dtk-kpi-note {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-mute);
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 18px;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--hpanel-divider);
+}
+
+.meta-grid dt {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.meta-grid dd {
+  margin: 2px 0 0;
+  font-size: 13px;
+}
+
+.dtk-rail .block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.dtk-rail .block-head .lbl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.levels-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-bottom: 6px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.lvl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lvl-chip i {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  background: var(--tone);
+  transform: rotate(45deg);
+}
+
+.lvl-chip b {
+  font-family: var(--font-mono);
+}
+
+/* ---- isometric completeness plate ---- */
+.plate {
+  margin: 18px 0 0;
+}
+
+.plate-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.plate-head i {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  background: var(--tone);
+  transform: rotate(45deg);
+}
+
+.plate-head .name {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.plate-head .pct {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plate-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.plate-svg .plinth {
+  fill: color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.plate-svg .plinth-edge {
+  fill: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.plate-svg .plinth-rule {
+  stroke: color-mix(in srgb, var(--text) 16%, transparent);
+  stroke-width: 0.6;
+}
+
+/* Three faces of one tone: the top catches the light, the left falls away. */
+.plate-svg .prism-top {
+  fill: color-mix(in srgb, var(--tone) 78%, white);
+}
+
+.plate-svg .prism-right {
+  fill: var(--tone);
+}
+
+.plate-svg .prism-left {
+  fill: color-mix(in srgb, var(--tone) 72%, black);
+}
+
+/* The missing volume: an empty wireframe standing on top of what was published. */
+.plate-svg .cage {
+  stroke: color-mix(in srgb, var(--tone) 55%, transparent);
+  stroke-width: 0.9;
+  stroke-dasharray: 2 2.5;
+}
+
+.plate-svg .cage-cap {
+  fill: none;
+  stroke: color-mix(in srgb, var(--tone) 55%, transparent);
+  stroke-width: 0.9;
+  stroke-dasharray: 2 2.5;
+}
+
+.plate-svg .cage.alarm,
+.plate-svg .cage-cap.alarm {
+  stroke: color-mix(in srgb, var(--crit) 80%, transparent);
+}
+
+.plate-svg .void-pad {
+  fill: none;
+  stroke: color-mix(in srgb, var(--text) 24%, transparent);
+  stroke-width: 0.8;
+  stroke-dasharray: 2 3;
+}
+
+.plate-svg .leader {
+  stroke: color-mix(in srgb, var(--text) 22%, transparent);
+  stroke-width: 0.6;
+}
+
+.plate-svg .plate-label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  fill: var(--text-dim);
+}
+
+.plate-svg .void .plate-label {
+  fill: var(--text-mute);
+}
+
+.plate-key {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 16px 0 0;
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+.plate-key .k-solid,
+.plate-key .k-void {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  transform: rotate(45deg);
+}
+
+.plate-key .k-solid {
+  background: var(--accent);
+}
+
+.plate-key .k-void {
+  margin-left: 12px;
+  border: 1px dashed color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+/* ---- downlink passes ---- */
+.passes {
+  display: flex;
+  flex-direction: column;
+}
+
+.pass {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--hpanel-divider);
+}
+
+.pass:last-child {
+  border-bottom: none;
+}
+
+.pass > i {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  background: var(--c);
+  transform: rotate(45deg);
+}
+
+.pass .who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pass .who b {
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.pass .fig {
+  display: flex;
+  flex-direction: column;
+  margin-left: auto;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.pass em,
+.pass .who em {
+  font-style: normal;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-mute);
+}
+
+.dtk-empty {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-mute);
+}
+
+.dtk-note {
+  margin: 14px 0 0;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+}
+
 /* Acquisitions breakpoints — the standard three tiers used across the mockups:
    980px drops the side column under the globe, 780px is the tablet/large-phone
    step, 560px is the compact phone step. The canvas itself is resized by a
@@ -2109,6 +2602,14 @@ table.data td.mono {
 
   .globe-stage {
     height: min(62vh, 560px);
+  }
+
+  /* Stacked, the rail has the full width to itself — an inner scroller would just
+     trap the page scroll, so it flows. */
+  .acq-side-scroll {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
   }
 }
 
@@ -2190,8 +2691,22 @@ table.data td.mono {
     display: none;
   }
 
-  .acq-detail {
+  .acq-detail,
+  .dtk-block {
     padding: 16px;
+  }
+
+  .dtk-kpi {
+    gap: 16px;
+  }
+
+  .dtk-kpi .big {
+    font-size: 36px;
+  }
+
+  .meta-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 }
 

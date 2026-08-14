@@ -177,14 +177,70 @@ export const STATUS_COLORS: Record<Status, string> = {
 // ---- Acquisitions globe (interactive 3D canvas) ----
 export interface Station { name: string; lat: number; lon: number; }
 export interface AcqProduct { lvl: string; sub: string; st: "Published" | "Processing" | "Planned"; }
+
+// Per-product-type completeness, mirroring the real backend's `<TYPE>_local_percentage`
+// fields (see apps/elastic/modules/datatakes.py). `pct: null` means the type is not
+// expected for this datatake — distinct from 0%, which means expected and missing.
+export interface AcqProductType { type: string; pct: number | null; }
+export interface AcqLevel { level: "L0" | "L1" | "L2"; products: AcqProductType[]; }
+
 export interface AcqDatatake {
-  id: string; sat: string; station: string;
+  id: string; sat: string; unit: string; station: string;
   lat: number; lon: number;            // acquisition footprint centre
   footprint: [number, number][];       // closed [lon, lat] ring — the acquired swath
-  cls: "ok" | "warn" | "crit";         // marker colour
-  comp: number;                        // completeness %
+  cls: "ok" | "warn" | "crit";         // marker colour — derived from comp
+  comp: number;                        // completeness % — derived as the mean over expected types
   status: string;                      // human status
-  prods: AcqProduct[];
+  mode: string;                        // instrument mode · polarisation, e.g. "IW · DV"
+  absOrbit: string;                    // absolute orbit
+  sensingS: number;                    // sensing duration, seconds
+  levels: AcqLevel[];
+  prods: AcqProduct[];                 // legacy summary list, still used by the /acquisitions rail
+}
+
+// ids look like "S2A_20260716T104201" — one parser, shared by the globe and the rail.
+export function sensingMs(id: string): number | null {
+  const m = id.match(/_(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
+  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
+}
+
+// ---- Completeness metrics -------------------------------------------------
+// One place, so the header KPI, the datatake list, the globe markers and the
+// completeness plates can never disagree.
+
+/** Product types actually expected for this datatake (pct !== null). */
+export const expectedTypes = (levels: AcqLevel[]): AcqProductType[] =>
+  levels.flatMap((l) => l.products).filter((p) => p.pct !== null);
+
+/**
+ * Datatake completeness as the unweighted MEAN across expected product types.
+ * This matches the reference design: for its S1C example the ten product types
+ * average 90.76% and the header reads 90.8%. Note the real backend currently
+ * reports `final_completeness_percentage` as the MAX, which would read 99.0% for
+ * the same datatake — the best-performing product rather than the datatake.
+ */
+export function meanCompleteness(levels: AcqLevel[]): number {
+  const ps = expectedTypes(levels);
+  if (!ps.length) return 0;
+  return ps.reduce((n, p) => n + (p.pct as number), 0) / ps.length;
+}
+
+/** Level aggregate — also an unweighted mean, as the reference design shows. */
+export function levelMean(level: AcqLevel): number | null {
+  const ps = level.products.filter((p) => p.pct !== null);
+  if (!ps.length) return null;
+  return ps.reduce((n, p) => n + (p.pct as number), 0) / ps.length;
+}
+
+/**
+ * Missing sensing time, SUMMED ACROSS PRODUCT TYPES: each expected type should
+ * cover the whole datatake, so a type at 62% is missing 38% of the sensing window
+ * and the shortfalls add up. The total can therefore exceed the datatake's own
+ * sensing duration — in the reference design a 3m 25s datatake reports 3m 09s
+ * missing across ten product types. It is a backlog figure, not an interval.
+ */
+export function missingSeconds(dt: AcqDatatake): number {
+  return expectedTypes(dt.levels).reduce((n, p) => n + dt.sensingS * (1 - (p.pct as number) / 100), 0);
 }
 
 // Builds a swath footprint around a centre point: `along` degrees down the ground
@@ -223,35 +279,85 @@ export const STATIONS: Station[] = [
   { name: "Neustrelitz", lat: 53.33, lon: 13.07 },
 ];
 
-export const ACQ_DATATAKES: AcqDatatake[] = [
+// Product-type completeness per datatake. These drive `comp` and `cls`, so the
+// header KPI, the datatake list, the globe markers and the plates all read from
+// one number. Percentages are illustrative mock values; the product-type names
+// follow the real CDS naming (RAW__0A, SLC__1A, OL_1_EFR, L2__NO2___ ...).
+type AcqSpec = Omit<AcqDatatake, "comp" | "cls">;
+
+const ACQ_SPECS: AcqSpec[] = [
   {
-    id: "S2A_20260716T104201", sat: "Sentinel-2A", station: "Svalbard", lat: 48.2, lon: 11.6,
-    footprint: swath(48.2, 11.6, 10, 2.6, -12), cls: "ok", comp: 100, status: "Published",
-    prods: [{ lvl: "L0", sub: "MSI raw", st: "Published" }, { lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }]
+    id: "S2A_20260716T104201", sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
+    footprint: swath(48.2, 11.6, 10, 2.6, -12), status: "Published",
+    mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205,
+    levels: [
+      { level: "L0", products: [{ type: "MSI__0A", pct: 100 }] },
+      { level: "L1", products: [{ type: "MSI__1C", pct: 100 }] },
+      { level: "L2", products: [{ type: "MSI__2A", pct: 100 }] },
+    ],
+    prods: [{ lvl: "L0", sub: "MSI raw", st: "Published" }, { lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }],
   },
   {
-    id: "S1A_20260716T093310", sat: "Sentinel-1A", station: "Matera", lat: 12.4, lon: 42.1,
-    footprint: swath(12.4, 42.1, 13, 2.3, -11), cls: "warn", comp: 62, status: "Processing",
-    prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "GRD", st: "Processing" }, { lvl: "L2", sub: "OCN", st: "Planned" }]
+    id: "S1A_20260716T093310", sat: "Sentinel-1A", unit: "S1A", station: "Matera", lat: 12.4, lon: 42.1,
+    footprint: swath(12.4, 42.1, 13, 2.3, -11), status: "Processing",
+    mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205,
+    levels: [
+      { level: "L0", products: [{ type: "RAW__0A", pct: 99.0 }, { type: "RAW__0C", pct: 99.0 }, { type: "RAW__0N", pct: 99.0 }, { type: "RAW__0S", pct: 99.0 }] },
+      { level: "L1", products: [{ type: "SLC__1A", pct: 62.8 }, { type: "SLC__1S", pct: 78.9 }, { type: "GRDH_1A", pct: 41.2 }, { type: "GRDH_1S", pct: 55.4 }] },
+      { level: "L2", products: [{ type: "OCN__2A", pct: null }, { type: "OCN__2S", pct: null }] },
+    ],
+    prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "GRD", st: "Processing" }, { lvl: "L2", sub: "OCN", st: "Planned" }],
   },
   {
-    id: "S3B_20260716T081145", sat: "Sentinel-3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
-    footprint: swath(-22.9, -45.2, 20, 11.4, -13), cls: "warn", comp: 78, status: "Processing",
-    prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }]
+    id: "S3B_20260716T081145", sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
+    footprint: swath(-22.9, -45.2, 20, 11.4, -13), status: "Processing",
+    mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180,
+    levels: [
+      { level: "L0", products: [{ type: "OL_0_EFR", pct: 99.0 }] },
+      { level: "L1", products: [{ type: "OL_1_EFR", pct: 78.0 }, { type: "OL_1_ERR", pct: 82.5 }] },
+      { level: "L2", products: [{ type: "OL_2_WFR", pct: null }] },
+    ],
+    prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }],
   },
   {
-    id: "S2B_20260716T072050", sat: "Sentinel-2B", station: "Inuvik", lat: 64.1, lon: -110.3,
-    footprint: swath(64.1, -110.3, 10, 2.6, -14), cls: "ok", comp: 100, status: "Published",
-    prods: [{ lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }]
+    id: "S2B_20260716T072050", sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 64.1, lon: -110.3,
+    footprint: swath(64.1, -110.3, 10, 2.6, -14), status: "Published",
+    mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188,
+    levels: [
+      { level: "L0", products: [{ type: "MSI__0A", pct: 99.4 }] },
+      { level: "L1", products: [{ type: "MSI__1C", pct: 100 }] },
+      { level: "L2", products: [{ type: "MSI__2A", pct: 100 }] },
+    ],
+    prods: [{ lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }],
   },
   {
-    id: "S5P_20260716T060012", sat: "Sentinel-5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
-    footprint: swath(34.7, 104.2, 24, 23, -12), cls: "ok", comp: 96, status: "Published",
-    prods: [{ lvl: "L1B", sub: "TROPOMI radiance", st: "Published" }, { lvl: "L2", sub: "NO₂ column", st: "Published" }]
+    id: "S5P_20260716T060012", sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
+    footprint: swath(34.7, 104.2, 24, 23, -12), status: "Published",
+    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940,
+    levels: [
+      { level: "L0", products: [{ type: "RA_BD_0_", pct: null }] },
+      { level: "L1", products: [{ type: "L1B_RA_BD1", pct: 99.0 }, { type: "L1B_RA_BD2", pct: 99.0 }] },
+      { level: "L2", products: [{ type: "L2__NO2___", pct: 92.4 }, { type: "L2__O3____", pct: 94.1 }] },
+    ],
+    prods: [{ lvl: "L1B", sub: "TROPOMI radiance", st: "Published" }, { lvl: "L2", sub: "NO\u2082 column", st: "Published" }],
   },
   {
-    id: "S3A_20260715T221533", sat: "Sentinel-3A", station: "Svalbard", lat: -35.6, lon: 138.9,
-    footprint: swath(-35.6, 138.9, 20, 11.4, 13), cls: "crit", comp: 0, status: "Failed",
-    prods: [{ lvl: "L0", sub: "SLSTR raw", st: "Planned" }]
+    id: "S3A_20260715T221533", sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
+    footprint: swath(-35.6, 138.9, 20, 11.4, 13), status: "Failed",
+    mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620,
+    levels: [
+      { level: "L0", products: [{ type: "SL_0_SLT", pct: 0 }] },
+      { level: "L1", products: [{ type: "SL_1_RBT", pct: 0 }] },
+      { level: "L2", products: [{ type: "SL_2_LST", pct: null }] },
+    ],
+    prods: [{ lvl: "L0", sub: "SLSTR raw", st: "Planned" }],
   },
 ];
+
+// comp and cls are derived, never hand-set: a datatake cannot claim a completeness
+// its product types do not support.
+export const ACQ_DATATAKES: AcqDatatake[] = ACQ_SPECS.map((spec) => {
+  const comp = Math.round(meanCompleteness(spec.levels) * 10) / 10;
+  const cls: AcqDatatake["cls"] = comp >= 95 ? "ok" : comp > 0 ? "warn" : "crit";
+  return { ...spec, comp, cls };
+});
