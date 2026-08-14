@@ -178,11 +178,53 @@ export const STATUS_COLORS: Record<Status, string> = {
 export interface Station { name: string; lat: number; lon: number; }
 export interface AcqProduct { lvl: string; sub: string; st: "Published" | "Processing" | "Planned"; }
 
-// Per-product-type completeness, mirroring the real backend's `<TYPE>_local_percentage`
-// fields (see apps/elastic/modules/datatakes.py). `pct: null` means the type is not
-// expected for this datatake — distinct from 0%, which means expected and missing.
-export interface AcqProductType { type: string; pct: number | null; }
-export interface AcqLevel { level: "L0" | "L1" | "L2"; products: AcqProductType[]; }
+/* Per-product-type completeness, mirroring the real backend's `<TYPE>_local_percentage`
+   fields. `pct: null` means the type is not expected for this datatake — distinct from
+   0%, which means expected and missing.
+
+   BACKEND AUDIT (apps/elastic/modules/datatakes.py, apps/utils/events_utils.py).
+   Every mission aggregates to the same three display levels, but each one identifies
+   them differently, and there is a fourth bucket:
+
+     S1  _calc_s1_datatake_completeness — no "L" token at all; the level is a digit
+         inside the product type: _0A_/_0C_/_0N_/_0S_ -> L0, _1A_/_1S_ -> L1,
+         _2A_/_2S_ -> L2.
+     S2  _calc_s2_datatake_completeness — L0_ -> L0; L1A_/L1B_/L1C_ all collapse into
+         one L1; L2A_ -> L2. Keys starting with ("L0_","L1A_","L1B_","L1C_","L2A_")
+         are level aggregates and are skipped.
+     S3  level_ids["S3"] = {L0_: "L0_", L1_: "L1_", L2_: "L2_"} — read off the
+         product document's own `product_level`, not parsed from the type name.
+     S5  level_ids["S5"] = {L0_: "L0_", L1_: "L1B", L2_: "L2_"} — its L1 token is
+         "L1B", not "L1".
+     ALL `product_level` falls back to "UNKNOWN" when nothing matches (set in four
+         places in datatakes.py), so UNKNOWN is a real bucket the UI must render.
+
+   No mission defines a level above L2 in the completeness path. The one exception is
+   get_product_level_python() in events_utils.py, used for sorting only, which maps a
+   trailing "A" to level 3 and returns 98/99 for unrecognised types.
+
+   Product types themselves are NOT enumerated anywhere in the backend — they are
+   whatever the cds-completeness-* indices contain at runtime. The sets below are
+   representative of each mission's instruments (SATELLITES[].instruments in
+   apps/utils/satellite_registry.py): S1 SAR only, S2 MSI only, S5P TROPOMI only, and
+   S3 four science instruments (OLCI, SLSTR, SRAL, MWR) — which is why S3 carries far
+   more product types than the rest and the plates have to cap. */
+export type ProductLevel = "L0" | "L1" | "L2" | "UNKNOWN";
+
+export const LEVEL_LABEL: Record<ProductLevel, string> = {
+  L0: "Level 0",
+  L1: "Level 1",
+  L2: "Level 2",
+  UNKNOWN: "Unclassified",
+};
+
+export interface AcqProductType {
+  type: string;
+  pct: number | null;
+  /** Instrument the type belongs to — the only mission where this varies is S3. */
+  instrument?: string;
+}
+export interface AcqLevel { level: ProductLevel; products: AcqProductType[]; }
 
 export interface AcqDatatake {
   id: string; sat: string; unit: string; station: string;
@@ -280,42 +322,91 @@ export const STATIONS: Station[] = [
 ];
 
 // Product-type completeness per datatake. These drive `comp` and `cls`, so the
-// header KPI, the datatake list, the globe markers and the plates all read from
-// one number. Percentages are illustrative mock values; the product-type names
-// follow the real CDS naming (RAW__0A, SLC__1A, OL_1_EFR, L2__NO2___ ...).
+// header KPI, the datatake list, the globe markers and the plates all read from one
+// number. Percentages are illustrative mock values; the product-type names and the
+// level each one falls into follow the real per-mission rules documented above.
 type AcqSpec = Omit<AcqDatatake, "comp" | "cls">;
 
 const ACQ_SPECS: AcqSpec[] = [
   {
+    // S2 — MSI only. The backend collapses L1A/L1B/L1C into a single L1.
     id: "S2A_20260716T104201", sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
     footprint: swath(48.2, 11.6, 10, 2.6, -12), status: "Published",
     mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205,
     levels: [
-      { level: "L0", products: [{ type: "MSI__0A", pct: 100 }] },
-      { level: "L1", products: [{ type: "MSI__1C", pct: 100 }] },
-      { level: "L2", products: [{ type: "MSI__2A", pct: 100 }] },
+      { level: "L0", products: [{ type: "MSI_L0__GR", pct: 100, instrument: "MSI" }] },
+      { level: "L1", products: [
+        { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
+        { type: "MSI_L1B_GR", pct: 100, instrument: "MSI" },
+        { type: "MSI_L1C_TC", pct: 100, instrument: "MSI" },
+      ] },
+      { level: "L2", products: [{ type: "MSI_L2A_DS", pct: 100, instrument: "MSI" }] },
     ],
     prods: [{ lvl: "L0", sub: "MSI raw", st: "Published" }, { lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }],
   },
   {
+    // S1 — SAR only. Level lives in the digit inside the type name, no "L" token.
     id: "S1A_20260716T093310", sat: "Sentinel-1A", unit: "S1A", station: "Matera", lat: 12.4, lon: 42.1,
     footprint: swath(12.4, 42.1, 13, 2.3, -11), status: "Processing",
     mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205,
     levels: [
-      { level: "L0", products: [{ type: "RAW__0A", pct: 99.0 }, { type: "RAW__0C", pct: 99.0 }, { type: "RAW__0N", pct: 99.0 }, { type: "RAW__0S", pct: 99.0 }] },
-      { level: "L1", products: [{ type: "SLC__1A", pct: 62.8 }, { type: "SLC__1S", pct: 78.9 }, { type: "GRDH_1A", pct: 41.2 }, { type: "GRDH_1S", pct: 55.4 }] },
-      { level: "L2", products: [{ type: "OCN__2A", pct: null }, { type: "OCN__2S", pct: null }] },
+      { level: "L0", products: [
+        { type: "IW_RAW__0A", pct: 99.0, instrument: "SAR" },
+        { type: "IW_RAW__0C", pct: 99.0, instrument: "SAR" },
+        { type: "IW_RAW__0N", pct: 99.0, instrument: "SAR" },
+        { type: "IW_RAW__0S", pct: 99.0, instrument: "SAR" },
+      ] },
+      { level: "L1", products: [
+        { type: "IW_SLC__1A", pct: 62.8, instrument: "SAR" },
+        { type: "IW_SLC__1S", pct: 78.9, instrument: "SAR" },
+        { type: "IW_GRDH_1A", pct: 41.2, instrument: "SAR" },
+        { type: "IW_GRDH_1S", pct: 55.4, instrument: "SAR" },
+      ] },
+      { level: "L2", products: [
+        { type: "IW_OCN__2A", pct: null, instrument: "SAR" },
+        { type: "IW_OCN__2S", pct: null, instrument: "SAR" },
+      ] },
     ],
     prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "GRD", st: "Processing" }, { lvl: "L2", sub: "OCN", st: "Planned" }],
   },
   {
+    // S3 — four science instruments, so by far the widest product-type set. This is
+    // the datatake that exercises the per-plate cap.
     id: "S3B_20260716T081145", sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
     footprint: swath(-22.9, -45.2, 20, 11.4, -13), status: "Processing",
     mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180,
     levels: [
-      { level: "L0", products: [{ type: "OL_0_EFR", pct: 99.0 }] },
-      { level: "L1", products: [{ type: "OL_1_EFR", pct: 78.0 }, { type: "OL_1_ERR", pct: 82.5 }] },
-      { level: "L2", products: [{ type: "OL_2_WFR", pct: null }] },
+      { level: "L0", products: [
+        { type: "OL_0_EFR", pct: 99.0, instrument: "OLCI" },
+        { type: "SL_0_SLT", pct: 99.0, instrument: "SLSTR" },
+        { type: "SR_0_SRA", pct: 98.4, instrument: "SRAL" },
+        { type: "MW_0_MWR", pct: 99.0, instrument: "MWR" },
+      ] },
+      { level: "L1", products: [
+        { type: "OL_1_EFR", pct: 78.0, instrument: "OLCI" },
+        { type: "OL_1_ERR", pct: 82.5, instrument: "OLCI" },
+        { type: "SL_1_RBT", pct: 96.1, instrument: "SLSTR" },
+        { type: "SR_1_SRA", pct: 99.0, instrument: "SRAL" },
+        { type: "SR_1_SRA_A", pct: 99.0, instrument: "SRAL" },
+        { type: "SR_1_SRA_BS", pct: 97.2, instrument: "SRAL" },
+        { type: "MW_1_MWR", pct: 99.0, instrument: "MWR" },
+      ] },
+      { level: "L2", products: [
+        { type: "OL_2_WFR", pct: 71.4, instrument: "OLCI" },
+        { type: "OL_2_WRR", pct: 88.0, instrument: "OLCI" },
+        { type: "OL_2_LFR", pct: 92.3, instrument: "OLCI" },
+        { type: "OL_2_LRR", pct: 94.6, instrument: "OLCI" },
+        { type: "SL_2_LST", pct: 96.8, instrument: "SLSTR" },
+        { type: "SL_2_WST", pct: 99.0, instrument: "SLSTR" },
+        { type: "SL_2_FRP", pct: 61.5, instrument: "SLSTR" },
+        { type: "SL_2_AOD", pct: 99.0, instrument: "SLSTR" },
+        { type: "SR_2_LAN", pct: 99.0, instrument: "SRAL" },
+        { type: "SR_2_WAT", pct: 98.1, instrument: "SRAL" },
+        { type: "SY_2_SYN", pct: 84.2, instrument: "SYN" },
+        { type: "SY_2_VGP", pct: 99.0, instrument: "SYN" },
+        { type: "SY_2_VG1", pct: null, instrument: "SYN" },
+        { type: "SY_2_AOD", pct: 90.7, instrument: "SYN" },
+      ] },
     ],
     prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }],
   },
@@ -324,31 +415,57 @@ const ACQ_SPECS: AcqSpec[] = [
     footprint: swath(64.1, -110.3, 10, 2.6, -14), status: "Published",
     mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188,
     levels: [
-      { level: "L0", products: [{ type: "MSI__0A", pct: 99.4 }] },
-      { level: "L1", products: [{ type: "MSI__1C", pct: 100 }] },
-      { level: "L2", products: [{ type: "MSI__2A", pct: 100 }] },
+      { level: "L0", products: [{ type: "MSI_L0__GR", pct: 99.4, instrument: "MSI" }] },
+      { level: "L1", products: [
+        { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
+        { type: "MSI_L1B_GR", pct: 100, instrument: "MSI" },
+        { type: "MSI_L1C_TC", pct: 100, instrument: "MSI" },
+      ] },
+      { level: "L2", products: [{ type: "MSI_L2A_DS", pct: 100, instrument: "MSI" }] },
     ],
     prods: [{ lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }],
   },
   {
+    // S5P — TROPOMI. Its L1 token is "L1B", not "L1", and it carries one radiance
+    // product per spectral band, so it also runs past the cap.
     id: "S5P_20260716T060012", sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
     footprint: swath(34.7, 104.2, 24, 23, -12), status: "Published",
     mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940,
     levels: [
-      { level: "L0", products: [{ type: "RA_BD_0_", pct: null }] },
-      { level: "L1", products: [{ type: "L1B_RA_BD1", pct: 99.0 }, { type: "L1B_RA_BD2", pct: 99.0 }] },
-      { level: "L2", products: [{ type: "L2__NO2___", pct: 92.4 }, { type: "L2__O3____", pct: 94.1 }] },
+      { level: "L1", products: [
+        { type: "L1B_RA_BD1", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD2", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD3", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD4", pct: 98.6, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD5", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD6", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD7", pct: 97.4, instrument: "TROPOMI" },
+        { type: "L1B_RA_BD8", pct: 99.0, instrument: "TROPOMI" },
+      ] },
+      { level: "L2", products: [
+        { type: "L2__NO2___", pct: 92.4, instrument: "TROPOMI" },
+        { type: "L2__O3____", pct: 94.1, instrument: "TROPOMI" },
+        { type: "L2__CO____", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L2__CH4___", pct: 88.9, instrument: "TROPOMI" },
+        { type: "L2__HCHO__", pct: 96.2, instrument: "TROPOMI" },
+        { type: "L2__SO2___", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L2__AER_AI", pct: 99.0, instrument: "TROPOMI" },
+        { type: "L2__CLOUD_", pct: 93.5, instrument: "TROPOMI" },
+      ] },
     ],
     prods: [{ lvl: "L1B", sub: "TROPOMI radiance", st: "Published" }, { lvl: "L2", sub: "NO\u2082 column", st: "Published" }],
   },
   {
+    // S3 SLSTR-only pass that failed, plus an unrecognised type — the backend's
+    // "UNKNOWN" product_level bucket, which the plates have to render.
     id: "S3A_20260715T221533", sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
     footprint: swath(-35.6, 138.9, 20, 11.4, 13), status: "Failed",
     mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620,
     levels: [
-      { level: "L0", products: [{ type: "SL_0_SLT", pct: 0 }] },
-      { level: "L1", products: [{ type: "SL_1_RBT", pct: 0 }] },
-      { level: "L2", products: [{ type: "SL_2_LST", pct: null }] },
+      { level: "L0", products: [{ type: "SL_0_SLT", pct: 0, instrument: "SLSTR" }] },
+      { level: "L1", products: [{ type: "SL_1_RBT", pct: 0, instrument: "SLSTR" }] },
+      { level: "L2", products: [{ type: "SL_2_LST", pct: null, instrument: "SLSTR" }] },
+      { level: "UNKNOWN", products: [{ type: "OUT_OF_MONITORING", pct: null }] },
     ],
     prods: [{ lvl: "L0", sub: "SLSTR raw", st: "Planned" }],
   },

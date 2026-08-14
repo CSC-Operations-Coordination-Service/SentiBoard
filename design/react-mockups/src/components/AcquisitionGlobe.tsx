@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import type { Station, AcqDatatake, AcqLevel } from "@/data/mock";
-import { sensingMs, levelMean, missingSeconds, expectedTypes } from "@/data/mock";
+import type { Station, AcqDatatake, AcqLevel, AcqProductType, ProductLevel } from "@/data/mock";
+import { sensingMs, levelMean, missingSeconds, expectedTypes, LEVEL_LABEL } from "@/data/mock";
 import { passesFor } from "@/data/downlink";
 import { LAND } from "@/data/land";
 
@@ -158,6 +158,12 @@ const Y0 = FULL + PD + 10;     // first prism base, leaving room for the tallest
 const LABEL_W = 112;
 const LABEL_GAP = 17;
 const ALARM_BELOW = 95;        // a cage this incomplete is drawn as an alarm
+/* Prisms per plate. Missions vary enormously in product-type count — S1 has four
+   types at L1, S5P eight, and S3's L2 fourteen across four instruments — so a plate
+   has to cap or it marches off the panel. The tail is never dropped silently: it is
+   listed underneath with its percentages, and the level mean above is computed over
+   ALL types regardless of how many are drawn. */
+const MAX_PRISMS = 8;
 
 /* Status glyph for the native datatake dropdown. A native <option> cannot carry a
    styled element, so the colour has to come from the character itself — which is
@@ -168,11 +174,35 @@ const OPT_DOT: Record<AcqDatatake["cls"], string> = { ok: "🟢", warn: "🟠", 
 /** "Sentinel-1A" -> "Sentinel-1"; Sentinel-5P flies alone and keeps its name. */
 const missionOf = (sat: string) => sat.replace(/[A-C]$/, "");
 
-const TONE: Record<AcqLevel["level"], string> = {
+const TONE: Record<ProductLevel, string> = {
   L0: "#4E6BE8",
   L1: "#8B5CF6",
   L2: "#0FA98C",
+  UNKNOWN: "#7E8899",
 };
+
+/** Lowest completeness first, "not expected" last — so a cap can only ever hide
+    healthy types, never a problem. */
+function worstFirst(a: AcqProductType, b: AcqProductType) {
+  if (a.pct === null) return b.pct === null ? a.type.localeCompare(b.type) : 1;
+  if (b.pct === null) return -1;
+  return a.pct - b.pct || a.type.localeCompare(b.type);
+}
+
+/** Per-instrument roll-up, for levels spanning more than one instrument (S3 only). */
+function byInstrument(products: AcqProductType[]) {
+  const acc = new Map<string, { sum: number; n: number; total: number }>();
+  for (const p of products) {
+    const key = p.instrument ?? "Unattributed";
+    const e = acc.get(key) ?? { sum: 0, n: 0, total: 0 };
+    e.total++;
+    if (p.pct !== null) { e.sum += p.pct; e.n++; }
+    acc.set(key, e);
+  }
+  return [...acc.entries()]
+    .map(([name, e]) => ({ name, total: e.total, mean: e.n ? e.sum / e.n : null }))
+    .sort((x, y) => x.name.localeCompare(y.name));
+}
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const poly = (...p: [number, number][]) => p.map(([x, y]) => `${r2(x)},${r2(y)}`).join(" ");
@@ -188,9 +218,12 @@ function dur(totalS: number) {
 const groupMb = (n: number) => n.toLocaleString("en-GB");
 
 function Plate({ level }: { level: AcqLevel }) {
-  const products = level.products;
-  const n = products.length;
   const mean = levelMean(level);
+  const ordered = useMemo(() => [...level.products].sort(worstFirst), [level]);
+  const products = ordered.slice(0, MAX_PRISMS);
+  const hidden = ordered.slice(MAX_PRISMS);
+  const instruments = useMemo(() => byInstrument(level.products), [level]);
+  const n = products.length;
 
   const base = (i: number): [number, number] => [CX0 + i * E1X, Y0 + i * E1Y];
   const last = base(n - 1);
@@ -217,18 +250,36 @@ function Plate({ level }: { level: AcqLevel }) {
     <figure className="plate" style={{ ["--tone" as string]: TONE[level.level] }}>
       <div className="plate-head">
         <i aria-hidden="true" />
-        <span className="name">Level {level.level.slice(1)}</span>
+        <span className="name">
+          {LEVEL_LABEL[level.level]}
+          <em>{level.products.length} type{level.products.length === 1 ? "" : "s"}</em>
+        </span>
         <span className="pct num">{mean === null ? "not expected" : `${mean.toFixed(1)}%`}</span>
       </div>
+
+      {/* A level spanning several instruments (only Sentinel-3 does) is unreadable as
+          fourteen bare prisms, so it gets a per-instrument roll-up above the plate. */}
+      {instruments.length > 1 && (
+        <p className="plate-instr">
+          {instruments.map((ins) => (
+            <span key={ins.name}>
+              {ins.name} <b>{ins.mean === null ? "n/a" : `${ins.mean.toFixed(1)}%`}</b>
+              <em>{ins.total}</em>
+            </span>
+          ))}
+        </p>
+      )}
+
       <svg
         className="plate-svg"
         viewBox={`0 0 ${r2(width)} ${r2(height)}`}
         preserveAspectRatio="xMinYMin meet"
         role="img"
         aria-label={
-          `Level ${level.level.slice(1)} production completeness, ${n} product type${n === 1 ? "" : "s"}` +
+          `${LEVEL_LABEL[level.level]} production completeness, ${level.products.length} product type${level.products.length === 1 ? "" : "s"}` +
           (mean === null ? ", not expected for this datatake." : `, ${mean.toFixed(1)}% overall.`) +
-          " " + products.map((p) => `${p.type}: ${pctText(p.pct)}`).join(". ") + "."
+          (hidden.length ? ` Lowest ${n} drawn, all ${level.products.length} listed.` : "") +
+          " " + ordered.map((p) => `${p.type}: ${pctText(p.pct)}`).join(". ") + "."
         }
       >
         <g aria-hidden="true">
@@ -288,6 +339,15 @@ function Plate({ level }: { level: AcqLevel }) {
           })}
         </g>
       </svg>
+
+      {/* Never a silent truncation: the capped tail is the healthiest types, and they
+          are named with their percentages so nothing disappears from the record. */}
+      {hidden.length > 0 && (
+        <p className="plate-more">
+          <b>+{hidden.length} not drawn</b>
+          <span>{hidden.map((p) => `${p.type} ${pctText(p.pct)}`).join(" · ")}</span>
+        </p>
+      )}
     </figure>
   );
 }
@@ -302,11 +362,17 @@ const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
   const m = useMemo(() => {
     const startMs = sensingMs(dt.id);
     const passes = passesFor(dt.id);
+    const all = dt.levels.flatMap((l) => l.products);
     return {
       startMs,
       passes,
+      // Levels are whatever this mission actually produces — S5P has no L0 entry at
+      // all, S3A carries an UNKNOWN bucket — so an empty level renders nothing rather
+      // than an empty plate.
+      levels: dt.levels.filter((l) => l.products.length > 0),
       types: expectedTypes(dt.levels).length,
-      allTypes: dt.levels.flatMap((l) => l.products).length,
+      allTypes: all.length,
+      instruments: [...new Set(all.map((p) => p.instrument).filter(Boolean))] as string[],
       missingS: missingSeconds(dt),
       totalMb: passes.reduce((n, p) => n + p.volumeMb, 0),
     };
@@ -361,17 +427,21 @@ const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
           <span className="lbl">Production completeness by level</span>
           <span className="eyebrow">Volume = published / expected sensing</span>
         </div>
+        <p className="dtk-kpi-note">
+          {m.allTypes} product type{m.allTypes === 1 ? "" : "s"} across {m.levels.length} level{m.levels.length === 1 ? "" : "s"}
+          {m.instruments.length > 1 ? ` · ${m.instruments.join(", ")}` : m.instruments.length === 1 ? ` · ${m.instruments[0]}` : ""}
+        </p>
         <div className="levels-legend">
-          {dt.levels.map((l) => {
+          {m.levels.map((l) => {
             const v = levelMean(l);
             return (
               <span className="lvl-chip" key={l.level} style={{ ["--tone" as string]: TONE[l.level] }}>
-                <i aria-hidden="true" />Level {l.level.slice(1)} <b>{v === null ? "n/a" : `${v.toFixed(1)}%`}</b>
+                <i aria-hidden="true" />{LEVEL_LABEL[l.level]} <b>{v === null ? "n/a" : `${v.toFixed(1)}%`}</b>
               </span>
             );
           })}
         </div>
-        {dt.levels.map((l) => <Plate key={l.level} level={l} />)}
+        {m.levels.map((l) => <Plate key={l.level} level={l} />)}
         <p className="plate-key" aria-hidden="true">
           <span className="k-solid" />Published volume
           <span className="k-void" />Missing volume
