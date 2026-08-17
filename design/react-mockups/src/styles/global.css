@@ -167,10 +167,13 @@ p {
   background: var(--accent-grad);
 }
 
+/* margin-left:auto rather than relying on .nav-links' flex:1 to do the pushing — below
+   760px the links are hidden and there is nothing left to push with. */
 .nav-right {
   display: flex;
   align-items: center;
   gap: 14px;
+  margin-left: auto;
 }
 
 .nav-partners {
@@ -2910,10 +2913,25 @@ table.data td.mono {
     display: none;
   }
 
+  /* 44px square — the minimum comfortable tap target. The negative margin lets the target
+     grow inwards from the wrap's own gutter instead of pushing the row wider. */
   .nav-burger {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-right: -10px;
+    border-radius: var(--r-sm);
   }
 
+  .nav-burger:active {
+    background: var(--bg-3);
+  }
+
+  /* The links become a sheet under the bar. Rows rather than a wrapped strip: each one is a
+     full-width 48px target, which is what a thumb needs and what the 11.5px desktop pills,
+     sized for a cursor, are not. */
   .nav.open .nav-links {
     display: flex;
     position: absolute;
@@ -2921,9 +2939,78 @@ table.data td.mono {
     left: 0;
     right: 0;
     flex-direction: column;
+    gap: 0;
+    margin-left: 0;
     background: var(--bg-1);
     border-bottom: 1px solid var(--line);
-    padding: 12px;
+    box-shadow: var(--shadow);
+    padding: 6px 12px 10px;
+    max-height: calc(100vh - var(--nav-h));
+    max-height: calc(100dvh - var(--nav-h));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .nav.open .nav-links a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 12px 14px;
+    font-size: 12.5px;
+    letter-spacing: 0.12em;
+    border-radius: var(--r-sm);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav.open .nav-links a:last-child {
+    border-bottom: 0;
+  }
+
+  /* The desktop marker is an underline that sits below the label; inside a flex row it would
+     become a stray flex item, so the active row is marked by its own edge bar instead. */
+  .nav.open .nav-links a.active::after {
+    display: none;
+  }
+
+  .nav.open .nav-links a.active {
+    background: var(--bg-3);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+
+  .theme-toggle {
+    min-height: 44px;
+    padding: 6px 14px;
+  }
+
+  .page-desc-head {
+    min-height: 44px;
+    padding: 11px 14px;
+  }
+
+  /* The wordmark is a link home — on a phone it is the only way back, so it gets a full
+     target rather than the logo's own 30px height. */
+  .brand {
+    min-height: 44px;
+  }
+
+  .footer .brand {
+    min-height: 0;
+  }
+
+  /* Footer links are 21px rows on a desktop, which is a cursor target, not a thumb one. */
+  .footer a:not(.partner-logo-link) {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 14px;
+  }
+
+  /* The partner logos are sized by their own artwork, which is shorter than 44px. The target
+     grows around the image instead of scaling it — the lockup keeps its proportions. */
+  .partner-logo-link {
+    min-height: 44px;
+    justify-content: center;
   }
 
   .grid.cols-2,

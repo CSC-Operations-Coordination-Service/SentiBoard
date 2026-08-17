@@ -230,9 +230,15 @@
   text-align: center;
 }
 
+/* minmax(0, 1fr), not 1fr: a bare 1fr track floors at min-content, and because .sb2-cell
+   carries aspect-ratio:1 its content-driven minimum HEIGHT is transferred through the ratio into
+   a minimum WIDTH. That gave the grid a ~667px hard floor, which a phone cannot satisfy — the
+   browser then widens the layout viewport past the device width and zooms the whole page out to
+   fit. Allowing the tracks to shrink is what keeps the month readable at its natural scale.
+   Above ~900px the tracks are far wider than min-content, so this changes nothing there. */
 .sb2-cellgrid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -490,5 +496,303 @@
 
   .sb2-flabel {
     width: 100%;
+  }
+}
+
+/* ---------- filter toggle (mobile only) ----------
+   Two chip rows plus a five-state legend is the whole first screen on a phone, and none of it is
+   the month. Folded behind a toggle, with the count of live filters on the face so it is clear
+   they are still doing something while out of sight. */
+.sb2-filter-toggle-row {
+  display: none;
+  padding: 14px 12px 0;
+}
+
+.sb2-filter-toggle {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--sb-text);
+  font-family: var(--font-mono-2);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.sb2-filter-toggle:active {
+  background: var(--surface-2);
+}
+
+.sb2-filter-toggle .count {
+  margin-left: auto;
+  color: var(--text-dim-2);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.sb2-filter-toggle .chev {
+  flex-shrink: 0;
+  color: var(--signal);
+  transition: transform 0.2s ease;
+}
+
+.sb2-filter-toggle[aria-expanded="true"] .chev {
+  transform: rotate(180deg);
+}
+
+/* ============================================================
+   MOBILE (≤760px) — one column, thumb-sized targets.
+
+   Breakpoint matched to the nav's, so the burger and this layout arrive together. The month grid
+   stays a 7-column month — that grid IS the proposal — but every cell is resized to be tappable
+   and every control is brought up to 44px.
+   ============================================================ */
+@media (max-width: 760px) {
+  .sb2-header,
+  .sb2-filters,
+  .sb2-grid {
+    padding-inline: 12px;
+  }
+
+  /* ---- header: title, then the month nav as a full-width row ---- */
+  .sb2-header {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding-block: 16px 14px;
+  }
+
+  .sb2-h1 {
+    font-size: 34px;
+    margin-top: 0;
+  }
+
+  .sb2-monthnav button {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+  }
+
+  .sb2-monthnav .lbl {
+    flex: 1;
+    width: auto;
+    min-width: 0;
+    font-size: 13px;
+  }
+
+  .sb2-root .page-desc {
+    margin: 14px 12px 0;
+    max-width: none;
+  }
+
+  /* ---- filters, behind the toggle ---- */
+  .sb2-filter-toggle-row {
+    display: block;
+  }
+
+  .sb2-filters {
+    gap: 16px;
+    padding-block: 14px;
+  }
+
+  .sb2-fgroup {
+    gap: 6px 14px;
+  }
+
+  .sb2-flabel {
+    align-self: auto;
+    font-size: 10.5px;
+    line-height: 1.3;
+  }
+
+  /* "COMPLETENESS<br>STATUS" is two lines only because the desktop label column is 78px wide;
+     across the full width it reads as one line. */
+  .sb2-flabel br {
+    display: none;
+  }
+
+  /* The tabs are 22px underlined words on a desktop — a cursor target. Here they get a real box
+     so the whole 44px is tappable, and the "on" state reads without relying on a 2px underline. */
+  .sb2-ftab {
+    min-height: 44px;
+    padding: 6px 12px;
+    border: 1px solid var(--hairline);
+    /* 4px, not a pill: the cells, the month nav and the toggle are all squared off, and a row of
+       fully-rounded capsules reads as a different design system */
+    border-radius: 4px;
+    background: var(--surface);
+  }
+
+  .sb2-ftab.on {
+    background: var(--signal-dim);
+    border-color: var(--signal);
+  }
+
+  .sb2-legend {
+    gap: 8px 14px;
+    padding-top: 0;
+  }
+
+  .sb2-legend-item {
+    font-size: 11.5px;
+  }
+
+  /* ---- month grid ---- */
+  .sb2-weekrow,
+  .sb2-cellgrid {
+    gap: 4px;
+  }
+
+  .sb2-weekrow div {
+    font-size: 10px;
+  }
+
+  .sb2-grid {
+    padding-block: 14px 18px;
+  }
+
+  /* Squares would be ~46px tall here, which does not fit a day number above a row of event
+     tiles. Dropping the ratio for an explicit min-height buys the height the content needs —
+     and, being the tap target for the day, the cell clears 44px on both axes either way. */
+  .sb2-cell {
+    aspect-ratio: auto;
+    min-height: 58px;
+    padding: 5px 4px;
+    border-radius: 3px;
+    gap: 3px;
+  }
+
+  .sb2-cellnum {
+    font-size: 12.5px;
+    line-height: 1.1;
+  }
+
+  .sb2-dots {
+    gap: 3px;
+  }
+
+  .sb2-typeicon {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+  }
+
+  .sb2-typeicon svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  /* the stripe marking a day that lost data keeps its weight against a smaller cell */
+  .sb2-cell.status-unavailable,
+  .sb2-cell.status-partial {
+    border-top-width: 2px;
+  }
+
+  /* ---- day panel ---- */
+  .sb2-panel {
+    padding: 16px 12px 20px;
+    /* selectDay() scrolls this into view; the sticky nav would otherwise cover its heading */
+    scroll-margin-top: calc(var(--nav-h) + 8px);
+  }
+
+  .sb2-panel-head {
+    margin-bottom: 10px;
+  }
+
+  .sb2-panel-close {
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin: -10px -10px 0 0;
+    padding: 0;
+  }
+
+  .sb2-occ-row {
+    padding: 12px 0;
+    gap: 9px;
+  }
+
+  .sb2-occ-title {
+    font-size: 14.5px;
+    line-height: 1.35;
+  }
+
+  .sb2-occ-meta {
+    font-size: 11px;
+    margin-top: 3px;
+  }
+
+  .sb2-occ-time {
+    font-size: 12px;
+  }
+
+  .sb2-occ-desc {
+    font-size: 13.5px;
+  }
+
+  /* the 27px indent lined the rows up under the desktop chevron; at this width it is width the
+     datatake ids need more */
+  .sb2-datatakes {
+    padding: 0 0 14px 19px;
+  }
+
+  .sb2-dt-row {
+    padding: 7px 0;
+    font-size: 12.5px;
+    gap: 7px;
+  }
+
+  .sb2-empty-panel {
+    font-size: 13px;
+  }
+
+  /* ---- the proposal badge ---- */
+  .sb2-badge {
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100vw - 20px);
+    font-size: 9.5px;
+    padding: 7px 10px;
+  }
+
+  .sb2-badge .tail {
+    display: none;
+  }
+}
+
+/* Large phones and below (≤430px): the seven columns are at their tightest here. */
+@media (max-width: 430px) {
+  .sb2-header,
+  .sb2-filters,
+  .sb2-grid {
+    padding-inline: 10px;
+  }
+
+  .sb2-weekrow,
+  .sb2-cellgrid {
+    gap: 3px;
+  }
+
+  .sb2-cell {
+    padding: 4px 3px;
+    min-height: 54px;
+  }
+
+  .sb2-cellnum {
+    font-size: 11.5px;
+  }
+
+  .sb2-typeicon {
+    width: 15px;
+    height: 15px;
   }
 }

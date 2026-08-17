@@ -841,30 +841,310 @@ select.control {
   }
 }
 
-@media (max-width: 620px) {
+/* The toggle that folds the filter controls away on a narrow viewport. Hidden by default because
+   it is only rendered there, but the rule is unconditional so the two stay in one place. */
+.filtersToggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -8px -10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-muted);
+  cursor: pointer;
+}
+
+.filtersToggle svg {
+  transition: transform 0.2s ease;
+}
+
+.filtersToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.badgeTail {
+  display: inline;
+}
+
+/* ============================================================
+   MOBILE (≤760px) — one column, thumb-sized targets.
+
+   Breakpoint matched to the app nav's, so the burger and this layout arrive together.
+   ============================================================ */
+@media (max-width: 760px) {
   .inner {
-    padding: 22px 16px 48px;
+    padding: 20px 14px 44px;
   }
 
-  .calWrap {
-    padding: 10px;
+  /* The intro says what the Description panel's opening sentence says — "events that could impede
+     data production — calibration activities, manoeuvres, platform anomalies and ground-segment
+     issues", down to "select a day to open its manifest". On a wide screen the repetition is free;
+     on a phone it was four lines on top of a fourteen-line panel, and the month began off-screen.
+     Here the accordion carries it, and arrives collapsed. */
+  .sub {
+    display: none;
   }
 
-  .dow,
-  .grid {
-    gap: 5px;
+  .title {
+    font-size: clamp(26px, 8vw, 34px);
   }
 
-  .cell {
-    padding: 6px;
-    border-radius: 7px;
+  .eyebrow {
+    font-size: 10px;
   }
 
-  .cellNum {
-    font-size: 11px;
+  /* the breadcrumb is a link, so it needs a target rather than its 17px line box */
+  .eyebrow a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .page :global(.page-desc) {
+    max-width: none;
+  }
+
+  /* ---------- month bar ---------- */
+  .monthBar {
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .monthNav {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .monthNav button {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+  }
+
+  .monthLabel {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+  }
+
+  .legend {
+    gap: 8px 12px;
+  }
+
+  .legendLabel {
+    flex: 0 0 100%;
+  }
+
+  .legendItem {
+    font-size: 11.5px;
+  }
+
+  /* ---------- filters ---------- */
+  .filters {
+    margin: 14px 0;
+    padding: 4px 12px 12px;
+  }
+
+  /* The head's bottom margin separated it from the fields; with the fields folded away it was 14px
+     of empty box under a collapsed bar. Moving the gap onto the first field puts it inside the
+     collapsible, so it folds away with the thing it was spacing. */
+  .filtersHead {
+    min-height: 48px;
+    margin-bottom: 0;
   }
 
   .fieldRow {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .field label {
+    font-size: 10.5px;
+  }
+
+  .control {
+    min-height: 44px;
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+
+  .chipRow {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chipRowLabel {
+    flex: 0 0 100%;
+    margin-right: 0;
+    font-size: 10.5px;
+  }
+
+  .chip {
+    min-height: 44px;
+    padding: 8px 13px;
+    font-size: 11.5px;
+  }
+
+  .reset,
+  .clear {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------- month grid ---------- */
+  .calWrap {
+    padding: 8px;
+    border-radius: 12px;
+  }
+
+  .dow,
+  .grid {
+    gap: 3px;
+  }
+
+  /* A day cell is the tap target for its day, so it has to clear 44px on both axes — and because
+     the cells are square, WIDTH is the binding constraint: seven of them plus the gutters have to
+     fit the screen. The gutters above are what buys the width; at 375px this lands at ~45px. */
+  .cell {
+    padding: 5px 4px;
+    border-radius: 7px;
+  }
+
+  .cellNum {
+    font-size: 11.5px;
+  }
+
+  .dots {
+    gap: 3px;
+  }
+
+  .dot {
+    width: 4px;
+    height: 4px;
+  }
+
+  .hint {
+    margin-top: 10px;
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+
+  /* ---------- day drawer ---------- */
+  .drawer {
+    width: min(440px, 100vw - 24px);
+  }
+
+  .drawerHead {
+    padding: 16px 14px 14px;
+  }
+
+  .drawerBody {
+    padding: 4px 14px 24px;
+  }
+
+  .iconBtn {
+    width: 44px;
+    height: 44px;
+    margin: -6px -6px 0 0;
+  }
+
+  .detailDay {
+    font-size: 21px;
+  }
+
+  .occTitle {
+    font-size: 14px;
+  }
+
+  .occMeta {
+    font-size: 11px;
+  }
+
+  .occSummary {
+    font-size: 13.5px;
+  }
+
+  .occDetail {
+    padding-left: 14px;
+  }
+
+  /* The datatake id, its product code and its sensing window shared a column with the status block
+     beside them, which left the id ellipsised. Stacked, each gets the full width. */
+  .dtRow {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 8px;
+    padding: 10px 0;
+    font-size: 12px;
+  }
+
+  .dtId {
+    overflow-wrap: anywhere;
+  }
+
+  .dtProduct,
+  .dtTime {
+    font-size: 11px;
+  }
+
+  .dtStatus {
+    grid-column: 2;
+    grid-row: auto;
+    align-self: start;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 7px;
+    text-align: left;
+  }
+
+  .dtStatusLabel {
+    font-size: 10px;
+  }
+
+  .dtPct {
+    font-size: 12px;
+  }
+
+  /* ---------- the proposal badge ---------- */
+  .badge {
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100vw - 20px);
+    font-size: 9.5px;
+    padding: 7px 10px;
+  }
+
+  .badgeTail {
+    display: none;
+  }
+}
+
+/* Large phones and below (≤430px) — the seven day columns are at their tightest here. */
+@media (max-width: 430px) {
+  .inner {
+    padding: 18px 10px 40px;
+  }
+
+  .calWrap {
+    padding: 7px;
+  }
+
+  .dow span {
+    font-size: 9px;
+  }
+
+  .cell {
+    padding: 4px 3px;
+    border-radius: 6px;
+  }
+
+  .cellNum {
+    font-size: 11px;
   }
 }

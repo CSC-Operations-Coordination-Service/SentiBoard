@@ -1,7 +1,7 @@
-import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, X, ChevronRight as ChevronRightSm } from "lucide-react";
+import { useState, useMemo, useId, useRef } from "react";
+import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, ChevronRight as ChevronRightSm } from "lucide-react";
 import EventIcon from "@/components/EventIcon";
-import { Collapse, PageDescription } from "@/components/ui";
+import { Collapse, PageDescription, useMediaQuery } from "@/components/ui";
 import { EVENTS_LOG_DESCRIPTION } from "@/data/copy";
 import type { IssueType } from "@/data/mock";
 import "@/styles/events-log-v3.css";
@@ -154,11 +154,22 @@ const MISSION_KEYS = Object.keys(MISSIONS) as MissionKey[];
 const TYPE_KEYS = Object.keys(TYPES) as TypeKey[];
 const STATUS_KEYS = Object.keys(COMPLETENESS) as StatusKey[];
 
+/* Matches the nav's own breakpoint so the burger and the one-column layout arrive together. */
+const NARROW = "(max-width: 760px)";
+
+const FILTER_TOTAL = MISSION_KEYS.length + TYPE_KEYS.length;
+
 export default function EventsLogV3() {
   const [activeMissions, setActiveMissions] = useState<MissionKey[]>([...MISSION_KEYS]);
   const [activeTypes, setActiveTypes] = useState<TypeKey[]>([...TYPE_KEYS]);
   const [selectedDay, setSelectedDay] = useState<number | null>(4);
   const [openOccurrence, setOpenOccurrence] = useState<number | null>(2);
+
+  const narrow = useMediaQuery(NARROW);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  const activeCount = activeMissions.length + activeTypes.length;
 
   const toggleMission = (m: MissionKey) =>
     setActiveMissions((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
@@ -190,7 +201,70 @@ export default function EventsLogV3() {
   const selectDay = (d: number) => {
     setSelectedDay(d);
     setOpenOccurrence(null);
+    // Side by side, picking a day visibly refills the panel next to the grid. Stacked, the panel
+    // is below the fold, so the tap would appear to do nothing at all — bring it into view.
+    if (narrow) {
+      requestAnimationFrame(() =>
+        panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      );
+    }
   };
+
+  const filters = (
+    <div className="sb2-filters">
+      <div className="sb2-fgroup">
+        <span className="sb2-flabel">MISSION</span>
+        {MISSION_KEYS.map((key) => {
+          const on = activeMissions.includes(key);
+          return (
+            <button
+              key={key}
+              className={`sb2-ftab ${on ? "on" : ""}`}
+              /* Only set when on. The off state's colour is the stylesheet's business, and it
+                 differs per layout: a transparent underline on a desktop, a visible pill border
+                 on a phone — an inline "transparent" would flatten the latter. */
+              style={on ? { borderColor: MISSIONS[key].color } : undefined}
+              onClick={() => toggleMission(key)}
+              title={MISSIONS[key].label}
+              aria-pressed={on}
+            >
+              <span className="sb2-dotlegend" style={{ background: MISSIONS[key].color }} />
+              {key}
+            </button>
+          );
+        })}
+      </div>
+      <div className="sb2-fgroup">
+        <span className="sb2-flabel">TYPE</span>
+        {TYPE_KEYS.map((key) => {
+          const on = activeTypes.includes(key);
+          return (
+            <button
+              key={key}
+              className={`sb2-ftab ${on ? "on" : ""}`}
+              onClick={() => toggleType(key)}
+              aria-pressed={on}
+            >
+              <EventIcon type={TYPES[key].issue} size={12} /> {key}
+            </button>
+          );
+        })}
+      </div>
+      <div className="sb2-fgroup">
+        {/* the space before the break matters: on a phone the <br> is hidden and the two words
+            run together into one line, so they need something between them */}
+        <span className="sb2-flabel">COMPLETENESS <br />STATUS</span>
+        <div className="sb2-legend">
+          {STATUS_KEYS.map((key) => (
+            <div className="sb2-legend-item" key={key}>
+              <span className="sb2-dotlegend" style={{ background: COMPLETENESS[key].color }} />
+              {COMPLETENESS[key].label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="sb2-root">
@@ -199,62 +273,35 @@ export default function EventsLogV3() {
           <div className="sb2-h1">July 2026</div>
         </div>
         <div className="sb2-monthnav">
-          <button aria-label="Previous month"><ChevronLeft size={14} /></button>
+          <button aria-label="Previous month"><ChevronLeft size={narrow ? 18 : 14} /></button>
           <div className="lbl">{filtered.length} events</div>
-          <button aria-label="Next month"><ChevronRight size={14} /></button>
+          <button aria-label="Next month"><ChevronRight size={narrow ? 18 : 14} /></button>
         </div>
       </div>
 
-      <PageDescription>{EVENTS_LOG_DESCRIPTION}</PageDescription>
+      <PageDescription defaultOpen={!narrow}>{EVENTS_LOG_DESCRIPTION}</PageDescription>
 
-      <div className="sb2-filters">
-        <div className="sb2-fgroup">
-          <span className="sb2-flabel">MISSION</span>
-          {MISSION_KEYS.map((key) => {
-            const on = activeMissions.includes(key);
-            return (
-              <button
-                key={key}
-                className={`sb2-ftab ${on ? "on" : ""}`}
-                style={{ borderColor: on ? MISSIONS[key].color : "transparent" }}
-                onClick={() => toggleMission(key)}
-                title={MISSIONS[key].label}
-                aria-pressed={on}
-              >
-                <span className="sb2-dotlegend" style={{ background: MISSIONS[key].color }} />
-                {key}
-              </button>
-            );
-          })}
-        </div>
-        <div className="sb2-fgroup">
-          <span className="sb2-flabel">TYPE</span>
-          {TYPE_KEYS.map((key) => {
-            const on = activeTypes.includes(key);
-            return (
-              <button
-                key={key}
-                className={`sb2-ftab ${on ? "on" : ""}`}
-                onClick={() => toggleType(key)}
-                aria-pressed={on}
-              >
-                <EventIcon type={TYPES[key].issue} size={12} /> {key}
-              </button>
-            );
-          })}
-        </div>
-        <div className="sb2-fgroup">
-          <span className="sb2-flabel">COMPLETENESS<br />STATUS</span>
-          <div className="sb2-legend">
-            {STATUS_KEYS.map((key) => (
-              <div className="sb2-legend-item" key={key}>
-                <span className="sb2-dotlegend" style={{ background: COMPLETENESS[key].color }} />
-                {COMPLETENESS[key].label}
-              </div>
-            ))}
+      {narrow ? (
+        <>
+          <div className="sb2-filter-toggle-row">
+            <button
+              type="button"
+              className="sb2-filter-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls={filtersId}
+              onClick={() => setFiltersOpen((v) => !v)}
+            >
+              <SlidersHorizontal size={16} aria-hidden />
+              FILTERS
+              <span className="count">{activeCount}/{FILTER_TOTAL}</span>
+              <ChevronDown className="chev" size={17} aria-hidden />
+            </button>
           </div>
-        </div>
-      </div>
+          <Collapse open={filtersOpen} id={filtersId}>{filters}</Collapse>
+        </>
+      ) : (
+        filters
+      )}
 
       <div className="sb2-body">
         <div className="sb2-grid">
@@ -294,7 +341,7 @@ export default function EventsLogV3() {
           </div>
         </div>
 
-        <div className="sb2-panel">
+        <div className="sb2-panel" ref={panelRef}>
           <div className="sb2-panel-head">
             <div>
               <div className="sb2-panel-day">{selectedDay ? String(selectedDay).padStart(2, "0") : "--"} JUL</div>
@@ -362,7 +409,13 @@ export default function EventsLogV3() {
         </div>
       </div>
 
-      <span className="ex-badge">Events proposal · Mission manifest — mission tiles + side panel</span>
+      {/* The badge is fixed over the page, so on a phone the restatement of what the proposal
+          looks like is dropped and only its name is kept — otherwise the caption wraps to three
+          lines and sits on top of the first occurrence. */}
+      <span className="ex-badge sb2-badge">
+        Events proposal · Mission manifest
+        <span className="tail"> — mission tiles + side panel</span>
+      </span>
     </div>
   );
 }

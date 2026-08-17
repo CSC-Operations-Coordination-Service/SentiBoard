@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { NavLink, Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { NavLink, Link, useLocation } from "react-router-dom";
+import { Menu, X } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
 import Partners from "./Partners";
 
@@ -14,13 +15,32 @@ const LINKS = [
 
 export default function Nav() {
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+
+  // Below 760px the links become a sheet that overlays the page, so it has to be dismissed
+  // as well as opened. Each link already closes it on click, but a route reached any other
+  // way (browser back, a link inside the page) would otherwise leave the sheet covering the
+  // destination.
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+
   return (
     <header className={"nav" + (open ? " open" : "")}>
       <div className="nav-inner wrap">
         <Link to="/" className="brand" onClick={() => setOpen(false)} aria-label="SentiBoard — home">
           <img className="brand-logo" src="/assets/img/sentiboard.png" alt="SentiBoard" />
         </Link>
-        <nav className="nav-links">
+        <nav className="nav-links" id="nav-links">
           {LINKS.map((l) => (
             <NavLink key={l.to} to={l.to} end={l.end} onClick={() => setOpen(false)}
               className={({ isActive }) => (isActive ? "active" : "")}>
@@ -31,8 +51,14 @@ export default function Nav() {
         <div className="nav-right">
           <div className="nav-partners"><Partners compact /></div>
           <ThemeToggle />
-          <button className="nav-burger" aria-label="Menu" onClick={() => setOpen((o) => !o)}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+          <button
+            className="nav-burger"
+            aria-label={open ? "Close menu" : "Menu"}
+            aria-expanded={open}
+            aria-controls="nav-links"
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <X size={22} aria-hidden /> : <Menu size={22} aria-hidden />}
           </button>
         </div>
       </div>

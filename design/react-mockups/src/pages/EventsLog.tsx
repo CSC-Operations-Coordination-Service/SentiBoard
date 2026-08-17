@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useId, useMemo, useState } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 import EventIcon from "@/components/EventIcon";
-import { PageDescription } from "@/components/ui";
+import { Collapse, PageDescription, useMediaQuery } from "@/components/ui";
 import { EVENTS_LOG_DESCRIPTION } from "@/data/copy";
 import { ISSUE_COLORS, IssueType } from "@/data/mock";
 import "@/styles/events-log.css";
@@ -232,10 +232,26 @@ const KIND_KEYS = Object.keys(KIND_LABEL) as IssueType[];
 /** A datatake states its own completeness only when it disagrees with its event. */
 const compOf = (e: LogEvent, it: ImpactedItem): CompKey => it.comp ?? COMP_FROM_STATUS[e.status];
 
+/* Below this width the page is one column and the filter bar is folded behind a toggle. It
+   matches the nav's own breakpoint, so the burger and the collapsed filters appear together
+   rather than one layout changing under the other. */
+const NARROW = "(max-width: 760px)";
+
+const FILTER_TOTAL = MISSION_KEYS.length + KIND_KEYS.length + COMP_KEYS.length;
+
 export default function EventsLog() {
   const [missions, setMissions] = useState<MissionKey[]>([...MISSION_KEYS]);
   const [comps, setComps] = useState<CompKey[]>([...COMP_KEYS]);
   const [kinds, setKinds] = useState<IssueType[]>([...KIND_KEYS]);
+
+  // Fourteen chips are three tidy rows on a desktop and most of a phone's first screen, so on
+  // a narrow viewport they start folded away and the log — the reason for the page — is what
+  // loads at the top. The chip count on the toggle is what tells you filters are in play
+  // while they are out of sight.
+  const narrow = useMediaQuery(NARROW);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersId = useId();
+  const activeCount = missions.length + kinds.length + comps.length;
 
   const toggleMission = (m: MissionKey) =>
     setMissions((p) => (p.includes(m) ? p.filter((x) => x !== m) : [...p, m]));
@@ -268,8 +284,64 @@ export default function EventsLog() {
   const weekday = (d: number) =>
     new Date(2026, MONTH_INDEX, d).toLocaleDateString("en-GB", { weekday: "short" });
 
+  /* The group labels are hidden on a desktop, where the three sets sit side by side in one row
+     and read as three sets. Stacked on a phone they need naming. */
+  const filterbar = (
+    <section className="wrap evl-filterbar">
+      <div className="filters">
+        <span className="evl-flabel">Mission</span>
+        {MISSION_KEYS.map((k) => {
+          const on = missions.includes(k);
+          return (
+            <button key={k} className={"chipbtn" + (on ? " on" : "")} onClick={() => toggleMission(k)}
+              title={MISSIONS[k].label} aria-pressed={on}
+              style={on ? { background: MISSIONS[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
+              <span className="evl-sw" style={{ background: on ? CHIP_INK : MISSIONS[k].color }} />
+              {k}
+            </button>
+          );
+        })}
+      </div>
+      <div className="filters">
+        <span className="evl-flabel">Event type</span>
+        {KIND_KEYS.map((k) => {
+          const on = kinds.includes(k);
+          const color = ISSUE_COLORS[k];
+          return (
+            <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleKind(k)}
+              aria-pressed={on}
+              style={on ? { background: color, borderColor: "transparent", color: CHIP_INK } : {}}>
+              <span style={{ color: on ? CHIP_INK : color, display: "inline-flex" }}>
+                <EventIcon type={k} size={12} />
+              </span>
+              {KIND_LABEL[k]}
+            </button>
+          );
+        })}
+      </div>
+      <div className="filters">
+        <span className="evl-flabel">Completeness</span>
+        {COMP_KEYS.map((k) => {
+          const on = comps.includes(k);
+          return (
+            <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleComp(k)}
+              aria-pressed={on}
+              style={on ? { background: COMPLETENESS[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
+              <span style={{ color: on ? CHIP_INK : COMPLETENESS[k].color, display: "inline-flex" }}>
+                <StatusIcon comp={k} ink={on ? COMPLETENESS[k].color : "var(--bg-2)"} />
+              </span>
+              {COMPLETENESS[k].label}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+
   return (
     <>
+      {/* On a phone the header is reordered by CSS so the month selector — a control — comes
+          before the prose, and the Description panel arrives collapsed. */}
       <div className="evl-head">
         <div className="wrap">
           <div className="evl-title-row"><h1>Events</h1></div>
@@ -277,60 +349,37 @@ export default function EventsLog() {
             Events over the past three months that could impede data production — planned
             calibration activities, manoeuvres or anomalies — with the products they impact.
           </p>
-          <PageDescription>{EVENTS_LOG_DESCRIPTION}</PageDescription>
+          <PageDescription defaultOpen={!narrow}>{EVENTS_LOG_DESCRIPTION}</PageDescription>
           <div className="evl-monthnav">
-            <button aria-label="Previous month"><ChevronLeft size={15} /></button>
+            <button aria-label="Previous month"><ChevronLeft size={narrow ? 18 : 15} /></button>
             <span className="label">{MONTH_LABEL}</span>
-            <button aria-label="Next month"><ChevronRight size={15} /></button>
+            <button aria-label="Next month"><ChevronRight size={narrow ? 18 : 15} /></button>
           </div>
         </div>
       </div>
 
       {/* ---------- filters ---------- */}
-      <section className="wrap evl-filterbar">
-        <div className="filters">
-          {MISSION_KEYS.map((k) => {
-            const on = missions.includes(k);
-            return (
-              <button key={k} className={"chipbtn" + (on ? " on" : "")} onClick={() => toggleMission(k)}
-                title={MISSIONS[k].label}
-                style={on ? { background: MISSIONS[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
-                <span className="evl-sw" style={{ background: on ? CHIP_INK : MISSIONS[k].color }} />
-                {k}
-              </button>
-            );
-          })}
-        </div>
-        <div className="filters">
-          {KIND_KEYS.map((k) => {
-            const on = kinds.includes(k);
-            const color = ISSUE_COLORS[k];
-            return (
-              <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleKind(k)}
-                style={on ? { background: color, borderColor: "transparent", color: CHIP_INK } : {}}>
-                <span style={{ color: on ? CHIP_INK : color, display: "inline-flex" }}>
-                  <EventIcon type={k} size={12} />
-                </span>
-                {KIND_LABEL[k]}
-              </button>
-            );
-          })}
-        </div>
-        <div className="filters">
-          {COMP_KEYS.map((k) => {
-            const on = comps.includes(k);
-            return (
-              <button key={k} className={"chipbtn chip-ico" + (on ? " on" : "")} onClick={() => toggleComp(k)}
-                style={on ? { background: COMPLETENESS[k].color, borderColor: "transparent", color: CHIP_INK } : {}}>
-                <span style={{ color: on ? CHIP_INK : COMPLETENESS[k].color, display: "inline-flex" }}>
-                  <StatusIcon comp={k} ink={on ? COMPLETENESS[k].color : "var(--bg-2)"} />
-                </span>
-                {COMPLETENESS[k].label}
-              </button>
-            );
-          })}
-        </div>
-      </section>
+      {narrow ? (
+        <>
+          <div className="wrap evl-filter-toggle-row">
+            <button
+              type="button"
+              className="evl-filter-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls={filtersId}
+              onClick={() => setFiltersOpen((v) => !v)}
+            >
+              <SlidersHorizontal size={16} aria-hidden />
+              Filters
+              <span className="count">{activeCount}/{FILTER_TOTAL}</span>
+              <ChevronDown className="chev" size={17} aria-hidden />
+            </button>
+          </div>
+          <Collapse open={filtersOpen} id={filtersId}>{filterbar}</Collapse>
+        </>
+      ) : (
+        filterbar
+      )}
 
       {/* ---------- day-grouped log ---------- */}
       <section className="wrap evl-log">
@@ -400,6 +449,10 @@ export default function EventsLog() {
                                       title={`${it.id} — ${comp.label}`}
                                     >
                                       {it.id} <span className="hash">[{it.hash}]</span>
+                                      {/* The dot alone carries completeness on a desktop, where
+                                          the title attribute spells it out on hover. Touch has no
+                                          hover, so on a phone the state is named in full. */}
+                                      <span className="state">{comp.label}</span>
                                       <span className="dot" style={{ background: comp.color }} />
                                     </a>
                                   );
@@ -418,7 +471,7 @@ export default function EventsLog() {
         ))}
       </section>
 
-      <span className="ex-badge">Events proposal · Chronological log</span>
+      <span className="ex-badge evl-badge">Events proposal · Chronological log</span>
     </>
   );
 }

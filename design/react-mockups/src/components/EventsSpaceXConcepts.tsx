@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/theme";
+import { Collapse, useMediaQuery } from "@/components/ui";
 import { PERIODS, inPeriod, type PeriodId } from "@/data/period";
 
 /* =============================================================================
@@ -411,18 +412,26 @@ function dayStatus(events: MissionEvent[]): DayStatus {
   return "NOMINAL";
 }
 
-/** Greedy lane packing: overlapping events on one mission stack rather than hide each other. */
-function packLanes(events: MissionEvent[]): { event: MissionEvent; lane: number }[] {
+/** Greedy lane packing: overlapping events on one mission stack rather than hide each other.
+ *
+ *  `minSpanMs` is the duration a block occupies on screen even when its real duration is shorter —
+ *  on a phone every block is held to a minimum tappable width, so two 90-minute events hours apart
+ *  render as boxes that overlap even though their times do not. Packing has to reserve the width
+ *  the block will actually take, or the two land in one lane and collide. Zero on a desktop, where
+ *  a block is drawn at its true width. */
+function packLanes(events: MissionEvent[], minSpanMs = 0): { event: MissionEvent; lane: number }[] {
   const laneEnds: number[] = [];
   return [...events]
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .map((event) => {
-      let lane = laneEnds.findIndex((end) => end <= event.start.getTime());
+      const from = event.start.getTime();
+      const until = Math.max(event.end.getTime(), from + minSpanMs);
+      let lane = laneEnds.findIndex((end) => end <= from);
       if (lane === -1) {
         lane = laneEnds.length;
         laneEnds.push(0);
       }
-      laneEnds[lane] = event.end.getTime();
+      laneEnds[lane] = until;
       return { event, lane };
     });
 }
@@ -602,11 +611,18 @@ function ConceptA({
   year,
   month,
   onOpen,
+  /** Vertical distance between stacked lanes. Bigger on a phone, where a block has to be tall
+   *  enough to hit with a thumb; the block's own height comes from CSS at the same breakpoint. */
+  pitch,
+  /** The CSS minimum block width, as a percentage of the month — see packLanes. */
+  minBlockPct,
 }: {
   events: MissionEvent[];
   year: number;
   month: number;
   onOpen: (e: MissionEvent) => void;
+  pitch: number;
+  minBlockPct: number;
 }) {
   const total = daysInMonth(year, month);
   const monthStart = utc(year, month, 1).getTime();
@@ -633,7 +649,7 @@ function ConceptA({
           </div>
 
           {MISSIONS.map((mission) => {
-            const packed = packLanes(events.filter((e) => e.mission === mission));
+            const packed = packLanes(events.filter((e) => e.mission === mission), (minBlockPct / 100) * span);
             const laneCount = Math.max(1, ...packed.map((p) => p.lane + 1));
             return (
               <div className="evx-gantt-row" key={mission}>
@@ -641,7 +657,7 @@ function ConceptA({
                   <b>{mission.replace("Sentinel-", "S")}</b>
                   <span>{packed.length} EV</span>
                 </div>
-                <div className="evx-track-plot" style={{ height: laneCount * 30 + 10 }}>
+                <div className="evx-track-plot" style={{ height: laneCount * pitch + 10 }}>
                   {days.map((d) => {
                     const wd = dowIndex(utc(year, month, d));
                     return (
@@ -665,7 +681,7 @@ function ConceptA({
                         style={{
                           left: `${left}%`,
                           width: `${width}%`,
-                          top: lane * 30 + 5,
+                          top: lane * pitch + 5,
                           ["--k" as string]: KIND_VAR[event.kind],
                         }}
                         onClick={() => onOpen(event)}
@@ -755,6 +771,18 @@ function ConceptB({
 
 type View = "A" | "B";
 
+/* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
+const NARROW = "(max-width: 760px)";
+
+/** Lane pitch for concept A — see the `pitch` prop. */
+const LANE_PITCH = { wide: 30, narrow: 52 };
+
+/* The phone rule `.evx-block { min-width: 44px }` expressed as a share of the month, so lane
+   packing can reserve it. The narrow plot is at its narrowest 680px minus the 74px mission
+   column, so 44px is ~7.3% of the axis; 7.5 leaves a hair of clearance. Wider viewports in this
+   band only spread the axis further, which makes the reservation more generous, never less. */
+const MIN_BLOCK_PCT = { wide: 0, narrow: 7.5 };
+
 export default function EventsSpaceXConcepts() {
   // Theme is declared at the top of the app; this page only reads it.
   const { theme } = useTheme();
@@ -764,6 +792,12 @@ export default function EventsSpaceXConcepts() {
   const [period, setPeriod] = useState<PeriodId>("custom"); // "custom" = the whole displayed month
   const [openEvent, setOpenEvent] = useState<MissionEvent | null>(null);
   const [openDay, setOpenDay] = useState<number | null>(null);
+
+  /* The colour key is reference material, not a control: on a phone it is seven rows of legend
+     between the tabs and the actual month, so it folds away there. */
+  const narrow = useMediaQuery(NARROW);
+  const [legendOpen, setLegendOpen] = useState(false);
+  const legendId = useId();
 
   const step = useCallback((delta: number) => {
     setOpenEvent(null);
@@ -804,6 +838,21 @@ export default function EventsSpaceXConcepts() {
       .filter((e) => eventDays(e, year, month).includes(openDay))
       .sort((a, b) => a.start.getTime() - b.start.getTime());
   }, [openDay, events, year, month]);
+
+  const legend = (
+    <div className="evx-legend">
+      <span className="evx-legend-l">EVENT TYPE</span>
+      {(Object.keys(KIND_VAR) as EventKind[]).map((k) => (
+        <span className="evx-legend-i" key={k}>
+          <i style={{ background: KIND_VAR[k] }} />
+          {k}
+        </span>
+      ))}
+      <span className="evx-legend-sep" aria-hidden />
+      <span className="evx-legend-i"><i className="outline" />PLANNED</span>
+      <span className="evx-legend-i"><i style={{ background: "var(--evx-dim)" }} />UNPLANNED</span>
+    </div>
+  );
 
   return (
     <div className="evx" data-theme={theme === "light" ? "light" : "dark"}>
@@ -863,24 +912,38 @@ export default function EventsSpaceXConcepts() {
           </div>
         </div>
 
-        <div className="evx-legend">
-          <span className="evx-legend-l">EVENT TYPE</span>
-          {(Object.keys(KIND_VAR) as EventKind[]).map((k) => (
-            <span className="evx-legend-i" key={k}>
-              <i style={{ background: KIND_VAR[k] }} />
-              {k}
-            </span>
-          ))}
-          <span className="evx-legend-sep" aria-hidden />
-          <span className="evx-legend-i"><i className="outline" />PLANNED</span>
-          <span className="evx-legend-i"><i style={{ background: "var(--evx-dim)" }} />UNPLANNED</span>
-        </div>
+        {narrow && (
+          <button
+            type="button"
+            className="evx-legend-toggle"
+            aria-expanded={legendOpen}
+            aria-controls={legendId}
+            onClick={() => setLegendOpen((v) => !v)}
+          >
+            LEGEND
+            <i className="evx-legend-chev" aria-hidden />
+          </button>
+        )}
+
+        {narrow ? <Collapse open={legendOpen} id={legendId}>{legend}</Collapse> : legend}
 
         {/* ---------------- the concept ---------------- */}
         {events.length === 0 ? (
           <p className="evx-none">NO EVENTS IN {MONTH_ABBR[month]} {year} FOR THE SELECTED PERIOD</p>
         ) : view === "A" ? (
-          <ConceptA events={events} year={year} month={month} onOpen={setOpenEvent} />
+          <>
+            {/* A scrolls sideways by nature — a month of days cannot be shown at phone width and
+                still be readable. Say so, rather than leaving the cut-off edge to be noticed. */}
+            {narrow && <p className="evx-scrollhint">SWIPE THE TIMELINE TO MOVE THROUGH THE MONTH →</p>}
+            <ConceptA
+              events={events}
+              year={year}
+              month={month}
+              onOpen={setOpenEvent}
+              pitch={narrow ? LANE_PITCH.narrow : LANE_PITCH.wide}
+              minBlockPct={narrow ? MIN_BLOCK_PCT.narrow : MIN_BLOCK_PCT.wide}
+            />
+          </>
         ) : (
           <ConceptB events={events} year={year} month={month} onOpen={setOpenDay} />
         )}
@@ -1220,10 +1283,132 @@ const CSS = `
   .evx-wrap { padding: 20px 14px 44px; }
   .evx-counters { grid-template-columns: repeat(2, 1fr); }
   .evx-bar { align-items: stretch; }
-  .evx-grid-tiles { grid-template-columns: repeat(7, minmax(64px, 1fr)); overflow-x: auto; }
-  .evx-tile { min-height: 88px; }
   .evx-backdrop.center { padding: 0; }
   .evx-popover { max-height: 100vh; }
   .evx-log { grid-template-columns: 1fr; }
+}
+
+/* =============================================================================
+   MOBILE (≤760px) — one column, thumb-sized targets.
+
+   Breakpoint matched to the app nav's, so the burger and this layout arrive together. Concept B
+   is made to FIT the width; concept A keeps its horizontal scroll, because a 31-day time axis
+   cannot be shown at phone width and stay readable — what changes there is that the scroll
+   becomes usable: the mission column stays put, and the blocks become thumb-sized.
+   ============================================================================= */
+@media (max-width: 760px) {
+  .evx-wrap { padding: 18px 14px 40px; }
+
+  /* ---------- header ---------- */
+  .evx-head { flex-direction: column; gap: 14px; }
+  .evx-h1 { margin-top: 7px; }
+  .evx-lede { margin-top: 8px; font-size: 13.5px; line-height: 1.5; max-width: none; }
+  .evx-field label { font-size: 9px; }
+
+  /* Five counters in two columns left a dangling empty cell; the last one spans instead. Denser
+     than the desktop cell too — three rows of counters is the largest single block standing
+     between the title and the month, which is what the page is actually for. */
+  .evx-counters { width: 100%; grid-template-columns: repeat(2, 1fr); }
+  .evx-counters div { gap: 3px; padding: 7px 11px; }
+  .evx-counters div:last-child { grid-column: 1 / -1; }
+  .evx-counters b { font-size: 17px; }
+  .evx-counters span { font-size: 8.5px; letter-spacing: 0.14em; }
+
+  /* ---------- control bar ---------- */
+  .evx-bar { flex-direction: column; align-items: stretch; gap: 12px; margin: 18px 0 12px; }
+  .evx-tabs { width: 100%; }
+  .evx-tabs button { flex: 1; min-height: 44px; padding: 10px 6px; font-size: 9.5px; letter-spacing: 0.08em; }
+  .evx-controls { flex-direction: column; align-items: stretch; gap: 12px; }
+  .evx-month { width: 100%; }
+  .evx-month button { flex: 0 0 44px; width: 44px; height: 44px; }
+  .evx-month-l { flex: 1; height: 44px; justify-content: center; padding: 0 8px; font-size: 12.5px; }
+  .evx-field select { width: 100%; min-width: 0; min-height: 44px; padding: 11px 30px 11px 12px; font-size: 12px; }
+
+  /* ---------- legend, behind its toggle ---------- */
+  .evx-legend-toggle {
+    display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px;
+    margin-bottom: 12px; padding: 12px 14px;
+    border: 1px solid var(--evx-line); background: var(--evx-panel); color: var(--evx-text); cursor: pointer;
+    font-family: var(--evx-mono); font-size: 10.5px; letter-spacing: 0.18em;
+  }
+  .evx-legend-chev {
+    width: 7px; height: 7px; border-right: 1px solid var(--evx-accent); border-bottom: 1px solid var(--evx-accent);
+    transform: rotate(45deg) translate(-2px, -2px); transition: transform 0.2s ease;
+  }
+  .evx-legend-toggle[aria-expanded="true"] .evx-legend-chev { transform: rotate(225deg) translate(-2px, -2px); }
+  .evx-legend { gap: 10px 14px; padding: 0 0 14px; margin-bottom: 0; border-top: 0; border-bottom: 0; }
+  .evx-legend-l { flex: 0 0 100%; }
+  .evx-legend-sep { display: none; }
+  .evx-legend-i { font-size: 10.5px; }
+  .evx-legend-i i { width: 10px; height: 10px; }
+
+  /* ---------- concept A ---------- */
+  .evx-scrollhint {
+    margin: 0 0 8px; font-family: var(--evx-mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--evx-faint);
+  }
+  .evx-gantt-scroll { -webkit-overflow-scrolling: touch; }
+  /* 980px put five of thirty-one days on screen. 680 gives ~20px a day — enough for the tick
+     numbers to stay legible while roughly half the month is visible at once. */
+  .evx-gantt-inner { min-width: 680px; }
+  .evx-gantt-row { grid-template-columns: 74px 1fr; }
+  /* The mission stays anchored while the time axis scrolls under it: without this you lose track
+     of which satellite's row you are reading as soon as you swipe. */
+  .evx-track-label {
+    position: sticky; left: 0; z-index: 2; gap: 2px; padding: 8px 9px;
+    flex-direction: column; align-items: flex-start; justify-content: center;
+    background: var(--evx-panel);
+  }
+  .evx-gantt-head .evx-track-label { background: var(--evx-panel-2); }
+  .evx-track-label b { font-size: 12px; }
+  .evx-track-label span { font-size: 8.5px; }
+  /* 44px tall to be tappable, and 44px wide at minimum — an event lasting 90 minutes is 0.9% of
+     the month, which is a 6px sliver no thumb can hit. */
+  .evx-block { height: 44px; min-width: 44px; padding: 0 8px; font-size: 10px; }
+  .evx-block-t { line-height: 42px; }
+
+  /* ---------- concept B ---------- */
+  /* minmax(0,1fr) so the seven columns fit the width instead of scrolling sideways — the day
+     header above them does not scroll, so any horizontal offset desynced the two. */
+  .evx-grid-tiles { grid-template-columns: repeat(7, minmax(0, 1fr)); overflow-x: visible; }
+  .evx-grid-dow span { padding: 8px 4px; font-size: 8px; letter-spacing: 0.06em; text-align: center; }
+  .evx-tile { min-height: 76px; gap: 4px; padding: 7px 5px; align-items: center; }
+  .evx-tile-d { font-size: 14px; }
+  /* The status word does not fit a ~50px tile ("MAINTENANCE" alone is wider). It is already
+     carried by the bar across the top of the tile, which is thickened to compensate, and named
+     in full in the day log the tile opens. */
+  .evx-tile-s { display: none; }
+  .evx-tile::before { height: 3px; }
+  .evx-tile.nominal::before { opacity: 0.5; }
+  .evx-tile-pills { gap: 2px; align-self: stretch; }
+  .evx-tile-pills i { min-width: 6px; max-width: none; height: 4px; }
+  .evx-tile-dtk { font-size: 8px; letter-spacing: 0.04em; }
+
+  /* ---------- overlays ---------- */
+  .evx-popover { max-height: 100dvh; }
+  .evx-slideover { width: 100%; height: 100dvh; border-left: 0; }
+  .evx-panel-head { padding: 13px 14px; }
+  .evx-panel-body { padding: 14px 14px 24px; }
+  .evx-x { width: 44px; height: 44px; }
+  .evx-ev-title { font-size: 17px; }
+  .evx-ev-sum { font-size: 13.5px; }
+  .evx-ev-kvs b { font-size: 11.5px; }
+
+  /* The datatake id is ~30 mono characters. Sharing one row with the bar, the percentage and the
+     tag left it ellipsised to nothing, so it takes a row of its own. */
+  .evx-dtk li { grid-template-columns: 1fr auto auto; gap: 7px 9px; padding: 9px 0; }
+  .evx-dtk-id { grid-column: 1 / -1; font-size: 10.5px; overflow-wrap: anywhere; }
+  .evx-dtk-bar { height: 5px; }
+
+  .evx-foot { gap: 6px; font-size: 9px; }
+}
+
+/* Large phones and below (≤430px) — the seven day columns are at their tightest here. */
+@media (max-width: 430px) {
+  .evx-wrap { padding: 16px 10px 36px; }
+  .evx-tabs button { font-size: 9px; letter-spacing: 0.05em; padding: 10px 4px; }
+  .evx-tile { min-height: 70px; padding: 6px 3px; }
+  .evx-tile-d { font-size: 13px; }
+  .evx-tile-dtk { font-size: 7.5px; }
+  .evx-grid-dow span { font-size: 7.5px; padding: 7px 2px; }
 }
 `;

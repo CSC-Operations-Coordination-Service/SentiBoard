@@ -3,6 +3,25 @@ import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { COMPLETENESS_LABEL, type Completeness, type Status } from "@/data/mock";
 
+/** Matches a CSS media query from JS, kept in sync as the viewport changes.
+ *
+ *  Layout belongs in CSS; this exists for the cases CSS cannot reach — a panel that should
+ *  start collapsed on a phone and expanded on a desktop, where the difference is an initial
+ *  React state, not a rule. Read synchronously on first render so a component that only
+ *  consults it on mount (a `defaultOpen`, say) gets the right answer without a re-render. */
+export function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(() => window.matchMedia?.(query).matches ?? false);
+  useEffect(() => {
+    const mq = window.matchMedia?.(query);
+    if (!mq) return;
+    setMatches(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setMatches(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [query]);
+  return matches;
+}
+
 /** Fade/slide element into view on scroll (SpaceX-style reveal). */
 export function Reveal({ children, as: Tag = "div", className = "", style }: {
   children: ReactNode; as?: any; className?: string; style?: React.CSSProperties;

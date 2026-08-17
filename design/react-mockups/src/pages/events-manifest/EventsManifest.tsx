@@ -10,9 +10,9 @@
 // shared module to keep honest, and a stakeholder reading the proposal can now follow it top to
 // bottom. Mock-up only — data is local (mock.ts); the shipping page is /v1/events.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
 import {
   ALL_SATELLITES,
   CATEGORIES,
@@ -44,9 +44,12 @@ import {
   type ManifestEvent,
   type Status,
 } from "./mock";
-import { Collapse, PageDescription } from "@/components/ui";
+import { Collapse, PageDescription, useMediaQuery } from "@/components/ui";
 import { EVENTS_DESCRIPTION } from "@/data/copy";
 import s from "./manifest.module.css";
+
+/* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
+const NARROW = "(max-width: 760px)";
 
 // ---------------------------------------------------------------------------
 // Status marks
@@ -186,6 +189,13 @@ export default function EventsManifest() {
   const [openDay, setOpenDay] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  /* Three fields plus five type chips is most of a phone's first screen, and none of it is the
+     month. On a narrow viewport the controls fold away; the head keeps the matching-event count
+     and the reset, so a filter left on is still visible while its controls are not. */
+  const narrow = useMediaQuery(NARROW);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filterFieldsId = useId();
+
   // A satellite from the old mission would contradict the new one, leaving zero results with no
   // visible cause, so changing mission clears it. Conversely a satellite implies its mission —
   // filling it in beats showing "All missions" next to "Sentinel-1A".
@@ -239,6 +249,85 @@ export default function EventsManifest() {
 
   const dayEvents = openDay === null ? [] : byDay.get(openDay) ?? [];
 
+  /* The controls themselves, kept out of the markup below so the narrow layout can put them behind
+     a toggle without the wide layout gaining a wrapper it has no use for. */
+  const filterFields = (
+    <>
+      <div className={s.fieldRow}>
+        <div className={s.field}>
+          <label htmlFor="mf-mission">Mission</label>
+          <select
+            id="mf-mission"
+            className={s.control}
+            value={filters.mission}
+            onChange={(e) => setMission(e.target.value)}
+          >
+            <option value="">All missions</option>
+            {MISSION_NAMES.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className={s.field}>
+          <label htmlFor="mf-satellite">Satellite</label>
+          <select
+            id="mf-satellite"
+            className={s.control}
+            value={filters.satellite}
+            onChange={(e) => setSatellite(e.target.value)}
+            disabled={satelliteDisabled}
+            title={satelliteDisabled ? "Sentinel-5P has a single satellite" : undefined}
+          >
+            <option value="">All satellites</option>
+            {satellites.map((sat) => (
+              <option key={sat} value={sat}>{sat}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className={`${s.field} ${s.fieldWide}`}>
+          <label htmlFor="mf-search">Search</label>
+          <div className={s.withIcon}>
+            <span className={s.lead} aria-hidden><Search size={13} /></span>
+            <input
+              id="mf-search"
+              className={s.control}
+              type="search"
+              placeholder="Event, satellite or datatake ID…"
+              value={filters.query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+            {filters.query && (
+              <button type="button" className={s.clear} onClick={() => setQuery("")} aria-label="Clear search">
+                <X size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className={s.chipRow}>
+        <span className={s.chipRowLabel}>Event type</span>
+        {CATEGORIES.map((c) => {
+          const Icon = CATEGORY_ICONS[c];
+          const on = filters.categories.includes(c);
+          return (
+            <button
+              key={c}
+              type="button"
+              className={`${s.chip} ${on ? s.chipOn : ""}`}
+              onClick={() => toggleCategory(c)}
+              aria-pressed={on}
+            >
+              <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+
   return (
     <div className={s.page}>
       <div className={s.inner}>
@@ -255,7 +344,7 @@ export default function EventsManifest() {
               platform anomalies and ground-segment issues — with the datatakes each one impacts.
               Select a day to open its manifest.
             </p>
-            <PageDescription>{EVENTS_DESCRIPTION}</PageDescription>
+            <PageDescription defaultOpen={!narrow}>{EVENTS_DESCRIPTION}</PageDescription>
           </div>
         </header>
 
@@ -285,80 +374,23 @@ export default function EventsManifest() {
                 <RotateCcw size={12} aria-hidden /> Reset
               </button>
             )}
-          </div>
-
-          <div className={s.fieldRow}>
-            <div className={s.field}>
-              <label htmlFor="mf-mission">Mission</label>
-              <select
-                id="mf-mission"
-                className={s.control}
-                value={filters.mission}
-                onChange={(e) => setMission(e.target.value)}
+            {/* Its own button rather than the whole head row: the reset lives in that row too, and
+                a button cannot be nested inside another button. */}
+            {narrow && (
+              <button
+                type="button"
+                className={s.filtersToggle}
+                aria-expanded={filtersOpen}
+                aria-controls={filterFieldsId}
+                aria-label={filtersOpen ? "Hide filter controls" : "Show filter controls"}
+                onClick={() => setFiltersOpen((v) => !v)}
               >
-                <option value="">All missions</option>
-                {MISSION_NAMES.map((m) => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={s.field}>
-              <label htmlFor="mf-satellite">Satellite</label>
-              <select
-                id="mf-satellite"
-                className={s.control}
-                value={filters.satellite}
-                onChange={(e) => setSatellite(e.target.value)}
-                disabled={satelliteDisabled}
-                title={satelliteDisabled ? "Sentinel-5P has a single satellite" : undefined}
-              >
-                <option value="">All satellites</option>
-                {satellites.map((sat) => (
-                  <option key={sat} value={sat}>{sat}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={`${s.field} ${s.fieldWide}`}>
-              <label htmlFor="mf-search">Search</label>
-              <div className={s.withIcon}>
-                <span className={s.lead} aria-hidden><Search size={13} /></span>
-                <input
-                  id="mf-search"
-                  className={s.control}
-                  type="search"
-                  placeholder="Event, satellite or datatake ID…"
-                  value={filters.query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-                {filters.query && (
-                  <button type="button" className={s.clear} onClick={() => setQuery("")} aria-label="Clear search">
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
+                <ChevronDown size={16} aria-hidden />
+              </button>
+            )}
           </div>
 
-          <div className={s.chipRow}>
-            <span className={s.chipRowLabel}>Event type</span>
-            {CATEGORIES.map((c) => {
-              const Icon = CATEGORY_ICONS[c];
-              const on = filters.categories.includes(c);
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  className={`${s.chip} ${on ? s.chipOn : ""}`}
-                  onClick={() => toggleCategory(c)}
-                  aria-pressed={on}
-                >
-                  <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c}
-                </button>
-              );
-            })}
-          </div>
+          {narrow ? <Collapse open={filtersOpen} id={filterFieldsId}>{filterFields}</Collapse> : filterFields}
         </section>
 
         {/* ---------- month grid ---------- */}
@@ -460,7 +492,12 @@ export default function EventsManifest() {
           </>
         )}
       </aside>
-      <span className="ex-badge">Events proposal · Mission manifest — filters + day drawer</span>
+      {/* The badge is fixed over the page; on a phone the description of the layout is dropped and
+          only the proposal's name kept, or the caption wraps across the content underneath it. */}
+      <span className={`ex-badge ${s.badge}`}>
+        Events proposal · Mission manifest
+        <span className={s.badgeTail}> — filters + day drawer</span>
+      </span>
     </div>
   );
 }
