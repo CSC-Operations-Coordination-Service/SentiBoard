@@ -18,6 +18,8 @@ import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
 import AcquisitionsGlobe from "./pages/AcquisitionsGlobe";
 import DataAvailability from "./pages/DataAvailability";
 import DataAvailabilitySpaceX from "./pages/DataAvailabilitySpaceX";
+import CoverageTimeline from "./pages/coverage-timeline/CoverageTimeline";
+import VersionMatrix from "./pages/version-matrix/VersionMatrix";
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -52,6 +54,8 @@ export default function App() {
           <Route path="/examples/acquisitions-globe" element={<AcquisitionsGlobe />} />
           <Route path="/examples/data-availability" element={<DataAvailability />} />
           <Route path="/examples/data-availability-spacex" element={<DataAvailabilitySpaceX />} />
+          <Route path="/examples/coverage-timeline" element={<CoverageTimeline />} />
+          <Route path="/examples/version-matrix" element={<VersionMatrix />} />
 
           {/* Remaining functional pages — styled placeholders carrying the real feature copy */}
           <Route path="/product-timeliness" element={<StatPage crumb="Product Timeliness" title="Product Timeliness"

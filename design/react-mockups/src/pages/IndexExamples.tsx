@@ -323,10 +323,6 @@ const CARDS = [
 // it stays clear which real page each one is an alternative to.
 const PAGE_CARDS = [
   {
-    to: "/examples/events-log", img: MOD_IMG[2], title: "Events · Chronological log",
-    desc: "The month as an operations log instead of a calendar grid: telemetry strip with counters and a per-day activity pulse, mission + status filters, then events grouped by day with the advisory copy and impacted products in view.",
-  },
-  {
     to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · mission tiles + side panel",
     desc: "The month kept as a grid, but reduced to one dot per event per day and an impact stripe on the days that lost data; picking a day opens a panel where each occurrence expands into the datatakes it hit and how complete they are. Near-black canvas, condensed type, one signal accent.",
   },
@@ -349,12 +345,23 @@ const ACQ_CARDS = [
 
 const AVAIL_CARDS = [
   {
+    to: "/examples/coverage-timeline", img: MOD_IMG[0], title: "Data Availability · Coverage timeline",
+    desc: "Trend rather than snapshot: no donuts at all. A heatmap carries one row per mission and one column per day of the selected range, shaded by that day's mean publication completeness, so an outage reads as the horizontal run it actually is. Sparkline chips per mission over 7/30/90 days carry the number an operator can act on — days since the last gap — and the table below is sorted by most recent GAP rather than chronologically, so what is broken sits at the top. Selecting a cell focuses the table on that mission and day.",
+  },
+  {
     to: "/examples/data-availability-spacex", img: MOD_IMG[3], title: "Data Availability · Telemetry console",
     desc: "The same page read as a launch console: hairline rules instead of panels, 2px radii, and monospace for every identifier, timestamp and figure. A live UTC clock and datatake counters in the header, three donut metrics drawn as thin SVG rings, then a compact table whose rows open the full telemetry record — sensing window, orbit and track, pass direction, footprint corners and the raw metadata as the backend would return it. Its own pitch-dark palette with electric accents, rather than the shared tokens.",
   },
   {
     to: "/examples/data-availability", img: MOD_IMG[1], title: "Data Availability · Filtered breakdown",
     desc: "The datatake list led by three donuts — share by mission, acquisition status, publication status — that describe whatever the filters currently select, so the charts and the rows can never disagree. Mission, satellite, date-range and datatake-ID filters above a sortable table of platform, sensor mode, start time, status and publication completeness.",
+  },
+];
+
+const PROC_CARDS = [
+  {
+    to: "/examples/version-matrix", img: MOD_IMG[3], title: "Processors · Version matrix",
+    desc: "Structured comparison rather than a spatial timeline: no zooming and no panning at all. Rows are processors, columns are baseline versions in sequence, and every row's newest release is right-aligned into the same last column — so that column reads straight down as the current state of the constellation and the ones before it are one, two or three baselines back. Every cell carries the two facts the releases feed actually holds, the baseline version and its release date; the feed has no status field, so the only distinction drawn is the one the dates imply — a filled marker for the baseline in force, hollow for one a later release replaced. A mission filter narrows the rows and \"Current versions only\" collapses the grid to a single column of the most recent release per processor with how long it has been in force. Selecting a cell opens the release beside the grid: release date, the period it covered, what it replaced and what replaced it, release notes, and impacted satellites.",
   },
 ];
 
@@ -405,10 +412,23 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Data Availability page</h2></div>
-          <span className="meta">2 alternatives to /availability</span>
+          <span className="meta">3 alternatives to /availability</span>
         </div>
         <div className="ex-list">
           {AVAIL_CARDS.map((c) => (
+            <Link className="ex-card" to={c.to} key={c.to}>
+              <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
+              <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="section-head" style={{ margin: "56px 0 24px" }}>
+          <div><h2 style={{ fontSize: 24 }}>Processors page</h2></div>
+          <span className="meta">1 alternative to /processors</span>
+        </div>
+        <div className="ex-list">
+          {PROC_CARDS.map((c) => (
             <Link className="ex-card" to={c.to} key={c.to}>
               <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
               <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>

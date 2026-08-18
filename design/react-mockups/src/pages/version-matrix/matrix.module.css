@@ -1,0 +1,682 @@
+/* ============================================================
+   Processors proposal 2 — "Version matrix".
+   Every colour resolves to the SHARED tokens (tokens.css), so this concept follows the
+   app's global dark/light switch with no palette of its own. The four baseline states
+   borrow the status colours global.css already puts on .pill — --ok, --info,
+   --text-mute, --warn — so a cell and its detail pill can never disagree.
+   ============================================================ */
+
+/* -------------------- counters -------------------- */
+.counters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-bottom: 22px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 16px;
+  background: var(--bg-2);
+}
+
+.counterK {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.counterV {
+  font-family: var(--font-mono);
+  font-size: 23px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* The "latest release" counter carries a month-year rather than a figure, which does not fit at the
+   others' size — stepped down so the row of four still reads as one band. */
+.counterV.small { font-size: 17px; }
+
+/* -------------------- controls -------------------- */
+.controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.controlLab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.segmented {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.segmented button {
+  padding: 6px 13px;
+  border: 0;
+  background: var(--bg-2);
+  color: var(--text-mute);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.segmented button:hover { color: var(--text); }
+.segmented button.on { background: var(--accent-grad); color: var(--on-accent); }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+/* The "in force only" switch. A real checkbox underneath, so it is keyboard- and
+   screen-reader-operable; the track and knob are drawn from the label. */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 13px 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.toggle:hover { color: var(--text); border-color: var(--line-strong); }
+.toggle input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+.track {
+  position: relative;
+  width: 30px;
+  height: 16px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--pill-bg);
+  border: 1px solid var(--line-strong);
+  transition: background 0.2s var(--ease), border-color 0.2s var(--ease);
+}
+
+.track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--text-mute);
+  transition: transform 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.toggle.on { color: var(--text); border-color: var(--line-strong); }
+.toggle.on .track { background: var(--accent); border-color: var(--accent); }
+.toggle.on .track::after { transform: translateX(14px); background: var(--on-accent); }
+.toggle input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+.reset:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+.reset:disabled { opacity: 0.4; cursor: default; }
+
+/* -------------------- layout: grid + detail panel -------------------- */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  align-items: start;
+  gap: 18px;
+}
+
+/* -------------------- the matrix -------------------- */
+.panel {
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-3);
+}
+
+.panelTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.panelHint {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+}
+
+.gridScroll { overflow-x: auto; }
+
+/* --cols is set inline from the release depth; --gut is the sticky row-label gutter. */
+.grid {
+  --gut: 188px;
+  min-width: calc(var(--gut) + var(--cols) * 118px);
+  padding-bottom: 4px;
+}
+
+.gridRow {
+  display: grid;
+  grid-template-columns: var(--gut) repeat(var(--cols), minmax(0, 1fr));
+}
+
+/* "In force only" leaves a single column, which stretched across the full panel turns each cell
+   into a wide bar with a version number stranded at one end. Cap it and let a filler column take
+   the slack — the mission bands still span the row because they span to the last line. */
+.grid.one { min-width: 0; }
+
+.grid.one .gridRow {
+  grid-template-columns: var(--gut) minmax(120px, 232px) minmax(0, 1fr);
+}
+
+/* The column axis. Right-aligned history: the newest baseline of EVERY row lands in the
+   last column, so that column reads down as "what each sensor has most recently been
+   given" and the columns to its left are one, two, three baselines back. */
+.axis {
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-2);
+}
+
+.axisCorner {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  padding: 11px 14px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.axisCell {
+  padding: 11px 12px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.axisCell.latest { color: var(--text-dim); }
+
+/* A mission band, so eighteen rows still read as four missions. The stripe spans the whole row, but
+   the LABEL is what sticks — not the band. A sticky box gets to shift only within its containing
+   block (for a grid item, the grid container), and the band already fills that container edge to
+   edge, so it has no slack and would scroll its text off-screen on a phone. The label is narrow, so
+   it has room; `left` matches .rowLab's padding so the two line up. */
+.band {
+  grid-column: 1 / -1;
+  padding: 9px 0;
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.bandLab {
+  position: sticky;
+  left: 14px;
+  display: inline-block;
+  padding: 0 14px;
+  white-space: nowrap;
+}
+
+.band b { font-weight: 500; color: var(--text); }
+.bandCount { color: var(--text-mute); }
+
+.row { border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row:hover .rowLab { background: var(--bg-3); }
+
+.rowLab {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  justify-content: center;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border-right: 1px solid var(--line);
+  transition: background 0.15s var(--ease);
+}
+
+.rowName {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.rowSub {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--text-mute);
+}
+
+.cellWrap {
+  display: flex;
+  align-items: stretch;
+  padding: 6px;
+  min-width: 0;
+}
+
+/* -------------------- a cell -------------------- */
+/* --c is the state colour, set inline. The marker is the left bar plus the dot, so the state
+   survives without colour alone: the four states also differ in dot fill and in label text. */
+.cell {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px 8px 11px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--c);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--c) 8%, var(--bg-2));
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), transform 0.12s var(--ease);
+}
+
+.cell:hover {
+  background: color-mix(in srgb, var(--c) 15%, var(--bg-2));
+  transform: translateY(-1px);
+}
+
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.cell.sel {
+  border-color: var(--accent);
+  border-left-color: var(--c);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.cellVer {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The release date, which is the second of the two facts a cell carries. */
+.cellMeta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cellDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+/* Filled for the baseline in force, hollow for one a later release replaced — so the two read apart
+   without relying on colour alone. */
+.cellDot.hollow {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--c);
+}
+
+/* A slot before a row's history begins. Hatched rather than blank, so a short history reads
+   as "no baseline this far back" and not as a rendering gap. */
+.slotEmpty {
+  flex: 1;
+  min-width: 0;
+  border-radius: var(--r-sm);
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    var(--grid-line) 4px,
+    var(--grid-line) 5px
+  );
+}
+
+/* A row on the roster with nothing published — the matrix's version of the timeline's empty lane. */
+.noneRow {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* -------------------- legend -------------------- */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--c);
+}
+
+.legendItem i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.legendItem i.hollow { background: transparent; box-shadow: inset 0 0 0 1.5px var(--c); }
+.legendNote { color: var(--text-mute); text-transform: none; letter-spacing: 0.04em; }
+.legendCount { margin-left: auto; color: var(--text-mute); }
+
+/* -------------------- detail panel -------------------- */
+.detail {
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  animation: rise var(--dur) var(--ease) both;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail { animation: none; }
+  .cell:hover { transform: none; }
+}
+
+.detailHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 15px;
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.detailTitle { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+.detailEyebrow {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.detailVer {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-mute);
+  cursor: pointer;
+}
+
+.close:hover { color: var(--text); border-color: var(--line-strong); }
+
+.detailBody { padding: 14px 15px 16px; display: flex; flex-direction: column; gap: 16px; }
+
+.kv {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.kvItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 11px;
+  background: var(--bg-2);
+}
+
+.kvK {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.kvV {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+}
+
+/* The baseline's window: its own release date to its successor's, or to the present day. */
+.window {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-3);
+}
+
+.windowLab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.windowVal {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.block { display: flex; flex-direction: column; gap: 7px; }
+
+.blockLab {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.blockBody { font-size: 13px; line-height: 1.55; color: var(--text-dim); }
+.blockBody p { margin: 0 0 7px; }
+.blockBody p:last-child { margin-bottom: 0; }
+.blockNone { font-size: 12.5px; color: var(--text-mute); font-style: italic; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.tag {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-2);
+}
+
+.tag.none { color: var(--text-mute); }
+
+/* Placeholder shown until a cell is picked, so the column does not collapse on load. */
+.detailIdle {
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  padding: 22px 18px;
+  background: var(--bg-2);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+.detailIdle b {
+  display: block;
+  margin-bottom: 7px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* -------------------- empty state -------------------- */
+.empty {
+  padding: 48px 16px;
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-mute);
+}
+
+/* -------------------- responsive -------------------- */
+@media (max-width: 1180px) {
+  /* Below the two-column threshold the panel stops being a side panel and becomes the block
+     under the grid — still sticky-free, still the same markup. */
+  .split { grid-template-columns: minmax(0, 1fr); }
+  .detail, .detailIdle { position: static; }
+  .detailIdle { display: none; }
+}
+
+@media (max-width: 900px) {
+  .counters { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .grid { --gut: 128px; min-width: calc(var(--gut) + var(--cols) * 104px); }
+  .rowSub { display: none; }
+  .controls { gap: 12px; }
+  .control, .toggle, .reset { width: 100%; }
+  .segmented { flex-wrap: wrap; }
+  .segmented button { flex: 1; text-align: center; }
+  .toggle { justify-content: flex-start; }
+  .kv { grid-template-columns: 1fr; }
+  .legend { gap: 10px 14px; }
+  .legendCount { margin-left: 0; width: 100%; }
+}

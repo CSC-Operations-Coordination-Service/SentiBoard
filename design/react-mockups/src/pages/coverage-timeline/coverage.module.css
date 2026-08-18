@@ -1,0 +1,423 @@
+/* ============================================================
+   Data Availability proposal 3 — "Coverage timeline".
+   Every colour here resolves to the SHARED tokens (tokens.css), so this concept
+   follows the app's global dark/light switch exactly like the other two — there is
+   no palette of its own to keep in sync. The heatmap ramp is built with color-mix
+   over --cmp-unavailable / --cmp-partial / --cmp-acquired, which means the scale
+   re-weights itself for each theme without a second set of values.
+   ============================================================ */
+
+/* -------------------- counters -------------------- */
+.counters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-bottom: 24px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 16px;
+  background: var(--bg-2);
+}
+
+.counterK {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.counterV {
+  font-family: var(--font-mono);
+  font-size: 23px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.counterV.warn { color: var(--cmp-partial); }
+.counterV.crit { color: var(--cmp-unavailable); }
+
+/* -------------------- trend chips -------------------- */
+.chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 13px 15px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.chipHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.chipName {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.chipMean {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--c);
+}
+
+.spark { display: block; width: 100%; height: 34px; }
+.sparkLine { fill: none; stroke: var(--c); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+.sparkArea { fill: var(--c); opacity: 0.12; }
+.sparkBase { stroke: var(--line-strong); stroke-width: 1; stroke-dasharray: 2 3; }
+
+.chipFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+.chipGap { color: var(--text-dim); }
+
+/* -------------------- heatmap -------------------- */
+.panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-3);
+}
+
+.panelTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.segmented {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.segmented button {
+  padding: 5px 11px;
+  border: 0;
+  background: var(--bg-2);
+  color: var(--text-mute);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.segmented button:hover { color: var(--text); }
+.segmented button.on { background: var(--accent-grad); color: var(--on-accent); }
+
+.mapScroll { overflow-x: auto; }
+.mapInner { min-width: 780px; padding: 14px 16px 16px; }
+
+.mapRow {
+  display: grid;
+  grid-template-columns: 104px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.mapRow + .mapRow { margin-top: 6px; }
+
+.mapAxis {
+  display: flex;
+  gap: 2px;
+  margin-left: 116px;
+  margin-bottom: 7px;
+}
+
+.axisTick {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-mute);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.mapLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mapLabel b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.mapLabel span {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+}
+
+.cells { display: flex; gap: 2px; }
+
+/* The cell itself. --c is mixed in per cell from the completeness ramp; days with nothing
+   scheduled stay empty rather than reading as zero, which is a different fact. */
+.cell {
+  flex: 1;
+  min-width: 6px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: var(--c);
+  cursor: pointer;
+  transition: transform 0.12s var(--ease), border-color 0.12s var(--ease);
+}
+
+.cell:hover { transform: scaleY(1.18); border-color: var(--text); }
+.cell:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.cellEmpty {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 3px,
+    var(--line) 3px,
+    var(--line) 4px
+  );
+  cursor: default;
+}
+
+.cellEmpty:hover { transform: none; border-color: transparent; }
+
+.cellOn { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+/* -------------------- legend + focus -------------------- */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 11px 16px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+}
+
+.ramp {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.rampBar {
+  width: 132px;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--cmp-unavailable),
+    var(--cmp-partial) 50%,
+    var(--cmp-acquired)
+  );
+}
+
+.legendItem { display: inline-flex; align-items: center; gap: 6px; }
+.legendItem i { width: 11px; height: 11px; border-radius: 2px; }
+
+.legendItem i.none {
+  background: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--line) 3px, var(--line) 4px);
+  border: 1px solid var(--line);
+}
+
+.focus {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+.focusClear {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--accent-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.focusClear:hover { border-color: var(--accent-2); }
+
+/* -------------------- table -------------------- */
+.tableHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 26px 0 10px;
+}
+
+.sortRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.count {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+
+.tableWrap {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.table { width: 100%; border-collapse: collapse; }
+
+.table th {
+  text-align: left;
+  padding: 11px 16px;
+  background: var(--bg-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+.table td { padding: 11px 16px; border-top: 1px solid var(--line); vertical-align: middle; }
+.table tbody tr { transition: background 0.15s var(--ease); }
+.table tbody tr:hover { background: var(--bg-3); }
+
+.gapRow td { box-shadow: inset 3px 0 0 var(--cmp-partial); }
+.lossRow td { box-shadow: inset 3px 0 0 var(--cmp-unavailable); }
+
+.id { font-family: var(--font-mono); font-size: 11.5px; color: var(--text); word-break: break-all; }
+.sat {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-2);
+}
+.mode { font-size: 13px; color: var(--text-dim); }
+.time {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.age { font-family: var(--font-mono); font-size: 11px; color: var(--text-mute); white-space: nowrap; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--c);
+  background: color-mix(in srgb, var(--c) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 32%, transparent);
+}
+
+.bar { display: flex; align-items: center; gap: 9px; min-width: 130px; }
+.barTrack { position: relative; flex: 1; height: 6px; border-radius: 3px; overflow: hidden; background: var(--pill-bg); }
+.barFill { height: 100%; border-radius: 3px; transition: width var(--dur) var(--ease); }
+.barVal {
+  width: 38px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.empty { padding: 44px 16px; text-align: center; font-size: 13.5px; color: var(--text-mute); }
+
+/* -------------------- responsive -------------------- */
+@media (max-width: 1100px) {
+  .chips { grid-template-columns: repeat(2, 1fr); }
+  .counters { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .chips { grid-template-columns: 1fr; }
+  .tableWrap { overflow-x: auto; }
+  .table { min-width: 720px; }
+}

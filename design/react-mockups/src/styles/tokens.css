@@ -89,6 +89,14 @@
   --evt-manoeuvre: #ffad00;
   --evt-production: #c77dff;
   --evt-satellite: #ee8216;
+
+  /* Processor baseline state, for the Version Matrix proposal. TWO values, not a status palette:
+     the releases feed carries a baseline version, a release date and release notes — no status —
+     so the only distinction available is the one the dates imply, "most recently released" versus
+     "replaced by a later one". Current borrows the nominal green; past would be --text-mute, but
+     that reaches only 3.7:1 against the matrix's tinted cell, so it is lifted one step. */
+  --bl-current: var(--ok);
+  --bl-past: #8b95a6;
 }
 
 /* -------------------- LIGHT -------------------- */
@@ -132,4 +140,12 @@
   --evt-manoeuvre: #b06f00;
   --evt-production: #7b1fa2;
   --evt-satellite: #c2660d;
+
+  /* Baseline state on white. Same story as the two sets above: the dark values are drawn for a
+     near-black panel, and these colour 9.5px label text sitting on a cell tinted with their own hue
+     (color-mix at 8%), which is the worst case — the shared --ok reaches only 1.8:1 there. Each is
+     darkened until it clears 4.5:1 against that tinted cell while staying recognisably the same
+     colour: current 5.1:1, past 4.7:1. */
+  --bl-current: #0b754e;
+  --bl-past: #636d79;
 }

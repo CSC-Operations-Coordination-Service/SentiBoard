@@ -59,3 +59,17 @@ export const PROCESSORS_DESCRIPTION =
   "Filter by mission to show only the processors you are interested in. Zoom in and out with the " +
   "mouse wheel, drag left and right to move through time, and select a coloured box to display the " +
   "details of that processor release.";
+
+/* Processors — the version matrix proposal. Describes its own controls rather than the timeline's,
+   since the two read the same releases in deliberately different ways. */
+export const PROCESSORS_MATRIX_DESCRIPTION =
+  "This page lists every release of the Copernicus Sentinel processors as a comparison grid. Each " +
+  "row is a processor; each column is a baseline version in sequence, with the newest release of " +
+  "every row in the last column — so reading that column downwards gives the current state of the " +
+  "whole constellation, and the columns to its left are one, two or three baselines back. Each cell " +
+  "shows the baseline version and the date it was released; a filled marker is the baseline " +
+  "currently in force, and a hollow one has been replaced by a later release. Filter by mission to " +
+  'narrow the rows, or switch on "Current versions only" to collapse the grid to a single column ' +
+  "showing the most recent release per processor and how long it has been in force. Select any cell " +
+  "to read that release's date, the period it covered, what it replaced, its release notes and the " +
+  "satellites it applies to.";
