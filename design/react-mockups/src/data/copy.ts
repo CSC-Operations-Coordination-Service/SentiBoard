@@ -73,3 +73,17 @@ export const PROCESSORS_MATRIX_DESCRIPTION =
   "showing the most recent release per processor and how long it has been in force. Select any cell " +
   "to read that release's date, the period it covered, what it replaced, its release notes and the " +
   "satellites it applies to.";
+
+/* Processors — the release log proposal. The notes are this view's content rather than a detail
+   panel's payload, so the description leads with them. */
+export const PROCESSORS_LOG_DESCRIPTION =
+  "This page lists every release of the Copernicus Sentinel processors as a feed, most recent " +
+  "first, with each entry's release notes shown in full rather than summarised or hidden. Each " +
+  "entry carries the processor it applies to, its baseline version, the date it was released, the " +
+  "release notes themselves and the satellites affected. Switch the grouping between by date, which " +
+  "buckets releases into the month they landed in and reads as a changelog for the whole " +
+  "constellation, and by processor, which reads as a release history per product. Narrow the feed by " +
+  "mission, by release-date range, or by searching — the search covers the release notes, the " +
+  "processor and its products, the baseline version, the mission and the satellites, and matches " +
+  "inside the notes are marked in place. All three narrow the feed together. Releases that the feed " +
+  "carries no notes for are listed with that stated.";

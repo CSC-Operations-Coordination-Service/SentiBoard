@@ -1,0 +1,451 @@
+/* ============================================================
+   Processors proposal 3 — "Release log".
+   Text-first: the release notes are the content, so the type scale favours prose over
+   chrome — hairline rules instead of panels-within-panels, mono reserved for the
+   metadata (dates, versions, satellites), and no status colour anywhere, because the
+   feed has no status to colour. Every value resolves to the shared tokens (tokens.css),
+   so this follows the app's global dark/light switch with no palette of its own.
+   ============================================================ */
+
+/* -------------------- counters -------------------- */
+.counters {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  margin-bottom: 22px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.counter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 13px 16px;
+  background: var(--bg-2);
+}
+
+.counterK {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.counterV {
+  font-family: var(--font-mono);
+  font-size: 23px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* The span counter carries two month-years, which will not fit at the others' size. */
+.counterV.small { font-size: 15px; line-height: 1.3; }
+
+/* -------------------- controls -------------------- */
+.controls {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.control.grow { flex: 1; min-width: 240px; }
+
+/* The controls row is bottom-aligned, so widgets of differing heights would stagger the label
+   row above them. One height for every widget keeps the labels on a single baseline. */
+.searchWrap,
+.segmented,
+.dates,
+.dateInput,
+.reset { height: 34px; }
+
+.controlLab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* Search box. The one control this concept leans on, so it gets the width. */
+.searchWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  transition: border-color 0.2s var(--ease);
+}
+
+.searchWrap:focus-within { border-color: var(--accent); }
+.searchWrap svg { flex: none; color: var(--text-mute); }
+
+.searchWrap input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+}
+
+.searchWrap input::placeholder { color: var(--text-mute); }
+.searchWrap input:focus { outline: none; }
+
+.clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--pill-bg);
+  color: var(--text-mute);
+  cursor: pointer;
+}
+
+.clear:hover { color: var(--text); }
+
+/* Release-date range. Matches the input treatment the Data Availability filters use
+   (styles/data-availability.css → .da-field input): raised surface, hairline border, mono. The
+   native picker follows the theme on its own, because tokens.css sets color-scheme per theme. */
+.dates {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dateInput {
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.3;
+  outline: none;
+  transition: border-color 0.2s var(--ease);
+}
+
+.dateInput:hover { border-color: var(--line-strong); }
+.dateInput:focus { border-color: var(--accent); }
+
+/* An empty date input renders its yyyy-mm-dd hint, which should read as a placeholder. */
+.dateInput:not(:focus):invalid,
+.dateInput[value=""] { color: var(--text-mute); }
+
+.dateSep {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+.segmented {
+  display: flex;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.segmented button {
+  padding: 0 13px;
+  border: 0;
+  background: var(--bg-2);
+  color: var(--text-mute);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transition: color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.segmented button:hover { color: var(--text); }
+.segmented button.on { background: var(--accent-grad); color: var(--on-accent); }
+.segmented button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+.reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+}
+
+.reset:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+.reset:disabled { opacity: 0.4; cursor: default; }
+
+/* -------------------- result line -------------------- */
+.resultLine {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.resultLine b { color: var(--text-dim); font-weight: 500; }
+
+/* -------------------- the feed -------------------- */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+  /* The prose is the content, so the column is capped at a comfortable measure rather than
+     stretched to the 1320px wrap. */
+  max-width: 940px;
+}
+
+.group { display: flex; flex-direction: column; }
+
+/* Sticky, so the month or processor you are reading under stays named while you scroll. */
+.groupHead {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 0 9px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--bg);
+}
+
+.groupTitle {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.groupMeta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.groupCount { margin-left: auto; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--text-mute); }
+
+/* -------------------- an entry -------------------- */
+.entry {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr);
+  gap: 0 22px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.entry:last-child { border-bottom: 0; }
+
+/* Date gutter — the spine of a chronological reading. */
+.gutter {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-top: 2px;
+}
+
+.day {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stamp {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  white-space: nowrap;
+}
+
+.body { min-width: 0; }
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 3px;
+}
+
+/* Grouped by processor there is no name or product line under it, so the head carries the gap. */
+.head.bare { margin-bottom: 12px; }
+
+.proc {
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* The baseline version — the other half of an entry's identity, so it reads as a tag. */
+.version {
+  display: inline-flex;
+  padding: 2px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 12px;
+}
+
+/* Release notes — the primary content, never truncated. */
+.notes {
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--text-dim);
+}
+
+.notes p { margin: 0 0 9px; }
+.notes p:last-child { margin-bottom: 0; }
+
+/* stripHtml turns <li> into a "• " prefix; hang the indent so wrapped lines line up. */
+.notes p.bullet {
+  padding-left: 17px;
+  text-indent: -17px;
+  margin-bottom: 5px;
+}
+
+.noNotes {
+  font-size: 13.5px;
+  color: var(--text-mute);
+  font-style: italic;
+}
+
+/* A search hit inside the notes. */
+.hit {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: var(--text);
+}
+
+.sats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 13px;
+}
+
+.satsLab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-right: 2px;
+}
+
+.sat {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+.sat.none { color: var(--text-mute); font-style: italic; }
+
+/* -------------------- empty state -------------------- */
+.empty {
+  padding: 54px 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  text-align: center;
+  color: var(--text-mute);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.empty b {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* -------------------- responsive -------------------- */
+@media (max-width: 900px) {
+  .counters { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .controls { gap: 12px; }
+  .control, .control.grow { width: 100%; min-width: 0; }
+  .segmented { width: 100%; }
+  .segmented button { flex: 1; text-align: center; }
+  .reset { width: 100%; justify-content: center; }
+  .dates { width: 100%; }
+  .dateInput { flex: 1; }
+
+  /* The date stops being a gutter and becomes the entry's first line. */
+  .entry {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    padding: 17px 0;
+  }
+
+  .gutter { flex-direction: row; align-items: baseline; gap: 10px; padding-top: 0; }
+  .notes { font-size: 14px; }
+  .groupHead { top: 0; }
+}

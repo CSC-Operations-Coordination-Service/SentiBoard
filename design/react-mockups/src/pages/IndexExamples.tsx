@@ -363,6 +363,10 @@ const PROC_CARDS = [
     to: "/examples/version-matrix", img: MOD_IMG[3], title: "Processors · Version matrix",
     desc: "Structured comparison rather than a spatial timeline: no zooming and no panning at all. Rows are processors, columns are baseline versions in sequence, and every row's newest release is right-aligned into the same last column — so that column reads straight down as the current state of the constellation and the ones before it are one, two or three baselines back. Every cell carries the two facts the releases feed actually holds, the baseline version and its release date; the feed has no status field, so the only distinction drawn is the one the dates imply — a filled marker for the baseline in force, hollow for one a later release replaced. A mission filter narrows the rows and \"Current versions only\" collapses the grid to a single column of the most recent release per processor with how long it has been in force. Selecting a cell opens the release beside the grid: release date, the period it covered, what it replaced and what replaced it, release notes, and impacted satellites.",
   },
+  {
+    to: "/examples/release-log", img: SCENES[2], title: "Processors · Release log",
+    desc: "Text-first, where the other two are spatial. The timeline and the matrix both reduce the release notes to something you click to reveal, but the notes are the part carrying the engineering content — what changed, by how much, and whether anything needs reprocessing. So this one is a reverse-chronological feed with the notes rendered in full and never truncated, one entry per release, with the version and date demoted to metadata around the prose. Grouping toggles between by date, which buckets releases into the month they landed in and reads as a changelog for the whole constellation, and by processor, which reads as a release history per product. A mission filter, a release-date range and a search across the notes, processor, baseline and satellites all narrow the feed together, with matches inside the notes marked in place. No status anywhere: the newest release is simply the entry at the top.",
+  },
 ];
 
 export function ExamplesHome() {
@@ -425,7 +429,7 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Processors page</h2></div>
-          <span className="meta">1 alternative to /processors</span>
+          <span className="meta">2 alternatives to /processors</span>
         </div>
         <div className="ex-list">
           {PROC_CARDS.map((c) => (
