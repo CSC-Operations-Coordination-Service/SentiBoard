@@ -324,48 +324,48 @@ const CARDS = [
 const PAGE_CARDS = [
   {
     to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · mission tiles + side panel",
-    desc: "The month kept as a grid, but reduced to one dot per event per day and an impact stripe on the days that lost data; picking a day opens a panel where each occurrence expands into the datatakes it hit and how complete they are. Near-black canvas, condensed type, one signal accent.",
+    desc: "The month displays as a daily grid using single dots for events and impact stripes for data-loss days. Selecting a day opens a panel detailing affected datatakes and their completeness. Designed on a near-black canvas with condensed type and a single accent color.",
   },
   {
     to: "/examples/events-spacex", img: MOD_IMG[0], title: "Events · timeline + heatmap (2 concepts)",
-    desc: "Two layouts behind one tab bar, sharing a period selector and one event register. A — an orbital Gantt ribbon with a track per mission and the month along the X axis, where each block opens a detail popover. B — 31 square day tiles carrying micro status pills, where picking a day slides over that day's UTC log and the datatakes it hit.",
+    desc: "Two layouts under one tab bar with a shared period selector. Layout A has an orbital Gantt ribbon with months on the X-axis and detail popovers for each block. Layout B features 31 square day tiles with micro status pills for day selection over the UTC log.",
   },
   {
     to: "/examples/events-manifest", img: MOD_IMG[3], title: "Events · filters + day drawer",
-    desc: "The manifest with mission / satellite / type / search filters over the full-width grid: one dot per event, a completeness stripe only on days that lost data. Selecting a day opens the Day Manifest drawer — that day's occurrences in time order, each expanding into the datatakes it impacted with sensing windows and completeness status.",
+    desc: "Shows mission events on a grid, marking days with missing data. Selecting a day reveals occurrences and impacted datatakes.",
   },
 ];
 
 const ACQ_CARDS = [
   {
     to: "/examples/acquisitions-globe", img: MOD_IMG[0], title: "Acquisitions · Demand-driven globe",
-    desc: "The same 3D globe, rebuilt underneath: frames are drawn on demand instead of on an unconditional animation loop, coastlines are cached in an OffscreenCanvas per resolution, and the canvas pauses when it scrolls out of view or the tab is hidden. Datatakes draw their acquired footprint rather than a bare point, the whole view is keyboard-operable with a live description for screen readers, and the day filter is bounded by the days that actually have coverage.",
+    desc: "The 3D globe is improved with on-demand frames, cached coastlines, and a pause feature for when it's hidden. Datatakes show footprints, are keyboard-operable, and day filters match available coverage.",
   },
 ];
 
 const AVAIL_CARDS = [
   {
     to: "/examples/coverage-timeline", img: MOD_IMG[0], title: "Data Availability · Coverage timeline",
-    desc: "Trend rather than snapshot: no donuts at all. A heatmap carries one row per mission and one column per day of the selected range, shaded by that day's mean publication completeness, so an outage reads as the horizontal run it actually is. Sparkline chips per mission over 7/30/90 days carry the number an operator can act on — days since the last gap — and the table below is sorted by most recent GAP rather than chronologically, so what is broken sits at the top. Selecting a cell focuses the table on that mission and day.",
+    desc: "The heatmap visualizes mission performance with daily completeness, showing outages as horizontal runs. Sparkline chips indicate days since the last gap, with the table sorted by the most recent gaps for quick identification of issues. Selecting a cell focuses on the specific mission and day.",
   },
   {
     to: "/examples/data-availability-spacex", img: MOD_IMG[3], title: "Data Availability · Telemetry console",
-    desc: "The same page read as a launch console: hairline rules instead of panels, 2px radii, and monospace for every identifier, timestamp and figure. A live UTC clock and datatake counters in the header, three donut metrics drawn as thin SVG rings, then a compact table whose rows open the full telemetry record — sensing window, orbit and track, pass direction, footprint corners and the raw metadata as the backend would return it. Its own pitch-dark palette with electric accents, rather than the shared tokens.",
+    desc: "The page mimicked a launch console with hairline rules, a UTC clock, donut metrics, and a table for telemetry records.",
   },
   {
     to: "/examples/data-availability", img: MOD_IMG[1], title: "Data Availability · Filtered breakdown",
-    desc: "The datatake list led by three donuts — share by mission, acquisition status, publication status — that describe whatever the filters currently select, so the charts and the rows can never disagree. Mission, satellite, date-range and datatake-ID filters above a sortable table of platform, sensor mode, start time, status and publication completeness.",
+    desc: "The datatake list includes filters for mission, acquisition, and publication status, ensuring consistent charts and rows, along with a sortable table of relevant details.",
   },
 ];
 
 const PROC_CARDS = [
   {
     to: "/examples/version-matrix", img: MOD_IMG[3], title: "Processors · Version matrix",
-    desc: "Structured comparison rather than a spatial timeline: no zooming and no panning at all. Rows are processors, columns are baseline versions in sequence, and every row's newest release is right-aligned into the same last column — so that column reads straight down as the current state of the constellation and the ones before it are one, two or three baselines back. Every cell carries the two facts the releases feed actually holds, the baseline version and its release date; the feed has no status field, so the only distinction drawn is the one the dates imply — a filled marker for the baseline in force, hollow for one a later release replaced. A mission filter narrows the rows and \"Current versions only\" collapses the grid to a single column of the most recent release per processor with how long it has been in force. Selecting a cell opens the release beside the grid: release date, the period it covered, what it replaced and what replaced it, release notes, and impacted satellites.",
+    desc: "A structured comparison displays processors in rows and baseline versions in columns, with the latest releases right-aligned. Each cell shows the baseline version and release date, indicating current (filled) versus replaced (hollow) versions. A mission filter narrows the rows, while 'Current versions only' shows the latest release per processor. Selecting a cell reveals details like release dates and impacted satellites.",
   },
   {
     to: "/examples/release-log", img: SCENES[2], title: "Processors · Release log",
-    desc: "Text-first, where the other two are spatial. The timeline and the matrix both reduce the release notes to something you click to reveal, but the notes are the part carrying the engineering content — what changed, by how much, and whether anything needs reprocessing. So this one is a reverse-chronological feed with the notes rendered in full and never truncated, one entry per release, with the version and date demoted to metadata around the prose. Grouping toggles between by date, which buckets releases into the month they landed in and reads as a changelog for the whole constellation, and by processor, which reads as a release history per product. A mission filter, a release-date range and a search across the notes, processor, baseline and satellites all narrow the feed together, with matches inside the notes marked in place. No status anywhere: the newest release is simply the entry at the top.",
+    desc: "Release notes are displayed in reverse-chronological order, with full entries and minimal metadata. Users can filter by date or processor, and search across various fields. The latest release is always at the top, with no status indicators.",
   },
 ];
 
