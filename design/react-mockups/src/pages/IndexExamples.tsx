@@ -389,11 +389,11 @@ export function ExamplesHome() {
         </div>
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
-          <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
-          <span className="meta">3 alternatives to /events</span>
+          <div><h2 style={{ fontSize: 24 }}>Acquisitions page</h2></div>
+          <span className="meta">1 alternatives to /acquisitions</span>
         </div>
         <div className="ex-list">
-          {PAGE_CARDS.map((c) => (
+          {ACQ_CARDS.map((c) => (
             <Link className="ex-card" to={c.to} key={c.to}>
               <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
               <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>
@@ -401,12 +401,13 @@ export function ExamplesHome() {
           ))}
         </div>
 
+
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
-          <div><h2 style={{ fontSize: 24 }}>Acquisitions page</h2></div>
-          <span className="meta">1 alternative to /acquisitions</span>
+          <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
+          <span className="meta">3 alternative to /events </span>
         </div>
         <div className="ex-list">
-          {ACQ_CARDS.map((c) => (
+          {PAGE_CARDS.map((c) => (
             <Link className="ex-card" to={c.to} key={c.to}>
               <div className="thumb" style={{ backgroundImage: `url(${c.img})` }} />
               <div className="body"><h3>{c.title}</h3><p>{c.desc}</p><span className="go">Open example →</span></div>

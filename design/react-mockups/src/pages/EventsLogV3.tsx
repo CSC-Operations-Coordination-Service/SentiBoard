@@ -12,7 +12,6 @@ import "@/styles/events-log-v3.css";
    A month grid where every day is a cell carrying one tile per event — the
    issue-type glyph tinted with the mission color — beside a day panel whose
    occurrences expand into the impacted datatakes and their completeness status.
-   Kept next to /examples/events-log so the two takes can be compared.
 
    Adapted from the standalone sketch in three ways, all plumbing rather than
    design: the styles live in events-log-v3.css instead of a <style> tag; the

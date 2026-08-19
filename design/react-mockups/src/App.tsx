@@ -11,7 +11,6 @@ import About from "./pages/About";
 import { SimplePage, StatPage } from "./pages/Simple";
 import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
-import EventsLog from "./pages/EventsLog";
 import EventsLogV3 from "./pages/EventsLogV3";
 import EventsManifest from "./pages/events-manifest/EventsManifest";
 import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
@@ -48,7 +47,6 @@ export default function App() {
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route path="/examples/reveal" element={<IndexReveal />} />
           <Route path="/examples/about" element={<AboutRedesign />} />
-          <Route path="/examples/events-log" element={<EventsLog />} />
           <Route path="/examples/events-log-v3" element={<EventsLogV3 />} />
           <Route path="/examples/events-manifest" element={<EventsManifest />} />
           <Route path="/examples/events-spacex" element={<EventsSpaceXConcepts />} />

@@ -30,7 +30,7 @@ export const EVENTS_DESCRIPTION =
   "Manifest, which lists that day's events in time order; expanding an event reveals the datatakes " +
   "it impacted, with their sensing windows and completeness status.";
 
-/* Events log — the month grid with the side panel (the /examples/events-log* proposals). */
+/* Events log — the month grid with the side panel (the /examples/events-log-v3 proposal). */
 export const EVENTS_LOG_DESCRIPTION =
   "This page logs the events that could impede data production — planned calibration activities, " +
   "manoeuvres and anomalies — against the month in which they occurred, together with the products " +
