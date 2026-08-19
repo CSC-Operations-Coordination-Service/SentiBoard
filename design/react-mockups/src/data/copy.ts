@@ -87,3 +87,15 @@ export const PROCESSORS_LOG_DESCRIPTION =
   "processor and its products, the baseline version, the mission and the satellites, and matches " +
   "inside the notes are marked in place. All three narrow the feed together. Releases that the feed " +
   "carries no notes for are listed with that stated.";
+
+/* Processors — the version compare proposal. A task view rather than a browsing one, so the
+   description explains the two picks rather than what the page lists. */
+export const PROCESSORS_COMPARE_DESCRIPTION =
+  "This page compares two baselines of one Copernicus Sentinel processor. Choose the processor, " +
+  "then the earlier and later baselines to compare; the later list only offers releases that came " +
+  'after the earlier one, so the comparison always reads forwards in time. "Compare to current" ' +
+  "sets the later side to the most recently released baseline. The summary states how far apart the " +
+  "two releases are, how many baselines the jump covers and which ones it skips over, and how the " +
+  "satellite coverage differs. Below it the release notes sit side by side, compared paragraph by " +
+  "paragraph: a line only the earlier baseline carried is marked with a minus, a line the later one " +
+  "added is marked with a plus, and a line both restate is dimmed rather than flagged as a change.";

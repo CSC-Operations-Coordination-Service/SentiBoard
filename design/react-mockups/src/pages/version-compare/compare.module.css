@@ -1,0 +1,347 @@
+/* ============================================================
+   Processors proposal 4 — "Version compare".
+   A diff needs two markers, added and removed. Rather than introduce a red/green palette
+   this borrows what the app already has: structure carries the signal (a left bar, a
+   mono +/- glyph, a faint tint) while the note text itself stays ordinary body colour.
+   So contrast never depends on the marker hue, and every value resolves to the shared
+   tokens (tokens.css) — the whole view follows the global dark/light switch.
+   ============================================================ */
+
+/* -------------------- picker -------------------- */
+.picker {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.fieldLab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* Matches the select treatment in styles/data-availability.css → .da-field select. */
+.select {
+  width: 100%;
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background-color: var(--bg-3);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-mute) 50%),
+    linear-gradient(135deg, var(--text-mute) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  transition: border-color 0.2s var(--ease);
+}
+
+.select:hover { border-color: var(--line-strong); }
+.select:focus { border-color: var(--accent); }
+
+.actions { display: flex; align-items: center; gap: 8px; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: default; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* -------------------- summary strip -------------------- */
+.summary {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 1px;
+  margin-bottom: 20px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.stat {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 15px;
+  background: var(--bg-2);
+}
+
+.statK {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.statV {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.25;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.statV.dim { color: var(--text-dim); font-size: 13px; }
+
+/* The baselines a comparison jumps over. */
+.skipped { display: flex; flex-wrap: wrap; gap: 5px; }
+
+.skip {
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/* -------------------- the two panels -------------------- */
+.panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.panel {
+  min-width: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+/* The later baseline is the one being asked about, so its panel gets the accent edge. */
+.panel.later { border-color: var(--line-strong); }
+
+.panelHead {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  background: var(--bg-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.side {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.panel.later .side { color: var(--accent-2); }
+
+.ver {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.when {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.panelMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.metaLab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-right: 2px;
+}
+
+.sat {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+}
+
+/* A satellite only this side carries — the same +/- vocabulary as the note lines. */
+.sat.only {
+  background: color-mix(in srgb, var(--accent) 14%, var(--bg-2));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+
+.sat.none { color: var(--text-mute); font-style: italic; }
+
+/* -------------------- diffed notes -------------------- */
+.notes {
+  padding: 6px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 8px;
+  padding: 7px 16px 7px 10px;
+  color: var(--text-dim);
+}
+
+.glyph {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--text-mute);
+  user-select: none;
+}
+
+.text.bullet { padding-left: 15px; text-indent: -15px; }
+
+/* Carried by both baselines: no marker at all, so the eye goes to what moved. */
+.line.same { color: var(--text-mute); }
+.line.same .glyph { color: var(--line-strong); }
+
+/* Present only in the earlier baseline — dropped by the later one. */
+.line.del {
+  background: var(--bg-3);
+  border-left: 2px solid var(--text-mute);
+  padding-left: 8px;
+}
+
+.line.del .glyph { color: var(--text-dim); }
+
+/* Present only in the later baseline — what it added. */
+.line.add {
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-2));
+  border-left: 2px solid var(--accent);
+  padding-left: 8px;
+  color: var(--text);
+}
+
+.line.add .glyph { color: var(--accent-2); }
+
+.noNotes {
+  padding: 18px 16px;
+  font-size: 13.5px;
+  color: var(--text-mute);
+  font-style: italic;
+}
+
+/* -------------------- legend -------------------- */
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.key { display: inline-flex; align-items: center; gap: 7px; }
+
+.key i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c);
+}
+
+.legendNote { margin-left: auto; text-transform: none; letter-spacing: 0.04em; }
+
+/* -------------------- empty state -------------------- */
+.empty {
+  padding: 48px 20px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-lg);
+  text-align: center;
+  color: var(--text-mute);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* -------------------- responsive -------------------- */
+@media (max-width: 1080px) {
+  .picker { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .actions { grid-column: 1 / -1; }
+  .btn { flex: 1; justify-content: center; }
+}
+
+@media (max-width: 860px) {
+  /* Two panels side by side stop being readable well before the viewport gets narrow, because each
+     one holds prose. Stacked, the later baseline sits under the earlier one, which is still the
+     order the comparison reads in. */
+  .panels { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .picker { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .stat { min-width: 50%; }
+  .notes { font-size: 13.5px; }
+  .legend { gap: 10px 16px; }
+  .legendNote { margin-left: 0; width: 100%; }
+}

@@ -367,6 +367,10 @@ const PROC_CARDS = [
     to: "/examples/release-log", img: SCENES[2], title: "Processors · Release log",
     desc: "Release notes are displayed in reverse-chronological order, with full entries and minimal metadata. Users can filter by date or processor, and search across various fields. The latest release is always at the top, with no status indicators.",
   },
+  {
+    to: "/examples/version-compare", img: MOD_IMG[3], title: "Processors · Version compare",
+    desc: "A focused diff rather than a browsing view: pick a processor and two of its baselines, and read what changed between them. The pickers enforce direction, so the later baseline is always on the right. A summary states the gap, how many baselines the jump covers and which it skips, and the release notes sit side by side line-diffed — added, dropped, or carried by both. 'Compare to current' jumps to the latest release.",
+  },
 ];
 
 export function ExamplesHome() {
@@ -430,7 +434,7 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Processors page</h2></div>
-          <span className="meta">2 alternatives to /processors</span>
+          <span className="meta">3 alternatives to /processors</span>
         </div>
         <div className="ex-list">
           {PROC_CARDS.map((c) => (
