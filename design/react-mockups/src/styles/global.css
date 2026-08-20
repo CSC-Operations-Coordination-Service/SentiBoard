@@ -3114,3 +3114,26 @@ table.data td.mono {
 .ab-variant{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mute)}
 .ab-variant a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
 .ab-variant a:hover{border-bottom-color:var(--accent)}
+
+/* ===== Legal / document pages (Terms & Conditions, Cookie Notice) — ported from the Next.js app's .legal block
+   (frontend/app/globals.css) with its colours remapped onto this mockup's tokens, so the same
+   markup renders in both themes instead of the dark-only original. ===== */
+.legal{max-width:768px;margin:0 auto}
+.legal .lead{font-size:clamp(16px,1.8vw,19px);line-height:1.65;color:var(--text);margin:0 0 26px;text-wrap:pretty}
+.legal h2{font-size:clamp(19px,2.3vw,25px);letter-spacing:-.01em;margin:40px 0 14px;font-weight:700;padding-top:18px;border-top:1px solid var(--line)}
+.legal>div:first-child h2:first-of-type{border-top:none;padding-top:0;margin-top:8px}
+.legal h3{font-size:15.5px;margin:26px 0 10px;font-weight:600;color:var(--text);font-family:var(--font-mono);letter-spacing:.01em}
+.legal p{color:var(--text-dim);font-size:15px;line-height:1.75;margin:0 0 16px}
+.legal ul{color:var(--text-dim);font-size:15px;line-height:1.7;margin:0 0 18px;padding-left:4px;list-style:none}
+.legal ul li{position:relative;padding-left:22px;margin:0 0 9px}
+.legal ul li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent-2);opacity:.7}
+.legal a{color:var(--accent)}
+.legal strong{color:var(--text);font-weight:600}
+.legal .callout{border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px;background:color-mix(in srgb,var(--accent) 8%,var(--bg-2));margin:0 0 22px}
+.legal .callout p:last-child{margin-bottom:0}
+.cookie-toggle{display:flex;align-items:center;gap:16px;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 22px;background:var(--bg-2);margin:8px 0 22px}
+.cookie-toggle .status{font-family:var(--font-mono);font-size:13px;color:var(--text)}
+.cookie-toggle .status b{color:var(--ok)}
+.cookie-toggle .status.off b{color:var(--text-dim)}
+.cookie-toggle .actions{display:flex;gap:10px;margin-left:auto}
+@media (max-width:600px){.cookie-toggle .actions{margin-left:0;width:100%}}

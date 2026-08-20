@@ -8,7 +8,7 @@ import Events from "./pages/Events";
 import Availability from "./pages/Availability";
 import Processors from "./pages/Processors";
 import About from "./pages/About";
-import { SimplePage, StatPage } from "./pages/Simple";
+import { NotFoundPage, StatPage } from "./pages/Simple";
 import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
 import EventsManifest from "./pages/events-manifest/EventsManifest";
@@ -21,6 +21,8 @@ import CoverageTimeline from "./pages/coverage-timeline/CoverageTimeline";
 import VersionMatrix from "./pages/version-matrix/VersionMatrix";
 import ReleaseLog from "./pages/release-log/ReleaseLog";
 import VersionCompare from "./pages/version-compare/VersionCompare";
+import CookieNotice from "./pages/CookieNotice";
+import TermsConditions from "./pages/TermsConditions";
 
 function ScrollTop() {
   const { pathname } = useLocation();
@@ -75,10 +77,10 @@ export default function App() {
           <Route path="/data-access" element={<StatPage crumb="Data Access" title="Data Access"
             sub="Global and detailed data-access performance for the Copernicus Data Space Ecosystem download and streaming services."
             kpis={[["Uptime (30d)", "99.95", "%"], ["Avg throughput", "3.2", "GB/s"], ["Active nodes", "6", ""], ["Requests / day", "9.1", "M"]]} />} />
-          <Route path="/terms-conditions" element={<SimplePage crumb="Terms &amp; Conditions" title="Terms &amp; Conditions" kind="terms" />} />
-          <Route path="/cookie-notice" element={<SimplePage crumb="Cookie Notice" title="Cookie Notice" kind="cookie" />} />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
+          <Route path="/cookie-notice" element={<CookieNotice />} />
 
-          <Route path="*" element={<SimplePage crumb="Not found" title="Page not found" kind="404" />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
       <Footer />

@@ -49,35 +49,17 @@ function ChartMock() {
   );
 }
 
-const TERMS = `These Terms & Conditions govern the use of the Copernicus Sentinel Operations Dashboard (SentiBoard). The dashboard is provided for informational purposes to support research and development activities. Data is offered on a best-effort basis in line with the Copernicus Data Policy: free, full and open access. While every effort is made to keep information accurate and up to date, no warranty is given as to completeness or fitness for a particular purpose. By using this dashboard you agree to attribute Copernicus / ESA as the source of any reused data.`;
-
-const COOKIE = `SentiBoard uses a minimal set of cookies strictly necessary for the dashboard to function, plus optional analytics cookies to help us understand how the dashboard is used. No personal data is sold or shared with third parties. You can accept or reject optional cookies at any time using the control below.`;
-
-/** Legal text / 404 — all share the same simple page frame. */
-export function SimplePage({ crumb, title, kind }: {
-  crumb: string; title: string; kind: "terms" | "cookie" | "404";
-}) {
+/** 404 — the only page still on this simple frame; Terms and the Cookie Notice carry real copy now. */
+export function NotFoundPage() {
   return (
     <>
-      <PageHeader crumb={crumb} title={title} />
+      <PageHeader crumb="Not found" title="Page not found" />
       <section className="wrap pad">
-        {kind === "terms" && <Reveal className="card"><p style={{ color: "var(--text-dim)", maxWidth: "80ch" }}>{TERMS}</p></Reveal>}
-        {kind === "cookie" && (
-          <Reveal className="card" style={{ maxWidth: 720 }}>
-            <p style={{ color: "var(--text-dim)" }}>{COOKIE}</p>
-            <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-              <button className="btn primary">Accept all</button>
-              <button className="btn">Necessary only</button>
-            </div>
-          </Reveal>
-        )}
-        {kind === "404" && (
-          <Reveal style={{ textAlign: "center", padding: "60px 0" }}>
-            <div className="stat" style={{ alignItems: "center" }}><span className="v" style={{ fontSize: 72 }}>404</span></div>
-            <p style={{ color: "var(--text-dim)" }}>This page could not be found.</p>
-            <Link className="btn primary" to="/" style={{ marginTop: 16 }}>Back to Home <span className="arrow">→</span></Link>
-          </Reveal>
-        )}
+        <Reveal style={{ textAlign: "center", padding: "60px 0" }}>
+          <div className="stat" style={{ alignItems: "center" }}><span className="v" style={{ fontSize: 72 }}>404</span></div>
+          <p style={{ color: "var(--text-dim)" }}>This page could not be found.</p>
+          <Link className="btn primary" to="/" style={{ marginTop: 16 }}>Back to Home <span className="arrow">→</span></Link>
+        </Reveal>
       </section>
     </>
   );
