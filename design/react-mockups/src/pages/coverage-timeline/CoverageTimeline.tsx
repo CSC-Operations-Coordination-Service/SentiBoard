@@ -190,7 +190,8 @@ export default function CoverageTimeline() {
 
   return (
     <>
-      <PageHeader crumb="Data Availability proposal" title="Coverage Timeline" desc={AVAILABILITY_DESCRIPTION} />
+      <PageHeader crumb="Data Availability proposal" title="Coverage Timeline" desc={AVAILABILITY_DESCRIPTION}
+        img="/assets/img/modules/Protecting_Atlantic.jpg" />
 
       <section className="wrap pad">
         {/* ---------------- counters ---------------- */}

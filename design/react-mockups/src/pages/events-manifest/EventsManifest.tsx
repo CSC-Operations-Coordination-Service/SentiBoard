@@ -346,7 +346,15 @@ export default function EventsManifest() {
   return (
     <div className={s.page}>
       <div className={s.inner}>
-        <header className={s.head}>
+        {/* The header art — the shared /examples backdrop recipe (.ex-hero-bg in global.css),
+            sitting inside the header this page already had. The header keeps its own geometry;
+            .ex-hero-host only adds a positioning context and lifts the copy above the image. */}
+        <header className={`${s.head} ex-hero-host ${s.headArt}`}>
+          <div
+            className="ex-hero-bg"
+            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Tibetan_Plateau.jpg")' }}
+            aria-hidden
+          />
           <div>
             <div className={s.eyebrow}>
               <Link to="/examples">Mock-ups</Link>

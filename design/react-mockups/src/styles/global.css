@@ -443,6 +443,83 @@ a.card:hover {
   background: transparent;
 }
 
+/* ---------- proposal header art (/examples/*) ----------------------------------------------
+   Header photography for the Events and Data Availability concept pages, without any of them
+   growing a hero band. It is a BACKDROP, not a layout box: absolutely positioned inside whatever
+   header the page already has, so the header keeps its own padding, height and flow, and the art
+   fills the area the header was already occupying.
+
+   Lives in global.css rather than examples.css because six pages share it and examples.css is
+   imported by only two of them — in dev that would leave the rest unstyled.
+
+   It combines the app's two existing backdrop recipes, and the combination is deliberate:
+
+     · the THEME VEIL is .about-bg's (a two-stop gradient in the theme's own canvas colour, 0.68 →
+       0.90 dark, 0.82 → 0.94 light). .ab-hero-bg instead thins its art with `opacity`, which works
+       for nebula.jpg because that image is nearly black to begin with. It does NOT work here: the
+       ESA Earth-observation set is mostly bright — icefields, snow, cloud — and at 50% opacity a
+       snowfield lifted the header background above the page's own text colours and left the
+       standfirst barely legible. A veil composited OVER the image darkens bright and dark art
+       alike, so legibility no longer depends on which photograph a page happens to get.
+     · the MASK FADE is .ab-hero-bg's, so the art dissolves before the header ends and the copy
+       lower down sits on the page's own background rather than on the photograph.
+     · the accent tint is also .ab-hero-bg's, kept so the art reads as part of the page rather
+       than as a stock photo dropped in behind it.
+     · center/cover because the ESA set mixes portrait and landscape and a header is always wider
+       than tall — cover crops, `contain` would letterbox.
+
+   Background layers paint first-listed on top: veil, then tint, then the photograph.
+   The image is supplied per page as --ex-hero-img. */
+.ex-hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: var(--ex-hero-veil), radial-gradient(120% 120% at 80% -10%, rgba(46, 125, 246, 0.16), transparent 55%),
+    var(--ex-hero-img) center / cover no-repeat;
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
+}
+
+/* Dark is the default theme, so its veil is the unqualified one.
+
+   The values start from .about-bg's (0.68 → 0.90) and are two steps heavier. .about-bg only ever
+   veils one image, acquisitions.jpg; this rule has to hold for whichever of the ESA set a page is
+   given, and the brightest of them — Tibetan_Plateau.jpg, a sunlit snowfield — left the standfirst
+   at 3.9:1 against the veil's original alphas, under the 4.5:1 needed for body text. At 0.76 → 0.95
+   the brightest image in the set clears AA and the darker ones keep plenty of headroom. Measured,
+   not guessed: see the contrast figures in the DEVOCS-219 notes. */
+.ex-hero-bg {
+  --ex-hero-veil: linear-gradient(rgba(5, 7, 12, 0.76), rgba(5, 7, 12, 0.95));
+}
+
+:root[data-theme="light"] .ex-hero-bg {
+  --ex-hero-veil: linear-gradient(rgba(244, 246, 250, 0.82), rgba(244, 246, 250, 0.94));
+}
+
+/* The two self-contained concept pages paint their own near-black canvas (--evx-bg / --sx-bg,
+   #08090a) rather than the app's --bg, so the shared veil would sit a shade light against them. */
+.evx .ex-hero-bg,
+.sx .ex-hero-bg {
+  --ex-hero-veil: linear-gradient(rgba(8, 9, 10, 0.78), rgba(8, 9, 10, 0.95));
+}
+
+.evx[data-theme="light"] .ex-hero-bg,
+.sx[data-theme="light"] .ex-hero-bg {
+  --ex-hero-veil: linear-gradient(rgba(244, 246, 250, 0.82), rgba(244, 246, 250, 0.94));
+}
+
+/* The header that hosts the backdrop. Only two declarations, so no page's geometry changes:
+   a positioning context for the backdrop, and a stacking context for the copy above it. */
+.ex-hero-host {
+  position: relative;
+}
+
+.ex-hero-host > *:not(.ex-hero-bg) {
+  position: relative;
+  z-index: 1;
+}
+
 /* Module links — a clean divider-separated list (no card boxes), so it sits over
    the backdrop without borders or overlap in either theme. */
 .about-links {

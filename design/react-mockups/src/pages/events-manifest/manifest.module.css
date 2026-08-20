@@ -155,6 +155,33 @@
   color: var(--mf-muted);
 }
 
+/* ---------------- header art ----------------
+   The shared /examples backdrop (.ex-hero-bg in global.css) sits inside the header this page
+   already had, so nothing about the header's size, padding or alignment changes — the title stays
+   on exactly the same baseline and x-position it was on before the image existed.
+
+   The one adjustment is the backdrop's inset. .ex-hero-bg defaults to `inset: 0`, which would box
+   the art to the text's own bounding rect; here it is bled out to the edges of .inner's padding so
+   it forms a band the width of the content column. That is deliberately NOT 100vw: a viewport-wide
+   band overflows horizontally whenever a scrollbar is present, and the column width lines the art
+   up with the filter and calendar panels below it, which is what makes it read as part of the page
+   rather than as a picture dropped behind the title. */
+.headArt :global(.ex-hero-bg) {
+  inset: -26px -28px 0;
+}
+
+@media (max-width: 760px) {
+  .headArt :global(.ex-hero-bg) {
+    inset: -20px -14px 0;
+  }
+}
+
+@media (max-width: 430px) {
+  .headArt :global(.ex-hero-bg) {
+    inset: -18px -10px 0;
+  }
+}
+
 /* ---------------- month bar + legend ---------------- */
 .monthBar {
   display: flex;

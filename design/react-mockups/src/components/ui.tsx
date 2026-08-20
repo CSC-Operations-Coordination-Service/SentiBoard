@@ -97,12 +97,19 @@ export function PageDescription({ children, title = "Description", defaultOpen =
   );
 }
 
-/** `desc` renders the collapsible "Description" panel above. */
-export function PageHeader({ title, sub, crumb, desc }: {
-  title: string; sub?: string; crumb: string; desc?: ReactNode;
+/** `desc` renders the collapsible "Description" panel above.
+ *
+ *  `img` puts a veiled photograph behind the header — the /examples/about hero recipe, shared as
+ *  .ex-hero-bg in global.css. It is a backdrop inside the header the page already has, so passing
+ *  it changes nothing about the header's size or spacing; omit it and the markup is unchanged. */
+export function PageHeader({ title, sub, crumb, desc, img }: {
+  title: string; sub?: string; crumb: string; desc?: ReactNode; img?: string;
 }) {
   return (
-    <div className="page-head">
+    <div className={`page-head${img ? " ex-hero-host" : ""}`}>
+      {img && (
+        <div className="ex-hero-bg" style={{ ["--ex-hero-img" as string]: `url("${img}")` }} aria-hidden />
+      )}
       <div className="wrap">
         <nav className="crumbs" aria-label="Breadcrumb">
           <Link to="/">Home</Link><span className="sep">/</span><span>{crumb}</span>

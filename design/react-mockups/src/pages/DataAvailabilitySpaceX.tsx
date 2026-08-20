@@ -723,7 +723,15 @@ export default function DataAvailabilitySpaceX() {
 
       <div className="sx-wrap">
         {/* ---------------- header ---------------- */}
-        <header className="sx-head">
+        {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
+            header this page already had. ex-hero-host adds only a positioning context, so the
+            header's existing geometry is untouched. */}
+        <header className="sx-head ex-hero-host">
+          <div
+            className="ex-hero-bg"
+            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/FLEX_Sentinel-3.jpg")' }}
+            aria-hidden
+          />
           <div className="sx-head-l">
             <div className="sx-tagline">
               <span className="sx-live" aria-hidden />
@@ -1066,6 +1074,9 @@ const CSS = `
 
 /* ---------- header ---------- */
 .sx-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+/* Header art bleed — see the note on .evx-head .ex-hero-bg in the Events concepts page. Bled to
+   .sx-wrap's padding so the art is a content-column-wide band, never 100vw. */
+.sx-head .ex-hero-bg { inset: -26px -26px 0; }
 .sx-tagline {
   display: flex; align-items: center; gap: 8px;
   font-family: var(--sx-mono); font-size: 10px; letter-spacing: 0.26em; color: var(--sx-accent);
@@ -1329,6 +1340,7 @@ const CSS = `
 }
 @media (max-width: 640px) {
   .sx-wrap { padding: 20px 16px 44px; }
+  .sx-head .ex-hero-bg { inset: -20px -16px 0; }
   .sx-filters { grid-template-columns: 1fr; }
   .sx-head-r { width: 100%; }
   .sx-poly { grid-template-columns: 1fr; }

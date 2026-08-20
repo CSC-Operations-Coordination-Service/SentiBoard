@@ -860,7 +860,15 @@ export default function EventsSpaceXConcepts() {
 
       <div className="evx-wrap">
         {/* ---------------- header ---------------- */}
-        <header className="evx-head">
+        {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
+            header this page already had. ex-hero-host adds only a positioning context, so the
+            tagline, title, lede and counters keep the exact geometry they had before. */}
+        <header className="evx-head ex-hero-host">
+          <div
+            className="ex-hero-bg"
+            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Ice_Greenland.jpg")' }}
+            aria-hidden
+          />
           <div>
             <div className="evx-tagline">
               <span className="evx-live" aria-hidden />
@@ -1089,6 +1097,11 @@ const CSS = `
 .evx-counters b.crit { color: var(--evx-crit); }
 .evx-counters b.warn { color: var(--evx-warn); }
 
+/* Header art bleed. .ex-hero-bg defaults to inset:0, which would box the image to the header
+   text's own rect; bled to .evx-wrap's padding it becomes a band the width of the content column.
+   Not 100vw — that overflows horizontally whenever a scrollbar is present. */
+.evx-head .ex-hero-bg { inset: -26px -26px 0; }
+
 /* ---------- control bar ---------- */
 .evx-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin: 24px 0 14px; }
 .evx-tabs { display: flex; gap: 1px; background: var(--evx-line); border: 1px solid var(--evx-line); }
@@ -1281,6 +1294,7 @@ const CSS = `
 }
 @media (max-width: 700px) {
   .evx-wrap { padding: 20px 14px 44px; }
+  .evx-head .ex-hero-bg { inset: -20px -14px 0; }
   .evx-counters { grid-template-columns: repeat(2, 1fr); }
   .evx-bar { align-items: stretch; }
   .evx-backdrop.center { padding: 0; }
@@ -1298,6 +1312,7 @@ const CSS = `
    ============================================================================= */
 @media (max-width: 760px) {
   .evx-wrap { padding: 18px 14px 40px; }
+  .evx-head .ex-hero-bg { inset: -18px -14px 0; }
 
   /* ---------- header ---------- */
   .evx-head { flex-direction: column; gap: 14px; }
@@ -1405,6 +1420,7 @@ const CSS = `
 /* Large phones and below (≤430px) — the seven day columns are at their tightest here. */
 @media (max-width: 430px) {
   .evx-wrap { padding: 16px 10px 36px; }
+  .evx-head .ex-hero-bg { inset: -16px -10px 0; }
   .evx-tabs button { font-size: 9px; letter-spacing: 0.05em; padding: 10px 4px; }
   .evx-tile { min-height: 70px; padding: 6px 3px; }
   .evx-tile-d { font-size: 13px; }

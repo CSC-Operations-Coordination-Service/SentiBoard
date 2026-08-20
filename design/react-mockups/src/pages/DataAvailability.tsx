@@ -485,7 +485,8 @@ export default function DataAvailability() {
   return (
     <>
       <PageHeader crumb="Data Availability proposal" title="Data Availability"
-        desc={AVAILABILITY_DESCRIPTION} />
+        desc={AVAILABILITY_DESCRIPTION}
+        img="/assets/img/modules/Tierra_Fuego_S1D.jpg" />
 
       <section className="wrap pad">
         <Reveal className="section-head">

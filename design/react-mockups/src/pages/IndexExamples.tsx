@@ -34,6 +34,37 @@ const PAGE_BY_IMG = [
 // Real Copernicus Sentinel-2 scenes (NOT the blue-marble globe).
 const SCENES = ["/assets/img/news/scene1.jpg", "/assets/img/news/scene2.jpg", "/assets/img/news/scene3.jpg", "/assets/img/news/scene4.jpg"];
 
+/* Card art for the proposal gallery. Every card gets its OWN image — before this the thirteen
+   cards shared six pictures between them (processors.jpg alone was on four), so the grid read as
+   a repeating pattern rather than as thirteen distinct destinations.
+ *
+ * The six concept pages that carry a header backdrop show THAT image on their card, so the card
+ * previews what the page actually looks like when you open it. The remaining seven have no
+ * backdrop of their own, so they take a leftover picture from the same folder.
+ *
+ * Keep these unique. If two cards ever share a value the gallery is back to looking patterned. */
+const ESA = (f: string) => `/assets/img/modules/${f}`;
+const CARD_ART = {
+  // index proposals
+  fleet: SCENES[0],
+  gallery: SCENES[1],
+  reveal: SCENES[2],
+  // events concepts — same image as each page's own header backdrop
+  eventsSwimlanes: ESA("Earth_rainforests.jpg"),
+  eventsSpacex: ESA("Ice_Greenland.jpg"),
+  eventsManifest: ESA("Tibetan_Plateau.jpg"),
+  // acquisitions
+  acquisitionsGlobe: MOD_IMG[0],
+  // data availability concepts — again matching each page's backdrop
+  coverageTimeline: ESA("Protecting_Atlantic.jpg"),
+  availabilitySpacex: ESA("FLEX_Sentinel-3.jpg"),
+  availabilityFiltered: ESA("Tierra_Fuego_S1D.jpg"),
+  // processors — no backdrops on these pages, so leftovers from the same set
+  versionMatrix: MOD_IMG[3],
+  releaseLog: ESA("Landing_asteroid.jpg"),
+  versionCompare: ESA("Hera_onboard_computer.jpg"),
+} as const;
+
 const HERO_EYEBROW = "Copernicus · EOF-CSC · Real-time operations";
 const HERO_SUB = "Real-time mission monitoring — a central point of access for events impacting data availability, real-time data collection insights, and key stats on products delivered.";
 const sevVar = (cls: string) => `var(--${cls === "ok" ? "ok" : cls === "warn" ? "warn" : cls === "crit" ? "crit" : "info"})`;
@@ -314,62 +345,62 @@ export function IndexReveal() {
 
 // ================= landing =================
 const CARDS = [
-  { to: "/examples/fleet", img: MOD_IMG[0], title: "A · Ticker over video + fleet", desc: "Video hero with news scrolling on top and live events along the bottom → Sentinel fleet → image page-cards." },
-  { to: "/examples/gallery", img: MOD_IMG[2], title: "B · Console + linkable gallery", desc: "News + real-time console as the first section (no globe) → diagonal gallery where every image links to a page." },
-  { to: "/examples/reveal", img: SCENES[0], title: "C · Editorial + reveal", desc: "Editorial first section (auto-scrolling Sentinel scenes + news + live rail, no globe) → pages revealed on scroll." },
+  { to: "/examples/fleet", img: CARD_ART.fleet, title: "Ticker over video - fleet", desc: "Video hero with news scrolling on top and live events along the bottom → Sentinel fleet → image page-cards." },
+  { to: "/examples/gallery", img: CARD_ART.gallery, title: "Console - linkable gallery", desc: "News + real-time console as the first section (no globe) → diagonal gallery where every image links to a page." },
+  { to: "/examples/reveal", img: CARD_ART.reveal, title: "Editorial - reveal", desc: "Editorial first section (auto-scrolling Sentinel scenes + news + live rail, no globe) → pages revealed on scroll." },
 ];
 
 // Proposals for pages other than the index — same idea, grouped separately so
 // it stays clear which real page each one is an alternative to.
 const PAGE_CARDS = [
   {
-    to: "/examples/events-swimlanes", img: MOD_IMG[3], title: "Events · Mission swimlanes",
+    to: "/examples/events-swimlanes", img: CARD_ART.eventsSwimlanes, title: "Events · Mission swimlanes",
     desc: "The month by fleet rather than by date: one collapsible row per mission (S1, S2, S3, S5P), collapsed by default. A row header states its event count, its affected datatakes, the event types present and an 'N active' badge when data is still degraded or lost. Expanding a row lists that mission's events inline with name, date and datatake count. Replaces the rejected chronological list.",
   },
   {
-    to: "/examples/events-spacex", img: MOD_IMG[0], title: "Events · timeline + heatmap (2 concepts)",
+    to: "/examples/events-spacex", img: CARD_ART.eventsSpacex, title: "Events · timeline + heatmap",
     desc: "Two layouts under one tab bar with a shared period selector. Layout A has an orbital Gantt ribbon with months on the X-axis and detail popovers for each block. Layout B features 31 square day tiles with micro status pills for day selection over the UTC log.",
   },
   {
-    to: "/examples/events-manifest", img: MOD_IMG[3], title: "Events · filters + day drawer",
+    to: "/examples/events-manifest", img: CARD_ART.eventsManifest, title: "Events · filters",
     desc: "Shows mission events on a grid, marking days with missing data. Each day carries one icon per event, drawn with that event type's glyph — the same five icons as the type filters above the grid — so a day with a manoeuvre and a production issue reads as both. Selecting a day reveals occurrences and impacted datatakes.",
   },
 ];
 
 const ACQ_CARDS = [
   {
-    to: "/examples/acquisitions-globe", img: MOD_IMG[0], title: "Acquisitions · Demand-driven globe",
+    to: "/examples/acquisitions-globe", img: CARD_ART.acquisitionsGlobe, title: "Acquisitions · Demand-driven globe",
     desc: "The 3D globe is improved with on-demand frames, cached coastlines, and a pause feature for when it's hidden. Datatakes show footprints, are keyboard-operable, and day filters match available coverage.",
   },
 ];
 
 const AVAIL_CARDS = [
   {
-    to: "/examples/coverage-timeline", img: MOD_IMG[0], title: "Data Availability · Coverage timeline",
+    to: "/examples/coverage-timeline", img: CARD_ART.coverageTimeline, title: "Data Availability · Coverage timeline",
     desc: "The heatmap visualizes mission performance with daily completeness, showing outages as horizontal runs. Sparkline chips indicate days since the last gap, with the table sorted by the most recent gaps for quick identification of issues. Selecting a cell focuses on the specific mission and day.",
   },
   {
-    to: "/examples/data-availability-spacex", img: MOD_IMG[3], title: "Data Availability · Telemetry console",
+    to: "/examples/data-availability-spacex", img: CARD_ART.availabilitySpacex, title: "Data Availability · Telemetry console",
     desc: "The page mimicked a launch console with hairline rules, a UTC clock, donut metrics, and a table for telemetry records.",
   },
   {
-    to: "/examples/data-availability", img: MOD_IMG[1], title: "Data Availability · Filtered breakdown",
+    to: "/examples/data-availability", img: CARD_ART.availabilityFiltered, title: "Data Availability · Filtered breakdown",
     desc: "The datatake list includes filters for mission, acquisition, and publication status, ensuring consistent charts and rows, along with a sortable table of relevant details.",
   },
 ];
 
 const PROC_CARDS = [
   {
-    to: "/examples/version-matrix", img: MOD_IMG[3], title: "Processors · Version matrix",
-    desc: "A structured comparison displays processors in rows and baseline versions in columns, with the latest releases right-aligned. Each cell shows the baseline version and release date, indicating current (filled) versus replaced (hollow) versions. A mission filter narrows the rows, while 'Current versions only' shows the latest release per processor. Selecting a cell reveals details like release dates and impacted satellites.",
+    to: "/examples/version-matrix", img: CARD_ART.versionMatrix, title: "Processors · Version matrix",
+    desc: "Processors are displayed in rows with baseline versions in columns, showing the latest releases. Cells indicate current (filled) and replaced (hollow) versions. A mission filter narrows rows, and selecting a cell reveals release dates and impacted satellites.",
   },
   {
-    to: "/examples/release-log", img: SCENES[2], title: "Processors · Release log",
+    to: "/examples/release-log", img: CARD_ART.releaseLog, title: "Processors · Release log",
     desc: "Release notes are displayed in reverse-chronological order, with full entries and minimal metadata. Users can filter by date or processor, and search across various fields. The latest release is always at the top, with no status indicators.",
   },
   {
-    to: "/examples/version-compare", img: MOD_IMG[3], title: "Processors · Version compare",
-    desc: "A focused diff rather than a browsing view: pick a processor and two of its baselines, and read what changed between them. The pickers enforce direction, so the later baseline is always on the right. A summary states the gap, how many baselines the jump covers and which it skips, and the release notes sit side by side line-diffed — added, dropped, or carried by both. 'Compare to current' jumps to the latest release.",
+    to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "Processors · Version compare",
+    desc: "A focused diff lets you compare two baselines of a processor, showing changes. The later baseline is on the right, with a summary of skipped baselines. Release notes appear side-by-side, highlighting changes, and 'Compare to current' directs you to the latest release.",
   },
 ];
 
