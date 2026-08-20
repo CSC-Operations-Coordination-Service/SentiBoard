@@ -51,6 +51,21 @@ import s from "./manifest.module.css";
 /* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
 const NARROW = "(max-width: 760px)";
 
+/** How many marks a day cell can show before it starts summarising. Four fits two rows of glyphs in
+ *  the wide cell and in the ~45px phone cell; beyond that the marks would crowd out the day number. */
+const MARKS_SHOWN = 4;
+
+/** "1 acquisition, 1 production" — what the day's glyphs say, for the cell's aria-label. In
+ *  CATEGORIES order rather than event order, so the same mix of types always reads the same way. */
+function typeSummary(events: ManifestEvent[]): string {
+  return CATEGORIES.filter((c) => events.some((e) => e.category === c))
+    .map((c) => {
+      const n = events.filter((e) => e.category === c).length;
+      return `${n} ${c.toLowerCase()}`;
+    })
+    .join(", ");
+}
+
 // ---------------------------------------------------------------------------
 // Status marks
 // ---------------------------------------------------------------------------
@@ -417,21 +432,47 @@ export default function EventsManifest() {
                   className={`${s.cell} ${selected ? s.cellSel : ""}`}
                   onClick={() => selectDay(c.day)}
                   aria-pressed={selected}
+                  /* The glyphs are aria-hidden, so the types they now encode have to reach a
+                     screen reader through the label. The dots carried no type at all, so this is
+                     information the cell gained rather than information it is repeating. */
                   aria-label={
                     events.length
-                      ? `${c.day} August, ${events.length} event${events.length === 1 ? "" : "s"}, worst completeness ${COMPLETENESS[status!].label}`
+                      ? `${c.day} August, ${events.length} event${events.length === 1 ? "" : "s"}, ${typeSummary(events)}, worst completeness ${COMPLETENESS[status!].label}`
                       : `${c.day} August, no events`
                   }
                 >
                   <span className={s.cellNum}>{String(c.day).padStart(2, "0")}</span>
 
-                  {/* One dot per event: the count is the signal, and colouring them would put a
-                      second palette on a grid that is meant to stay quiet. */}
+                  {/* One mark per event, drawn with that event's TYPE GLYPH — the same five icons
+                      the filter pills carry at the top of the page (components/EventIcon's set), so
+                      a day reads as "a manoeuvre and a production issue" rather than "two things".
+                      Replaces the neutral dots that were here.
+
+                      Still uncoloured: this page reserves colour for completeness, and the pills
+                      draw these same glyphs in the accent rather than in a per-type hue, so a second
+                      palette would contradict both. The glyph identifies the type; the stripe below
+                      identifies the loss. */}
                   {events.length > 0 && (
-                    <span className={s.dots}>
-                      {events.map((e) => (
-                        <span key={e.id} className={s.dot} title={`${e.time} · ${e.category} · ${e.satellite}`} />
-                      ))}
+                    <span className={s.marks}>
+                      {events.slice(0, MARKS_SHOWN).map((e) => {
+                        const Icon = CATEGORY_ICONS[e.category];
+                        return (
+                          <span
+                            key={e.id}
+                            className={s.mark}
+                            title={`${e.time} · ${e.category} · ${e.satellite}`}
+                          >
+                            <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden />
+                          </span>
+                        );
+                      })}
+                      {/* A glyph is far bigger than the 5px dot it replaces, so a busy day can no
+                          longer show one mark per event. The mock's busiest day has two; a real
+                          month will have more, and silently dropping them would make the grid
+                          under-report. */}
+                      {events.length > MARKS_SHOWN && (
+                        <em className={s.markMore}>+{events.length - MARKS_SHOWN}</em>
+                      )}
                     </span>
                   )}
 
@@ -449,7 +490,7 @@ export default function EventsManifest() {
         <p className={s.hint}>
           {filtered.length === 0
             ? "No events match the current filters."
-            : "Every dot is one event. A coloured stripe marks a day where completeness was degraded or lost."}
+            : "Every icon is one event, drawn with its event type's glyph — the same icons as the type filters above. A coloured stripe marks a day where completeness was degraded or lost."}
         </p>
       </div>
 

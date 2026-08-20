@@ -11,8 +11,8 @@ import About from "./pages/About";
 import { SimplePage, StatPage } from "./pages/Simple";
 import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
-import EventsLogV3 from "./pages/EventsLogV3";
 import EventsManifest from "./pages/events-manifest/EventsManifest";
+import EventsSwimlanes from "./pages/events-swimlanes/EventsSwimlanes";
 import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
 import AcquisitionsGlobe from "./pages/AcquisitionsGlobe";
 import DataAvailability from "./pages/DataAvailability";
@@ -48,9 +48,9 @@ export default function App() {
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route path="/examples/reveal" element={<IndexReveal />} />
           <Route path="/examples/about" element={<AboutRedesign />} />
-          <Route path="/examples/events-log-v3" element={<EventsLogV3 />} />
           <Route path="/examples/events-manifest" element={<EventsManifest />} />
           <Route path="/examples/events-spacex" element={<EventsSpaceXConcepts />} />
+          <Route path="/examples/events-swimlanes" element={<EventsSwimlanes />} />
           <Route path="/examples/acquisitions-globe" element={<AcquisitionsGlobe />} />
           <Route path="/examples/data-availability" element={<DataAvailability />} />
           <Route path="/examples/data-availability-spacex" element={<DataAvailabilitySpaceX />} />

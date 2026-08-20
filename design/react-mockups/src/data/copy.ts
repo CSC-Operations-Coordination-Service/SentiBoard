@@ -24,19 +24,24 @@ export const AVAILABILITY_DESCRIPTION =
 export const EVENTS_DESCRIPTION =
   "This page logs the events that could impede data production — calibration activities, satellite " +
   "manoeuvres, platform anomalies and ground-segment issues — against the month in which they " +
-  "occurred. Each dot in a day cell is one event, and a coloured stripe marks a day on which " +
+  "occurred. Each icon in a day cell is one event, drawn with that event type's glyph — the same " +
+  "icons as the event type filters — and a coloured stripe marks a day on which " +
   "publication completeness was degraded or lost. Filter the month by mission, by satellite, by " +
   "event type, or search by event title, satellite or datatake ID. Select any day to open its Day " +
   "Manifest, which lists that day's events in time order; expanding an event reveals the datatakes " +
   "it impacted, with their sensing windows and completeness status.";
 
-/* Events log — the month grid with the side panel (the /examples/events-log-v3 proposal). */
-export const EVENTS_LOG_DESCRIPTION =
-  "This page logs the events that could impede data production — planned calibration activities, " +
-  "manoeuvres and anomalies — against the month in which they occurred, together with the products " +
-  "they impact. Narrow the month down with the mission, event type and completeness status " +
-  "filters. Select a day in the grid to list its occurrences in the side panel, then expand any " +
-  "occurrence to see the datatakes it affected and how complete each one is.";
+/* Events — the mission swimlanes (the /examples/events-swimlanes proposal). The top level is the
+   fleet rather than time, so the description leads with the row and says what "active" means: the
+   Events feed has no open/closed field, and the badge must not be read as one. */
+export const EVENTS_SWIMLANES_DESCRIPTION =
+  "This page groups the month's events by mission rather than by date. Each row is one mission, and " +
+  "states — before it is opened — how many events it had, how many distinct datatakes those events " +
+  "affected, which event types occurred, and how many of them still have data missing. Open a row " +
+  "to list that mission's events in date order, then expand an event to see the datatakes it " +
+  "impacted, with their sensing windows and completeness status. \"Active\" counts events whose " +
+  "datatake completeness is still degraded, lost or in progress: the events feed carries no " +
+  "open/closed state, so this is derived from completeness rather than read from a status field.";
 
 /* Events — the calendar on the current page, kept as-is for comparison against the proposals. */
 export const EVENTS_LIST_DESCRIPTION =

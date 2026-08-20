@@ -1,11 +1,26 @@
-// DEVOCS-219 — "Mission Manifest" Events mock-up: domain types, the August 2026 mock data and the
-// pure helpers both layout variants share. Mock-up only — nothing here talks to a backend; the
-// shipping page is /v1/events, server-rendered from lib/data.ts.
+// DEVOCS-219 — Events mock data for the Mission swimlanes proposal (/examples/events-swimlanes).
 //
-// Everything is a literal: no Date.now(), no `new Date()` without explicit arguments, no RNG. The
-// server render and the client hydration therefore produce identical markup, so React never
-// reports a mismatch. That is also why no day is marked "today" — the mock is pinned to August
-// 2026 and asking the runtime for the real date would reintroduce exactly that hazard.
+// It began as `pages/events-manifest/mock.ts` and carries the same August 2026 dataset, with three
+// deliberate changes:
+//
+//   1. Colours point at the APP-LEVEL tokens in styles/tokens.css (--cmp-* for completeness,
+//      --evt-* for event type) instead of the private --mf-* set the manifest page defined. Those
+//      tokens are transcribed from production's own two legends (dataAvailability.css and
+//      events.css) and exist in both themes, so this page agrees with the shipping dashboard
+//      rather than with a palette invented per page.
+//   2. Event type gains a colour. Completeness keeps its own scale; the two never colour the
+//      same mark.
+//   3. Adds the datatake-count and "unrecovered" derivations the swimlanes surface without a click.
+//
+// It was briefly shared with a consolidated calendar-grid proposal, which was not taken forward;
+// the calendar geometry and per-day helpers that only that page used are gone. The surviving
+// surface is what EventsSwimlanes imports. `pages/events-manifest/mock.ts` is a separate file and
+// stays byte-identical with its copy in the Next.js frontend (frontend/app/examples/events/).
+//
+// Everything is a literal: no Date.now(), no argument-less `new Date()`, no RNG — so a server
+// render and a client hydration produce identical markup. That is also why no day is marked
+// "today": the mock is pinned to August 2026 and asking the runtime for the real date would
+// reintroduce exactly that hazard.
 
 import { Cog, Compass, Joystick, Satellite, SatelliteDish, type LucideIcon } from "lucide-react";
 
@@ -16,8 +31,7 @@ import { Cog, Compass, Joystick, Satellite, SatelliteDish, type LucideIcon } fro
 /** The five event categories the production Events page publishes. */
 export type EventCategory = "Acquisition" | "Calibration" | "Manoeuvre" | "Production" | "Satellite";
 
-/** Publication completeness of a datatake — the same five states the production legend
- *  publishes, not a private three-colour scale. */
+/** Publication completeness of a datatake — production's five legend states. */
 export type Status = "planned" | "processing" | "acquired" | "partial" | "unavailable";
 
 export type Datatake = {
@@ -59,7 +73,14 @@ export const MISSIONS: Record<string, string[]> = {
 };
 
 export const MISSION_NAMES = Object.keys(MISSIONS);
-export const ALL_SATELLITES = MISSION_NAMES.flatMap((m) => MISSIONS[m]);
+
+/** The short forms the dashboard prints on badges and datatake IDs — S1, S2, S3, S5P. */
+export const MISSION_SHORT: Record<string, string> = {
+  "Sentinel-1": "S1",
+  "Sentinel-2": "S2",
+  "Sentinel-3": "S3",
+  "Sentinel-5P": "S5P",
+};
 
 const MISSION_OF: Record<string, string> = Object.fromEntries(
   MISSION_NAMES.flatMap((m) => MISSIONS[m].map((sat) => [sat, m])),
@@ -69,8 +90,14 @@ export function missionOf(satellite: string): string {
   return MISSION_OF[satellite] ?? satellite;
 }
 
-/** The same five glyphs the real Events page renders (components/EventIcon in the mock-ups app,
- *  the broadcast / compass / joystick / cog / satellite set on /v1/events), so a Manoeuvre reads
+/** "S1A" — the satellite as the datatake tables abbreviate it. */
+export function satelliteShort(satellite: string): string {
+  const mission = missionOf(satellite);
+  const unit = satellite.slice(mission.length).replace(/^-/, "");
+  return MISSION_SHORT[mission] + unit;
+}
+
+/** The same five glyphs the real Events page renders (components/EventIcon), so a Manoeuvre reads
  *  identically wherever it appears. Drawn at CATEGORY_STROKE, matching EventIcon. */
 export const CATEGORY_ICONS: Record<EventCategory, LucideIcon> = {
   Acquisition: SatelliteDish,
@@ -85,16 +112,26 @@ export const CATEGORY_STROKE = 1.9;
 
 export const CATEGORIES = Object.keys(CATEGORY_ICONS) as EventCategory[];
 
-/** Labels and colours taken from production's own datatake legend, so this page cannot disagree
- *  with the shipping dashboard about what "Partial" looks like. Planned and Processing share the
- *  neutral grey: neither has lost anything, they are simply not finished. The values live in
- *  manifest.module.css. */
+/** Event-type colours — the app-level --evt-* tokens, which are production's own Event Types
+ *  legend (apps/static/assets/css/events.css) re-weighted for the dark canvas. Both themes are
+ *  defined in styles/tokens.css, so nothing here needs a light-mode branch. */
+export const CATEGORY_COLOR: Record<EventCategory, string> = {
+  Acquisition: "var(--evt-acquisition)",
+  Calibration: "var(--evt-calibration)",
+  Manoeuvre: "var(--evt-manoeuvre)",
+  Production: "var(--evt-production)",
+  Satellite: "var(--evt-satellite)",
+};
+
+/** Completeness labels and colours — the app-level --cmp-* tokens, which are production's five
+ *  datatake legend states. Planned and Processing are the two greys, a step apart so a lone dot
+ *  still distinguishes them; neither has lost anything, they are simply not finished. */
 export const COMPLETENESS: Record<Status, { label: string; color: string }> = {
-  planned: { label: "Planned", color: "var(--mf-grey)" },
-  processing: { label: "Processing", color: "var(--mf-grey)" },
-  acquired: { label: "Acquired", color: "var(--mf-green)" },
-  partial: { label: "Partial", color: "var(--mf-orange)" },
-  unavailable: { label: "Unavailable", color: "var(--mf-red)" },
+  planned: { label: "Planned", color: "var(--cmp-planned)" },
+  processing: { label: "Processing", color: "var(--cmp-processing)" },
+  acquired: { label: "Acquired", color: "var(--cmp-acquired)" },
+  partial: { label: "Partial", color: "var(--cmp-partial)" },
+  unavailable: { label: "Unavailable", color: "var(--cmp-unavailable)" },
 };
 
 /** Legend order: the lifecycle, then the two failure states. */
@@ -109,12 +146,6 @@ const STATUS_RANK: Record<Status, number> = {
   planned: 1,
   acquired: 0,
 };
-
-/** True for the two states that actually cost data. Only these mark a day cell in the grid, so a
- *  month of planned and processing work stays quiet and the eye goes to the losses. */
-export function marksLoss(status: Status): boolean {
-  return status === "partial" || status === "unavailable";
-}
 
 // ---------------------------------------------------------------------------
 // Mock data — August 2026
@@ -307,9 +338,45 @@ export function eventStatus(event: ManifestEvent): Status {
   return worstStatus(event.datatakes);
 }
 
-export function dayStatus(events: ManifestEvent[]): Status {
-  return worstStatus(events.flatMap((e) => e.datatakes));
+// ---------------------------------------------------------------------------
+// Counts surfaced WITHOUT a click
+//
+// The lane headers and the event rows both promise the datatake-affected count on their face, so
+// the arithmetic lives here once rather than in each.
+// ---------------------------------------------------------------------------
+
+/** How many DISTINCT datatakes a set of events impacted.
+ *
+ *  Distinct, not summed: ev-07 loses two datatake fragments and ev-08 republishes the same two, so
+ *  a plain sum reports four affected datatakes on a mission that only ever had two. A lane header
+ *  reading "4 datatakes" when the operator can count two IDs inside it is a header they stop
+ *  believing, so the same ID seen twice counts once. */
+export function distinctDatatakeCount(events: ManifestEvent[]): number {
+  return new Set(events.flatMap((e) => e.datatakes.map((d) => d.id))).size;
 }
+
+/** Whether an event's data has NOT yet come back — any datatake still Partial, Unavailable or
+ *  Processing.
+ *
+ *  This is a COMPLETENESS reading, not a workflow state. The Events feed has no lifecycle field
+ *  (see design/events-kanban-data-gap.md): production derives an `overall_status` of ok / partial /
+ *  failed from the same datatake completeness figures, and that is the only "is this still a
+ *  problem" signal the data actually carries. Every view that shows an "active" badge labels it
+ *  against this definition, and none of them claims the event is open in a tracker. */
+export function isUnrecovered(event: ManifestEvent): boolean {
+  return event.datatakes.some(
+    (d) => d.status === "partial" || d.status === "unavailable" || d.status === "processing",
+  );
+}
+
+/** The wording every "N active" badge explains itself with, so the lane header, the event row and
+ *  the page footnote cannot drift apart. */
+export const ACTIVE_DEFINITION =
+  "Active = datatake completeness still degraded, lost or in progress. The Events feed carries no open/closed field; this is derived from completeness.";
+
+// ---------------------------------------------------------------------------
+// Filtering
+// ---------------------------------------------------------------------------
 
 export type Filters = {
   mission: string; // "" = all
@@ -339,34 +406,18 @@ export function filterEvents(events: ManifestEvent[], f: Filters): ManifestEvent
   });
 }
 
-/** Day of month → that day's events, sorted by time. */
-export function groupByDay(events: ManifestEvent[]): Map<number, ManifestEvent[]> {
-  const map = new Map<number, ManifestEvent[]>();
+/** Mission name → that mission's events, chronological. Every mission gets a key, including the
+ *  ones with nothing this month: a swimlane that disappears when its filter matches nothing reads
+ *  as a missing row rather than a quiet one. */
+export function groupByMission(events: ManifestEvent[]): Map<string, ManifestEvent[]> {
+  const map = new Map<string, ManifestEvent[]>(MISSION_NAMES.map((m) => [m, []]));
   [...events]
     .sort((a, b) => a.day - b.day || a.time.localeCompare(b.time))
-    .forEach((e) => map.set(e.day, [...(map.get(e.day) ?? []), e]));
+    .forEach((e) => map.get(missionOf(e.satellite))!.push(e));
   return map;
 }
 
-export type Cell = { day: number; dim: boolean };
-
-/** A Monday-first month grid padded to whole weeks, matching components/EventsCalendar.tsx. The
- *  leading and trailing cells belong to the neighbouring months and are never selectable. */
-export function calendarCells(year: number, month: number): Cell[] {
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const firstDow = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7; // Monday = 0
-  const prevMonthLast = new Date(Date.UTC(year, month - 1, 0)).getUTCDate();
-
-  const cells: Cell[] = [];
-  for (let i = 0; i < firstDow; i++) cells.push({ day: prevMonthLast - firstDow + 1 + i, dim: true });
-  for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, dim: false });
-  for (let d = 1; cells.length % 7 !== 0; d++) cells.push({ day: d, dim: true });
-  return cells;
-}
-
-export const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-
-/** "05 Aug 2026" for a day of the mocked month. */
-export function dayLabel(day: number): string {
-  return `${pad(day)} ${MONTH_SHORT[MONTH - 1]} ${YEAR}`;
+/** "05 Aug" — the short form a swimlane row and a card use, where the year is already established. */
+export function shortDayLabel(day: number): string {
+  return `${pad(day)} ${MONTH_SHORT[MONTH - 1]}`;
 }

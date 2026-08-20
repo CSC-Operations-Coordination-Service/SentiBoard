@@ -1,0 +1,762 @@
+/* DEVOCS-219 — /examples/events-swimlanes.
+   A CSS module, so its class names cannot collide with global.css.
+
+   Same colour discipline as the calendar-grid proposal: --cmp-* for datatake completeness and
+   --evt-* for event type, both from styles/tokens.css and both defined in the dark and light
+   themes. The --sw-* variables are canvas and chrome only, aliased onto app tokens. */
+
+.page {
+  --sw-bg: var(--bg);
+  --sw-panel: var(--bg-1);
+  --sw-panel-2: var(--bg-2);
+  --sw-line: var(--line);
+  --sw-line-strong: var(--line-strong);
+
+  --sw-text: var(--text);
+  --sw-muted: var(--text-dim);
+  --sw-faint: var(--text-mute);
+
+  --sw-signal: var(--accent-2);
+  --sw-signal-soft: color-mix(in srgb, var(--accent-2) 14%, transparent);
+
+  position: relative;
+  min-height: calc(100vh - var(--nav-h, 0px));
+  width: 100%;
+  background: var(--sw-bg);
+  color: var(--sw-text);
+  font-family: var(--font-sans, var(--sans));
+}
+
+.inner {
+  max-width: var(--wrap, var(--maxw));
+  margin: 0 auto;
+  padding: 26px 28px 64px;
+}
+
+.page :global(.page-desc) {
+  --pd-line: var(--sw-line);
+  --pd-bg: var(--sw-panel);
+  --pd-label: var(--sw-muted);
+  --pd-label-hover: var(--sw-text);
+  --pd-accent: var(--sw-signal);
+  --pd-hover: var(--sw-signal-soft);
+  --pd-body: var(--sw-muted);
+  max-width: 74ch;
+}
+
+/* ---------------- header ---------------- */
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--sw-signal);
+}
+
+.eyebrow a { color: inherit; text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+
+.title {
+  margin: 0;
+  font-family: var(--font-display, var(--display, var(--font-sans)));
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 8px 0 0;
+  max-width: 74ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--sw-muted);
+}
+
+/* ---------------- month bar + legend ---------------- */
+.monthBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--sw-line);
+  border-bottom: 1px solid var(--sw-line);
+}
+
+.monthLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.legend { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+
+.legendLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sw-faint);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--sw-muted);
+}
+
+.legendDot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+
+/* ---------------- fleet totals ---------------- */
+.totals {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 20px 0 0;
+  border: 1px solid var(--sw-line);
+  border-radius: 14px;
+  background: var(--sw-line);
+  overflow: hidden;
+}
+
+.total {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--sw-panel);
+}
+
+.total span {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sw-faint);
+}
+
+.total b {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The one figure that is a finding rather than a fact, so the one figure that takes a colour. */
+.totalWarn { color: var(--cmp-partial); }
+
+/* ---------------- filters ---------------- */
+.filters {
+  margin: 16px 0 18px;
+  padding: 16px;
+  border: 1px solid var(--sw-line);
+  border-radius: 14px;
+  background: var(--sw-panel);
+}
+
+.filtersHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--sw-faint);
+}
+
+.filtersLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.count {
+  margin-left: 4px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  color: var(--sw-muted);
+}
+
+.reset {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-signal);
+}
+
+.reset:hover { text-decoration: underline; }
+
+.fieldRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fieldWide { max-width: 460px; }
+
+.field label {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sw-faint);
+}
+
+.control {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--sw-line);
+  border-radius: 8px;
+  background: var(--sw-panel-2);
+  color: var(--sw-text);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 12.5px;
+  line-height: 1.3;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.control:hover:not(:disabled) { border-color: var(--sw-line-strong); }
+.control:focus { border-color: var(--sw-signal); box-shadow: 0 0 0 3px var(--sw-signal-soft); }
+
+.withIcon { position: relative; display: flex; }
+.withIcon .control { padding-left: 31px; }
+
+.lead {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+  color: var(--sw-faint);
+}
+
+.clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--sw-faint);
+}
+
+.clear:hover { color: var(--sw-text); }
+
+.chipRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+.chipRowLabel {
+  margin-right: 4px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sw-faint);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--sw-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--sw-faint);
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.chip:hover { border-color: var(--sw-line-strong); color: var(--sw-muted); }
+
+.chipOn {
+  border-color: var(--chip, var(--sw-signal));
+  background: color-mix(in srgb, var(--chip, var(--sw-signal)) 14%, transparent);
+  color: var(--chip, var(--sw-signal));
+}
+
+.filtersToggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -8px -10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--sw-muted);
+  cursor: pointer;
+}
+
+.filtersToggle svg { transition: transform 0.2s ease; }
+.filtersToggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+
+/* ---------------- lanes ---------------- */
+.lanesHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  color: var(--sw-faint);
+}
+
+.expandAll {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--sw-signal);
+}
+
+.expandAll:hover { text-decoration: underline; }
+
+.lanes { display: flex; flex-direction: column; gap: 10px; }
+
+.lane {
+  border: 1px solid var(--sw-line);
+  border-radius: 14px;
+  background: var(--sw-panel);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.lane:hover:not(.laneEmpty) { border-color: var(--sw-line-strong); }
+.laneOpen { border-color: var(--sw-line-strong); }
+
+/* A mission with no events this month: present, so the fleet is complete, and visibly quiet. */
+.laneEmpty { opacity: 0.5; }
+
+.laneHead {
+  display: grid;
+  grid-template-columns: 16px 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.laneHead:disabled { cursor: default; }
+.laneHead:focus-visible { outline: 2px solid var(--sw-signal); outline-offset: -2px; }
+
+/* The mission's short form as a plate — S1, S2, S3, S5P, the same abbreviations the datatake IDs
+   and the acquisition filters use. It is the fastest way to find your own row. */
+.laneShort {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 26px;
+  border: 1px solid var(--sw-line-strong);
+  border-radius: 7px;
+  background: var(--sw-panel-2);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--sw-muted);
+}
+
+.laneOpen .laneShort { border-color: var(--sw-signal); color: var(--sw-signal); }
+
+.laneName { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+
+.laneTitle { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+
+.laneSats {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--sw-faint);
+}
+
+.laneBadges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px 14px;
+}
+
+/* "N ACTIVE" — amber, the Partial colour, because that is literally what it counts: completeness
+   that has not come back. Not red: an active event is not the same as data confirmed lost, and the
+   red in this palette is reserved for Unavailable. */
+.activeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 9px;
+  border: 1px solid color-mix(in srgb, var(--cmp-partial) 55%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cmp-partial) 14%, transparent);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--cmp-partial);
+  white-space: nowrap;
+  cursor: help;
+}
+
+.laneTypes { display: inline-flex; align-items: center; gap: 4px; }
+.lanePip { width: 7px; height: 7px; border-radius: 50%; }
+
+.laneCount,
+.laneDtk {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--sw-faint);
+  white-space: nowrap;
+}
+
+.laneCount b,
+.laneDtk b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--sw-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.chev { flex: 0 0 auto; color: var(--sw-faint); transition: transform 0.18s; }
+.chevOpen { transform: rotate(90deg); }
+
+/* ---------------- events inside a lane ---------------- */
+.eventList {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 8px;
+  border-top: 1px solid var(--sw-line);
+}
+
+.event { border-bottom: 1px solid var(--sw-line); }
+.event:last-child { border-bottom: 0; }
+
+.eventRow {
+  display: grid;
+  grid-template-columns: 13px 15px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* One strip, so the four trailing fields move as a unit when the row runs out of width. */
+.eventTail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+
+.eventRow:hover .eventTitle { color: var(--sw-signal); }
+.eventRow:focus-visible { outline: 2px solid var(--sw-signal); outline-offset: -2px; }
+
+.eventIcon { display: inline-flex; }
+
+.eventBody { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.eventTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  transition: color 0.15s;
+}
+
+.eventMeta {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--sw-faint);
+}
+
+.eventDate {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--sw-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.eventCount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--sw-faint);
+  white-space: nowrap;
+}
+
+.eventCount b {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sw-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Same flex-collapses-the-leading-space fix as the calendar grid's day markers. */
+.eventCountUnit { margin-left: 0.28em; }
+
+.eventLost {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cmp-unavailable);
+}
+
+/* The per-event echo of the lane badge, same colour, smaller. */
+.eventActive {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--cmp-partial) 50%, transparent);
+  border-radius: 999px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cmp-partial);
+  white-space: nowrap;
+  cursor: help;
+}
+
+.circle { flex: 0 0 auto; border-radius: 50%; }
+
+.eventDetail { padding: 0 0 14px 23px; }
+
+.eventSummary { margin: 0 0 12px; font-size: 12.5px; line-height: 1.6; color: var(--sw-muted); max-width: 88ch; }
+
+.dtHead {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sw-line);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sw-faint);
+}
+
+.dtList { list-style: none; margin: 0; padding: 0; }
+
+.dtRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 9px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--sw-line);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+}
+
+.dtRow:last-child { border-bottom: 0; }
+.dtId { color: var(--sw-text); }
+.dtProduct { grid-column: 2; color: var(--sw-signal); font-size: 10px; letter-spacing: 0.06em; }
+.dtTime { grid-column: 2; color: var(--sw-faint); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+
+.dtStatus {
+  grid-column: 3;
+  grid-row: 1 / span 3;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  text-align: right;
+}
+
+.dtStatusLabel { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+.dtPct { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.hint {
+  margin: 16px 2px 0;
+  max-width: 90ch;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--sw-faint);
+}
+
+.badgeTail { display: inline; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+/* ≤1080px — the trailing strip stops fitting beside a full-length title, so it drops to a second
+   line under it. It stays in column 3, indented past the chevron and the type glyph, so it still
+   reads as part of the same row rather than as a row of its own. */
+@media (max-width: 1080px) {
+  .eventRow {
+    grid-template-columns: 13px 15px minmax(0, 1fr);
+    row-gap: 8px;
+  }
+
+  .eventTail { grid-column: 3; justify-content: flex-start; }
+}
+
+@media (max-width: 900px) {
+  .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .head { flex-direction: column; }
+}
+
+/* ============================================================
+   MOBILE (≤760px) — one column, thumb-sized targets. Breakpoint matched to the app nav's.
+   ============================================================ */
+@media (max-width: 760px) {
+  .inner { padding: 20px 14px 44px; }
+
+  /* Same argument as the other Events proposals: the intro repeats the Description panel's
+     opening, which on a phone pushed the lanes off the first screen. */
+  .sub { display: none; }
+
+  .title { font-size: clamp(26px, 8vw, 34px); }
+  .eyebrow { font-size: 10px; }
+  .eyebrow a { display: inline-flex; align-items: center; min-height: 44px; }
+  .page :global(.page-desc) { max-width: none; }
+
+  .monthBar { gap: 10px; padding: 12px 0; }
+  .legendLabel { flex: 0 0 100%; }
+  .legend { gap: 8px 12px; }
+  .legendItem { font-size: 11.5px; }
+
+  /* The label wraps to two lines on the two long ones ("Datatakes affected", "Missions with
+     events"), so the tiles are given a min-height rather than letting one row jump the other. */
+  .total { padding: 12px 14px; min-height: 74px; justify-content: space-between; }
+  .total b { font-size: 19px; }
+
+  .filters { margin: 14px 0; padding: 4px 12px 12px; }
+  .filtersHead { min-height: 48px; margin-bottom: 0; }
+  .fieldRow { margin-top: 14px; }
+  .fieldWide { max-width: none; }
+  .control { min-height: 44px; padding: 11px 12px; font-size: 13px; }
+  .chipRowLabel { flex: 0 0 100%; margin-right: 0; font-size: 10.5px; }
+  .chip { min-height: 44px; padding: 8px 13px; font-size: 11.5px; }
+
+  .reset,
+  .clear,
+  .expandAll {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------- lanes ---------- */
+  /* The header stacks: identity on the first line, the badges on the second. Four counts and a
+     badge could not share a line with a mission name at 375px without the counts ellipsising —
+     and the counts are the reason the row is worth reading collapsed. */
+  .laneHead {
+    grid-template-columns: 16px 44px minmax(0, 1fr);
+    gap: 10px 12px;
+    padding: 12px 14px;
+    min-height: 60px;
+  }
+
+  .laneBadges {
+    grid-column: 2 / -1;
+    justify-content: flex-start;
+    gap: 8px 12px;
+  }
+
+  .laneTitle { font-size: 14.5px; }
+
+  .eventList { padding: 0 14px 6px; }
+
+  /* On a phone the row is already stacked by the ≤1080px rule; here it only needs bigger text and
+     a 44px-tall touch target. */
+  .eventRow { padding: 12px 0; min-height: 44px; }
+  .eventTitle { font-size: 14px; }
+  .eventMeta { font-size: 11px; }
+  .eventDetail { padding-left: 16px; }
+  .eventSummary { font-size: 13.5px; }
+
+  .dtRow { grid-template-columns: auto minmax(0, 1fr); gap: 3px 8px; padding: 10px 0; font-size: 12px; }
+  .dtId { overflow-wrap: anywhere; }
+  .dtProduct,
+  .dtTime { font-size: 11px; }
+
+  .dtStatus {
+    grid-column: 2;
+    grid-row: auto;
+    align-self: start;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 7px;
+    text-align: left;
+  }
+
+  .dtStatusLabel { font-size: 10px; }
+
+  .hint { font-size: 11.5px; }
+
+  .badge { right: 10px; bottom: 10px; max-width: calc(100vw - 20px); font-size: 9.5px; padding: 7px 10px; }
+  .badgeTail { display: none; }
+}
+
+@media (max-width: 430px) {
+  .inner { padding: 18px 10px 40px; }
+  .laneHead { padding: 12px; }
+  .eventList { padding: 0 12px 6px; }
+
+  /* The totals stay two-up. One column made them four full-width rows — a whole screen of
+     summary before the first mission, on the page whose point is that the missions ARE the
+     summary. Two-up they cost half a screen and the lanes stay reachable. */
+  .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .total { padding: 11px 12px; }
+  .total span { font-size: 9.5px; letter-spacing: 0.1em; }
+  .total b { font-size: 18px; }
+}

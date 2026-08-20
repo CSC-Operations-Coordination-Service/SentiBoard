@@ -323,8 +323,8 @@ const CARDS = [
 // it stays clear which real page each one is an alternative to.
 const PAGE_CARDS = [
   {
-    to: "/examples/events-log-v3", img: MOD_IMG[1], title: "Events · mission tiles + side panel",
-    desc: "The month displays as a daily grid using single dots for events and impact stripes for data-loss days. Selecting a day opens a panel detailing affected datatakes and their completeness. Designed on a near-black canvas with condensed type and a single accent color.",
+    to: "/examples/events-swimlanes", img: MOD_IMG[3], title: "Events · Mission swimlanes",
+    desc: "The month by fleet rather than by date: one collapsible row per mission (S1, S2, S3, S5P), collapsed by default. A row header states its event count, its affected datatakes, the event types present and an 'N active' badge when data is still degraded or lost. Expanding a row lists that mission's events inline with name, date and datatake count. Replaces the rejected chronological list.",
   },
   {
     to: "/examples/events-spacex", img: MOD_IMG[0], title: "Events · timeline + heatmap (2 concepts)",
@@ -332,7 +332,7 @@ const PAGE_CARDS = [
   },
   {
     to: "/examples/events-manifest", img: MOD_IMG[3], title: "Events · filters + day drawer",
-    desc: "Shows mission events on a grid, marking days with missing data. Selecting a day reveals occurrences and impacted datatakes.",
+    desc: "Shows mission events on a grid, marking days with missing data. Each day carries one icon per event, drawn with that event type's glyph — the same five icons as the type filters above the grid — so a day with a manoeuvre and a production issue reads as both. Selecting a day reveals occurrences and impacted datatakes.",
   },
 ];
 
@@ -408,7 +408,7 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
-          <span className="meta">3 alternative to /events </span>
+          <span className="meta">3 final concepts for /events</span>
         </div>
         <div className="ex-list">
           {PAGE_CARDS.map((c) => (

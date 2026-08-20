@@ -10,8 +10,8 @@
 
    The palette is deliberately NOT the one in globals.css: the brief asks for a near-black canvas
    and a single signal accent. The accent is --accent-cyan (#00C7D6), which already means
-   "live / now / selected" app-wide, and the five completeness colours are lifted verbatim from the
-   Events log proposal — so nothing here invents a colour meaning. Type,
+   "live / now / selected" app-wide, and the five completeness colours are lifted verbatim from
+   production's own datatake legend — so nothing here invents a colour meaning. Type,
    radii and the page width still come from globals.css (--sans, --mono, --display, --maxw). */
 
 .page {
@@ -31,8 +31,8 @@
   --mf-signal: #00c7d6;
   --mf-signal-soft: rgba(0, 199, 214, 0.13);
 
-  /* completeness status — the five states and the exact colours the Events log proposal uses
-     (/examples/events-log-v3), so the two proposals cannot disagree about what "Partial" means.
+  /* completeness status — the five states and the exact colours production's own legend uses, so
+     this page and the shipping dashboard cannot disagree about what "Partial" means.
      Planned and Processing share the neutral grey: not finished is not the same as degraded. */
   --mf-grey: #a6abb0;
   --mf-green: #3fe096;
@@ -511,25 +511,48 @@ select.control {
   color: var(--mf-text);
 }
 
-.dots {
+/* One mark per event, each drawn with its event type's glyph — the icons the filter pills carry.
+   Replaces the neutral dots that were here. */
+.marks {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  padding-bottom: 2px;
+  align-items: center;
+  gap: 2px 3px;
+  padding-bottom: 1px;
 }
 
-.dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--mf-faint);
+/* The glyph inherits its colour rather than taking a per-type hue: this page spends colour on
+   completeness only, and the pills draw these same icons in the accent, not in five hues. The
+   SHAPE is what identifies the type; the stripe under the cell is what identifies the loss. */
+.mark {
+  display: inline-flex;
   flex: 0 0 auto;
-  transition: background 0.15s;
+  color: var(--mf-faint);
+  transition: color 0.15s;
 }
 
-.cell:hover .dot,
-.cellSel .dot {
-  background: var(--mf-signal);
+.cell:hover .mark,
+.cellSel .mark {
+  color: var(--mf-signal);
+}
+
+/* "+2" when a day has more events than the cell can draw. Sized to sit on the glyphs' baseline
+   rather than beside them, so a summarised day is still one row of marks. */
+.markMore {
+  flex: 0 0 auto;
+  font-family: var(--font-mono, var(--mono));
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--mf-faint);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s;
+}
+
+.cell:hover .markMore,
+.cellSel .markMore {
+  color: var(--mf-signal);
 }
 
 /* the loss stripe: bottom edge of the cell, colour set inline from the day's worst impact */
@@ -1021,13 +1044,19 @@ select.control {
     font-size: 11.5px;
   }
 
-  .dots {
-    gap: 3px;
+  /* The cell is ~45px wide here, so the glyphs come down a step and the gutter tightens: four
+     11px marks plus their gaps fit two rows without touching the day number above them. */
+  .marks {
+    gap: 1px 2px;
   }
 
-  .dot {
-    width: 4px;
-    height: 4px;
+  .mark svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .markMore {
+    font-size: 9px;
   }
 
   .hint {
