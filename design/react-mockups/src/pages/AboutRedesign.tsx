@@ -74,14 +74,6 @@ export default function AboutRedesign() {
         </div>
       </section>
 
-      <section className="wrap" style={{ paddingTop: 18 }}>
-        <p className="ab-variant">
-          <span>Layout B · hero led</span>
-          <span>·</span>
-          <Link to="/about">See layout A — page-header led →</Link>
-        </p>
-      </section>
-
       <section className="wrap pad" style={{ paddingTop: 0 }}>
         <Reveal className="ab-intro">
           <p>{ABOUT_INTRO[1]}</p>

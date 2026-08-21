@@ -61,13 +61,7 @@ export default function AcquisitionsGlobe() {
         {/* Cross-link to the second Acquisitions concept. The two answer different questions —
             this one is the geographic reading, the ladder is the pipeline reading — so they are
             reviewed together rather than one replacing the other. */}
-        <p className="acq-variant">
-          <span>Concept a &middot; geographic reading</span>
-          <span>&middot;</span>
-          <Link to="/examples/acquisitions-ladder">See concept b &mdash; level ladder &rarr;</Link>
-          <span>&middot;</span>
-          <Link to="/examples">All proposals &rarr;</Link>
-        </p>
+
         <Reveal>
           <AcquisitionGlobe stations={STATIONS} datatakes={ACQ_DATATAKES} rail="plates" />
         </Reveal>

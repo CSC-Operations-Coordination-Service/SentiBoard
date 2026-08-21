@@ -53,10 +53,9 @@ export const EVENTS_LIST_DESCRIPTION =
 /* Acquisitions — shared by the current globe page and the demand-driven proposal, since both
    answer the same question with the same controls. */
 export const ACQUISITIONS_DESCRIPTION =
-  "This page shows past, current and future Copernicus Sentinel acquisitions on an interactive 3D " +
-  "globe. By default the real-time sensing scenario is displayed. Filter by satellite and by " +
-  "acquisition status to focus the globe on a single mission, inspect a past acquisition to see " +
-  "how it completed, or explore what is planned ahead. Drag to rotate the globe and scroll to zoom.";
+  "This page shows Copernicus Sentinel acquisitions on a 3D globe.  " +
+  "Filter by satellite and acquisition status to explore current and past missions. " +
+  "Drag to rotate and scroll to zoom. ";
 
 /* Processors — the release timeline. */
 export const PROCESSORS_DESCRIPTION =

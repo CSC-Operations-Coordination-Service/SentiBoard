@@ -139,7 +139,6 @@ export default function ReleaseLog() {
         crumb="Processors proposal"
         title="Release Log"
         sub="Every processor release as a reverse-chronological feed, with the release notes in full rather than hidden behind a click. Group by month or by processor, then narrow by mission, by release-date range, or by searching the releases."
-        desc={PROCESSORS_LOG_DESCRIPTION}
       />
 
       <section className="wrap pad">

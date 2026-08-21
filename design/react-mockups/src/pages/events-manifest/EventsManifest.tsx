@@ -366,7 +366,6 @@ export default function EventsManifest() {
               platform anomalies and ground-segment issues — with the datatakes each one impacts.
               Select a day to open its manifest.
             </p>
-            <PageDescription defaultOpen={!narrow}>{EVENTS_DESCRIPTION}</PageDescription>
           </div>
         </header>
 

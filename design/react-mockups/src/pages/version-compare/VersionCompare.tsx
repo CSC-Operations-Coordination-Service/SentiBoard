@@ -164,7 +164,6 @@ export default function VersionCompare() {
         crumb="Processors proposal"
         title="Version Compare"
         sub="Pick a processor and two of its baselines, and read what changed between them: the release dates, the baselines the jump covers, how satellite coverage differs, and the release notes side by side with the differences marked."
-        desc={PROCESSORS_COMPARE_DESCRIPTION}
       />
 
       <section className="wrap pad">

@@ -490,8 +490,8 @@ export default function AcquisitionsLadder() {
   return (
     <>
       <PageHeader crumb="Acquisitions · Ladder" title="Acquisitions Status"
-        sub="Proposal for the acquisitions page as a processing chain rather than a map: the fleet on a time strip, the selected datatake's product levels stacked bottom-to-top, and the yield drop between levels named — so where the data is being lost is a reading, not an inference."
-        desc={ACQUISITIONS_DESCRIPTION} />
+        sub="Redesign the acquisitions page as a processing chain: fleet on a timeline, product levels stacked, and yield drops labeled to indicate data loss."
+      />
 
       <section className="wrap pad">
 

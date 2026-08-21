@@ -15,7 +15,7 @@ export default function Processors() {
     <>
       <PageHeader crumb="Processors" title="Processors"
         sub="The complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. Zoom in / out with the mouse wheel, drag left / right, and click a coloured box to display the details of the selected processor release."
-        desc={PROCESSORS_DESCRIPTION} />
+      />
 
       <section className="wrap pad">
         <div className="filters">

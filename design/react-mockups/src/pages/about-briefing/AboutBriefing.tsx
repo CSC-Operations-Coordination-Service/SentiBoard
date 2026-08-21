@@ -82,7 +82,7 @@ export default function AboutBriefing() {
 
   return (
     <>
-      <PageHeader crumb="About" title="About" sub="Systems briefing — the full dashboard reference on one page." />
+      <PageHeader crumb="About" title="About" />
 
       <div className={"wrap pad " + s.shell}>
         {/* ---------- sticky index rail ---------- */}
