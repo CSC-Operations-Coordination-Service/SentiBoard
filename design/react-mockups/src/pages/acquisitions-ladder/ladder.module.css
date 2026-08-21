@@ -1,0 +1,946 @@
+/* ============================================================
+   Acquisitions proposal — "Acquisition Ladder".
+   ALTERNATIVE to /acquisitions and to /examples/acquisitions-globe. Neither is
+   touched.
+
+   Every colour resolves to the SHARED tokens (tokens.css), so this concept follows
+   the app's global dark/light switch with no palette of its own to keep in sync.
+   The completeness hues come from --cmp-* (the same five production states the
+   legend uses); the yield-drop connector is built with color-mix over
+   --cmp-unavailable / --cmp-partial / --cmp-acquired so the severity ramp
+   re-weights itself per theme rather than carrying a second set of values.
+
+   There is NO canvas and NO animation loop in this concept — the only moving
+   thing on the page is the wall-clock text node in the header. That is the point
+   of the proposal, so please keep it that way: no keyframes that run forever.
+   ============================================================ */
+
+/* -------------------- shared shell -------------------- */
+.band {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.bandHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-1);
+}
+
+.bandTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-width: 0;
+}
+
+.bandK {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.bandN {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.bandSub {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 0;
+  padding: 12px 18px 0;
+}
+
+/* -------------------- variant strip + cross-link -------------------- */
+.variant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin: 0 0 22px;
+}
+
+.variant b {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.variant a {
+  color: var(--accent-2);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+
+.variant a:hover,
+.variant a:focus-visible {
+  border-bottom-color: currentColor;
+}
+
+/* -------------------- controls -------------------- */
+.ctrls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ctrlK {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-right: 2px;
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  background: var(--pill-bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  cursor: pointer;
+  transition: color 0.18s, border-color 0.18s, background 0.18s;
+}
+
+.btn:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.btn[aria-pressed="true"] {
+  color: var(--on-accent);
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+/* -------------------- BAND 1 · fleet strip -------------------- */
+.strip {
+  padding: 16px 18px 6px;
+}
+
+/* The scenario clock. Deliberately a scrub, not a playing simulation: a play loop
+   would reintroduce the per-frame render cost the globe concept had to engineer
+   around, and nothing here needs to move on its own. */
+.clockRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.clockVal {
+  font-family: var(--font-mono);
+  font-size: 19px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.clockVal small {
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: var(--text-mute);
+  margin-left: 6px;
+}
+
+.scrub {
+  flex: 1 1 260px;
+  min-width: 180px;
+  accent-color: var(--accent-2);
+}
+
+.grid {
+  position: relative;
+}
+
+/* Hour ticks. One absolutely positioned rule each — cheap, and they redraw only
+   when the window or the clock changes. */
+.ticks {
+  position: relative;
+  height: 18px;
+  margin-left: var(--laneLabelW);
+  border-bottom: 1px solid var(--line);
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1px solid var(--grid-line);
+  padding-left: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.lane {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: 34px;
+  border-bottom: 1px solid var(--line);
+}
+
+.lane:last-of-type {
+  border-bottom: 0;
+}
+
+.laneLab {
+  flex: 0 0 var(--laneLabelW);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  padding-right: 10px;
+}
+
+.laneHue {
+  width: 3px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--laneHue);
+  flex: none;
+}
+
+.laneDim .laneLab,
+.laneDim .track {
+  opacity: 0.32;
+}
+
+.track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The now-line spans the whole plot, so it lives on the grid rather than per lane. Its `left` is
+   handed in as a calc over the lane-label gutter — a percentage of the grid would land in the
+   wrong place, because the plot starts after the label column. */
+.nowLine {
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--accent-2);
+  box-shadow: 0 0 8px 1px color-mix(in srgb, var(--accent-2) 45%, transparent);
+  pointer-events: none;
+  z-index: 3;
+}
+
+.nowFlag {
+  position: absolute;
+  top: -18px;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+
+/* A datatake. Percentage left/width off the window, with a floor so a 3-minute
+   Sentinel-2 datatake stays a clickable target next to a 20-minute Sentinel-3 one
+   on a 24-hour window — at true scale it would be under a pixel. */
+.bar {
+  position: absolute;
+  top: 7px;
+  height: 20px;
+  min-width: 14px;
+  padding: 0;
+  border: 1px solid var(--barLine);
+  border-radius: 4px;
+  background: var(--barFill);
+  color: var(--barInk);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  overflow: visible;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+
+.bar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px -4px color-mix(in srgb, var(--barLine) 70%, transparent);
+}
+
+.bar[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--accent-2), 0 6px 18px -6px color-mix(in srgb, var(--accent-2) 60%, transparent);
+}
+
+/* Scheduled: nothing has been sensed yet in the scenario, so the bar is an outline
+   rather than a fill. Same distinction the production legend draws between Planned
+   and everything that has actually flown. */
+.barScheduled {
+  background: transparent;
+  border-style: dashed;
+}
+
+/* In sensing at the scenario instant. A static diagonal hatch — not an animated
+   one, see the header note. */
+.barSensing {
+  background-image: repeating-linear-gradient(135deg,
+      color-mix(in srgb, var(--barLine) 42%, transparent) 0 3px,
+      transparent 3px 7px);
+}
+
+/* The bar's label line — the datatake id and the stations that downlinked it, sitting UNDER the
+   bar rather than inside it. A bar's width encodes sensing duration, which at a full-scenario
+   window is a handful of pixels; an id inside it is simply not readable, so the width says how
+   long and the line below says what and from where. */
+.barLab {
+  position: absolute;
+  top: 23px;
+  left: 0;
+  display: flex;
+  gap: 5px;
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+/* Anchored to the bar's right edge, but the CONTENT order is untouched — reversing the flex
+   direction here would print the stations before the id and read backwards. */
+.barLabEnd {
+  left: auto;
+  right: 0;
+}
+
+.barLab b {
+  font-weight: 500;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.bar[aria-pressed="true"] .barLab b {
+  color: var(--text);
+}
+
+.stripFoot {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 12px 0 8px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend i {
+  display: inline-block;
+  width: 16px;
+  height: 9px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  flex: none;
+}
+
+/* -------------------- BAND 2 · the ladder -------------------- */
+.ladderWrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 0;
+}
+
+.ladder {
+  padding: 20px 18px 22px;
+  min-width: 0;
+}
+
+.dtHead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.dtId {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.dtPhase {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  color: var(--barLine);
+}
+
+.dtMeta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  margin: 0 0 20px;
+}
+
+/* The rungs, bottom-to-top: L0 at the base feeding upward. `column-reverse` keeps
+   the DOM in level order (L0 first) for a screen reader and the arrow keys while
+   painting the base at the bottom, which is the direction the data actually flows. */
+.rungs {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0;
+}
+
+/* Each rung and the connector below it. Reversed like its parent: the wrapper's DOM order is
+   [connector, rung] so a screen reader hears the level before its yield figure, while the paint
+   order puts the connector underneath the rung — i.e. between it and the level it came from. */
+.rungGroup {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.rung {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg-1);
+  padding: 11px 13px 13px;
+}
+
+/* Below the 95% threshold the plates use. Outline, not a fill, so it reads on both
+   themes without restating the completeness hue. */
+.rungAlarm {
+  border-color: var(--cmp-partial);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cmp-partial) 35%, transparent);
+}
+
+.rungNE {
+  border-style: dashed;
+  background: transparent;
+}
+
+.rungHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0 0 9px;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.rungLab {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.rungTag {
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--pill-bg);
+  color: var(--text-mute);
+  text-transform: uppercase;
+}
+
+.rungPct {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.rungPct.warn { color: var(--cmp-partial); }
+.rungPct.crit { color: var(--cmp-unavailable); }
+.rungPct.none { color: var(--text-mute); font-size: 11px; }
+
+/* Instrument grouping inside a rung. This is what lets Sentinel-3's fourteen
+   Level-2 types read as five groups with no cap — a rung is a band that can wrap,
+   so nothing is ever hidden behind an "and N more" line. */
+.groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.group {
+  flex: 1 1 190px;
+  min-width: 0;
+}
+
+.groupHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 5px;
+}
+
+.segs {
+  display: flex;
+  gap: 3px;
+}
+
+/* One product type. The bar IS the meter: the fill is its completeness. */
+.seg {
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 26px;
+  position: relative;
+  border: 1px solid var(--segLine);
+  border-radius: 3px;
+  background: var(--bg-3);
+  padding: 0;
+  cursor: help;
+  overflow: hidden;
+}
+
+.segFill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: var(--segLine);
+}
+
+/* pct === null — the type is not expected at all, which is NOT the same fact as 0%
+   and must not look like it. */
+.segNE {
+  border-style: dashed;
+  border-color: var(--line-strong);
+  background: transparent;
+}
+
+/* Scheduled datatake: the plan is known, the completeness is not yet a fact. */
+.segPending {
+  border-style: dashed;
+  border-color: var(--cmp-planned);
+  background: transparent;
+}
+
+/* The yield-loss connector — the diagnostic move of this concept. Two rungs shown
+   side by side leave the subtraction to the reader; this states it. */
+.link {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 0 3px 13px;
+  min-height: 34px;
+}
+
+.linkRail {
+  width: 3px;
+  align-self: stretch;
+  border-radius: 2px;
+  background: var(--linkHue);
+  margin: 2px 0;
+}
+
+.linkTxt {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--linkHue);
+  font-variant-numeric: tabular-nums;
+}
+
+.linkTxt em {
+  font-style: normal;
+  color: var(--text-mute);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 9px;
+  margin-left: 4px;
+}
+
+/* Ladder base — where a mission's chain actually starts. Sentinel-5P starts at
+   L1B, and saying so is the honest rendering of a two-rung mission; a blank Level 0
+   plate would read as a hole. */
+.base {
+  margin-top: 2px;
+  padding: 9px 13px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+}
+
+/* Expanded rung — the numbers, for the operator who needs them. */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 11px;
+  font-size: 11.5px;
+}
+
+.tbl caption {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  padding-bottom: 6px;
+}
+
+.tbl th,
+.tbl td {
+  text-align: left;
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.tbl th {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 400;
+}
+
+.tbl td {
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.tbl td:first-child { color: var(--text); }
+.tbl .warn { color: var(--cmp-partial); }
+.tbl .crit { color: var(--cmp-unavailable); }
+.tbl .ne { color: var(--text-mute); }
+
+/* -------------------- BAND 2 · side rail -------------------- */
+.side {
+  border-left: 1px solid var(--line);
+  background: var(--bg-1);
+  padding: 20px 18px;
+  min-width: 0;
+}
+
+.kpi + .kpi {
+  margin-top: 16px;
+}
+
+.kpiK {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.kpiV {
+  font-family: var(--font-mono);
+  font-size: 25px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.kpiV small {
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-left: 3px;
+}
+
+.kpiV.warn { color: var(--cmp-partial); }
+.kpiV.crit { color: var(--cmp-unavailable); }
+.kpiV.mute { color: var(--text-mute); font-size: 15px; }
+
+.kpiNote {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-mute);
+  margin: 5px 0 0;
+}
+
+.dl {
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.dlRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  padding: 4px 0;
+}
+
+.dlRow b {
+  color: var(--text);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+}
+
+.dlNone {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--cmp-unavailable);
+}
+
+/* Geography, stated as a coordinate. This concept deliberately carries no map — see
+   the page note. */
+.geo {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+/* -------------------- BAND 3 · fleet roll-up -------------------- */
+.fleet {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--line);
+}
+
+.mcard {
+  background: var(--bg-2);
+  border: 0;
+  border-top: 2px solid var(--laneHue);
+  padding: 15px 16px 17px;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: background 0.18s;
+}
+
+.mcard:hover {
+  background: var(--bg-3);
+}
+
+.mcard[aria-pressed="true"] {
+  background: var(--bg-3);
+  box-shadow: inset 0 0 0 1px var(--accent-2);
+}
+
+.mcardTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.mcardName {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.mcardMean {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.mcardMean.warn { color: var(--cmp-partial); }
+.mcardMean.crit { color: var(--cmp-unavailable); }
+
+/* The mini-ladder: the same rungs collapsed to one bar per level. Four ragged
+   silhouettes side by side is the cross-mission comparison the globe has no room
+   for — the differing level structures become the shape of the card. */
+.mini {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 3px;
+}
+
+.miniRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.miniLab {
+  flex: 0 0 34px;
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 0.1em;
+  color: var(--text-mute);
+}
+
+.miniBar {
+  flex: 1 1 auto;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  overflow: hidden;
+  min-width: 0;
+}
+
+.miniFill {
+  display: block;
+  height: 100%;
+  background: var(--segLine);
+}
+
+.miniVal {
+  flex: 0 0 38px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.mcardFoot {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+  line-height: 1.6;
+}
+
+/* -------------------- note -------------------- */
+.note {
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--accent-2);
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  padding: 15px 18px;
+  margin-bottom: 20px;
+}
+
+.note h3 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin: 0 0 7px;
+}
+
+.note p {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+
+.note p:last-child { margin-bottom: 0; }
+
+/* -------------------- responsive -------------------- */
+@media (max-width: 1100px) {
+  .ladderWrap { grid-template-columns: minmax(0, 1fr); }
+  .side { border-left: 0; border-top: 1px solid var(--line); }
+  .fleet { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .fleet { grid-template-columns: minmax(0, 1fr); }
+  .group { flex: 1 1 100%; }
+  .laneLab { font-size: 10px; }
+
+  /* Touch sizing. The bar's desktop 14px floor is a mouse target, not a finger one — every lane in
+     the scenario carries a single datatake, so there is no neighbour for a wider bar to collide
+     with and the floor can go up. The lane and the station notch grow with it.
+     The lane-label gutter stays at 68px: it is handed to the now-line as --laneLabelW from an
+     inline style, so narrowing it here would only desynchronise the two. */
+  .bar { min-width: 44px; height: 26px; }
+  .barLab { top: 29px; }
+  .lane { min-height: 48px; }
+  .btn { padding: 8px 13px; }
+  .seg { height: 30px; }
+}
+
+/* Focus is never removed — this concept's whole accessibility story is that every
+   control is a real focusable element rather than a canvas with a mirror list. */
+.btn:focus-visible,
+.bar:focus-visible,
+.rungHead:focus-visible,
+.mcard:focus-visible,
+.seg:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}

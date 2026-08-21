@@ -17,6 +17,7 @@ import EventsManifest from "./pages/events-manifest/EventsManifest";
 import EventsSwimlanes from "./pages/events-swimlanes/EventsSwimlanes";
 import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
 import AcquisitionsGlobe from "./pages/AcquisitionsGlobe";
+import AcquisitionsLadder from "./pages/acquisitions-ladder/AcquisitionsLadder";
 import DataAvailability from "./pages/DataAvailability";
 import DataAvailabilitySpaceX from "./pages/DataAvailabilitySpaceX";
 import CoverageTimeline from "./pages/coverage-timeline/CoverageTimeline";
@@ -58,6 +59,7 @@ export default function App() {
           <Route path="/examples/events-spacex" element={<EventsSpaceXConcepts />} />
           <Route path="/examples/events-swimlanes" element={<EventsSwimlanes />} />
           <Route path="/examples/acquisitions-globe" element={<AcquisitionsGlobe />} />
+          <Route path="/examples/acquisitions-ladder" element={<AcquisitionsLadder />} />
           <Route path="/examples/data-availability" element={<DataAvailability />} />
           <Route path="/examples/data-availability-spacex" element={<DataAvailabilitySpaceX />} />
           <Route path="/examples/coverage-timeline" element={<CoverageTimeline />} />

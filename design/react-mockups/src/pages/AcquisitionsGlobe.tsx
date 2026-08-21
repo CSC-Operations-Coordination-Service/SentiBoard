@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { PageHeader, Reveal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
@@ -57,12 +58,29 @@ export default function AcquisitionsGlobe() {
         desc={ACQUISITIONS_DESCRIPTION} />
 
       <section className="wrap pad">
+        {/* Cross-link to the second Acquisitions concept. The two answer different questions —
+            this one is the geographic reading, the ladder is the pipeline reading — so they are
+            reviewed together rather than one replacing the other. */}
+        <p className="acq-variant">
+          <span>Concept a &middot; geographic reading</span>
+          <span>&middot;</span>
+          <Link to="/examples/acquisitions-ladder">See concept b &mdash; level ladder &rarr;</Link>
+          <span>&middot;</span>
+          <Link to="/examples">All proposals &rarr;</Link>
+        </p>
         <Reveal>
           <AcquisitionGlobe stations={STATIONS} datatakes={ACQ_DATATAKES} rail="plates" />
         </Reveal>
       </section>
 
       <style>{`
+        .acq-variant {
+          display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+          font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em;
+          text-transform: uppercase; color: var(--text-mute); margin: 0 0 22px;
+        }
+        .acq-variant a { color: var(--accent-2); text-decoration: none; border-bottom: 1px solid transparent; }
+        .acq-variant a:hover, .acq-variant a:focus-visible { border-bottom-color: currentColor; }
         .acq-changelog {
           display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 16px; margin: 0;

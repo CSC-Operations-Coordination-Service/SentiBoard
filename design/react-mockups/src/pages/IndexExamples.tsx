@@ -60,6 +60,7 @@ const CARD_ART = {
   eventsManifest: ESA("Tibetan_Plateau.jpg"),
   // acquisitions
   acquisitionsGlobe: MOD_IMG[0],
+  acquisitionsLadder: MOD_IMG[1],
   // data availability concepts — again matching each page's backdrop
   coverageTimeline: ESA("Protecting_Atlantic.jpg"),
   availabilitySpacex: ESA("FLEX_Sentinel-3.jpg"),
@@ -363,44 +364,48 @@ const CARDS = [
 const ABOUT_CARDS = [
   {
     to: "/examples/about", img: CARD_ART.aboutHero, title: "a) About · hero led",
-    desc: "The same canonical About text, led by a full-bleed hero instead of the standard page header. The four module descriptions become image cards rather than an arrow list, so the module part of the text carries its own artwork, and the FAQ groups close the page unchanged.",
+    desc: "The About section has a full-bleed hero, image cards for modules, and unchanged FAQ groups.",
   },
   {
     to: "/examples/about-briefing", img: CARD_ART.aboutBriefing, title: "b) About · systems briefing",
-    desc: "The reference-manual reading: a sticky mono index rail lit by scroll position, the prose in one 68ch column, the four modules as a hairline-ruled numbered list with no imagery, and every FAQ answer rendered open and flat — so the browser's own find reaches the whole page instead of eleven closed accordions.",
+    desc: "The reference manual has a sticky index, a single-column layout, numbered modules, and all FAQs open for easy access.",
   },
   {
     to: "/examples/about-dossier", img: CARD_ART.aboutDossier, title: "c) About · mission dossier",
-    desc: "The text as a paged dossier rather than a scroll: seven full-height panels advanced horizontally by swipe, arrow keys or the chapter strip, each splitting content left against an ESA scene bled to the right edge. The only layout that gives each module a full screen. Stacks vertically on narrow viewports and under prefers-reduced-motion.",
+    desc: "A paged dossier with seven panels that swipe horizontally, displaying content on the left and an ESA scene on the right. It stacks vertically on narrow viewports.",
   },
 ];
 
 const PAGE_CARDS = [
   {
     to: "/examples/events-swimlanes", img: CARD_ART.eventsSwimlanes, title: "a) Events · Mission swimlanes",
-    desc: "The month by fleet rather than by date: one collapsible row per mission (S1, S2, S3, S5P), collapsed by default. A row header states its event count, its affected datatakes, the event types present and an 'N active' badge when data is still degraded or lost. Expanding a row lists that mission's events inline with name, date and datatake count. Replaces the rejected chronological list.",
+    desc: "Show missions by fleet with collapsible rows for each (S1, S2, S3, S5P). Row headers display event count, affected datatakes, and an 'N active' badge. Expanding a row reveals event details, replacing the chronological list.",
   },
   {
     to: "/examples/events-spacex", img: CARD_ART.eventsSpacex, title: "b) Events · timeline + heatmap",
-    desc: "Two layouts under one tab bar with a shared period selector. Layout A has an orbital Gantt ribbon with months on the X-axis and detail popovers for each block. Layout B features 31 square day tiles with micro status pills for day selection over the UTC log.",
+    desc: "Two layouts share a tab bar: Layout A has a Gantt ribbon by month, and Layout B features 31 day tiles with status pills.",
   },
   {
     to: "/examples/events-manifest", img: CARD_ART.eventsManifest, title: "c) Events · filters",
-    desc: "Shows mission events on a grid, marking days with missing data. Each day carries one icon per event, drawn with that event type's glyph — the same five icons as the type filters above the grid — so a day with a manoeuvre and a production issue reads as both. Selecting a day reveals occurrences and impacted datatakes.",
+    desc: "Shows mission events on a grid with icons for each event type. Selecting a day reveals occurrences and affected datatakes.",
   },
 ];
 
 const ACQ_CARDS = [
   {
     to: "/examples/acquisitions-globe", img: CARD_ART.acquisitionsGlobe, title: "a) Acquisitions · Demand-driven globe",
-    desc: "The 3D globe is improved with on-demand frames, cached coastlines, and a pause feature for when it's hidden. Datatakes show footprints, are keyboard-operable, and day filters match available coverage.",
+    desc: "The 3D globe includes on-demand frames, cached coastlines, and a pause feature.",
+  },
+  {
+    to: "/examples/acquisitions-ladder", img: CARD_ART.acquisitionsLadder, title: "b) Acquisitions · Level ladder",
+    desc: "Satellite data is categorized into flown, sensing, and scheduled. Sentinel-5P has two levels, and Sentinel-3's Level 2 has five instrument groups.",
   },
 ];
 
 const AVAIL_CARDS = [
   {
     to: "/examples/coverage-timeline", img: CARD_ART.coverageTimeline, title: "a) Data Availability · Coverage timeline",
-    desc: "The heatmap visualizes mission performance with daily completeness, showing outages as horizontal runs. Sparkline chips indicate days since the last gap, with the table sorted by the most recent gaps for quick identification of issues. Selecting a cell focuses on the specific mission and day.",
+    desc: "The heatmap shows daily mission performance, with outages as horizontal runs and sparkline chips indicating gaps. The table is sorted by recent gaps for easy issue identification.",
   },
   {
     to: "/examples/data-availability-spacex", img: CARD_ART.availabilitySpacex, title: "b) Data Availability · Telemetry console",
@@ -415,15 +420,15 @@ const AVAIL_CARDS = [
 const PROC_CARDS = [
   {
     to: "/examples/version-matrix", img: CARD_ART.versionMatrix, title: "a) Processors · Version matrix",
-    desc: "Processors are displayed in rows with baseline versions in columns, showing the latest releases. Cells indicate current (filled) and replaced (hollow) versions. A mission filter narrows rows, and selecting a cell reveals release dates and impacted satellites.",
+    desc: "Processors are arranged in rows with baseline versions in columns. Cells show current (filled) and replaced (hollow) versions, with a mission filter to narrow rows and display release dates and impacted satellites.",
   },
   {
     to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors · Release log",
-    desc: "Release notes are displayed in reverse-chronological order, with full entries and minimal metadata. Users can filter by date or processor, and search across various fields. The latest release is always at the top, with no status indicators.",
+    desc: "Release notes appear in reverse order, with filtering options and no status indicators.",
   },
   {
     to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Version compare",
-    desc: "A focused diff lets you compare two baselines of a processor, showing changes. The later baseline is on the right, with a summary of skipped baselines. Release notes appear side-by-side, highlighting changes, and 'Compare to current' directs you to the latest release.",
+    desc: "A focused diff compares two processor baselines, showing changes side-by-side with a summary and a link to the latest release.",
   },
 ];
 
@@ -461,7 +466,7 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Acquisitions page</h2></div>
-          <span className="meta">1 alternatives to /acquisitions</span>
+          <span className="meta">2 alternatives to /acquisitions</span>
         </div>
         <div className="ex-list">
           {ACQ_CARDS.map((c) => (
