@@ -5,10 +5,10 @@ import FilterBar from "@/components/FilterBar";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES, type AcqDatatake } from "@/data/mock";
 
-// ids look like "S2A_20260716T104201" — pull YYYY-MM-DD out for the date filter
+// The date filter reads the sensing start off the record. It used to parse it out of the datatake
+// id, which the dashboard's real id format (S1C-73089) does not carry.
 function acquisitionDate(dt: AcqDatatake): string {
-  const m = dt.id.match(/_(\d{4})(\d{2})(\d{2})T/);
-  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
+  return dt.startIso.slice(0, 10);
 }
 
 export default function Acquisitions() {

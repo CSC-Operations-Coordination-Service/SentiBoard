@@ -10,6 +10,7 @@ import { AVAILABILITY_DESCRIPTION, AVAILABILITY_SUMMARY } from "@/data/copy";
 import DatatakeModal from "@/components/DatatakeModal";
 import type { DatatakeSummary } from "@/data/datatake-details";
 import { DEFAULT_PERIOD, PERIODS, inPeriod, type PeriodId } from "@/data/period";
+import { makeDatatakeId } from "@/data/datatake-id";
 import { useTheme } from "@/theme";
 import "@/styles/data-availability.css";
 
@@ -167,10 +168,7 @@ function generateMockData(count = 240): Datatake[] {
     const status = statusFor(rng);
     const completeness = completenessFor(status, rng);
     const start = startFor(status, rng, window);
-    const hex = Math.floor(rng() * 0xffffff).toString(16).padStart(6, "0").toUpperCase();
-    const id = `${sat}_${mode}_${fmtDate(start).replace(/-/g, "")}T${pad(start.getUTCHours())}${pad(
-      start.getUTCMinutes(),
-    )}${pad(start.getUTCSeconds())}_${hex}`;
+    const id = makeDatatakeId(sat, rng);
 
     rows.push({ id, satellite: sat, mission: MISSION_OF[sat], sensorMode: mode, status, completeness, start });
   }

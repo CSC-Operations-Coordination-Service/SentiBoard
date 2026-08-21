@@ -141,9 +141,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 2, 9, 40),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S3A_OLCI_20260802T041200_A17C2E", "PARTIAL", 62),
-      dtk("S3A_SLSTR_20260802T055400_B04F19", "RECOVERED", 100),
-      dtk("S3A_SRAL_20260802T072100_9CE30D", "PARTIAL", 74),
+      dtk("S3A-158-230", "PARTIAL", 62),
+      dtk("S3A-237-321", "RECOVERED", 100),
+      dtk("S3A-256-344", "PARTIAL", 74),
     ],
   },
   {
@@ -158,7 +158,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 3, 8, 0),
     end: utc(Y, M, 5, 18, 0),
     impact: "NONE",
-    datatakes: [dtk("S2A_MSI_20260803T093015_44D1AB", "RECOVERED", 100)],
+    datatakes: [dtk("S2A-82146-8", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4811",
@@ -173,8 +173,8 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 5, 6, 45),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S5P_TROPOMI_20260804T213000_7F2A11", "PARTIAL", 48),
-      dtk("S5P_TROPOMI_20260805T012200_5B99C4", "PARTIAL", 55),
+      dtk("S5P-74790", "PARTIAL", 48),
+      dtk("S5P-80694", "PARTIAL", 55),
     ],
   },
   {
@@ -204,9 +204,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 7, 16, 30),
     impact: "UNAVAILABLE",
     datatakes: [
-      dtk("S1A_IW_20260807T020500_C11D08", "UNAVAILABLE", 0),
-      dtk("S1A_IW_20260807T035100_D82B47", "UNAVAILABLE", 0),
-      dtk("S1A_EW_20260807T053300_E904A2", "UNAVAILABLE", 0),
+      dtk("S1A-40824", "UNAVAILABLE", 0),
+      dtk("S1A-46727", "UNAVAILABLE", 0),
+      dtk("S1A-34921", "UNAVAILABLE", 0),
     ],
   },
   {
@@ -221,7 +221,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 9, 6, 0),
     end: utc(Y, M, 9, 18, 0),
     impact: "NONE",
-    datatakes: [dtk("S2B_MSI_20260809T101500_3A77F0", "RECOVERED", 100)],
+    datatakes: [dtk("S2B-88049-1", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4821",
@@ -236,9 +236,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 12, 2, 15),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S3A_OLCI_20260811T060200_2D5E8B", "PARTIAL", 81),
-      dtk("S3B_SLSTR_20260811T114500_66A0C3", "PARTIAL", 69),
-      dtk("S3B_OLCI_20260811T193000_8E12F5", "RECOVERED", 100),
+      dtk("S3A-178-253", "PARTIAL", 81),
+      dtk("S3B-296-005", "PARTIAL", 69),
+      dtk("S3B-276-367", "RECOVERED", 100),
     ],
   },
   {
@@ -267,9 +267,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 16, 8, 0),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S2C_MSI_20260814T134000_A0B3D1", "PARTIAL", 72),
-      dtk("S2C_MSI_20260815T102200_F41C9E", "PARTIAL", 64),
-      dtk("S2C_MSI_20260816T073000_1B8D55", "RECOVERED", 96),
+      dtk("S2C-99855-6", "PARTIAL", 72),
+      dtk("S2C-15759-8", "PARTIAL", 64),
+      dtk("S2C-21663-1", "RECOVERED", 96),
     ],
   },
   {
@@ -298,9 +298,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 20, 15, 30),
     impact: "UNAVAILABLE",
     datatakes: [
-      dtk("S1A_IW_20260818T112000_74EE21", "UNAVAILABLE", 0),
-      dtk("S1C_IW_20260819T054500_9033AC", "UNAVAILABLE", 12),
-      dtk("S1A_IW_20260820T081500_C5D7B6", "RECOVERED", 100),
+      dtk("S1A-52631", "UNAVAILABLE", 0),
+      dtk("S1C-70340", "UNAVAILABLE", 12),
+      dtk("S1A-58534", "RECOVERED", 100),
     ],
   },
   {
@@ -314,7 +314,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 21, 5, 0),
     end: utc(Y, M, 22, 17, 0),
     impact: "NONE",
-    datatakes: [dtk("S5P_TROPOMI_20260821T093000_2C64FA", "RECOVERED", 100)],
+    datatakes: [dtk("S5P-86597", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4840",
@@ -327,7 +327,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 23, 16, 40),
     end: utc(Y, M, 23, 18, 10),
     impact: "UNAVAILABLE",
-    datatakes: [dtk("S2B_MSI_20260823T164500_B7A2E8", "UNAVAILABLE", 0)],
+    datatakes: [dtk("S2B-93952-4", "UNAVAILABLE", 0)],
   },
   {
     id: "GSCAL-1192",
@@ -355,8 +355,8 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 27, 12, 45),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S3A_OLCI_20260826T033000_5E19B2", "PARTIAL", 41),
-      dtk("S3A_OLCI_20260827T041000_A6C80F", "PARTIAL", 58),
+      dtk("S3A-197-276", "PARTIAL", 41),
+      dtk("S3A-217-299", "PARTIAL", 58),
     ],
   },
   {
@@ -370,7 +370,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 28, 8, 0),
     end: utc(Y, M, 29, 20, 0),
     impact: "NONE",
-    datatakes: [dtk("S5P_TROPOMI_20260828T113000_D2B4E7", "RECOVERED", 100)],
+    datatakes: [dtk("S5P-92500", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4853",
@@ -384,8 +384,8 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 31, 4, 5),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S1C_EW_20260830T193000_11FA6D", "PARTIAL", 77),
-      dtk("S1C_IW_20260831T021500_3D0E94", "RECOVERED", 100),
+      dtk("S1C-64437", "PARTIAL", 77),
+      dtk("S1C-76243", "RECOVERED", 100),
     ],
   },
 ];

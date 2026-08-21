@@ -1,3 +1,5 @@
+import { fixedDatatakeId } from "./datatake-id";
+
 // Static mock data for the UI mockups. In the real product these values come
 // from Flask SSR (OpenSearch / JIRA / TLE) with no browser-exposed JSON API.
 // Copy here mirrors the wording used in the current SentiBoard templates.
@@ -70,7 +72,7 @@ export interface Datatake { id: string; mission: string; sensing: string; start:
 /* The rows are placed RELATIVE to today rather than pinned to fixed dates. With fixed dates the
    period selector was decorative — every row fell outside "Last 24 Hours" the moment the dates
    aged, so no choice changed the table. Offsets keep at least one row inside every period and the
-   ids stay honest, because a datatake id encodes its own sensing time. */
+   sensing labels follow from the offsets. */
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
 const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -81,12 +83,9 @@ function platformLabel(sat: string): string {
   return sat.startsWith("S5") ? "Sentinel-5P" : `Sentinel-${sat.slice(1)}`;
 }
 
-/** The id format the dashboard uses: S2A_20260813T104201. */
-function datatakeId(sat: string, d: Date): string {
-  const stamp = `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}`;
-  const time = `${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}`;
-  return `${sat}_${stamp}T${time}`;
-}
+/* Ids come from data/datatake-id.ts — the dashboard's own per-mission format (S1C-73089,
+   S2C-10132-1, S3A-142-380, S5P-45784). Seeded by the row's position so the list is stable and a
+   literal written elsewhere can be matched against it. */
 
 function sensingLabel(d: Date): string {
   return `${pad2(d.getUTCDate())} ${MONTH_ABBR[d.getUTCMonth()]} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())} UTC`;
@@ -113,9 +112,9 @@ export const DATATAKES: Datatake[] = (() => {
   // Seconds are zeroed so an id stays legible; the rest rides on the current instant, which is
   // what keeps "Last 24 Hours" populated whatever time of day the page is opened.
   const anchor = Math.floor(Date.now() / 60_000) * 60_000;
-  return DATATAKE_SPEC.map(([sat, offset, comp, pct]) => {
+  return DATATAKE_SPEC.map(([sat, offset, comp, pct], i) => {
     const start = new Date(anchor + offset);
-    return { id: datatakeId(sat, start), mission: platformLabel(sat), sensing: sensingLabel(start), start, comp, pct };
+    return { id: fixedDatatakeId(sat, i + 1), mission: platformLabel(sat), sensing: sensingLabel(start), start, comp, pct };
   }).sort((a, b) => b.start.getTime() - a.start.getTime());
 })();
 
@@ -235,15 +234,18 @@ export interface AcqDatatake {
   status: string;                      // human status
   mode: string;                        // instrument mode · polarisation, e.g. "IW · DV"
   absOrbit: string;                    // absolute orbit
+  startIso: string;                    // sensing start — explicit, since the id no longer carries it
   sensingS: number;                    // sensing duration, seconds
   levels: AcqLevel[];
   prods: AcqProduct[];                 // legacy summary list, still used by the /acquisitions rail
 }
 
-// ids look like "S2A_20260716T104201" — one parser, shared by the globe and the rail.
-export function sensingMs(id: string): number | null {
-  const m = id.match(/_(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/);
-  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]) : null;
+/* Sensing start, shared by the globe and the rail. This used to pick the timestamp out of the
+   datatake id; the dashboard's real id format (S3A-142-380) carries no time, so it reads the
+   explicit field instead. */
+export function sensingMs(dt: { startIso: string }): number | null {
+  const ms = Date.parse(dt.startIso);
+  return Number.isNaN(ms) ? null : ms;
 }
 
 // ---- Completeness metrics -------------------------------------------------
@@ -330,7 +332,7 @@ type AcqSpec = Omit<AcqDatatake, "comp" | "cls">;
 const ACQ_SPECS: AcqSpec[] = [
   {
     // S2 — MSI only. The backend collapses L1A/L1B/L1C into a single L1.
-    id: "S2A_20260716T104201", sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
+    id: "S2A-48201-1", startIso: "2026-07-16T10:42:01Z", sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
     footprint: swath(48.2, 11.6, 10, 2.6, -12), status: "Published",
     mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205,
     levels: [
@@ -346,7 +348,7 @@ const ACQ_SPECS: AcqSpec[] = [
   },
   {
     // S1 — SAR only. Level lives in the digit inside the type name, no "L" token.
-    id: "S1A_20260716T093310", sat: "Sentinel-1A", unit: "S1A", station: "Matera", lat: 12.4, lon: 42.1,
+    id: "S1A-57622", startIso: "2026-07-16T09:33:10Z", sat: "Sentinel-1A", unit: "S1A", station: "Matera", lat: 12.4, lon: 42.1,
     footprint: swath(12.4, 42.1, 13, 2.3, -11), status: "Processing",
     mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205,
     levels: [
@@ -372,7 +374,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S3 — four science instruments, so by far the widest product-type set. This is
     // the datatake that exercises the per-plate cap.
-    id: "S3B_20260716T081145", sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
+    id: "S3B-080-345", startIso: "2026-07-16T08:11:45Z", sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
     footprint: swath(-22.9, -45.2, 20, 11.4, -13), status: "Processing",
     mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180,
     levels: [
@@ -411,7 +413,7 @@ const ACQ_SPECS: AcqSpec[] = [
     prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }],
   },
   {
-    id: "S2B_20260716T072050", sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 64.1, lon: -110.3,
+    id: "S2B-42050-1", startIso: "2026-07-16T07:20:50Z", sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 64.1, lon: -110.3,
     footprint: swath(64.1, -110.3, 10, 2.6, -14), status: "Published",
     mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188,
     levels: [
@@ -428,7 +430,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S5P — TROPOMI. Its L1 token is "L1B", not "L1", and it carries one radiance
     // product per spectral band, so it also runs past the cap.
-    id: "S5P_20260716T060012", sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
+    id: "S5P-60012", startIso: "2026-07-16T06:00:12Z", sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
     footprint: swath(34.7, 104.2, 24, 23, -12), status: "Published",
     mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940,
     levels: [
@@ -458,7 +460,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S3 SLSTR-only pass that failed, plus an unrecognised type — the backend's
     // "UNKNOWN" product_level bucket, which the plates have to render.
-    id: "S3A_20260715T221533", sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
+    id: "S3A-055-358", startIso: "2026-07-15T22:15:33Z", sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
     footprint: swath(-35.6, 138.9, 20, 11.4, 13), status: "Failed",
     mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620,
     levels: [

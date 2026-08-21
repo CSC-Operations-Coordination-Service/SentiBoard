@@ -360,7 +360,7 @@ function Plate({ level }: { level: AcqLevel }) {
  */
 const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
   const m = useMemo(() => {
-    const startMs = sensingMs(dt.id);
+    const startMs = sensingMs(dt);
     const passes = passesFor(dt.id);
     const all = dt.levels.flatMap((l) => l.products);
     return {
@@ -1124,7 +1124,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   // room for it — otherwise the labels collide as soon as passes cluster.
   const marks = useMemo(() => {
     const all = datatakes
-      .map((a, i) => ({ i, a, ms: sensingMs(a.id) }))
+      .map((a, i) => ({ i, a, ms: sensingMs(a) }))
       .filter((m): m is { i: number; a: AcqDatatake; ms: number } => m.ms !== null)
       .map((m) => ({ ...m, pct: ((m.ms - DAY_START) / DAY_LEN) * 100 }))
       .filter((m) => m.pct >= 0 && m.pct <= 100)
@@ -1362,7 +1362,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                   onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
                   onClick={() => activateMark(m)}
                 >
-                  <span className="tickid" aria-hidden="true">{m.showLabel ? m.a.id.split("_")[0] : ""}</span>
+                  <span className="tickid" aria-hidden="true">{m.showLabel ? m.a.id.split("-")[0] : ""}</span>
                   <span className="tickmark" aria-hidden="true" />
                 </button>
               ))}

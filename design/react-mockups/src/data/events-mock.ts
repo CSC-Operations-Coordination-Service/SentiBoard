@@ -56,7 +56,6 @@ export type ManifestEvent = {
   category: EventCategory;
   satellite: string;
   title: string;
-  summary: string;
   datatakes: Datatake[];
 };
 
@@ -154,8 +153,7 @@ const STATUS_RANK: Record<Status, number> = {
 export const EVENTS: ManifestEvent[] = [
   {
     id: "ev-01", day: 3, time: "04:12", category: "Manoeuvre", satellite: "Sentinel-1A",
-    title: "In-plane manoeuvre #212",
-    summary: "Scheduled orbit maintenance burn. Imaging suspended for the burn window; no gap expected in the delivered products.",
+    title: "Manoeuvre",
     datatakes: [
       { id: "S1A-318402", satellite: "Sentinel-1A", product: "IW GRDH", sensingStart: "2026-08-03T04:02:00Z", sensingStop: "2026-08-03T04:11:12Z", completeness: 100, status: "acquired" },
       { id: "S1A-318403", satellite: "Sentinel-1A", product: "IW SLC", sensingStart: "2026-08-03T04:26:40Z", sensingStop: "2026-08-03T04:34:05Z", completeness: 100, status: "acquired" },
@@ -163,16 +161,14 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-02", day: 4, time: "09:30", category: "Calibration", satellite: "Sentinel-2B",
-    title: "MSI dark-signal calibration",
-    summary: "Monthly dark-current characterisation over the calibration site. Imaging suspended for 18 minutes by design.",
+    title: "Calibration",
     datatakes: [
       { id: "S2B-712094", satellite: "Sentinel-2B", product: "MSI L1C", sensingStart: "2026-08-04T09:12:31Z", sensingStop: "2026-08-04T09:29:58Z", completeness: 100, status: "acquired" },
     ],
   },
   {
     id: "ev-03", day: 5, time: "18:40", category: "Acquisition", satellite: "Sentinel-3B",
-    title: "Svalbard downlink interruption",
-    summary: "Ground-station outage during the 18:40 pass; 41 minutes of OLCI and SLSTR data were not dumped and could not be recovered on the following orbit.",
+    title: "Acquisition",
     datatakes: [
       { id: "S3B-253251", satellite: "Sentinel-3B", product: "OL_1_EFR", sensingStart: "2026-08-05T18:22:00Z", sensingStop: "2026-08-05T19:03:00Z", completeness: 0, status: "unavailable" },
       { id: "S3B-253252", satellite: "Sentinel-3B", product: "SL_1_RBT", sensingStart: "2026-08-05T18:22:00Z", sensingStop: "2026-08-05T19:03:00Z", completeness: 62, status: "partial" },
@@ -181,16 +177,14 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-04", day: 5, time: "19:05", category: "Production", satellite: "Sentinel-3B",
-    title: "Ground-segment investigation opened",
-    summary: "Root-cause analysis for the Svalbard outage. Reprocessing of the partially dumped products is queued behind the investigation.",
+    title: "Production",
     datatakes: [
       { id: "S3B-253252", satellite: "Sentinel-3B", product: "SL_2_WST", sensingStart: "2026-08-05T18:22:00Z", sensingStop: "2026-08-05T19:03:00Z", completeness: 71, status: "processing" },
     ],
   },
   {
     id: "ev-05", day: 7, time: "02:15", category: "Satellite", satellite: "Sentinel-1C",
-    title: "Platform safe mode",
-    summary: "Autonomous transition to safe mode after a star-tracker anomaly. Payload off for four consecutive orbits; recovery completed 07:48 UTC.",
+    title: "Satellite",
     datatakes: [
       { id: "S1C-401180", satellite: "Sentinel-1C", product: "IW GRDH", sensingStart: "2026-08-07T02:15:00Z", sensingStop: "2026-08-07T02:41:30Z", completeness: 0, status: "unavailable" },
       { id: "S1C-401181", satellite: "Sentinel-1C", product: "IW GRDH", sensingStart: "2026-08-07T03:52:10Z", sensingStop: "2026-08-07T04:19:44Z", completeness: 0, status: "unavailable" },
@@ -199,16 +193,14 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-06", day: 10, time: "11:00", category: "Calibration", satellite: "Sentinel-5P",
-    title: "TROPOMI solar irradiance calibration",
-    summary: "Routine solar-port measurement sequence, nominal. No impact on the L2 product chain.",
+    title: "Calibration",
     datatakes: [
       { id: "S5P-881204", satellite: "Sentinel-5P", product: "L1B_RA_BD3", sensingStart: "2026-08-10T10:41:00Z", sensingStop: "2026-08-10T10:59:20Z", completeness: 100, status: "acquired" },
     ],
   },
   {
     id: "ev-07", day: 12, time: "22:15", category: "Acquisition", satellite: "Sentinel-1A",
-    title: "Acquisition-plan fragment loss",
-    summary: "Two consecutive passes were not persisted by the planning service; the fragments were rebuilt from the long-term plan the following morning.",
+    title: "Acquisition",
     datatakes: [
       { id: "S1A-318974", satellite: "Sentinel-1A", product: "IW SLC", sensingStart: "2026-08-12T22:15:00Z", sensingStop: "2026-08-12T22:38:26Z", completeness: 48, status: "partial" },
       { id: "S1A-318975", satellite: "Sentinel-1A", product: "IW GRDH", sensingStart: "2026-08-12T23:52:40Z", sensingStop: "2026-08-13T00:14:02Z", completeness: 55, status: "partial" },
@@ -216,8 +208,7 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-08", day: 13, time: "07:50", category: "Production", satellite: "Sentinel-1A",
-    title: "Fragment persistence restored",
-    summary: "Cache write path patched and the affected passes backfilled. Both datatakes republished at full completeness.",
+    title: "Production",
     datatakes: [
       { id: "S1A-318974", satellite: "Sentinel-1A", product: "IW SLC", sensingStart: "2026-08-12T22:15:00Z", sensingStop: "2026-08-12T22:38:26Z", completeness: 100, status: "acquired" },
       { id: "S1A-318975", satellite: "Sentinel-1A", product: "IW GRDH", sensingStart: "2026-08-12T23:52:40Z", sensingStop: "2026-08-13T00:14:02Z", completeness: 100, status: "acquired" },
@@ -225,8 +216,7 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-09", day: 14, time: "05:40", category: "Manoeuvre", satellite: "Sentinel-3A",
-    title: "Out-of-plane manoeuvre #163",
-    summary: "Inclination correction with a 35-minute instrument outage window. Altimetry products over the window are incomplete.",
+    title: "Manoeuvre",
     datatakes: [
       { id: "S3A-255014", satellite: "Sentinel-3A", product: "SR_2_LAN", sensingStart: "2026-08-14T05:33:00Z", sensingStop: "2026-08-14T06:08:00Z", completeness: 58, status: "partial" },
       { id: "S3A-255015", satellite: "Sentinel-3A", product: "OL_2_LFR", sensingStart: "2026-08-14T05:33:00Z", sensingStop: "2026-08-14T06:08:00Z", completeness: 61, status: "partial" },
@@ -234,8 +224,7 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-10", day: 17, time: "13:20", category: "Acquisition", satellite: "Sentinel-2A",
-    title: "X-band transmitter switch-off",
-    summary: "Transmitter tripped mid-pass over Matera; on-board memory overwrote the oldest segment before the next contact.",
+    title: "Acquisition",
     datatakes: [
       { id: "S2A-713401", satellite: "Sentinel-2A", product: "MSI L1C", sensingStart: "2026-08-17T13:04:12Z", sensingStop: "2026-08-17T13:19:50Z", completeness: 0, status: "unavailable" },
       { id: "S2A-713402", satellite: "Sentinel-2A", product: "MSI L2A", sensingStart: "2026-08-17T13:04:12Z", sensingStop: "2026-08-17T13:19:50Z", completeness: 0, status: "unavailable" },
@@ -243,16 +232,14 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-11", day: 19, time: "03:05", category: "Manoeuvre", satellite: "Sentinel-5P",
-    title: "Orbit maintenance burn",
-    summary: "Nominal sun-synchronous orbit correction. Instrument remained in measurement mode throughout.",
+    title: "Manoeuvre",
     datatakes: [
       { id: "S5P-882041", satellite: "Sentinel-5P", product: "L2__NO2___", sensingStart: "2026-08-19T02:47:30Z", sensingStop: "2026-08-19T03:34:10Z", completeness: 100, status: "acquired" },
     ],
   },
   {
     id: "ev-12", day: 20, time: "16:45", category: "Production", satellite: "Sentinel-2C",
-    title: "L2A processing backlog",
-    summary: "Processor queue saturated after a configuration rollout; L2A publication is running roughly three hours behind the timeliness target. Nothing is lost — the products are still being published.",
+    title: "Production",
     datatakes: [
       { id: "S2C-714220", satellite: "Sentinel-2C", product: "MSI L2A", sensingStart: "2026-08-20T10:22:04Z", sensingStop: "2026-08-20T10:37:41Z", completeness: 80, status: "processing" },
       { id: "S2C-714221", satellite: "Sentinel-2C", product: "MSI L2A", sensingStart: "2026-08-20T12:01:18Z", sensingStop: "2026-08-20T12:16:55Z", completeness: 80, status: "processing" },
@@ -260,32 +247,28 @@ export const EVENTS: ManifestEvent[] = [
   },
   {
     id: "ev-13", day: 24, time: "08:18", category: "Satellite", satellite: "Sentinel-2A",
-    title: "Collision avoidance manoeuvre",
-    summary: "Precautionary avoidance burn scheduled against a tracked debris conjunction. The pass is planned; no product impact is expected once the burn is confirmed.",
+    title: "Satellite",
     datatakes: [
       { id: "S2A-713988", satellite: "Sentinel-2A", product: "MSI L1C", sensingStart: "2026-08-24T08:02:44Z", sensingStop: "2026-08-24T08:17:29Z", completeness: 0, status: "planned" },
     ],
   },
   {
     id: "ev-14", day: 25, time: "21:30", category: "Acquisition", satellite: "Sentinel-3A",
-    title: "Trickle-dump station handover delay",
-    summary: "Handover between Svalbard and Inuvik slipped by twelve minutes, leaving a short gap at the head of the dumped segment.",
+    title: "Acquisition",
     datatakes: [
       { id: "S3A-255730", satellite: "Sentinel-3A", product: "OL_1_ERR", sensingStart: "2026-08-25T21:18:00Z", sensingStop: "2026-08-25T21:52:30Z", completeness: 91, status: "partial" },
     ],
   },
   {
     id: "ev-15", day: 27, time: "12:05", category: "Calibration", satellite: "Sentinel-1C",
-    title: "SAR internal calibration sequence",
-    summary: "Post-recovery instrument characterisation after the safe-mode event on 07 August. Results nominal.",
+    title: "Calibration",
     datatakes: [
       { id: "S1C-402551", satellite: "Sentinel-1C", product: "IW SLC", sensingStart: "2026-08-27T11:48:20Z", sensingStop: "2026-08-27T12:04:58Z", completeness: 100, status: "acquired" },
     ],
   },
   {
     id: "ev-16", day: 31, time: "20:02", category: "Acquisition", satellite: "Sentinel-1A",
-    title: "Downlink queue backlog",
-    summary: "Minor queue backlog at Matera after a scheduling conflict; the tail of the pass was dumped on the following orbit.",
+    title: "Acquisition",
     datatakes: [
       { id: "S1A-319612", satellite: "Sentinel-1A", product: "IW GRDH", sensingStart: "2026-08-31T19:44:10Z", sensingStop: "2026-08-31T20:11:36Z", completeness: 93, status: "partial" },
     ],
@@ -398,7 +381,6 @@ export function filterEvents(events: ManifestEvent[], f: Filters): ManifestEvent
     if (!q) return true;
     return (
       e.title.toLowerCase().includes(q) ||
-      e.summary.toLowerCase().includes(q) ||
       e.satellite.toLowerCase().includes(q) ||
       e.category.toLowerCase().includes(q) ||
       e.datatakes.some((d) => d.id.toLowerCase().includes(q) || d.product.toLowerCase().includes(q))

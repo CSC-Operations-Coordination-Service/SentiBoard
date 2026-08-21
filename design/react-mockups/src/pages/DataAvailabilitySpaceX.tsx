@@ -152,6 +152,28 @@ function acquisitionWindow() {
 // Processing one flew within the last day, the settled states fill everything older.
 // -----------------------------------------------------------------------------
 
+/* Datatake identifiers, in the dashboard's own format. The shape differs per mission:
+     Sentinel-1   S1C-73089      datatake id
+     Sentinel-2   S2C-10132-1    datatake id + segment (omitted when there is a single segment)
+     Sentinel-3   S3A-142-380    cycle + relative orbit
+     Sentinel-5P  S5P-45784      absolute orbit
+   Note what the id does NOT carry: a timestamp. The old filename-style id
+   (S3B_SRAL_20260822T224237_61EBE9) was a PRODUCT name, and views were parsing a sensing time out
+   of it. Everything reads the explicit `start` field instead — an identifier is a name, not a
+   record. Inlined rather than imported because this file is deliberately dependency-free. */
+function makeDatatakeId(satellite: string, rng: () => number): string {
+  const sat = satellite.toUpperCase();
+  const digits = (n: number, w: number) => String(n).padStart(w, "0");
+  if (sat.startsWith("S3")) {
+    return `${sat}-${digits(100 + Math.floor(rng() * 300), 3)}-${digits(1 + Math.floor(rng() * 385), 3)}`;
+  }
+  if (sat.startsWith("S2")) {
+    const datatake = 10000 + Math.floor(rng() * 89999);
+    return rng() < 0.55 ? `${sat}-${datatake}-${1 + Math.floor(rng() * 9)}` : `${sat}-${datatake}`;
+  }
+  return `${sat}-${10000 + Math.floor(rng() * 89999)}`;
+}
+
 function seededRandom(seed: number) {
   let s = seed;
   return () => {
@@ -198,10 +220,7 @@ function generateMockData(count = 240): Datatake[] {
     const status = statusFor(rng);
     const completeness = completenessFor(status, rng);
     const start = startFor(status, rng, w);
-    const hex = Math.floor(rng() * 0xffffff).toString(16).padStart(6, "0").toUpperCase();
-    const id = `${sat}_${mode}_${fmtDate(start).replace(/-/g, "")}T${pad(start.getUTCHours())}${pad(
-      start.getUTCMinutes(),
-    )}${pad(start.getUTCSeconds())}_${hex}`;
+    const id = makeDatatakeId(sat, rng);
     rows.push({ id, satellite: sat, mission: MISSION_OF[sat], sensorMode: mode, status, completeness, start });
   }
   return rows.sort((a, b) => b.start.getTime() - a.start.getTime());

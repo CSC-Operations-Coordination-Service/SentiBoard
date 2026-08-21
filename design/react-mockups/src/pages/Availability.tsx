@@ -35,20 +35,17 @@ function Donut({ pct, label, sub, status }: { pct: number; label: string; sub: s
 const FILTERS: (Completeness | "all")[] = ["all", ...COMPLETENESS_ORDER];
 const FILTER_LABEL: Record<string, string> = { all: "All", ...COMPLETENESS_LABEL };
 
-/* Maps a row of the availability table onto what the details modal needs. The datatake ID carries
-   the platform and the sensing start (S2A_20260716T104201), so nothing has to be invented here —
-   everything the modal shows beyond this is derived in data/datatake-details.ts. */
+/* Maps a row of the availability table onto what the details modal needs.
+   The id used to be picked apart for the platform and the sensing start — it was a product-style
+   name that happened to contain both. In the dashboard's own format (S1C-73089) it contains
+   neither, so the platform comes off the id's prefix and the time off the row's own `start`. */
 function toSummary(d: DatatakeRow): DatatakeSummary {
-  const [platform, stamp] = d.id.split("_");
-  const iso = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(9, 11)}:${stamp.slice(
-    11,
-    13,
-  )}:${stamp.slice(13, 15)}Z`;
+  const platform = d.id.split("-")[0];
   return {
     id: d.id,
     platform,
     mission: missionOfPlatform(platform),
-    sensingStart: new Date(iso),
+    sensingStart: d.start,
     statusLabel: FILTER_LABEL[d.comp],
     statusColor: COMPLETENESS_COLOR[d.comp],
     completeness: d.pct,

@@ -7,6 +7,8 @@
    completeness states, the same three-month window plus the scheduled tail, and the same seeded
    RNG, so the rows never reshuffle between renders. */
 
+import { makeDatatakeId } from "@/data/datatake-id";
+
 export type Status = "Planned" | "Processing" | "Acquired" | "Partial" | "Unavailable";
 
 export interface Datatake {
@@ -158,10 +160,7 @@ function generate(count = 900): Datatake[] {
       }
     }
 
-    const hex = Math.floor(rng() * 0xffffff).toString(16).padStart(6, "0").toUpperCase();
-    const id = `${sat}_${mode}_${fmtDate(start).replace(/-/g, "")}T${pad(start.getUTCHours())}${pad(
-      start.getUTCMinutes(),
-    )}${pad(start.getUTCSeconds())}_${hex}`;
+    const id = makeDatatakeId(sat, rng);
 
     rows.push({ id, satellite: sat, mission, sensorMode: mode, status, completeness, start });
   }

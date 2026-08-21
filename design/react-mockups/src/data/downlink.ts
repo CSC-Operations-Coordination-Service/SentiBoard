@@ -39,26 +39,26 @@ export interface DownlinkPass {
 
 /** Keyed by datatake id — the join the backend does not yet provide. */
 const DOWNLINK_PASSES: Record<string, DownlinkPass[]> = {
-  S2A_20260716T104201: [
+  "S2A-48201-1": [
     { station: "SGS", stationName: "Svalbard", atIso: "2026-07-16T11:02:14Z", volumeMb: 18_400, durationS: 41 },
   ],
-  S1A_20260716T093310: [
+  "S1A-57622": [
     { station: "MTI", stationName: "Matera", atIso: "2026-07-16T09:58:07Z", volumeMb: 23_200, durationS: 36 },
     { station: "SGS", stationName: "Svalbard", atIso: "2026-07-16T10:44:52Z", volumeMb: 9_850, durationS: 17 },
   ],
-  S3B_20260716T081145: [
+  "S3B-080-345": [
     { station: "MSP", stationName: "Maspalomas", atIso: "2026-07-16T08:37:20Z", volumeMb: 31_600, durationS: 58 },
   ],
-  S2B_20260716T072050: [
+  "S2B-42050-1": [
     { station: "INU", stationName: "Inuvik", atIso: "2026-07-16T07:41:33Z", volumeMb: 17_900, durationS: 39 },
   ],
-  S5P_20260716T060012: [
+  "S5P-60012": [
     { station: "NSG", stationName: "Neustrelitz", atIso: "2026-07-16T06:52:41Z", volumeMb: 4_120, durationS: 12 },
     { station: "SGS", stationName: "Svalbard", atIso: "2026-07-16T07:35:09Z", volumeMb: 3_780, durationS: 11 },
   ],
   // The failed datatake downlinked nothing — an empty list is a real state the
   // rail has to render, not a missing key.
-  S3A_20260715T221533: [],
+  "S3A-055-358": [],
 };
 
 /**
