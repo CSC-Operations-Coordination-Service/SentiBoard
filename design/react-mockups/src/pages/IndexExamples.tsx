@@ -440,7 +440,6 @@ export function ExamplesHome() {
       <section className="wrap pad">
         <div className="section-head" style={{ marginBottom: 24 }}>
           <div><h2 style={{ fontSize: 24 }}>Index page</h2></div>
-          <span className="meta">3 options</span>
         </div>
         <div className="ex-list">
           {CARDS.map((c) => (
@@ -453,7 +452,6 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>About page</h2></div>
-          <span className="meta">3 alternatives to /about</span>
         </div>
         <div className="ex-list">
           {ABOUT_CARDS.map((c) => (
@@ -466,7 +464,6 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Acquisitions page</h2></div>
-          <span className="meta">2 alternatives to /acquisitions</span>
         </div>
         <div className="ex-list">
           {ACQ_CARDS.map((c) => (
@@ -480,7 +477,6 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Events page</h2></div>
-          <span className="meta">3 final concepts for /events</span>
         </div>
         <div className="ex-list">
           {PAGE_CARDS.map((c) => (
@@ -493,7 +489,6 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Data Availability page</h2></div>
-          <span className="meta">3 alternatives to /availability</span>
         </div>
         <div className="ex-list">
           {AVAIL_CARDS.map((c) => (
@@ -506,7 +501,6 @@ export function ExamplesHome() {
 
         <div className="section-head" style={{ margin: "56px 0 24px" }}>
           <div><h2 style={{ fontSize: 24 }}>Processors page</h2></div>
-          <span className="meta">3 alternatives to /processors</span>
         </div>
         <div className="ex-list">
           {PROC_CARDS.map((c) => (
