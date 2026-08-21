@@ -1,0 +1,356 @@
+/* ============================================================
+   About proposal C — "Systems Briefing".
+   Every colour resolves to the SHARED tokens (tokens.css), so this concept follows
+   the app's global dark/light switch with no palette of its own to keep in sync.
+   The whole page is hairline rules over the page ground — no card fills — which is
+   the vocabulary the Processors and telemetry pages already use.
+   ============================================================ */
+
+/* -------------------- shell: rail + document -------------------- */
+.shell {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr);
+  gap: clamp(32px, 5vw, 72px);
+  align-items: start;
+}
+
+/* Below 1000px the rail stops being a rail: a 232px sticky column leaves too little
+   for a 68ch measure, so it becomes a horizontal scrolling strip above the document. */
+@media (max-width: 1000px) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}
+
+/* -------------------- sticky index rail -------------------- */
+.rail {
+  position: sticky;
+  /* clears the sticky nav, plus a little air */
+  top: calc(var(--nav-h) + 20px);
+  border-left: 1px solid var(--line);
+  padding-left: 18px;
+}
+
+@media (max-width: 1000px) {
+  .rail {
+    position: static;
+    border-left: none;
+    border-bottom: 1px solid var(--line);
+    padding-left: 0;
+    padding-bottom: 14px;
+  }
+}
+
+.railHead {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 14px;
+}
+
+.railNav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@media (max-width: 1000px) {
+  .railNav {
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    /* the strip scrolls; the page must not */
+    scrollbar-width: thin;
+    padding-bottom: 4px;
+  }
+}
+
+.railNav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px 7px 0;
+  text-decoration: none;
+  color: var(--text-mute);
+  font-size: 13.5px;
+  border-radius: var(--r-sm);
+  transition: color 0.2s var(--ease);
+  white-space: nowrap;
+}
+
+.railNav a:hover {
+  color: var(--text);
+}
+
+.railNav a:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
+/* active entry — the one piece of accent colour in the rail */
+.railOn {
+  color: var(--text) !important;
+  position: relative;
+}
+
+.railOn::before {
+  content: "";
+  position: absolute;
+  left: -19px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--accent-grad);
+}
+
+@media (max-width: 1000px) {
+  .railOn::before {
+    left: 0;
+    top: auto;
+    bottom: -5px;
+    transform: none;
+    width: 100%;
+    height: 2px;
+  }
+}
+
+.railN {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+}
+
+.railOn .railN {
+  color: var(--accent-2);
+}
+
+.railLabel {
+  flex: 1;
+}
+
+/* count chip — module / answer totals, derived in the component */
+.railCount {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-mute);
+  background: var(--pill-bg);
+  border-radius: 999px;
+  padding: 2px 7px;
+}
+
+.railFoot {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  word-break: break-all;
+}
+
+.railFoot a {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.railFoot a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1000px) {
+  .railFoot {
+    display: none;
+    /* the address is in the Programme context section too */
+  }
+}
+
+/* -------------------- document column -------------------- */
+/* 68ch is the measure the copy is set for; the wrap is 1320px, so without this the
+   15.5px prose would run to ~150 characters a line. */
+.doc {
+  max-width: 68ch;
+}
+
+.sec {
+  /* scroll-margin so an anchor jump does not park the heading under the sticky nav */
+  scroll-margin-top: calc(var(--nav-h) + 24px);
+  padding-bottom: clamp(40px, 6vw, 72px);
+}
+
+.sec + .sec {
+  border-top: 1px solid var(--line);
+  padding-top: clamp(36px, 5vw, 56px);
+}
+
+.h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-size: clamp(21px, 2.6vw, 30px);
+  letter-spacing: -0.01em;
+  margin: 0 0 20px;
+}
+
+.hN {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--track);
+  color: var(--accent-2);
+  /* keeps the number off the heading's baseline shift */
+  transform: translateY(-2px);
+}
+
+.lead {
+  color: var(--text);
+  font-size: clamp(16px, 1.7vw, 19px);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.p {
+  color: var(--text-dim);
+  font-size: 15.5px;
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+
+.p:last-child {
+  margin-bottom: 0;
+}
+
+.mail {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.mail:hover {
+  text-decoration: underline;
+}
+
+.note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-mute);
+  margin: -8px 0 24px;
+  line-height: 1.5;
+}
+
+/* -------------------- 02 · module definition list -------------------- */
+.defs {
+  margin: 0;
+}
+
+.def {
+  padding: 18px 0;
+  border-top: 1px solid var(--line);
+}
+
+.def:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.def dt {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.defN {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: 0.06em;
+}
+
+.defTitle {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.defTitle:hover {
+  color: var(--accent-2);
+}
+
+.defTitle:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.defArrow {
+  color: var(--accent-2);
+  transition: transform 0.2s var(--ease);
+}
+
+.defTitle:hover .defArrow {
+  transform: translateX(3px);
+}
+
+.def dd {
+  margin: 0;
+  /* aligns the description under the title, past the 02 gutter */
+  padding-left: 34px;
+  color: var(--text-dim);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
+@media (max-width: 560px) {
+  .def dd {
+    padding-left: 0;
+  }
+}
+
+/* -------------------- 04 · flat, always-open FAQs -------------------- */
+.qGroup {
+  margin-bottom: 30px;
+}
+
+.qGroup:last-child {
+  margin-bottom: 0;
+}
+
+.qGroupTitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.qa {
+  padding: 12px 0;
+}
+
+.qa + .qa {
+  border-top: 1px solid var(--grid-line);
+}
+
+.q {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.a {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.65;
+}

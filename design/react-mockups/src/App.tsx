@@ -11,6 +11,8 @@ import About from "./pages/About";
 import { NotFoundPage, StatPage } from "./pages/Simple";
 import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
+import AboutBriefing from "./pages/about-briefing/AboutBriefing";
+import AboutDossier from "./pages/about-dossier/AboutDossier";
 import EventsManifest from "./pages/events-manifest/EventsManifest";
 import EventsSwimlanes from "./pages/events-swimlanes/EventsSwimlanes";
 import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route path="/examples/reveal" element={<IndexReveal />} />
           <Route path="/examples/about" element={<AboutRedesign />} />
+          <Route path="/examples/about-briefing" element={<AboutBriefing />} />
+          <Route path="/examples/about-dossier" element={<AboutDossier />} />
           <Route path="/examples/events-manifest" element={<EventsManifest />} />
           <Route path="/examples/events-spacex" element={<EventsSpaceXConcepts />} />
           <Route path="/examples/events-swimlanes" element={<EventsSwimlanes />} />

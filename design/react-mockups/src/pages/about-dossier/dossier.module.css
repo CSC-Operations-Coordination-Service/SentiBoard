@@ -1,0 +1,438 @@
+/* ============================================================
+   About proposal D — "Mission Dossier".
+   Every colour resolves to the SHARED tokens (tokens.css), so this concept follows
+   the app's global dark/light switch with no palette of its own.
+
+   Two layouts, one set of rules. Wide + motion allowed: a horizontal scroll-snap
+   track of full-height panels. Narrow (<=900px) or prefers-reduced-motion: snap and
+   the fixed viewport height are switched OFF and the same panels stack vertically.
+   The JS never reads a breakpoint — it asks whether the track can scroll at all.
+   ============================================================ */
+
+.page {
+  position: relative;
+  background: var(--bg);
+}
+
+/* -------------------- the paged track -------------------- */
+.track {
+  display: flex;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* full viewport minus the sticky nav, so one panel is exactly one screen */
+  height: calc(100vh - var(--nav-h));
+  /* room for the fixed HUD at the bottom */
+  scrollbar-width: none;
+}
+
+@supports (height: 100dvh) {
+  .track {
+    height: calc(100dvh - var(--nav-h));
+  }
+}
+
+.track::-webkit-scrollbar {
+  display: none;
+}
+
+.track:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: -3px;
+}
+
+.panel {
+  position: relative;
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+/* -------------------- backdrop bled to the right edge -------------------- */
+.art {
+  position: absolute;
+  inset: 0 0 0 38%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* Content sits on flat ground on the left; the veil is what keeps the type legible
+   where the two meet, rather than a blanket dark layer over the whole photograph. */
+.veil {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, var(--bg) 0%, var(--bg) 34%, color-mix(in srgb, var(--bg) 70%, transparent) 48%, transparent 72%),
+    linear-gradient(0deg, color-mix(in srgb, var(--bg) 55%, transparent) 0%, transparent 40%);
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+  width: min(56ch, 46%);
+  margin-left: max(24px, calc((100vw - var(--wrap)) / 2));
+  padding: clamp(20px, 4vh, 48px) 0 clamp(84px, 12vh, 120px);
+  /* a panel taller than the screen (the FAQ one) must not be clipped */
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* -------------------- type -------------------- */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-bottom: 18px;
+}
+
+.eyebrowN {
+  color: var(--accent-2);
+}
+
+.h1 {
+  font-size: clamp(26px, 3.6vw, 46px);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 0 0 18px;
+}
+
+.h2 {
+  font-size: clamp(23px, 3vw, 38px);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  margin: 0 0 16px;
+}
+
+.prose p {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0 0 12px;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.lead {
+  color: var(--text) !important;
+  font-size: clamp(15.5px, 1.5vw, 17.5px) !important;
+}
+
+.mail {
+  color: var(--accent-2);
+  text-decoration: none;
+}
+
+.mail:hover {
+  text-decoration: underline;
+}
+
+.cta {
+  align-self: flex-start;
+  margin-top: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  text-decoration: none;
+  padding: 10px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.cta:hover {
+  border-color: var(--accent-2);
+  background: var(--pill-bg);
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+/* -------------------- the FAQ panel scrolls inside itself -------------------- */
+/* Eleven answers cannot fit one screen at a readable size, so this single panel gets
+   its own y-scroll rather than shrinking the type to make them fit. */
+.faqScroll {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 12px;
+  scrollbar-width: thin;
+}
+
+.faqGroup {
+  margin-bottom: 20px;
+}
+
+.faqGroupTitle {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin: 0 0 8px;
+}
+
+.faq {
+  border-bottom: 1px solid var(--line);
+}
+
+.faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 11px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.chev {
+  color: var(--accent-2);
+  transition: transform 0.2s var(--ease);
+  flex: none;
+}
+
+.faq[open] .chev {
+  transform: rotate(45deg);
+}
+
+.ans {
+  margin: 0;
+  padding: 0 0 13px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* -------------------- fixed HUD: progress + chapters + counter -------------------- */
+.hud {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--line);
+}
+
+.progress {
+  height: 2px;
+  background: var(--grid-line);
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent-grad);
+  transition: width 0.35s var(--ease);
+}
+
+.hudRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px max(16px, calc((100vw - var(--wrap)) / 2));
+}
+
+.arrow {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.arrow:hover:not(:disabled) {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+.arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.arrow:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.chapters {
+  flex: 1;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chapters::-webkit-scrollbar {
+  display: none;
+}
+
+.chapter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  padding: 7px 11px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  color: var(--text-mute);
+  font-size: 12px;
+  white-space: nowrap;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.chapter:hover {
+  color: var(--text);
+}
+
+.chapter:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.chapterOn {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--pill-bg);
+}
+
+.chapterN {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-mute);
+}
+
+.chapterOn .chapterN {
+  color: var(--accent-2);
+}
+
+.counter {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.counter span {
+  color: var(--text-mute);
+  margin: 0 2px;
+}
+
+/* The shared .ex-badge is fixed at bottom-right, which is exactly where this page's HUD
+   sits — the badge landed on top of the counter and the next-panel arrow. Lift it clear.
+   Scoped to .page, so the badge is unchanged on every other proposal. */
+.page :global(.ex-badge) {
+  bottom: 62px;
+}
+
+/* -------------------- stacked fallback -------------------- */
+/* Narrow viewports AND anyone who has asked for reduced motion get the same thing:
+   ordinary vertical sections. Snap off, fixed height off, backdrop pushed to a band
+   behind the type instead of a right-edge bleed. */
+@media (max-width: 900px), (prefers-reduced-motion: reduce) {
+  .track {
+    display: block;
+    height: auto;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+
+  .panel {
+    flex: none;
+    min-height: auto;
+    display: block;
+    border-bottom: 1px solid var(--line);
+    scroll-margin-top: calc(var(--nav-h) + 16px);
+  }
+
+  .art {
+    inset: 0;
+    opacity: 0.22;
+  }
+
+  .veil {
+    background: linear-gradient(0deg, var(--bg) 0%, color-mix(in srgb, var(--bg) 72%, transparent) 55%, color-mix(in srgb, var(--bg) 55%, transparent) 100%);
+  }
+
+  .body {
+    width: auto;
+    max-width: 68ch;
+    max-height: none;
+    margin: 0 auto;
+    padding: clamp(40px, 8vw, 72px) 20px;
+  }
+
+  /* no longer a viewport-bound panel, so the FAQ list just runs on */
+  .faqScroll {
+    overflow: visible;
+    padding-right: 0;
+  }
+
+  /* The strip stops being a pager and becomes a plain jump list: no progress bar, no
+     prev/next, no counter — those describe a position in a sequence, and in this layout
+     there is no sequence, just sections. It stays FIXED to the bottom rather than sticky:
+     the HUD is the last element in the DOM, so a sticky `top` never engages and it would
+     simply sit at the end of the document as a strip you only reach after everything. */
+  .progress,
+  .arrow,
+  .counter {
+    display: none;
+  }
+
+  .hudRow {
+    padding: 8px 12px;
+  }
+
+  /* clears the fixed jump bar so the last panel's copy is not hidden behind it */
+  .track {
+    padding-bottom: 56px;
+  }
+}
+
+/* The page ends above the fixed HUD; in the stacked layout the HUD is sticky at the
+   top instead, so the reserved space is only needed in the paged one. */
+@media (min-width: 901px) and (prefers-reduced-motion: no-preference) {
+  .page {
+    padding-bottom: 0;
+  }
+}
