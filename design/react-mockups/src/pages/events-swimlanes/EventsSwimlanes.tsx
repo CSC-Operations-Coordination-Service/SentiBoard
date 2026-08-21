@@ -178,7 +178,6 @@ function EventRow({
           mounting them on expand would make the row appear at full size instead. */}
       <Collapse open={open} id={`sw-ev-${event.id}`}>
         <div className={s.eventDetail}>
-          <p className={s.eventSummary}>{event.summary}</p>
           <div className={s.dtHead}>
             <span>Impacted datatakes · {event.datatakes.length}</span>
           </div>

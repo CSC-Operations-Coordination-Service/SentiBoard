@@ -314,7 +314,6 @@ export function filterEvents(events: ManifestEvent[], f: Filters): ManifestEvent
     if (!q) return true;
     return (
       e.title.toLowerCase().includes(q) ||
-      e.summary.toLowerCase().includes(q) ||
       e.satellite.toLowerCase().includes(q) ||
       e.category.toLowerCase().includes(q) ||
       e.datatakes.some((d) => d.id.toLowerCase().includes(q) || d.product.toLowerCase().includes(q))

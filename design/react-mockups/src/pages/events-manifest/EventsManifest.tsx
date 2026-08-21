@@ -158,7 +158,6 @@ function OccurrenceList({
                 mounting them on expand would make the panel appear at full size instead. */}
             <Collapse open={open} id={`occ-${e.id}`}>
               <div className={s.occDetail}>
-                <p className={s.occSummary}>{e.summary}</p>
                 <div className={s.dtHead}>
                   <span>
                     Impacted datatakes · {e.datatakes.length}
