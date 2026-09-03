@@ -410,14 +410,252 @@
 
 .empty { padding: 44px 16px; text-align: center; font-size: 13.5px; color: var(--text-mute); }
 
+/* -------------------- focused view (charts + list) -------------------- */
+.focusedHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 26px 0 16px;
+}
+
+.focusedHeader h3 {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.focusedLayout {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.focusedList {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.listHeader {
+  padding: 11px 16px;
+  background: var(--bg-3);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  border-bottom: 1px solid var(--line);
+}
+
+.listItems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+.listItems li {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.15s var(--ease);
+}
+
+.listItems li:last-child { border-bottom: none; }
+.listItems li:hover { background: var(--bg-3); }
+.listItems li.gapItem { box-shadow: inset 3px 0 0 var(--cmp-partial); }
+.listItems li.lossItem { box-shadow: inset 3px 0 0 var(--cmp-unavailable); }
+
+.listIdRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.listId {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text);
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.listSat {
+  flex-shrink: 0;
+  display: inline-flex;
+  padding: 2px 7px;
+  border-radius: var(--r-sm);
+  background: var(--pill-bg);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+
+.listDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.listMode {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+.listTime {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.focusedCharts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.chartCard {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.chartTitle {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  width: 100%;
+  text-align: center;
+}
+
+.donutChart {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.donutChart svg { max-width: 120px; }
+
+.donutTrack { stroke: var(--line); opacity: 0.45; }
+
+.donutMid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  pointer-events: none;
+}
+
+.donutN {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.donutC {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  color: var(--text-mute);
+  text-transform: uppercase;
+}
+
+.donutLegend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.donutLegend li {
+  display: grid;
+  grid-template-columns: 7px 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.donutLegend li:first-child { border-top: 0; }
+
+.donutDot { width: 7px; height: 7px; border-radius: 1px; }
+
+.donutLabel {
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.donutValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.donutPercent {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-mute);
+  min-width: 30px;
+  text-align: right;
+  font-size: 9px;
+}
+
+.emptyCharts {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 40px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-mute);
+}
+
 /* -------------------- responsive -------------------- */
 @media (max-width: 1100px) {
   .chips { grid-template-columns: repeat(2, 1fr); }
   .counters { grid-template-columns: repeat(2, 1fr); }
+  .focusedLayout { grid-template-columns: 1fr; }
+  .focusedCharts { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px) {
   .chips { grid-template-columns: 1fr; }
   .tableWrap { overflow-x: auto; }
   .table { min-width: 720px; }
+  .focusedLayout { grid-template-columns: 1fr; }
+  .focusedCharts { grid-template-columns: 1fr; }
+  .focusedList { max-height: none; }
 }

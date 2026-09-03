@@ -11,7 +11,72 @@ import {
   daysOf, daysSinceGap, fmtDate, fmtDateTime, isGap, missionRow, pad, trendSeries,
 } from "./mock";
 import s from "./coverage.module.css";
-import "@/styles/data-availability.css"; // filter bar, shared with the "Filtered breakdown" proposal
+import "@/styles/data-availability.css";
+
+type Slice = { key: string; label: string; value: number; color: string };
+
+function Donut({ slices, total, caption }: { slices: Slice[]; total: number; caption: string }) {
+  const SIZE = 120;
+  const THICK = 9;
+  const r = (SIZE - THICK) / 2;
+  const circumference = 2 * Math.PI * r;
+  const sum = slices.reduce((s, x) => s + x.value, 0) || 1;
+  const GAP = 2;
+
+  let offset = 0;
+  const arcs = slices
+    .filter((s) => s.value > 0)
+    .map((s) => {
+      const len = (s.value / sum) * circumference;
+      const drawn = Math.max(1, len - GAP);
+      const node = (
+        <circle
+          key={s.key}
+          cx={SIZE / 2}
+          cy={SIZE / 2}
+          r={r}
+          fill="none"
+          strokeWidth={THICK}
+          strokeDasharray={`${drawn} ${circumference - drawn}`}
+          strokeDashoffset={-offset}
+          style={{ stroke: s.color }}
+        />
+      );
+      offset += len;
+      return node;
+    });
+
+  return (
+    <div className={s.donutChart}>
+      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={caption}>
+        <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" strokeWidth={THICK} className={s.donutTrack} />
+          {arcs}
+        </g>
+      </svg>
+      <div className={s.donutMid}>
+        <span className={s.donutN}>{total}</span>
+        <span className={s.donutC}>{caption}</span>
+      </div>
+    </div>
+  );
+}
+
+function DonutLegend({ slices, total }: { slices: Slice[]; total: number }) {
+  const denom = total || 1;
+  return (
+    <ul className={s.donutLegend}>
+      {slices.map((slice) => (
+        <li key={slice.key}>
+          <span className={s.donutDot} style={{ background: slice.color }} aria-hidden />
+          <span className={s.donutLabel}>{slice.label}</span>
+          <span className={s.donutValue}>{slice.value}</span>
+          <span className={s.donutPercent}>{Math.round((slice.value / denom) * 100)}%</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 /* Data Availability PROPOSAL 3 — "Coverage timeline". An ALTERNATIVE to /availability, which is
    untouched, and a third reading alongside /examples/data-availability-spacex (telemetry console)
@@ -31,6 +96,26 @@ import "@/styles/data-availability.css"; // filter bar, shared with the "Filtere
 
    Colour comes entirely from the shared tokens, so this follows the app's global light/dark switch
    with no palette of its own — see coverage.module.css. Static mock data throughout. */
+
+function statusSlices(rows: Datatake[]): Slice[] {
+  const STATUS_ORDER: Status[] = ["Planned", "Processing", "Acquired", "Partial", "Unavailable"];
+  const acc = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<Status, number>;
+  rows.forEach((r) => (acc[r.status] += 1));
+  return STATUS_ORDER.map((s) => ({ key: s, label: s.toUpperCase(), value: acc[s], color: STATUS_COLOR[s] }));
+}
+
+function modeSlices(rows: Datatake[]): Slice[] {
+  const acc = new Map<string, number>();
+  rows.forEach((r) => acc.set(r.sensorMode, (acc.get(r.sensorMode) ?? 0) + 1));
+  return [...acc.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([mode, n]) => ({
+      key: mode,
+      label: mode,
+      value: n,
+      color: STATUS_COLOR["Acquired"],
+    }));
+}
 
 type TrendWindow = 7 | 30 | 90;
 type SortKey = "gap" | "recent" | "worst";
@@ -432,85 +517,141 @@ export default function CoverageTimeline() {
           </div>
         </div>
 
-        {/* ---------------- table ---------------- */}
-        <div className={s.tableHead}>
-          <div className={s.sortRow}>
-            Order
-            <div className={s.segmented}>
-              {SORTS.map((o) => (
-                <button key={o.id} className={sort === o.id ? s.on : ""} onClick={() => setSort(o.id)}>
-                  {o.label}
-                </button>
-              ))}
+        {/* ---------------- focused view (charts + list) OR table (normal view) ---------------- */}
+        {focus ? (
+          <>
+            <div className={s.focusedHeader}>
+              <h3>
+                {focus.mission} · {focus.key} · {rows.length} datatake{rows.length !== 1 ? "s" : ""}
+              </h3>
+              <button className={s.focusClear} onClick={() => setFocus(null)}>
+                <X size={14} />
+                Clear focus
+              </button>
             </div>
-          </div>
-          <span className={s.count}>
-            Showing {visible.length} of {sorted.length} datatake{sorted.length !== 1 ? "s" : ""}
-            {focus ? ` · focused on ${focus.mission} ${focus.key}` : ""}
-          </span>
-        </div>
 
-        <Reveal className={s.tableWrap}>
-          <table className={s.table}>
-            <thead>
-              <tr>
-                <th>Datatake ID</th>
-                <th>Platform</th>
-                <th>Mode</th>
-                <th>Start (UTC)</th>
-                <th>Age</th>
-                <th>Status</th>
-                <th>Publication completeness</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((row) => {
-                const cls = row.status === "Unavailable" ? s.lossRow : isGap(row) ? s.gapRow : undefined;
-                return (
-                  <tr key={row.id} className={cls}>
-                    <td className={s.id}>{row.id}</td>
-                    <td><span className={s.sat}>{row.satellite}</span></td>
-                    <td className={s.mode}>{row.sensorMode}</td>
-                    <td className={s.time}>{fmtDateTime(row.start)}</td>
-                    <td className={s.age}>{ageOf(row.start)}</td>
-                    <td>
-                      <span className={s.badge} style={{ ["--c" as string]: STATUS_COLOR[row.status as Status] }}>
-                        {row.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className={s.bar}>
-                        <div className={s.barTrack}>
-                          <div
-                            className={s.barFill}
-                            style={{ width: `${row.completeness}%`, background: STATUS_COLOR[row.status as Status] }}
-                          />
-                        </div>
-                        <span className={s.barVal}>{row.completeness}%</span>
+            <div className={s.focusedLayout}>
+              <div className={s.focusedList}>
+                <div className={s.listHeader}>DATATAKES</div>
+                <ul className={s.listItems}>
+                  {rows.map((row) => (
+                    <li key={row.id} className={row.status === "Unavailable" ? s.lossItem : isGap(row) ? s.gapItem : undefined}>
+                      <div className={s.listIdRow}>
+                        <span className={s.listId}>{row.id}</span>
+                        <span className={s.listSat}>{row.satellite}</span>
                       </div>
-                    </td>
-                    <td>
-                      <button
-                        className="dtm-trigger icon"
-                        onClick={() => setSelected(toSummary(row))}
-                        title={`View details — ${row.id}`}
-                        aria-label={`View details for datatake ${row.id}`}
-                      >
-                        <Eye size={15} />
-                      </button>
-                    </td>
+                      <div className={s.listDetails}>
+                        <span className={s.listMode}>{row.sensorMode}</span>
+                        <span className={s.listTime}>{fmtDateTime(row.start)}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className={s.focusedCharts}>
+                {rows.length === 0 ? (
+                  <p className={s.emptyCharts}>No datatakes for this selection.</p>
+                ) : (
+                  <>
+                    <div className={s.chartCard}>
+                      <h4 className={s.chartTitle}>STATUS DISTRIBUTION</h4>
+                      <Donut slices={statusSlices(rows)} total={rows.length} caption="DATATAKES" />
+                      <DonutLegend slices={statusSlices(rows)} total={rows.length} />
+                    </div>
+
+                    <div className={s.chartCard}>
+                      <h4 className={s.chartTitle}>SENSOR MODES</h4>
+                      <Donut slices={modeSlices(rows)} total={modeSlices(rows).length} caption="MODES" />
+                      <DonutLegend slices={modeSlices(rows)} total={rows.length} />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Normal table view */}
+            <div className={s.tableHead}>
+              <div className={s.sortRow}>
+                Order
+                <div className={s.segmented}>
+                  {SORTS.map((o) => (
+                    <button key={o.id} className={sort === o.id ? s.on : ""} onClick={() => setSort(o.id)}>
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <span className={s.count}>
+                Showing {visible.length} of {sorted.length} datatake{sorted.length !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            <Reveal className={s.tableWrap}>
+              <table className={s.table}>
+                <thead>
+                  <tr>
+                    <th>Datatake ID</th>
+                    <th>Platform</th>
+                    <th>Mode</th>
+                    <th>Start (UTC)</th>
+                    <th>Age</th>
+                    <th>Status</th>
+                    <th>Publication completeness</th>
+                    <th>Actions</th>
                   </tr>
-                );
-              })}
-              {visible.length === 0 && (
-                <tr>
-                  <td colSpan={8} className={s.empty}>No datatakes match the current filters.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </Reveal>
+                </thead>
+                <tbody>
+                  {visible.map((row) => {
+                    const cls = row.status === "Unavailable" ? s.lossRow : isGap(row) ? s.gapRow : undefined;
+                    return (
+                      <tr key={row.id} className={cls}>
+                        <td className={s.id}>{row.id}</td>
+                        <td><span className={s.sat}>{row.satellite}</span></td>
+                        <td className={s.mode}>{row.sensorMode}</td>
+                        <td className={s.time}>{fmtDateTime(row.start)}</td>
+                        <td className={s.age}>{ageOf(row.start)}</td>
+                        <td>
+                          <span className={s.badge} style={{ ["--c" as string]: STATUS_COLOR[row.status as Status] }}>
+                            {row.status}
+                          </span>
+                        </td>
+                        <td>
+                          <div className={s.bar}>
+                            <div className={s.barTrack}>
+                              <div
+                                className={s.barFill}
+                                style={{ width: `${row.completeness}%`, background: STATUS_COLOR[row.status as Status] }}
+                              />
+                            </div>
+                            <span className={s.barVal}>{row.completeness}%</span>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            className="dtm-trigger icon"
+                            onClick={() => setSelected(toSummary(row))}
+                            title={`View details — ${row.id}`}
+                            aria-label={`View details for datatake ${row.id}`}
+                          >
+                            <Eye size={15} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {visible.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className={s.empty}>No datatakes match the current filters.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </Reveal>
+          </>
+        )}
       </section>
 
       {selected && <DatatakeModal datatake={selected} onClose={() => setSelected(null)} />}

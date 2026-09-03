@@ -956,10 +956,6 @@ export default function EventsSpaceXConcepts() {
           <ConceptB events={events} year={year} month={month} onOpen={setOpenDay} />
         )}
 
-        <footer className="evx-foot">
-          <span>MOCK DATA · AUGUST 2026 · NO BACKEND ATTACHED</span>
-          <span>SENTIBOARD V2 · DEVOCS-219 · EVENTS CONCEPTS A/B</span>
-        </footer>
       </div>
 
       {/* ---------------- A: event popover ---------------- */}
