@@ -158,7 +158,6 @@ export function IndexFleet() {
           ))}
         </div>
       </section>
-      <span className="ex-badge">Example A · Ticker over video + fleet</span>
     </>
   );
 }
@@ -205,7 +204,6 @@ export function IndexGallery() {
           ))}
         </div>
       </section>
-      <span className="ex-badge">Example B · Console + linkable gallery</span>
     </>
   );
 }
@@ -295,6 +293,44 @@ function NewsTimeline() {
   );
 }
 
+// ================= COMBINED — fleet video + gallery news box + gallery carousel =================
+export function IndexFleetGallery() {
+  return (
+    <>
+      {/* video hero from fleet page */}
+      <section className="vhero">
+        <video autoPlay muted loop playsInline>
+          <source src="/assets/mv/home.mp4" type="video/mp4" />
+        </video>
+        <div className="vhero-cap">
+          <h1>Copernicus <span className="hl">Sentinel</span> Operations Dashboard</h1>
+          <p>{HERO_SUB}</p>
+        </div>
+        <div className="vhero-bar bottom"><LiveMarquee /></div>
+      </section>
+
+      {/* page carousel gallery from gallery page */}
+      <section className="ex-gallery">
+        <div className="eg-stage">
+          {COLS.map((col, ci) => (
+            <div className={"eg-col" + (ci % 2 ? " rev" : "")} key={ci}>
+              {col.map((idx, i) => {
+                const p = PAGE_BY_IMG[idx];
+                return (
+                  <Link className="eg-tile" to={p.href} key={i} title={p.title}>
+                    <img src={MOD_IMG[idx]} alt="" loading="lazy" />
+                    <span className="eg-cap"><h4>{p.title}</h4><p>{p.desc}</p><span className="go">Open →</span></span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
 // ================= VARIANT C — editorial first (no video, hero text here) + reveal rows =================
 export function IndexReveal() {
   useEffect(() => {
@@ -344,13 +380,13 @@ export function IndexReveal() {
           ))}
         </div>
       </section>
-      <span className="ex-badge">Example C · Editorial + reveal</span>
     </>
   );
 }
 
 // ================= landing =================
 const CARDS = [
+  { to: "/examples/fleet-gallery", img: SCENES[3], title: "d) Fleet + Gallery combined", desc: "Video hero from fleet page → diagonal carousel gallery." },
   { to: "/examples/fleet", img: CARD_ART.fleet, title: "a) Ticker over video - fleet", desc: "Video hero with news scrolling on top and live events along the bottom → Sentinel fleet → image page-cards." },
   { to: "/examples/gallery", img: CARD_ART.gallery, title: "b) Console - linkable gallery", desc: "News + real-time console as the first section (no globe) → diagonal gallery where every image links to a page." },
   { to: "/examples/reveal", img: CARD_ART.reveal, title: "c) Editorial - reveal", desc: "Editorial first section (auto-scrolling Sentinel scenes + news + live rail, no globe) → pages revealed on scroll." },

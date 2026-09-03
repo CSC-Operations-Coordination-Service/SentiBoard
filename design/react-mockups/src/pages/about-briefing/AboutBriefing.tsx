@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Globe2, CalendarClock, Database, Cpu } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import { ABOUT_INTRO, ABOUT_MODULES, ABOUT_OUTRO, ABOUT_CONTACT_EMAIL } from "@/data/about";
 import { ABOUT_FAQS } from "@/data/about-faqs";
@@ -34,10 +36,10 @@ import s from "./briefing.module.css";
 // Rail entries. `id` doubles as the scroll-spy target and the anchor href, so adding a section
 // means adding one row here plus one <section> carrying the same id — nothing else.
 const SECTIONS = [
-  { id: "overview", n: "01", label: "Overview" },
-  { id: "modules", n: "02", label: "The four modules" },
-  { id: "programme", n: "03", label: "Programme context" },
-  { id: "faqs", n: "04", label: "FAQs" },
+  { id: "overview", n: "01", label: "Overview", Icon: Globe2 },
+  { id: "modules", n: "02", label: "The four modules", Icon: CalendarClock },
+  { id: "programme", n: "03", label: "Programme context", Icon: Database },
+  { id: "faqs", n: "04", label: "FAQs", Icon: Cpu },
 ] as const;
 
 /** Lights the rail entry for whichever section currently owns the reading position.
@@ -89,19 +91,22 @@ export default function AboutBriefing() {
         <aside className={s.rail} aria-label="On this page">
           <div className={s.railHead}>Contents</div>
           <nav className={s.railNav}>
-            {SECTIONS.map((x) => (
-              <a
-                key={x.id}
-                href={`#${x.id}`}
-                className={x.id === active ? s.railOn : undefined}
-                aria-current={x.id === active ? "true" : undefined}
-              >
-                <span className={s.railN}>{x.n}</span>
-                <span className={s.railLabel}>{x.label}</span>
-                {x.id === "modules" && <span className={s.railCount}>{ABOUT_MODULES.length}</span>}
-                {x.id === "faqs" && <span className={s.railCount}>{faqCount}</span>}
-              </a>
-            ))}
+            {SECTIONS.map((x) => {
+              const Icon = x.Icon;
+              return (
+                <a
+                  key={x.id}
+                  href={`#${x.id}`}
+                  className={x.id === active ? s.railOn : undefined}
+                  aria-current={x.id === active ? "true" : undefined}
+                >
+                  <Icon className={s.railN} size={16} strokeWidth={1.5} aria-hidden />
+                  <span className={s.railLabel}>{x.label}</span>
+                  {x.id === "modules" && <span className={s.railCount}>{ABOUT_MODULES.length}</span>}
+                  {x.id === "faqs" && <span className={s.railCount}>{faqCount}</span>}
+                </a>
+              );
+            })}
           </nav>
           <div className={s.railFoot}>
             <a href={`mailto:${ABOUT_CONTACT_EMAIL}`}>{ABOUT_CONTACT_EMAIL}</a>
@@ -164,7 +169,6 @@ export default function AboutBriefing() {
         </div>
       </div>
 
-      <span className="ex-badge">Proposal C · Systems briefing</span>
     </>
   );
 }

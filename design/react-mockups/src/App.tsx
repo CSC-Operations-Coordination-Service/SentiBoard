@@ -9,7 +9,7 @@ import Availability from "./pages/Availability";
 import Processors from "./pages/Processors";
 import About from "./pages/About";
 import { NotFoundPage, StatPage } from "./pages/Simple";
-import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal } from "./pages/IndexExamples";
+import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal, IndexFleetGallery } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
 import AboutBriefing from "./pages/about-briefing/AboutBriefing";
 import AboutDossier from "./pages/about-dossier/AboutDossier";
@@ -51,6 +51,7 @@ export default function App() {
           <Route path="/examples" element={<ExamplesHome />} />
           <Route path="/examples/fleet" element={<IndexFleet />} />
           <Route path="/examples/gallery" element={<IndexGallery />} />
+          <Route path="/examples/fleet-gallery" element={<IndexFleetGallery />} />
           <Route path="/examples/reveal" element={<IndexReveal />} />
           <Route path="/examples/about" element={<AboutRedesign />} />
           <Route path="/examples/about-briefing" element={<AboutBriefing />} />

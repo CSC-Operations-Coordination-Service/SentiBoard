@@ -118,7 +118,6 @@ export default function AboutRedesign() {
         </Reveal>
       </section>
 
-      <span className="ex-badge">Proposal · About redesign</span>
     </>
   );
 }

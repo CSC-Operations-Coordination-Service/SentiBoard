@@ -120,10 +120,9 @@
 }
 
 .railN {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.06em;
+  flex-shrink: 0;
   color: var(--text-mute);
+  transition: color 0.2s var(--ease);
 }
 
 .railOn .railN {

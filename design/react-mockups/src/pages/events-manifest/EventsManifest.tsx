@@ -539,12 +539,6 @@ export default function EventsManifest() {
           </>
         )}
       </aside>
-      {/* The badge is fixed over the page; on a phone the description of the layout is dropped and
-          only the proposal's name kept, or the caption wraps across the content underneath it. */}
-      <span className={`ex-badge ${s.badge}`}>
-        Events proposal · Mission manifest
-        <span className={s.badgeTail}> — filters + day drawer</span>
-      </span>
     </div>
   );
 }

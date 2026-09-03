@@ -498,11 +498,6 @@ export default function EventsSwimlanes() {
             : ACTIVE_DEFINITION}
         </p>
       </div>
-
-      <span className={`ex-badge ${s.badge}`}>
-        Events proposal · Mission swimlanes
-        <span className={s.badgeTail}> — collapsible rows per mission</span>
-      </span>
     </div>
   );
 }

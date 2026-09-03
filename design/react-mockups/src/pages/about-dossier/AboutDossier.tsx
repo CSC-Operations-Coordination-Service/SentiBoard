@@ -255,7 +255,6 @@ export default function AboutDossier() {
         </div>
       </div>
 
-      <span className="ex-badge">Proposal D · Mission dossier</span>
     </div>
   );
 }
