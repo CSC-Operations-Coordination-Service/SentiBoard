@@ -500,77 +500,7 @@ export default function DataAvailability() {
           <DonutCard title="Publication status" icon={<CloudUpload size={13} />} slices={publications} palette={palette} />
         </Reveal>
 
-        {/* Filters */}
-        <div className="da-filters">
-          <div className="da-filters-head">
-            <SlidersHorizontal size={14} />
-            <span className="lab">Filters</span>
-            <button className="da-reset" onClick={reset} disabled={!active}><RotateCcw size={12} />Reset</button>
-          </div>
 
-          <div className="da-fields">
-            <div className="da-field">
-              <label htmlFor="da-period">Period</label>
-              <select
-                id="da-period"
-                value={period}
-                onChange={(e) => {
-                  setPeriod(e.target.value as PeriodId);
-                  setDateFrom("");
-                  setDateTo("");
-                }}
-              >
-                {PERIODS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-                <option value="custom">Custom range</option>
-              </select>
-            </div>
-
-            <div className="da-field">
-              <label htmlFor="da-mission">Mission</label>
-              <select id="da-mission" value={mission} onChange={(e) => handleMissionChange(e.target.value)}>
-                {missionOptions.map((m) => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-
-            <div className="da-field">
-              <label htmlFor="da-sat">Satellite</label>
-              <select id="da-sat" value={satellite} disabled={mission === "Sentinel-5P"}
-                onChange={(e) => setSatellite(e.target.value)}>
-                {satelliteOptions.map((sat) => <option key={sat} value={sat}>{sat}</option>)}
-              </select>
-            </div>
-
-            <div className="da-field">
-              <label htmlFor="da-from">From</label>
-              <div className="da-input-wrap">
-                <Calendar size={14} className="lead" />
-                <input id="da-from" type="date" value={dateFrom} onChange={(e) => onCustomDate("from", e.target.value)} />
-              </div>
-            </div>
-
-            <div className="da-field">
-              <label htmlFor="da-to">To</label>
-              <div className="da-input-wrap">
-                <Calendar size={14} className="lead" />
-                <input id="da-to" type="date" value={dateTo} onChange={(e) => onCustomDate("to", e.target.value)} />
-              </div>
-            </div>
-
-            <div className="da-field">
-              <label htmlFor="da-search">Datatake ID</label>
-              <div className="da-input-wrap">
-                <Search size={14} className="lead" />
-                <input id="da-search" type="text" placeholder="Search by id…" value={search}
-                  onChange={(e) => setSearch(e.target.value)} />
-                {search && (
-                  <button className="da-clear" onClick={() => setSearch("")} aria-label="Clear search">
-                    <X size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
 
         <div className="da-count">
           Showing {visible.length} of {sorted.length} datatake{sorted.length !== 1 ? "s" : ""}
