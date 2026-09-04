@@ -3,6 +3,7 @@ import type { Station, AcqDatatake, AcqLevel, AcqProductType, ProductLevel } fro
 import { sensingMs, levelMean, missingSeconds, expectedTypes, LEVEL_LABEL } from "@/data/mock";
 import { passesFor } from "@/data/downlink";
 import { LAND } from "@/data/land";
+import KmlLinkDisplay from "@/components/KmlLinkDisplay";
 
 // Self-contained interactive 3D globe (Canvas 2D — no external libraries):
 // shaded Earth + graticule, coastlines, acquisition footprints, station coverage
@@ -496,13 +497,19 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   const [tickRove, setTickRove] = useState(0);  // roving tabindex across the sensing marks
   const [contact, setContact] = useState<string[]>([]);
   const [trackW, setTrackW] = useState(0);
+  const [isDark, setIsDark] = useState(() => {
+    const theme = document.documentElement.getAttribute("data-theme");
+    if (theme) return theme === "dark";
+    return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? true;
+  });
 
   const selRef = useRef(0);
   const hoverRef = useRef(-1);
   const playingRef = useRef(true);
   const speedRef = useRef(60);
-  const invalidateRef = useRef<() => void>(() => {});
+  const invalidateRef = useRef<() => void>(() => { });
   const scrubbingRef = useRef(false);
+  const isDarkRef = useRef(isDark);
   const orbits = useRef(ORBITS.map((o) => ({ ...o })));
   const st = useRef({ W: 0, H: 0, dpr: 1, R: 0, baseR: 0, cx: 0, cy: 0, yaw: 0, tilt: -0.42, animMs: 0, zoom: 1, dragging: false, lastX: 0, lastY: 0, moved: 0, simMs: Date.UTC(2026, 6, 16, 11, 4, 22), pinch: 0, targetYaw: 0, targetTilt: -0.42, flying: false, reduce: false, idleFrom: 0 });
 
@@ -514,6 +521,12 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   const invalidate = useCallback(() => invalidateRef.current(), []);
 
   useEffect(() => { setSel(0); selRef.current = 0; setTickRove(0); invalidate(); }, [datatakes, invalidate]);
+
+  // Keep ref in sync with state so drawBase reads current value
+  useEffect(() => {
+    isDarkRef.current = isDark;
+    invalidate();
+  }, [isDark, invalidate]);
 
   // Selecting a datatake (from the list, a footprint, a sensing mark or the
   // screen-reader mirror) rotates the globe so that datatake faces the viewer, so a
@@ -551,6 +564,24 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
     // ---- gating: motion preference, viewport intersection, tab visibility ------
     const motionQ = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     s.reduce = !!motionQ?.matches;
+
+    // Listen to system preference (fallback when no data-theme attribute)
+    const themeQ = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const onThemeChange = (e: MediaQueryListEvent) => {
+      const theme = document.documentElement.getAttribute("data-theme");
+      if (!theme) {  // Only update if app theme isn't overriding
+        setIsDark(e.matches);  // useEffect will handle the invalidation
+      }
+    };
+    themeQ?.addEventListener?.("change", onThemeChange);
+
+    const themeObserver = new MutationObserver(() => {
+      const theme = document.documentElement.getAttribute("data-theme");
+      const newIsDark = theme === "dark" || (!theme && (window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? true));
+      setIsDark(newIsDark);
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
     let inView = true;
     let pageVisible = !document.hidden;
     let raf = 0;
@@ -714,25 +745,58 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       const { cx, cy, R } = s;
       c.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
       c.clearRect(0, 0, s.W, s.H);
+
+      const colors = isDarkRef.current ? {
+        // Dark mode
+        atmGlow: ["rgba(56,189,248,0.18)", "rgba(56,189,248,0)"],
+        sphereLight: "#0a0e17",
+        sphereMid: "#080a12",
+        sphereDark: "#050710",
+        equator: "rgba(30,41,59,0.5)",
+        meridian: "rgba(30,41,59,0.15)",
+        meridianThin: "rgba(30,41,59,0.08)",
+        coastWide: "rgba(100,116,139,0.3)",
+        coastThin: "rgba(100,116,139,0.7)",
+        coverage: "rgba(148,163,184,0.2)",
+      } : {
+        // Light mode
+        atmGlow: ["rgba(59,130,246,0.12)", "rgba(59,130,246,0)"],
+        sphereLight: "#e8edf3",
+        sphereMid: "#d8e0e8",
+        sphereDark: "#c8d3e0",
+        equator: "rgba(148,163,184,0.4)",
+        meridian: "rgba(148,163,184,0.15)",
+        meridianThin: "rgba(148,163,184,0.08)",
+        coastWide: "rgba(51,65,85,0.28)",
+        coastThin: "rgba(51,65,85,0.7)",
+        coverage: "rgba(100,116,139,0.2)",
+      };
+
+      // Atmospheric glow rim
       const ag = c.createRadialGradient(cx, cy, R * 0.9, cx, cy, R * 1.35);
-      ag.addColorStop(0, "rgba(54,140,224,0.18)"); ag.addColorStop(1, "rgba(54,140,224,0)");
+      ag.addColorStop(0, colors.atmGlow[0]); ag.addColorStop(1, colors.atmGlow[1]);
       c.fillStyle = ag; c.beginPath(); c.arc(cx, cy, R * 1.35, 0, 6.2832); c.fill();
-      const sg = c.createRadialGradient(cx - R * 0.35, cy - R * 0.4, R * 0.1, cx, cy, R);
-      sg.addColorStop(0, "#14233d"); sg.addColorStop(0.6, "#0c1729"); sg.addColorStop(1, "#070d18");
+
+      // Sphere with 3D lighting: offset light source top-left to fake sun-facing curvature
+      const sg = c.createRadialGradient(cx - R * 0.3, cy - R * 0.35, R * 0.15, cx, cy, R * 1.1);
+      sg.addColorStop(0, colors.sphereLight);
+      sg.addColorStop(0.5, colors.sphereMid);
+      sg.addColorStop(1, colors.sphereDark);
       c.fillStyle = sg; c.beginPath(); c.arc(cx, cy, R, 0, 6.2832); c.fill();
+
+      // Graticule: equator brighter, meridians subtle
       for (let la = -60; la <= 60; la += 30) {
         const ring: P[] = []; for (let lo = 0; lo <= 360; lo += 5) ring.push(proj(la, lo));
-        strokePath(c, ring, la === 0 ? "rgba(54,208,224,0.22)" : "rgba(120,150,190,0.12)", la === 0 ? 1.2 : 1);
+        strokePath(c, ring, la === 0 ? colors.equator : colors.meridian, la === 0 ? 1.2 : 1);
       }
       for (let lo2 = 0; lo2 < 360; lo2 += 30) {
         const mer: P[] = []; for (let la2 = -90; la2 <= 90; la2 += 5) mer.push(proj(la2, lo2));
-        strokePath(c, mer, "rgba(120,150,190,0.10)", 1);
+        strokePath(c, mer, colors.meridianThin, 1);
       }
-      // Coastlines from the pre-resolved unit vectors: a soft wide pass reads as
-      // landmass, a crisp thin pass draws the coastline on top. Vertices on the far
-      // hemisphere are rejected by their depth before anything is stroked.
+
+      // Coastlines: two-pass technique (soft base + crisp outline) with higher contrast
       const land = landVectors(landDecim());
-      const wide = "rgba(88,120,150,0.22)", thin = "rgba(150,182,168,0.62)";
+      const wide = colors.coastWide, thin = colors.coastThin;
       for (let pass = 0; pass < 2; pass++) {
         c.lineWidth = pass === 0 ? 3.2 : 1;
         c.strokeStyle = pass === 0 ? wide : thin;
@@ -746,11 +810,12 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         }
         c.stroke();
       }
-      // Station coverage circles, dashed until a satellite is actually inside them.
+
+      // Station coverage circles
       for (const stn of stations) {
         const pts = coverageRing(stn).map(([lon, lat]) => proj(lat, lon));
         c.setLineDash([2, 4]);
-        strokePath(c, pts, "rgba(205,217,236,0.22)", 1);
+        strokePath(c, pts, colors.coverage, 1);
         c.setLineDash([]);
       }
     }
@@ -763,7 +828,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         layer = makeLayer(cv!.width, cv!.height);
         layers.set(resKey, layer);
       }
-      const viewKey = `${s.yaw.toFixed(4)}|${s.tilt.toFixed(4)}|${s.R.toFixed(2)}|${s.cx.toFixed(1)}|${s.cy.toFixed(1)}`;
+      const viewKey = `${s.yaw.toFixed(4)}|${s.tilt.toFixed(4)}|${s.R.toFixed(2)}|${s.cx.toFixed(1)}|${s.cy.toFixed(1)}|${isDarkRef.current}`;
       if (layer.key !== viewKey) { drawBase(layer.ctx); layer.key = viewKey; }
       return layer;
     }
@@ -813,7 +878,14 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       ctx.restore();
     }
 
-    const colOf = (a: AcqDatatake) => (a.cls === "ok" ? "#3DD68C" : a.cls === "warn" ? "#F5B544" : "#FF5C6C");
+    const colOf = (a: AcqDatatake) => {
+      if (isDarkRef.current) {
+        return a.cls === "ok" ? "#3DD68C" : a.cls === "warn" ? "#F5B544" : "#FF5C6C";
+      } else {
+        // Light mode: darken orange/red for better contrast
+        return a.cls === "ok" ? "#3DD68C" : a.cls === "warn" ? "#c2410c" : "#b91c1c";
+      }
+    };
 
     function draw() {
       refreshView();
@@ -821,12 +893,20 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       ctx.clearRect(0, 0, s.W, s.H);
       ctx.drawImage(baseLayer().cv, 0, 0, s.W, s.H);
 
+      const limbColor = isDark ? "rgba(54,208,224,0.35)" : "rgba(59,130,246,0.25)";
+      const stationLiveColor = isDark ? "rgba(54,208,224,0.95)" : "rgba(59,130,246,0.85)";
+      const stationIdleColor = isDark ? "rgba(205,217,236,0.7)" : "rgba(100,116,139,0.5)";
+      const stationLiveLabel = isDark ? "rgba(54,208,224,0.9)" : "rgba(59,130,246,0.8)";
+      const stationIdleLabel = isDark ? "rgba(205,217,236,0.6)" : "rgba(100,116,139,0.45)";
+      const datatakeLabelDetail = isDark ? "rgba(205,217,236,0.8)" : "rgba(71,85,105,0.7)";
+      const labelShadow = isDark ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.9)";
+
       // Selected last, so its outline is never buried under a neighbour's fill.
       const order = datatakes.map((_, i) => i).sort((a, b) => Number(a === selRef.current) - Number(b === selRef.current));
       for (const i of order) drawFootprint(datatakes[i], colOf(datatakes[i]), selRef.current === i, hoverRef.current === i);
 
       // The limb goes on top of the footprints so nothing bleeds over the edge.
-      ctx.strokeStyle = "rgba(54,208,224,0.35)"; ctx.lineWidth = 1;
+      ctx.strokeStyle = limbColor; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.stroke();
 
       orbits.current.forEach((o) => {
@@ -845,13 +925,13 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         const p = proj(stn.lat, stn.lon);
         if (p.z <= 0) return;
         const live = sats.some((q) => arcDeg(q.lat, q.lon, stn.lat, stn.lon) < CONTACT_DEG);
-        ctx.strokeStyle = live ? "rgba(54,208,224,0.95)" : "rgba(205,217,236,0.7)";
+        ctx.strokeStyle = live ? stationLiveColor : stationIdleColor;
         ctx.lineWidth = 1.2;
         ctx.beginPath(); ctx.moveTo(p.x, p.y - 4); ctx.lineTo(p.x + 4, p.y); ctx.lineTo(p.x, p.y + 4); ctx.lineTo(p.x - 4, p.y); ctx.closePath();
         ctx.stroke();
-        if (live) { ctx.fillStyle = "rgba(54,208,224,0.9)"; ctx.fill(); }
+        if (live) { ctx.fillStyle = stationLiveColor; ctx.fill(); }
         ctx.font = "10px ui-monospace,monospace";
-        ctx.fillStyle = live ? "rgba(54,208,224,0.9)" : "rgba(205,217,236,0.6)";
+        ctx.fillStyle = live ? stationLiveLabel : stationIdleLabel;
         ctx.fillText(stn.name, p.x + 8, p.y + 3);
       });
 
@@ -866,9 +946,9 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         if (isSel || isHov) {
           ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, rr + 5, 0, 6.2832); ctx.stroke();
           const lx = p.x + rr + (isSel ? 15 : 9);
-          ctx.font = "11px ui-monospace,monospace"; ctx.shadowColor = "rgba(0,0,0,0.85)"; ctx.shadowBlur = 4;
+          ctx.font = "11px ui-monospace,monospace"; ctx.shadowColor = labelShadow; ctx.shadowBlur = 4;
           ctx.fillStyle = "#fff"; ctx.fillText(a.id, lx, p.y - 2);
-          ctx.fillStyle = "rgba(205,217,236,0.8)"; ctx.fillText(a.sat + " · " + a.comp + "%", lx, p.y + 12);
+          ctx.fillStyle = datatakeLabelDetail; ctx.fillText(a.sat + " · " + a.comp + "%", lx, p.y + 12);
           ctx.shadowBlur = 0;
         }
         if (isSel) {
@@ -1042,11 +1122,13 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
 
     return () => {
       cancelAnimationFrame(raf);
-      invalidateRef.current = () => {};
+      invalidateRef.current = () => { };
       io.disconnect();
       ro.disconnect();
+      themeObserver.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
       motionQ?.removeEventListener?.("change", onMotionChange);
+      themeQ?.removeEventListener?.("change", onThemeChange);
       cv.removeEventListener("pointerdown", onPointerDown);
       cv.removeEventListener("pointermove", onPointerMove);
       cv.removeEventListener("pointerup", onPointerUp);
@@ -1204,7 +1286,6 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         <div className="dtk-select">
           <label htmlFor={selectId}>List of Datatakes:</label>
           <span className="dtk-select-field">
-            <span className={"dd-dot " + dt.cls} aria-hidden="true" />
             <select
               id={selectId}
               value={sel}
@@ -1224,208 +1305,209 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
           <span className="dtk-select-meta">
             {datatakes.length} datatake{datatakes.length === 1 ? "" : "s"} · {missionGroups.length} mission{missionGroups.length === 1 ? "" : "s"}
           </span>
+          <KmlLinkDisplay datatake={dt} />
         </div>
       )}
 
-    <div className="acq-layout">
-      <div className="globe-card">
-        <div className="globe-stage" ref={stageRef}>
-          <canvas
-            ref={cvRef}
-            className="globe-canvas"
-            role="img"
-            tabIndex={0}
-            aria-label={globeLabel}
-            aria-describedby={helpId}
-            aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Plus Minus Enter"
-          />
-          <p className="sr-only" aria-live="polite">{globeLabel}</p>
-          <p className="sr-only" id={helpId}>
-            Interactive globe. Arrow keys rotate the globe, hold Shift to rotate faster.
-            Plus and minus zoom. Zero resets the view. Left and right square brackets step
-            through the datatakes. Enter plays or pauses the simulation clock. Every
-            footprint is also available as a button in the marker list and the datatake list.
-          </p>
+      <div className="acq-layout">
+        <div className="globe-card">
+          <div className="globe-stage" ref={stageRef}>
+            <canvas
+              ref={cvRef}
+              className="globe-canvas"
+              role="img"
+              tabIndex={0}
+              aria-label={globeLabel}
+              aria-describedby={helpId}
+              aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Plus Minus Enter"
+            />
+            <p className="sr-only" aria-live="polite">{globeLabel}</p>
+            <p className="sr-only" id={helpId}>
+              Interactive globe. Arrow keys rotate the globe, hold Shift to rotate faster.
+              Plus and minus zoom. Zero resets the view. Left and right square brackets step
+              through the datatakes. Enter plays or pauses the simulation clock. Every
+              footprint is also available as a button in the marker list and the datatake list.
+            </p>
 
-          {/* Screen-reader mirror of the canvas footprints: each plotted datatake is
+            {/* Screen-reader mirror of the canvas footprints: each plotted datatake is
               reachable as a real button without leaving the globe, and focusing one
               highlights it on the canvas. */}
-          <div className="sr-only">
-            <h4>Datatakes plotted on the globe</h4>
-            <ul>
-              {datatakes.map((a, i) => (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    onClick={() => select(i)}
-                    onFocus={() => { hoverRef.current = i; invalidate(); }}
-                    onBlur={() => { hoverRef.current = -1; invalidate(); }}
-                    aria-current={sel === i ? "true" : undefined}
-                  >
-                    {a.id}, {a.sat} to {a.station}, {a.comp} percent complete, {a.status}
-                    {sel === i ? " (selected)" : ""}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="globe-overlay" aria-hidden="true">
-            <span className="eyebrow">Live acquisition plan · 3D</span>
-            <div className="acq-now">Now acquiring · <b>{dt.sat} → {dt.station}</b></div>
-          </div>
-
-          <div className="zoomctl">
-            <button type="button" aria-label="Zoom in" onClick={() => setZoom(st.current.zoom * 1.3)}>+</button>
-            <button type="button" aria-label="Zoom out" onClick={() => setZoom(st.current.zoom / 1.3)}>−</button>
-            <button type="button" aria-label="Reset view" title="Reset view" onClick={resetView}>⌖</button>
-          </div>
-
-          <div className="globe-hint" aria-hidden="true">
-            <span>scroll to zoom</span><span>drag or arrows to rotate</span><span>click a footprint</span>
-          </div>
-
-          <div className="simbar">
-            <div
-              className="simctl"
-              role="toolbar"
-              aria-label="Simulation clock"
-              aria-orientation="horizontal"
-              ref={barRef}
-              onKeyDown={onBarKeyDown}
-            >
-              <button
-                type="button"
-                className="play"
-                aria-label={playing ? "Pause simulation" : "Play simulation"}
-                aria-pressed={playing}
-                onClick={togglePlay}
-                {...roveProps("play")}
-              >
-                <span aria-hidden="true">{playing ? "❚❚" : "►"}</span>
-              </button>
-              <div className="simtime">
-                <span ref={clockRef}>{clockText(st.current.simMs)}</span>
-                <small>SIMULATION TIME</small>
-              </div>
-              <input
-                ref={scrubRef}
-                className="scrub"
-                type="range"
-                min={0}
-                max={DAY_MIN}
-                step={1}
-                defaultValue={Math.round(((st.current.simMs - DAY_START) / DAY_LEN) * DAY_MIN)}
-                aria-label="Simulation time of day"
-                onChange={onScrub}
-                onPointerDown={() => { scrubbingRef.current = true; }}
-                onPointerUp={() => { scrubbingRef.current = false; }}
-                onPointerCancel={() => { scrubbingRef.current = false; }}
-                {...roveProps("scrub")}
-              />
-              <button
-                type="button"
-                className="speed"
-                aria-label={`Simulation speed ${speed} times real time. Activate to change.`}
-                onClick={cycleSpeed}
-                {...roveProps("speed")}
-              >
-                <span aria-hidden="true">×{speed}</span>
-              </button>
+            <div className="sr-only">
+              <h4>Datatakes plotted on the globe</h4>
+              <ul>
+                {datatakes.map((a, i) => (
+                  <li key={a.id}>
+                    <button
+                      type="button"
+                      onClick={() => select(i)}
+                      onFocus={() => { hoverRef.current = i; invalidate(); }}
+                      onBlur={() => { hoverRef.current = -1; invalidate(); }}
+                      aria-current={sel === i ? "true" : undefined}
+                    >
+                      {a.id}, {a.sat} to {a.station}, {a.comp} percent complete, {a.status}
+                      {sel === i ? " (selected)" : ""}
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            {/* Sensing marks: one button per datatake at its acquisition time. A
+            <div className="globe-overlay" aria-hidden="true">
+              <span className="eyebrow">Live acquisition plan · 3D</span>
+              <div className="acq-now">Now acquiring · <b>{dt.sat} → {dt.station}</b></div>
+            </div>
+
+            <div className="zoomctl">
+              <button type="button" aria-label="Zoom in" onClick={() => setZoom(st.current.zoom * 1.3)}>+</button>
+              <button type="button" aria-label="Zoom out" onClick={() => setZoom(st.current.zoom / 1.3)}>−</button>
+              <button type="button" aria-label="Reset view" title="Reset view" onClick={resetView}>⌖</button>
+            </div>
+
+            <div className="globe-hint" aria-hidden="true">
+              <span>scroll to zoom</span><span>drag or arrows to rotate</span><span>click a footprint</span>
+            </div>
+
+            <div className="simbar">
+              <div
+                className="simctl"
+                role="toolbar"
+                aria-label="Simulation clock"
+                aria-orientation="horizontal"
+                ref={barRef}
+                onKeyDown={onBarKeyDown}
+              >
+                <button
+                  type="button"
+                  className="play"
+                  aria-label={playing ? "Pause simulation" : "Play simulation"}
+                  aria-pressed={playing}
+                  onClick={togglePlay}
+                  {...roveProps("play")}
+                >
+                  <span aria-hidden="true">{playing ? "❚❚" : "►"}</span>
+                </button>
+                <div className="simtime">
+                  <span ref={clockRef}>{clockText(st.current.simMs)}</span>
+                  <small>SIMULATION TIME</small>
+                </div>
+                <input
+                  ref={scrubRef}
+                  className="scrub"
+                  type="range"
+                  min={0}
+                  max={DAY_MIN}
+                  step={1}
+                  defaultValue={Math.round(((st.current.simMs - DAY_START) / DAY_LEN) * DAY_MIN)}
+                  aria-label="Simulation time of day"
+                  onChange={onScrub}
+                  onPointerDown={() => { scrubbingRef.current = true; }}
+                  onPointerUp={() => { scrubbingRef.current = false; }}
+                  onPointerCancel={() => { scrubbingRef.current = false; }}
+                  {...roveProps("scrub")}
+                />
+                <button
+                  type="button"
+                  className="speed"
+                  aria-label={`Simulation speed ${speed} times real time. Activate to change.`}
+                  onClick={cycleSpeed}
+                  {...roveProps("speed")}
+                >
+                  <span aria-hidden="true">×{speed}</span>
+                </button>
+              </div>
+
+              {/* Sensing marks: one button per datatake at its acquisition time. A
                 single tab stop; arrow keys move between marks, Home and End jump to
                 the ends. Activating a mark seeks the clock to it and selects it. */}
-            <div
-              className="simtrack"
-              ref={trackRef}
-              role="group"
-              aria-label="Datatake sensing marks"
-              aria-describedby={trackHelpId}
-              onKeyDown={onTrackKeyDown}
-            >
-              <div className="simtrack-axis" aria-hidden="true" />
-              {marks.map((m, n) => (
+              <div
+                className="simtrack"
+                ref={trackRef}
+                role="group"
+                aria-label="Datatake sensing marks"
+                aria-describedby={trackHelpId}
+                onKeyDown={onTrackKeyDown}
+              >
+                <div className="simtrack-axis" aria-hidden="true" />
+                {marks.map((m, n) => (
+                  <button
+                    key={m.a.id}
+                    type="button"
+                    data-tick={n}
+                    className={"simtick " + m.a.cls + (sel === m.i ? " sel" : "")}
+                    style={{ left: `${m.pct}%` }}
+                    tabIndex={n === tickRove ? 0 : -1}
+                    aria-current={sel === m.i ? "true" : undefined}
+                    aria-label={`${m.a.id}, ${m.a.sat}, sensed ${hhmmss(m.ms)}, ${m.a.comp} percent complete`}
+                    onFocus={() => { setTickRove(n); hoverRef.current = m.i; invalidate(); }}
+                    onBlur={() => { hoverRef.current = -1; invalidate(); }}
+                    onMouseEnter={() => { hoverRef.current = m.i; invalidate(); }}
+                    onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
+                    onClick={() => activateMark(m)}
+                  >
+                    <span className="tickid" aria-hidden="true">{m.showLabel ? m.a.id.split("-")[0] : ""}</span>
+                    <span className="tickmark" aria-hidden="true" />
+                  </button>
+                ))}
+              </div>
+              <p className="sr-only" id={trackHelpId}>
+                With the marks focused, left and right arrows move between them, Home and End
+                jump to the first and last. Enter seeks the simulation clock to that
+                acquisition and selects it on the globe.
+              </p>
+              <p className="sr-only" aria-live="polite">
+                {marks.length} of {datatakes.length} acquisitions fall inside the simulated day.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className={"acq-side" + (rail === "plates" ? " acq-side-scroll" : "")}>
+          {/* The plates variant selects from the dropdown above, so this panel would be
+            a second control called "List of Datatakes". */}
+          {rail === "detail" && (
+            <div className="acq-list">
+              <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
+              {datatakes.map((a, i) => (
                 <button
-                  key={m.a.id}
                   type="button"
-                  data-tick={n}
-                  className={"simtick " + m.a.cls + (sel === m.i ? " sel" : "")}
-                  style={{ left: `${m.pct}%` }}
-                  tabIndex={n === tickRove ? 0 : -1}
-                  aria-current={sel === m.i ? "true" : undefined}
-                  aria-label={`${m.a.id}, ${m.a.sat}, sensed ${hhmmss(m.ms)}, ${m.a.comp} percent complete`}
-                  onFocus={() => { setTickRove(n); hoverRef.current = m.i; invalidate(); }}
-                  onBlur={() => { hoverRef.current = -1; invalidate(); }}
-                  onMouseEnter={() => { hoverRef.current = m.i; invalidate(); }}
+                  key={a.id}
+                  className={"acq-item" + (sel === i ? " sel" : "")}
+                  aria-current={sel === i ? "true" : undefined}
+                  onClick={() => select(i)}
+                  onMouseEnter={() => { hoverRef.current = i; invalidate(); }}
                   onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
-                  onClick={() => activateMark(m)}
+                  onFocus={() => { hoverRef.current = i; invalidate(); }}
+                  onBlur={() => { hoverRef.current = -1; invalidate(); }}
                 >
-                  <span className="tickid" aria-hidden="true">{m.showLabel ? m.a.id.split("-")[0] : ""}</span>
-                  <span className="tickmark" aria-hidden="true" />
+                  <span className={"sd " + a.cls} aria-hidden="true" />
+                  <span className="acq-item-text"><span className="id">{a.id}</span><span className="sub">{a.sat} · {a.station}</span></span>
+                  <span className="pct">{a.comp}%</span>
                 </button>
               ))}
             </div>
-            <p className="sr-only" id={trackHelpId}>
-              With the marks focused, left and right arrows move between them, Home and End
-              jump to the first and last. Enter seeks the simulation clock to that
-              acquisition and selects it on the globe.
-            </p>
-            <p className="sr-only" aria-live="polite">
-              {marks.length} of {datatakes.length} acquisitions fall inside the simulated day.
-            </p>
-          </div>
+          )}
+
+          {rail === "plates" ? (
+            <DatatakeRail dt={dt} />
+          ) : (
+            <aside className="acq-detail" aria-label={`Details for datatake ${dt.id}`}>
+              <span className="eyebrow">Datatake details</span>
+              <h4>{dt.id}</h4>
+              <div className="acq-detail-kvs">
+                <div className="kv"><span>Satellite</span><span>{dt.sat}</span></div>
+                <div className="kv"><span>Station</span><span>{dt.station}</span></div>
+                <div className="kv"><span>Footprint</span><span>{Math.abs(dt.lat)}°{dt.lat >= 0 ? "N" : "S"} {Math.abs(dt.lon)}°{dt.lon >= 0 ? "E" : "W"}</span></div>
+                <div className="kv"><span>Completeness</span><span>{dt.comp} %</span></div>
+                <div className="kv"><span>Status</span><span>{dt.status}</span></div>
+              </div>
+              <div className="acq-prod-h">Products</div>
+              {dt.prods.map((p, i) => (
+                <div className="prod-row" key={i}><span><span className="lvl">{p.lvl}</span> · {p.sub}</span><span className={"pill " + pillFor(p.st)}>{p.st}</span></div>
+              ))}
+            </aside>
+          )}
         </div>
       </div>
-
-      <div className={"acq-side" + (rail === "plates" ? " acq-side-scroll" : "")}>
-        {/* The plates variant selects from the dropdown above, so this panel would be
-            a second control called "List of Datatakes". */}
-        {rail === "detail" && (
-          <div className="acq-list">
-            <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
-            {datatakes.map((a, i) => (
-              <button
-                type="button"
-                key={a.id}
-                className={"acq-item" + (sel === i ? " sel" : "")}
-                aria-current={sel === i ? "true" : undefined}
-                onClick={() => select(i)}
-                onMouseEnter={() => { hoverRef.current = i; invalidate(); }}
-                onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
-                onFocus={() => { hoverRef.current = i; invalidate(); }}
-                onBlur={() => { hoverRef.current = -1; invalidate(); }}
-              >
-                <span className={"sd " + a.cls} aria-hidden="true" />
-                <span className="acq-item-text"><span className="id">{a.id}</span><span className="sub">{a.sat} · {a.station}</span></span>
-                <span className="pct">{a.comp}%</span>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {rail === "plates" ? (
-          <DatatakeRail dt={dt} />
-        ) : (
-          <aside className="acq-detail" aria-label={`Details for datatake ${dt.id}`}>
-            <span className="eyebrow">Datatake details</span>
-            <h4>{dt.id}</h4>
-            <div className="acq-detail-kvs">
-              <div className="kv"><span>Satellite</span><span>{dt.sat}</span></div>
-              <div className="kv"><span>Station</span><span>{dt.station}</span></div>
-              <div className="kv"><span>Footprint</span><span>{Math.abs(dt.lat)}°{dt.lat >= 0 ? "N" : "S"} {Math.abs(dt.lon)}°{dt.lon >= 0 ? "E" : "W"}</span></div>
-              <div className="kv"><span>Completeness</span><span>{dt.comp} %</span></div>
-              <div className="kv"><span>Status</span><span>{dt.status}</span></div>
-            </div>
-            <div className="acq-prod-h">Products</div>
-            {dt.prods.map((p, i) => (
-              <div className="prod-row" key={i}><span><span className="lvl">{p.lvl}</span> · {p.sub}</span><span className={"pill " + pillFor(p.st)}>{p.st}</span></div>
-            ))}
-          </aside>
-        )}
-      </div>
-    </div>
     </>
   );
 }

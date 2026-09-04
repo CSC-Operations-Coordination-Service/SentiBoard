@@ -238,6 +238,7 @@ export interface AcqDatatake {
   sensingS: number;                    // sensing duration, seconds
   levels: AcqLevel[];
   prods: AcqProduct[];                 // legacy summary list, still used by the /acquisitions rail
+  kmlLink?: { url: string; filename: string };  // ESA KML link for S1/S2; undefined for S3/S5
 }
 
 /* Sensing start, shared by the globe and the rail. This used to pick the timestamp out of the
@@ -337,39 +338,55 @@ const ACQ_SPECS: AcqSpec[] = [
     mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205,
     levels: [
       { level: "L0", products: [{ type: "MSI_L0__GR", pct: 100, instrument: "MSI" }] },
-      { level: "L1", products: [
-        { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
-        { type: "MSI_L1B_GR", pct: 100, instrument: "MSI" },
-        { type: "MSI_L1C_TC", pct: 100, instrument: "MSI" },
-      ] },
+      {
+        level: "L1", products: [
+          { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
+          { type: "MSI_L1B_GR", pct: 100, instrument: "MSI" },
+          { type: "MSI_L1C_TC", pct: 100, instrument: "MSI" },
+        ]
+      },
       { level: "L2", products: [{ type: "MSI_L2A_DS", pct: 100, instrument: "MSI" }] },
     ],
     prods: [{ lvl: "L0", sub: "MSI raw", st: "Published" }, { lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }],
+    kmlLink: {
+      url: "https://sentinels.copernicus.eu/documents/d/sentinel/s2a_mp_acq__kml_20260903t150000_20260921t180000",
+      filename: "s2a_user_20260710t000000_20260716t235959.kml",
+    },
   },
   {
     // S1 — SAR only. Level lives in the digit inside the type name, no "L" token.
-    id: "S1A-57622", startIso: "2026-07-16T09:33:10Z", sat: "Sentinel-1A", unit: "S1A", station: "Matera", lat: 12.4, lon: 42.1,
+    id: "S1C-57622", startIso: "2026-07-16T09:33:10Z", sat: "Sentinel-1C", unit: "S1C", station: "Matera", lat: 12.4, lon: 42.1,
     footprint: swath(12.4, 42.1, 13, 2.3, -11), status: "Processing",
     mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205,
     levels: [
-      { level: "L0", products: [
-        { type: "IW_RAW__0A", pct: 99.0, instrument: "SAR" },
-        { type: "IW_RAW__0C", pct: 99.0, instrument: "SAR" },
-        { type: "IW_RAW__0N", pct: 99.0, instrument: "SAR" },
-        { type: "IW_RAW__0S", pct: 99.0, instrument: "SAR" },
-      ] },
-      { level: "L1", products: [
-        { type: "IW_SLC__1A", pct: 62.8, instrument: "SAR" },
-        { type: "IW_SLC__1S", pct: 78.9, instrument: "SAR" },
-        { type: "IW_GRDH_1A", pct: 41.2, instrument: "SAR" },
-        { type: "IW_GRDH_1S", pct: 55.4, instrument: "SAR" },
-      ] },
-      { level: "L2", products: [
-        { type: "IW_OCN__2A", pct: null, instrument: "SAR" },
-        { type: "IW_OCN__2S", pct: null, instrument: "SAR" },
-      ] },
+      {
+        level: "L0", products: [
+          { type: "IW_RAW__0A", pct: 99.0, instrument: "SAR" },
+          { type: "IW_RAW__0C", pct: 99.0, instrument: "SAR" },
+          { type: "IW_RAW__0N", pct: 99.0, instrument: "SAR" },
+          { type: "IW_RAW__0S", pct: 99.0, instrument: "SAR" },
+        ]
+      },
+      {
+        level: "L1", products: [
+          { type: "IW_SLC__1A", pct: 62.8, instrument: "SAR" },
+          { type: "IW_SLC__1S", pct: 78.9, instrument: "SAR" },
+          { type: "IW_GRDH_1A", pct: 41.2, instrument: "SAR" },
+          { type: "IW_GRDH_1S", pct: 55.4, instrument: "SAR" },
+        ]
+      },
+      {
+        level: "L2", products: [
+          { type: "IW_OCN__2A", pct: null, instrument: "SAR" },
+          { type: "IW_OCN__2S", pct: null, instrument: "SAR" },
+        ]
+      },
     ],
     prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "GRD", st: "Processing" }, { lvl: "L2", sub: "OCN", st: "Planned" }],
+    kmlLink: {
+      url: "https://sentinels.copernicus.eu/documents/d/sentinel/s1c_mp_user_20260902t180959_20260924t202000",
+      filename: "s1c_mp_user_20260903t171528_20260925t194000",
+    },
   },
   {
     // S3 — four science instruments, so by far the widest product-type set. This is
@@ -378,37 +395,43 @@ const ACQ_SPECS: AcqSpec[] = [
     footprint: swath(-22.9, -45.2, 20, 11.4, -13), status: "Processing",
     mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180,
     levels: [
-      { level: "L0", products: [
-        { type: "OL_0_EFR", pct: 99.0, instrument: "OLCI" },
-        { type: "SL_0_SLT", pct: 99.0, instrument: "SLSTR" },
-        { type: "SR_0_SRA", pct: 98.4, instrument: "SRAL" },
-        { type: "MW_0_MWR", pct: 99.0, instrument: "MWR" },
-      ] },
-      { level: "L1", products: [
-        { type: "OL_1_EFR", pct: 78.0, instrument: "OLCI" },
-        { type: "OL_1_ERR", pct: 82.5, instrument: "OLCI" },
-        { type: "SL_1_RBT", pct: 96.1, instrument: "SLSTR" },
-        { type: "SR_1_SRA", pct: 99.0, instrument: "SRAL" },
-        { type: "SR_1_SRA_A", pct: 99.0, instrument: "SRAL" },
-        { type: "SR_1_SRA_BS", pct: 97.2, instrument: "SRAL" },
-        { type: "MW_1_MWR", pct: 99.0, instrument: "MWR" },
-      ] },
-      { level: "L2", products: [
-        { type: "OL_2_WFR", pct: 71.4, instrument: "OLCI" },
-        { type: "OL_2_WRR", pct: 88.0, instrument: "OLCI" },
-        { type: "OL_2_LFR", pct: 92.3, instrument: "OLCI" },
-        { type: "OL_2_LRR", pct: 94.6, instrument: "OLCI" },
-        { type: "SL_2_LST", pct: 96.8, instrument: "SLSTR" },
-        { type: "SL_2_WST", pct: 99.0, instrument: "SLSTR" },
-        { type: "SL_2_FRP", pct: 61.5, instrument: "SLSTR" },
-        { type: "SL_2_AOD", pct: 99.0, instrument: "SLSTR" },
-        { type: "SR_2_LAN", pct: 99.0, instrument: "SRAL" },
-        { type: "SR_2_WAT", pct: 98.1, instrument: "SRAL" },
-        { type: "SY_2_SYN", pct: 84.2, instrument: "SYN" },
-        { type: "SY_2_VGP", pct: 99.0, instrument: "SYN" },
-        { type: "SY_2_VG1", pct: null, instrument: "SYN" },
-        { type: "SY_2_AOD", pct: 90.7, instrument: "SYN" },
-      ] },
+      {
+        level: "L0", products: [
+          { type: "OL_0_EFR", pct: 99.0, instrument: "OLCI" },
+          { type: "SL_0_SLT", pct: 99.0, instrument: "SLSTR" },
+          { type: "SR_0_SRA", pct: 98.4, instrument: "SRAL" },
+          { type: "MW_0_MWR", pct: 99.0, instrument: "MWR" },
+        ]
+      },
+      {
+        level: "L1", products: [
+          { type: "OL_1_EFR", pct: 78.0, instrument: "OLCI" },
+          { type: "OL_1_ERR", pct: 82.5, instrument: "OLCI" },
+          { type: "SL_1_RBT", pct: 96.1, instrument: "SLSTR" },
+          { type: "SR_1_SRA", pct: 99.0, instrument: "SRAL" },
+          { type: "SR_1_SRA_A", pct: 99.0, instrument: "SRAL" },
+          { type: "SR_1_SRA_BS", pct: 97.2, instrument: "SRAL" },
+          { type: "MW_1_MWR", pct: 99.0, instrument: "MWR" },
+        ]
+      },
+      {
+        level: "L2", products: [
+          { type: "OL_2_WFR", pct: 71.4, instrument: "OLCI" },
+          { type: "OL_2_WRR", pct: 88.0, instrument: "OLCI" },
+          { type: "OL_2_LFR", pct: 92.3, instrument: "OLCI" },
+          { type: "OL_2_LRR", pct: 94.6, instrument: "OLCI" },
+          { type: "SL_2_LST", pct: 96.8, instrument: "SLSTR" },
+          { type: "SL_2_WST", pct: 99.0, instrument: "SLSTR" },
+          { type: "SL_2_FRP", pct: 61.5, instrument: "SLSTR" },
+          { type: "SL_2_AOD", pct: 99.0, instrument: "SLSTR" },
+          { type: "SR_2_LAN", pct: 99.0, instrument: "SRAL" },
+          { type: "SR_2_WAT", pct: 98.1, instrument: "SRAL" },
+          { type: "SY_2_SYN", pct: 84.2, instrument: "SYN" },
+          { type: "SY_2_VGP", pct: 99.0, instrument: "SYN" },
+          { type: "SY_2_VG1", pct: null, instrument: "SYN" },
+          { type: "SY_2_AOD", pct: 90.7, instrument: "SYN" },
+        ]
+      },
     ],
     prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }],
   },
@@ -418,14 +441,20 @@ const ACQ_SPECS: AcqSpec[] = [
     mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188,
     levels: [
       { level: "L0", products: [{ type: "MSI_L0__GR", pct: 99.4, instrument: "MSI" }] },
-      { level: "L1", products: [
-        { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
-        { type: "MSI_L1B_GR", pct: 100, instrument: "MSI" },
-        { type: "MSI_L1C_TC", pct: 100, instrument: "MSI" },
-      ] },
+      {
+        level: "L1", products: [
+          { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
+          { type: "MSI_L1B_GR", pct: 100, instrument: "MSI" },
+          { type: "MSI_L1C_TC", pct: 100, instrument: "MSI" },
+        ]
+      },
       { level: "L2", products: [{ type: "MSI_L2A_DS", pct: 100, instrument: "MSI" }] },
     ],
     prods: [{ lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Published" }],
+    kmlLink: {
+      url: "https://sentinels.copernicus.eu/documents/d/sentinel/s2b_mp_acq__kml_20260827t120000_20260914t150000",
+      filename: "s2b_user_20260827t120000_20260914t150000.kml",
+    },
   },
   {
     // S5P — TROPOMI. Its L1 token is "L1B", not "L1", and it carries one radiance
@@ -434,26 +463,30 @@ const ACQ_SPECS: AcqSpec[] = [
     footprint: swath(34.7, 104.2, 24, 23, -12), status: "Published",
     mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940,
     levels: [
-      { level: "L1", products: [
-        { type: "L1B_RA_BD1", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD2", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD3", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD4", pct: 98.6, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD5", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD6", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD7", pct: 97.4, instrument: "TROPOMI" },
-        { type: "L1B_RA_BD8", pct: 99.0, instrument: "TROPOMI" },
-      ] },
-      { level: "L2", products: [
-        { type: "L2__NO2___", pct: 92.4, instrument: "TROPOMI" },
-        { type: "L2__O3____", pct: 94.1, instrument: "TROPOMI" },
-        { type: "L2__CO____", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L2__CH4___", pct: 88.9, instrument: "TROPOMI" },
-        { type: "L2__HCHO__", pct: 96.2, instrument: "TROPOMI" },
-        { type: "L2__SO2___", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L2__AER_AI", pct: 99.0, instrument: "TROPOMI" },
-        { type: "L2__CLOUD_", pct: 93.5, instrument: "TROPOMI" },
-      ] },
+      {
+        level: "L1", products: [
+          { type: "L1B_RA_BD1", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD2", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD3", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD4", pct: 98.6, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD5", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD6", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD7", pct: 97.4, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD8", pct: 99.0, instrument: "TROPOMI" },
+        ]
+      },
+      {
+        level: "L2", products: [
+          { type: "L2__NO2___", pct: 92.4, instrument: "TROPOMI" },
+          { type: "L2__O3____", pct: 94.1, instrument: "TROPOMI" },
+          { type: "L2__CO____", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L2__CH4___", pct: 88.9, instrument: "TROPOMI" },
+          { type: "L2__HCHO__", pct: 96.2, instrument: "TROPOMI" },
+          { type: "L2__SO2___", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L2__AER_AI", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L2__CLOUD_", pct: 93.5, instrument: "TROPOMI" },
+        ]
+      },
     ],
     prods: [{ lvl: "L1B", sub: "TROPOMI radiance", st: "Published" }, { lvl: "L2", sub: "NO\u2082 column", st: "Published" }],
   },

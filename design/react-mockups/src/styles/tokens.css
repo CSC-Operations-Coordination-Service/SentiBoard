@@ -7,145 +7,145 @@
    ============================================================ */
 
 :root {
-  /* Type */
-  --font-sans: "Inter", "Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
-  --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
+   /* Type */
+   --font-sans: "Inter", "Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
+   --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
 
-  /* Brand accent (shared across themes) — SentiBoard telemetry blue→cyan */
-  --accent: #2e7df6;
-  --accent-2: #12b1bf;
-  --accent-grad: linear-gradient(90deg, #2e7df6, #36d0e0);
+   /* Brand accent (shared across themes) — SentiBoard telemetry blue→cyan */
+   --accent: #2e7df6;
+   --accent-2: #12b1bf;
+   --accent-grad: linear-gradient(90deg, #2e7df6, #36d0e0);
 
-  /* Semantic status (shared) */
-  --ok: #34d399;
-  --warn: #f5b544;
-  --crit: #ef5b6e;
-  --info: #4ea8ff;
-  --planned: #9e9e9e;
-  --partial: #bb8747;
+   /* Semantic status (shared) */
+   --ok: #34d399;
+   --warn: #f5b544;
+   --crit: #ef5b6e;
+   --info: #4ea8ff;
+   --planned: #9e9e9e;
+   --partial: #bb8747;
 
-  /* Motion + shape */
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 16px;
-  --ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --dur: 0.45s;
-  --wrap: 1320px;
-  --nav-h: 68px;
+   /* Motion + shape */
+   --r-sm: 6px;
+   --r-md: 10px;
+   --r-lg: 16px;
+   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+   --dur: 0.45s;
+   --wrap: 1320px;
+   --nav-h: 68px;
 
-  /* Uppercase "mission" label treatment (SpaceX-like) */
-  --track: 0.18em;
+   /* Uppercase "mission" label treatment (SpaceX-like) */
+   --track: 0.18em;
 }
 
-/* -------------------- DARK (default) -------------------- */
+/* -------------------- DARK (default) — Moderate palette -------------------- */
 :root,
 :root[data-theme="dark"] {
-  color-scheme: dark;
+   color-scheme: dark;
 
-  --bg: #05070c;
-  /* ground */
-  --bg-1: #0a0e16;
-  /* raised surface */
-  --bg-2: #10151f;
-  /* card */
-  --bg-3: #171d29;
-  /* hover / input */
-  --line: rgba(255, 255, 255, 0.09);
-  --line-strong: rgba(255, 255, 255, 0.16);
+   --bg: #1a1f25;
+   /* ground */
+   --bg-1: #252b33;
+   /* raised surface */
+   --bg-2: #343a40;
+   /* card */
+   --bg-3: #45787e;
+   /* hover / input */
+   --line: rgba(137, 202, 205, 0.12);
+   --line-strong: rgba(137, 202, 205, 0.22);
 
-  --text: #eef2f8;
-  --text-dim: #aab4c5;
-  --text-mute: #6c778a;
+   --text: #ffffff;
+   --text-dim: #cccccc;
+   --text-mute: #737373;
 
-  --veil: linear-gradient(180deg, rgba(5, 7, 12, 0) 0%, rgba(5, 7, 12, 0.65) 60%, rgba(5, 7, 12, 0.96) 100%);
-  --glass: rgba(10, 14, 22, 0.72);
-  --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
-  --grid-line: rgba(255, 255, 255, 0.04);
+   --veil: linear-gradient(180deg, rgba(26, 31, 37, 0) 0%, rgba(26, 31, 37, 0.65) 60%, rgba(26, 31, 37, 0.96) 100%);
+   --glass: rgba(34, 42, 51, 0.72);
+   --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
+   --grid-line: rgba(137, 202, 205, 0.05);
 
-  --pill-bg: rgba(255, 255, 255, 0.06);
-  --on-accent: #04101f;
-  --hpanel-divider: rgba(255, 255, 255, 0.06);
+   --pill-bg: rgba(137, 202, 205, 0.08);
+   --on-accent: #00252e;
+   --hpanel-divider: rgba(137, 202, 205, 0.08);
 
-  /* Datatake completeness — production's five legend states
+   /* Datatake completeness — production's five legend states
      (apps/static/assets/css/dataAvailability.css → .status-circle-dt-*):
      Planned #9e9e9e · Processing #9e9e9e · Acquired #0aa41b · Partial #bb8747 · Unavailable #FF0000.
      Two adjustments: production paints Planned and Processing the SAME grey, which works beside a
      label but not as a chart slice or a lone dot, so Processing is lifted a step; and #0aa41b /
      #FF0000 go muddy and glaring on a near-black canvas, so both are lightened here. */
-  --cmp-planned: #8b9096;
-  --cmp-processing: #c3c9cf;
-  --cmp-acquired: #2fc04a;
-  --cmp-partial: #cc9a54;
-  --cmp-unavailable: #ff4d4d;
+   --cmp-planned: #8b9096;
+   --cmp-processing: #c3c9cf;
+   --cmp-acquired: #2fc04a;
+   --cmp-partial: #cc9a54;
+   --cmp-unavailable: #ff4d4d;
 
-  /* Event types — production's Event Types legend
+   /* Event types — production's Event Types legend
      (apps/static/assets/css/events.css → .event-acquisition etc.):
      Acquisition #495057 · Calibration #B0DFE5 · Manoeuvre #FFAD00 · Production #7b1fa2 · Satellite #EE8216.
      Same treatment as the completeness set: production is light-only, and its slate Acquisition and
      deep-purple Production both vanish against a near-black card, so those two are lifted to the same
      hue at a usable lightness. The other three are verbatim. */
-  --evt-acquisition: #aeb8c4;
-  --evt-calibration: #b0dfe5;
-  --evt-manoeuvre: #ffad00;
-  --evt-production: #c77dff;
-  --evt-satellite: #ee8216;
+   --evt-acquisition: #aeb8c4;
+   --evt-calibration: #b0dfe5;
+   --evt-manoeuvre: #ffad00;
+   --evt-production: #c77dff;
+   --evt-satellite: #ee8216;
 
-  /* Processor baseline state, for the Version Matrix proposal. TWO values, not a status palette:
+   /* Processor baseline state, for the Version Matrix proposal. TWO values, not a status palette:
      the releases feed carries a baseline version, a release date and release notes — no status —
      so the only distinction available is the one the dates imply, "most recently released" versus
      "replaced by a later one". Current borrows the nominal green; past would be --text-mute, but
      that reaches only 3.7:1 against the matrix's tinted cell, so it is lifted one step. */
-  --bl-current: var(--ok);
-  --bl-past: #8b95a6;
+   --bl-current: var(--ok);
+   --bl-past: #8b95a6;
 }
 
 /* -------------------- LIGHT -------------------- */
 :root[data-theme="light"] {
-  color-scheme: light;
+   color-scheme: light;
 
-  --bg: #f4f6fa;
-  --bg-1: #ffffff;
-  --bg-2: #ffffff;
-  --bg-3: #eef1f6;
-  --line: rgba(9, 20, 40, 0.10);
-  --line-strong: rgba(9, 20, 40, 0.18);
+   --bg: #f4f6fa;
+   --bg-1: #ffffff;
+   --bg-2: #ffffff;
+   --bg-3: #eef1f6;
+   --line: rgba(9, 20, 40, 0.10);
+   --line-strong: rgba(9, 20, 40, 0.18);
 
-  --text: #0c1524;
-  --text-dim: #45536b;
-  --text-mute: #8a94a6;
+   --text: #0c1524;
+   --text-dim: #45536b;
+   --text-mute: #8a94a6;
 
-  --veil: linear-gradient(180deg, rgba(244, 246, 250, 0) 0%, rgba(244, 246, 250, 0.55) 55%, rgba(244, 246, 250, 0.92) 100%);
-  --glass: rgba(255, 255, 255, 0.78);
-  --shadow: 0 18px 50px -24px rgba(20, 40, 80, 0.35);
-  --grid-line: rgba(9, 20, 40, 0.05);
+   --veil: linear-gradient(180deg, rgba(244, 246, 250, 0) 0%, rgba(244, 246, 250, 0.55) 55%, rgba(244, 246, 250, 0.92) 100%);
+   --glass: rgba(255, 255, 255, 0.78);
+   --shadow: 0 18px 50px -24px rgba(20, 40, 80, 0.35);
+   --grid-line: rgba(9, 20, 40, 0.05);
 
-  --pill-bg: rgba(9, 20, 40, 0.05);
-  --on-accent: #ffffff;
-  --hpanel-divider: rgba(9, 20, 40, 0.07);
+   --pill-bg: rgba(9, 20, 40, 0.05);
+   --on-accent: #ffffff;
+   --hpanel-divider: rgba(9, 20, 40, 0.07);
 
-  /* Completeness on white. Production's palette was drawn for a dark panel, and these values also
+   /* Completeness on white. Production's palette was drawn for a dark panel, and these values also
      colour label text, not just dots — so each hue is darkened until it is legible on white while
      staying recognisably the same colour. */
-  --cmp-planned: #6b7075;
-  --cmp-processing: #949ba3;
-  --cmp-acquired: #0a8a17;
-  --cmp-partial: #8f6522;
-  --cmp-unavailable: #d30000;
+   --cmp-planned: #6b7075;
+   --cmp-processing: #949ba3;
+   --cmp-acquired: #0a8a17;
+   --cmp-partial: #8f6522;
+   --cmp-unavailable: #d30000;
 
-  /* Event types on white. Acquisition and Production are production's own values, which were drawn
+   /* Event types on white. Acquisition and Production are production's own values, which were drawn
      for a light page and need no change. Calibration's pale cyan and the two warm hues do — they
      colour tag text as well as glyphs, so each is darkened to hold contrast on white. */
-  --evt-acquisition: #495057;
-  --evt-calibration: #3f8c99;
-  --evt-manoeuvre: #b06f00;
-  --evt-production: #7b1fa2;
-  --evt-satellite: #c2660d;
+   --evt-acquisition: #495057;
+   --evt-calibration: #3f8c99;
+   --evt-manoeuvre: #b06f00;
+   --evt-production: #7b1fa2;
+   --evt-satellite: #c2660d;
 
-  /* Baseline state on white. Same story as the two sets above: the dark values are drawn for a
+   /* Baseline state on white. Same story as the two sets above: the dark values are drawn for a
      near-black panel, and these colour 9.5px label text sitting on a cell tinted with their own hue
      (color-mix at 8%), which is the worst case — the shared --ok reaches only 1.8:1 there. Each is
      darkened until it clears 4.5:1 against that tinted cell while staying recognisably the same
      colour: current 5.1:1, past 4.7:1. */
-  --bl-current: #0b754e;
-  --bl-past: #636d79;
+   --bl-current: #0b754e;
+   --bl-past: #636d79;
 }

@@ -196,7 +196,7 @@ p {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  background: var(--bg-3);
+  background: var(--bg-2);
   border: 1px solid var(--line);
   color: var(--text-dim);
   border-radius: 999px;
@@ -515,7 +515,7 @@ a.card:hover {
   position: relative;
 }
 
-.ex-hero-host > *:not(.ex-hero-bg) {
+.ex-hero-host>*:not(.ex-hero-bg) {
   position: relative;
   z-index: 1;
 }
@@ -674,13 +674,13 @@ a.card:hover {
 
 /* Hidden while closed so links inside a collapsed panel stay out of the tab order; the delay
    holds visibility until the slide has finished. */
-.collapsible > .collapsible-inner {
+.collapsible>.collapsible-inner {
   overflow: hidden;
   visibility: hidden;
   transition: visibility 0s linear 0.2s;
 }
 
-.collapsible.open > .collapsible-inner {
+.collapsible.open>.collapsible-inner {
   visibility: visible;
   transition-delay: 0s;
 }
@@ -960,9 +960,20 @@ a.card:hover {
   font-size: 12px;
   line-height: 1;
 }
-.nstat.warn { background: var(--warn); color: #1b1305; }
-.nstat.ok { background: var(--ok); color: #05130c; }
-.ntext { min-width: 0; }
+
+.nstat.warn {
+  background: var(--warn);
+  color: #1b1305;
+}
+
+.nstat.ok {
+  background: var(--ok);
+  color: #05130c;
+}
+
+.ntext {
+  min-width: 0;
+}
 
 .ntitle {
   font-size: 13px;
@@ -1089,17 +1100,40 @@ a.card:hover {
   line-height: 0;
   transition: opacity 0.2s var(--ease), transform 0.2s var(--ease);
 }
-.px-cue:hover { opacity: 0.8; transform: translateY(2px); }
-.px-cue:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; border-radius: 8px; }
+
+.px-cue:hover {
+  opacity: 0.8;
+  transform: translateY(2px);
+}
+
+.px-cue:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
 .px-cue-ico {
   animation: px-cue-bounce 1.8s ease-in-out infinite;
 }
+
 @keyframes px-cue-bounce {
-  0%, 100% { transform: translateY(0); opacity: 0.55; }
-  50% { transform: translateY(8px); opacity: 1; }
+
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .px-cue-ico { animation: none; }
+  .px-cue-ico {
+    animation: none;
+  }
 }
 
 .px-panel {
@@ -1145,6 +1179,7 @@ a.card:hover {
 :root[data-theme="light"] .px-panel-bg {
   filter: brightness(1.12) saturate(1.03);
 }
+
 :root[data-theme="light"] .px-panel-veil {
   background: linear-gradient(180deg, rgba(3, 5, 10, 0.25) 0%, rgba(3, 5, 10, 0) 30%,
       rgba(3, 5, 10, 0.18) 58%, rgba(3, 5, 10, 0.82) 100%);
@@ -1637,14 +1672,22 @@ table.data td.mono {
 }
 
 .globe-card {
-  --text: #eef2f8;
-  --text-dim: #b4bdca;
-  --text-mute: #7e8899;
+  --text: #ffffff;
+  --text-dim: #cccccc;
+  --text-mute: #737373;
   position: relative;
   border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--line);
-  background: radial-gradient(circle at 50% 42%, #0b1424 0%, #05070c 78%);
+  background: radial-gradient(circle at 50% 42%, #252b33 0%, #1a1f25 78%);
+}
+
+/* Light mode: medium-light background for the globe section */
+:root[data-theme="light"] .globe-card {
+  --text: #1a2332;
+  --text-dim: #4a5a6a;
+  --text-mute: #7a8a9a;
+  background: radial-gradient(circle at 50% 42%, #c8daf0 0%, #a8c8e0 78%);
 }
 
 .globe-stage {
@@ -1806,7 +1849,7 @@ table.data td.mono {
   pointer-events: none;
 }
 
-.globe-hint span + span::before {
+.globe-hint span+span::before {
   content: "·";
   margin-right: 14px;
 }
@@ -2196,7 +2239,7 @@ table.data td.mono {
   backdrop-filter: blur(12px);
 }
 
-.dtk-select > label {
+.dtk-select>label {
   font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
@@ -2277,6 +2320,64 @@ table.data td.mono {
   font-size: 12px;
   color: var(--text-mute);
   white-space: nowrap;
+}
+
+.kml-link-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 8px;
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  font-size: 12px;
+}
+
+.kml-link-container.kml-derived {
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 8px;
+}
+
+.kml-label {
+  font-size: 11px;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  color: var(--text-mute);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.kml-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--accent-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  transition: opacity var(--dur) var(--ease);
+}
+
+.kml-link:hover {
+  opacity: 0.8;
+}
+
+.kml-link:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.kml-icon {
+  font-size: 10px;
+}
+
+.kml-notice {
+  color: var(--text-dim);
+  font-style: italic;
 }
 
 @media (max-width: 560px) {
@@ -2375,7 +2476,7 @@ table.data td.mono {
   font-size: 12px;
 }
 
-.dtk-aside > div {
+.dtk-aside>div {
   display: flex;
   gap: 8px;
 }
@@ -2687,7 +2788,7 @@ table.data td.mono {
   border-bottom: none;
 }
 
-.pass > i {
+.pass>i {
   width: 9px;
   height: 9px;
   flex-shrink: 0;
@@ -3109,31 +3210,161 @@ table.data td.mono {
     grid-template-columns: 1fr;
   }
 }
+
 /* About page: two layout proposals share one source text (src/data/about.ts).
    This switcher keeps both reachable so they can be compared side by side. */
-.ab-variant{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-mute)}
-.ab-variant a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
-.ab-variant a:hover{border-bottom-color:var(--accent)}
+.ab-variant {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-mute)
+}
+
+.ab-variant a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent
+}
+
+.ab-variant a:hover {
+  border-bottom-color: var(--accent)
+}
 
 /* ===== Legal / document pages (Terms & Conditions, Cookie Notice) — ported from the Next.js app's .legal block
    (frontend/app/globals.css) with its colours remapped onto this mockup's tokens, so the same
    markup renders in both themes instead of the dark-only original. ===== */
-.legal{max-width:768px;margin:0 auto}
-.legal .lead{font-size:clamp(16px,1.8vw,19px);line-height:1.65;color:var(--text);margin:0 0 26px;text-wrap:pretty}
-.legal h2{font-size:clamp(19px,2.3vw,25px);letter-spacing:-.01em;margin:40px 0 14px;font-weight:700;padding-top:18px;border-top:1px solid var(--line)}
-.legal>div:first-child h2:first-of-type{border-top:none;padding-top:0;margin-top:8px}
-.legal h3{font-size:15.5px;margin:26px 0 10px;font-weight:600;color:var(--text);font-family:var(--font-mono);letter-spacing:.01em}
-.legal p{color:var(--text-dim);font-size:15px;line-height:1.75;margin:0 0 16px}
-.legal ul{color:var(--text-dim);font-size:15px;line-height:1.7;margin:0 0 18px;padding-left:4px;list-style:none}
-.legal ul li{position:relative;padding-left:22px;margin:0 0 9px}
-.legal ul li::before{content:"";position:absolute;left:2px;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent-2);opacity:.7}
-.legal a{color:var(--accent)}
-.legal strong{color:var(--text);font-weight:600}
-.legal .callout{border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px;background:color-mix(in srgb,var(--accent) 8%,var(--bg-2));margin:0 0 22px}
-.legal .callout p:last-child{margin-bottom:0}
-.cookie-toggle{display:flex;align-items:center;gap:16px;flex-wrap:wrap;border:1px solid var(--line);border-radius:var(--r-lg);padding:18px 22px;background:var(--bg-2);margin:8px 0 22px}
-.cookie-toggle .status{font-family:var(--font-mono);font-size:13px;color:var(--text)}
-.cookie-toggle .status b{color:var(--ok)}
-.cookie-toggle .status.off b{color:var(--text-dim)}
-.cookie-toggle .actions{display:flex;gap:10px;margin-left:auto}
-@media (max-width:600px){.cookie-toggle .actions{margin-left:0;width:100%}}
+.legal {
+  max-width: 768px;
+  margin: 0 auto
+}
+
+.legal .lead {
+  font-size: clamp(16px, 1.8vw, 19px);
+  line-height: 1.65;
+  color: var(--text);
+  margin: 0 0 26px;
+  text-wrap: pretty
+}
+
+.legal h2 {
+  font-size: clamp(19px, 2.3vw, 25px);
+  letter-spacing: -.01em;
+  margin: 40px 0 14px;
+  font-weight: 700;
+  padding-top: 18px;
+  border-top: 1px solid var(--line)
+}
+
+.legal>div:first-child h2:first-of-type {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 8px
+}
+
+.legal h3 {
+  font-size: 15.5px;
+  margin: 26px 0 10px;
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  letter-spacing: .01em
+}
+
+.legal p {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.75;
+  margin: 0 0 16px
+}
+
+.legal ul {
+  color: var(--text-dim);
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 0 0 18px;
+  padding-left: 4px;
+  list-style: none
+}
+
+.legal ul li {
+  position: relative;
+  padding-left: 22px;
+  margin: 0 0 9px
+}
+
+.legal ul li::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 9px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  opacity: .7
+}
+
+.legal a {
+  color: var(--accent)
+}
+
+.legal strong {
+  color: var(--text);
+  font-weight: 600
+}
+
+.legal .callout {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-2));
+  margin: 0 0 22px
+}
+
+.legal .callout p:last-child {
+  margin-bottom: 0
+}
+
+.cookie-toggle {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px 22px;
+  background: var(--bg-2);
+  margin: 8px 0 22px
+}
+
+.cookie-toggle .status {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text)
+}
+
+.cookie-toggle .status b {
+  color: var(--ok)
+}
+
+.cookie-toggle .status.off b {
+  color: var(--text-dim)
+}
+
+.cookie-toggle .actions {
+  display: flex;
+  gap: 10px;
+  margin-left: auto
+}
+
+@media (max-width:600px) {
+  .cookie-toggle .actions {
+    margin-left: 0;
+    width: 100%
+  }
+}

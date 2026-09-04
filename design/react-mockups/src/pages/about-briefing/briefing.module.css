@@ -120,9 +120,10 @@
 }
 
 .railN {
-  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   color: var(--text-mute);
-  transition: color 0.2s var(--ease);
 }
 
 .railOn .railN {
@@ -262,10 +263,13 @@
 }
 
 .defN {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  flex-shrink: 0;
   color: var(--text-mute);
-  letter-spacing: 0.06em;
+  transition: color 0.2s var(--ease);
+}
+
+.def:hover .defN {
+  color: var(--text);
 }
 
 .defTitle {
