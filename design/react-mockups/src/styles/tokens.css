@@ -53,6 +53,15 @@
    --line: rgba(137, 202, 205, 0.12);
    --line-strong: rgba(137, 202, 205, 0.22);
 
+   /* Timeline and gantt backgrounds (dark) */
+   --timeline-bg: #151b27;
+   --timeline-section-bg: #1a1f2e;
+   --timeline-card-bg: #0f1219;
+   --gantt-container-bg: #151b27;
+   --gantt-label-bg: #1a1f2e;
+   --gantt-row-bg: #0f1219;
+   --gantt-border: #2a3142;
+
    --text: #ffffff;
    --text-dim: #cccccc;
    --text-mute: #737373;
@@ -109,6 +118,15 @@
    --bg-3: #eef1f6;
    --line: rgba(9, 20, 40, 0.10);
    --line-strong: rgba(9, 20, 40, 0.18);
+
+   /* Timeline and gantt backgrounds (light) */
+   --timeline-bg: #eff1f6;
+   --timeline-section-bg: #f8fafb;
+   --timeline-card-bg: #f8fafb;
+   --gantt-container-bg: #eff1f6;
+   --gantt-label-bg: #f8fafb;
+   --gantt-row-bg: #f8fafb;
+   --gantt-border: rgba(9, 20, 40, 0.1);
 
    --text: #0c1524;
    --text-dim: #45536b;

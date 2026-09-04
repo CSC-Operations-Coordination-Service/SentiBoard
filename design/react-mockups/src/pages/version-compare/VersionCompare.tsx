@@ -1,19 +1,19 @@
 import { useCallback, useMemo, useState } from "react";
-import { ArrowRight, GitCompareArrows, RotateCcw } from "lucide-react";
+import { GitCompareArrows, RotateCcw } from "lucide-react";
 import { PageHeader, Reveal } from "@/components/ui";
 import { PROCESSORS_COMPARE_DESCRIPTION } from "@/data/copy";
 import {
   COMPARABLE_BY_MISSION, DEFAULT_GROUP,
-  type DiffLine, type ReleaseRecord, type ProcessorGroup,
-  ageLabel, currentOf, defaultPair, diffLines, earlierPool, groupOf,
-  laterThan, noteLines, releaseOf, sideBySide, summarise,
+  type ProcessorGroup,
+  currentOf, defaultPair, earlierPool, groupOf,
+  laterThan, releaseOf,
 } from "./mock";
 import s from "./compare.module.css";
 
 const FIRST = DEFAULT_GROUP;
 
 /** Gantt-style timeline showing all baselines and highlighting the compared ones. */
-function GanttTimeline({ group, fromV, toV }: { group: ProcessorGroup; fromV: string; toV: string }) {
+function GanttTimeline({ group, fromV, toV, selectedBaseline, onBaselineSelect }: { group: ProcessorGroup; fromV: string; toV: string; selectedBaseline: string | null; onBaselineSelect: (baseline: string | null) => void }) {
   if (!group.releases.length) return null;
 
   const releases = group.releases;
@@ -46,25 +46,28 @@ function GanttTimeline({ group, fromV, toV }: { group: ProcessorGroup; fromV: st
             const endMs = nextRelease ? nextRelease.ms : maxDate + (maxDate - minDate) * 0.1;
             const isFrom = rel.baseline === fromV;
             const isTo = rel.baseline === toV;
+            const isCompared = isFrom || isTo;
+            const isClicked = selectedBaseline === rel.baseline;
 
             return (
               <div key={rel.baseline} className={s.ganttRow}>
-                <div
-                  className={`${s.ganttBar} ${isFrom ? s.barFrom : ""} ${isTo ? s.barTo : ""}`}
+                <button
+                  type="button"
+                  className={`${s.ganttBar} ${isFrom ? s.barFrom : ""} ${isTo ? s.barTo : ""} ${isClicked ? s.barClicked : ""}`}
                   style={{
                     left: `${getXPosition(rel.ms)}%`,
                     width: `${getWidth(rel.ms, endMs)}%`,
                   }}
                   title={`${rel.baseline}: ${rel.iso}`}
+                  onClick={() => onBaselineSelect(isClicked ? null : rel.baseline)}
+                  aria-pressed={isClicked}
                 >
-                  {(isFrom || isTo) && (
+                  {isCompared && (
                     <span className={s.barLabel}>
-                      {isFrom && "from"}
-                      {isFrom && isTo ? " / " : ""}
-                      {isTo && "to"}
+                      {rel.baseline}
                     </span>
                   )}
-                </div>
+                </button>
               </div>
             );
           })}
@@ -74,71 +77,12 @@ function GanttTimeline({ group, fromV, toV }: { group: ProcessorGroup; fromV: st
   );
 }
 
-function Notes({ lines }: { lines: DiffLine[] }) {
-  if (!lines.length) {
-    return <p className={s.noNotes}>No release notes published for this baseline.</p>;
-  }
-  return (
-    <div className={s.notes}>
-      {lines.map((line, i) => (
-        <div className={`${s.line} ${s[line.op]}`} key={i}>
-          <span className={s.glyph} aria-hidden>
-            {line.op === "add" ? "+" : line.op === "del" ? "−" : "·"}
-          </span>
-          <span className={line.bullet ? `${s.text} ${s.bullet}` : s.text}>
-            <span className="sr-only">
-              {line.op === "add" ? "Added: " : line.op === "del" ? "Removed: " : ""}
-            </span>
-            {line.text}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function Panel({
-  side, release, lines, onlySats,
-}: {
-  side: "earlier" | "later";
-  release: ReleaseRecord;
-  lines: DiffLine[];
-  onlySats: string[];
-}) {
-  const only = new Set(onlySats);
-  return (
-    <section className={side === "later" ? `${s.panel} ${s.later}` : s.panel}>
-      <div className={s.panelHead}>
-        <span className={s.side}>{side === "later" ? "Later — to" : "Earlier — from"}</span>
-        <span className={s.ver}>{release.baseline}</span>
-        <span className={s.when}>{release.iso}</span>
-      </div>
-
-      <div className={s.panelMeta}>
-        <span className={s.metaLab}>Released</span>
-        <span className={s.sat}>{release.day}</span>
-        <span className={s.metaLab} style={{ marginLeft: 8 }}>Satellites</span>
-        {release.sats.length ? (
-          release.sats.map((sat) => (
-            <span className={only.has(sat) ? `${s.sat} ${s.only}` : s.sat} key={sat}>
-              {only.has(sat) ? `+ ${sat}` : sat}
-            </span>
-          ))
-        ) : (
-          <span className={`${s.sat} ${s.none}`}>not published in the feed</span>
-        )}
-      </div>
-
-      <Notes lines={lines} />
-    </section>
-  );
-}
-
 export default function VersionCompare() {
   const [ipf, setIpf] = useState(FIRST?.ipf ?? "");
   const initial = FIRST ? defaultPair(FIRST) : { from: "", to: "" };
   const [fromV, setFromV] = useState(initial.from);
   const [toV, setToV] = useState(initial.to);
+  const [selectedBaseline, setSelectedBaseline] = useState<string | null>(null);
 
   const group = useMemo(() => groupOf(ipf), [ipf]);
 
@@ -176,28 +120,15 @@ export default function VersionCompare() {
     pickProcessor(FIRST.ipf);
   }, [pickProcessor]);
 
-  const from = group && releaseOf(group, fromV);
-  const to = group && releaseOf(group, toV);
-
-  const diff = useMemo(
-    () => (from && to ? diffLines(noteLines(from.notes), noteLines(to.notes)) : []),
-    [from, to],
-  );
-  const split = useMemo(() => sideBySide(diff), [diff]);
-  const stats = useMemo(
-    () => (group && from && to ? summarise(group, from, to) : null),
-    [group, from, to],
-  );
-
-  const atCurrent = group && to ? currentOf(group).baseline === to.baseline : false;
+  const atCurrent = group ? currentOf(group).baseline === toV : false;
   const dirty = group ? ipf !== FIRST?.ipf || fromV !== defaultPair(group).from || toV !== defaultPair(group).to : false;
 
   return (
     <>
       <PageHeader
         crumb="Processors proposal"
-        title="Version Compare"
-        sub="Pick a processor and two of its baselines, and read what changed between them: the release dates, the baselines the jump covers, how satellite coverage differs, and the release notes side by side with the differences marked."
+        title="Baseline Timeline"
+        sub="A scrollable gantt-style timeline showing all baseline releases for a selected processor over time. Click on any baseline bar to view its complete release information including notes, affected satellites, and processor details."
       />
 
       <section className="wrap pad">
@@ -260,16 +191,6 @@ export default function VersionCompare() {
           </div>
 
           <div className={s.actions}>
-            <button
-              type="button"
-              className={s.btn}
-              onClick={compareToCurrent}
-              disabled={!group || atCurrent}
-              title={atCurrent ? "Already comparing against the latest release" : undefined}
-            >
-              <GitCompareArrows size={13} />
-              Compare to current
-            </button>
             <button type="button" className={s.btn} onClick={reset} disabled={!dirty}>
               <RotateCcw size={12} />
               Reset
@@ -277,77 +198,72 @@ export default function VersionCompare() {
           </div>
         </Reveal>
 
-        {!group || !from || !to ? (
-          <div className={s.empty}>Select a processor and two of its baselines to compare.</div>
+        {!group ? (
+          <div className={s.empty}>Select a processor to view the timeline.</div>
         ) : (
           <>
             {/* Gantt timeline showing all baselines */}
             <Reveal>
-              <GanttTimeline group={group} fromV={fromV} toV={toV} />
+              <GanttTimeline group={group} fromV={fromV} toV={toV} selectedBaseline={selectedBaseline} onBaselineSelect={setSelectedBaseline} />
             </Reveal>
 
-            {/* Summary stats */}
-            <Reveal className={s.summary}>
-              <div className={s.stat}>
-                <span className={s.statK}>Comparing</span>
-                <span className={s.statV}>
-                  {from.baseline} <ArrowRight size={13} style={{ verticalAlign: "-2px" }} /> {to.baseline}
-                </span>
-              </div>
-              <div className={s.stat}>
-                <span className={s.statK}>Apart</span>
-                <span className={s.statV}>{ageLabel(stats!.months)}</span>
-              </div>
-              <div className={s.stat}>
-                <span className={s.statK}>Baselines covered</span>
-                <span className={s.statV}>
-                  {stats!.steps}
-                  <span className={s.statK} style={{ marginLeft: 6 }}>
-                    {stats!.steps === 1 ? "consecutive" : "steps"}
-                  </span>
-                </span>
-              </div>
-              <div className={s.stat}>
-                <span className={s.statK}>Skipped over</span>
-                {stats!.skipped.length ? (
-                  <span className={s.skipped}>
-                    {stats!.skipped.map((r) => (
-                      <span className={s.skip} key={r.baseline}>{r.baseline}</span>
-                    ))}
-                  </span>
-                ) : (
-                  <span className={`${s.statV} ${s.dim}`}>none — consecutive releases</span>
-                )}
-              </div>
-              <div className={s.stat}>
-                <span className={s.statK}>Notes changed</span>
-                <span className={`${s.statV} ${s.dim}`}>
-                  +{split.counts.add} / −{split.counts.del} · {split.counts.same} unchanged
-                </span>
-              </div>
-            </Reveal>
+            {/* Release details for selected baseline */}
+            {selectedBaseline && (
+              <Reveal className={s.releaseDetails}>
+                {group.releases
+                  .filter((rel) => rel.baseline === selectedBaseline)
+                  .map((rel) => (
+                    <div key={rel.baseline} className={s.detailsCard}>
+                      <div className={s.detailsHead}>
+                        <div>
+                          <div className={s.detailsVersion}>{rel.baseline}</div>
+                          <div className={s.detailsDate}>{rel.day}</div>
+                          <div className={s.detailsIso}>{rel.iso}</div>
+                        </div>
+                        <button
+                          type="button"
+                          className={s.closeDetails}
+                          onClick={() => setSelectedBaseline(null)}
+                          aria-label="Close details"
+                        >
+                          ✕
+                        </button>
+                      </div>
 
-            {/* Side-by-side comparison */}
-            <div className={s.panels}>
-              <Panel side="earlier" release={from} lines={split.from} onlySats={stats!.sats.onlyFrom} />
-              <Panel side="later" release={to} lines={split.to} onlySats={stats!.sats.onlyTo} />
-            </div>
+                      <div className={s.detailsProc}>
+                        <span className={s.detailsProcLabel}>{rel.label}</span>
+                        <span className={s.detailsSub}>{rel.sub}</span>
+                      </div>
 
-            <div className={s.legend}>
-              <span className={s.key} style={{ ["--c" as string]: "var(--accent)" }}>
-                <i />+ added by {to.baseline}
-              </span>
-              <span className={s.key} style={{ ["--c" as string]: "var(--text-mute)" }}>
-                <i />− only in {from.baseline}
-              </span>
-              <span className={s.key} style={{ ["--c" as string]: "var(--line-strong)" }}>
-                <i />· carried by both
-              </span>
-              <span className={s.legendNote}>
-                Differences are compared paragraph by paragraph, so a line both baselines restate is
-                shown as carried rather than changed.
-              </span>
-            </div>
+                      {rel.notes ? (
+                        <div className={s.detailsNotes}>
+                          {rel.notes
+                            .split("\n")
+                            .filter((line) => line.trim() !== "")
+                            .map((line, i) => (
+                              <p key={i} className={line.startsWith("• ") ? s.notesBullet : undefined}>
+                                {line.replace(/^•\s*/, "")}
+                              </p>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className={s.noNotes}>No release notes published for this baseline.</p>
+                      )}
+
+                      {rel.sats.length > 0 && (
+                        <div className={s.detailsSats}>
+                          <span className={s.satsLabel}>Satellites:</span>
+                          {rel.sats.map((sat) => (
+                            <span key={sat} className={s.sat}>
+                              {sat}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+              </Reveal>
+            )}
           </>
         )}
       </section>

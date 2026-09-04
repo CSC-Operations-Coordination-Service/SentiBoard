@@ -15,8 +15,8 @@
   gap: 14px;
   padding: 16px;
   margin-bottom: 20px;
-  background: #0e1017;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--timeline-section-bg);
+  border: 1px solid var(--gantt-border);
   border-radius: var(--r-lg);
 }
 
@@ -32,7 +32,7 @@
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #9aa4b4;
+  color: var(--text-mute);
 }
 
 /* Matches the select treatment in styles/data-availability.css → .da-field select. */
@@ -40,25 +40,25 @@
   width: 100%;
   height: 36px;
   padding: 0 32px 0 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--gantt-border);
   border-radius: var(--r-sm);
-  background-color: #12151e;
-  color: #eef1f6;
+  background-color: var(--gantt-row-bg);
+  color: var(--text);
   font-family: var(--font-mono);
   font-size: 13px;
   cursor: pointer;
   appearance: none;
   outline: none;
-  background-image: linear-gradient(45deg, transparent 50%, #9aa4b4 50%),
-    linear-gradient(135deg, #9aa4b4 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-mute) 50%),
+    linear-gradient(135deg, var(--text-mute) 50%, transparent 50%);
   background-position: calc(100% - 16px) center, calc(100% - 11px) center;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   transition: border-color 0.2s var(--ease);
 }
 
-.select:hover { border-color: rgba(255, 255, 255, 0.2); }
-.select:focus { border-color: #00c7d6; }
+.select:hover { border-color: var(--line-strong); }
+.select:focus { border-color: var(--accent); }
 
 .actions { display: flex; align-items: center; gap: 8px; }
 
@@ -68,10 +68,10 @@
   gap: 7px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   background: transparent;
-  color: #c1c7d0;
+  color: var(--text-dim);
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -81,13 +81,13 @@
 }
 
 .btn:hover:not(:disabled) {
-  color: #eef1f6;
-  border-color: #00c7d6;
-  background: rgba(0, 199, 214, 0.1);
+  color: var(--text);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .btn:disabled { opacity: 0.4; cursor: default; }
-.btn:focus-visible { outline: 2px solid #00c7d6; outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* -------------------- summary strip -------------------- */
 .summary {
@@ -323,25 +323,31 @@
 .ganttContainer {
   margin-bottom: 20px;
   padding: 16px;
-  background: #0e1017;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--gantt-container-bg);
+  border: 1px solid var(--gantt-border);
   border-radius: var(--r-lg);
+  overflow-x: auto;
 }
 
 .ganttChart {
   display: grid;
-  grid-template-columns: 120px 1fr;
+  grid-template-columns: 120px minmax(600px, 1fr);
   gap: 16px;
   align-items: start;
+  width: 100%;
 }
 
 .ganttLabels {
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gantt-border);
   border-radius: var(--r-sm);
   overflow: hidden;
+  grid-column: 1;
+  position: sticky;
+  left: 0;
+  z-index: 10;
 }
 
 .ganttLabel {
@@ -349,15 +355,15 @@
   flex-direction: column;
   gap: 3px;
   padding: 10px 12px;
-  background: #12151e;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--gantt-label-bg);
+  border-right: 1px solid var(--gantt-border);
 }
 
 .labelVersion {
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 500;
-  color: #eef1f6;
+  color: #d9dcdf;
   line-height: 1;
 }
 
@@ -365,7 +371,7 @@
   font-family: var(--font-mono);
   font-size: 9px;
   letter-spacing: 0.06em;
-  color: #9aa4b4;
+  color: #6b7684;
   line-height: 1;
 }
 
@@ -373,16 +379,18 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--gantt-border);
   border-radius: var(--r-sm);
   overflow: hidden;
+  width: 1200px;
+  grid-column: 2;
 }
 
 .ganttRow {
   position: relative;
   height: 38px;
-  background: #12151e;
-  min-width: 0;
+  background: var(--gantt-row-bg);
+  width: 100%;
 }
 
 .ganttBar {
@@ -391,33 +399,41 @@
   transform: translateY(-50%);
   height: 24px;
   border-radius: 3px;
-  background: rgba(154, 164, 180, 0.2);
+  background: color-mix(in srgb, var(--text-mute) 20%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-family: var(--font-mono);
   font-size: 9px;
-  color: #9aa4b4;
+  color: var(--text-mute);
   font-weight: 500;
   transition: all 0.2s var(--ease);
+  border: none;
+  cursor: pointer;
 }
 
 .ganttBar:hover {
-  background: rgba(154, 164, 180, 0.35);
+  background: color-mix(in srgb, var(--text-mute) 35%, transparent);
 }
 
 /* Highlighting the "from" baseline */
 .ganttBar.barFrom {
-  background: rgba(0, 199, 214, 0.25);
-  color: #eef1f6;
-  box-shadow: inset 0 0 0 1.5px #00c7d6;
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
 }
 
 /* Highlighting the "to" baseline */
 .ganttBar.barTo {
-  background: rgba(0, 199, 214, 0.35);
-  color: #eef1f6;
-  box-shadow: inset 0 0 0 1.5px #00c7d6;
+  background: color-mix(in srgb, var(--accent) 35%, transparent);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+/* Highlighting a clicked baseline */
+.ganttBar.barClicked {
+  box-shadow: inset 0 0 0 2px var(--accent), 0 0 12px 1px color-mix(in srgb, var(--accent) 50%, transparent);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .barLabel {
@@ -427,6 +443,140 @@
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* -------------------- release details -------------------- */
+.releaseDetails {
+  margin-top: 20px;
+}
+
+.detailsCard {
+  padding: 20px;
+  background: var(--timeline-section-bg);
+  border: 1px solid var(--gantt-border);
+  border-radius: var(--r-lg);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.detailsHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.detailsVersion {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.detailsDate {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-mute);
+  margin-top: 4px;
+}
+
+.detailsIso {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  margin-top: 2px;
+}
+
+.closeDetails {
+  background: transparent;
+  border: none;
+  color: var(--text-mute);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s var(--ease);
+  flex: none;
+}
+
+.closeDetails:hover {
+  color: var(--text);
+}
+
+.detailsProc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.detailsProcLabel {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.detailsSub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.detailsNotes {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-dim);
+}
+
+.detailsNotes p {
+  margin: 0 0 8px;
+}
+
+.detailsNotes p:last-child {
+  margin-bottom: 0;
+}
+
+.notesBullet {
+  padding-left: 15px;
+  text-indent: -15px;
+}
+
+.detailsSats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.satsLabel {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  margin-right: 4px;
+}
+
+.sat {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 /* -------------------- empty state -------------------- */

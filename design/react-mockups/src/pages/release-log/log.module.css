@@ -44,7 +44,10 @@
 }
 
 /* The span counter carries two month-years, which will not fit at the others' size. */
-.counterV.small { font-size: 15px; line-height: 1.3; }
+.counterV.small {
+  font-size: 15px;
+  line-height: 1.3;
+}
 
 /* -------------------- controls -------------------- */
 .controls {
@@ -61,7 +64,10 @@
   gap: 7px;
 }
 
-.control.grow { flex: 1; min-width: 240px; }
+.control.grow {
+  flex: 1;
+  min-width: 240px;
+}
 
 /* The controls row is bottom-aligned, so widgets of differing heights would stagger the label
    row above them. One height for every widget keeps the labels on a single baseline. */
@@ -69,7 +75,9 @@
 .segmented,
 .dates,
 .dateInput,
-.reset { height: 34px; }
+.reset {
+  height: 34px;
+}
 
 .controlLab {
   font-family: var(--font-mono);
@@ -91,8 +99,14 @@
   transition: border-color 0.2s var(--ease);
 }
 
-.searchWrap:focus-within { border-color: var(--accent); }
-.searchWrap svg { flex: none; color: var(--text-mute); }
+.searchWrap:focus-within {
+  border-color: var(--accent);
+}
+
+.searchWrap svg {
+  flex: none;
+  color: var(--text-mute);
+}
 
 .searchWrap input {
   flex: 1;
@@ -106,8 +120,13 @@
   font-size: 13.5px;
 }
 
-.searchWrap input::placeholder { color: var(--text-mute); }
-.searchWrap input:focus { outline: none; }
+.searchWrap input::placeholder {
+  color: var(--text-mute);
+}
+
+.searchWrap input:focus {
+  outline: none;
+}
 
 .clear {
   display: inline-flex;
@@ -123,7 +142,9 @@
   cursor: pointer;
 }
 
-.clear:hover { color: var(--text); }
+.clear:hover {
+  color: var(--text);
+}
 
 /* Release-date range. Matches the input treatment the Data Availability filters use
    (styles/data-availability.css → .da-field input): raised surface, hairline border, mono. The
@@ -148,12 +169,19 @@
   transition: border-color 0.2s var(--ease);
 }
 
-.dateInput:hover { border-color: var(--line-strong); }
-.dateInput:focus { border-color: var(--accent); }
+.dateInput:hover {
+  border-color: var(--line-strong);
+}
+
+.dateInput:focus {
+  border-color: var(--accent);
+}
 
 /* An empty date input renders its yyyy-mm-dd hint, which should read as a placeholder. */
 .dateInput:not(:focus):invalid,
-.dateInput[value=""] { color: var(--text-mute); }
+.dateInput[value=""] {
+  color: var(--text-mute);
+}
 
 .dateSep {
   flex: none;
@@ -165,8 +193,8 @@
 .segmented {
   display: flex;
   gap: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--line);
+  border: 1px solid var(--line);
   border-radius: var(--r-sm);
   overflow: hidden;
 }
@@ -174,8 +202,8 @@
 .segmented button {
   padding: 0 13px;
   border: 0;
-  background: #12151e;
-  color: #9aa4b4;
+  background: var(--bg-3);
+  color: #fff;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -185,18 +213,18 @@
 }
 
 .segmented button:hover {
-  color: #eef1f6;
-  background: rgba(0, 199, 214, 0.1);
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 .segmented button.on {
-  background: linear-gradient(135deg, rgba(0, 199, 214, 0.25) 0%, rgba(0, 199, 214, 0.15) 100%);
-  color: #00c7d6;
-  border-bottom: 2px solid #00c7d6;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 25%, transparent) 0%, color-mix(in srgb, var(--accent) 15%, transparent) 100%);
+  color: var(--accent);
+  border-bottom: 2px solid var(--accent);
 }
 
 .segmented button:focus-visible {
-  outline: 2px solid #00c7d6;
+  outline: 2px solid var(--accent);
   outline-offset: -2px;
 }
 
@@ -215,8 +243,15 @@
   letter-spacing: 0.08em;
 }
 
-.reset:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
-.reset:disabled { opacity: 0.4; cursor: default; }
+.reset:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
 /* -------------------- result line -------------------- */
 .resultLine {
@@ -235,7 +270,10 @@
   color: var(--text-mute);
 }
 
-.resultLine b { color: var(--text-dim); font-weight: 500; }
+.resultLine b {
+  color: var(--text-dim);
+  font-weight: 500;
+}
 
 /* -------------------- the feed -------------------- */
 .feed {
@@ -247,7 +285,10 @@
   max-width: 940px;
 }
 
-.group { display: flex; flex-direction: column; }
+.group {
+  display: flex;
+  flex-direction: column;
+}
 
 /* Sticky, so the month or processor you are reading under stays named while you scroll. */
 .groupHead {
@@ -280,7 +321,13 @@
   color: var(--text-mute);
 }
 
-.groupCount { margin-left: auto; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em; color: var(--text-mute); }
+.groupCount {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-mute);
+}
 
 /* -------------------- an entry -------------------- */
 .entry {
@@ -291,7 +338,9 @@
   border-bottom: 1px solid var(--line);
 }
 
-.entry:last-child { border-bottom: 0; }
+.entry:last-child {
+  border-bottom: 0;
+}
 
 /* Date gutter — the spine of a chronological reading. */
 .gutter {
@@ -317,7 +366,9 @@
   white-space: nowrap;
 }
 
-.body { min-width: 0; }
+.body {
+  min-width: 0;
+}
 
 .head {
   display: flex;
@@ -328,7 +379,9 @@
 }
 
 /* Grouped by processor there is no name or product line under it, so the head carries the gap. */
-.head.bare { margin-bottom: 12px; }
+.head.bare {
+  margin-bottom: 12px;
+}
 
 .proc {
   font-size: 15.5px;
@@ -365,8 +418,13 @@
   color: var(--text-dim);
 }
 
-.notes p { margin: 0 0 9px; }
-.notes p:last-child { margin-bottom: 0; }
+.notes p {
+  margin: 0 0 9px;
+}
+
+.notes p:last-child {
+  margin-bottom: 0;
+}
 
 /* stripHtml turns <li> into a "• " prefix; hang the indent so wrapped lines line up. */
 .notes p.bullet {
@@ -416,7 +474,10 @@
   color: var(--text-dim);
 }
 
-.sat.none { color: var(--text-mute); font-style: italic; }
+.sat.none {
+  color: var(--text-mute);
+  font-style: italic;
+}
 
 /* -------------------- empty state -------------------- */
 .empty {
@@ -448,9 +509,9 @@
   flex-direction: column;
   gap: 20px;
   padding: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--gantt-border);
   border-radius: var(--r-lg);
-  background: #0e1017;
+  background: var(--timeline-bg);
   overflow-x: auto;
 }
 
@@ -458,7 +519,7 @@
   height: 40px;
   width: 100%;
   min-height: 0;
-  color: #9aa4b4;
+  color: #6b7684;
   flex: none;
 }
 
@@ -490,15 +551,15 @@
 }
 
 .timelineEvent.selected .eventDot {
-  box-shadow: 0 0 0 3px #0e1017, 0 0 12px 2px rgba(0, 199, 214, 0.6);
+  box-shadow: 0 0 0 3px var(--bg-2), 0 0 12px 2px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 .eventDot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #00c7d6;
-  box-shadow: 0 0 0 3px #0e1017, 0 0 8px 0 rgba(0, 199, 214, 0.4);
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--bg-2), 0 0 8px 0 color-mix(in srgb, var(--accent) 40%, transparent);
   flex: none;
 }
 
@@ -515,7 +576,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.06em;
-  color: #9aa4b4;
+  color: var(--text-mute);
   white-space: nowrap;
 }
 
@@ -531,15 +592,15 @@
   display: inline-block;
   padding: 4px 10px;
   border-radius: 4px;
-  background: rgba(0, 199, 214, 0.15);
-  color: #00c7d6;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 10px;
   white-space: nowrap;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid rgba(0, 199, 214, 0.3);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 .timelineDetails {
@@ -553,8 +614,8 @@
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  background: #0e1017;
-  border: 1px solid rgba(0, 199, 214, 0.3);
+  background: var(--timeline-section-bg);
+  border: 1px solid var(--gantt-border);
   border-radius: var(--r-lg);
 }
 
@@ -569,7 +630,7 @@
 .dateTitle {
   font-size: 15px;
   font-weight: 500;
-  color: #eef1f6;
+  color: var(--text);
   margin: 0;
   flex: 1;
 }
@@ -577,7 +638,7 @@
 .closeDetails {
   background: transparent;
   border: none;
-  color: #9aa4b4;
+  color: var(--text-mute);
   font-size: 18px;
   cursor: pointer;
   padding: 0;
@@ -590,14 +651,14 @@
 }
 
 .closeDetails:hover {
-  color: #eef1f6;
+  color: var(--text);
 }
 
 .releaseCard {
   padding: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--gantt-border);
   border-radius: var(--r-md);
-  background: #12151e;
+  background: var(--timeline-card-bg);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -613,18 +674,18 @@
 .cardProc {
   font-size: 14px;
   font-weight: 500;
-  color: #eef1f6;
+  color: var(--text);
 }
 
 .cardVersion {
   display: inline-flex;
   padding: 3px 10px;
-  border: 1px solid rgba(0, 199, 214, 0.3);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
   border-radius: var(--r-xs);
-  background: rgba(0, 199, 214, 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #00c7d6;
+  color: var(--accent);
   font-weight: 500;
 }
 
@@ -633,13 +694,13 @@
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9aa4b4;
+  color: var(--text-mute);
 }
 
 .cardNotes {
   font-size: 13px;
   line-height: 1.5;
-  color: #c1c7d0;
+  color: var(--text-dim);
 }
 
 .cardNotes p {
@@ -657,15 +718,18 @@
 }
 
 .cardMore {
-  color: #9aa4b4;
+  color: var(--text-mute);
   font-style: italic;
   font-size: 12px;
   margin-top: 4px !important;
 }
 
+
 /* -------------------- responsive -------------------- */
 @media (max-width: 900px) {
-  .counters { grid-template-columns: repeat(2, 1fr); }
+  .counters {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   .timelineEvents {
     height: 220px;
@@ -677,13 +741,37 @@
 }
 
 @media (max-width: 700px) {
-  .controls { gap: 12px; }
-  .control, .control.grow { width: 100%; min-width: 0; }
-  .segmented { width: 100%; }
-  .segmented button { flex: 1; text-align: center; }
-  .reset { width: 100%; justify-content: center; }
-  .dates { width: 100%; }
-  .dateInput { flex: 1; }
+  .controls {
+    gap: 12px;
+  }
+
+  .control,
+  .control.grow {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .segmented {
+    width: 100%;
+  }
+
+  .segmented button {
+    flex: 1;
+    text-align: center;
+  }
+
+  .reset {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .dates {
+    width: 100%;
+  }
+
+  .dateInput {
+    flex: 1;
+  }
 
   /* The date stops being a gutter and becomes the entry's first line. */
   .entry {
@@ -692,9 +780,20 @@
     padding: 17px 0;
   }
 
-  .gutter { flex-direction: row; align-items: baseline; gap: 10px; padding-top: 0; }
-  .notes { font-size: 14px; }
-  .groupHead { top: 0; }
+  .gutter {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 10px;
+    padding-top: 0;
+  }
+
+  .notes {
+    font-size: 14px;
+  }
+
+  .groupHead {
+    top: 0;
+  }
 
   .timelineWrapper {
     padding: 14px;

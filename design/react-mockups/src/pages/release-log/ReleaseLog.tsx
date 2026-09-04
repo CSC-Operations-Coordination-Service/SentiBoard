@@ -151,8 +151,8 @@ export default function ReleaseLog() {
     <>
       <PageHeader
         crumb="Processors proposal"
-        title="Release Log"
-        sub="A visual timeline of every processor release. Use the filters to narrow by mission, date range, or search the release notes. Hover over events to see details."
+        title="Release Timeline"
+        sub="A visual timeline of every processor release organized by date. Click on events to expand and view full release notes, satellites, and processor details. Filter by mission, date range, or search across all release information."
       />
 
       <section className="wrap pad">

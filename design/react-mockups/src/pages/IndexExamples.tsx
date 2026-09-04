@@ -456,15 +456,15 @@ const AVAIL_CARDS = [
 const PROC_CARDS = [
   {
     to: "/examples/version-matrix", img: CARD_ART.versionMatrix, title: "a) Processors · Version matrix",
-    desc: "Processors are arranged in rows with baseline versions in columns. Cells show current (filled) and replaced (hollow) versions, with a mission filter to narrow rows and display release dates and impacted satellites.",
+    desc: "Processors are arranged in rows with baseline versions in columns.",
   },
   {
-    to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors · Release log",
-    desc: "Release notes appear in reverse order, with filtering options and no status indicators.",
+    to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors · Release Timeline",
+    desc: "Release notes appear in order, with filtering options and no status indicators.",
   },
   {
-    to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Version compare",
-    desc: "A focused diff compares two processor baselines, showing changes side-by-side with a summary and a link to the latest release.",
+    to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Gantt timeline",
+    desc: "A scrollable gantt-style timeline showing all baseline releases for a selected processor over time.",
   },
 ];
 
