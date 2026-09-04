@@ -4,18 +4,13 @@ import { Collapse, useMediaQuery } from "@/components/ui";
 import { PERIODS, inPeriod, type PeriodId } from "@/data/period";
 
 /* =============================================================================
-   DEVOCS-219 — Events page concepts, telemetry register. PROPOSALS only; the real
+   DEVOCS-219 — Events page concept: ORBITAL TIMELINE. PROPOSALS only; the real
    Events page (/events) is untouched. Reachable at /examples/events-spacex.
-
-   Two layouts behind one tab bar, so they can be compared without leaving the page:
 
      A · ORBITAL TIMELINE — missions on the Y axis, the month's days on the X, every
          event a block on its mission's track. Answers "what was happening, to whom,
          and for how long" in one read. Lanes are packed so overlapping events on the
          same mission stack instead of hiding each other.
-
-     B · TELEMETRY GRID — the month as day tiles carrying micro status pills. Answers
-         "which days went wrong" first, then opens the day's log on the right.
 
    COMMON WITH THE DATA AVAILABILITY MOCK-UPS, as asked:
      · Theme is declared at the top of the app and only read here — no in-page toggle,
@@ -703,73 +698,8 @@ function ConceptA({
 }
 
 // -----------------------------------------------------------------------------
-// CONCEPT B — telemetry grid
-// -----------------------------------------------------------------------------
-
-function ConceptB({
-  events,
-  year,
-  month,
-  onOpen,
-}: {
-  events: MissionEvent[];
-  year: number;
-  month: number;
-  onOpen: (day: number) => void;
-}) {
-  const total = daysInMonth(year, month);
-  const lead = dowIndex(utc(year, month, 1));
-  const byDay = useMemo(() => {
-    const map = new Map<number, MissionEvent[]>();
-    events.forEach((e) => eventDays(e, year, month).forEach((d) => map.set(d, [...(map.get(d) ?? []), e])));
-    return map;
-  }, [events, year, month]);
-
-  return (
-    <div className="evx-grid">
-      <div className="evx-grid-dow">
-        {DOW.map((d) => (
-          <span key={d}>{d}</span>
-        ))}
-      </div>
-      <div className="evx-grid-tiles">
-        {Array.from({ length: lead }, (_, i) => (
-          <div className="evx-tile blank" key={`b${i}`} aria-hidden />
-        ))}
-        {Array.from({ length: total }, (_, i) => i + 1).map((day) => {
-          const dayEvents = byDay.get(day) ?? [];
-          const status = dayStatus(dayEvents);
-          const impacted = dayEvents.reduce((n, e) => n + e.datatakes.length, 0);
-          return (
-            <button
-              className={`evx-tile ${status.toLowerCase()}`}
-              key={day}
-              style={{ ["--k" as string]: STATUS_VAR[status] }}
-              onClick={() => onOpen(day)}
-              aria-label={`${fmtDate(utc(year, month, day))} — ${status}, ${dayEvents.length} events`}
-            >
-              <span className="evx-tile-d">{pad(day)}</span>
-              <span className="evx-tile-s">{status}</span>
-              <span className="evx-tile-pills">
-                {dayEvents.slice(0, 4).map((e) => (
-                  <i key={e.id} style={{ background: KIND_VAR[e.kind] }} />
-                ))}
-                {dayEvents.length > 4 && <em>+{dayEvents.length - 4}</em>}
-              </span>
-              {impacted > 0 && <span className="evx-tile-dtk">{impacted} DTK</span>}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
 // Page
 // -----------------------------------------------------------------------------
-
-type View = "A" | "B";
 
 /* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
 const NARROW = "(max-width: 760px)";
@@ -786,12 +716,10 @@ const MIN_BLOCK_PCT = { wide: 0, narrow: 7.5 };
 export default function EventsSpaceXConcepts() {
   // Theme is declared at the top of the app; this page only reads it.
   const { theme } = useTheme();
-  const [view, setView] = useState<View>("A");
   const [year, setYear] = useState(Y);
   const [month, setMonth] = useState(M);
   const [period, setPeriod] = useState<PeriodId>("custom"); // "custom" = the whole displayed month
   const [openEvent, setOpenEvent] = useState<MissionEvent | null>(null);
-  const [openDay, setOpenDay] = useState<number | null>(null);
 
   /* The colour key is reference material, not a control: on a phone it is seven rows of legend
      between the tabs and the actual month, so it folds away there. */
@@ -801,7 +729,6 @@ export default function EventsSpaceXConcepts() {
 
   const step = useCallback((delta: number) => {
     setOpenEvent(null);
-    setOpenDay(null);
     setMonth((m) => {
       const next = m + delta;
       if (next < 0) {
@@ -832,12 +759,6 @@ export default function EventsSpaceXConcepts() {
   const impacted = events.reduce((n, e) => n + e.datatakes.length, 0);
   const lost = events.reduce((n, e) => n + e.datatakes.filter((d) => d.status === "UNAVAILABLE").length, 0);
 
-  const dayEvents = useMemo(() => {
-    if (openDay === null) return [];
-    return events
-      .filter((e) => eventDays(e, year, month).includes(openDay))
-      .sort((a, b) => a.start.getTime() - b.start.getTime());
-  }, [openDay, events, year, month]);
 
   const legend = (
     <div className="evx-legend">
@@ -892,15 +813,6 @@ export default function EventsSpaceXConcepts() {
 
         {/* ---------------- controls ---------------- */}
         <div className="evx-bar">
-          <div className="evx-tabs" role="tablist" aria-label="Layout concept">
-            <button role="tab" aria-selected={view === "A"} className={view === "A" ? "on" : ""} onClick={() => setView("A")}>
-              A · ORBITAL TIMELINE
-            </button>
-            <button role="tab" aria-selected={view === "B"} className={view === "B" ? "on" : ""} onClick={() => setView("B")}>
-              B · TELEMETRY GRID
-            </button>
-          </div>
-
           <div className="evx-controls">
             <div className="evx-month">
               <button onClick={() => step(-1)} aria-label="Previous month"><IconPrev /></button>
@@ -938,9 +850,9 @@ export default function EventsSpaceXConcepts() {
         {/* ---------------- the concept ---------------- */}
         {events.length === 0 ? (
           <p className="evx-none">NO EVENTS IN {MONTH_ABBR[month]} {year} FOR THE SELECTED PERIOD</p>
-        ) : view === "A" ? (
+        ) : (
           <>
-            {/* A scrolls sideways by nature — a month of days cannot be shown at phone width and
+            {/* Scrolls sideways by nature — a month of days cannot be shown at phone width and
                 still be readable. Say so, rather than leaving the cut-off edge to be noticed. */}
             {narrow && <p className="evx-scrollhint">SWIPE THE TIMELINE TO MOVE THROUGH THE MONTH →</p>}
             <ConceptA
@@ -952,8 +864,6 @@ export default function EventsSpaceXConcepts() {
               minBlockPct={narrow ? MIN_BLOCK_PCT.narrow : MIN_BLOCK_PCT.wide}
             />
           </>
-        ) : (
-          <ConceptB events={events} year={year} month={month} onOpen={setOpenDay} />
         )}
 
       </div>
@@ -974,35 +884,6 @@ export default function EventsSpaceXConcepts() {
         </Overlay>
       )}
 
-      {/* ---------------- B: day slide-over ---------------- */}
-      {openDay !== null && (
-        <Overlay side="right" labelledBy="evx-day-t" onClose={() => setOpenDay(null)}>
-          <header className="evx-panel-head">
-            <div>
-              <span className="evx-panel-tag">DAY LOG · UTC</span>
-              <h3 id="evx-day-t">{fmtDate(utc(year, month, openDay))}</h3>
-            </div>
-            <button className="evx-x" onClick={() => setOpenDay(null)} aria-label="Close day log"><IconClose /></button>
-          </header>
-          <div className="evx-panel-body">
-            {dayEvents.length === 0 ? (
-              <p className="evx-ev-none">NO EVENTS LOGGED — NOMINAL DAY</p>
-            ) : (
-              dayEvents.map((e) => (
-                <article className="evx-log" key={e.id}>
-                  <div className="evx-log-time">
-                    <b>{fmtTime(e.start)}</b>
-                    <span>{durationLabel(e.start, e.end)}</span>
-                  </div>
-                  <div className="evx-log-body">
-                    <EventBody event={e} />
-                  </div>
-                </article>
-              ))
-            )}
-          </div>
-        </Overlay>
-      )}
     </div>
   );
 }
@@ -1019,16 +900,16 @@ const CSS = `
   --evx-mono: "JetBrains Mono", "Geist Mono", var(--font-mono, ui-monospace), "SFMono-Regular", Menlo, Consolas, monospace;
   --evx-sans: var(--font-display, var(--font-sans, "Inter")), system-ui, -apple-system, sans-serif;
 
-  --evx-bg: #08090a;
-  --evx-panel: #0d0e12;
-  --evx-panel-2: #101218;
-  --evx-line: #1b1e25;
-  --evx-line-2: #2b303a;
-  --evx-text: #e9ecf1;
-  --evx-dim: #8a919d;
-  --evx-faint: #565d6a;
-  --evx-accent: #00e5ff;
-  --evx-accent-soft: rgba(0, 229, 255, 0.1);
+  --evx-bg: #1a1f25;
+  --evx-panel: #343a40;
+  --evx-panel-2: #252b33;
+  --evx-line: #45787e;
+  --evx-line-2: #4ebec6;
+  --evx-text: #eef1f6;
+  --evx-dim: #79818d;
+  --evx-faint: #eef1f6;
+  --evx-accent: #12b1bf;
+  --evx-accent-soft: rgba(18, 177, 191, 0.12);
 
   --evx-ok: #00e08a;
   --evx-warn: #ffb020;
@@ -1058,8 +939,8 @@ const CSS = `
   --evx-line-2: #b9c0c9;
   --evx-text: #14171c;
   --evx-dim: #4d5560;
-  --evx-faint: #79818d;
-  --evx-accent: #007c93;
+  --evx-faint: #dde1e6;
+  --evx-accent: #b9c0c9;
   --evx-accent-soft: rgba(0, 124, 147, 0.08);
 
   --evx-ok: #00875a;
@@ -1100,14 +981,6 @@ const CSS = `
 
 /* ---------- control bar ---------- */
 .evx-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin: 24px 0 14px; }
-.evx-tabs { display: flex; gap: 1px; background: var(--evx-line); border: 1px solid var(--evx-line); }
-.evx-tabs button {
-  padding: 10px 18px; border: 0; background: var(--evx-panel); color: var(--evx-dim); cursor: pointer;
-  font-family: var(--evx-mono); font-size: 10.5px; letter-spacing: 0.16em;
-  transition: color 0.15s, background 0.15s;
-}
-.evx-tabs button:hover { color: var(--evx-text); }
-.evx-tabs button.on { background: var(--evx-accent); color: var(--evx-bg); font-weight: 600; }
 .evx-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .evx-month { display: flex; align-items: center; gap: 1px; background: var(--evx-line); border: 1px solid var(--evx-line); }
 .evx-month button {
@@ -1182,29 +1055,6 @@ const CSS = `
   font-family: var(--evx-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--evx-faint);
 }
 
-/* ---------- concept B ---------- */
-.evx-grid { border: 1px solid var(--evx-line); background: var(--evx-panel); }
-.evx-grid-dow { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--evx-panel-2); border-bottom: 1px solid var(--evx-line); }
-.evx-grid-dow span { padding: 9px 12px; font-family: var(--evx-mono); font-size: 9px; letter-spacing: 0.18em; color: var(--evx-faint); }
-.evx-grid-tiles { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--evx-line); }
-.evx-tile {
-  position: relative; display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
-  min-height: 104px; padding: 9px 10px; border: 0; background: var(--evx-panel);
-  color: var(--evx-text); cursor: pointer; text-align: left; transition: background 0.12s;
-}
-.evx-tile.blank { background: var(--evx-panel-2); cursor: default; }
-.evx-tile:not(.blank):hover { background: var(--evx-accent-soft); }
-.evx-tile:focus-visible { outline: 1px solid var(--evx-accent); outline-offset: -1px; }
-.evx-tile::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--k); }
-.evx-tile.blank::before { display: none; }
-.evx-tile.nominal::before { opacity: 0.35; }
-.evx-tile-d { font-family: var(--evx-mono); font-size: 17px; font-variant-numeric: tabular-nums; }
-.evx-tile-s { font-family: var(--evx-mono); font-size: 8.5px; letter-spacing: 0.14em; color: var(--k); }
-.evx-tile-pills { display: flex; align-items: center; gap: 3px; margin-top: auto; }
-.evx-tile-pills i { width: 100%; min-width: 12px; max-width: 22px; height: 4px; }
-.evx-tile-pills em { font-style: normal; font-family: var(--evx-mono); font-size: 8.5px; color: var(--evx-faint); }
-.evx-tile-dtk { font-family: var(--evx-mono); font-size: 8.5px; letter-spacing: 0.1em; color: var(--evx-faint); }
-
 /* ---------- overlays ---------- */
 .evx-backdrop { position: fixed; inset: 0; z-index: 300; display: flex; background: var(--evx-scrim); animation: evx-fade 0.16s ease; }
 .evx-backdrop.center { align-items: center; justify-content: center; padding: 24px; }
@@ -1266,16 +1116,6 @@ const CSS = `
 .evx-dtk-bar i { display: block; height: 100%; }
 .evx-dtk-pct { font-family: var(--evx-mono); font-size: 10px; color: var(--evx-dim); font-variant-numeric: tabular-nums; text-align: right; }
 
-/* ---------- day log ---------- */
-.evx-log { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--evx-line); }
-.evx-log:first-child { padding-top: 0; }
-.evx-log:last-child { border-bottom: 0; }
-.evx-log-time { display: flex; flex-direction: column; gap: 3px; font-family: var(--evx-mono); }
-.evx-log-time b { font-size: 13px; color: var(--evx-accent); font-variant-numeric: tabular-nums; }
-.evx-log-time span { font-size: 9px; letter-spacing: 0.1em; color: var(--evx-faint); }
-.evx-log-body { min-width: 0; }
-.evx-log-body .evx-ev-kvs { grid-template-columns: repeat(2, 1fr); }
-
 /* ---------- footer ---------- */
 .evx-foot {
   display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
@@ -1295,7 +1135,6 @@ const CSS = `
   .evx-bar { align-items: stretch; }
   .evx-backdrop.center { padding: 0; }
   .evx-popover { max-height: 100vh; }
-  .evx-log { grid-template-columns: 1fr; }
 }
 
 /* =============================================================================
@@ -1327,8 +1166,6 @@ const CSS = `
 
   /* ---------- control bar ---------- */
   .evx-bar { flex-direction: column; align-items: stretch; gap: 12px; margin: 18px 0 12px; }
-  .evx-tabs { width: 100%; }
-  .evx-tabs button { flex: 1; min-height: 44px; padding: 10px 6px; font-size: 9.5px; letter-spacing: 0.08em; }
   .evx-controls { flex-direction: column; align-items: stretch; gap: 12px; }
   .evx-month { width: 100%; }
   .evx-month button { flex: 0 0 44px; width: 44px; height: 44px; }
@@ -1377,23 +1214,6 @@ const CSS = `
   .evx-block { height: 44px; min-width: 44px; padding: 0 8px; font-size: 10px; }
   .evx-block-t { line-height: 42px; }
 
-  /* ---------- concept B ---------- */
-  /* minmax(0,1fr) so the seven columns fit the width instead of scrolling sideways — the day
-     header above them does not scroll, so any horizontal offset desynced the two. */
-  .evx-grid-tiles { grid-template-columns: repeat(7, minmax(0, 1fr)); overflow-x: visible; }
-  .evx-grid-dow span { padding: 8px 4px; font-size: 8px; letter-spacing: 0.06em; text-align: center; }
-  .evx-tile { min-height: 76px; gap: 4px; padding: 7px 5px; align-items: center; }
-  .evx-tile-d { font-size: 14px; }
-  /* The status word does not fit a ~50px tile ("MAINTENANCE" alone is wider). It is already
-     carried by the bar across the top of the tile, which is thickened to compensate, and named
-     in full in the day log the tile opens. */
-  .evx-tile-s { display: none; }
-  .evx-tile::before { height: 3px; }
-  .evx-tile.nominal::before { opacity: 0.5; }
-  .evx-tile-pills { gap: 2px; align-self: stretch; }
-  .evx-tile-pills i { min-width: 6px; max-width: none; height: 4px; }
-  .evx-tile-dtk { font-size: 8px; letter-spacing: 0.04em; }
-
   /* ---------- overlays ---------- */
   .evx-popover { max-height: 100dvh; }
   .evx-slideover { width: 100%; height: 100dvh; border-left: 0; }
@@ -1413,14 +1233,9 @@ const CSS = `
   .evx-foot { gap: 6px; font-size: 9px; }
 }
 
-/* Large phones and below (≤430px) — the seven day columns are at their tightest here. */
+/* Large phones and below (≤430px) */
 @media (max-width: 430px) {
   .evx-wrap { padding: 16px 10px 36px; }
   .evx-head .ex-hero-bg { inset: -16px -10px 0; }
-  .evx-tabs button { font-size: 9px; letter-spacing: 0.05em; padding: 10px 4px; }
-  .evx-tile { min-height: 70px; padding: 6px 3px; }
-  .evx-tile-d { font-size: 13px; }
-  .evx-tile-dtk { font-size: 7.5px; }
-  .evx-grid-dow span { font-size: 7.5px; padding: 7px 2px; }
 }
 `;
