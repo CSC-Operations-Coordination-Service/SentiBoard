@@ -18,7 +18,7 @@ import {
 
 export {
   MISSION_NAMES, MISSION_ORDER, ageLabel, monthsBetween,
-  type MissionId, type ReleaseRecord,
+  type MissionId, type ProcessorGroup, type ReleaseRecord,
 } from "@/data/processor-releases";
 
 /** Only processors with at least two baselines can be compared; one with fewer has nothing to diff.

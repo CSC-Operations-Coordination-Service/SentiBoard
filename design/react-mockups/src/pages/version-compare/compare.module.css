@@ -15,8 +15,8 @@
   gap: 14px;
   padding: 16px;
   margin-bottom: 20px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  background: #0e1017;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-lg);
 }
 
@@ -32,7 +32,7 @@
   font-size: 10px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: #9aa4b4;
 }
 
 /* Matches the select treatment in styles/data-availability.css → .da-field select. */
@@ -40,25 +40,25 @@
   width: 100%;
   height: 36px;
   padding: 0 32px 0 12px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-sm);
-  background-color: var(--bg-3);
-  color: var(--text);
+  background-color: #12151e;
+  color: #eef1f6;
   font-family: var(--font-mono);
   font-size: 13px;
   cursor: pointer;
   appearance: none;
   outline: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--text-mute) 50%),
-    linear-gradient(135deg, var(--text-mute) 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, #9aa4b4 50%),
+    linear-gradient(135deg, #9aa4b4 50%, transparent 50%);
   background-position: calc(100% - 16px) center, calc(100% - 11px) center;
   background-size: 5px 5px, 5px 5px;
   background-repeat: no-repeat;
   transition: border-color 0.2s var(--ease);
 }
 
-.select:hover { border-color: var(--line-strong); }
-.select:focus { border-color: var(--accent); }
+.select:hover { border-color: rgba(255, 255, 255, 0.2); }
+.select:focus { border-color: #00c7d6; }
 
 .actions { display: flex; align-items: center; gap: 8px; }
 
@@ -68,10 +68,10 @@
   gap: 7px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--r-sm);
   background: transparent;
-  color: var(--text-dim);
+  color: #c1c7d0;
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -80,9 +80,14 @@
   transition: color 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
 }
 
-.btn:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+.btn:hover:not(:disabled) {
+  color: #eef1f6;
+  border-color: #00c7d6;
+  background: rgba(0, 199, 214, 0.1);
+}
+
 .btn:disabled { opacity: 0.4; cursor: default; }
-.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid #00c7d6; outline-offset: 2px; }
 
 /* -------------------- summary strip -------------------- */
 .summary {
@@ -91,8 +96,8 @@
   flex-wrap: wrap;
   gap: 1px;
   margin-bottom: 20px;
-  background: var(--line);
-  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-md);
   overflow: hidden;
 }
@@ -104,7 +109,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 12px 15px;
-  background: var(--bg-2);
+  background: #0e1017;
 }
 
 .statK {
@@ -112,30 +117,31 @@
   font-size: 9.5px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: #9aa4b4;
 }
 
 .statV {
   font-family: var(--font-mono);
   font-size: 16px;
   line-height: 1.25;
-  color: var(--text);
+  color: #eef1f6;
   font-variant-numeric: tabular-nums;
 }
 
-.statV.dim { color: var(--text-dim); font-size: 13px; }
+.statV.dim { color: #c1c7d0; font-size: 13px; }
 
 /* The baselines a comparison jumps over. */
 .skipped { display: flex; flex-wrap: wrap; gap: 5px; }
 
 .skip {
   display: inline-flex;
-  padding: 2px 7px;
+  padding: 3px 10px;
   border-radius: var(--r-sm);
-  background: var(--pill-bg);
+  background: rgba(0, 199, 214, 0.1);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-dim);
+  color: #c1c7d0;
+  border: 1px solid rgba(0, 199, 214, 0.2);
 }
 
 /* -------------------- the two panels -------------------- */
@@ -148,14 +154,14 @@
 
 .panel {
   min-width: 0;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  background: #0e1017;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--r-lg);
   overflow: hidden;
 }
 
 /* The later baseline is the one being asked about, so its panel gets the accent edge. */
-.panel.later { border-color: var(--line-strong); }
+.panel.later { border-color: rgba(0, 199, 214, 0.3); }
 
 .panelHead {
   display: flex;
@@ -163,8 +169,8 @@
   gap: 10px;
   flex-wrap: wrap;
   padding: 13px 16px;
-  background: var(--bg-3);
-  border-bottom: 1px solid var(--line);
+  background: #12151e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .side {
@@ -172,16 +178,16 @@
   font-size: 9.5px;
   letter-spacing: var(--track);
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: #9aa4b4;
 }
 
-.panel.later .side { color: var(--accent-2); }
+.panel.later .side { color: #00c7d6; }
 
 .ver {
   font-family: var(--font-mono);
   font-size: 19px;
   line-height: 1;
-  color: var(--text);
+  color: #eef1f6;
   font-variant-numeric: tabular-nums;
 }
 
@@ -189,7 +195,7 @@
   margin-left: auto;
   font-family: var(--font-mono);
   font-size: 11px;
-  color: var(--text-dim);
+  color: #c1c7d0;
   white-space: nowrap;
 }
 
@@ -199,7 +205,7 @@
   gap: 6px;
   flex-wrap: wrap;
   padding: 10px 16px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .metaLab {
@@ -207,28 +213,28 @@
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: #9aa4b4;
   margin-right: 2px;
 }
 
 .sat {
   display: inline-flex;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: var(--r-sm);
-  background: var(--pill-bg);
+  background: rgba(154, 164, 180, 0.15);
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--text-dim);
+  color: #c1c7d0;
 }
 
 /* A satellite only this side carries — the same +/- vocabulary as the note lines. */
 .sat.only {
-  background: color-mix(in srgb, var(--accent) 14%, var(--bg-2));
-  color: var(--text);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+  background: rgba(0, 199, 214, 0.15);
+  color: #eef1f6;
+  box-shadow: inset 0 0 0 1px rgba(0, 199, 214, 0.4);
 }
 
-.sat.none { color: var(--text-mute); font-style: italic; }
+.sat.none { color: #9aa4b4; font-style: italic; }
 
 /* -------------------- diffed notes -------------------- */
 .notes {
@@ -242,7 +248,7 @@
   grid-template-columns: 22px minmax(0, 1fr);
   gap: 8px;
   padding: 7px 16px 7px 10px;
-  color: var(--text-dim);
+  color: #c1c7d0;
 }
 
 .glyph {
@@ -250,39 +256,39 @@
   font-size: 12px;
   line-height: 1.6;
   text-align: center;
-  color: var(--text-mute);
+  color: #9aa4b4;
   user-select: none;
 }
 
 .text.bullet { padding-left: 15px; text-indent: -15px; }
 
 /* Carried by both baselines: no marker at all, so the eye goes to what moved. */
-.line.same { color: var(--text-mute); }
-.line.same .glyph { color: var(--line-strong); }
+.line.same { color: #9aa4b4; }
+.line.same .glyph { color: rgba(255, 255, 255, 0.15); }
 
 /* Present only in the earlier baseline — dropped by the later one. */
 .line.del {
-  background: var(--bg-3);
-  border-left: 2px solid var(--text-mute);
+  background: #12151e;
+  border-left: 2px solid #9aa4b4;
   padding-left: 8px;
 }
 
-.line.del .glyph { color: var(--text-dim); }
+.line.del .glyph { color: #c1c7d0; }
 
 /* Present only in the later baseline — what it added. */
 .line.add {
-  background: color-mix(in srgb, var(--accent) 9%, var(--bg-2));
-  border-left: 2px solid var(--accent);
+  background: rgba(0, 199, 214, 0.1);
+  border-left: 2px solid #00c7d6;
   padding-left: 8px;
-  color: var(--text);
+  color: #eef1f6;
 }
 
-.line.add .glyph { color: var(--accent-2); }
+.line.add .glyph { color: #00c7d6; }
 
 .noNotes {
   padding: 18px 16px;
   font-size: 13.5px;
-  color: var(--text-mute);
+  color: #9aa4b4;
   font-style: italic;
 }
 
@@ -294,12 +300,12 @@
   gap: 18px;
   margin-top: 18px;
   padding-top: 14px;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: #9aa4b4;
 }
 
 .key { display: inline-flex; align-items: center; gap: 7px; }
@@ -313,13 +319,123 @@
 
 .legendNote { margin-left: auto; text-transform: none; letter-spacing: 0.04em; }
 
+/* -------------------- gantt timeline -------------------- */
+.ganttContainer {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #0e1017;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-lg);
+}
+
+.ganttChart {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.ganttLabels {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.ganttLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  background: #12151e;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.labelVersion {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: #eef1f6;
+  line-height: 1;
+}
+
+.labelDate {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: #9aa4b4;
+  line-height: 1;
+}
+
+.ganttBars {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+.ganttRow {
+  position: relative;
+  height: 38px;
+  background: #12151e;
+  min-width: 0;
+}
+
+.ganttBar {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 24px;
+  border-radius: 3px;
+  background: rgba(154, 164, 180, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #9aa4b4;
+  font-weight: 500;
+  transition: all 0.2s var(--ease);
+}
+
+.ganttBar:hover {
+  background: rgba(154, 164, 180, 0.35);
+}
+
+/* Highlighting the "from" baseline */
+.ganttBar.barFrom {
+  background: rgba(0, 199, 214, 0.25);
+  color: #eef1f6;
+  box-shadow: inset 0 0 0 1.5px #00c7d6;
+}
+
+/* Highlighting the "to" baseline */
+.ganttBar.barTo {
+  background: rgba(0, 199, 214, 0.35);
+  color: #eef1f6;
+  box-shadow: inset 0 0 0 1.5px #00c7d6;
+}
+
+.barLabel {
+  display: inline-block;
+  padding: 0 6px;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 /* -------------------- empty state -------------------- */
 .empty {
   padding: 48px 20px;
-  border: 1px dashed var(--line-strong);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: var(--r-lg);
   text-align: center;
-  color: var(--text-mute);
+  color: #9aa4b4;
   font-size: 14px;
   line-height: 1.6;
 }

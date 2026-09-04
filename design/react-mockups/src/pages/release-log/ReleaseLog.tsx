@@ -4,130 +4,144 @@ import { PageHeader, Reveal } from "@/components/ui";
 import { PROCESSORS_LOG_DESCRIPTION } from "@/data/copy";
 import {
   FEED_BOUNDS, MISSION_ORDER, RELEASE_FEED,
-  type GroupBy, type MissionId, type ReleaseRecord,
-  filterFeed, groupFeed, highlight, tally,
+  type MissionId, type ReleaseRecord,
+  filterFeed, tally,
 } from "./mock";
 import s from "./log.module.css";
 
-/* Processors PROPOSAL 3 — "Release log". An ALTERNATIVE to the release timeline (the /processors
-   page) and to the version matrix, both untouched.
-
-   The other two are spatial: the timeline puts time on an axis you pan and zoom, the matrix puts
-   processors and baselines on two axes you read across. Both answer "which version, and when" — and
-   both, by construction, reduce the release notes to something you click to reveal. But the notes
-   are the part with the actual engineering content: what changed, by how much, and whether anything
-   needs reprocessing.
-
-   So this concept inverts the priority. It is a reverse-chronological feed with the notes rendered
-   IN FULL and never truncated, one entry per release, and the version and date demoted to metadata
-   around the prose. That makes it the only one of the three you can read straight through, and the
-   only one where "when did they last touch the cloud mask" is a search rather than a hunt.
-
-     · Entries are newest first, each carrying its processor, baseline version, release date and the
-       whole of its release notes.
-     · Grouping toggles between BY DATE — one bucket per calendar month, which reads as a changelog —
-       and BY PROCESSOR, which reads as per-product release histories.
-     · Three filters that compose: mission, a release-date range, and a search that covers the notes,
-       the processor and its products, the baseline version, the mission and the satellites — with
-       matches inside the notes marked in place.
-     · No status of any kind. The feed carries a version, a date and notes; the newest release is
-       simply the entry at the top, and nothing here labels anything "current" or "deprecated".
-
-   Colour comes entirely from the shared tokens, so this follows the app's global light/dark switch
-   with no palette of its own — see log.module.css. Static mock data throughout, from the fixture
-   shared with the matrix (@/data/processor-releases), authored in the upstream feed's own shape. */
-
 type MissionFilter = "All" | MissionId;
 
-const GROUPINGS: { id: GroupBy; label: string }[] = [
-  { id: "date", label: "By date" },
-  { id: "processor", label: "By processor" },
-];
+/** Timeline visualization component showing releases as dots with processor chips below. */
+function TimelineView({ entries, selectedDate, onDateSelect }: { entries: ReleaseRecord[]; selectedDate: number | null; onDateSelect: (date: number | null) => void }) {
+  if (entries.length === 0) return null;
 
-/** The notes, rendered in full. stripHtml has already turned the feed's HTML into lines, with list
- *  items prefixed "• " — so a line is a paragraph and a bullet keeps a hanging indent. */
-function Notes({ text, query }: { text: string; query: string }) {
-  return (
-    <div className={s.notes}>
-      {text
-        .split("\n")
-        .filter((line) => line.trim() !== "")
-        .map((line, i) => (
-          <p key={i} className={line.startsWith("• ") ? s.bullet : undefined}>
-            {highlight(line, query).map((seg, j) =>
-              seg.hit ? (
-                <mark className={s.hit} key={j}>{seg.text}</mark>
-              ) : (
-                <span key={j}>{seg.text}</span>
-              ),
-            )}
-          </p>
-        ))}
-    </div>
-  );
-}
+  const minDate = Math.min(...entries.map((e) => e.ms));
+  const maxDate = Math.max(...entries.map((e) => e.ms));
+  const span = maxDate - minDate || 1;
 
-/** `showProc` names the processor on the entry itself. Off when the feed is grouped BY processor,
- *  where the group header already says it and repeating it on every entry is just noise — there the
- *  baseline version alone identifies the entry. */
-function Entry({ rel, query, showProc }: { rel: ReleaseRecord; query: string; showProc: boolean }) {
+  // Group entries by date for positioning
+  const byDate = new Map<number, ReleaseRecord[]>();
+  for (const entry of entries) {
+    const key = entry.ms;
+    byDate.set(key, [...(byDate.get(key) ?? []), entry]);
+  }
+
+  const sortedDates = Array.from(byDate.keys()).sort((a, b) => a - b);
+
   return (
-    <article className={s.entry}>
-      <div className={s.gutter}>
-        <span className={s.day}>{rel.day}</span>
-        <span className={s.stamp}>{rel.iso}</span>
+    <div className={s.timelineContainer}>
+      <div className={s.timelineWrapper}>
+        {/* Timeline axis */}
+        <svg className={s.timelineAxis} viewBox="0 0 1000 40" preserveAspectRatio="none">
+          <line x1="0" y1="20" x2="1000" y2="20" stroke="currentColor" strokeWidth="1" opacity="0.2" />
+          {sortedDates.map((date) => {
+            const xPercent = ((date - minDate) / span) * 100;
+            return (
+              <g key={date}>
+                <line x1={`${xPercent}%`} y1="15" x2={`${xPercent}%`} y2="25" stroke="currentColor" opacity="0.3" />
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Release events */}
+        <div className={s.timelineEvents} style={{ minWidth: `${Math.max(100, span / (maxDate - minDate) * 100)}%` }}>
+          {sortedDates.map((date) => {
+            const xPercent = ((date - minDate) / span) * 100;
+            const releases = byDate.get(date)!;
+            const isSelected = selectedDate === date;
+
+            return (
+              <button
+                key={date}
+                className={`${s.timelineEvent} ${isSelected ? s.selected : ""}`}
+                style={{ left: `${xPercent}%` }}
+                onClick={() => onDateSelect(isSelected ? null : date)}
+                type="button"
+                aria-pressed={isSelected}
+              >
+                <div className={s.eventDot} title={new Date(date).toLocaleDateString()} />
+                <div className={s.eventLabel}>
+                  <span className={s.eventDate}>{new Date(date).toLocaleDateString()}</span>
+                  <div className={s.processorChips}>
+                    {releases.map((rel) => (
+                      <span key={`${rel.ipf}-${rel.baseline}`} className={s.procChip} title={`${rel.label} v${rel.baseline}`}>
+                        {rel.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className={s.body}>
-        <div className={showProc ? s.head : `${s.head} ${s.bare}`}>
-          {showProc && <h3 className={s.proc}>{rel.label}</h3>}
-          <span className={s.version}>{rel.baseline}</span>
-        </div>
-        {showProc && <div className={s.sub}>{rel.sub}</div>}
-
-        {rel.notes ? (
-          <Notes text={rel.notes} query={query} />
-        ) : (
-          // A release the feed carries no notes for is real, not a formatting gap — and in a view
-          // whose whole content is the notes, saying so plainly matters more than anywhere else.
-          <p className={s.noNotes}>No release notes published for this baseline.</p>
-        )}
-
-        <div className={s.sats}>
-          <span className={s.satsLab}>Satellites</span>
-          {rel.sats.length ? (
-            rel.sats.map((sat) => (
-              <span className={s.sat} key={sat}>{sat}</span>
-            ))
-          ) : (
-            <span className={`${s.sat} ${s.none}`}>not published in the feed</span>
+      {/* Details below timeline - only show when a date is selected */}
+      {selectedDate && (
+        <div className={s.timelineDetails}>
+          {byDate.has(selectedDate) && (
+            <div className={s.dateSection}>
+              <div className={s.dateHeader}>
+                <h3 className={s.dateTitle}>{new Date(selectedDate).toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</h3>
+                <button
+                  className={s.closeDetails}
+                  onClick={() => onDateSelect(null)}
+                  type="button"
+                  aria-label="Close details"
+                >
+                  ✕
+                </button>
+              </div>
+              {byDate.get(selectedDate)!.map((rel) => (
+                <div key={`${rel.ipf}-${rel.baseline}`} className={s.releaseCard}>
+                  <div className={s.cardHead}>
+                    <span className={s.cardProc}>{rel.label}</span>
+                    <span className={s.cardVersion}>{rel.baseline}</span>
+                  </div>
+                  <div className={s.cardSub}>{rel.sub}</div>
+                  {rel.notes ? (
+                    <div className={s.cardNotes}>
+                      {rel.notes
+                        .split("\n")
+                        .filter((line) => line.trim() !== "")
+                        .map((line, i) => (
+                          <p key={i} className={line.startsWith("• ") ? s.cardBullet : undefined}>
+                            {line.replace(/^•\s*/, "")}
+                          </p>
+                        ))}
+                    </div>
+                  ) : (
+                    <p className={s.noNotes}>No release notes published</p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      </div>
-    </article>
+      )}
+    </div>
   );
 }
 
 export default function ReleaseLog() {
   const [mission, setMission] = useState<MissionFilter>("All");
-  const [groupBy, setGroupBy] = useState<GroupBy>("date");
   const [query, setQuery] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [selectedDate, setSelectedDate] = useState<number | null>(null);
 
   const entries = useMemo(
     () => filterFeed(RELEASE_FEED, mission, query, dateFrom, dateTo),
     [mission, query, dateFrom, dateTo],
   );
-  const groups = useMemo(() => groupFeed(entries, groupBy), [entries, groupBy]);
   const counts = useMemo(() => tally(entries), [entries]);
 
   const dated = dateFrom !== "" || dateTo !== "";
-  const active = mission !== "All" || query !== "" || groupBy !== "date" || dated;
+  const active = mission !== "All" || query !== "" || dated;
 
   const reset = useCallback(() => {
     setMission("All");
-    setGroupBy("date");
     setQuery("");
     setDateFrom("");
     setDateTo("");
@@ -138,11 +152,11 @@ export default function ReleaseLog() {
       <PageHeader
         crumb="Processors proposal"
         title="Release Log"
-        sub="Every processor release as a reverse-chronological feed, with the release notes in full rather than hidden behind a click. Group by month or by processor, then narrow by mission, by release-date range, or by searching the releases."
+        sub="A visual timeline of every processor release. Use the filters to narrow by mission, date range, or search the release notes. Hover over events to see details."
       />
 
       <section className="wrap pad">
-        {/* ---------------- counters ---------------- */}
+        {/* Counters */}
         <Reveal className={s.counters}>
           <div className={s.counter}>
             <span className={s.counterK}>Releases</span>
@@ -164,7 +178,7 @@ export default function ReleaseLog() {
           </div>
         </Reveal>
 
-        {/* ---------------- controls ---------------- */}
+        {/* Controls */}
         <div className={s.controls}>
           <div className={`${s.control} ${s.grow}`}>
             <label className={s.controlLab} htmlFor="rl-search">Search</label>
@@ -173,7 +187,7 @@ export default function ReleaseLog() {
               <input
                 id="rl-search"
                 type="text"
-                placeholder="e.g. placeholder…"
+                placeholder="Search release notes..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -202,8 +216,6 @@ export default function ReleaseLog() {
             </div>
           </div>
 
-          {/* Release date range. Bounded to the span the feed actually covers, so the picker cannot
-              wander outside it, and both ends are optional — a `from` alone means "since". */}
           <div className={s.control}>
             <span className={s.controlLab}>Released between</span>
             <div className={s.dates}>
@@ -239,23 +251,6 @@ export default function ReleaseLog() {
           </div>
 
           <div className={s.control}>
-            <span className={s.controlLab} id="rl-group-lab">Group</span>
-            <div className={s.segmented} role="group" aria-labelledby="rl-group-lab">
-              {GROUPINGS.map((g) => (
-                <button
-                  key={g.id}
-                  type="button"
-                  className={groupBy === g.id ? s.on : ""}
-                  onClick={() => setGroupBy(g.id)}
-                  aria-pressed={groupBy === g.id}
-                >
-                  {g.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className={s.control}>
             <span className={s.controlLab}>&nbsp;</span>
             <button type="button" className={s.reset} onClick={reset} disabled={!active}>
               <RotateCcw size={12} />
@@ -264,11 +259,11 @@ export default function ReleaseLog() {
           </div>
         </div>
 
-        {/* ---------------- result line ---------------- */}
+        {/* Result summary */}
         <div className={s.resultLine}>
           <span>
             <b>{counts.releases}</b> of {RELEASE_FEED.length} releases
-            {query && <> matching “<b>{query}</b>”</>}
+            {query && <> matching "<b>{query}</b>"</>}
             {dated && (
               <>
                 {" "}released {dateFrom ? <>from <b>{dateFrom}</b></> : "up to"}
@@ -277,43 +272,21 @@ export default function ReleaseLog() {
               </>
             )}
           </span>
-          <span>
-            {groups.length} {groupBy === "date" ? "month" : "processor"}
-            {groups.length === 1 ? "" : "s"}
-          </span>
         </div>
 
-        {/* ---------------- feed ---------------- */}
-        {groups.length === 0 ? (
+        {/* Timeline visualization */}
+        {entries.length === 0 ? (
           <div className={s.empty}>
             <b>No releases match</b>
             {query
-              ? `Nothing matches “${query}” — the search covers the release notes, the processor, the baseline version, the mission and the satellites.`
+              ? `Nothing matches "${query}" — the search covers the release notes, the processor, the baseline version, the mission and the satellites.`
               : dated
                 ? "No releases in the selected date range."
                 : "No releases for the selected mission."}
           </div>
         ) : (
-          <Reveal className={s.feed}>
-            {groups.map((g) => (
-              <section className={s.group} key={g.key}>
-                <header className={s.groupHead}>
-                  <h2 className={s.groupTitle}>{g.title}</h2>
-                  <span className={s.groupMeta}>{g.meta}</span>
-                  <span className={s.groupCount}>
-                    {g.entries.length} release{g.entries.length === 1 ? "" : "s"}
-                  </span>
-                </header>
-                {g.entries.map((rel) => (
-                  <Entry
-                    key={`${rel.ipf}-${rel.baseline}-${rel.ms}`}
-                    rel={rel}
-                    query={query}
-                    showProc={groupBy !== "processor"}
-                  />
-                ))}
-              </section>
-            ))}
+          <Reveal>
+            <TimelineView entries={entries} selectedDate={selectedDate} onDateSelect={setSelectedDate} />
           </Reveal>
         )}
       </section>

@@ -4,40 +4,75 @@ import { PageHeader, Reveal } from "@/components/ui";
 import { PROCESSORS_COMPARE_DESCRIPTION } from "@/data/copy";
 import {
   COMPARABLE_BY_MISSION, DEFAULT_GROUP,
-  type DiffLine, type ReleaseRecord,
+  type DiffLine, type ReleaseRecord, type ProcessorGroup,
   ageLabel, currentOf, defaultPair, diffLines, earlierPool, groupOf,
   laterThan, noteLines, releaseOf, sideBySide, summarise,
 } from "./mock";
 import s from "./compare.module.css";
 
-/* Processors PROPOSAL 4 — "Version compare". An ALTERNATIVE to the three browsing views (the
-   /processors timeline, /examples/version-matrix and /examples/release-log), all untouched.
-
-   The other three are all built for scanning: the timeline to see when baselines landed, the matrix
-   to see which version each processor is on, the log to read the notes as they accumulate. Every one
-   of them answers "what is out there". None of them answers the question that actually precedes a
-   reprocessing decision: "we are on X, they have moved to Y — what is the difference?"
-
-   So this is not a browsing layout at all. It is two picks and an answer:
-
-     · choose a processor, then the two baselines to compare. The pickers enforce direction — the
-       "to" list only offers baselines released after the "from" — so an added line always means the
-       later baseline added it, and the +/- can never invert under the reader;
-     · "Compare to current" jumps the later side to the newest release on record, which is the
-       comparison anyone arrives with;
-     · a summary strip states what the two dates imply: the gap, how many baselines the jump covers,
-       which ones it skips over, and how the satellite coverage differs;
-     · the notes sit side by side, line-diffed. Lines both baselines carry are dimmed, lines only the
-       earlier one had are marked "−", lines the later one added are marked "+".
-
-   The diff is a real longest-common-subsequence over paragraphs (see mock.ts), not a similarity
-   guess, so a line that merely moved is never reported as changed.
-
-   No status of any kind: the feed carries a version, a date and notes, and "current" here means the
-   most recently released baseline, nothing more. Colour comes entirely from the shared tokens — see
-   compare.module.css. Static mock data, from the fixture shared with the other proposals. */
-
 const FIRST = DEFAULT_GROUP;
+
+/** Gantt-style timeline showing all baselines and highlighting the compared ones. */
+function GanttTimeline({ group, fromV, toV }: { group: ProcessorGroup; fromV: string; toV: string }) {
+  if (!group.releases.length) return null;
+
+  const releases = group.releases;
+  const minDate = releases[0].ms;
+  const maxDate = releases[releases.length - 1].ms;
+  const span = maxDate - minDate || 1;
+
+  const getXPosition = (ms: number) => ((ms - minDate) / span) * 100;
+  const getWidth = (startMs: number, endMs: number) => {
+    const start = Math.max(startMs, minDate);
+    const end = Math.min(endMs, maxDate);
+    return ((end - start) / span) * 100;
+  };
+
+  return (
+    <div className={s.ganttContainer}>
+      <div className={s.ganttChart}>
+        <div className={s.ganttLabels}>
+          {releases.map((rel) => (
+            <div key={rel.baseline} className={s.ganttLabel}>
+              <span className={s.labelVersion}>{rel.baseline}</span>
+              <span className={s.labelDate}>{rel.from}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className={s.ganttBars}>
+          {releases.map((rel, idx) => {
+            const nextRelease = releases[idx + 1];
+            const endMs = nextRelease ? nextRelease.ms : maxDate + (maxDate - minDate) * 0.1;
+            const isFrom = rel.baseline === fromV;
+            const isTo = rel.baseline === toV;
+
+            return (
+              <div key={rel.baseline} className={s.ganttRow}>
+                <div
+                  className={`${s.ganttBar} ${isFrom ? s.barFrom : ""} ${isTo ? s.barTo : ""}`}
+                  style={{
+                    left: `${getXPosition(rel.ms)}%`,
+                    width: `${getWidth(rel.ms, endMs)}%`,
+                  }}
+                  title={`${rel.baseline}: ${rel.iso}`}
+                >
+                  {(isFrom || isTo) && (
+                    <span className={s.barLabel}>
+                      {isFrom && "from"}
+                      {isFrom && isTo ? " / " : ""}
+                      {isTo && "to"}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Notes({ lines }: { lines: DiffLine[] }) {
   if (!lines.length) {
@@ -51,7 +86,6 @@ function Notes({ lines }: { lines: DiffLine[] }) {
             {line.op === "add" ? "+" : line.op === "del" ? "−" : "·"}
           </span>
           <span className={line.bullet ? `${s.text} ${s.bullet}` : s.text}>
-            {/* A screen reader gets the marker as words rather than punctuation. */}
             <span className="sr-only">
               {line.op === "add" ? "Added: " : line.op === "del" ? "Removed: " : ""}
             </span>
@@ -167,7 +201,7 @@ export default function VersionCompare() {
       />
 
       <section className="wrap pad">
-        {/* ---------------- pickers ---------------- */}
+        {/* Pickers */}
         <Reveal className={s.picker}>
           <div className={s.field}>
             <label className={s.fieldLab} htmlFor="vc-proc">Processor</label>
@@ -247,7 +281,12 @@ export default function VersionCompare() {
           <div className={s.empty}>Select a processor and two of its baselines to compare.</div>
         ) : (
           <>
-            {/* ---------------- summary ---------------- */}
+            {/* Gantt timeline showing all baselines */}
+            <Reveal>
+              <GanttTimeline group={group} fromV={fromV} toV={toV} />
+            </Reveal>
+
+            {/* Summary stats */}
             <Reveal className={s.summary}>
               <div className={s.stat}>
                 <span className={s.statK}>Comparing</span>
@@ -288,7 +327,7 @@ export default function VersionCompare() {
               </div>
             </Reveal>
 
-            {/* ---------------- side by side ---------------- */}
+            {/* Side-by-side comparison */}
             <div className={s.panels}>
               <Panel side="earlier" release={from} lines={split.from} onlySats={stats!.sats.onlyFrom} />
               <Panel side="later" release={to} lines={split.to} onlySats={stats!.sats.onlyTo} />
