@@ -58,17 +58,17 @@ While the current architecture successfully served the initial phase of the appl
 ### System Diagram
   - Sentiboard Overview
 
-  ![Sentiboard Overview](media\sentiboard_overview.svg)
+  ![Sentiboard Overview](media/sentiboard_overview.svg)
 
 
   - Sentiboard HA Deployment Strategy
 
-  ![Senti Board HA](media\sentiboard_ha.svg)
-  
+  ![Sentiboard HA](media/sentiboard_ha.svg)
 
-  - Backend Diagram
 
-  ![Backend Flow Chart](media\fastapigen_pygen_framework.svg)
+  - Backend Flow Diagram
+
+  ![Backend Flow Chart](media/fastapigen_pygen_framework.svg)
 
 ## Key Design Decisions
 
