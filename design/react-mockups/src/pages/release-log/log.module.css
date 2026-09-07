@@ -218,9 +218,9 @@
 }
 
 .segmented button.on {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 25%, transparent) 0%, color-mix(in srgb, var(--accent) 15%, transparent) 100%);
-  color: var(--accent);
-  border-bottom: 2px solid var(--accent);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent-teal-bright) 25%, transparent) 0%, color-mix(in srgb, var(--accent-teal-bright) 15%, transparent) 100%);
+  color: var(--accent-teal-bright);
+  border-bottom: 2px solid var(--accent-teal-bright);
 }
 
 .segmented button:focus-visible {
@@ -551,15 +551,15 @@
 }
 
 .timelineEvent.selected .eventDot {
-  box-shadow: 0 0 0 3px var(--bg-2), 0 0 12px 2px color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow: 0 0 0 3px var(--timeline-bg), 0 0 12px 2px color-mix(in srgb, var(--accent-teal-bright) 60%, transparent);
 }
 
 .eventDot {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--bg-2), 0 0 8px 0 color-mix(in srgb, var(--accent) 40%, transparent);
+  background: var(--accent-teal-bright);
+  box-shadow: 0 0 0 3px var(--timeline-bg), 0 0 8px 0 color-mix(in srgb, var(--accent-teal-bright) 40%, transparent);
   flex: none;
 }
 
@@ -592,15 +592,15 @@
   display: inline-block;
   padding: 4px 10px;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
-  color: var(--accent);
+  background: color-mix(in srgb, var(--accent-teal-bright) 15%, transparent);
+  color: var(--accent-teal-bright);
   font-family: var(--font-mono);
   font-size: 10px;
   white-space: nowrap;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-teal-bright) 30%, transparent);
 }
 
 .timelineDetails {

@@ -14,6 +14,8 @@
    /* Brand accent (shared across themes) — SentiBoard telemetry blue→cyan */
    --accent: #2e7df6;
    --accent-2: #12b1bf;
+   --accent-teal: #455e7e;
+   --accent-teal-bright: #5a8a99;
    --accent-grad: linear-gradient(90deg, #2e7df6, #36d0e0);
 
    /* Semantic status (shared) */
