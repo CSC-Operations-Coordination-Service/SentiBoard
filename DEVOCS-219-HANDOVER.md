@@ -64,15 +64,15 @@ Each links to the other, so you can flip between them without retyping URLs.
 The other `/examples/*` routes (`fleet`, `gallery`, `reveal`, indexed at `/examples`) are **index-page**
 proposals and are a separate question from the About layouts.
 
-**Three Events-page proposals to compare**, all alternatives to `/events` (the real calendar page is
+**Two Events-page proposals to compare**, both alternatives to `/events` (the real calendar page is
 untouched). They answer the same question differently — how to show what an event cost in product
 completeness — so review them together:
 
 | URL | Treatment |
 | --- | --- |
-| `/examples/events-log` | the month as a chronological operations log: no grid, events grouped by day |
-| `/examples/events-log-v3` | *mission tiles + side panel* — grid kept, each event a mission-coloured tile, day panel beside the grid; local palette (near-black, condensed type, orange accent) |
-| `/examples/events-manifest` | *filters + day drawer* — grid kept, one neutral dot per event and a completeness stripe only on days that lost data; mission / satellite / type / search filters, and day detail in an overlay **Day Manifest** drawer |
+| `/examples/events-manifest` | *filters + day drawer* — grid kept, one **event-type icon** per event (the same glyphs as the type filter pills) and a completeness stripe only on days that lost data; mission / satellite / type / search filters, and day detail in an overlay **Day Manifest** drawer |
+| `/examples/events-swimlanes` | *mission swimlanes* — the month by fleet instead of by date: one collapsible row per mission, collapsed by default, each header carrying its event count, affected datatakes and an "N active" badge |
+| `/examples/events-spacex` | *timeline + heatmap* — two layouts behind a tab bar: an orbital timeline (missions on Y, days on X) and a telemetry grid of day tiles over a UTC day log |
 
 All three use the same five completeness states as the production legend — Planned, Processing,
 Acquired, Partial, Unavailable — with one shared set of colours, and the same event-type glyphs as

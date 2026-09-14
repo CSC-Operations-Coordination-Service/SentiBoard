@@ -23,7 +23,8 @@ export const AVAILABILITY_DESCRIPTION =
 export const EVENTS_DESCRIPTION =
   "This page logs the events that could impede data production — calibration activities, satellite " +
   "manoeuvres, platform anomalies and ground-segment issues — against the month in which they " +
-  "occurred. Each dot in a day cell is one event, and a coloured stripe marks a day on which " +
+  "occurred. Each icon in a day cell is one event, drawn with that event type's glyph — the same " +
+  "icons as the event type filters — and a coloured stripe marks a day on which " +
   "publication completeness was degraded or lost. Filter the month by mission, by satellite, by " +
   "event type, or search by event title, satellite or datatake ID. Select any day to open its Day " +
   "Manifest, which lists that day's events in time order; expanding an event reveals the datatakes " +

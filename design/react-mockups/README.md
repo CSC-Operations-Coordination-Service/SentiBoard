@@ -54,14 +54,22 @@ The real pages above are unaffected by anything under `/examples`.
 | `/examples/gallery` | Index B — news + real-time console first, then a diagonal linkable gallery | `/` | `pages/IndexExamples.tsx` |
 | `/examples/reveal` | Index C — editorial first section, pages revealed on scroll | `/` | `pages/IndexExamples.tsx` |
 | `/examples/about` | About — layout B, hero led | `/about` | `pages/AboutRedesign.tsx` |
-| `/examples/events-log` | Events — the month as a chronological operations log | `/events` | `pages/EventsLog.tsx` |
-| `/examples/events-log-v3` | Events — mission manifest, **mission tiles + side panel**: each event a mission-coloured tile on its day, day detail in a panel beside the grid | `/events` | `pages/EventsLogV3.tsx` |
-| `/examples/events-manifest` | Events — mission manifest, **filters + day drawer**: one neutral dot per event, mission / satellite / type / search filters, day detail in an overlay Day Manifest drawer | `/events` | `pages/events-manifest/EventsManifest.tsx` |
+| `/examples/events-swimlanes` | **FINAL CONCEPT.** Events — **mission swimlanes**: one collapsible row per mission (S1, S2, S3, S5P), collapsed by default, each header carrying its event count, affected datatakes, types present and an "N active" badge | `/events` | `pages/events-swimlanes/EventsSwimlanes.tsx` |
+| `/examples/events-spacex` | **FINAL CONCEPT.** Events — two layouts behind a tab bar: **A · orbital timeline** (missions on Y, the month's days on X) and **B · telemetry grid** (day tiles over a UTC day log) | `/events` | `components/EventsSpaceXConcepts.tsx` |
+| `/examples/events-manifest` | **FINAL CONCEPT.** Events — mission manifest, **filters + day drawer**: mission / satellite / type / search filters, one **event-type icon** per event on its day, day detail in an overlay Day Manifest drawer | `/events` | `pages/events-manifest/EventsManifest.tsx` |
 | `/examples/acquisitions-globe` | Acquisitions — demand-driven globe (footprints, keyboard operation, sensing marks) + a "what changed" summary | `/acquisitions` | `pages/AcquisitionsGlobe.tsx` |
+| `/examples/acquisitions-ladder` | Acquisitions — **level ladder**: the page read as a processing chain rather than a map. Band 1 a fleet strip (one lane per satellite unit, scrubbable scenario clock splitting flown / sensing-now / scheduled, window presets, station notches); Band 2 the selected datatake's levels stacked bottom-to-top with the **yield drop named between rungs**; Band 3 per-mission mini-ladders. Ragged by design — S5P two rungs, S3 Level 2 as five instrument groups with nothing capped. No canvas, no 3D, no coastline geometry | `/acquisitions` | `pages/acquisitions-ladder/AcquisitionsLadder.tsx` |
 | `/examples/data-availability` | Data Availability — three donuts describing the current filter selection, over a sortable datatake table | `/availability` | `pages/DataAvailability.tsx` |
 
 `/about` and `/examples/about` are cross-linked in both directions and render the same canonical
 text from `src/data/about.ts` — they differ only in presentation.
+
+`/examples/acquisitions-globe` and `/examples/acquisitions-ladder` are cross-linked in both
+directions and read the same `ACQ_DATATAKES`. They are not competing versions of one layout: the
+globe is the **geographic** reading of acquisitions (where the fleet is sensing) and the ladder is
+the **pipeline** reading (where in the level chain the data is being lost). The ladder carries no
+map at all — geography is a lat/lon readout — which is what lets it drop the canvas, the 3D scene
+and `src/data/land.ts` entirely.
 
 ### Direct-URL only — styled placeholders
 
@@ -95,23 +103,55 @@ src/
   styles/tokens.css      Dark + light design tokens (semantic vars)
   styles/global.css      Component styles (nav, hero, cards, table, calendar, globe, timeline…)
   styles/examples.css    Styles used only by the /examples proposals
-  styles/events-log.css        /examples/events-log
-  styles/events-log-v3.css     /examples/events-log-v3
   styles/data-availability.css /examples/data-availability
   data/mock.ts           Static mock data mirroring the real domain shapes
   data/about.ts          Canonical About copy, shared by both About layouts
+  data/events-mock.ts    August 2026 Events data + helpers for the Mission swimlanes proposal,
+                         its only consumer. Colour comes from the app-level tokens (--evt-* event
+                         type, --cmp-* completeness), which are production's own two legends, so
+                         it cannot drift from the shipping dashboard.
   data/land.ts           Natural Earth 110m land outlines, drawn as globe coastlines
   components/            Nav, Footer, ThemeToggle, Partners, EventIcon, FeatureCard,
                          FilterBar, AcquisitionGlobe, shared UI (Reveal, Pill, PageHeader)
   pages/                 One file per route (IndexExamples.tsx holds four)
-  pages/events-manifest/ The one proposal kept in its own folder, because it is the only page
-                         that ships with its own data + stylesheet rather than reusing
-                         data/mock.ts and a file under styles/:
+  pages/events-manifest/ A final concept. Its mock.ts stays byte-identical with the Next.js
+                         copy (see below); manifest.module.css has diverged, because the
+                         responsive work landed here only:
                            EventsManifest.tsx      the page — filters, grid, Day Manifest drawer
                            mock.ts                 August 2026 events + the pure helpers
                            manifest.module.css     a CSS module, so its class names cannot
                                                    collide with global.css
+  pages/events-swimlanes/      Mission swimlanes.
+                           EventsSwimlanes.tsx     fleet totals, filters, four collapsible lanes
+                           swimlanes.module.css    CSS module; --sw-* are canvas aliases only
 ```
+
+### Events rework — DEVOCS-219
+
+**Three final concepts** are under comparison, and no further consolidation is planned:
+`events-swimlanes`, `events-spacex` and `events-manifest`. All three keep their routes as they are.
+
+Two earlier Events proposals were **removed** to keep the branch light — `events-calendar-grid`
+(a consolidation attempt that was not taken forward) and `events-log-v3` (mission tiles + side
+panel). Both are recoverable from git history; `events-log-v3` was committed work, the other was
+never committed.
+
+A kanban board grouped by event status was asked for and is **not built**: the Events feed has no
+lifecycle status field, so Active / Scheduled / Resolved cannot be populated without inventing one.
+The reading of the data model is in
+[`design/events-kanban-data-gap.md`](../events-kanban-data-gap.md).
+
+Wherever a view shows an "N active" badge, it means **datatake completeness still degraded, lost or
+in progress** — derived from completeness, not read from a status field. The single definition is
+`ACTIVE_DEFINITION` in `data/events-mock.ts`, and every page that shows the badge prints it.
+
+**Day markers in `events-manifest` are event-type icons**, not dots: one mark per event, drawn with
+the glyph its type carries in the filter pills and in the drawer rows, so the same event reads
+identically in all three places. They stay uncoloured — this page spends colour on completeness
+only, and the pills draw the same glyphs in the accent rather than in five hues, so shape carries
+type and the stripe under the cell carries loss. A day with more events than the cell can draw
+summarises the tail as "+n"; the cell's `aria-label` still names every event and every type, so the
+visual cap hides nothing from a screen reader. `MARKS_SHOWN` in `EventsManifest.tsx` is the cap.
 
 The same proposal also exists in the Next.js frontend at
 `frontend/app/examples/events/` — see `frontend/README.md`. `mock.ts` is byte-identical between
@@ -134,6 +174,30 @@ Module imagery lives in `public/assets/img/modules/` (self-contained, no hotlink
 
 These are placeholders for the mockup. For production, prefer official ESA/Copernicus
 mission imagery with proper attribution.
+
+### Proposal header art
+
+The ESA/Copernicus images in the same folder are used as header backdrops on the concept pages,
+one per page, via the shared `.ex-hero-bg` recipe in `styles/global.css`:
+
+| Page | Image |
+|---|---|
+| `/examples/events-manifest` | `Tibetan_Plateau.jpg` |
+| `/examples/events-swimlanes` | `Earth_rainforests.jpg` |
+| `/examples/events-spacex` | `Ice_Greenland.jpg` |
+| `/examples/data-availability` | `Tierra_Fuego_S1D.jpg` |
+| `/examples/data-availability-spacex` | `FLEX_Sentinel-3.jpg` |
+| `/examples/coverage-timeline` | `Protecting_Atlantic.jpg` |
+
+The pairing is arbitrary — assigned by a shuffle, not by subject — so treat any of it as swappable.
+`Earth_Australia.jpg`, `Earth_Crater.jpg` and `Earth_Moon.jpg` are unused and available.
+
+Two notes for whoever takes these to production. `Protecting_areas_of_the_Atlantic_Ocean_from_
+human_activity(2).jpg` is byte-identical to `Protecting_Atlantic.jpg` (same MD5) and can be
+deleted; its parentheses would also need URL-encoding in CSS. And these files are unoptimised —
+`Earth_rainforests.jpg` is 1.3 MB and `Protecting_Atlantic.jpg` 3000×4400 — so they want resizing
+and re-compressing before this is anything but a mock-up. Each still needs its individual ESA
+credit line recorded here.
 
 ## Design tokens
 
