@@ -9,7 +9,10 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  overflow: hidden;
+  overflow: visible !important;
+  width: 100vw !important;
+  margin-left: calc(-50vw + 50%) !important;
+  box-sizing: border-box !important;
 }
 
 .page-header::before {
@@ -23,9 +26,9 @@
 .page-header-inner {
   position: relative;
   z-index: 1;
-  max-width: var(--wrap);
-  margin: 0 auto;
-  padding: 0 clamp(18px, 4vw, 48px);
+  width: 100% !important;
+  padding: 0 clamp(18px, 4vw, 48px) !important;
+  box-sizing: border-box !important;
 }
 
 /* Breadcrumbs */

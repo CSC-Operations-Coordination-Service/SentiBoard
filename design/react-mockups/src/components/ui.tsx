@@ -106,11 +106,13 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
   title: string; sub?: string; crumb: string; desc?: ReactNode; img?: string;
 }) {
   return (
-    <div className={`page-head${img ? " ex-hero-host" : ""}`}>
+    <>
+      <style>{`.page-head .page-desc { max-width: none !important; }`}</style>
+      <div className={`page-head${img ? " ex-hero-host" : ""}`} style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)", boxSizing: "border-box" } as any}>
       {img && (
         <div className="ex-hero-bg" style={{ ["--ex-hero-img" as string]: `url("${img}")` }} aria-hidden />
       )}
-      <div className="wrap">
+      <div className="wrap" style={{ maxWidth: "none", margin: "0", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box" } as any}>
         <nav className="crumbs" aria-label="Breadcrumb">
           <Link to="/">Home</Link><span className="sep">/</span><span>{crumb}</span>
         </nav>
@@ -119,5 +121,6 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
         {desc && <PageDescription>{desc}</PageDescription>}
       </div>
     </div>
+    </>
   );
 }

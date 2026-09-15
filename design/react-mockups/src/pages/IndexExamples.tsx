@@ -428,7 +428,7 @@ const PAGE_CARDS = [
 
 const ACQ_CARDS = [
   {
-    to: "/examples/acquisitions-globe", img: CARD_ART.acquisitionsGlobe, title: "a) Acquisitions · Demand-driven globe",
+    to: "/examples/acquisitions-globe", img: CARD_ART.acquisitionsGlobe, title: "a) Acquisitions status",
     desc: "The 3D globe includes on-demand frames, cached coastlines, and a pause feature.",
   },
   /*{

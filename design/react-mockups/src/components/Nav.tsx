@@ -6,7 +6,7 @@ import Partners from "./Partners";
 
 const LINKS = [
   { to: "/examples/index1", label: "Index", end: true },
-  { to: "/acquisitions", label: "Acquisitions" },
+  { to: "/examples/acquisitions-globe", label: "Acquisitions" },
   { to: "/events", label: "Events" },
   { to: "/availability", label: "Data Availability" },
   { to: "/processors", label: "Processors" },

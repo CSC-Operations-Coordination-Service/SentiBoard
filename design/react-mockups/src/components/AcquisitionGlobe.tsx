@@ -482,6 +482,10 @@ const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
   );
 });
 
+function getDayFromIso(startIso: string): string {
+  return startIso.split('T')[0];
+}
+
 export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" }: { stations: Station[]; datatakes: AcqDatatake[]; rail?: "detail" | "plates" }) {
   const cvRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -497,6 +501,8 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   const [tickRove, setTickRove] = useState(0);  // roving tabindex across the sensing marks
   const [contact, setContact] = useState<string[]>([]);
   const [trackW, setTrackW] = useState(0);
+  const [satFilter, setSatFilter] = useState("*");
+  const [dayFilter, setDayFilter] = useState("*");
   const [isDark, setIsDark] = useState(() => {
     const theme = document.documentElement.getAttribute("data-theme");
     if (theme) return theme === "dark";
@@ -520,6 +526,26 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
 
   const invalidate = useCallback(() => invalidateRef.current(), []);
 
+  const filteredDatatakes = useMemo(() => {
+    return datatakes.filter(dt => {
+      if (satFilter !== "*" && dt.sat !== satFilter) return false;
+      if (dayFilter !== "*" && getDayFromIso(dt.startIso) !== dayFilter) return false;
+      return true;
+    });
+  }, [datatakes, satFilter, dayFilter]);
+
+  const uniqueSatellites = useMemo(() => {
+    const sats = new Set(datatakes.map(dt => dt.sat));
+    return Array.from(sats).sort();
+  }, [datatakes]);
+
+  const uniqueDays = useMemo(() => {
+    const daysSet = new Set<string>();
+    const baseData = satFilter !== "*" ? datatakes.filter(dt => dt.sat === satFilter) : datatakes;
+    baseData.forEach(dt => daysSet.add(getDayFromIso(dt.startIso)));
+    return Array.from(daysSet).sort().reverse();
+  }, [datatakes, satFilter]);
+
   useEffect(() => { setSel(0); selRef.current = 0; setTickRove(0); invalidate(); }, [datatakes, invalidate]);
 
   // Keep ref in sync with state so drawBase reads current value
@@ -532,7 +558,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   // screen-reader mirror) rotates the globe so that datatake faces the viewer, so a
   // far-side selection still reveals itself instead of staying hidden behind the globe.
   const select = useCallback((i: number) => {
-    const a = datatakes[i];
+    const a = filteredDatatakes[i];
     if (!a) return;
     setSel(i); selRef.current = i;
     const s = st.current;
@@ -541,7 +567,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
     s.flying = true;
     s.idleFrom = performance.now();
     invalidate();
-  }, [datatakes, invalidate]);
+  }, [filteredDatatakes, invalidate]);
 
   const setZoom = useCallback((z: number) => {
     const s = st.current;
@@ -902,8 +928,8 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       const labelShadow = isDark ? "rgba(0,0,0,0.85)" : "rgba(255,255,255,0.9)";
 
       // Selected last, so its outline is never buried under a neighbour's fill.
-      const order = datatakes.map((_, i) => i).sort((a, b) => Number(a === selRef.current) - Number(b === selRef.current));
-      for (const i of order) drawFootprint(datatakes[i], colOf(datatakes[i]), selRef.current === i, hoverRef.current === i);
+      const order = filteredDatatakes.map((_, i) => i).sort((a, b) => Number(a === selRef.current) - Number(b === selRef.current));
+      for (const i of order) drawFootprint(filteredDatatakes[i], colOf(filteredDatatakes[i]), selRef.current === i, hoverRef.current === i);
 
       // The limb goes on top of the footprints so nothing bleeds over the edge.
       ctx.strokeStyle = limbColor; ctx.lineWidth = 1;
@@ -935,7 +961,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         ctx.fillText(stn.name, p.x + 8, p.y + 3);
       });
 
-      datatakes.forEach((a, i) => {
+      filteredDatatakes.forEach((a, i) => {
         const p = proj(a.lat, a.lon);
         if (p.z <= 0) return;
         const col = colOf(a);
@@ -978,13 +1004,13 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       const mx = clientX - r.left, my = clientY - r.top;
       const geo = unproject(mx, my);
       if (geo) {
-        for (let i = datatakes.length - 1; i >= 0; i--) {
-          const f = datatakes[i].footprint;
+        for (let i = filteredDatatakes.length - 1; i >= 0; i--) {
+          const f = filteredDatatakes[i].footprint;
           if (f && f.length >= 4 && inRing(f, geo.lon, geo.lat)) return i;
         }
       }
       let best = -1, bd = 400;
-      datatakes.forEach((a, i) => {
+      filteredDatatakes.forEach((a, i) => {
         const p = proj(a.lat, a.lon);
         if (p.z > 0) { const d = (p.x - mx) ** 2 + (p.y - my) ** 2; if (d < bd) { bd = d; best = i; } }
       });
@@ -1074,8 +1100,8 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
         // Reset hands the rotation straight back to the globe rather than waiting out
         // the idle timer.
         case "0": case "Home": s.zoom = 1; s.R = s.baseR; s.yaw = 0; s.tilt = -0.42; s.flying = false; s.idleFrom = 0; break;
-        case "]": case "n": select((selRef.current + 1) % Math.max(1, datatakes.length)); break;
-        case "[": case "p": select((selRef.current - 1 + Math.max(1, datatakes.length)) % Math.max(1, datatakes.length)); break;
+        case "]": case "n": select((selRef.current + 1) % Math.max(1, filteredDatatakes.length)); break;
+        case "[": case "p": select((selRef.current - 1 + Math.max(1, filteredDatatakes.length)) % Math.max(1, filteredDatatakes.length)); break;
         case "Enter": case " ": togglePlayRef.current(); break;
         default: handled = false;
       }
@@ -1205,7 +1231,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   // window are dropped rather than hidden, and a mark only shows its id when there is
   // room for it — otherwise the labels collide as soon as passes cluster.
   const marks = useMemo(() => {
-    const all = datatakes
+    const all = filteredDatatakes
       .map((a, i) => ({ i, a, ms: sensingMs(a) }))
       .filter((m): m is { i: number; a: AcqDatatake; ms: number } => m.ms !== null)
       .map((m) => ({ ...m, pct: ((m.ms - DAY_START) / DAY_LEN) * 100 }))
@@ -1218,7 +1244,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       if (room) lastPx = px;
       return { ...m, showLabel: room };
     });
-  }, [datatakes, trackW]);
+  }, [filteredDatatakes, trackW]);
 
   useEffect(() => { setTickRove((i) => Math.max(0, Math.min(i, marks.length - 1))); }, [marks.length]);
 
@@ -1245,14 +1271,21 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
   };
   const activateMark = (m: { i: number; ms: number }) => { seek(m.ms); select(m.i); };
 
-  const dt = datatakes[sel] ?? datatakes[0];
+  useEffect(() => {
+    setSel(0);
+    selRef.current = 0;
+    setTickRove(0);
+    invalidate();
+  }, [satFilter, dayFilter, invalidate]);
+
+  const dt = filteredDatatakes[sel] ?? filteredDatatakes[0];
 
   // Every datatake in one dropdown, grouped by mission so all four constellations
   // are reachable without a satellite filter in front of them. Mission order is
   // numeric, so Sentinel-5P sorts after Sentinel-3 rather than between 1 and 2.
   const missionGroups = useMemo(() => {
     const byMission = new Map<string, { i: number; a: AcqDatatake }[]>();
-    datatakes.forEach((a, i) => {
+    filteredDatatakes.forEach((a, i) => {
       const mission = missionOf(a.sat);
       const bucket = byMission.get(mission);
       if (bucket) bucket.push({ i, a }); else byMission.set(mission, [{ i, a }]);
@@ -1260,7 +1293,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
     return [...byMission.entries()]
       .sort((x, y) => x[0].localeCompare(y[0], undefined, { numeric: true }))
       .map(([mission, items]) => ({ mission, items: [...items].sort((p, q) => p.a.id.localeCompare(q.a.id)) }));
-  }, [datatakes]);
+  }, [filteredDatatakes]);
 
   // Live description of the canvas for assistive tech. Kept in sync with the
   // selection, playback and station-contact state, and mirrored into a polite live
@@ -1270,8 +1303,8 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       ? `${contact.length} of ${stations.length} ground stations in contact: ${contact.join(", ")}.`
       : `No ground stations in contact of ${stations.length}.`;
     if (!dt) return "Interactive globe of Sentinel acquisitions. No datatakes match the current filters.";
-    return `Interactive globe of Sentinel acquisitions. ${datatakes.length} datatake${datatakes.length === 1 ? "" : "s"} plotted with their footprints. Selected: ${dt.id}, ${dt.sat} downlinking to ${dt.station}, ${dt.comp}% complete, status ${dt.status}, footprint centred at ${latLonText(dt.lat, dt.lon)}. ${contactText} Simulation ${playing ? "playing" : "paused"} at ${speed} times real time.`;
-  }, [datatakes, dt, playing, speed, contact, stations.length]);
+    return `Interactive globe of Sentinel acquisitions. ${filteredDatatakes.length} datatake${filteredDatatakes.length === 1 ? "" : "s"} plotted with their footprints. Selected: ${dt.id}, ${dt.sat} downlinking to ${dt.station}, ${dt.comp}% complete, status ${dt.status}, footprint centred at ${latLonText(dt.lat, dt.lon)}. ${contactText} Simulation ${playing ? "playing" : "paused"} at ${speed} times real time.`;
+  }, [filteredDatatakes, dt, playing, speed, contact, stations.length]);
 
   if (!dt) return null;
 
@@ -1279,37 +1312,130 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
 
   return (
     <>
-      {/* Datatake selector for the proposal variant — replaces the satellite/day
-          filter bar and the right column's list panel with one dropdown over every
-          mission, the way the legacy Acquisitions page selects a datatake. */}
+      {/* Toolbar with filters and metadata - matching mockup layout */}
       {rail === "plates" && (
-        <div className="dtk-select">
-          <label htmlFor={selectId}>List of Datatakes:</label>
-          <span className="dtk-select-field">
-            <select
-              id={selectId}
-              value={sel}
-              onChange={(e) => select(Number(e.target.value))}
-            >
-              {missionGroups.map((g) => (
-                <optgroup label={g.mission} key={g.mission}>
-                  {g.items.map(({ i, a }) => (
-                    <option value={i} key={a.id}>
-                      {OPT_DOT[a.cls]}  {a.id} · {a.sat} · {a.comp.toFixed(1)}% · {a.status}
-                    </option>
+        <div style={{
+          background: "var(--bg-2)",
+          borderBottom: "1px solid var(--line)",
+          padding: "8px 16px",
+          width: "100vw",
+          marginLeft: "calc(-50vw + 50%)"
+        }}>
+          {/* Filters row with breadcrumb and metadata */}
+          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "nowrap", minHeight: "56px" }}>
+            {/* Breadcrumb - inline */}
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", color: "var(--text-mute)", flexShrink: 0 }}>
+              <span>⌂</span>
+              <span>›</span>
+              <strong style={{ color: "var(--text)", whiteSpace: "nowrap" }}>Acquisitions Status</strong>
+            </div>
+
+            {/* Vertical separator */}
+            <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
+
+            {/* Filters */}
+            <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "nowrap" }}>
+            <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+              <label htmlFor={`${uid}-sat-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Satellite</label>
+              <select
+                id={`${uid}-sat-filter`}
+                value={satFilter}
+                onChange={(e) => setSatFilter(e.target.value)}
+                style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
+              >
+                <option value="*">All satellites</option>
+                {uniqueSatellites.map(sat => (
+                  <option key={sat} value={sat}>{sat}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+              <label htmlFor={`${uid}-day-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Day of acquisition</label>
+              <select
+                id={`${uid}-day-filter`}
+                value={dayFilter}
+                onChange={(e) => setDayFilter(e.target.value)}
+                style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
+              >
+                <option value="*">Any day</option>
+                {uniqueDays.map(day => (
+                  <option key={day} value={day}>{day}</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+              <label htmlFor={selectId} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>List of datatakes</label>
+              <span className="dtk-select-field">
+                <select
+                  id={selectId}
+                  value={sel}
+                  onChange={(e) => select(Number(e.target.value))}
+                  style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "280px" }}
+                >
+                  {missionGroups.map((g) => (
+                    <optgroup label={g.mission} key={g.mission}>
+                      {g.items.map(({ i, a }) => (
+                        <option value={i} key={a.id}>
+                          {OPT_DOT[a.cls]}  {a.id} · {a.sat} · {a.comp.toFixed(1)}% · {a.status}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
-                </optgroup>
-              ))}
-            </select>
-          </span>
-          <span className="dtk-select-meta">
-            {datatakes.length} datatake{datatakes.length === 1 ? "" : "s"} · {missionGroups.length} mission{missionGroups.length === 1 ? "" : "s"}
-          </span>
-          <KmlLinkDisplay datatake={dt} />
+                </select>
+              </span>
+            </div>
+
+            {/* Search button */}
+            <button
+              type="button"
+              style={{
+                background: "none",
+                border: "1px solid var(--line)",
+                borderRadius: "3px",
+                padding: "5px 8px",
+                color: "var(--text-mute)",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "12px",
+                flexShrink: 0
+              }}
+              title="Apply filters"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: "block" }}>
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.6-3.6" />
+              </svg>
+            </button>
+            </div>
+
+            {/* Another separator */}
+            <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
+
+            {/* Counts and source on the right */}
+            <div style={{ display: "flex", gap: "20px", alignItems: "center", fontSize: "10px", color: "var(--text-mute)", marginLeft: "auto", flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: "12px", whiteSpace: "nowrap" }}>
+                <span><strong style={{ color: "var(--text)" }}>{filteredDatatakes.length}</strong> datatake{filteredDatatakes.length === 1 ? "" : "s"}</span>
+                <span><strong style={{ color: "var(--text)" }}>{missionGroups.length}</strong> mission{missionGroups.length === 1 ? "" : "s"}</span>
+              </div>
+              <div style={{ display: "flex", gap: "4px", alignItems: "center", whiteSpace: "nowrap" }}>
+                <span>Official source</span>
+                <KmlLinkDisplay datatake={dt} />
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="acq-layout">
+      <div className="acq-layout" style={{
+        padding: "16px",
+        width: "100vw",
+        marginLeft: "calc(-50vw + 50%)",
+        boxSizing: "border-box"
+      }}>
         <div className="globe-card">
           <div className="globe-stage" ref={stageRef}>
             <canvas
@@ -1335,7 +1461,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
             <div className="sr-only">
               <h4>Datatakes plotted on the globe</h4>
               <ul>
-                {datatakes.map((a, i) => (
+                {filteredDatatakes.map((a, i) => (
                   <li key={a.id}>
                     <button
                       type="button"
@@ -1455,7 +1581,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                 acquisition and selects it on the globe.
               </p>
               <p className="sr-only" aria-live="polite">
-                {marks.length} of {datatakes.length} acquisitions fall inside the simulated day.
+                {marks.length} of {filteredDatatakes.length} acquisitions fall inside the simulated day.
               </p>
             </div>
           </div>
@@ -1467,7 +1593,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
           {rail === "detail" && (
             <div className="acq-list">
               <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
-              {datatakes.map((a, i) => (
+              {filteredDatatakes.map((a, i) => (
                 <button
                   type="button"
                   key={a.id}
