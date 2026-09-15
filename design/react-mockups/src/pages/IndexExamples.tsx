@@ -891,31 +891,35 @@ export function Index1() {
                 ],
               },
             ].map((section, idx) => (
-              <div key={idx}>
+              <div key={idx} style={{
+                border: `1px solid ${openSections[idx] ? "#29c3d6" : "var(--line-soft)"}`,
+                borderRadius: "10px",
+                overflow: "hidden",
+                marginBottom: "12px",
+                background: "rgba(10,18,24,.7)",
+                transition: "border-color 0.2s ease",
+              }}>
                 <button onClick={() => setOpenSections({ ...openSections, [idx]: !openSections[idx] })} style={{
                   display: "flex",
                   alignItems: "center",
                   gap: "12px",
                   width: "100%",
                   padding: "16px 20px",
-                  marginBottom: "12px",
-                  border: "1px solid var(--line-soft)",
-                  borderRadius: "10px",
-                  background: "rgba(10,18,24,.7)",
-                  backdropFilter: "blur(10px)",
+                  border: "none",
+                  background: "transparent",
                   cursor: "pointer",
-                  color: "var(--text)",
                   fontSize: "15px",
                   fontWeight: 600,
                   transition: "all .2s ease",
-                }} onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.borderColor = "var(--line-strong)")} onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => (e.currentTarget.style.borderColor = "var(--line-soft)")}>
+                }}>
                   <span style={{ flex: "none", width: "19px", display: "grid", placeItems: "center", color: "#29c3d6" }}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                       {section.icon}
                     </svg>
                   </span>
-                  <span style={{ flex: 1, textAlign: "left" }}>{section.title}</span>
+                  <span style={{ flex: 1, textAlign: "left", color: "var(--text)" }}>{section.title}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" style={{
+                    color: "#29c3d6",
                     transform: openSections[idx] ? "rotate(180deg)" : "rotate(0deg)",
                     transition: "transform .2s ease",
                   }}>
@@ -923,21 +927,17 @@ export function Index1() {
                   </svg>
                 </button>
                 {openSections[idx] && (
-                  <div style={{ marginBottom: "20px" }}>
+                  <div style={{ padding: "0 20px 16px 20px", borderTop: "1px solid rgba(41,195,214,.2)" }}>
                     {section.items.map((item, itemIdx) => (
                       <div key={itemIdx} style={{
-                        padding: "12px 20px",
-                        marginBottom: "8px",
-                        borderLeft: "3px solid var(--line-soft)",
-                        background: "rgba(10,18,24,.3)",
+                        paddingTop: "12px",
                       }}>
-                        <p style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{item.q}</p>
+                        <p style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 600, color: "#29c3d6" }}>{item.q}</p>
                         <p style={{ margin: "0", fontSize: "13px", lineHeight: 1.6, color: "rgba(255,255,255,.74)" }}>{item.a}</p>
                       </div>
                     ))}
                   </div>
                 )}
-                {idx < 5 && <div style={{ height: "1px", background: "rgba(255,255,255,.06)", margin: "20px 0" }} />}
               </div>
             ))}
             <p style={{
