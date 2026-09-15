@@ -10,7 +10,18 @@ import "@/styles/examples.css";
 /* Index-page PROPOSAL examples — ALTERNATIVES to the real Home page (untouched).
    Plain React + CSS (no Next.js yet, but portable to it). Routes under /examples. */
 
-// page linked to each MOD_IMG index (for the clickable gallery tiles)
+/* The four dashboard pages, and the picture each one shows in the scrolling gallery. The two
+   arrays are indexed together by COLS below, so they must stay in the same order.
+
+   This is separate from CARD_ART further down, which gives every PROPOSAL card its own distinct
+   image. These four are the real pages, and they keep the four module pictures. */
+const MOD_IMG = [
+  "/assets/img/modules/acquisitions.jpg",
+  "/assets/img/modules/availability.jpg",
+  "/assets/img/modules/events.jpg",
+  "/assets/img/modules/processors.jpg",
+];
+
 const PAGE_BY_IMG = [
   { href: "/acquisitions", title: "Acquisitions Status", desc: "Interactive 3D globe" },
   { href: "/availability", title: "Data Availability", desc: "Collections & completeness" },

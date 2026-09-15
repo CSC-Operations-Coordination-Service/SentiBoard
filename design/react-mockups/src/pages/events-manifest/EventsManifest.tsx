@@ -361,7 +361,10 @@ export default function EventsManifest() {
               <span>Events</span>
             </div>
             <h1 className={s.title}>Events</h1>
-            <PageDescription className={s.desc}>{EVENTS_DESCRIPTION}</PageDescription>          </div>
+            {/* Styled through `.page :global(.page-desc)` in manifest.module.css, which re-points
+                the shared --pd-* palette at this canvas — so no className is needed here. */}
+            <PageDescription>{EVENTS_DESCRIPTION}</PageDescription>
+          </div>
         </header>
 
         <div className={s.monthBar}>
