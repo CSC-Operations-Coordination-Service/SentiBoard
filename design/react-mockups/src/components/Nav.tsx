@@ -5,7 +5,7 @@ import ThemeToggle from "./ThemeToggle";
 import Partners from "./Partners";
 
 const LINKS = [
-  { to: "/examples/index1", label: "Index", end: true },
+  //{ to: "/examples/index1", label: "Index", end: true },
   { to: "/examples/acquisitions-globe", label: "Acquisitions" },
   { to: "/events", label: "Events" },
   { to: "/availability", label: "Data Availability" },

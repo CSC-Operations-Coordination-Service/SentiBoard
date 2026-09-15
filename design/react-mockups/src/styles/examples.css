@@ -1738,6 +1738,35 @@ details.faq[open] .faq-body {
   padding: 12px 20px 16px !important;
 }
 
+/* Light theme overrides */
+:root[data-theme="light"] {
+  --accent-cyan: #29c3d6;
+  --ground: #ffffff;
+}
+
+/* FAQ section in light mode */
+:root[data-theme="light"] section#faq {
+  background: white !important;
+}
+
+:root[data-theme="light"] section#faq * {
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] section#faq span:first-child,
+:root[data-theme="light"] section#faq h2 {
+  color: #29c3d6 !important;
+}
+
+:root[data-theme="light"] section#faq p[style*="color: #29c3d6"] {
+  color: #29c3d6 !important;
+}
+
+/* News bar in light mode */
+:root[data-theme="light"] main > div:has(> div[style*="position: \"fixed\""]) {
+  background: #ffffff !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .ticker-track {
     animation: none;

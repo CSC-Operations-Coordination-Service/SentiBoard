@@ -718,7 +718,7 @@ export function Index1() {
               color: "#fff",
               letterSpacing: "-.02em",
             }}>
-              Copernicus <span style={{ color: "#2E7DF6" }}>Sentinel</span> Operations Dashboard
+              Copernicus <span style={{ color: "#29c3d6" }}>Sentinel</span> Operations Dashboard
             </h1>
             <p style={{
               fontSize: "16px",
