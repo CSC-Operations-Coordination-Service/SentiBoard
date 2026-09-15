@@ -5,7 +5,6 @@ import LiveClock from "./LiveClock";
 
 const LINKS = [
   { href: "/v1", label: "Index" },
-  { href: "/v1/about", label: "About" },
   { href: "/v1/events", label: "Events" },
   { href: "/v1/availability", label: "Data Availability" },
   { href: "/v1/processors", label: "Processors" },

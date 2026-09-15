@@ -152,7 +152,8 @@ export default function ReleaseLog() {
       <PageHeader
         crumb="Processors proposal"
         title="Release Timeline"
-        sub="A visual timeline of every processor release organized by date. Click on events to expand and view full release notes, satellites, and processor details. Filter by mission, date range, or search across all release information."
+        desc={PROCESSORS_LOG_DESCRIPTION}
+        img="/assets/img/modules/processors.jpg"
       />
 
       <section className="wrap pad">

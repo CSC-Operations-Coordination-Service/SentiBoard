@@ -28,16 +28,18 @@ const BODY = `
 <p>The ESA logo is owned by ESA and protected by trademarks and under Article 6 of the Paris Convention for the Protection of Industrial Property. You may not modify or create derivatives of the ESA logo. Any use, reproduction, publication, display, transmission, making available to the public or exploitation of the ESA logo requires prior written authorisation. For authorisation, please contact: <a href="mailto:corporatebranding@esa.int">corporatebranding@esa.int</a>.</p>
 `;
 
+import PageHeader from "@/components/PageHeader";
+
 export default function TermsPage() {
   return (
     <>
-      <div className="page-head"><div className="wrap">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <a href="/v1"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg> Home</a>
-          <span className="sep">/</span><span className="cur">Terms &amp; Conditions</span>
-        </nav>
-        <h1>Terms &amp; Conditions</h1>
-      </div></div>
+      <PageHeader
+        title="Terms & Conditions"
+        breadcrumbs={[
+          { label: "Home", href: "/v1" },
+          { label: "Terms & Conditions" },
+        ]}
+      />
       <section className="wrap pad">
         <div className="legal reveal" dangerouslySetInnerHTML={{ __html: BODY }} />
       </section>

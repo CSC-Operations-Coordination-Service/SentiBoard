@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import EventsView from "@/components/EventsView";
 import { getCalendarEvents } from "@/lib/data";
 
@@ -28,14 +29,16 @@ export default async function EventsPage({
 
   return (
     <>
-      <div className="page-head"><div className="wrap">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <a href="/v1"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg> Home</a>
-          <span className="sep">/</span><span className="cur">Events</span>
-        </nav>
-        <h1>Events</h1>
-        <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to their issue type.</p>
-      </div></div>
+      <PageHeader
+        title="Events"
+        description={
+          <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to their issue type.</p>
+        }
+        breadcrumbs={[
+          { label: "Home", href: "/v1" },
+          { label: "Events" },
+        ]}
+      />
 
       <section className="wrap pad">
         {/* key remounts EventsView on month change → filters + selected day reset cleanly */}

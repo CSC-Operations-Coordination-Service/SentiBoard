@@ -1,0 +1,177 @@
+/* ============================================================
+   PageHeader — Reusable page header component
+   ============================================================ */
+
+.page-header {
+  position: relative;
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid var(--line);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+
+.page-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(26, 31, 37, 0) 0%, rgba(26, 31, 37, 0.4) 100%);
+  pointer-events: none;
+}
+
+.page-header-inner {
+  position: relative;
+  z-index: 1;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 clamp(18px, 4vw, 48px);
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.breadcrumb-item a {
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb-item a:hover {
+  color: var(--accent-2);
+}
+
+.breadcrumb-item .current {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.breadcrumb-item .separator {
+  color: var(--text-mute);
+}
+
+/* Page Title */
+.page-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 1.5rem;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+/* Description Accordion */
+.page-description {
+  max-width: 66ch;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: rgba(45, 184, 130, 0.04);
+  overflow: hidden;
+}
+
+.description-toggle {
+  width: 100%;
+  cursor: pointer;
+  padding: 14px 16px;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.2s, background 0.2s;
+}
+
+.description-toggle:hover {
+  background: rgba(45, 184, 130, 0.05);
+  color: var(--text);
+}
+
+.toggle-label {
+  flex: 1;
+  text-align: left;
+}
+
+.toggle-icon {
+  flex: 0 0 auto;
+  color: var(--accent-2);
+  transition: transform 0.2s ease;
+}
+
+.toggle-icon.open {
+  transform: rotate(180deg);
+}
+
+.description-content {
+  padding: 0 16px 14px;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.65;
+  animation: slideDown 0.2s ease-out;
+}
+
+.description-content p {
+  margin: 0 0 1rem;
+}
+
+.description-content p:last-child {
+  margin-bottom: 0;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 760px) {
+  .page-header {
+    padding: 2rem 0 1.5rem;
+  }
+
+  .page-title {
+    font-size: clamp(24px, 3vw, 32px);
+    margin-bottom: 1rem;
+  }
+
+  .breadcrumbs {
+    font-size: 10px;
+    margin-bottom: 0.75rem;
+  }
+
+  .description-toggle {
+    padding: 12px 14px;
+    font-size: 10px;
+  }
+
+  .description-content {
+    padding: 0 14px 12px;
+    font-size: 13px;
+  }
+}

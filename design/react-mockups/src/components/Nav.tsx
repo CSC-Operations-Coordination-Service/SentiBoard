@@ -5,8 +5,7 @@ import ThemeToggle from "./ThemeToggle";
 import Partners from "./Partners";
 
 const LINKS = [
-  { to: "/", label: "Index", end: true },
-  { to: "/about", label: "About" },
+  { to: "/examples/index1", label: "Index", end: true },
   { to: "/acquisitions", label: "Acquisitions" },
   { to: "/events", label: "Events" },
   { to: "/availability", label: "Data Availability" },
@@ -37,7 +36,7 @@ export default function Nav() {
   return (
     <header className={"nav" + (open ? " open" : "")}>
       <div className="nav-inner wrap">
-        <Link to="/" className="brand" onClick={() => setOpen(false)} aria-label="SentiBoard — home">
+        <Link to="/examples/index1" className="brand" onClick={() => setOpen(false)} aria-label="SentiBoard — home">
           <img className="brand-logo" src="/assets/img/sentiboard.png" alt="SentiBoard" />
         </Link>
         <nav className="nav-links" id="nav-links">

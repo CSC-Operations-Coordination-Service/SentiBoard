@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/theme";
+import { PageHeader } from "@/components/ui";
+import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import { DEFAULT_PERIOD, PERIODS, PERIOD_LABEL, inPeriod, periodStart, type PeriodId } from "@/data/period";
 
 /* =============================================================================
@@ -737,262 +739,258 @@ export default function DataAvailabilitySpaceX() {
   const published = rows.length ? Math.round(rows.reduce((s, r) => s + r.completeness, 0) / rows.length) : 0;
 
   return (
-    <div className="sx" data-theme={dark ? "dark" : "light"}>
-      <style>{CSS}</style>
+    <>
+      <PageHeader
+        crumb="Data Availability"
+        title="Data Availability"
+        desc={AVAILABILITY_DESCRIPTION}
+        img="/assets/img/modules/FLEX_Sentinel-3.jpg"
+      />
+      <div className="sx" data-theme={dark ? "dark" : "light"}>
+        <style>{CSS}</style>
 
-      <div className="sx-wrap">
-        {/* ---------------- header ---------------- */}
-        {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
+        <div className="sx-wrap">
+          {/* ---------------- header ---------------- */}
+          {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
             header this page already had. ex-hero-host adds only a positioning context, so the
             header's existing geometry is untouched. */}
-        <header className="sx-head ex-hero-host">
-          <div
-            className="ex-hero-bg"
-            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/FLEX_Sentinel-3.jpg")' }}
-            aria-hidden
-          />
-          <div className="sx-head-l">
-            <div className="sx-tagline">
-              <span className="sx-live" aria-hidden />
-              COPERNICUS · SENTINEL OPERATIONS
+          <header className="sx-head ex-hero-host">
+            <div
+              className="ex-hero-bg"
+              style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/FLEX_Sentinel-3.jpg")' }}
+              aria-hidden
+            />
+            <div className="sx-head-r">
+              <div className="sx-window">
+                <span className="sx-window-l">ACTIVE RANGE</span>
+                <span className="sx-window-v">{rangeLabel}</span>
+                <span className="sx-window-d">{PERIOD_LABEL[period].toUpperCase()}</span>
+              </div>
             </div>
-            <h1 className="sx-h1">DATA AVAILABILITY</h1>
-            <p className="sx-lede">
-              Datatakes from {fmtDate(WINDOW.start)} to {fmtDate(WINDOW.end)} UTC, including those scheduled to
-              23:59:59 of the following day. Refreshed hourly.
-            </p>
-          </div>
+          </header>
 
-          <div className="sx-head-r">
-            <div className="sx-window">
-              <span className="sx-window-l">ACTIVE RANGE</span>
-              <span className="sx-window-v">{rangeLabel}</span>
-              <span className="sx-window-d">{PERIOD_LABEL[period].toUpperCase()}</span>
+          <div className="sx-counters">
+            <div className="sx-counter">
+              <span className="sx-counter-k">TOTAL DATATAKES</span>
+              <span className="sx-counter-v">{String(DATA.length).padStart(4, "0")}</span>
+            </div>
+            <div className="sx-counter">
+              <span className="sx-counter-k">IN CURRENT FILTER</span>
+              <span className="sx-counter-v">{String(rows.length).padStart(4, "0")}</span>
+            </div>
+            <div className="sx-counter">
+              <span className="sx-counter-k">MEAN COMPLETENESS</span>
+              <span className="sx-counter-v">{published}%</span>
+            </div>
+            <div className="sx-counter">
+              <span className="sx-counter-k">DEGRADED / LOST</span>
+              <span className="sx-counter-v sx-warn">{String(lost).padStart(4, "0")}</span>
             </div>
           </div>
-        </header>
 
-        <div className="sx-counters">
-          <div className="sx-counter">
-            <span className="sx-counter-k">TOTAL DATATAKES</span>
-            <span className="sx-counter-v">{String(DATA.length).padStart(4, "0")}</span>
+          {/* ---------------- overview ---------------- */}
+          <div className="sx-sec sx-sec-top">
+            <span className="sx-sec-l">OVERVIEW{filtered ? " · FILTERED" : ""}</span>
+            <span className="sx-sec-r">3 METRICS</span>
           </div>
-          <div className="sx-counter">
-            <span className="sx-counter-k">IN CURRENT FILTER</span>
-            <span className="sx-counter-v">{String(rows.length).padStart(4, "0")}</span>
+
+          <div className="sx-grid3">
+            <section className="sx-card">
+              <h2 className="sx-card-t">MISSION SHARE</h2>
+              {rows.length === 0 ? (
+                <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
+              ) : (
+                <>
+                  <Donut slices={missions} total={rows.length} caption="DATATAKES" />
+                  <Legend slices={missions} total={rows.length} />
+                </>
+              )}
+            </section>
+
+            <section className="sx-card">
+              <h2 className="sx-card-t">ACQUISITION STATUS</h2>
+              {rows.length === 0 ? (
+                <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
+              ) : (
+                <>
+                  <Donut slices={statuses} total={published} caption="MEAN COMPL." />
+                  <Legend slices={statuses} total={rows.length} />
+                </>
+              )}
+            </section>
+
+            <section className="sx-card">
+              <h2 className="sx-card-t">PUBLICATION STATUS</h2>
+              {rows.length === 0 ? (
+                <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
+              ) : (
+                <>
+                  <Donut
+                    slices={publications}
+                    total={publications.find((p) => p.key === "PUBLISHED")?.value ?? 0}
+                    caption="PUBLISHED"
+                  />
+                  <Legend slices={publications} total={rows.length} />
+                </>
+              )}
+            </section>
           </div>
-          <div className="sx-counter">
-            <span className="sx-counter-k">MEAN COMPLETENESS</span>
-            <span className="sx-counter-v">{published}%</span>
+
+          {/* ---------------- filters ---------------- */}
+          <div className="sx-sec">
+            <span className="sx-sec-l">FILTER TELEMETRY</span>
+            <button className="sx-mini" onClick={reset} disabled={!filtered}>
+              <IconReset />
+              RESET
+            </button>
           </div>
-          <div className="sx-counter">
-            <span className="sx-counter-k">DEGRADED / LOST</span>
-            <span className="sx-counter-v sx-warn">{String(lost).padStart(4, "0")}</span>
-          </div>
-        </div>
 
-        {/* ---------------- overview ---------------- */}
-        <div className="sx-sec sx-sec-top">
-          <span className="sx-sec-l">OVERVIEW{filtered ? " · FILTERED" : ""}</span>
-          <span className="sx-sec-r">3 METRICS</span>
-        </div>
+          <div className="sx-filters">
+            <div className="sx-field">
+              <label htmlFor="sx-period">PERIOD</label>
+              <select
+                id="sx-period"
+                value={period}
+                onChange={(e) => {
+                  setPeriod(e.target.value as PeriodId);
+                  setFrom("");
+                  setTo("");
+                }}
+              >
+                {PERIODS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label.toUpperCase()}</option>
+                ))}
+                <option value="custom">CUSTOM RANGE</option>
+              </select>
+            </div>
 
-        <div className="sx-grid3">
-          <section className="sx-card">
-            <h2 className="sx-card-t">MISSION SHARE</h2>
-            {rows.length === 0 ? (
-              <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
-            ) : (
-              <>
-                <Donut slices={missions} total={rows.length} caption="DATATAKES" />
-                <Legend slices={missions} total={rows.length} />
-              </>
-            )}
-          </section>
+            <div className="sx-field">
+              <label htmlFor="sx-mission">MISSION</label>
+              <select id="sx-mission" value={mission} onChange={(e) => onMissionChange(e.target.value)}>
+                <option value="ALL">ALL MISSIONS</option>
+                {MISSION_NAMES.map((m) => (
+                  <option key={m} value={m}>{m.toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
 
-          <section className="sx-card">
-            <h2 className="sx-card-t">ACQUISITION STATUS</h2>
-            {rows.length === 0 ? (
-              <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
-            ) : (
-              <>
-                <Donut slices={statuses} total={published} caption="MEAN COMPL." />
-                <Legend slices={statuses} total={rows.length} />
-              </>
-            )}
-          </section>
+            <div className="sx-field">
+              <label htmlFor="sx-sat">SATELLITE</label>
+              <select id="sx-sat" value={satellite} disabled={satelliteLocked} onChange={(e) => setSatellite(e.target.value)}>
+                <option value="ALL">ALL UNITS</option>
+                {satelliteOptions.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
 
-          <section className="sx-card">
-            <h2 className="sx-card-t">PUBLICATION STATUS</h2>
-            {rows.length === 0 ? (
-              <p className="sx-none">NO SIGNAL — NO DATATAKES IN FILTER</p>
-            ) : (
-              <>
-                <Donut
-                  slices={publications}
-                  total={publications.find((p) => p.key === "PUBLISHED")?.value ?? 0}
-                  caption="PUBLISHED"
+            <div className="sx-field">
+              <label htmlFor="sx-from">FROM</label>
+              <input id="sx-from" type="date" value={from} onChange={(e) => onCustomDate("from", e.target.value)} />
+            </div>
+
+            <div className="sx-field">
+              <label htmlFor="sx-to">TO</label>
+              <input id="sx-to" type="date" value={to} onChange={(e) => onCustomDate("to", e.target.value)} />
+            </div>
+
+            <div className="sx-field sx-field-wide">
+              <label htmlFor="sx-q">DATATAKE ID</label>
+              <div className="sx-search">
+                <span className="sx-search-i" aria-hidden><IconSearch /></span>
+                <input
+                  id="sx-q"
+                  type="text"
+                  placeholder="SEARCH BY ID…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                 />
-                <Legend slices={publications} total={rows.length} />
-              </>
-            )}
-          </section>
-        </div>
-
-        {/* ---------------- filters ---------------- */}
-        <div className="sx-sec">
-          <span className="sx-sec-l">FILTER TELEMETRY</span>
-          <button className="sx-mini" onClick={reset} disabled={!filtered}>
-            <IconReset />
-            RESET
-          </button>
-        </div>
-
-        <div className="sx-filters">
-          <div className="sx-field">
-            <label htmlFor="sx-period">PERIOD</label>
-            <select
-              id="sx-period"
-              value={period}
-              onChange={(e) => {
-                setPeriod(e.target.value as PeriodId);
-                setFrom("");
-                setTo("");
-              }}
-            >
-              {PERIODS.map((p) => (
-                <option key={p.id} value={p.id}>{p.label.toUpperCase()}</option>
-              ))}
-              <option value="custom">CUSTOM RANGE</option>
-            </select>
-          </div>
-
-          <div className="sx-field">
-            <label htmlFor="sx-mission">MISSION</label>
-            <select id="sx-mission" value={mission} onChange={(e) => onMissionChange(e.target.value)}>
-              <option value="ALL">ALL MISSIONS</option>
-              {MISSION_NAMES.map((m) => (
-                <option key={m} value={m}>{m.toUpperCase()}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="sx-field">
-            <label htmlFor="sx-sat">SATELLITE</label>
-            <select id="sx-sat" value={satellite} disabled={satelliteLocked} onChange={(e) => setSatellite(e.target.value)}>
-              <option value="ALL">ALL UNITS</option>
-              {satelliteOptions.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="sx-field">
-            <label htmlFor="sx-from">FROM</label>
-            <input id="sx-from" type="date" value={from} onChange={(e) => onCustomDate("from", e.target.value)} />
-          </div>
-
-          <div className="sx-field">
-            <label htmlFor="sx-to">TO</label>
-            <input id="sx-to" type="date" value={to} onChange={(e) => onCustomDate("to", e.target.value)} />
-          </div>
-
-          <div className="sx-field sx-field-wide">
-            <label htmlFor="sx-q">DATATAKE ID</label>
-            <div className="sx-search">
-              <span className="sx-search-i" aria-hidden><IconSearch /></span>
-              <input
-                id="sx-q"
-                type="text"
-                placeholder="SEARCH BY ID…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-              {query && (
-                <button className="sx-search-x" onClick={() => setQuery("")} aria-label="Clear search">
-                  <IconClose size={12} />
-                </button>
-              )}
+                {query && (
+                  <button className="sx-search-x" onClick={() => setQuery("")} aria-label="Clear search">
+                    <IconClose size={12} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* ---------------- table ---------------- */}
-        <div className="sx-sec">
-          <span className="sx-sec-l">DATATAKES</span>
-          <span className="sx-sec-r">
-            {String(visible.length).padStart(3, "0")} / {String(rows.length).padStart(4, "0")} SHOWN
-            {rows.length > ROW_CAP ? " · NARROW THE FILTER FOR MORE" : ""}
-          </span>
-        </div>
+          {/* ---------------- table ---------------- */}
+          <div className="sx-sec">
+            <span className="sx-sec-l">DATATAKES</span>
+            <span className="sx-sec-r">
+              {String(visible.length).padStart(3, "0")} / {String(rows.length).padStart(4, "0")} SHOWN
+              {rows.length > ROW_CAP ? " · NARROW THE FILTER FOR MORE" : ""}
+            </span>
+          </div>
 
-        <div className="sx-tablewrap">
-          <table className="sx-table">
-            <thead>
-              <tr>
-                <th>DATATAKE ID</th>
-                <th>PLATFORM</th>
-                <th>MODE</th>
-                <th>START UTC</th>
-                <th>STATUS</th>
-                <th>COMPLETENESS</th>
-                <th className="sx-right">ACTIONS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((row) => (
-                <tr
-                  key={row.id}
-                  tabIndex={0}
-                  role="button"
-                  aria-label={`Telemetry for datatake ${row.id}`}
-                  onClick={() => setSelected(row)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      setSelected(row);
-                    }
-                  }}
-                >
-                  <td className="sx-id">{row.id}</td>
-                  <td><span className="sx-plat">{row.satellite}</span></td>
-                  <td className="sx-mode">{row.sensorMode}</td>
-                  <td className="sx-time">{fmtStamp(row.start)}</td>
-                  <td><StatusBadge status={row.status} /></td>
-                  <td><CompletenessBar value={row.completeness} status={row.status} /></td>
-                  <td className="sx-right">
-                    {/* The row is the primary target; this repeats it for anyone scanning
-                        for a control rather than trying the row. */}
-                    <button
-                      className="sx-view"
-                      onClick={(e) => {
-                        e.stopPropagation();
+          <div className="sx-tablewrap">
+            <table className="sx-table">
+              <thead>
+                <tr>
+                  <th>DATATAKE ID</th>
+                  <th>PLATFORM</th>
+                  <th>MODE</th>
+                  <th>START UTC</th>
+                  <th>STATUS</th>
+                  <th>COMPLETENESS</th>
+                  <th className="sx-right">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((row) => (
+                  <tr
+                    key={row.id}
+                    tabIndex={0}
+                    role="button"
+                    aria-label={`Telemetry for datatake ${row.id}`}
+                    onClick={() => setSelected(row)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
                         setSelected(row);
-                      }}
-                    >
-                      VIEW DETAILS
-                      <IconChevron />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {visible.length === 0 && (
-                <tr className="sx-empty-row">
-                  <td colSpan={7}>NO DATATAKES MATCH THE CURRENT FILTER</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      }
+                    }}
+                  >
+                    <td className="sx-id">{row.id}</td>
+                    <td><span className="sx-plat">{row.satellite}</span></td>
+                    <td className="sx-mode">{row.sensorMode}</td>
+                    <td className="sx-time">{fmtStamp(row.start)}</td>
+                    <td><StatusBadge status={row.status} /></td>
+                    <td><CompletenessBar value={row.completeness} status={row.status} /></td>
+                    <td className="sx-right">
+                      {/* The row is the primary target; this repeats it for anyone scanning
+                        for a control rather than trying the row. */}
+                      <button
+                        className="sx-view"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelected(row);
+                        }}
+                      >
+                        VIEW DETAILS
+                        <IconChevron />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {visible.length === 0 && (
+                  <tr className="sx-empty-row">
+                    <td colSpan={7}>NO DATATAKES MATCH THE CURRENT FILTER</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          <footer className="sx-foot">
+            <span>MOCK DATA · NO BACKEND ATTACHED</span>
+            <span>SENTIBOARD V2 · DEVOCS-219 · PROPOSAL 03</span>
+          </footer>
         </div>
 
-        <footer className="sx-foot">
-          <span>MOCK DATA · NO BACKEND ATTACHED</span>
-          <span>SENTIBOARD V2 · DEVOCS-219 · PROPOSAL 03</span>
-        </footer>
+        {selected && <DetailsModal datatake={selected} onClose={() => setSelected(null)} />}
       </div>
-
-      {selected && <DetailsModal datatake={selected} onClose={() => setSelected(null)} />}
-    </div>
+    </>
   );
 }
 

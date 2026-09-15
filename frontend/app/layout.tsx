@@ -7,29 +7,42 @@ export const metadata: Metadata = {
   description: "Copernicus Sentinel Operations Dashboard",
 };
 
-// DEVOCS-219: Space Grotesk (condensed technical grotesk) carries headlines and the big version
-// numbers; Inter carries body and labels. Version strings and UTC timestamps use --mono, set in
-// globals.css.
+// DEVOCS-219: NotesEsa is the ESA brand face and carries the whole app — body text and headings
+// alike. globals.css points both --sans and --display at the --font-display variable declared
+// below; the system stack behind them is only the loading fallback. Timestamps, identifiers and
+// figures keep --mono, which is not NotesEsa: those are read down a column.
 //
-// These are next/font/LOCAL, not next/font/google, deliberately: the google loader downloads the
-// files at build time over undici, which ignores HTTP_PROXY/HTTPS_PROXY. On a proxied build host
-// (ocs.staging) that hangs or fails. Committing the woff2 files makes `next build` work with no
-// network at all. Both are variable fonts, so one file covers the whole weight range.
+// next/font/LOCAL, not next/font/google, deliberately: the google loader downloads the files at
+// build time over undici, which ignores HTTP_PROXY/HTTPS_PROXY and hangs on a proxied build host
+// (ocs.staging). Committing the woff2 files makes `next build` work with no network at all.
 //
-// To update a face: fetch the latin src url from
-// https://fonts.googleapis.com/css2?family=Inter:wght@100..900 (send a modern browser User-Agent,
-// otherwise Google returns ttf), replace the file, and keep the weight range in sync.
-const inter = localFont({
-  src: "./fonts/inter-latin-var.woff2",
-  weight: "100 900",
-  style: "normal",
-  variable: "--font-sans",
-  display: "swap",
-});
-const grotesk = localFont({
-  src: "./fonts/space-grotesk-latin-var.woff2",
-  weight: "300 700",
-  style: "normal",
+// Reach the family through var(--font-display) only. next/font rewrites the family to a hashed
+// name (__notesEsa_<hash>), so a literal "NotesEsa" in CSS matches nothing and falls silently
+// through to the system stack.
+
+const notesEsa = localFont({
+  src: [
+    {
+      path: "./fonts/NotesEsa.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "./fonts/NotesEsa-Italic.woff2",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "./fonts/NotesEsa-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "./fonts/NotesEsa-BoldItalic.woff2",
+      weight: "700",
+      style: "italic",
+    },
+  ],
   variable: "--font-display",
   display: "swap",
 });
@@ -39,7 +52,7 @@ const grotesk = localFont({
 // landing page at "/" and future versions can differ.
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${grotesk.variable}`}>
+    <html lang="en" className={notesEsa.variable}>
       <body>{children}</body>
     </html>
   );

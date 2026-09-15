@@ -1,119 +1,35 @@
-DEVOCS-219: add the Data Availability and Events concepts, and the new globe
+DEVOCS-219: align both apps with the ESA brand — NotesEsa type and SentiBoard cyan
 
-Three pages' worth of proposals, plus the shared data and tokens they had to
-agree on before they could sit next to each other. Nothing under /v1 or the
-mock-ups' own routes changes; everything new lives under /examples.
+Typography, colour and page furniture brought into line with the SentiBoard
+installation, applied to the Vite mock-ups and the Next.js frontend together so
+the two cannot drift.
 
-DATA AVAILABILITY — two alternatives to /availability
+TYPE — NotesEsa replaces Inter and Space Grotesk. Four faces (regular, italic,
+bold, bold-italic) are committed in both apps: frontend/app/fonts/ loaded through
+next/font/local, and design/react-mockups/public/ for the mock-ups. Body text now
+falls back to the system stack rather than shipping a second family, so --font-sans
+starts at Helvetica Neue and --font-display is NotesEsa.
 
-  /examples/data-availability          filtered breakdown
-      Three donuts — mission share, acquisition status, sensor mode — describing
-      whatever the filters currently select, over a sortable table of platform,
-      sensor mode, start time, status and publication completeness. The charts
-      are computed from the same filtered array the rows render, so the two can
-      never disagree. Recharts in both apps; in the Next copy the donuts are
-      split into Charts.tsx and pulled in with next/dynamic({ssr:false}),
-      because ResponsiveContainer measures a parent box the server has no width
-      for and would otherwise hydrate differently than it rendered.
+COLOUR — the accent moves to the logo cyan. --accent becomes #12b1bf (was the
+telemetry blue #2e7df6) across the mock-up tokens, with the hairline, pill and
+grid tints re-derived from it. The Next app gains --primary-dark #1B4D3E and
+--primary-light #2DB882, which now drive primary buttons and the page-description
+panel instead of the blue accent.
 
-  /examples/data-availability-spacex   telemetry console
-      The same data read as a launch console: hairline rules instead of panels,
-      2px radii, condensed type for labels and monospace for every identifier,
-      timestamp and figure. Live UTC clock, three donuts drawn as thin SVG rings
-      with no chart library, and a compact table whose rows open the full
-      telemetry record — sensing window, orbit and track, pass direction,
-      footprint corners and the raw metadata as the backend would return it.
-      Its own pitch-dark palette rather than the shared tokens.
+PAGEHEADER — one component per app (breadcrumbs, title, collapsible description,
+optional background image), plus page-header.css in the mock-ups, replacing the
+per-page header markup the proposal pages each carried.
 
-      frontend/components/DataAvailabilitySpaceX.tsx is the original and imports
-      nothing but React — no Tailwind, since adding it here would put a PostCSS
-      pipeline and a preflight reset on top of app/globals.css, which styles
-      every shipping /v1 page. The Vite copy differs in two places only: its
-      theme button drives the app theme through useTheme() instead of local
-      state, so the page and the nav above it cannot disagree, and its font
-      stacks fall back through var(--font-display, var(--font-sans, …)), since
-      this app defines no --font-display and a bare var() would drop the whole
-      declaration.
+INDEX — a new /examples/index1 landing in both apps, carrying the module cards and,
+in the Next copy, an ExpandableNewsBar. The mock-ups' Nav points its Index link and
+brand mark at it. The About entry is removed from both navs and
+frontend/app/v1/about/page.tsx is deleted with it.
 
-EVENTS — /examples/events-spacex, two concepts behind one tab bar
+ICON FONTS — Flaticon and Simple-Line-Icons (woff/woff2) added under
+frontend/public/assets so the ported /v1 pages render their glyphs offline.
 
-  A · orbital timeline — a track per mission with the month along the X axis,
-      each event a block that opens a detail popover; overlapping events on one
-      mission stack into packed lanes instead of hiding each other.
-  B · telemetry grid — 31 day tiles carrying micro status pills, where picking a
-      day slides over that day's UTC log and the datatakes it hit.
+Four implementation write-ups ride along: design/react-mockups/DESIGN-UPDATES.md
+and, under frontend/, CHANGELOG-TYPOGRAPHY.md, TYPOGRAPHY-UPDATE.md and
+DEVOCS-219-IMPLEMENTATION.md.
 
-  Both share the period selector and one event register, and use the same
-  telemetry palette as the Data Availability console so the proposals read as
-  one family. Theme is read from the app, not toggled in the page.
-
-ACQUISITIONS — /examples/acquisitions-globe
-
-  The globe rebuilt around demand-driven rendering. The unconditional
-  requestAnimationFrame loop is gone: a frame is drawn when something asks for
-  one, or while the simulation clock is genuinely running, and animation is
-  gated on four conditions — clock playing, canvas intersecting the viewport,
-  tab visible, prefers-reduced-motion off — so a globe scrolled away or sitting
-  in a background tab costs nothing. Every rate is per second and scaled by a
-  frame delta clamped to 48 ms, so it turns at the same speed at 60 Hz and
-  144 Hz and a stalled tab resumes instead of jumping the clock. Coastline
-  vertices are pre-resolved to unit vectors once per decimation level, so a
-  frame costs six multiplies per vertex and no trigonometry. Selecting a
-  datatake — from the list, a footprint, a sensing mark or the screen-reader
-  mirror — rotates the globe so it faces the viewer rather than leaving a
-  far-side selection hidden.
-
-  The day filter is now bounded by the days that actually carry acquisitions,
-  and a date inside those bounds that falls in a gap snaps to the nearest
-  covered day with a note, instead of dropping the user into an empty view.
-
-SHARED, so the proposals cannot drift apart
-
-  data/period.ts          the dashboard's time-range filter. Production puts
-                          this control in the top navigation, not on the page;
-                          the ids and labels are that control's, verbatim, with
-                          "custom" added for the FROM/TO pickers.
-  data/datatake-details.ts the "View Details" payload, one row per product,
-                          10 a page, Timeliness only for S3 and S5P, as
-                          production's modal does. Everything is derived from
-                          the datatake ID through a hash, so reopening the modal
-                          never changes the orbit, station or percentages.
-  components/DatatakeModal the dialog itself: Escape closes, a backdrop click
-                          closes only when the press started there, focus moves
-                          in and returns to the trigger, Tab is trapped, and the
-                          page behind is scroll-locked without shifting under
-                          the scrollbar's width. The page owns which datatake is
-                          selected; the modal owns only open-dialog state.
-  tokens.css              --cmp-* and --evt-* carry production's completeness
-                          and event-type legends per theme. Four values are
-                          adjusted and the reason is written next to each:
-                          production paints Planned and Processing the same
-                          grey, which works beside a label but not as a lone dot
-                          or a chart slice, and its slate Acquisition and
-                          deep-purple Production disappear on a near-black card.
-  data/mock.ts            datatakes are now generated from offsets against the
-                          current instant rather than fixed strings, which is
-                          what keeps "Last 24 Hours" populated whatever time of
-                          day the page is opened, and they carry the five
-                          completeness states instead of the old health Status.
-                          Pill accepts both vocabularies.
-
-The globe and filtered-breakdown pages were already documented in
-design/react-mockups/README.md by e874d6a but had never been committed; they
-land here.
-
-INFRA — infra/README.md now documents the deployment as performed, not as
-planned. The mock-ups are live on 172.28.89.6:3000. The notes that cost real
-time are written down: there is no checkout on the host, so docker build reads
-the working tree and an uncommitted change ships; internal short names have no
-DNS from the VPN, so the IP is not optional; 172.28.89.5 is the Flask host and
-the easy wrong answer; every command is labelled laptop or server, because scp
-from inside an SSH session copies the server to itself; and the image must be
-tagged :previous before docker load, which otherwise untags the running image
-and takes the rollback with it silently.
-
-Dependencies: recharts in both apps, lucide-react added to the Next app.
-
-Verified with tsc -b in the mock-ups and tsc --noEmit in the frontend, both
-clean. Not eyeballed in a browser — none was available in the working
-environment.
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>

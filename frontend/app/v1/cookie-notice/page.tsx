@@ -1,3 +1,4 @@
+import PageHeader from "@/components/PageHeader";
 import CookieToggle from "@/components/CookieToggle";
 
 const BODY = `
@@ -108,13 +109,13 @@ const BODY = `
 export default function CookieNoticePage() {
   return (
     <>
-      <div className="page-head"><div className="wrap">
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <a href="/v1"><svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" /></svg> Home</a>
-          <span className="sep">/</span><span className="cur">Cookie Notice</span>
-        </nav>
-        <h1>Cookie Notice</h1>
-      </div></div>
+      <PageHeader
+        title="Cookie Notice"
+        breadcrumbs={[
+          { label: "Home", href: "/v1" },
+          { label: "Cookie Notice" },
+        ]}
+      />
       <section className="wrap pad">
         <div className="legal reveal" dangerouslySetInnerHTML={{ __html: BODY }} />
         <CookieToggle />

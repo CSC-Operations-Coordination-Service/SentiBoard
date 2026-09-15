@@ -19,7 +19,6 @@ export default function Footer() {
         </div>
         <div className="foot-col">
           <h5>Quick Links</h5>
-          <Link href="/v1/about">About</Link>
           <Link href="/v1/acquisitions">Acquisitions Status</Link>
           <Link href="/v1/events">Events</Link>
           <Link href="/v1/availability">Data Availability</Link>

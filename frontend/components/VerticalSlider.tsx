@@ -31,12 +31,7 @@ const SLIDES: Slide[] = [
     img: "/assets/img/processors.webp",
     text: "Shows the complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline.",
   },
-  {
-    title: "About",
-    href: "/v1/about",
-    img: "/assets/img/about.webp",
-    text: "Copernicus is the EU's Earth observation programme, providing open Sentinel satellite data. Managed by ESA, it supports research through the Operations Dashboard, offering real-time insights and key data stats.",
-  },
+
 ];
 
 export default function VerticalSlider() {

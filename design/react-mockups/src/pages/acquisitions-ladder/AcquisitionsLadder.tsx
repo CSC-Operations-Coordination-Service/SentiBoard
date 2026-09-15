@@ -490,7 +490,6 @@ export default function AcquisitionsLadder() {
   return (
     <>
       <PageHeader crumb="Acquisitions · Ladder" title="Acquisitions Status"
-        sub="Redesign the acquisitions page as a processing chain: fleet on a timeline, product levels stacked, and yield drops labeled to indicate data loss."
       />
 
       <section className="wrap pad">

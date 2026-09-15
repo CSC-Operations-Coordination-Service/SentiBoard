@@ -482,18 +482,11 @@ export default function DataAvailability() {
 
   return (
     <>
-      <PageHeader crumb="Data Availability proposal" title="Data Availability"
+      <PageHeader crumb="Data Availability" title="Data Availability"
         desc={AVAILABILITY_DESCRIPTION}
         img="/assets/img/modules/Tierra_Fuego_S1D.jpg" />
 
       <section className="wrap pad">
-        <Reveal className="section-head">
-          <div>
-            <h2><LayoutDashboard size={19} style={{ verticalAlign: "-3px", marginRight: 9 }} />Datatake breakdown</h2>
-          </div>
-          <span className="meta">{filtered.length} DATATAKES</span>
-        </Reveal>
-
         <Reveal className="da-grid3">
           <DonutCard title="Datatake share by mission" icon={<TrendingUp size={13} />} slices={missions} palette={palette} />
           <DonutCard title="Acquisition status breakdown" icon={<Activity size={13} />} slices={statuses} palette={palette} />

@@ -313,6 +313,14 @@
   color: var(--text-mute);
 }
 
+.nt-sep {
+  width: 2px;
+  height: 16px;
+  background: #29c3d6;
+  flex-shrink: 0;
+  margin: 0 6px;
+}
+
 @keyframes nt-hscroll {
   from {
     transform: translateX(0);
@@ -1615,6 +1623,133 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--accent-2);
+}
+
+/* ---------- Index1 Page: horizontal scrolling news ticker ---------- */
+@keyframes slide {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.ticker-track {
+  display: flex;
+  gap: 24px;
+  animation: slide 68s linear infinite;
+}
+
+.ticker-item {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-left: 3px solid;
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.ticker-item.crit {
+  border-left-color: var(--crit);
+  background: color-mix(in srgb, var(--crit) 8%, transparent);
+}
+
+.ticker-item.warn {
+  border-left-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+}
+
+.ticker-item.info {
+  border-left-color: var(--info);
+  background: color-mix(in srgb, var(--info) 8%, transparent);
+}
+
+.ticker-item.ok {
+  border-left-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+
+
+/* Index1 Page: FAQ details styling */
+details.faq {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+details.faq summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  transition: background 0.2s ease;
+}
+
+details.faq summary:hover {
+  background: var(--bg-1);
+}
+
+details.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+details.faq .chev {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: bold;
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+details.faq[open] .chev {
+  transform: rotate(180deg);
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+}
+
+details.faq .faq-body {
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+details.faq[open] .faq-body {
+  max-height: 900px !important;
+  padding: 12px 20px 16px !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+
+  details.faq .chev {
+    transition: none;
+  }
+
+  details.faq .faq-body {
+    transition: none;
+  }
 }
 
 /* =========================================================================

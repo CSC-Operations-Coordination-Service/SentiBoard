@@ -6,7 +6,7 @@ import DataAvailabilitySpaceX from "@/components/DataAvailabilitySpaceX";
 // nothing to wire up here.
 
 export const metadata: Metadata = {
-  title: "Data Availability · Telemetry console — mock-up",
+  title: "Data Availability",
   description: "Design proposal 3. Mock data, no backend.",
 };
 

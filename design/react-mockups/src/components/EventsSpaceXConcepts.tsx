@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useTheme } from "@/theme";
-import { Collapse, useMediaQuery } from "@/components/ui";
+import { Collapse, PageHeader, useMediaQuery } from "@/components/ui";
+import { EVENTS_SWIMLANES_DESCRIPTION } from "@/data/copy";
 import { PERIODS, inPeriod, type PeriodId } from "@/data/period";
 
 /* =============================================================================
@@ -776,115 +777,117 @@ export default function EventsSpaceXConcepts() {
   );
 
   return (
-    <div className="evx" data-theme={theme === "light" ? "light" : "dark"}>
-      <style>{CSS}</style>
+    <>
+      <PageHeader
+        crumb="Events proposal"
+        title="Events"
+        desc={EVENTS_SWIMLANES_DESCRIPTION}
+        img="/assets/img/modules/Ice_Greenland.jpg"
+      />
+      <div className="evx" data-theme={theme === "light" ? "light" : "dark"}>
+        <style>{CSS}</style>
 
-      <div className="evx-wrap">
-        {/* ---------------- header ---------------- */}
-        {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
+        <div className="evx-wrap">
+          {/* ---------------- header ---------------- */}
+          {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
             header this page already had. ex-hero-host adds only a positioning context, so the
             tagline, title, lede and counters keep the exact geometry they had before. */}
-        <header className="evx-head ex-hero-host">
-          <div
-            className="ex-hero-bg"
-            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Ice_Greenland.jpg")' }}
-            aria-hidden
-          />
-          <div>
-            <div className="evx-tagline">
-              <span className="evx-live" aria-hidden />
-              COPERNICUS · SENTINEL OPERATIONS
-            </div>
-            <h1 className="evx-h1">EVENTS</h1>
-            <p className="evx-lede">
-              Calibration activities, manoeuvres, platform anomalies and ground-segment issues that could impede data
-              production, against the month in which they occurred and the datatakes they impacted.
-            </p>
-          </div>
-
-          <div className="evx-counters">
-            <div><span>EVENTS</span><b>{pad(events.length)}</b></div>
-            <div><span>INCIDENTS</span><b className="crit">{pad(incidents)}</b></div>
-            <div><span>PLANNED</span><b>{pad(planned)}</b></div>
-            <div><span>DTK IMPACTED</span><b className="warn">{pad(impacted)}</b></div>
-            <div><span>DTK LOST</span><b className="crit">{pad(lost)}</b></div>
-          </div>
-        </header>
-
-        {/* ---------------- controls ---------------- */}
-        <div className="evx-bar">
-          <div className="evx-controls">
-            <div className="evx-month">
-              <button onClick={() => step(-1)} aria-label="Previous month"><IconPrev /></button>
-              <span className="evx-month-l">{MONTH_ABBR[month]} {year}</span>
-              <button onClick={() => step(1)} aria-label="Next month"><IconNext /></button>
+          <header className="evx-head ex-hero-host">
+            <div
+              className="ex-hero-bg"
+              style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Ice_Greenland.jpg")' }}
+              aria-hidden
+            />
+            <div>
+              <div className="evx-tagline">
+                <span className="evx-live" aria-hidden />
+              </div>
             </div>
 
-            <div className="evx-field">
-              <label htmlFor="evx-period">PERIOD</label>
-              <select id="evx-period" value={period} onChange={(e) => setPeriod(e.target.value as PeriodId)}>
-                <option value="custom">FULL MONTH</option>
-                {PERIODS.map((p) => (
-                  <option key={p.id} value={p.id}>{p.label.toUpperCase()}</option>
-                ))}
-              </select>
+            <div className="evx-counters">
+              <div><span>EVENTS</span><b>{pad(events.length)}</b></div>
+              <div><span>INCIDENTS</span><b className="crit">{pad(incidents)}</b></div>
+              <div><span>PLANNED</span><b>{pad(planned)}</b></div>
+              <div><span>DTK IMPACTED</span><b className="warn">{pad(impacted)}</b></div>
+              <div><span>DTK LOST</span><b className="crit">{pad(lost)}</b></div>
+            </div>
+          </header>
+
+          {/* ---------------- controls ---------------- */}
+          <div className="evx-bar">
+            <div className="evx-controls">
+              <div className="evx-month">
+                <button onClick={() => step(-1)} aria-label="Previous month"><IconPrev /></button>
+                <span className="evx-month-l">{MONTH_ABBR[month]} {year}</span>
+                <button onClick={() => step(1)} aria-label="Next month"><IconNext /></button>
+              </div>
+
+              <div className="evx-field">
+                <label htmlFor="evx-period">PERIOD</label>
+                <select id="evx-period" value={period} onChange={(e) => setPeriod(e.target.value as PeriodId)}>
+                  <option value="custom">FULL MONTH</option>
+                  {PERIODS.map((p) => (
+                    <option key={p.id} value={p.id}>{p.label.toUpperCase()}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
+
+          {narrow && (
+            <button
+              type="button"
+              className="evx-legend-toggle"
+              aria-expanded={legendOpen}
+              aria-controls={legendId}
+              onClick={() => setLegendOpen((v) => !v)}
+            >
+              LEGEND
+              <i className="evx-legend-chev" aria-hidden />
+            </button>
+          )}
+
+          {narrow ? <Collapse open={legendOpen} id={legendId}>{legend}</Collapse> : legend}
+
+          {/* ---------------- the concept ---------------- */}
+          {events.length === 0 ? (
+            <p className="evx-none">NO EVENTS IN {MONTH_ABBR[month]} {year} FOR THE SELECTED PERIOD</p>
+          ) : (
+            <>
+              {/* Scrolls sideways by nature — a month of days cannot be shown at phone width and
+                still be readable. Say so, rather than leaving the cut-off edge to be noticed. */}
+              {narrow && <p className="evx-scrollhint">SWIPE THE TIMELINE TO MOVE THROUGH THE MONTH →</p>}
+              <ConceptA
+                events={events}
+                year={year}
+                month={month}
+                onOpen={setOpenEvent}
+                pitch={narrow ? LANE_PITCH.narrow : LANE_PITCH.wide}
+                minBlockPct={narrow ? MIN_BLOCK_PCT.narrow : MIN_BLOCK_PCT.wide}
+              />
+            </>
+          )}
+
         </div>
 
-        {narrow && (
-          <button
-            type="button"
-            className="evx-legend-toggle"
-            aria-expanded={legendOpen}
-            aria-controls={legendId}
-            onClick={() => setLegendOpen((v) => !v)}
-          >
-            LEGEND
-            <i className="evx-legend-chev" aria-hidden />
-          </button>
-        )}
-
-        {narrow ? <Collapse open={legendOpen} id={legendId}>{legend}</Collapse> : legend}
-
-        {/* ---------------- the concept ---------------- */}
-        {events.length === 0 ? (
-          <p className="evx-none">NO EVENTS IN {MONTH_ABBR[month]} {year} FOR THE SELECTED PERIOD</p>
-        ) : (
-          <>
-            {/* Scrolls sideways by nature — a month of days cannot be shown at phone width and
-                still be readable. Say so, rather than leaving the cut-off edge to be noticed. */}
-            {narrow && <p className="evx-scrollhint">SWIPE THE TIMELINE TO MOVE THROUGH THE MONTH →</p>}
-            <ConceptA
-              events={events}
-              year={year}
-              month={month}
-              onOpen={setOpenEvent}
-              pitch={narrow ? LANE_PITCH.narrow : LANE_PITCH.wide}
-              minBlockPct={narrow ? MIN_BLOCK_PCT.narrow : MIN_BLOCK_PCT.wide}
-            />
-          </>
+        {/* ---------------- A: event popover ---------------- */}
+        {openEvent && (
+          <Overlay side="center" labelledBy="evx-pop-t" onClose={() => setOpenEvent(null)}>
+            <header className="evx-panel-head">
+              <div>
+                <span className="evx-panel-tag">EVENT TELEMETRY</span>
+                <h3 id="evx-pop-t">{openEvent.id}</h3>
+              </div>
+              <button className="evx-x" onClick={() => setOpenEvent(null)} aria-label="Close event"><IconClose /></button>
+            </header>
+            <div className="evx-panel-body">
+              <EventBody event={openEvent} />
+            </div>
+          </Overlay>
         )}
 
       </div>
-
-      {/* ---------------- A: event popover ---------------- */}
-      {openEvent && (
-        <Overlay side="center" labelledBy="evx-pop-t" onClose={() => setOpenEvent(null)}>
-          <header className="evx-panel-head">
-            <div>
-              <span className="evx-panel-tag">EVENT TELEMETRY</span>
-              <h3 id="evx-pop-t">{openEvent.id}</h3>
-            </div>
-            <button className="evx-x" onClick={() => setOpenEvent(null)} aria-label="Close event"><IconClose /></button>
-          </header>
-          <div className="evx-panel-body">
-            <EventBody event={openEvent} />
-          </div>
-        </Overlay>
-      )}
-
-    </div>
+    </>
   );
 }
 

@@ -356,17 +356,12 @@ export default function EventsManifest() {
           />
           <div>
             <div className={s.eyebrow}>
-              <Link to="/examples">Mock-ups</Link>
+              <Link to="/examples">Home</Link>
               <span aria-hidden>/</span>
-              <span>Mission Manifest</span>
+              <span>Events</span>
             </div>
             <h1 className={s.title}>Events</h1>
-            <p className={s.sub}>
-              Events that could impede data production — calibration activities, manoeuvres,
-              platform anomalies and ground-segment issues — with the datatakes each one impacts.
-              Select a day to open its manifest.
-            </p>
-          </div>
+            <PageDescription className={s.desc}>{EVENTS_DESCRIPTION}</PageDescription>          </div>
         </header>
 
         <div className={s.monthBar}>

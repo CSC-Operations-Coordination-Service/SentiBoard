@@ -9,7 +9,7 @@ import Availability from "./pages/Availability";
 import Processors from "./pages/Processors";
 import About from "./pages/About";
 import { NotFoundPage, StatPage } from "./pages/Simple";
-import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal, IndexFleetGallery } from "./pages/IndexExamples";
+import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal, IndexFleetGallery, Index1 } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
 import AboutBriefing from "./pages/about-briefing/AboutBriefing";
 import AboutDossier from "./pages/about-dossier/AboutDossier";
@@ -49,6 +49,7 @@ export default function App() {
 
           {/* PROPOSAL examples (do not affect the real pages above) */}
           <Route path="/examples" element={<ExamplesHome />} />
+          <Route path="/examples/index1" element={<Index1 />} />
           <Route path="/examples/fleet" element={<IndexFleet />} />
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route path="/examples/fleet-gallery" element={<IndexFleetGallery />} />

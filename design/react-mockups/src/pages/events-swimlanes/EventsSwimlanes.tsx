@@ -401,16 +401,11 @@ export default function EventsSwimlanes() {
           />
           <div>
             <div className={s.eyebrow}>
-              <Link to="/examples">Mock-ups</Link>
+              <Link to="/examples">Home</Link>
               <span aria-hidden>/</span>
-              <span>Mission swimlanes</span>
+              <span>Events</span>
             </div>
             <h1 className={s.title}>Events</h1>
-            <p className={s.sub}>
-              The month by mission rather than by date. Each row states its event count, its
-              affected datatakes and whether any of its data is still missing; open a row for that
-              mission's events.
-            </p>
             <PageDescription defaultOpen={!narrow}>{EVENTS_SWIMLANES_DESCRIPTION}</PageDescription>
           </div>
         </header>

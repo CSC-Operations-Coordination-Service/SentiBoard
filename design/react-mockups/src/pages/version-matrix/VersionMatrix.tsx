@@ -155,7 +155,8 @@ export default function VersionMatrix() {
       <PageHeader
         crumb="Processors proposal"
         title="Version Matrix"
-        sub="Baseline versions per processor, as a comparison grid rather than a timeline. Rows are processors, columns are baselines in sequence, and every row's newest release sits in the same last column — so the current state of the constellation reads straight down. Select a cell for the release detail."
+        desc={PROCESSORS_MATRIX_DESCRIPTION}
+        img="/assets/img/modules/processors.jpg"
       />
 
       <section className="wrap pad">

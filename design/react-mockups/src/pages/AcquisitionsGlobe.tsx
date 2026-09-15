@@ -53,8 +53,7 @@ const CHANGES: [string, string][] = [
 export default function AcquisitionsGlobe() {
   return (
     <>
-      <PageHeader crumb="Acquisitions · Demand-driven globe" title="Acquisitions Status"
-        sub="Proposal for the acquisitions globe: the same interactive 3D view, rebuilt so it only renders when it has to, draws the acquired footprints rather than bare points, and is fully operable from the keyboard."
+      <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
         desc={ACQUISITIONS_DESCRIPTION} />
 
       <section className="wrap pad">

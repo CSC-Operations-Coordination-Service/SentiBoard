@@ -8,6 +8,8 @@
    for pages that are new in v2, so they describe the proposal's own controls rather than restating
    copy from a page that does not exist yet. */
 
+import Events from "@/pages/Events";
+
 export const AVAILABILITY_SUMMARY =
   "";
 
@@ -22,40 +24,60 @@ export const AVAILABILITY_DESCRIPTION =
 
 /* Events — the "Mission Manifest" calendar proposal: month grid plus the Day Manifest drawer. */
 export const EVENTS_DESCRIPTION =
-  "This page logs the events that could impede data production — calibration activities, satellite " +
-  "manoeuvres, platform anomalies and ground-segment issues — against the month in which they " +
-  "occurred. Each icon in a day cell is one event, drawn with that event type's glyph — the same " +
-  "icons as the event type filters — and a coloured stripe marks a day on which " +
-  "publication completeness was degraded or lost. Filter the month by mission, by satellite, by " +
-  "event type, or search by event title, satellite or datatake ID. Select any day to open its Day " +
-  "Manifest, which lists that day's events in time order; expanding an event reveals the datatakes " +
-  "it impacted, with their sensing windows and completeness status.";
+  "This view shows the events occurred on a given date and the possible impact on user products completeness. " +
+  "Events are categorized according to the following issue types: " +
+  " - Acquisition: issue occurring during the reception of the data at the ground station " +
+  "- Calibration: issue occurred during sensor calibration " +
+  "- Manoeuvre: issue occurred during the execution of a manoeuvre " +
+  "- Production: issue occurred during data processing " +
+  "- Satellite: issue due to instrument unavailability " +
+  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their " +
+  "sensing times, along with further details about the event. The impact on datatake completeness is represented by the " +
+  "right-side coloured circle. The 'green' colour indicates that the total completeness is spared; 'orange' is used in " +
+  "case of medium impact; the 'red' colour is used when the datatake is lost. " +
+  "Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.";
 
 /* Events — the mission swimlanes (the /examples/events-swimlanes proposal). The top level is the
    fleet rather than time, so the description leads with the row and says what "active" means: the
    Events feed has no open/closed field, and the badge must not be read as one. */
 export const EVENTS_SWIMLANES_DESCRIPTION =
-  "This page groups the month's events by mission rather than by date. Each row is one mission, and " +
-  "states — before it is opened — how many events it had, how many distinct datatakes those events " +
-  "affected, which event types occurred, and how many of them still have data missing. Open a row " +
-  "to list that mission's events in date order, then expand an event to see the datatakes it " +
-  "impacted, with their sensing windows and completeness status. \"Active\" counts events whose " +
-  "datatake completeness is still degraded, lost or in progress: the events feed carries no " +
-  "open/closed state, so this is derived from completeness rather than read from a status field.";
+  "This view shows the events occurred on a given date and the possible impact on user products completeness. " +
+  "Events are categorized according to the following issue types: " +
+  " - Acquisition: issue occurring during the reception of the data at the ground station " +
+  "- Calibration: issue occurred during sensor calibration " +
+  "- Manoeuvre: issue occurred during the execution of a manoeuvre " +
+  "- Production: issue occurred during data processing " +
+  "- Satellite: issue due to instrument unavailability " +
+  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their " +
+  "sensing times, along with further details about the event. The impact on datatake completeness is represented by the " +
+  "right-side coloured circle. The 'green' colour indicates that the total completeness is spared; 'orange' is used in " +
+  "case of medium impact; the 'red' colour is used when the datatake is lost. " +
+  "Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.";
 
 /* Events — the calendar on the current page, kept as-is for comparison against the proposals. */
 export const EVENTS_LIST_DESCRIPTION =
-  "This page shows the events of the past three months that could impede data production, on a " +
-  "month calendar. Use the event type filters to show only the categories you are interested in; " +
-  "the calendar and the event count update together. Select an event in the calendar to read its " +
-  "details, including how far it affected data production and which products it impacted.";
+  "This view shows the events occurred on a given date and the possible impact on user products completeness. " +
+  "Events are categorized according to the following issue types: " +
+  " - Acquisition: issue occurring during the reception of the data at the ground station " +
+  "- Calibration: issue occurred during sensor calibration " +
+  "- Manoeuvre: issue occurred during the execution of a manoeuvre " +
+  "- Production: issue occurred during data processing " +
+  "- Satellite: issue due to instrument unavailability " +
+  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their " +
+  "sensing times, along with further details about the event. The impact on datatake completeness is represented by the " +
+  "right-side coloured circle. The 'green' colour indicates that the total completeness is spared; 'orange' is used in " +
+  "case of medium impact; the 'red' colour is used when the datatake is lost. " +
+  "Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.";
 
 /* Acquisitions — shared by the current globe page and the demand-driven proposal, since both
    answer the same question with the same controls. */
 export const ACQUISITIONS_DESCRIPTION =
-  "This page shows Copernicus Sentinel acquisitions on a 3D globe.  " +
-  "Filter by satellite and acquisition status to explore current and past missions. " +
-  "Drag to rotate and scroll to zoom. ";
+  "This view shows the scheduled Acquisition Plans, on an interactive " +
+  "3D globe. By default, the view shows the real-time position of the Copernicus Sentinels satellite; " +
+  "however, by selecting a datatake from the top-right dropdown menu, the simulation time is shifted to " +
+  "the beginning of the selected acquisition. Datatakes can be filtered by selecting the satellite and " +
+  "the acquisition date. By clicking on the  icon, it is possible to inspect the published products " +
+  "relevant to the selected datatake.entinel acquisitions on a 3D globe.  ";
 
 /* Processors — the release timeline. */
 export const PROCESSORS_DESCRIPTION =

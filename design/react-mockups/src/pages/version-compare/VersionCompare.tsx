@@ -128,7 +128,8 @@ export default function VersionCompare() {
       <PageHeader
         crumb="Processors proposal"
         title="Baseline Timeline"
-        sub="A scrollable gantt-style timeline showing all baseline releases for a selected processor over time. Click on any baseline bar to view its complete release information including notes, affected satellites, and processor details."
+        desc={PROCESSORS_COMPARE_DESCRIPTION}
+        img="/assets/img/modules/processors.jpg"
       />
 
       <section className="wrap pad">
