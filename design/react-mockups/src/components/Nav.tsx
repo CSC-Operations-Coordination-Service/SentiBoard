@@ -6,10 +6,10 @@ import Partners from "./Partners";
 
 const LINKS = [
   //{ to: "/examples/index1", label: "Index", end: true },
-  { to: "/examples/acquisitions-globe", label: "Acquisitions" },
-  { to: "/events", label: "Events" },
-  { to: "/availability", label: "Data Availability" },
-  { to: "/processors", label: "Processors" },
+  { to: "/examples/acquisitions-globe", label: "Acquisitions", end: false },
+  { to: "/events", label: "Events", end: false },
+  { to: "/availability", label: "Data Availability", end: false },
+  { to: "/processors", label: "Processors", end: false },
 ];
 
 export default function Nav() {
