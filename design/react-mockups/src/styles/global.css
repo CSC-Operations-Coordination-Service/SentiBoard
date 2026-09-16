@@ -1719,7 +1719,7 @@ table.data td.mono {
   border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--line);
-  background: radial-gradient(circle at 50% 42%, #252b33 0%, #1a1f25 78%);
+  background: var(--surface-bg);
 }
 
 /* Light mode: medium-light background for the globe section */
@@ -1727,7 +1727,7 @@ table.data td.mono {
   --text: #1a2332;
   --text-dim: #4a5a6a;
   --text-mute: #7a8a9a;
-  background: radial-gradient(circle at 50% 42%, #c8daf0 0%, #a8c8e0 78%);
+  background: var(--surface-bg);
 }
 
 .globe-stage {
@@ -2113,7 +2113,7 @@ table.data td.mono {
 .acq-list {
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--bg-2);
+  background: var(--surface-bg);
   overflow: hidden;
 }
 
@@ -2210,7 +2210,7 @@ table.data td.mono {
 .acq-detail {
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--bg-2);
+  background: var(--surface-bg);
   padding: 20px;
 }
 

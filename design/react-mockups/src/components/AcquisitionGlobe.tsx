@@ -1315,12 +1315,14 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       {/* Toolbar with filters and metadata - matching mockup layout */}
       {rail === "plates" && (
         <div style={{
-          background: "var(--bg-2)",
+          background: "var(--surface-bg)",
           borderBottom: "1px solid var(--line)",
-          padding: "8px 16px",
+          padding: "0",
           width: "100vw",
-          marginLeft: "calc(-50vw + 50%)"
+          marginLeft: "calc(-50vw + 50%)",
+          boxSizing: "border-box"
         }}>
+          <div style={{ padding: "8px clamp(18px, 4vw, 48px)", boxSizing: "border-box" }}>
           {/* Filters row with breadcrumb and metadata */}
           <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "nowrap", minHeight: "56px" }}>
             {/* Breadcrumb - inline */}
@@ -1427,15 +1429,20 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
               </div>
             </div>
           </div>
+          </div>
         </div>
       )}
 
-      <div className="acq-layout" style={{
-        padding: "16px",
+      <div style={{
         width: "100vw",
         marginLeft: "calc(-50vw + 50%)",
-        boxSizing: "border-box"
+        boxSizing: "border-box",
+        paddingBlock: "clamp(56px, 8vw, 120px)"
       }}>
+        <div className="acq-layout" style={{
+          padding: "0 clamp(18px, 4vw, 48px)",
+          boxSizing: "border-box"
+        }}>
         <div className="globe-card">
           <div className="globe-stage" ref={stageRef}>
             <canvas
@@ -1632,6 +1639,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
               ))}
             </aside>
           )}
+        </div>
         </div>
       </div>
     </>

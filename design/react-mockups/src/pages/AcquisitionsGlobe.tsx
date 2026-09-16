@@ -56,14 +56,16 @@ export default function AcquisitionsGlobe() {
       <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
         desc={ACQUISITIONS_DESCRIPTION} img="/assets/img/nebula.jpg" />
 
-      <section className="wrap pad" style={{ paddingTop: "1rem" }}>
-        {/* Cross-link to the second Acquisitions concept. The two answer different questions —
-            this one is the geographic reading, the ladder is the pipeline reading — so they are
-            reviewed together rather than one replacing the other. */}
+      <section style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)", boxSizing: "border-box", paddingBlock: "clamp(56px, 8vw, 120px)" } as any}>
+        <div style={{ width: "100%", maxWidth: "none", margin: "0", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box" } as any}>
+          {/* Cross-link to the second Acquisitions concept. The two answer different questions —
+              this one is the geographic reading, the ladder is the pipeline reading — so they are
+              reviewed together rather than one replacing the other. */}
 
-        <Reveal>
-          <AcquisitionGlobe stations={STATIONS} datatakes={ACQ_DATATAKES} rail="plates" />
-        </Reveal>
+          <Reveal>
+            <AcquisitionGlobe stations={STATIONS} datatakes={ACQ_DATATAKES} rail="plates" />
+          </Reveal>
+        </div>
       </section>
 
       <style>{`
