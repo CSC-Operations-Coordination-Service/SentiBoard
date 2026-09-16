@@ -135,12 +135,16 @@ p {
   background: var(--glass);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  box-sizing: border-box;
+  padding: 0 clamp(18px, 4vw, 48px);
 }
 
 .nav-inner {
   display: flex;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
   width: 100%;
 }
 
@@ -172,7 +176,6 @@ p {
   display: flex;
   gap: 4px;
   margin-left: 8px;
-  flex: 1;
 }
 
 .nav-links a {

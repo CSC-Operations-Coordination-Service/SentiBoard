@@ -24,8 +24,6 @@ export default function PageHeader({
   descriptionOpen = true,
   backgroundImage,
 }: PageHeaderProps) {
-  const [open, setOpen] = useState(descriptionOpen);
-
   return (
     <div
       className="page-header"
@@ -47,29 +45,14 @@ export default function PageHeader({
           </nav>
         )}
 
-        <h1 className="page-title">{title}</h1>
-
-        {description && (
-          <div className="page-description">
-            <button
-              type="button"
-              className="description-toggle"
-              onClick={() => setOpen(!open)}
-              aria-expanded={open}
-            >
-              <span className="toggle-label">{descriptionTitle}</span>
-              <ChevronDown
-                size={16}
-                className={`toggle-icon ${open ? "open" : ""}`}
-              />
-            </button>
-            {open && (
-              <div className="description-content">
-                {description}
-              </div>
-            )}
-          </div>
-        )}
+        <div className="page-header-content">
+          <h1 className="page-title">{title}</h1>
+          {description && (
+            <div className="page-description">
+              {description}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

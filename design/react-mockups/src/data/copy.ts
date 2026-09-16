@@ -24,17 +24,13 @@ export const AVAILABILITY_DESCRIPTION =
 
 /* Events — the "Mission Manifest" calendar proposal: month grid plus the Day Manifest drawer. */
 export const EVENTS_DESCRIPTION =
-  "This view shows the events occurred on a given date and the possible impact on user products completeness. " +
-  "Events are categorized according to the following issue types: " +
-  " - Acquisition: issue occurring during the reception of the data at the ground station " +
-  "- Calibration: issue occurred during sensor calibration " +
-  "- Manoeuvre: issue occurred during the execution of a manoeuvre " +
-  "- Production: issue occurred during data processing " +
-  "- Satellite: issue due to instrument unavailability " +
-  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their " +
-  "sensing times, along with further details about the event. The impact on datatake completeness is represented by the " +
-  "right-side coloured circle. The 'green' colour indicates that the total completeness is spared; 'orange' is used in " +
-  "case of medium impact; the 'red' colour is used when the datatake is lost. " +
+  "This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:\n" +
+  "- Acquisition: issue occurring during the reception of the data at the ground station\n" +
+  "- Calibration: issue occurred during sensor calibration\n" +
+  "- Manoeuvre: issue occurred during the execution of a manoeuvre\n" +
+  "- Production: issue occurred during data processing\n" +
+  "- Satellite: issue due to instrument unavailability\n" +
+  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The \"green\" colour indicates that the total completeness is spared; \"orange\" is used in case of medium impact; the \"red\" colour is used when the datatake is lost.\n" +
   "Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.";
 
 /* Events — the mission swimlanes (the /examples/events-swimlanes proposal). The top level is the

@@ -16,6 +16,7 @@ import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHoriz
 import {
   ALL_SATELLITES,
   CATEGORIES,
+  CATEGORY_COLOR,
   CATEGORY_ICONS,
   CATEGORY_STROKE,
   COMPLETENESS,
@@ -44,8 +45,7 @@ import {
   type ManifestEvent,
   type Status,
 } from "./mock";
-import { Collapse, PageDescription, useMediaQuery } from "@/components/ui";
-import { EVENTS_DESCRIPTION } from "@/data/copy";
+import { Collapse, useMediaQuery } from "@/components/ui";
 import s from "./manifest.module.css";
 
 /* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
@@ -119,7 +119,7 @@ function OccurrenceList({
   onToggle,
 }: {
   events: ManifestEvent[];
-  expanded: string | null;
+  expanded: Set<string>;
   onToggle: (id: string) => void;
 }) {
   if (events.length === 0) {
@@ -131,7 +131,7 @@ function OccurrenceList({
       {events.map((e) => {
         const Icon = CATEGORY_ICONS[e.category];
         const status = eventStatus(e);
-        const open = expanded === e.id;
+        const open = expanded.has(e.id);
         const unavailable = e.datatakes.filter((d) => d.status === "unavailable").length;
 
         return (
@@ -148,7 +148,10 @@ function OccurrenceList({
               <span className={s.occBody}>
                 <span className={s.occTitle}>{e.title}</span>
                 <span className={s.occMeta}>
-                  <Icon size={12} strokeWidth={CATEGORY_STROKE} aria-hidden /> {e.category} · {e.satellite}
+                  <span style={{ color: CATEGORY_COLOR[e.category], display: "inline-flex", alignItems: "center" }}>
+                    <Icon size={12} strokeWidth={CATEGORY_STROKE} aria-hidden />
+                  </span>
+                  {" "}{e.category} · {e.satellite}
                 </span>
               </span>
               <StatusCircle status={status} />
@@ -201,7 +204,8 @@ function DaySummary({ events }: { events: ManifestEvent[] }) {
 export default function EventsManifest() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [openDay, setOpenDay] = useState<number | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [descriptionOpen, setDescriptionOpen] = useState(true);
 
   /* Three fields plus five type chips is most of a phone's first screen, and none of it is the
      month. On a narrow viewport the controls fold away; the head keeps the matching-event count
@@ -248,7 +252,7 @@ export default function EventsManifest() {
     setOpenDay(day);
     // A newly opened day starts collapsed: the timeline answers "what happened", and
     // auto-expanding the first event would bury it under one event's datatakes.
-    setExpanded(null);
+    setExpanded(new Set());
   }, []);
 
   // Escape closes the drawer — the overlay is modal in feel, so it should behave like one.
@@ -262,6 +266,16 @@ export default function EventsManifest() {
   }, [openDay, close]);
 
   const dayEvents = openDay === null ? [] : byDay.get(openDay) ?? [];
+
+  const toggleAllExpanded = useCallback(() => {
+    if (expanded.size === dayEvents.length && dayEvents.length > 0) {
+      // All are expanded, collapse all
+      setExpanded(new Set());
+    } else if (dayEvents.length > 0) {
+      // Expand all events
+      setExpanded(new Set(dayEvents.map((e) => e.id)));
+    }
+  }, [expanded, dayEvents]);
 
   /* The controls themselves, kept out of the markup below so the narrow layout can put them behind
      a toggle without the wide layout gaining a wrapper it has no use for. */
@@ -326,6 +340,7 @@ export default function EventsManifest() {
         {CATEGORIES.map((c) => {
           const Icon = CATEGORY_ICONS[c];
           const on = filters.categories.includes(c);
+          const categoryColor = CATEGORY_COLOR[c];
           return (
             <button
               key={c}
@@ -333,8 +348,17 @@ export default function EventsManifest() {
               className={`${s.chip} ${on ? s.chipOn : ""}`}
               onClick={() => toggleCategory(c)}
               aria-pressed={on}
+              style={
+                on
+                  ? {
+                    borderColor: categoryColor,
+                    backgroundColor: `${categoryColor}24`,
+                    color: categoryColor,
+                  }
+                  : undefined
+              }
             >
-              <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c}
+              <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c.charAt(0).toUpperCase() + c.slice(1)}
             </button>
           );
         })}
@@ -363,7 +387,31 @@ export default function EventsManifest() {
             <h1 className={s.title}>Events</h1>
             {/* Styled through `.page :global(.page-desc)` in manifest.module.css, which re-points
                 the shared --pd-* palette at this canvas — so no className is needed here. */}
-            <PageDescription>{EVENTS_DESCRIPTION}</PageDescription>
+            <div className={s.descriptionCard}>
+              <button
+                type="button"
+                className={s.descriptionHead}
+                onClick={() => setDescriptionOpen(!descriptionOpen)}
+                aria-expanded={descriptionOpen}
+              >
+                <span>Description</span>
+                <span className={s.descriptionChev}>{descriptionOpen ? "^" : "v"}</span>
+              </button>
+              <Collapse open={descriptionOpen}>
+                <div className={s.descriptionBody}>
+                  <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+                  <ul>
+                    <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
+                    <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
+                    <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
+                    <li><strong>Production:</strong> issue occurred during data processing</li>
+                    <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+                  </ul>
+                  <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
+                  <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+                </div>
+              </Collapse>
+            </div>
           </div>
         </header>
 
@@ -460,11 +508,13 @@ export default function EventsManifest() {
                     <span className={s.marks}>
                       {events.slice(0, MARKS_SHOWN).map((e) => {
                         const Icon = CATEGORY_ICONS[e.category];
+                        const categoryColor = CATEGORY_COLOR[e.category];
                         return (
                           <span
                             key={e.id}
                             className={s.mark}
                             title={`${e.time} · ${e.category} · ${e.satellite}`}
+                            style={{ color: categoryColor }}
                           >
                             <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden />
                           </span>
@@ -480,22 +530,11 @@ export default function EventsManifest() {
                     </span>
                   )}
 
-                  {/* Loss stripe, drawn only for Partial and Unavailable. Planned, Processing and
-                      Acquired days stay unmarked — nothing has been lost there. */}
-                  {status && marksLoss(status) && (
-                    <span className={s.lossBar} style={{ background: COMPLETENESS[status].color }} aria-hidden />
-                  )}
                 </button>
               );
             })}
           </div>
         </div>
-
-        <p className={s.hint}>
-          {filtered.length === 0
-            ? "No events match the current filters."
-            : "Every icon is one event, drawn with its event type's glyph — the same icons as the type filters above. A coloured stripe marks a day where completeness was degraded or lost."}
-        </p>
       </div>
 
       {/* ---------- Day Manifest drawer ---------- */}
@@ -523,15 +562,33 @@ export default function EventsManifest() {
                 <h2 className={s.detailDay}>{dayLabel(openDay)}</h2>
                 <DaySummary events={dayEvents} />
               </div>
-              <button type="button" className={s.iconBtn} onClick={close} aria-label="Close">
-                <X size={15} aria-hidden />
-              </button>
+              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <button
+                  type="button"
+                  className={s.expandAllBtn}
+                  onClick={toggleAllExpanded}
+                  title={expanded.size === dayEvents.length ? "Collapse all events" : "Expand all events"}
+                >
+                  {expanded.size === dayEvents.length ? "Collapse All" : "Expand All"}
+                </button>
+                <button type="button" className={s.iconBtn} onClick={close} aria-label="Close">
+                  <X size={15} aria-hidden />
+                </button>
+              </div>
             </div>
             <div className={s.drawerBody}>
               <OccurrenceList
                 events={dayEvents}
                 expanded={expanded}
-                onToggle={(id) => setExpanded((prev) => (prev === id ? null : id))}
+                onToggle={(id) => setExpanded((prev) => {
+                  const newSet = new Set(prev);
+                  if (newSet.has(id)) {
+                    newSet.delete(id);
+                  } else {
+                    newSet.add(id);
+                  }
+                  return newSet;
+                })}
               />
             </div>
           </>

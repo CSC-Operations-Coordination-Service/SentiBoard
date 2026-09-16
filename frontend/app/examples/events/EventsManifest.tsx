@@ -18,6 +18,7 @@ import { ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, X } fr
 import {
   ALL_SATELLITES,
   CATEGORIES,
+  CATEGORY_COLOR,
   CATEGORY_ICONS,
   CATEGORY_STROKE,
   COMPLETENESS,
@@ -48,7 +49,6 @@ import {
 } from "./mock";
 import Collapse from "@/components/Collapse";
 import PageDescription from "@/components/PageDescription";
-import { EVENTS_DESCRIPTION } from "@/lib/copy";
 import s from "./manifest.module.css";
 
 /** How many marks a day cell can show before it starts summarising. Four fits two rows of glyphs in
@@ -119,7 +119,7 @@ function OccurrenceList({
   onToggle,
 }: {
   events: ManifestEvent[];
-  expanded: string | null;
+  expanded: Set<string>;
   onToggle: (id: string) => void;
 }) {
   if (events.length === 0) {
@@ -131,7 +131,7 @@ function OccurrenceList({
       {events.map((e) => {
         const Icon = CATEGORY_ICONS[e.category];
         const status = eventStatus(e);
-        const open = expanded === e.id;
+        const open = expanded.has(e.id);
         const unavailable = e.datatakes.filter((d) => d.status === "unavailable").length;
 
         return (
@@ -202,7 +202,8 @@ function DaySummary({ events }: { events: ManifestEvent[] }) {
 export default function EventsManifest() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [openDay, setOpenDay] = useState<number | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"overview" | "details">("overview");
 
   // A satellite from the old mission would contradict the new one, leaving zero results with no
   // visible cause, so changing mission clears it. Conversely a satellite implies its mission —
@@ -242,7 +243,7 @@ export default function EventsManifest() {
     setOpenDay(day);
     // A newly opened day starts collapsed: the timeline answers "what happened", and
     // auto-expanding the first event would bury it under one event's datatakes.
-    setExpanded(null);
+    setExpanded(new Set());
   }, []);
 
   // Escape closes the drawer — the overlay is modal in feel, so it should behave like one.
@@ -257,6 +258,17 @@ export default function EventsManifest() {
 
   const dayEvents = openDay === null ? [] : byDay.get(openDay) ?? [];
 
+  const handleExpandAll = useCallback(() => {
+    if (expanded.size === dayEvents.length && dayEvents.length > 0) {
+      // All events are expanded, collapse them all
+      setExpanded(new Set());
+    } else if (dayEvents.length > 0) {
+      // Expand all events
+      const allIds = new Set(dayEvents.map((e) => e.id));
+      setExpanded(allIds);
+    }
+  }, [expanded, dayEvents]);
+
   return (
     <div className={s.page}>
       <div className={s.inner}>
@@ -268,12 +280,41 @@ export default function EventsManifest() {
               <span>Mission Manifest</span>
             </div>
             <h1 className={s.title}>Events</h1>
+            <div className={s.tabBar}>
+              <button
+                type="button"
+                className={`${s.tab} ${activeTab === "overview" ? s.tabActive : ""}`}
+                onClick={() => setActiveTab("overview")}
+                aria-selected={activeTab === "overview"}
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                className={`${s.tab} ${activeTab === "details" ? s.tabActive : ""}`}
+                onClick={() => setActiveTab("details")}
+                aria-selected={activeTab === "details"}
+              >
+                Details
+              </button>
+            </div>
             <p className={s.sub}>
               Events that could impede data production — calibration activities, manoeuvres,
               platform anomalies and ground-segment issues — with the datatakes each one impacts.
               Select a day to open its manifest.
             </p>
-            <PageDescription>{EVENTS_DESCRIPTION}</PageDescription>
+            <PageDescription>
+              <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+              <ul style={{ paddingLeft: '1.2rem', margin: '0.5rem 0' }}>
+                <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
+                <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
+                <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
+                <li><strong>Production:</strong> issue occurred during data processing</li>
+                <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+              </ul>
+              <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
+              <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+            </PageDescription>
           </div>
         </header>
 
@@ -364,6 +405,7 @@ export default function EventsManifest() {
             {CATEGORIES.map((c) => {
               const Icon = CATEGORY_ICONS[c];
               const on = filters.categories.includes(c);
+              const categoryColor = CATEGORY_COLOR[c];
               return (
                 <button
                   key={c}
@@ -371,8 +413,17 @@ export default function EventsManifest() {
                   className={`${s.chip} ${on ? s.chipOn : ""}`}
                   onClick={() => toggleCategory(c)}
                   aria-pressed={on}
+                  style={
+                    on
+                      ? {
+                        borderColor: categoryColor,
+                        backgroundColor: `${categoryColor}24`,
+                        color: categoryColor,
+                      }
+                      : undefined
+                  }
                 >
-                  <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c}
+                  <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c.charAt(0).toUpperCase() + c.slice(1)}
                 </button>
               );
             })}
@@ -490,15 +541,36 @@ export default function EventsManifest() {
                 <h2 className={s.detailDay}>{dayLabel(openDay)}</h2>
                 <DaySummary events={dayEvents} />
               </div>
-              <button type="button" className={s.iconBtn} onClick={close} aria-label="Close">
-                <X size={15} aria-hidden />
-              </button>
+              <div className={s.drawerActions}>
+                {dayEvents.length > 0 && (
+                  <button
+                    type="button"
+                    className={s.expandAllBtn}
+                    onClick={handleExpandAll}
+                    aria-label={expanded.size === dayEvents.length ? "Collapse all" : "Expand all"}
+                    title={expanded.size === dayEvents.length ? "Collapse all events" : "Expand all events"}
+                  >
+                    {expanded.size === dayEvents.length ? "Collapse All" : "Expand All"}
+                  </button>
+                )}
+                <button type="button" className={s.iconBtn} onClick={close} aria-label="Close">
+                  <X size={15} aria-hidden />
+                </button>
+              </div>
             </div>
             <div className={s.drawerBody}>
               <OccurrenceList
                 events={dayEvents}
                 expanded={expanded}
-                onToggle={(id) => setExpanded((prev) => (prev === id ? null : id))}
+                onToggle={(id) => {
+                  const newExpanded = new Set(expanded);
+                  if (newExpanded.has(id)) {
+                    newExpanded.delete(id);
+                  } else {
+                    newExpanded.add(id);
+                  }
+                  setExpanded(newExpanded);
+                }}
               />
             </div>
           </>

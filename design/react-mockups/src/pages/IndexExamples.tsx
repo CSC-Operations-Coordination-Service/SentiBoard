@@ -412,14 +412,14 @@ const ABOUT_CARDS = [
 ];
 
 const PAGE_CARDS = [
-  {
+  /*{
     to: "/examples/events-swimlanes", img: CARD_ART.eventsSwimlanes, title: "a) Events · Mission swimlanes",
     desc: "Show missions by fleet with collapsible rows for each (S1, S2, S3, S5P). Row headers display event count, affected datatakes, and an 'N active' badge. Expanding a row reveals event details, replacing the chronological list.",
   },
   {
     to: "/examples/events-spacex", img: CARD_ART.eventsSpacex, title: "b) Events · timeline + heatmap",
     desc: "Two layouts share a tab bar: Layout A has a Gantt ribbon by month, and Layout B features 31 day tiles with status pills.",
-  },
+  },*/
   {
     to: "/examples/events-manifest", img: CARD_ART.eventsManifest, title: "c) Events · filters",
     desc: "Shows mission events on a grid with icons for each event type. Selecting a day reveals occurrences and affected datatakes.",

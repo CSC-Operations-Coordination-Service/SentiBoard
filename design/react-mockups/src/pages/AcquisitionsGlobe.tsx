@@ -54,9 +54,9 @@ export default function AcquisitionsGlobe() {
   return (
     <>
       <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
-        desc={ACQUISITIONS_DESCRIPTION} />
+        desc={ACQUISITIONS_DESCRIPTION} img="/assets/img/nebula.jpg" />
 
-      <section className="wrap pad">
+      <section className="wrap pad" style={{ paddingTop: "1rem" }}>
         {/* Cross-link to the second Acquisitions concept. The two answer different questions —
             this one is the geographic reading, the ladder is the pipeline reading — so they are
             reviewed together rather than one replacing the other. */}

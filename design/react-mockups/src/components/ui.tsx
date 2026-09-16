@@ -66,35 +66,11 @@ export function Collapse({ open, id, children }: {
   );
 }
 
-/** The "Description" panel under a page title, carried over from the legacy dashboard's
- *  <div id="accordion"> card. That markup needed Bootstrap's data-toggle="collapse" and therefore
- *  jQuery at runtime; here the open flag is React state and the slide is CSS, so the behaviour
- *  survives with no third-party JS.
- *
- *  Open by default: the guidance is worth reading on arrival, so collapsing is the deliberate act,
- *  not expanding. */
-export function PageDescription({ children, title = "Description", defaultOpen = true }: {
-  children: ReactNode; title?: string; defaultOpen?: boolean;
+/** Inline description rendered directly without accordion toggle. */
+export function PageDescription({ children }: {
+  children: ReactNode;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
-  const bodyId = useId();
-  return (
-    <div className="page-desc">
-      <button
-        type="button"
-        className="page-desc-head"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={bodyId}
-      >
-        {title}
-        <ChevronDown className="chev" size={15} aria-hidden />
-      </button>
-      <Collapse open={open} id={bodyId}>
-        <div className="body">{children}</div>
-      </Collapse>
-    </div>
-  );
+  return <div className="page-description">{children}</div>;
 }
 
 /** `desc` renders the collapsible "Description" panel above.

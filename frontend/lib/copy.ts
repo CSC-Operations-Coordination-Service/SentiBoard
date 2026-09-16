@@ -21,11 +21,11 @@ export const AVAILABILITY_DESCRIPTION =
   '"from"-"to" time range applies to the start date of the datatakes.';
 
 export const EVENTS_DESCRIPTION =
-  "This page logs the events that could impede data production — calibration activities, satellite " +
-  "manoeuvres, platform anomalies and ground-segment issues — against the month in which they " +
-  "occurred. Each icon in a day cell is one event, drawn with that event type's glyph — the same " +
-  "icons as the event type filters — and a coloured stripe marks a day on which " +
-  "publication completeness was degraded or lost. Filter the month by mission, by satellite, by " +
-  "event type, or search by event title, satellite or datatake ID. Select any day to open its Day " +
-  "Manifest, which lists that day's events in time order; expanding an event reveals the datatakes " +
-  "it impacted, with their sensing windows and completeness status.";
+  "This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:\n" +
+  "- Acquisition: issue occurring during the reception of the data at the ground station\n" +
+  "- Calibration: issue occurred during sensor calibration\n" +
+  "- Manoeuvre: issue occurred during the execution of a manoeuvre\n" +
+  "- Production: issue occurred during data processing\n" +
+  "- Satellite: issue due to instrument unavailability\n" +
+  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The \"green\" colour indicates that the total completeness is spared; \"orange\" is used in case of medium impact; the \"red\" colour is used when the datatake is lost.\n" +
+  "Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.";

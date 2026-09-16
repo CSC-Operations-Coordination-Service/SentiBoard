@@ -42,6 +42,7 @@ export type ManifestEvent = {
   category: EventCategory;
   satellite: string;
   title: string;
+  summary?: string;
   datatakes: Datatake[];
 };
 
@@ -81,6 +82,15 @@ export const CATEGORY_ICONS: Record<EventCategory, LucideIcon> = {
 
 /** EventIcon's stroke weight — thin enough to stay legible at 12px without going bold. */
 export const CATEGORY_STROKE = 1.9;
+
+/** Event type colors from swimlanes — each category has a distinct hue. */
+export const CATEGORY_COLOR: Record<EventCategory, string> = {
+  Acquisition: "#aeb8c4",
+  Calibration: "#b0dfe5",
+  Manoeuvre: "#ffad00",
+  Production: "#c77dff",
+  Satellite: "#ee8216",
+};
 
 export const CATEGORIES = Object.keys(CATEGORY_ICONS) as EventCategory[];
 

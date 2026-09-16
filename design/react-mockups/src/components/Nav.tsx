@@ -7,7 +7,7 @@ import Partners from "./Partners";
 const LINKS = [
   //{ to: "/examples/index1", label: "Index", end: true },
   { to: "/examples/acquisitions-globe", label: "Acquisitions", end: false },
-  { to: "/events", label: "Events", end: false },
+  { to: "/examples/events-manifest", label: "Events", end: false },
   { to: "/availability", label: "Data Availability", end: false },
   { to: "/processors", label: "Processors", end: false },
 ];
@@ -35,7 +35,7 @@ export default function Nav() {
 
   return (
     <header className={"nav" + (open ? " open" : "")}>
-      <div className="nav-inner wrap">
+      <div className="nav-inner">
         <Link to="/examples/index1" className="brand" onClick={() => setOpen(false)} aria-label="SentiBoard — home">
           <img className="brand-logo" src="/assets/img/sentiboard.png" alt="SentiBoard" />
         </Link>

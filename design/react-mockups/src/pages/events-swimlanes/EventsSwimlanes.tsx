@@ -406,7 +406,7 @@ export default function EventsSwimlanes() {
               <span>Events</span>
             </div>
             <h1 className={s.title}>Events</h1>
-            <PageDescription defaultOpen={!narrow}>{EVENTS_SWIMLANES_DESCRIPTION}</PageDescription>
+            <PageDescription>{EVENTS_SWIMLANES_DESCRIPTION}</PageDescription>
           </div>
         </header>
 
