@@ -8,7 +8,7 @@ const LINKS = [
   //{ to: "/examples/index1", label: "Index", end: true },
   { to: "/examples/acquisitions-globe", label: "Acquisitions", end: false },
   { to: "/examples/events-manifest", label: "Events", end: false },
-  { to: "/availability", label: "Data Availability", end: false },
+  { to: "/examples/coverage-timeline", label: "Data Availability", end: false },
   { to: "/processors", label: "Processors", end: false },
 ];
 

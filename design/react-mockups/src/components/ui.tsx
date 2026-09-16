@@ -81,6 +81,8 @@ export function PageDescription({ children }: {
 export function PageHeader({ title, sub, crumb, desc, img }: {
   title: string; sub?: string; crumb: string; desc?: ReactNode; img?: string;
 }) {
+  const [descOpen, setDescOpen] = useState(true);
+
   return (
     <>
       <style>{`.page-head .page-desc { max-width: none !important; }`}</style>
@@ -94,7 +96,21 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
         </nav>
         <h1>{title}</h1>
         {sub && <p className="sub">{sub}</p>}
-        {desc && <PageDescription>{desc}</PageDescription>}
+        {desc && (
+          <div className="page-desc">
+            <button
+              className="page-desc-head"
+              onClick={() => setDescOpen(!descOpen)}
+              aria-expanded={descOpen}
+            >
+              <span>Description</span>
+              <ChevronDown className="chev" size={14} />
+            </button>
+            <Collapse open={descOpen}>
+              <div className="body">{desc}</div>
+            </Collapse>
+          </div>
+        )}
       </div>
     </div>
     </>
