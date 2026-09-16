@@ -1,0 +1,493 @@
+/* Split pane layout container */
+.container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: calc(100vh - 200px);
+  background: var(--bg);
+  position: relative;
+}
+
+/* Satellite tabs */
+.satTabs {
+  display: flex;
+  gap: 8px;
+  padding: 20px 30px 16px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  flex-wrap: wrap;
+}
+
+.tabBtn {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tabBtn:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+.tabBtn.active {
+  background: var(--accent-2);
+  border-color: var(--accent-2);
+  color: var(--on-accent);
+}
+
+/* Split layout */
+.split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  min-height: 600px;
+  gap: 0;
+  width: 100%;
+}
+
+/* Left pane - Satellite visualization */
+.satpane {
+  position: relative;
+  background: linear-gradient(135deg, rgba(6, 12, 18, 0.95) 0%, rgba(6, 12, 18, 0.85) 100%);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
+}
+
+.artGlow,
+.art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.artGlow {
+  filter: blur(26px);
+  background: radial-gradient(circle at center, var(--accent-2) 0%, transparent 100%);
+  opacity: 0.15;
+  z-index: 1;
+}
+
+.art {
+  background: radial-gradient(circle at 50% 40%, rgba(63, 208, 224, 0.2) 0%, transparent 70%);
+  opacity: 0.3;
+  z-index: 2;
+}
+
+.satelliteImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  opacity: 0.9;
+  z-index: 2;
+  mix-blend-mode: screen;
+  transition: opacity 0.4s ease;
+}
+
+.placeholder {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--ink-faint);
+  text-align: center;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.satpane:has(.satelliteImage) .placeholder {
+  opacity: 0;
+}
+
+.placeholderText {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+/* Right pane - Processors list */
+.procpane {
+  padding: 26px 30px 90px;
+  min-width: 0;
+  position: relative;
+  background: linear-gradient(
+    90deg,
+    rgba(6, 12, 18, 0.3) 0%,
+    rgba(6, 12, 18, 0.62) 26%,
+    rgba(6, 12, 18, 0.72) 100%
+  );
+  backdrop-filter: blur(3px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.phead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.phead h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.plist {
+  border-top: 1px solid var(--line);
+}
+
+.prow {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.prow.on .panel {
+  max-height: 1800px;
+}
+
+.phdr {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 15px 4px;
+  color: var(--ink);
+  transition: background 0.2s ease;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.phdr:hover {
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.nm {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.nm b {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.nm span {
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.cur {
+  text-align: right;
+  flex: none;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.cur b {
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--accent-2);
+  margin: 0 0 3px 0;
+  display: block;
+}
+
+.cur b.none {
+  color: var(--ink-faint);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.cur span {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  margin: 0;
+}
+
+.cur span i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent-2);
+  box-shadow: 0 0 7px var(--accent-2);
+  flex: none;
+}
+
+.chev {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-faint);
+  transition: transform 0.3s ease, color 0.2s ease;
+}
+
+.phdr:hover .chev {
+  color: var(--accent-2);
+}
+
+.prow.on .chev {
+  transform: rotate(180deg);
+  color: var(--accent-2);
+}
+
+.panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.45s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.in {
+  padding: 4px 4px 26px;
+}
+
+.vsel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  margin: 2px 0 20px;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.028);
+}
+
+.vsel label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.step {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink-dim);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.step:hover:not(:disabled) {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+.step:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+
+.vtag {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.vtag.now {
+  color: var(--accent-2);
+}
+
+.meta {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.meta div {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+}
+
+.meta dt {
+  font-weight: 400;
+  color: var(--ink-faint);
+}
+
+.meta dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sats {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+  flex-wrap: wrap;
+}
+
+.sats span {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  padding: 4px 9px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  color: var(--ink-dim);
+  display: inline-block;
+}
+
+.rn h4 {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.rn p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  line-height: 1.62;
+}
+
+.rn ul {
+  margin: 0 0 18px;
+  padding-left: 19px;
+}
+
+.rn li {
+  font-size: 12.5px;
+  line-height: 1.62;
+  color: var(--ink-dim);
+  margin-bottom: 5px;
+}
+
+.rn li b {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.rn code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--accent-2);
+}
+
+/* Responsive */
+@media (max-width: 1080px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .satpane {
+    min-height: 62vh;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .procpane {
+    padding: 20px 20px 70px;
+  }
+}
+
+@media (max-width: 768px) {
+  .satTabs {
+    padding: 16px 20px 12px;
+  }
+
+  .tabBtn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .procpane {
+    padding: 16px 16px 50px;
+  }
+
+  .phead h2 {
+    font-size: 13px;
+  }
+
+  .phdr {
+    padding: 12px 2px;
+    gap: 8px;
+  }
+
+  .nm b {
+    font-size: 12px;
+  }
+
+  .nm span {
+    font-size: 10px;
+  }
+
+  .cur {
+    min-width: 140px;
+  }
+
+  .cur b {
+    font-size: 14px;
+  }
+
+  .vsel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .vsel select {
+    width: 100%;
+  }
+}

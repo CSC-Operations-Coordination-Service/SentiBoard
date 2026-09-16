@@ -77,47 +77,31 @@ export const ACQUISITIONS_DESCRIPTION =
 
 /* Processors — the release timeline. */
 export const PROCESSORS_DESCRIPTION =
-  "This page lists every release of the Copernicus Sentinel processors on an interactive timeline. " +
-  "Filter by mission to show only the processors you are interested in. Zoom in and out with the " +
-  "mouse wheel, drag left and right to move through time, and select a coloured box to display the " +
-  "details of that processor release.";
+  "This view shows the complete list of the releases of the Copernicus Sentinels processors, " +
+  "on an interactive timeline. The timeline can be zoomed in / out using the mouse wheel, and dragged" +
+  " to the left / right by moving the mouse while keeping left-hand button pressed. By clicking on a " +
+  "colored box, the details relevant to the selected processor release is displayed in the lower part of the screen.";
 
 /* Processors — the version matrix proposal. Describes its own controls rather than the timeline's,
    since the two read the same releases in deliberately different ways. */
 export const PROCESSORS_MATRIX_DESCRIPTION =
-  "This page lists every release of the Copernicus Sentinel processors as a comparison grid. Each " +
-  "row is a processor; each column is a baseline version in sequence, with the newest release of " +
-  "every row in the last column — so reading that column downwards gives the current state of the " +
-  "whole constellation, and the columns to its left are one, two or three baselines back. Each cell " +
-  "shows the baseline version and the date it was released; a filled marker is the baseline " +
-  "currently in force, and a hollow one has been replaced by a later release. Filter by mission to " +
-  'narrow the rows, or switch on "Current versions only" to collapse the grid to a single column ' +
-  "showing the most recent release per processor and how long it has been in force. Select any cell " +
-  "to read that release's date, the period it covered, what it replaced, its release notes and the " +
-  "satellites it applies to.";
+  "This view shows the complete list of the releases of the Copernicus Sentinels processors, " +
+  "on an interactive timeline. The timeline can be zoomed in / out using the mouse wheel, and dragged" +
+  " to the left / right by moving the mouse while keeping left-hand button pressed. By clicking on a " +
+  "colored box, the details relevant to the selected processor release is displayed in the lower part of the screen.";
 
 /* Processors — the release log proposal. The notes are this view's content rather than a detail
    panel's payload, so the description leads with them. */
 export const PROCESSORS_LOG_DESCRIPTION =
-  "This page lists every release of the Copernicus Sentinel processors as a feed, most recent " +
-  "first, with each entry's release notes shown in full rather than summarised or hidden. Each " +
-  "entry carries the processor it applies to, its baseline version, the date it was released, the " +
-  "release notes themselves and the satellites affected. Switch the grouping between by date, which " +
-  "buckets releases into the month they landed in and reads as a changelog for the whole " +
-  "constellation, and by processor, which reads as a release history per product. Narrow the feed by " +
-  "mission, by release-date range, or by searching — the search covers the release notes, the " +
-  "processor and its products, the baseline version, the mission and the satellites, and matches " +
-  "inside the notes are marked in place. All three narrow the feed together. Releases that the feed " +
-  "carries no notes for are listed with that stated.";
+  "This view shows the complete list of the releases of the Copernicus Sentinels processors, " +
+  "on an interactive timeline. The timeline can be zoomed in / out using the mouse wheel, and dragged" +
+  " to the left / right by moving the mouse while keeping left-hand button pressed. By clicking on a " +
+  "colored box, the details relevant to the selected processor release is displayed in the lower part of the screen.";
 
 /* Processors — the version compare proposal. A task view rather than a browsing one, so the
    description explains the two picks rather than what the page lists. */
 export const PROCESSORS_COMPARE_DESCRIPTION =
-  "This page compares two baselines of one Copernicus Sentinel processor. Choose the processor, " +
-  "then the earlier and later baselines to compare; the later list only offers releases that came " +
-  'after the earlier one, so the comparison always reads forwards in time. "Compare to current" ' +
-  "sets the later side to the most recently released baseline. The summary states how far apart the " +
-  "two releases are, how many baselines the jump covers and which ones it skips over, and how the " +
-  "satellite coverage differs. Below it the release notes sit side by side, compared paragraph by " +
-  "paragraph: a line only the earlier baseline carried is marked with a minus, a line the later one " +
-  "added is marked with a plus, and a line both restate is dimmed rather than flagged as a change.";
+  "This view shows the complete list of the releases of the Copernicus Sentinels processors, " +
+  "on an interactive timeline. The timeline can be zoomed in / out using the mouse wheel, and dragged" +
+  " to the left / right by moving the mouse while keeping left-hand button pressed. By clicking on a " +
+  "colored box, the details relevant to the selected processor release is displayed in the lower part of the screen.";

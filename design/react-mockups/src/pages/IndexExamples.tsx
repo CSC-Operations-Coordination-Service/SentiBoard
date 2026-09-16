@@ -442,29 +442,29 @@ const AVAIL_CARDS = [
     to: "/examples/coverage-timeline", img: CARD_ART.coverageTimeline, title: "a) Data Availability · Coverage timeline",
     desc: "The heatmap shows daily mission performance, with outages as horizontal runs and sparkline chips indicating gaps. The table is sorted by recent gaps for easy issue identification.",
   },
-  {
+  /*{
     to: "/examples/data-availability-spacex", img: CARD_ART.availabilitySpacex, title: "b) Data Availability",
     desc: "The page mimicked a launch console with hairline rules, a UTC clock, donut metrics, and a table for telemetry records.",
   },
   {
     to: "/examples/data-availability", img: CARD_ART.availabilityFiltered, title: "c) Data Availability · Filtered breakdown",
     desc: "The datatake list includes filters for mission, acquisition, and publication status, ensuring consistent charts and rows, along with a sortable table of relevant details.",
-  },
+  },*/
 ];
 
 const PROC_CARDS = [
   {
-    to: "/examples/version-matrix", img: CARD_ART.versionMatrix, title: "a) Processors · Version matrix",
-    desc: "Processors are arranged in rows with baseline versions in columns.",
+    to: "/processors", img: CARD_ART.versionMatrix, title: "a) Processors",
+    desc: "The focus is on the last released processor. Historical information can be accessed by expanding the processor details.",
   },
-  {
+  /*{
     to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors · Release Timeline",
     desc: "Release notes appear in order, with filtering options and no status indicators.",
   },
   {
     to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Gantt timeline",
     desc: "A scrollable gantt-style timeline showing all baseline releases for a selected processor over time.",
-  },
+  },*/
 ];
 
 export function ExamplesHome() {

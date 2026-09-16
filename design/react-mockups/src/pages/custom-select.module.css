@@ -1,0 +1,147 @@
+.container {
+  position: relative;
+  display: inline-block;
+  flex: 0 1 auto;
+  min-width: auto;
+}
+
+.trigger {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent-2);
+  background: #181e26;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 8px 10px;
+  cursor: pointer;
+  width: auto;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.trigger:hover {
+  background: rgba(29, 208, 221, 0.08);
+  border-color: var(--accent-2);
+  color: #00e5d0;
+}
+
+.trigger:focus {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.trigger:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.trigger.open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-color: var(--accent-2);
+  background: rgba(29, 208, 221, 0.08);
+}
+
+.value {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  flex: none;
+  transition: transform 0.2s ease;
+  color: currentColor;
+}
+
+.trigger.open .chevron {
+  transform: rotate(180deg);
+}
+
+.menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: #181e26;
+  border: 1px solid var(--accent-2);
+  border-top: none;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  min-width: 200px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: var(--ink-dim);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.option:last-child {
+  border-bottom: none;
+}
+
+.option:hover {
+  background: rgba(29, 208, 221, 0.12);
+  color: var(--accent-2);
+}
+
+.option.selected {
+  background: rgba(29, 208, 221, 0.18);
+  color: var(--accent-2);
+  font-weight: 600;
+}
+
+.label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.checkmark {
+  flex: none;
+  color: var(--accent-2);
+}
+
+/* Scrollbar styling */
+.menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background: rgba(0, 217, 196, 0.2);
+  border-radius: 3px;
+}
+
+.menu::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 217, 196, 0.4);
+}

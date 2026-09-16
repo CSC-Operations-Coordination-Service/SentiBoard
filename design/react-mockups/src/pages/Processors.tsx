@@ -1,62 +1,208 @@
 import { useState } from "react";
-import { PageHeader, Reveal } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { PROCESSORS_DESCRIPTION } from "@/data/copy";
-import { PROCESSORS, STATUS_COLORS, Processor } from "@/data/mock";
+import { PROCESSOR_GROUPS, MISSION_ORDER, MISSION_NAMES, MissionId } from "@/data/processor-releases";
+import CustomSelect, { type SelectOption } from "./CustomSelect";
+import s from "./processors.module.css";
 
-const MISSIONS = ["All", "S1 IPF", "S2 IPF", "S3 IPF", "S5P"];
+// Map mission IDs to satellite image paths
+const SATELLITE_IMAGES: Record<MissionId, string> = {
+  "1": "/assets/img/satellites/s1.jpg",
+  "2": "/assets/img/satellites/s2.jpg",
+  "3": "/assets/img/satellites/s3.jpg",
+  "5P": "/assets/img/satellites/s5.jpg",
+};
 
 export default function Processors() {
-  const [mission, setMission] = useState("All");
-  const [sel, setSel] = useState<Processor>(PROCESSORS[1]);
-  const rows = mission === "All" ? PROCESSORS : PROCESSORS.filter((p) => p.mission === mission);
-  const lanes = [...new Set(rows.map((r) => r.mission))];
+  const [activeMission, setActiveMission] = useState<MissionId>("1");
+  const [expandedProc, setExpandedProc] = useState<string | null>(null);
+  const [selectedVersion, setSelectedVersion] = useState<Record<string, string>>({});
+
+  const satelliteImageUrl = SATELLITE_IMAGES[activeMission];
 
   return (
     <>
       <PageHeader crumb="Processors" title="Processors"
         desc={PROCESSORS_DESCRIPTION}
+        img="/assets/img/modules/processors.jpg"
       />
 
-      <section className="wrap pad">
-        <div className="filters">
-          <span className="meta" style={{ marginRight: 8 }}>Mission</span>
-          {MISSIONS.map((m) => (
-            <button key={m} className={"chipbtn" + (mission === m ? " on" : "")} onClick={() => setMission(m)}>{m}</button>
+      <section className={s.container}>
+        {/* Satellite selector tabs - all four buttons always visible */}
+        <div className={s.satTabs}>
+          {MISSION_ORDER.map((m) => (
+            <button
+              key={m}
+              className={`${s.tabBtn} ${activeMission === m ? s.active : ""}`}
+              onClick={() => setActiveMission(m)}
+            >
+              S{m}
+            </button>
           ))}
         </div>
 
-        <Reveal className="timeline">
-          <div className="tl-row" style={{ borderBottom: "1px solid var(--line)", paddingBottom: 10, marginBottom: 6 }}>
-            <div className="tl-lab" />
-            <div className="tl-track">
-              {["Jan", "Mar", "May", "Jul", "Sep", "Nov"].map((m, i) => (
-                <span key={m} className="meta" style={{ position: "absolute", left: `${i * 20}%`, top: 4 }}>{m}</span>
-              ))}
-            </div>
-          </div>
-          {lanes.map((lane) => (
-            <div className="tl-row" key={lane}>
-              <div className="tl-lab">{lane}</div>
-              <div className="tl-track">
-                {rows.filter((r) => r.mission === lane).map((r, i) => (
-                  <div key={i} className="tl-box"
-                    style={{ left: `${r.from}%`, width: `${r.to - r.from}%`, background: STATUS_COLORS[r.status], outline: sel === r ? "2px solid var(--text)" : "none" }}
-                    onClick={() => setSel(r)}>{r.label}</div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </Reveal>
+        {/* Split layout */}
+        <div className={s.split}>
+          {/* Left pane: Satellite visualization */}
+          <section className={s.satpane}>
+            <div className={s.artGlow} aria-hidden="true"></div>
+            <div className={s.art} aria-hidden="true"></div>
 
-        <Reveal className="card" style={{ marginTop: 20 }}>
-          <div className="meta" style={{ marginBottom: 10 }}>Selected release</div>
-          <div className="grid cols-4" style={{ gap: 24 }}>
-            <div className="stat"><span className="k">Processor</span><span className="v" style={{ fontSize: 26 }}>{sel.mission}</span></div>
-            <div className="stat"><span className="k">Baseline</span><span className="v" style={{ fontSize: 26 }}>{sel.label}</span></div>
-            <div className="stat"><span className="k">Status</span><span className="v" style={{ fontSize: 26, color: STATUS_COLORS[sel.status], textTransform: "capitalize" }}>{sel.status === "info" ? "current" : sel.status}</span></div>
-            <div className="stat"><span className="k">Applies to</span><span className="v" style={{ fontSize: 26 }}>All datatakes</span></div>
-          </div>
-        </Reveal>
+            {/* Satellite image */}
+            {satelliteImageUrl && (
+              <img
+                src={satelliteImageUrl}
+                alt={`Sentinel-${activeMission} satellite`}
+                className={s.satelliteImage}
+              />
+            )}
+
+            <div className={s.placeholder}>
+              <div className={s.placeholderText}>Sentinel-{activeMission} Visualization</div>
+            </div>
+          </section>
+
+          {/* Right pane: Processors list */}
+          <section className={s.procpane}>
+            <div className={s.phead}>
+              <h2>Processors - Sentinel-{activeMission}</h2>
+            </div>
+
+            <div className={s.plist}>
+              {PROCESSOR_GROUPS.filter((g) => g.mission === activeMission).map((group) => {
+                const isExpanded = expandedProc === group.ipf;
+                const currentRelease = group.releases[group.releases.length - 1];
+                const selectedVersionValue = selectedVersion[group.ipf] ?? currentRelease?.baseline;
+                const selectedReleaseIdx = group.releases.findIndex((r) => r.baseline === selectedVersionValue);
+                const selectedRelease = group.releases[selectedReleaseIdx] || currentRelease;
+                const isCurrentVersion = selectedRelease === currentRelease;
+
+                return group.releases.length > 0 ? (
+                  <div
+                    key={group.ipf}
+                    className={`${s.prow} ${isExpanded ? s.on : ""}`}
+                  >
+                    <button
+                      className={s.phdr}
+                      aria-expanded={isExpanded}
+                      onClick={() => setExpandedProc(isExpanded ? null : group.ipf)}
+                    >
+                      <span className={s.nm}>
+                        <b>{group.label}</b>
+                        <span>{group.sub}</span>
+                      </span>
+                      <span className={s.cur}>
+                        <b>{currentRelease.baseline}</b>
+                        <span>
+                          <i></i>in force · {currentRelease.from.toUpperCase()}
+                        </span>
+                      </span>
+                      <svg
+                        className={s.chev}
+                        width="15"
+                        height="15"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.4"
+                        aria-hidden="true"
+                      >
+                        <path d="M6 9l6 6 6-6"></path>
+                      </svg>
+                    </button>
+
+                    {isExpanded && (
+                      <div className={s.panel}>
+                        <div className={s.in}>
+                          {/* Version selector with prev/next buttons */}
+                          <div className={s.vsel}>
+                            <label htmlFor={`v-${group.ipf}`}>Baseline version</label>
+                            <button
+                              className={`${s.step} ${s.prev}`}
+                              disabled={selectedReleaseIdx <= 0}
+                              onClick={() => {
+                                if (selectedReleaseIdx > 0) {
+                                  setSelectedVersion({
+                                    ...selectedVersion,
+                                    [group.ipf]: group.releases[selectedReleaseIdx - 1].baseline,
+                                  });
+                                }
+                              }}
+                              aria-label="Previous version"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                                <path d="M15 5l-7 7 7 7"></path>
+                              </svg>
+                            </button>
+                            <CustomSelect
+                              id={`v-${group.ipf}`}
+                              value={selectedVersionValue}
+                              options={group.releases.map((r, idx) => ({
+                                value: r.baseline,
+                                label: `${r.baseline} · ${r.from}${idx === group.releases.length - 1 ? " · in force" : ""}`,
+                                isCurrent: idx === group.releases.length - 1,
+                              }))}
+                              onChange={(value) => setSelectedVersion({ ...selectedVersion, [group.ipf]: value })}
+                            />
+                            <button
+                              className={`${s.step} ${s.next}`}
+                              disabled={selectedReleaseIdx >= group.releases.length - 1}
+                              onClick={() => {
+                                if (selectedReleaseIdx < group.releases.length - 1) {
+                                  setSelectedVersion({
+                                    ...selectedVersion,
+                                    [group.ipf]: group.releases[selectedReleaseIdx + 1].baseline,
+                                  });
+                                }
+                              }}
+                              aria-label="Next version"
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+                                <path d="M9 5l7 7-7 7"></path>
+                              </svg>
+                            </button>
+                            {isCurrentVersion && <span className={`${s.vtag} ${s.now}`}>In force</span>}
+                          </div>
+
+                          {/* Metadata */}
+                          <dl className={s.meta}>
+                            <div>
+                              <dt>Processor Baseline ID:</dt>
+                              <dd>{selectedRelease.baseline}</dd>
+                            </div>
+                            <div>
+                              <dt>Operational since:</dt>
+                              <dd>{selectedRelease.day}</dd>
+                            </div>
+                            <div>
+                              <dt>Impacted satellite(s):</dt>
+                              <dd>{selectedRelease.sats.join(", ")}</dd>
+                            </div>
+                          </dl>
+
+                          {/* Release notes */}
+                          {selectedRelease.notes && (
+                            <div className={s.rn}>
+                              <h4>Release notes</h4>
+                              <p>{selectedRelease.notes}</p>
+                              {selectedRelease.sats.length > 0 && (
+                                <div className={s.sats}>
+                                  {selectedRelease.sats.map((sat) => (
+                                    <span key={sat}>{sat}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : null;
+              })}
+            </div>
+          </section>
+        </div>
       </section>
     </>
   );
