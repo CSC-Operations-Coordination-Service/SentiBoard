@@ -179,7 +179,6 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
 
   return (
     <>
-      <style>{`.page-head .page-desc { max-width: none !important; }`}</style>
       <div className={`page-head${img ? " ex-hero-host" : ""}`} style={{ width: "100%", boxSizing: "border-box" } as any}>
       {img && (
         <div className="ex-hero-bg" style={{ ["--ex-hero-img" as string]: `url("${img}")` }} aria-hidden />
@@ -190,43 +189,46 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
         </nav>
         <h1>{title}</h1>
         {sub && <p className="sub">{sub}</p>}
-        {desc && (
-          <div className="page-desc">
-            <button
-              className="page-desc-head"
-              onClick={() => setDescOpen(true)}
-              aria-expanded={descOpen}
-              style={{
-                backgroundColor: '#1e262e',
-                border: '1px solid #2a3440',
-                color: '#a0aec0',
-                padding: '8px 16px',
-                marginTop: '12px',
-                borderRadius: '0px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                boxShadow: 'none',
-                cursor: 'pointer',
-                fontFamily: 'var(--font-mono)',
-                fontSize: '11px',
-                letterSpacing: 'var(--track)',
-                textTransform: 'uppercase',
-                transition: 'color 0.2s var(--ease), background 0.2s var(--ease)',
-              }}
-            >
-              <span>Description</span>
-              <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-            <DescriptionModal open={descOpen} onClose={() => setDescOpen(false)}>
-              <div className="body">{desc}</div>
-            </DescriptionModal>
-          </div>
-        )}
       </div>
     </div>
+
+    {desc && (
+      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" } as any}>
+        <div style={{ marginTop: '16px' }}>
+          <button
+            type="button"
+            aria-expanded={descOpen}
+            onClick={() => setDescOpen(true)}
+            style={{
+              cursor: 'pointer',
+              padding: '12px 16px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '0px',
+              background: 'rgb(52, 58, 64)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '12px',
+              fontFamily: 'var(--font-mono)',
+              fontSize: '11px',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'rgb(154, 164, 180)',
+              transition: 'color 0.2s, background 0.2s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <span>Description</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
+        </div>
+        <DescriptionModal open={descOpen} onClose={() => setDescOpen(false)}>
+          <div className="body">{desc}</div>
+        </DescriptionModal>
+      </div>
+    )}
     </>
   );
 }
