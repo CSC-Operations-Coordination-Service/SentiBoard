@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { PageHeader, Reveal } from "@/components/ui";
+import { PageHeader, Reveal, DescriptionModal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
@@ -51,10 +52,62 @@ const CHANGES: [string, string][] = [
 ];
 
 export default function AcquisitionsGlobe() {
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+
   return (
     <>
       <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
-        desc={ACQUISITIONS_DESCRIPTION} img="/assets/img/nebula.jpg" />
+        img="/assets/img/nebula.jpg" />
+
+      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", margin: "0", padding: "0" }}>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              type="button"
+              style={{
+                cursor: "pointer",
+                padding: "12px 16px",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "0",
+                background: "#343a40",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#9aa4b4",
+                transition: "color 0.2s, background 0.2s",
+                whiteSpace: "nowrap",
+                marginLeft: "0 !important" as any,
+                alignSelf: "flex-start !important" as any,
+              }}
+              onClick={() => setDescriptionOpen(true)}
+              aria-expanded={descriptionOpen}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#eef1f6";
+                e.currentTarget.style.background = "rgba(0, 199, 214, 0.13)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#9aa4b4";
+                e.currentTarget.style.background = "#343a40";
+              }}
+            >
+              <span>Description</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </div>
+          <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
+            <div style={{ color: "#eef1f6" }}>
+              <p>{ACQUISITIONS_DESCRIPTION}</p>
+            </div>
+          </DescriptionModal>
+        </div>
+      </div>
 
       <section style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)", boxSizing: "border-box", paddingBlock: "clamp(56px, 8vw, 120px)" } as any}>
         <div style={{ width: "100%", maxWidth: "none", margin: "0", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box" } as any}>

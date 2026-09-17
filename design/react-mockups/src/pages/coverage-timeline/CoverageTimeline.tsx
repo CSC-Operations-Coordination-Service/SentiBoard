@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { Eye, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
-import { PageHeader, Reveal } from "@/components/ui";
+import { PageHeader, Reveal, DescriptionModal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import DatatakeModal from "@/components/DatatakeModal";
 import type { DatatakeSummary } from "@/data/datatake-details";
@@ -174,6 +174,7 @@ export default function CoverageTimeline() {
   const [sort, setSort] = useState<SortKey>("gap");
   const [focus, setFocus] = useState<{ mission: string; key: string; date: Date } | null>(null);
   const [selected, setSelected] = useState<DatatakeSummary | null>(null);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   const satelliteOptions = mission === "All" ? ["All", ...ALL_SATELLITES] : ["All", ...MISSIONS[mission]];
 
@@ -275,8 +276,58 @@ export default function CoverageTimeline() {
 
   return (
     <>
-      <PageHeader crumb="Data Availability" title="Data Availability" desc={AVAILABILITY_DESCRIPTION}
+      <PageHeader crumb="Data Availability" title="Data Availability"
         img="/assets/img/modules/Protecting_Atlantic.jpg" />
+
+      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", margin: "0", padding: "0" }}>
+          <div style={{ marginTop: "16px" }}>
+            <button
+              type="button"
+              style={{
+                cursor: "pointer",
+                padding: "12px 16px",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                borderRadius: "0",
+                background: "#343a40",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "12px",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#9aa4b4",
+                transition: "color 0.2s, background 0.2s",
+                whiteSpace: "nowrap",
+                marginLeft: "0 !important" as any,
+                alignSelf: "flex-start !important" as any,
+              }}
+              onClick={() => setDescriptionOpen(true)}
+              aria-expanded={descriptionOpen}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "#eef1f6";
+                e.currentTarget.style.background = "rgba(0, 199, 214, 0.13)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "#9aa4b4";
+                e.currentTarget.style.background = "#343a40";
+              }}
+            >
+              <span>Description</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+          </div>
+          <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
+            <div style={{ color: "#eef1f6" }}>
+              <p>{AVAILABILITY_DESCRIPTION}</p>
+            </div>
+          </DescriptionModal>
+        </div>
+      </div>
 
       <section className="wrap pad">
         {/* ---------------- counters ---------------- */}

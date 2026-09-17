@@ -45,7 +45,7 @@ export default function About() {
   return (
     <div className="about-page">
       <div className="about-bg" aria-hidden />
-      <PageHeader crumb="About" title="About" />
+      <PageHeader crumb="About" title="About" desc={<>SentiBoard is an Earth observation data management and monitoring platform designed to track satellite missions, data acquisition, processing pipelines, and operational health across multiple satellite constellations. This page provides an overview of the platform's capabilities and key features.</>} />
 
       <section className="wrap" style={{ paddingTop: 4 }}>
         <p className="ab-variant">

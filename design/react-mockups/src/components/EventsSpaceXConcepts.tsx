@@ -1,17 +1,22 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTheme } from "@/theme";
-import { Collapse, PageHeader, useMediaQuery } from "@/components/ui";
-import { EVENTS_SWIMLANES_DESCRIPTION } from "@/data/copy";
+import { Collapse, DescriptionModal, useMediaQuery } from "@/components/ui";
 import { PERIODS, inPeriod, type PeriodId } from "@/data/period";
 
 /* =============================================================================
-   DEVOCS-219 — Events page concept: ORBITAL TIMELINE. PROPOSALS only; the real
+   DEVOCS-219 — Events page concepts, telemetry register. PROPOSALS only; the real
    Events page (/events) is untouched. Reachable at /examples/events-spacex.
+
+   Two layouts behind one tab bar, so they can be compared without leaving the page:
 
      A · ORBITAL TIMELINE — missions on the Y axis, the month's days on the X, every
          event a block on its mission's track. Answers "what was happening, to whom,
          and for how long" in one read. Lanes are packed so overlapping events on the
          same mission stack instead of hiding each other.
+
+     B · TELEMETRY GRID — the month as day tiles carrying micro status pills. Answers
+         "which days went wrong" first, then opens the day's log on the right.
 
    COMMON WITH THE DATA AVAILABILITY MOCK-UPS, as asked:
      · Theme is declared at the top of the app and only read here — no in-page toggle,
@@ -137,9 +142,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 2, 9, 40),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S3A-158-230", "PARTIAL", 62),
-      dtk("S3A-237-321", "RECOVERED", 100),
-      dtk("S3A-256-344", "PARTIAL", 74),
+      dtk("S3A_OLCI_20260802T041200_A17C2E", "PARTIAL", 62),
+      dtk("S3A_SLSTR_20260802T055400_B04F19", "RECOVERED", 100),
+      dtk("S3A_SRAL_20260802T072100_9CE30D", "PARTIAL", 74),
     ],
   },
   {
@@ -154,7 +159,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 3, 8, 0),
     end: utc(Y, M, 5, 18, 0),
     impact: "NONE",
-    datatakes: [dtk("S2A-82146-8", "RECOVERED", 100)],
+    datatakes: [dtk("S2A_MSI_20260803T093015_44D1AB", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4811",
@@ -169,8 +174,8 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 5, 6, 45),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S5P-74790", "PARTIAL", 48),
-      dtk("S5P-80694", "PARTIAL", 55),
+      dtk("S5P_TROPOMI_20260804T213000_7F2A11", "PARTIAL", 48),
+      dtk("S5P_TROPOMI_20260805T012200_5B99C4", "PARTIAL", 55),
     ],
   },
   {
@@ -200,9 +205,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 7, 16, 30),
     impact: "UNAVAILABLE",
     datatakes: [
-      dtk("S1A-40824", "UNAVAILABLE", 0),
-      dtk("S1A-46727", "UNAVAILABLE", 0),
-      dtk("S1A-34921", "UNAVAILABLE", 0),
+      dtk("S1A_IW_20260807T020500_C11D08", "UNAVAILABLE", 0),
+      dtk("S1A_IW_20260807T035100_D82B47", "UNAVAILABLE", 0),
+      dtk("S1A_EW_20260807T053300_E904A2", "UNAVAILABLE", 0),
     ],
   },
   {
@@ -217,7 +222,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 9, 6, 0),
     end: utc(Y, M, 9, 18, 0),
     impact: "NONE",
-    datatakes: [dtk("S2B-88049-1", "RECOVERED", 100)],
+    datatakes: [dtk("S2B_MSI_20260809T101500_3A77F0", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4821",
@@ -232,9 +237,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 12, 2, 15),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S3A-178-253", "PARTIAL", 81),
-      dtk("S3B-296-005", "PARTIAL", 69),
-      dtk("S3B-276-367", "RECOVERED", 100),
+      dtk("S3A_OLCI_20260811T060200_2D5E8B", "PARTIAL", 81),
+      dtk("S3B_SLSTR_20260811T114500_66A0C3", "PARTIAL", 69),
+      dtk("S3B_OLCI_20260811T193000_8E12F5", "RECOVERED", 100),
     ],
   },
   {
@@ -263,9 +268,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 16, 8, 0),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S2C-99855-6", "PARTIAL", 72),
-      dtk("S2C-15759-8", "PARTIAL", 64),
-      dtk("S2C-21663-1", "RECOVERED", 96),
+      dtk("S2C_MSI_20260814T134000_A0B3D1", "PARTIAL", 72),
+      dtk("S2C_MSI_20260815T102200_F41C9E", "PARTIAL", 64),
+      dtk("S2C_MSI_20260816T073000_1B8D55", "RECOVERED", 96),
     ],
   },
   {
@@ -294,9 +299,9 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 20, 15, 30),
     impact: "UNAVAILABLE",
     datatakes: [
-      dtk("S1A-52631", "UNAVAILABLE", 0),
-      dtk("S1C-70340", "UNAVAILABLE", 12),
-      dtk("S1A-58534", "RECOVERED", 100),
+      dtk("S1A_IW_20260818T112000_74EE21", "UNAVAILABLE", 0),
+      dtk("S1C_IW_20260819T054500_9033AC", "UNAVAILABLE", 12),
+      dtk("S1A_IW_20260820T081500_C5D7B6", "RECOVERED", 100),
     ],
   },
   {
@@ -310,7 +315,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 21, 5, 0),
     end: utc(Y, M, 22, 17, 0),
     impact: "NONE",
-    datatakes: [dtk("S5P-86597", "RECOVERED", 100)],
+    datatakes: [dtk("S5P_TROPOMI_20260821T093000_2C64FA", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4840",
@@ -323,7 +328,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 23, 16, 40),
     end: utc(Y, M, 23, 18, 10),
     impact: "UNAVAILABLE",
-    datatakes: [dtk("S2B-93952-4", "UNAVAILABLE", 0)],
+    datatakes: [dtk("S2B_MSI_20260823T164500_B7A2E8", "UNAVAILABLE", 0)],
   },
   {
     id: "GSCAL-1192",
@@ -351,8 +356,8 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 27, 12, 45),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S3A-197-276", "PARTIAL", 41),
-      dtk("S3A-217-299", "PARTIAL", 58),
+      dtk("S3A_OLCI_20260826T033000_5E19B2", "PARTIAL", 41),
+      dtk("S3A_OLCI_20260827T041000_A6C80F", "PARTIAL", 58),
     ],
   },
   {
@@ -366,7 +371,7 @@ const EVENTS: MissionEvent[] = [
     start: utc(Y, M, 28, 8, 0),
     end: utc(Y, M, 29, 20, 0),
     impact: "NONE",
-    datatakes: [dtk("S5P-92500", "RECOVERED", 100)],
+    datatakes: [dtk("S5P_TROPOMI_20260828T113000_D2B4E7", "RECOVERED", 100)],
   },
   {
     id: "GSANOM-4853",
@@ -380,8 +385,8 @@ const EVENTS: MissionEvent[] = [
     end: utc(Y, M, 31, 4, 5),
     impact: "PARTIAL",
     datatakes: [
-      dtk("S1C-64437", "PARTIAL", 77),
-      dtk("S1C-76243", "RECOVERED", 100),
+      dtk("S1C_EW_20260830T193000_11FA6D", "PARTIAL", 77),
+      dtk("S1C_IW_20260831T021500_3D0E94", "RECOVERED", 100),
     ],
   },
 ];
@@ -408,26 +413,18 @@ function dayStatus(events: MissionEvent[]): DayStatus {
   return "NOMINAL";
 }
 
-/** Greedy lane packing: overlapping events on one mission stack rather than hide each other.
- *
- *  `minSpanMs` is the duration a block occupies on screen even when its real duration is shorter —
- *  on a phone every block is held to a minimum tappable width, so two 90-minute events hours apart
- *  render as boxes that overlap even though their times do not. Packing has to reserve the width
- *  the block will actually take, or the two land in one lane and collide. Zero on a desktop, where
- *  a block is drawn at its true width. */
-function packLanes(events: MissionEvent[], minSpanMs = 0): { event: MissionEvent; lane: number }[] {
+/** Greedy lane packing: overlapping events on one mission stack rather than hide each other. */
+function packLanes(events: MissionEvent[]): { event: MissionEvent; lane: number }[] {
   const laneEnds: number[] = [];
   return [...events]
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .map((event) => {
-      const from = event.start.getTime();
-      const until = Math.max(event.end.getTime(), from + minSpanMs);
-      let lane = laneEnds.findIndex((end) => end <= from);
+      let lane = laneEnds.findIndex((end) => end <= event.start.getTime());
       if (lane === -1) {
         lane = laneEnds.length;
         laneEnds.push(0);
       }
-      laneEnds[lane] = until;
+      laneEnds[lane] = event.end.getTime();
       return { event, lane };
     });
 }
@@ -607,18 +604,11 @@ function ConceptA({
   year,
   month,
   onOpen,
-  /** Vertical distance between stacked lanes. Bigger on a phone, where a block has to be tall
-   *  enough to hit with a thumb; the block's own height comes from CSS at the same breakpoint. */
-  pitch,
-  /** The CSS minimum block width, as a percentage of the month — see packLanes. */
-  minBlockPct,
 }: {
   events: MissionEvent[];
   year: number;
   month: number;
   onOpen: (e: MissionEvent) => void;
-  pitch: number;
-  minBlockPct: number;
 }) {
   const total = daysInMonth(year, month);
   const monthStart = utc(year, month, 1).getTime();
@@ -645,7 +635,7 @@ function ConceptA({
           </div>
 
           {MISSIONS.map((mission) => {
-            const packed = packLanes(events.filter((e) => e.mission === mission), (minBlockPct / 100) * span);
+            const packed = packLanes(events.filter((e) => e.mission === mission));
             const laneCount = Math.max(1, ...packed.map((p) => p.lane + 1));
             return (
               <div className="evx-gantt-row" key={mission}>
@@ -653,7 +643,7 @@ function ConceptA({
                   <b>{mission.replace("Sentinel-", "S")}</b>
                   <span>{packed.length} EV</span>
                 </div>
-                <div className="evx-track-plot" style={{ height: laneCount * pitch + 10 }}>
+                <div className="evx-track-plot" style={{ height: laneCount * 30 + 10 }}>
                   {days.map((d) => {
                     const wd = dowIndex(utc(year, month, d));
                     return (
@@ -677,7 +667,7 @@ function ConceptA({
                         style={{
                           left: `${left}%`,
                           width: `${width}%`,
-                          top: lane * pitch + 5,
+                          top: lane * 30 + 5,
                           ["--k" as string]: KIND_VAR[event.kind],
                         }}
                         onClick={() => onOpen(event)}
@@ -699,37 +689,88 @@ function ConceptA({
 }
 
 // -----------------------------------------------------------------------------
+// CONCEPT B — telemetry grid
+// -----------------------------------------------------------------------------
+
+function ConceptB({
+  events,
+  year,
+  month,
+  onOpen,
+}: {
+  events: MissionEvent[];
+  year: number;
+  month: number;
+  onOpen: (day: number) => void;
+}) {
+  const total = daysInMonth(year, month);
+  const lead = dowIndex(utc(year, month, 1));
+  const byDay = useMemo(() => {
+    const map = new Map<number, MissionEvent[]>();
+    events.forEach((e) => eventDays(e, year, month).forEach((d) => map.set(d, [...(map.get(d) ?? []), e])));
+    return map;
+  }, [events, year, month]);
+
+  return (
+    <div className="evx-grid">
+      <div className="evx-grid-dow">
+        {DOW.map((d) => (
+          <span key={d}>{d}</span>
+        ))}
+      </div>
+      <div className="evx-grid-tiles">
+        {Array.from({ length: lead }, (_, i) => (
+          <div className="evx-tile blank" key={`b${i}`} aria-hidden />
+        ))}
+        {Array.from({ length: total }, (_, i) => i + 1).map((day) => {
+          const dayEvents = byDay.get(day) ?? [];
+          const status = dayStatus(dayEvents);
+          const impacted = dayEvents.reduce((n, e) => n + e.datatakes.length, 0);
+          return (
+            <button
+              className={`evx-tile ${status.toLowerCase()}`}
+              key={day}
+              style={{ ["--k" as string]: STATUS_VAR[status] }}
+              onClick={() => onOpen(day)}
+              aria-label={`${fmtDate(utc(year, month, day))} — ${status}, ${dayEvents.length} events`}
+            >
+              <span className="evx-tile-d">{pad(day)}</span>
+              <span className="evx-tile-s">{status}</span>
+              <span className="evx-tile-pills">
+                {dayEvents.slice(0, 4).map((e) => (
+                  <i key={e.id} style={{ background: KIND_VAR[e.kind] }} />
+                ))}
+                {dayEvents.length > 4 && <em>+{dayEvents.length - 4}</em>}
+              </span>
+              {impacted > 0 && <span className="evx-tile-dtk">{impacted} DTK</span>}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
 // Page
 // -----------------------------------------------------------------------------
 
-/* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
-const NARROW = "(max-width: 760px)";
-
-/** Lane pitch for concept A — see the `pitch` prop. */
-const LANE_PITCH = { wide: 30, narrow: 52 };
-
-/* The phone rule `.evx-block { min-width: 44px }` expressed as a share of the month, so lane
-   packing can reserve it. The narrow plot is at its narrowest 680px minus the 74px mission
-   column, so 44px is ~7.3% of the axis; 7.5 leaves a hair of clearance. Wider viewports in this
-   band only spread the axis further, which makes the reservation more generous, never less. */
-const MIN_BLOCK_PCT = { wide: 0, narrow: 7.5 };
+type View = "A" | "B";
 
 export default function EventsSpaceXConcepts() {
   // Theme is declared at the top of the app; this page only reads it.
   const { theme } = useTheme();
+  const [view, setView] = useState<View>("A");
   const [year, setYear] = useState(Y);
   const [month, setMonth] = useState(M);
   const [period, setPeriod] = useState<PeriodId>("custom"); // "custom" = the whole displayed month
   const [openEvent, setOpenEvent] = useState<MissionEvent | null>(null);
-
-  /* The colour key is reference material, not a control: on a phone it is seven rows of legend
-     between the tabs and the actual month, so it folds away there. */
-  const narrow = useMediaQuery(NARROW);
-  const [legendOpen, setLegendOpen] = useState(false);
-  const legendId = useId();
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [openDay, setOpenDay] = useState<number | null>(null);
 
   const step = useCallback((delta: number) => {
     setOpenEvent(null);
+    setOpenDay(null);
     setMonth((m) => {
       const next = m + delta;
       if (next < 0) {
@@ -760,134 +801,174 @@ export default function EventsSpaceXConcepts() {
   const impacted = events.reduce((n, e) => n + e.datatakes.length, 0);
   const lost = events.reduce((n, e) => n + e.datatakes.filter((d) => d.status === "UNAVAILABLE").length, 0);
 
-
-  const legend = (
-    <div className="evx-legend">
-      <span className="evx-legend-l">EVENT TYPE</span>
-      {(Object.keys(KIND_VAR) as EventKind[]).map((k) => (
-        <span className="evx-legend-i" key={k}>
-          <i style={{ background: KIND_VAR[k] }} />
-          {k}
-        </span>
-      ))}
-      <span className="evx-legend-sep" aria-hidden />
-      <span className="evx-legend-i"><i className="outline" />PLANNED</span>
-      <span className="evx-legend-i"><i style={{ background: "var(--evx-dim)" }} />UNPLANNED</span>
-    </div>
-  );
+  const dayEvents = useMemo(() => {
+    if (openDay === null) return [];
+    return events
+      .filter((e) => eventDays(e, year, month).includes(openDay))
+      .sort((a, b) => a.start.getTime() - b.start.getTime());
+  }, [openDay, events, year, month]);
 
   return (
-    <>
-      <PageHeader
-        crumb="Events proposal"
-        title="Events"
-        desc={EVENTS_SWIMLANES_DESCRIPTION}
-        img="/assets/img/modules/Ice_Greenland.jpg"
-      />
-      <div className="evx" data-theme={theme === "light" ? "light" : "dark"}>
-        <style>{CSS}</style>
+    <div className="evx" data-theme={theme === "light" ? "light" : "dark"}>
+      <style>{CSS}</style>
 
-        <div className="evx-wrap">
-          {/* ---------------- header ---------------- */}
-          {/* Header art — the shared /examples backdrop (.ex-hero-bg in global.css) inside the
-            header this page already had. ex-hero-host adds only a positioning context, so the
-            tagline, title, lede and counters keep the exact geometry they had before. */}
-          <header className="evx-head ex-hero-host">
-            <div
-              className="ex-hero-bg"
-              style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Ice_Greenland.jpg")' }}
-              aria-hidden
-            />
-            <div>
-              <div className="evx-tagline">
-                <span className="evx-live" aria-hidden />
-              </div>
+      <div className="evx-wrap">
+        {/* ---------------- header ---------------- */}
+        <header className="evx-head ex-hero-host">
+          <div
+            className="ex-hero-bg"
+            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Ice_Greenland.jpg")' }}
+            aria-hidden
+          />
+          <div>
+            <div className="evx-eyebrow">
+              <Link to="/examples">Home</Link>
+              <span aria-hidden>/</span>
+              <span>Events</span>
             </div>
-
-            <div className="evx-counters">
-              <div><span>EVENTS</span><b>{pad(events.length)}</b></div>
-              <div><span>INCIDENTS</span><b className="crit">{pad(incidents)}</b></div>
-              <div><span>PLANNED</span><b>{pad(planned)}</b></div>
-              <div><span>DTK IMPACTED</span><b className="warn">{pad(impacted)}</b></div>
-              <div><span>DTK LOST</span><b className="crit">{pad(lost)}</b></div>
-            </div>
-          </header>
-
-          {/* ---------------- controls ---------------- */}
-          <div className="evx-bar">
-            <div className="evx-controls">
-              <div className="evx-month">
-                <button onClick={() => step(-1)} aria-label="Previous month"><IconPrev /></button>
-                <span className="evx-month-l">{MONTH_ABBR[month]} {year}</span>
-                <button onClick={() => step(1)} aria-label="Next month"><IconNext /></button>
-              </div>
-
-              <div className="evx-field">
-                <label htmlFor="evx-period">PERIOD</label>
-                <select id="evx-period" value={period} onChange={(e) => setPeriod(e.target.value as PeriodId)}>
-                  <option value="custom">FULL MONTH</option>
-                  {PERIODS.map((p) => (
-                    <option key={p.id} value={p.id}>{p.label.toUpperCase()}</option>
-                  ))}
-                </select>
-              </div>
+            <h1 className="evx-h1">EVENTS</h1>
+            <div className="evx-description-card">
+              <button
+                type="button"
+                className="evx-description-head"
+                onClick={() => setDescriptionOpen(true)}
+                aria-expanded={descriptionOpen}
+              >
+                <span>Description</span>
+                <svg className="evx-description-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+              <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
+                <div className="evx-description-body">
+                  <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+                  <ul>
+                    <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
+                    <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
+                    <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
+                    <li><strong>Production:</strong> issue occurred during data processing</li>
+                    <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+                  </ul>
+                  <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
+                  <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+                </div>
+              </DescriptionModal>
             </div>
           </div>
 
-          {narrow && (
-            <button
-              type="button"
-              className="evx-legend-toggle"
-              aria-expanded={legendOpen}
-              aria-controls={legendId}
-              onClick={() => setLegendOpen((v) => !v)}
-            >
-              LEGEND
-              <i className="evx-legend-chev" aria-hidden />
+          <div className="evx-counters">
+            <div><span>EVENTS</span><b>{pad(events.length)}</b></div>
+            <div><span>INCIDENTS</span><b className="crit">{pad(incidents)}</b></div>
+            <div><span>PLANNED</span><b>{pad(planned)}</b></div>
+            <div><span>DTK IMPACTED</span><b className="warn">{pad(impacted)}</b></div>
+            <div><span>DTK LOST</span><b className="crit">{pad(lost)}</b></div>
+          </div>
+        </header>
+
+        {/* ---------------- controls ---------------- */}
+        <div className="evx-bar">
+          <div className="evx-tabs" role="tablist" aria-label="Layout concept">
+            <button role="tab" aria-selected={view === "A"} className={view === "A" ? "on" : ""} onClick={() => setView("A")}>
+              A · ORBITAL TIMELINE
             </button>
-          )}
+            <button role="tab" aria-selected={view === "B"} className={view === "B" ? "on" : ""} onClick={() => setView("B")}>
+              B · TELEMETRY GRID
+            </button>
+          </div>
 
-          {narrow ? <Collapse open={legendOpen} id={legendId}>{legend}</Collapse> : legend}
+          <div className="evx-controls">
+            <div className="evx-month">
+              <button onClick={() => step(-1)} aria-label="Previous month"><IconPrev /></button>
+              <span className="evx-month-l">{MONTH_ABBR[month]} {year}</span>
+              <button onClick={() => step(1)} aria-label="Next month"><IconNext /></button>
+            </div>
 
-          {/* ---------------- the concept ---------------- */}
-          {events.length === 0 ? (
-            <p className="evx-none">NO EVENTS IN {MONTH_ABBR[month]} {year} FOR THE SELECTED PERIOD</p>
-          ) : (
-            <>
-              {/* Scrolls sideways by nature — a month of days cannot be shown at phone width and
-                still be readable. Say so, rather than leaving the cut-off edge to be noticed. */}
-              {narrow && <p className="evx-scrollhint">SWIPE THE TIMELINE TO MOVE THROUGH THE MONTH →</p>}
-              <ConceptA
-                events={events}
-                year={year}
-                month={month}
-                onOpen={setOpenEvent}
-                pitch={narrow ? LANE_PITCH.narrow : LANE_PITCH.wide}
-                minBlockPct={narrow ? MIN_BLOCK_PCT.narrow : MIN_BLOCK_PCT.wide}
-              />
-            </>
-          )}
-
+            <div className="evx-field">
+              <label htmlFor="evx-period">PERIOD</label>
+              <select id="evx-period" value={period} onChange={(e) => setPeriod(e.target.value as PeriodId)}>
+                <option value="custom">FULL MONTH</option>
+                {PERIODS.map((p) => (
+                  <option key={p.id} value={p.id}>{p.label.toUpperCase()}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        {/* ---------------- A: event popover ---------------- */}
-        {openEvent && (
-          <Overlay side="center" labelledBy="evx-pop-t" onClose={() => setOpenEvent(null)}>
-            <header className="evx-panel-head">
-              <div>
-                <span className="evx-panel-tag">EVENT TELEMETRY</span>
-                <h3 id="evx-pop-t">{openEvent.id}</h3>
-              </div>
-              <button className="evx-x" onClick={() => setOpenEvent(null)} aria-label="Close event"><IconClose /></button>
-            </header>
-            <div className="evx-panel-body">
-              <EventBody event={openEvent} />
-            </div>
-          </Overlay>
+        <div className="evx-legend">
+          <span className="evx-legend-l">EVENT TYPE</span>
+          {(Object.keys(KIND_VAR) as EventKind[]).map((k) => (
+            <span className="evx-legend-i" key={k}>
+              <i style={{ background: KIND_VAR[k] }} />
+              {k}
+            </span>
+          ))}
+          <span className="evx-legend-sep" aria-hidden />
+          <span className="evx-legend-i"><i className="outline" />PLANNED</span>
+          <span className="evx-legend-i"><i style={{ background: "var(--evx-dim)" }} />UNPLANNED</span>
+        </div>
+
+        {/* ---------------- the concept ---------------- */}
+        {events.length === 0 ? (
+          <p className="evx-none">NO EVENTS IN {MONTH_ABBR[month]} {year} FOR THE SELECTED PERIOD</p>
+        ) : view === "A" ? (
+          <ConceptA events={events} year={year} month={month} onOpen={setOpenEvent} />
+        ) : (
+          <ConceptB events={events} year={year} month={month} onOpen={setOpenDay} />
         )}
 
+        <footer className="evx-foot">
+          <span>MOCK DATA · AUGUST 2026 · NO BACKEND ATTACHED</span>
+          <span>SENTIBOARD V2 · DEVOCS-219 · EVENTS CONCEPTS A/B</span>
+        </footer>
       </div>
-    </>
+
+      {/* ---------------- A: event popover ---------------- */}
+      {openEvent && (
+        <Overlay side="center" labelledBy="evx-pop-t" onClose={() => setOpenEvent(null)}>
+          <header className="evx-panel-head">
+            <div>
+              <span className="evx-panel-tag">EVENT TELEMETRY</span>
+              <h3 id="evx-pop-t">{openEvent.id}</h3>
+            </div>
+            <button className="evx-x" onClick={() => setOpenEvent(null)} aria-label="Close event"><IconClose /></button>
+          </header>
+          <div className="evx-panel-body">
+            <EventBody event={openEvent} />
+          </div>
+        </Overlay>
+      )}
+
+      {/* ---------------- B: day slide-over ---------------- */}
+      {openDay !== null && (
+        <Overlay side="right" labelledBy="evx-day-t" onClose={() => setOpenDay(null)}>
+          <header className="evx-panel-head">
+            <div>
+              <span className="evx-panel-tag">DAY LOG · UTC</span>
+              <h3 id="evx-day-t">{fmtDate(utc(year, month, openDay))}</h3>
+            </div>
+            <button className="evx-x" onClick={() => setOpenDay(null)} aria-label="Close day log"><IconClose /></button>
+          </header>
+          <div className="evx-panel-body">
+            {dayEvents.length === 0 ? (
+              <p className="evx-ev-none">NO EVENTS LOGGED — NOMINAL DAY</p>
+            ) : (
+              dayEvents.map((e) => (
+                <article className="evx-log" key={e.id}>
+                  <div className="evx-log-time">
+                    <b>{fmtTime(e.start)}</b>
+                    <span>{durationLabel(e.start, e.end)}</span>
+                  </div>
+                  <div className="evx-log-body">
+                    <EventBody event={e} />
+                  </div>
+                </article>
+              ))
+            )}
+          </div>
+        </Overlay>
+      )}
+    </div>
   );
 }
 
@@ -903,16 +984,16 @@ const CSS = `
   --evx-mono: "JetBrains Mono", "Geist Mono", var(--font-mono, ui-monospace), "SFMono-Regular", Menlo, Consolas, monospace;
   --evx-sans: var(--font-display, var(--font-sans, "Inter")), system-ui, -apple-system, sans-serif;
 
-  --evx-bg: #1a1f25;
-  --evx-panel: #343a40;
-  --evx-panel-2: #252b33;
-  --evx-line: #45787e;
-  --evx-line-2: #4ebec6;
-  --evx-text: #eef1f6;
-  --evx-dim: #79818d;
-  --evx-faint: #eef1f6;
-  --evx-accent: #12b1bf;
-  --evx-accent-soft: rgba(18, 177, 191, 0.12);
+  --evx-bg: #08090a;
+  --evx-panel: #0d0e12;
+  --evx-panel-2: #101218;
+  --evx-line: #1b1e25;
+  --evx-line-2: #2b303a;
+  --evx-text: #e9ecf1;
+  --evx-dim: #8a919d;
+  --evx-faint: #565d6a;
+  --evx-accent: #00e5ff;
+  --evx-accent-soft: rgba(0, 229, 255, 0.1);
 
   --evx-ok: #00e08a;
   --evx-warn: #ffb020;
@@ -942,8 +1023,8 @@ const CSS = `
   --evx-line-2: #b9c0c9;
   --evx-text: #14171c;
   --evx-dim: #4d5560;
-  --evx-faint: #dde1e6;
-  --evx-accent: #b9c0c9;
+  --evx-faint: #79818d;
+  --evx-accent: #007c93;
   --evx-accent-soft: rgba(0, 124, 147, 0.08);
 
   --evx-ok: #00875a;
@@ -961,15 +1042,116 @@ const CSS = `
 }
 
 .evx *, .evx *::before, .evx *::after { box-sizing: border-box; }
-.evx-wrap { max-width: 1400px; margin: 0 auto; padding: 26px 26px 56px; }
+.evx-wrap { width: 100%; }
 
 /* ---------- header ---------- */
-.evx-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 26px; flex-wrap: wrap; }
+.evx-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 26px;
+  flex-wrap: wrap;
+  position: relative;
+  width: 100%;
+  padding: 26px clamp(18px, 4vw, 48px) 0;
+  margin-bottom: 22px;
+}
+.evx-head.ex-hero-host { z-index: 1; }
+.evx-head .ex-hero-bg { inset: -26px calc(-1 * clamp(18px, 4vw, 48px)) 0; }
+
+/* Content container under header */
+.evx-wrap > * {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 clamp(18px, 4vw, 48px);
+  width: 100%;
+}
+
+.evx-wrap > .evx-head {
+  max-width: none;
+  padding: 26px clamp(18px, 4vw, 48px) 0;
+}
 .evx-tagline { display: flex; align-items: center; gap: 8px; font-family: var(--evx-mono); font-size: 10px; letter-spacing: 0.26em; color: var(--evx-accent); }
 .evx-live { width: 6px; height: 6px; background: var(--evx-ok); animation: evx-pulse 2.4s infinite; }
 @keyframes evx-pulse { 0% { opacity: 1 } 70% { opacity: 0.4 } 100% { opacity: 1 } }
 .evx-h1 { margin: 10px 0 0; font-size: clamp(28px, 4.4vw, 44px); font-weight: 700; letter-spacing: 0.01em; line-height: 1; text-transform: uppercase; }
 .evx-lede { margin: 10px 0 0; max-width: 70ch; font-size: 13px; line-height: 1.6; color: var(--evx-dim); }
+
+/* Eyebrow breadcrumb */
+.evx-eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-family: var(--evx-mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--evx-accent); }
+.evx-eyebrow a { color: inherit; text-decoration: none; }
+.evx-eyebrow a:hover { text-decoration: underline; }
+
+/* Description card accordion */
+.evx-description-card {
+  width: 100%;
+  max-width: none;
+  margin-top: 16px;
+  border: 1px solid var(--evx-line);
+  border-radius: 2px;
+  background: var(--evx-panel);
+  overflow: hidden;
+}
+
+.evx-description-head {
+  width: 100%;
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--evx-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--evx-dim);
+  transition: color 0.2s, background 0.2s;
+}
+
+.evx-description-head:hover {
+  color: var(--evx-text);
+  background: var(--evx-accent-soft);
+}
+
+.evx-description-chev {
+  flex: 0 0 auto;
+  color: var(--evx-accent);
+  transition: transform 0.2s ease;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.evx-description-card :global(.collapsible.open) .evx-description-chev {
+  transform: rotate(180deg);
+}
+
+.evx-description-body {
+  padding: 12px 16px 16px;
+  color: var(--evx-dim);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.evx-description-body p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.evx-description-body ul {
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.evx-description-body li {
+  margin: 0.35rem 0;
+}
+
 .evx-counters { display: grid; grid-template-columns: repeat(5, minmax(84px, auto)); gap: 1px; background: var(--evx-line); border: 1px solid var(--evx-line); }
 .evx-counters div { display: flex; flex-direction: column; gap: 5px; padding: 10px 13px; background: var(--evx-panel); }
 .evx-counters span { font-family: var(--evx-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--evx-faint); }
@@ -977,13 +1159,16 @@ const CSS = `
 .evx-counters b.crit { color: var(--evx-crit); }
 .evx-counters b.warn { color: var(--evx-warn); }
 
-/* Header art bleed. .ex-hero-bg defaults to inset:0, which would box the image to the header
-   text's own rect; bled to .evx-wrap's padding it becomes a band the width of the content column.
-   Not 100vw — that overflows horizontally whenever a scrollbar is present. */
-.evx-head .ex-hero-bg { inset: -26px -26px 0; }
-
 /* ---------- control bar ---------- */
 .evx-bar { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin: 24px 0 14px; }
+.evx-tabs { display: flex; gap: 1px; background: var(--evx-line); border: 1px solid var(--evx-line); }
+.evx-tabs button {
+  padding: 10px 18px; border: 0; background: var(--evx-panel); color: var(--evx-dim); cursor: pointer;
+  font-family: var(--evx-mono); font-size: 10.5px; letter-spacing: 0.16em;
+  transition: color 0.15s, background 0.15s;
+}
+.evx-tabs button:hover { color: var(--evx-text); }
+.evx-tabs button.on { background: var(--evx-accent); color: var(--evx-bg); font-weight: 600; }
 .evx-controls { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
 .evx-month { display: flex; align-items: center; gap: 1px; background: var(--evx-line); border: 1px solid var(--evx-line); }
 .evx-month button {
@@ -1058,6 +1243,29 @@ const CSS = `
   font-family: var(--evx-mono); font-size: 9px; letter-spacing: 0.16em; color: var(--evx-faint);
 }
 
+/* ---------- concept B ---------- */
+.evx-grid { border: 1px solid var(--evx-line); background: var(--evx-panel); }
+.evx-grid-dow { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--evx-panel-2); border-bottom: 1px solid var(--evx-line); }
+.evx-grid-dow span { padding: 9px 12px; font-family: var(--evx-mono); font-size: 9px; letter-spacing: 0.18em; color: var(--evx-faint); }
+.evx-grid-tiles { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; background: var(--evx-line); }
+.evx-tile {
+  position: relative; display: flex; flex-direction: column; gap: 6px; align-items: flex-start;
+  min-height: 104px; padding: 9px 10px; border: 0; background: var(--evx-panel);
+  color: var(--evx-text); cursor: pointer; text-align: left; transition: background 0.12s;
+}
+.evx-tile.blank { background: var(--evx-panel-2); cursor: default; }
+.evx-tile:not(.blank):hover { background: var(--evx-accent-soft); }
+.evx-tile:focus-visible { outline: 1px solid var(--evx-accent); outline-offset: -1px; }
+.evx-tile::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: var(--k); }
+.evx-tile.blank::before { display: none; }
+.evx-tile.nominal::before { opacity: 0.35; }
+.evx-tile-d { font-family: var(--evx-mono); font-size: 17px; font-variant-numeric: tabular-nums; }
+.evx-tile-s { font-family: var(--evx-mono); font-size: 8.5px; letter-spacing: 0.14em; color: var(--k); }
+.evx-tile-pills { display: flex; align-items: center; gap: 3px; margin-top: auto; }
+.evx-tile-pills i { width: 100%; min-width: 12px; max-width: 22px; height: 4px; }
+.evx-tile-pills em { font-style: normal; font-family: var(--evx-mono); font-size: 8.5px; color: var(--evx-faint); }
+.evx-tile-dtk { font-family: var(--evx-mono); font-size: 8.5px; letter-spacing: 0.1em; color: var(--evx-faint); }
+
 /* ---------- overlays ---------- */
 .evx-backdrop { position: fixed; inset: 0; z-index: 300; display: flex; background: var(--evx-scrim); animation: evx-fade 0.16s ease; }
 .evx-backdrop.center { align-items: center; justify-content: center; padding: 24px; }
@@ -1119,6 +1327,16 @@ const CSS = `
 .evx-dtk-bar i { display: block; height: 100%; }
 .evx-dtk-pct { font-family: var(--evx-mono); font-size: 10px; color: var(--evx-dim); font-variant-numeric: tabular-nums; text-align: right; }
 
+/* ---------- day log ---------- */
+.evx-log { display: grid; grid-template-columns: 74px 1fr; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--evx-line); }
+.evx-log:first-child { padding-top: 0; }
+.evx-log:last-child { border-bottom: 0; }
+.evx-log-time { display: flex; flex-direction: column; gap: 3px; font-family: var(--evx-mono); }
+.evx-log-time b { font-size: 13px; color: var(--evx-accent); font-variant-numeric: tabular-nums; }
+.evx-log-time span { font-size: 9px; letter-spacing: 0.1em; color: var(--evx-faint); }
+.evx-log-body { min-width: 0; }
+.evx-log-body .evx-ev-kvs { grid-template-columns: repeat(2, 1fr); }
+
 /* ---------- footer ---------- */
 .evx-foot {
   display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
@@ -1133,112 +1351,12 @@ const CSS = `
 }
 @media (max-width: 700px) {
   .evx-wrap { padding: 20px 14px 44px; }
-  .evx-head .ex-hero-bg { inset: -20px -14px 0; }
   .evx-counters { grid-template-columns: repeat(2, 1fr); }
   .evx-bar { align-items: stretch; }
+  .evx-grid-tiles { grid-template-columns: repeat(7, minmax(64px, 1fr)); overflow-x: auto; }
+  .evx-tile { min-height: 88px; }
   .evx-backdrop.center { padding: 0; }
   .evx-popover { max-height: 100vh; }
-}
-
-/* =============================================================================
-   MOBILE (≤760px) — one column, thumb-sized targets.
-
-   Breakpoint matched to the app nav's, so the burger and this layout arrive together. Concept B
-   is made to FIT the width; concept A keeps its horizontal scroll, because a 31-day time axis
-   cannot be shown at phone width and stay readable — what changes there is that the scroll
-   becomes usable: the mission column stays put, and the blocks become thumb-sized.
-   ============================================================================= */
-@media (max-width: 760px) {
-  .evx-wrap { padding: 18px 14px 40px; }
-  .evx-head .ex-hero-bg { inset: -18px -14px 0; }
-
-  /* ---------- header ---------- */
-  .evx-head { flex-direction: column; gap: 14px; }
-  .evx-h1 { margin-top: 7px; }
-  .evx-lede { margin-top: 8px; font-size: 13.5px; line-height: 1.5; max-width: none; }
-  .evx-field label { font-size: 9px; }
-
-  /* Five counters in two columns left a dangling empty cell; the last one spans instead. Denser
-     than the desktop cell too — three rows of counters is the largest single block standing
-     between the title and the month, which is what the page is actually for. */
-  .evx-counters { width: 100%; grid-template-columns: repeat(2, 1fr); }
-  .evx-counters div { gap: 3px; padding: 7px 11px; }
-  .evx-counters div:last-child { grid-column: 1 / -1; }
-  .evx-counters b { font-size: 17px; }
-  .evx-counters span { font-size: 8.5px; letter-spacing: 0.14em; }
-
-  /* ---------- control bar ---------- */
-  .evx-bar { flex-direction: column; align-items: stretch; gap: 12px; margin: 18px 0 12px; }
-  .evx-controls { flex-direction: column; align-items: stretch; gap: 12px; }
-  .evx-month { width: 100%; }
-  .evx-month button { flex: 0 0 44px; width: 44px; height: 44px; }
-  .evx-month-l { flex: 1; height: 44px; justify-content: center; padding: 0 8px; font-size: 12.5px; }
-  .evx-field select { width: 100%; min-width: 0; min-height: 44px; padding: 11px 30px 11px 12px; font-size: 12px; }
-
-  /* ---------- legend, behind its toggle ---------- */
-  .evx-legend-toggle {
-    display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 44px;
-    margin-bottom: 12px; padding: 12px 14px;
-    border: 1px solid var(--evx-line); background: var(--evx-panel); color: var(--evx-text); cursor: pointer;
-    font-family: var(--evx-mono); font-size: 10.5px; letter-spacing: 0.18em;
-  }
-  .evx-legend-chev {
-    width: 7px; height: 7px; border-right: 1px solid var(--evx-accent); border-bottom: 1px solid var(--evx-accent);
-    transform: rotate(45deg) translate(-2px, -2px); transition: transform 0.2s ease;
-  }
-  .evx-legend-toggle[aria-expanded="true"] .evx-legend-chev { transform: rotate(225deg) translate(-2px, -2px); }
-  .evx-legend { gap: 10px 14px; padding: 0 0 14px; margin-bottom: 0; border-top: 0; border-bottom: 0; }
-  .evx-legend-l { flex: 0 0 100%; }
-  .evx-legend-sep { display: none; }
-  .evx-legend-i { font-size: 10.5px; }
-  .evx-legend-i i { width: 10px; height: 10px; }
-
-  /* ---------- concept A ---------- */
-  .evx-scrollhint {
-    margin: 0 0 8px; font-family: var(--evx-mono); font-size: 9.5px; letter-spacing: 0.14em; color: var(--evx-faint);
-  }
-  .evx-gantt-scroll { -webkit-overflow-scrolling: touch; }
-  /* 980px put five of thirty-one days on screen. 680 gives ~20px a day — enough for the tick
-     numbers to stay legible while roughly half the month is visible at once. */
-  .evx-gantt-inner { min-width: 680px; }
-  .evx-gantt-row { grid-template-columns: 74px 1fr; }
-  /* The mission stays anchored while the time axis scrolls under it: without this you lose track
-     of which satellite's row you are reading as soon as you swipe. */
-  .evx-track-label {
-    position: sticky; left: 0; z-index: 2; gap: 2px; padding: 8px 9px;
-    flex-direction: column; align-items: flex-start; justify-content: center;
-    background: var(--evx-panel);
-  }
-  .evx-gantt-head .evx-track-label { background: var(--evx-panel-2); }
-  .evx-track-label b { font-size: 12px; }
-  .evx-track-label span { font-size: 8.5px; }
-  /* 44px tall to be tappable, and 44px wide at minimum — an event lasting 90 minutes is 0.9% of
-     the month, which is a 6px sliver no thumb can hit. */
-  .evx-block { height: 44px; min-width: 44px; padding: 0 8px; font-size: 10px; }
-  .evx-block-t { line-height: 42px; }
-
-  /* ---------- overlays ---------- */
-  .evx-popover { max-height: 100dvh; }
-  .evx-slideover { width: 100%; height: 100dvh; border-left: 0; }
-  .evx-panel-head { padding: 13px 14px; }
-  .evx-panel-body { padding: 14px 14px 24px; }
-  .evx-x { width: 44px; height: 44px; }
-  .evx-ev-title { font-size: 17px; }
-  .evx-ev-sum { font-size: 13.5px; }
-  .evx-ev-kvs b { font-size: 11.5px; }
-
-  /* The datatake id is ~30 mono characters. Sharing one row with the bar, the percentage and the
-     tag left it ellipsised to nothing, so it takes a row of its own. */
-  .evx-dtk li { grid-template-columns: 1fr auto auto; gap: 7px 9px; padding: 9px 0; }
-  .evx-dtk-id { grid-column: 1 / -1; font-size: 10.5px; overflow-wrap: anywhere; }
-  .evx-dtk-bar { height: 5px; }
-
-  .evx-foot { gap: 6px; font-size: 9px; }
-}
-
-/* Large phones and below (≤430px) */
-@media (max-width: 430px) {
-  .evx-wrap { padding: 16px 10px 36px; }
-  .evx-head .ex-hero-bg { inset: -16px -10px 0; }
+  .evx-log { grid-template-columns: 1fr; }
 }
 `;

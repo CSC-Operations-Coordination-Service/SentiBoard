@@ -45,7 +45,7 @@ import {
   type ManifestEvent,
   type Status,
 } from "./mock";
-import { Collapse, useMediaQuery } from "@/components/ui";
+import { Collapse, DescriptionModal, useMediaQuery } from "@/components/ui";
 import s from "./manifest.module.css";
 
 /* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
@@ -205,7 +205,7 @@ export default function EventsManifest() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [openDay, setOpenDay] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [descriptionOpen, setDescriptionOpen] = useState(true);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   /* Three fields plus five type chips is most of a phone's first screen, and none of it is the
      month. On a narrow viewport the controls fold away; the head keeps the matching-event count
@@ -391,13 +391,15 @@ export default function EventsManifest() {
               <button
                 type="button"
                 className={s.descriptionHead}
-                onClick={() => setDescriptionOpen(!descriptionOpen)}
+                onClick={() => setDescriptionOpen(true)}
                 aria-expanded={descriptionOpen}
               >
                 <span>Description</span>
-                <span className={s.descriptionChev}>{descriptionOpen ? "^" : "v"}</span>
+                <svg className={s.descriptionChev} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </button>
-              <Collapse open={descriptionOpen}>
+              <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
                 <div className={s.descriptionBody}>
                   <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
                   <ul>
@@ -410,7 +412,7 @@ export default function EventsManifest() {
                   <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
                   <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
                 </div>
-              </Collapse>
+              </DescriptionModal>
             </div>
           </div>
         </header>

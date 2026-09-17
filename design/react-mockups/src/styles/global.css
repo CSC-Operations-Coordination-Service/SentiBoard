@@ -778,11 +778,7 @@ a.card:hover {
 .page-desc-head .chev {
   flex: 0 0 auto;
   color: var(--pd-accent);
-  transition: transform 0.2s var(--ease);
-}
-
-.page-desc-head[aria-expanded="true"] .chev {
-  transform: rotate(180deg);
+  transition: color 0.2s var(--ease);
 }
 
 .page-desc .body {
@@ -3407,4 +3403,60 @@ table.data td.mono {
     margin-left: 0;
     width: 100%
   }
+}
+
+/* ================= DESCRIPTION MODAL ================= */
+.description-modal-overlay {
+  color: var(--text);
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.description-modal {
+  color: var(--text);
+  border-radius: 0 !important;
+}
+
+.description-modal button[aria-label="Close"] {
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+
+.description-modal button[aria-label="Close"]:hover {
+  color: var(--accent-2);
+}
+
+.description-modal button[aria-label="Close"] svg {
+  stroke-width: 2.5;
+}
+
+.description-modal p {
+  margin: 0 0 1.2rem;
+  line-height: 1.6;
+  color: var(--text-dim, inherit);
+  font-size: 15px;
+}
+
+.description-modal p:last-child {
+  margin-bottom: 0;
+}
+
+.description-modal ul {
+  margin: 0 0 1.2rem 0;
+  padding-left: 24px;
+  line-height: 1.6;
+}
+
+.description-modal li {
+  margin-bottom: 0.6rem;
+  color: var(--text-dim, inherit);
+  font-size: 15px;
+}
+
+.description-modal li:last-child {
+  margin-bottom: 0;
+}
+
+.description-modal strong {
+  color: var(--text);
+  font-weight: 600;
 }
