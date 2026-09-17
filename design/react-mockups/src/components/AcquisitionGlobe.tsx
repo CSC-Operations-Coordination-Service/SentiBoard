@@ -74,6 +74,118 @@ function arcDeg(aLat: number, aLon: number, bLat: number, bLon: number) {
   return Math.acos(Math.max(-1, Math.min(1, Math.sin(p) * Math.sin(q) + Math.cos(p) * Math.cos(q) * Math.cos((bLon - aLon) * D)))) * DEG;
 }
 
+// Draw ground station icon with parabola dish, receiver, and antenna tower
+function drawGroundStationIcon(ctx: CanvasRenderingContext2D, x: number, y: number, color: string, scale: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(scale, scale);
+  ctx.lineWidth = 1.1;
+  ctx.strokeStyle = color;
+
+  // Reception waves (arcs) - semi-transparent
+  ctx.globalAlpha = 0.55;
+  for (let r = 5; r <= 9; r += 2) {
+    ctx.beginPath();
+    ctx.arc(1.5, -4.5, r, -2.5, -0.9);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Parabola/dish
+  ctx.beginPath();
+  ctx.ellipse(0, -2.5, 4.6, 2.3, -0.5, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(color, 0.25);
+  ctx.fill();
+  ctx.stroke();
+
+  // Receiver arm
+  ctx.beginPath();
+  ctx.moveTo(0, -2.5);
+  ctx.lineTo(2.6, -5.2);
+  ctx.stroke();
+
+  // Receiver element
+  ctx.beginPath();
+  ctx.arc(2.9, -5.6, 1, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+
+  // Antenna tower/mast
+  ctx.beginPath();
+  ctx.moveTo(0, -1.5);
+  ctx.lineTo(0, 3.2);
+  ctx.stroke();
+
+  // Base structure
+  ctx.beginPath();
+  ctx.moveTo(-3.4, 3.4);
+  ctx.lineTo(3.4, 3.4);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(-2, 3.4);
+  ctx.lineTo(0, 1);
+  ctx.lineTo(2, 3.4);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// Draw satellite icon with solar panels, body, and antenna
+function drawSatelliteIcon(ctx: CanvasRenderingContext2D, x: number, y: number, angle: number, color: string, scale: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.scale(scale, scale);
+
+  // Solar panels (wings)
+  ctx.fillStyle = hexA(color, 0.18);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1;
+  [-1, 1].forEach(d => {
+    ctx.beginPath();
+    ctx.rect(d > 0 ? 5 : -13, -3.4, 8, 6.8);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(d > 0 ? 9 : -9, -3.4);
+    ctx.lineTo(d > 0 ? 9 : -9, 3.4);
+    ctx.globalAlpha = 0.55;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Cross beam
+  ctx.beginPath();
+  ctx.moveTo(-5, 0);
+  ctx.lineTo(5, 0);
+  ctx.stroke();
+
+  // Body
+  ctx.fillStyle = "#0b141b";
+  ctx.beginPath();
+  ctx.rect(-4, -4.4, 8, 8.8);
+  ctx.fill();
+  ctx.stroke();
+
+  // Color panel on body
+  ctx.fillStyle = color;
+  ctx.fillRect(-2.4, -2.6, 4.8, 2.4);
+
+  // Antenna
+  ctx.beginPath();
+  ctx.moveTo(0, -4.4);
+  ctx.lineTo(0, -8);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(0, -8.8, 3, 1.5, 0, 0, Math.PI * 2);
+  ctx.fillStyle = hexA(color, 0.33);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
 // Ray-casting point-in-polygon in lon/lat, with longitudes unwrapped relative to the
 // probe so a ring that straddles the antimeridian still tests correctly.
 function inRing(ring: [number, number][], lon: number, lat: number) {
@@ -508,6 +620,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
     if (theme) return theme === "dark";
     return window.matchMedia?.("(prefers-color-scheme: dark)")?.matches ?? true;
   });
+  const [zen, setZen] = useState(false);
 
   const selRef = useRef(0);
   const hoverRef = useRef(-1);
@@ -935,27 +1048,171 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       ctx.strokeStyle = limbColor; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.2832); ctx.stroke();
 
-      orbits.current.forEach((o) => {
-        const trk: P[] = []; for (let u = 0; u < 6.2832; u += 0.05) { const g = groundPoint(o, u); trk.push(proj(g.lat, g.lon)); }
-        strokePath(ctx, trk, hexA(o.col, 0.32), 1.4);
+      // Calculate current satellite positions for contact detection
+      const sats = orbits.current.map((o) => groundPoint(o, o.u));
+
+      orbits.current.forEach((o, idx) => {
+        // Enhanced orbital traces: full vs faded based on visibility
+        ctx.lineWidth = 1.1;
+        let prev: P | null = null;
+        let prevHid = false;
+
+        for (let d = 0; d <= 360; d += 3) {
+          const angle = (d * Math.PI) / 180;
+          const g = groundPoint(o, angle);
+          const p = proj(g.lat, g.lon);
+          const hid = p.z < 0; // Behind the globe
+
+          if (prev) {
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(p.x, p.y);
+            // Front part (visible): 60% opacity | Back part (hidden): 15% opacity
+            ctx.strokeStyle = (hid || prevHid) ? hexA(o.col, 0.15) : hexA(o.col, 0.60);
+            ctx.stroke();
+          }
+          prev = p;
+          prevHid = hid;
+        }
+
         const g2 = groundPoint(o, o.u), sp = proj(g2.lat, g2.lon);
+
         if (sp.z > 0) {
-          const dx = sp.x - cx, dy = sp.y - cy, ax = cx + dx * 1.07, ay = cy + dy * 1.07;
-          ctx.strokeStyle = hexA(o.col, 0.3); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(sp.x, sp.y); ctx.lineTo(ax, ay); ctx.stroke();
-          ctx.fillStyle = o.col; ctx.shadowColor = o.col; ctx.shadowBlur = 12; ctx.beginPath(); ctx.arc(ax, ay, 3.2, 0, 6.2832); ctx.fill(); ctx.shadowBlur = 0;
+          // Sub-satellite point connection (dashed line)
+          ctx.setLineDash([2, 3]);
+          ctx.strokeStyle = hexA(o.col, 0.4);
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          ctx.moveTo(sp.x, sp.y);
+          const dx = sp.x - cx, dy = sp.y - cy;
+          const subdist = Math.hypot(dx, dy);
+          if (subdist > 0) {
+            const gx = cx + (dx / subdist) * R * 0.95;
+            const gy = cy + (dy / subdist) * R * 0.95;
+            ctx.lineTo(gx, gy);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Sub-satellite point marker
+          ctx.fillStyle = hexA(o.col, 0.6);
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 1.8, 0, 6.2832);
+          ctx.fill();
+
+          // Satellite icon with direction
+          const ahead = groundPoint(o, o.u + 0.02);
+          const aheadProj = proj(ahead.lat, ahead.lon);
+          const angle = Math.atan2(aheadProj.y - sp.y, aheadProj.x - sp.x);
+          const iconScale = Math.max(0.9, Math.min(1.7, st.current.zoom));
+
+          ctx.globalAlpha = 1;
+          ctx.shadowColor = o.col;
+          ctx.shadowBlur = 9;
+          drawSatelliteIcon(ctx, sp.x, sp.y, angle, o.col, iconScale);
+          ctx.shadowBlur = 0;
+
+          // Satellite label
+          ctx.font = "9.5px ui-monospace, monospace";
+          const satLabel = ["S1C", "S2A", "S3B", "S5P"][idx] || `SAT${idx}`;
+          const w = ctx.measureText(satLabel).width;
+          ctx.fillStyle = "rgba(8,15,20,0.74)";
+          ctx.fillRect(sp.x + 12, sp.y - 17, w + 8, 13);
+          ctx.fillStyle = o.col;
+          ctx.fillText(satLabel, sp.x + 16, sp.y - 7);
+        }
+
+        // Transmission pulse animation when satellite is in station contact
+        const isInContact = sats.some((q) => arcDeg(q.lat, q.lon, stations[0]?.lat ?? 0, stations[0]?.lon ?? 0) < CONTACT_DEG);
+        if (sp.z > 0 && isInContact) {
+          const pulsePhase = (st.current.animMs * 0.0009) % 1;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 7 + pulsePhase * 16, 0, 6.2832);
+          const pulseOpacity = Math.round((1 - pulsePhase) * 190);
+          ctx.strokeStyle = o.col + pulseOpacity.toString(16).padStart(2, "0");
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
         }
       });
 
-      const sats = orbits.current.map((o) => groundPoint(o, o.u));
+      // Render transmission beams from satellites to ground stations
+      orbits.current.forEach((o) => {
+        const satPos = groundPoint(o, o.u);
+        const satProj = proj(satPos.lat, satPos.lon);
+
+        stations.forEach((stn) => {
+          const stnProj = proj(stn.lat, stn.lon);
+          if (stnProj.z <= 0 || satProj.z <= 0) return;
+
+          const distDeg = arcDeg(satPos.lat, satPos.lon, stn.lat, stn.lon);
+          if (distDeg >= CONTACT_DEG) return; // Not in contact
+
+          // Transmission cone from satellite to ground station
+          const k = 1 - (distDeg / CONTACT_DEG); // 1 at zenith, 0 at horizon
+          const coneWidth = R * 0.085 * (0.45 + 0.55 * k);
+
+          const dx = stnProj.x - satProj.x;
+          const dy = stnProj.y - satProj.y;
+          const len = Math.hypot(dx, dy) || 1;
+          const nx = -dy / len;
+          const ny = dx / len;
+
+          // Gradient cone fill
+          const grad = ctx.createLinearGradient(satProj.x, satProj.y, stnProj.x, stnProj.y);
+          grad.addColorStop(0, hexA(o.col, 0.67)); // Bright at satellite
+          grad.addColorStop(1, hexA(o.col, 0.08)); // Faint at ground
+
+          ctx.beginPath();
+          ctx.moveTo(satProj.x, satProj.y);
+          ctx.lineTo(stnProj.x + nx * coneWidth, stnProj.y + ny * coneWidth);
+          ctx.lineTo(stnProj.x - nx * coneWidth, stnProj.y - ny * coneWidth);
+          ctx.closePath();
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.strokeStyle = hexA(o.col, 0.47);
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Animated dashed beam center line
+          ctx.save();
+          ctx.setLineDash([5, 7]);
+          ctx.lineDashOffset = -(st.current.animMs * 0.026) % 12;
+          ctx.strokeStyle = o.col;
+          ctx.lineWidth = 1.3;
+          ctx.beginPath();
+          ctx.moveTo(satProj.x, satProj.y);
+          ctx.lineTo(stnProj.x, stnProj.y);
+          ctx.stroke();
+          ctx.restore();
+
+          // Ground footprint ellipse
+          ctx.save();
+          ctx.translate(stnProj.x, stnProj.y);
+          ctx.rotate(Math.atan2(ny, nx));
+          ctx.beginPath();
+          ctx.ellipse(0, 0, coneWidth, coneWidth * 0.34, 0, 0, Math.PI * 2);
+          ctx.fillStyle = hexA(o.col, 0.13);
+          ctx.fill();
+          ctx.strokeStyle = hexA(o.col, 0.8);
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          ctx.restore();
+        });
+      });
+
+      // Render ground station icons and labels
       stations.forEach((stn) => {
         const p = proj(stn.lat, stn.lon);
         if (p.z <= 0) return;
         const live = sats.some((q) => arcDeg(q.lat, q.lon, stn.lat, stn.lon) < CONTACT_DEG);
-        ctx.strokeStyle = live ? stationLiveColor : stationIdleColor;
-        ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(p.x, p.y - 4); ctx.lineTo(p.x + 4, p.y); ctx.lineTo(p.x, p.y + 4); ctx.lineTo(p.x - 4, p.y); ctx.closePath();
-        ctx.stroke();
-        if (live) { ctx.fillStyle = stationLiveColor; ctx.fill(); }
+
+        // Draw parabola dish icon
+        const iconScale = Math.max(0.9, Math.min(1.7, st.current.zoom));
+        ctx.globalAlpha = live ? 1 : 0.65;
+        drawGroundStationIcon(ctx, p.x, p.y, live ? stationLiveColor : stationIdleColor, iconScale);
+        ctx.globalAlpha = 1;
+
+        // Station label
         ctx.font = "10px ui-monospace,monospace";
         ctx.fillStyle = live ? stationLiveLabel : stationIdleLabel;
         ctx.fillText(stn.name, p.x + 8, p.y + 3);
@@ -1323,112 +1580,152 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
           boxSizing: "border-box"
         }}>
           <div style={{ padding: "8px clamp(18px, 4vw, 48px)", boxSizing: "border-box" }}>
-          {/* Filters row with breadcrumb and metadata */}
-          <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "nowrap", minHeight: "56px" }}>
-            {/* Breadcrumb - inline */}
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", color: "var(--text-mute)", flexShrink: 0 }}>
-              <span>⌂</span>
-              <span>›</span>
-              <strong style={{ color: "var(--text)", whiteSpace: "nowrap" }}>Acquisitions Status</strong>
-            </div>
+            {/* Filters row with breadcrumb and metadata */}
+            <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "nowrap", minHeight: "56px" }}>
+              {/* Vertical separator */}
+              <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
 
-            {/* Vertical separator */}
-            <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
+              {/* Filters */}
+              <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "nowrap" }}>
+                <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+                  <label htmlFor={`${uid}-sat-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Satellite</label>
+                  <select
+                    id={`${uid}-sat-filter`}
+                    value={satFilter}
+                    onChange={(e) => setSatFilter(e.target.value)}
+                    style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
+                  >
+                    <option value="*">All satellites</option>
+                    {uniqueSatellites.map(sat => (
+                      <option key={sat} value={sat}>{sat}</option>
+                    ))}
+                  </select>
+                </div>
 
-            {/* Filters */}
-            <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "nowrap" }}>
-            <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-              <label htmlFor={`${uid}-sat-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Satellite</label>
-              <select
-                id={`${uid}-sat-filter`}
-                value={satFilter}
-                onChange={(e) => setSatFilter(e.target.value)}
-                style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
-              >
-                <option value="*">All satellites</option>
-                {uniqueSatellites.map(sat => (
-                  <option key={sat} value={sat}>{sat}</option>
-                ))}
-              </select>
-            </div>
+                <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+                  <label htmlFor={`${uid}-day-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Day of acquisition</label>
+                  <select
+                    id={`${uid}-day-filter`}
+                    value={dayFilter}
+                    onChange={(e) => setDayFilter(e.target.value)}
+                    style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
+                  >
+                    <option value="*">Any day</option>
+                    {uniqueDays.map(day => (
+                      <option key={day} value={day}>{day}</option>
+                    ))}
+                  </select>
+                </div>
 
-            <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-              <label htmlFor={`${uid}-day-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Day of acquisition</label>
-              <select
-                id={`${uid}-day-filter`}
-                value={dayFilter}
-                onChange={(e) => setDayFilter(e.target.value)}
-                style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
-              >
-                <option value="*">Any day</option>
-                {uniqueDays.map(day => (
-                  <option key={day} value={day}>{day}</option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-              <label htmlFor={selectId} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>List of datatakes</label>
-              <span className="dtk-select-field">
-                <select
-                  id={selectId}
-                  value={sel}
-                  onChange={(e) => select(Number(e.target.value))}
-                  style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "280px" }}
-                >
-                  {missionGroups.map((g) => (
-                    <optgroup label={g.mission} key={g.mission}>
-                      {g.items.map(({ i, a }) => (
-                        <option value={i} key={a.id}>
-                          {OPT_DOT[a.cls]}  {a.id} · {a.sat} · {a.comp.toFixed(1)}% · {a.status}
-                        </option>
+                <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+                  <label htmlFor={selectId} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>List of datatakes</label>
+                  <span className="dtk-select-field">
+                    <select
+                      id={selectId}
+                      value={sel}
+                      onChange={(e) => select(Number(e.target.value))}
+                      style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "280px" }}
+                    >
+                      {missionGroups.map((g) => (
+                        <optgroup label={g.mission} key={g.mission}>
+                          {g.items.map(({ i, a }) => (
+                            <option value={i} key={a.id}>
+                              {OPT_DOT[a.cls]}  {a.id} · {a.sat} · {a.comp.toFixed(1)}% · {a.status}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </span>
-            </div>
+                    </select>
+                  </span>
+                </div>
 
-            {/* Search button */}
-            <button
-              type="button"
-              style={{
-                background: "none",
-                border: "1px solid var(--line)",
-                borderRadius: "3px",
-                padding: "5px 8px",
-                color: "var(--text-mute)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "12px",
-                flexShrink: 0
-              }}
-              title="Apply filters"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: "block" }}>
-                <circle cx="11" cy="11" r="7" />
-                <path d="M20 20l-3.6-3.6" />
-              </svg>
-            </button>
-            </div>
+                {/* Search button */}
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "1px solid var(--line)",
+                    borderRadius: "3px",
+                    padding: "5px 8px",
+                    color: "var(--text-mute)",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "12px",
+                    flexShrink: 0
+                  }}
+                  title="Apply filters"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: "block" }}>
+                    <circle cx="11" cy="11" r="7" />
+                    <path d="M20 20l-3.6-3.6" />
+                  </svg>
+                </button>
 
-            {/* Another separator */}
-            <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
-
-            {/* Counts and source on the right */}
-            <div style={{ display: "flex", gap: "20px", alignItems: "center", fontSize: "10px", color: "var(--text-mute)", marginLeft: "auto", flexShrink: 0 }}>
-              <div style={{ display: "flex", gap: "12px", whiteSpace: "nowrap" }}>
-                <span><strong style={{ color: "var(--text)" }}>{filteredDatatakes.length}</strong> datatake{filteredDatatakes.length === 1 ? "" : "s"}</span>
-                <span><strong style={{ color: "var(--text)" }}>{missionGroups.length}</strong> mission{missionGroups.length === 1 ? "" : "s"}</span>
+                {/* Expand/Collapse Globe Button */}
+                <button
+                  type="button"
+                  onClick={() => setZen(!zen)}
+                  style={{
+                    background: zen ? "var(--accent)" : "var(--accent)",
+                    border: `2px solid ${zen ? "var(--accent)" : "var(--accent)"}`,
+                    borderRadius: "4px",
+                    padding: "8px 18px",
+                    color: "#fff",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    fontSize: "12px",
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    transition: "all 0.2s ease",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.1em",
+                    boxShadow: "0 0 12px rgba(61, 139, 253, 0.4)",
+                    marginLeft: "auto"
+                  }}
+                  aria-label={zen ? "Show details panel" : "Expand globe to fullscreen"}
+                  title={zen ? "Show details panel" : "Expand globe to fullscreen"}
+                  onMouseEnter={(e) => {
+                    const button = e.currentTarget as HTMLButtonElement;
+                    button.style.boxShadow = "0 0 16px rgba(61, 139, 253, 0.6)";
+                    button.style.transform = "scale(1.02)";
+                  }}
+                  onMouseLeave={(e) => {
+                    const button = e.currentTarget as HTMLButtonElement;
+                    button.style.boxShadow = "0 0 12px rgba(61, 139, 253, 0.4)";
+                    button.style.transform = "scale(1)";
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    {zen ? (
+                      <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                    ) : (
+                      <path d="M8 3v4m0 0H4m4 0l-4-4m12 18v-4m0 0h4m-4 0l4 4M3 12h4m0 0v4m0-4L3 16m18 0v-4m0 0h-4m4 0l4-4" />
+                    )}
+                  </svg>
+                  {zen ? "Show Details" : "Fullscreen"}
+                </button>
               </div>
-              <div style={{ display: "flex", gap: "4px", alignItems: "center", whiteSpace: "nowrap" }}>
-                <span>Official source</span>
-                <KmlLinkDisplay datatake={dt} />
+
+              {/* Another separator */}
+              <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
+
+              {/* Counts and source on the right */}
+              <div style={{ display: "flex", gap: "20px", alignItems: "center", fontSize: "10px", color: "var(--text-mute)", marginLeft: "auto", flexShrink: 0 }}>
+                <div style={{ display: "flex", gap: "12px", whiteSpace: "nowrap" }}>
+                  <span><strong style={{ color: "var(--text)" }}>{filteredDatatakes.length}</strong> datatake{filteredDatatakes.length === 1 ? "" : "s"}</span>
+                  <span><strong style={{ color: "var(--text)" }}>{missionGroups.length}</strong> mission{missionGroups.length === 1 ? "" : "s"}</span>
+                </div>
+                <div style={{ display: "flex", gap: "4px", alignItems: "center", whiteSpace: "nowrap" }}>
+                  <span>Official source</span>
+                  <KmlLinkDisplay datatake={dt} />
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
@@ -1441,205 +1738,211 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
       }}>
         <div className="acq-layout" style={{
           padding: "0 clamp(18px, 4vw, 48px)",
-          boxSizing: "border-box"
+          boxSizing: "border-box",
+          display: "grid",
+          gridTemplateColumns: zen ? "1fr" : "1fr minmax(320px, 25vw)",
+          gap: "12px"
         }}>
-        <div className="globe-card">
-          <div className="globe-stage" ref={stageRef}>
-            <canvas
-              ref={cvRef}
-              className="globe-canvas"
-              role="img"
-              tabIndex={0}
-              aria-label={globeLabel}
-              aria-describedby={helpId}
-              aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Plus Minus Enter"
-            />
-            <p className="sr-only" aria-live="polite">{globeLabel}</p>
-            <p className="sr-only" id={helpId}>
-              Interactive globe. Arrow keys rotate the globe, hold Shift to rotate faster.
-              Plus and minus zoom. Zero resets the view. Left and right square brackets step
-              through the datatakes. Enter plays or pauses the simulation clock. Every
-              footprint is also available as a button in the marker list and the datatake list.
-            </p>
+          <div className="globe-card">
+            <div className="globe-stage" ref={stageRef}>
+              <canvas
+                ref={cvRef}
+                className="globe-canvas"
+                role="img"
+                tabIndex={0}
+                aria-label={globeLabel}
+                aria-describedby={helpId}
+                aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown Plus Minus Enter"
+              />
+              <p className="sr-only" aria-live="polite">{globeLabel}</p>
+              <p className="sr-only" id={helpId}>
+                Interactive globe. Arrow keys rotate the globe, hold Shift to rotate faster.
+                Plus and minus zoom. Zero resets the view. Left and right square brackets step
+                through the datatakes. Enter plays or pauses the simulation clock. Every
+                footprint is also available as a button in the marker list and the datatake list.
+              </p>
 
-            {/* Screen-reader mirror of the canvas footprints: each plotted datatake is
+              {/* Screen-reader mirror of the canvas footprints: each plotted datatake is
               reachable as a real button without leaving the globe, and focusing one
               highlights it on the canvas. */}
-            <div className="sr-only">
-              <h4>Datatakes plotted on the globe</h4>
-              <ul>
-                {filteredDatatakes.map((a, i) => (
-                  <li key={a.id}>
-                    <button
-                      type="button"
-                      onClick={() => select(i)}
-                      onFocus={() => { hoverRef.current = i; invalidate(); }}
-                      onBlur={() => { hoverRef.current = -1; invalidate(); }}
-                      aria-current={sel === i ? "true" : undefined}
-                    >
-                      {a.id}, {a.sat} to {a.station}, {a.comp} percent complete, {a.status}
-                      {sel === i ? " (selected)" : ""}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="globe-overlay" aria-hidden="true">
-              <span className="eyebrow">Live acquisition plan · 3D</span>
-              <div className="acq-now">Now acquiring · <b>{dt.sat} → {dt.station}</b></div>
-            </div>
-
-            <div className="zoomctl">
-              <button type="button" aria-label="Zoom in" onClick={() => setZoom(st.current.zoom * 1.3)}>+</button>
-              <button type="button" aria-label="Zoom out" onClick={() => setZoom(st.current.zoom / 1.3)}>−</button>
-              <button type="button" aria-label="Reset view" title="Reset view" onClick={resetView}>⌖</button>
-            </div>
-
-            <div className="globe-hint" aria-hidden="true">
-              <span>scroll to zoom</span><span>drag or arrows to rotate</span><span>click a footprint</span>
-            </div>
-
-            <div className="simbar">
-              <div
-                className="simctl"
-                role="toolbar"
-                aria-label="Simulation clock"
-                aria-orientation="horizontal"
-                ref={barRef}
-                onKeyDown={onBarKeyDown}
-              >
-                <button
-                  type="button"
-                  className="play"
-                  aria-label={playing ? "Pause simulation" : "Play simulation"}
-                  aria-pressed={playing}
-                  onClick={togglePlay}
-                  {...roveProps("play")}
-                >
-                  <span aria-hidden="true">{playing ? "❚❚" : "►"}</span>
-                </button>
-                <div className="simtime">
-                  <span ref={clockRef}>{clockText(st.current.simMs)}</span>
-                  <small>SIMULATION TIME</small>
-                </div>
-                <input
-                  ref={scrubRef}
-                  className="scrub"
-                  type="range"
-                  min={0}
-                  max={DAY_MIN}
-                  step={1}
-                  defaultValue={Math.round(((st.current.simMs - DAY_START) / DAY_LEN) * DAY_MIN)}
-                  aria-label="Simulation time of day"
-                  onChange={onScrub}
-                  onPointerDown={() => { scrubbingRef.current = true; }}
-                  onPointerUp={() => { scrubbingRef.current = false; }}
-                  onPointerCancel={() => { scrubbingRef.current = false; }}
-                  {...roveProps("scrub")}
-                />
-                <button
-                  type="button"
-                  className="speed"
-                  aria-label={`Simulation speed ${speed} times real time. Activate to change.`}
-                  onClick={cycleSpeed}
-                  {...roveProps("speed")}
-                >
-                  <span aria-hidden="true">×{speed}</span>
-                </button>
+              <div className="sr-only">
+                <h4>Datatakes plotted on the globe</h4>
+                <ul>
+                  {filteredDatatakes.map((a, i) => (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onClick={() => select(i)}
+                        onFocus={() => { hoverRef.current = i; invalidate(); }}
+                        onBlur={() => { hoverRef.current = -1; invalidate(); }}
+                        aria-current={sel === i ? "true" : undefined}
+                      >
+                        {a.id}, {a.sat} to {a.station}, {a.comp} percent complete, {a.status}
+                        {sel === i ? " (selected)" : ""}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              {/* Sensing marks: one button per datatake at its acquisition time. A
+              <div className="globe-overlay" aria-hidden="true">
+                <span className="eyebrow">Live acquisition plan · 3D</span>
+                <div className="acq-now">Now acquiring · <b>{dt.sat} → {dt.station}</b></div>
+              </div>
+
+              <div className="zoomctl">
+                <button type="button" aria-label="Zoom in" onClick={() => setZoom(st.current.zoom * 1.3)}>+</button>
+                <button type="button" aria-label="Zoom out" onClick={() => setZoom(st.current.zoom / 1.3)}>−</button>
+                <button type="button" aria-label="Reset view" title="Reset view" onClick={resetView}>⌖</button>
+              </div>
+
+              <div className="globe-hint" aria-hidden="true">
+                <span>scroll to zoom</span><span>drag or arrows to rotate</span><span>click a footprint</span>
+              </div>
+
+              <div className="simbar">
+                <div
+                  className="simctl"
+                  role="toolbar"
+                  aria-label="Simulation clock"
+                  aria-orientation="horizontal"
+                  ref={barRef}
+                  onKeyDown={onBarKeyDown}
+                >
+                  <button
+                    type="button"
+                    className="play"
+                    aria-label={playing ? "Pause simulation" : "Play simulation"}
+                    aria-pressed={playing}
+                    onClick={togglePlay}
+                    {...roveProps("play")}
+                  >
+                    <span aria-hidden="true">{playing ? "❚❚" : "►"}</span>
+                  </button>
+                  <div className="simtime">
+                    <span ref={clockRef}>{clockText(st.current.simMs)}</span>
+                    <small>SIMULATION TIME</small>
+                  </div>
+                  <input
+                    ref={scrubRef}
+                    className="scrub"
+                    type="range"
+                    min={0}
+                    max={DAY_MIN}
+                    step={1}
+                    defaultValue={Math.round(((st.current.simMs - DAY_START) / DAY_LEN) * DAY_MIN)}
+                    aria-label="Simulation time of day"
+                    onChange={onScrub}
+                    onPointerDown={() => { scrubbingRef.current = true; }}
+                    onPointerUp={() => { scrubbingRef.current = false; }}
+                    onPointerCancel={() => { scrubbingRef.current = false; }}
+                    {...roveProps("scrub")}
+                  />
+                  <button
+                    type="button"
+                    className="speed"
+                    aria-label={`Simulation speed ${speed} times real time. Activate to change.`}
+                    onClick={cycleSpeed}
+                    {...roveProps("speed")}
+                  >
+                    <span aria-hidden="true">×{speed}</span>
+                  </button>
+                </div>
+
+                {/* Sensing marks: one button per datatake at its acquisition time. A
                 single tab stop; arrow keys move between marks, Home and End jump to
                 the ends. Activating a mark seeks the clock to it and selects it. */}
-              <div
-                className="simtrack"
-                ref={trackRef}
-                role="group"
-                aria-label="Datatake sensing marks"
-                aria-describedby={trackHelpId}
-                onKeyDown={onTrackKeyDown}
-              >
-                <div className="simtrack-axis" aria-hidden="true" />
-                {marks.map((m, n) => (
+                <div
+                  className="simtrack"
+                  ref={trackRef}
+                  role="group"
+                  aria-label="Datatake sensing marks"
+                  aria-describedby={trackHelpId}
+                  onKeyDown={onTrackKeyDown}
+                >
+                  <div className="simtrack-axis" aria-hidden="true" />
+                  {marks.map((m, n) => (
+                    <button
+                      key={m.a.id}
+                      type="button"
+                      data-tick={n}
+                      className={"simtick " + m.a.cls + (sel === m.i ? " sel" : "")}
+                      style={{ left: `${m.pct}%` }}
+                      tabIndex={n === tickRove ? 0 : -1}
+                      aria-current={sel === m.i ? "true" : undefined}
+                      aria-label={`${m.a.id}, ${m.a.sat}, sensed ${hhmmss(m.ms)}, ${m.a.comp} percent complete`}
+                      onFocus={() => { setTickRove(n); hoverRef.current = m.i; invalidate(); }}
+                      onBlur={() => { hoverRef.current = -1; invalidate(); }}
+                      onMouseEnter={() => { hoverRef.current = m.i; invalidate(); }}
+                      onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
+                      onClick={() => activateMark(m)}
+                    >
+                      <span className="tickid" aria-hidden="true">{m.showLabel ? m.a.id.split("-")[0] : ""}</span>
+                      <span className="tickmark" aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+                <p className="sr-only" id={trackHelpId}>
+                  With the marks focused, left and right arrows move between them, Home and End
+                  jump to the first and last. Enter seeks the simulation clock to that
+                  acquisition and selects it on the globe.
+                </p>
+                <p className="sr-only" aria-live="polite">
+                  {marks.length} of {filteredDatatakes.length} acquisitions fall inside the simulated day.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className={"acq-side" + (rail === "plates" ? " acq-side-scroll" : "")}
+            style={{ display: zen ? "none" : "flex" }}
+          >
+            {/* The plates variant selects from the dropdown above, so this panel would be
+            a second control called "List of Datatakes". */}
+            {rail === "detail" && (
+              <div className="acq-list">
+                <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
+                {filteredDatatakes.map((a, i) => (
                   <button
-                    key={m.a.id}
                     type="button"
-                    data-tick={n}
-                    className={"simtick " + m.a.cls + (sel === m.i ? " sel" : "")}
-                    style={{ left: `${m.pct}%` }}
-                    tabIndex={n === tickRove ? 0 : -1}
-                    aria-current={sel === m.i ? "true" : undefined}
-                    aria-label={`${m.a.id}, ${m.a.sat}, sensed ${hhmmss(m.ms)}, ${m.a.comp} percent complete`}
-                    onFocus={() => { setTickRove(n); hoverRef.current = m.i; invalidate(); }}
-                    onBlur={() => { hoverRef.current = -1; invalidate(); }}
-                    onMouseEnter={() => { hoverRef.current = m.i; invalidate(); }}
+                    key={a.id}
+                    className={"acq-item" + (sel === i ? " sel" : "")}
+                    aria-current={sel === i ? "true" : undefined}
+                    onClick={() => select(i)}
+                    onMouseEnter={() => { hoverRef.current = i; invalidate(); }}
                     onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
-                    onClick={() => activateMark(m)}
+                    onFocus={() => { hoverRef.current = i; invalidate(); }}
+                    onBlur={() => { hoverRef.current = -1; invalidate(); }}
                   >
-                    <span className="tickid" aria-hidden="true">{m.showLabel ? m.a.id.split("-")[0] : ""}</span>
-                    <span className="tickmark" aria-hidden="true" />
+                    <span className={"sd " + a.cls} aria-hidden="true" />
+                    <span className="acq-item-text"><span className="id">{a.id}</span><span className="sub">{a.sat} · {a.station}</span></span>
+                    <span className="pct">{a.comp}%</span>
                   </button>
                 ))}
               </div>
-              <p className="sr-only" id={trackHelpId}>
-                With the marks focused, left and right arrows move between them, Home and End
-                jump to the first and last. Enter seeks the simulation clock to that
-                acquisition and selects it on the globe.
-              </p>
-              <p className="sr-only" aria-live="polite">
-                {marks.length} of {filteredDatatakes.length} acquisitions fall inside the simulated day.
-              </p>
-            </div>
+            )}
+
+            {rail === "plates" ? (
+              <DatatakeRail dt={dt} />
+            ) : (
+              <aside className="acq-detail" aria-label={`Details for datatake ${dt.id}`}>
+                <span className="eyebrow">Datatake details</span>
+                <h4>{dt.id}</h4>
+                <div className="acq-detail-kvs">
+                  <div className="kv"><span>Satellite</span><span>{dt.sat}</span></div>
+                  <div className="kv"><span>Station</span><span>{dt.station}</span></div>
+                  <div className="kv"><span>Footprint</span><span>{Math.abs(dt.lat)}°{dt.lat >= 0 ? "N" : "S"} {Math.abs(dt.lon)}°{dt.lon >= 0 ? "E" : "W"}</span></div>
+                  <div className="kv"><span>Completeness</span><span>{dt.comp} %</span></div>
+                  <div className="kv"><span>Status</span><span>{dt.status}</span></div>
+                </div>
+                <div className="acq-prod-h">Products</div>
+                {dt.prods.map((p, i) => (
+                  <div className="prod-row" key={i}><span><span className="lvl">{p.lvl}</span> · {p.sub}</span><span className={"pill " + pillFor(p.st)}>{p.st}</span></div>
+                ))}
+              </aside>
+            )}
           </div>
-        </div>
-
-        <div className={"acq-side" + (rail === "plates" ? " acq-side-scroll" : "")}>
-          {/* The plates variant selects from the dropdown above, so this panel would be
-            a second control called "List of Datatakes". */}
-          {rail === "detail" && (
-            <div className="acq-list">
-              <div className="lh"><span>List of Datatakes</span><span>completeness</span></div>
-              {filteredDatatakes.map((a, i) => (
-                <button
-                  type="button"
-                  key={a.id}
-                  className={"acq-item" + (sel === i ? " sel" : "")}
-                  aria-current={sel === i ? "true" : undefined}
-                  onClick={() => select(i)}
-                  onMouseEnter={() => { hoverRef.current = i; invalidate(); }}
-                  onMouseLeave={() => { hoverRef.current = -1; invalidate(); }}
-                  onFocus={() => { hoverRef.current = i; invalidate(); }}
-                  onBlur={() => { hoverRef.current = -1; invalidate(); }}
-                >
-                  <span className={"sd " + a.cls} aria-hidden="true" />
-                  <span className="acq-item-text"><span className="id">{a.id}</span><span className="sub">{a.sat} · {a.station}</span></span>
-                  <span className="pct">{a.comp}%</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {rail === "plates" ? (
-            <DatatakeRail dt={dt} />
-          ) : (
-            <aside className="acq-detail" aria-label={`Details for datatake ${dt.id}`}>
-              <span className="eyebrow">Datatake details</span>
-              <h4>{dt.id}</h4>
-              <div className="acq-detail-kvs">
-                <div className="kv"><span>Satellite</span><span>{dt.sat}</span></div>
-                <div className="kv"><span>Station</span><span>{dt.station}</span></div>
-                <div className="kv"><span>Footprint</span><span>{Math.abs(dt.lat)}°{dt.lat >= 0 ? "N" : "S"} {Math.abs(dt.lon)}°{dt.lon >= 0 ? "E" : "W"}</span></div>
-                <div className="kv"><span>Completeness</span><span>{dt.comp} %</span></div>
-                <div className="kv"><span>Status</span><span>{dt.status}</span></div>
-              </div>
-              <div className="acq-prod-h">Products</div>
-              {dt.prods.map((p, i) => (
-                <div className="prod-row" key={i}><span><span className="lvl">{p.lvl}</span> · {p.sub}</span><span className={"pill " + pillFor(p.st)}>{p.st}</span></div>
-              ))}
-            </aside>
-          )}
-        </div>
         </div>
       </div>
     </>
