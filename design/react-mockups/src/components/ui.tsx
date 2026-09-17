@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
 import { COMPLETENESS_LABEL, type Completeness, type Status } from "@/data/mock";
@@ -99,7 +100,7 @@ export function DescriptionModal({ open, onClose, children }: {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       className="description-modal-overlay"
@@ -161,7 +162,8 @@ export function DescriptionModal({ open, onClose, children }: {
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -178,13 +180,13 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
   return (
     <>
       <style>{`.page-head .page-desc { max-width: none !important; }`}</style>
-      <div className={`page-head${img ? " ex-hero-host" : ""}`} style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)", boxSizing: "border-box" } as any}>
+      <div className={`page-head${img ? " ex-hero-host" : ""}`} style={{ width: "100%", boxSizing: "border-box" } as any}>
       {img && (
         <div className="ex-hero-bg" style={{ ["--ex-hero-img" as string]: `url("${img}")` }} aria-hidden />
       )}
-      <div className="wrap" style={{ maxWidth: "none", margin: "0", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box" } as any}>
+      <div className="wrap" style={{ maxWidth: "none", margin: "0", padding: "0", boxSizing: "border-box" } as any}>
         <nav className="crumbs" aria-label="Breadcrumb">
-          <Link to="/">Home</Link><span className="sep">/</span><span>{crumb}</span>
+          <a href="/examples/index1">HOME</a><span className="sep">/</span><span>{crumb.toUpperCase()}</span>
         </nav>
         <h1>{title}</h1>
         {sub && <p className="sub">{sub}</p>}
@@ -194,6 +196,24 @@ export function PageHeader({ title, sub, crumb, desc, img }: {
               className="page-desc-head"
               onClick={() => setDescOpen(true)}
               aria-expanded={descOpen}
+              style={{
+                backgroundColor: '#1e262e',
+                border: '1px solid #2a3440',
+                color: '#a0aec0',
+                padding: '8px 16px',
+                marginTop: '12px',
+                borderRadius: '0px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: 'none',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-mono)',
+                fontSize: '11px',
+                letterSpacing: 'var(--track)',
+                textTransform: 'uppercase',
+                transition: 'color 0.2s var(--ease), background 0.2s var(--ease)',
+              }}
             >
               <span>Description</span>
               <svg className="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">

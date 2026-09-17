@@ -2,7 +2,86 @@
    SentiBoard v2 — Global + component styles
    ============================================================ */
 
-/* NotesEsa — ESA brand typography */
+/* ============================================================
+   Self-hosted modern fonts — no CDN dependency
+   ============================================================ */
+
+/* Space Grotesk — bold, geometric headings */
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("/fonts/SpaceGrotesk-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Plus Jakarta Sans — legible body text */
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: url("/fonts/PlusJakartaSans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* JetBrains Mono — technical data, identifiers, code */
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* NotesEsa — ESA brand typography (kept as fallback) */
 @font-face {
   font-family: "NotesEsa";
   src: url("/NotesEsa.woff2") format("woff2");
@@ -72,12 +151,18 @@ h4 {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
 p {
   margin: 0 0 1rem;
+}
+
+p strong,
+p b {
+  color: var(--text-bold-accent, #e2e8f0);
+  font-weight: 600;
 }
 
 .wrap {
@@ -113,6 +198,9 @@ p {
 
 .section-head h2 {
   font-size: clamp(24px, 3vw, 38px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
 }
 
 .eyebrow {
@@ -153,7 +241,8 @@ p {
   align-items: center;
   font-family: var(--font-display);
   font-weight: 700;
-  color: var(--accent-2);
+  color: var(--accent-cyan, #00e5ff);
+  letter-spacing: -0.01em;
 }
 
 .brand-logo {
@@ -183,19 +272,22 @@ p {
   font-size: 11.5px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text-muted-cool, #94a3b8);
   padding: 8px 12px;
-  border-radius: var(--r-sm);
+  border-radius: 0 !important;
+  font-weight: 600;
   transition: color 0.2s, background 0.2s;
 }
 
 .nav-links a:hover {
   color: var(--text);
   background: var(--bg-3);
+  border-radius: 0 !important;
 }
 
 .nav-links a.active {
   color: var(--text);
+  border-radius: 0 !important;
 }
 
 .nav-links a.active::after {
@@ -203,7 +295,7 @@ p {
   display: block;
   height: 2px;
   margin-top: 6px;
-  border-radius: 2px;
+  border-radius: 0 !important;
   background: var(--accent-grad);
 }
 
@@ -447,12 +539,15 @@ a.card:hover {
 .card h3 {
   font-size: 18px;
   margin-bottom: 10px;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
 }
 
 .card p {
-  color: var(--text-dim);
+  color: var(--text-muted-cool, #94a3b8);
   font-size: 14px;
   margin: 0;
+  line-height: 1.6;
 }
 
 /* ================= ABOUT PAGE ================= */
@@ -585,6 +680,8 @@ a.card:hover {
   font-size: clamp(19px, 2vw, 24px);
   margin-bottom: 8px;
   transition: color 0.2s;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
 }
 
 .about-link:hover h3 {
@@ -592,10 +689,11 @@ a.card:hover {
 }
 
 .about-link p {
-  color: var(--text-dim);
+  color: var(--text-muted-cool, #94a3b8);
   font-size: 14px;
   max-width: 78ch;
   margin: 0;
+  line-height: 1.6;
 }
 
 .al-arrow {
@@ -660,41 +758,72 @@ a.card:hover {
 
 /* ================= PAGE HEADER ================= */
 .page-head {
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-1);
+  border: none !important;
+  border-bottom: none !important;
+  background: transparent;
+  padding: 24px 0 34px 0;
 }
 
 .page-head .wrap {
-  padding-block: 40px 34px;
+  width: 100%;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 clamp(18px, 4vw, 48px) !important;
+  box-sizing: border-box;
+}
+
+.page-head .crumbs,
+.page-head h1,
+.page-desc {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
 }
 
 .crumbs {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: var(--text-mute);
-  margin-bottom: 14px;
+  font-size: 13px;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-cyan, #00e5ff);
+  margin: 0 0 8px 0 !important;
+  padding-left: 0 !important;
+  margin-left: 0 !important;
+  line-height: 1.2;
 }
 
 .crumbs a {
-  color: var(--text-dim);
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: none;
+  transition: opacity 0.2s;
 }
 
 .crumbs a:hover {
-  color: var(--text);
+  opacity: 0.8;
 }
 
 .crumbs .sep {
-  opacity: 0.5;
+  color: var(--accent-cyan, #00e5ff);
 }
 
 .page-head h1 {
   font-size: clamp(30px, 5vw, 52px);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary, #ffffff);
+  margin: 0 !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+  line-height: 1.1;
 }
 
 .page-head .sub {
-  color: var(--text-dim);
+  color: var(--text-muted-cool, #94a3b8);
   margin-top: 12px;
   max-width: 720px;
   font-size: 15px;
@@ -744,35 +873,36 @@ a.card:hover {
   --pd-hover: transparent;
   --pd-body: var(--text-dim);
 
-  margin-top: 16px;
-  max-width: 720px;
-  border: 1px solid var(--pd-line);
-  border-radius: var(--r-md);
-  background: var(--pd-bg);
-  overflow: hidden;
+  margin-top: 12px !important;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  width: fit-content !important;
+  max-width: max-content !important;
+  display: inline-block !important;
 }
 
 .page-desc-head {
-  width: 100%;
+  width: auto !important;
+  max-width: max-content !important;
   cursor: pointer;
-  padding: 11px 16px;
-  border: 0;
-  background: none;
-  display: flex;
+  padding: 8px 16px !important;
+  border: 1px solid #2a3440 !important;
+  border-radius: 0 !important;
+  background-color: #1e262e !important;
+  display: inline-flex !important;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
-  color: var(--pd-label);
+  color: #a0aec0 !important;
   transition: color 0.2s var(--ease), background 0.2s var(--ease);
 }
 
 .page-desc-head:hover {
-  color: var(--pd-label-hover);
-  background: var(--pd-hover);
+  color: #ffffff !important;
+  background: #2a3440 !important;
 }
 
 .page-desc-head .chev {
@@ -898,6 +1028,7 @@ a.card:hover {
   font-weight: 700;
   letter-spacing: -0.02em;
   max-width: 14ch;
+  color: var(--text-primary, #ffffff);
 }
 
 .hero-cap h1 .hl {
@@ -908,10 +1039,11 @@ a.card:hover {
 }
 
 .hero-cap p {
-  color: var(--text-dim);
+  color: var(--text-muted-cool, #94a3b8);
   max-width: 60ch;
   margin-top: 16px;
   font-size: 16px;
+  line-height: 1.6;
 }
 
 .chips {
@@ -1245,7 +1377,8 @@ a.card:hover {
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 12px 0 16px;
-  color: #fff;
+  color: var(--text-primary, #ffffff);
+  font-family: var(--font-display);
 }
 
 .px-panel-meta {
@@ -3403,6 +3536,16 @@ table.data td.mono {
     margin-left: 0;
     width: 100%
   }
+}
+
+/* ================= FILTER-TO-CONTENT TRANSITIONS ================= */
+/* Smooth spacing between filter controls and main content below */
+.filters, .filterbar, .controlbar, .monthBar, .toolbar, .topbar {
+  border-top: none !important;
+  border-bottom: none !important;
+  padding-bottom: 24px !important;
+  padding-top: 16px !important;
+  margin-bottom: 8px !important;
 }
 
 /* ================= DESCRIPTION MODAL ================= */

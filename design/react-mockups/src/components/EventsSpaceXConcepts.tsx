@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTheme } from "@/theme";
-import { Collapse, DescriptionModal, useMediaQuery } from "@/components/ui";
+import { Collapse, DescriptionModal, PageHeader, useMediaQuery } from "@/components/ui";
 import { PERIODS, inPeriod, type PeriodId } from "@/data/period";
 
 /* =============================================================================
@@ -812,58 +812,31 @@ export default function EventsSpaceXConcepts() {
     <div className="evx" data-theme={theme === "light" ? "light" : "dark"}>
       <style>{CSS}</style>
 
-      <div className="evx-wrap">
-        {/* ---------------- header ---------------- */}
-        <header className="evx-head ex-hero-host">
-          <div
-            className="ex-hero-bg"
-            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Ice_Greenland.jpg")' }}
-            aria-hidden
-          />
-          <div>
-            <div className="evx-eyebrow">
-              <Link to="/examples">Home</Link>
-              <span aria-hidden>/</span>
-              <span>Events</span>
-            </div>
-            <h1 className="evx-h1">EVENTS</h1>
-            <div className="evx-description-card">
-              <button
-                type="button"
-                className="evx-description-head"
-                onClick={() => setDescriptionOpen(true)}
-                aria-expanded={descriptionOpen}
-              >
-                <span>Description</span>
-                <svg className="evx-description-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-              <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
-                <div className="evx-description-body">
-                  <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
-                  <ul>
-                    <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
-                    <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
-                    <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
-                    <li><strong>Production:</strong> issue occurred during data processing</li>
-                    <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
-                  </ul>
-                  <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
-                  <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
-                </div>
-              </DescriptionModal>
-            </div>
-          </div>
+      <PageHeader crumb="Events" title="Events" img="/assets/img/modules/Ice_Greenland.jpg"
+        desc={
+          <>
+            <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+            <ul>
+              <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
+              <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
+              <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
+              <li><strong>Production:</strong> issue occurred during data processing</li>
+              <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+            </ul>
+            <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
+            <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+          </>
+        } />
 
-          <div className="evx-counters">
-            <div><span>EVENTS</span><b>{pad(events.length)}</b></div>
-            <div><span>INCIDENTS</span><b className="crit">{pad(incidents)}</b></div>
-            <div><span>PLANNED</span><b>{pad(planned)}</b></div>
-            <div><span>DTK IMPACTED</span><b className="warn">{pad(impacted)}</b></div>
-            <div><span>DTK LOST</span><b className="crit">{pad(lost)}</b></div>
-          </div>
-        </header>
+      <div className="evx-wrap" style={{ position: "relative" }}>
+        {/* KPI counters positioned in header */}
+        <div className="evx-counters" style={{ position: "absolute", top: "-80px", right: "clamp(18px, 4vw, 48px)", display: "grid", gridTemplateColumns: "repeat(5, auto)", gap: "32px", zIndex: 1 }}>
+          <div><span>EVENTS</span><b>{pad(events.length)}</b></div>
+          <div><span>INCIDENTS</span><b className="crit">{pad(incidents)}</b></div>
+          <div><span>PLANNED</span><b>{pad(planned)}</b></div>
+          <div><span>DTK IMPACTED</span><b className="warn">{pad(impacted)}</b></div>
+          <div><span>DTK LOST</span><b className="crit">{pad(lost)}</b></div>
+        </div>
 
         {/* ---------------- controls ---------------- */}
         <div className="evx-bar">
@@ -1349,6 +1322,7 @@ const CSS = `
   .evx-counters { grid-template-columns: repeat(3, 1fr); }
   .evx-ev-kvs { grid-template-columns: repeat(2, 1fr); }
 }
+
 @media (max-width: 700px) {
   .evx-wrap { padding: 20px 14px 44px; }
   .evx-counters { grid-template-columns: repeat(2, 1fr); }

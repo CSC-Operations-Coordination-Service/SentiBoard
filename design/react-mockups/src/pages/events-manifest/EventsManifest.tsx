@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import { PageHeader } from "@/components/ui";
 import {
   ALL_SATELLITES,
   CATEGORIES,
@@ -366,58 +367,28 @@ export default function EventsManifest() {
     </>
   );
 
-  return (
-    <div className={s.page}>
-      <div className={s.inner}>
-        {/* The header art — the shared /examples backdrop recipe (.ex-hero-bg in global.css),
-            sitting inside the header this page already had. The header keeps its own geometry;
-            .ex-hero-host only adds a positioning context and lifts the copy above the image. */}
-        <header className={`${s.head} ex-hero-host ${s.headArt}`}>
-          <div
-            className="ex-hero-bg"
-            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Tibetan_Plateau.jpg")' }}
-            aria-hidden
-          />
-          <div>
-            <div className={s.eyebrow}>
-              <Link to="/examples">Home</Link>
-              <span aria-hidden>/</span>
-              <span>Events</span>
-            </div>
-            <h1 className={s.title}>Events</h1>
-            {/* Styled through `.page :global(.page-desc)` in manifest.module.css, which re-points
-                the shared --pd-* palette at this canvas — so no className is needed here. */}
-            <div className={s.descriptionCard}>
-              <button
-                type="button"
-                className={s.descriptionHead}
-                onClick={() => setDescriptionOpen(true)}
-                aria-expanded={descriptionOpen}
-              >
-                <span>Description</span>
-                <svg className={s.descriptionChev} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </button>
-              <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
-                <div className={s.descriptionBody}>
-                  <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
-                  <ul>
-                    <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
-                    <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
-                    <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
-                    <li><strong>Production:</strong> issue occurred during data processing</li>
-                    <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
-                  </ul>
-                  <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
-                  <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
-                </div>
-              </DescriptionModal>
-            </div>
-          </div>
-        </header>
+  const DESCRIPTION = (
+    <>
+      <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+      <ul>
+        <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
+        <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
+        <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
+        <li><strong>Production:</strong> issue occurred during data processing</li>
+        <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+      </ul>
+      <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
+      <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+    </>
+  );
 
-        <div className={s.monthBar}>
+  return (
+    <>
+      <PageHeader crumb="Events" title="Events" desc={DESCRIPTION} img="/assets/img/modules/Tibetan_Plateau.jpg" />
+
+      <div className={s.page}>
+        <div className={s.inner}>
+          <div className={s.monthBar}>
           <div className={s.monthNav}>
             <button type="button" disabled title="Mock data covers August 2026 only" aria-label="Previous month">
               <ChevronLeft size={15} aria-hidden />
@@ -597,5 +568,6 @@ export default function EventsManifest() {
         )}
       </aside>
     </div>
+    </>
   );
 }
