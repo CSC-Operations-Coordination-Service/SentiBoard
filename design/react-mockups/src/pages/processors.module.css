@@ -12,7 +12,7 @@
 .satTabs {
   display: flex;
   gap: 8px;
-  padding: 20px 30px 16px;
+  padding: 20px 30px 16px 60px;
   border-bottom: 1px solid var(--line);
   background: var(--bg);
   flex-wrap: wrap;
@@ -60,8 +60,9 @@
   background: linear-gradient(135deg, rgba(6, 12, 18, 0.95) 0%, rgba(6, 12, 18, 0.85) 100%);
   overflow: hidden;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   border-right: 1px solid var(--line);
 }
 
@@ -86,16 +87,14 @@
 }
 
 .satelliteImage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 70%;
   object-fit: contain;
-  object-position: center;
   opacity: 0.9;
   z-index: 2;
   mix-blend-mode: screen;
   transition: opacity 0.4s ease;
+  margin-top: 20px;
 }
 
 .placeholder {
