@@ -309,7 +309,7 @@
   width: 28px;
   height: 28px;
   border: 1px solid var(--mf-line);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--mf-panel);
   color: var(--mf-muted);
   cursor: pointer;
@@ -374,7 +374,7 @@
   margin: 20px auto 18px;
   padding: 16px clamp(18px, 4vw, 48px);
   border: 1px solid var(--mf-line);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--mf-panel);
   box-sizing: border-box;
 }
@@ -446,7 +446,7 @@
   width: 100%;
   padding: 9px 12px;
   border: 1px solid var(--mf-line);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--mf-panel-2);
   color: var(--mf-text);
   font-family: var(--font-mono, var(--mono));
@@ -541,7 +541,7 @@ select.control {
   gap: 6px;
   padding: 6px 11px;
   border: 1px solid var(--mf-line);
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--mf-faint);
   cursor: pointer;
@@ -566,11 +566,12 @@ select.control {
 /* ---------------- month grid ---------------- */
 .calWrap {
   width: 100%;
-  max-width: var(--wrap);
+  max-width: 800px;
+  /* Limits overall grid width to shrink column widths */
   margin: 0 auto 64px;
   padding: 14px clamp(18px, 4vw, 48px);
   border: 1px solid var(--mf-line);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--mf-panel);
   box-sizing: border-box;
 }
@@ -598,14 +599,15 @@ select.control {
 .cell {
   position: relative;
   aspect-ratio: 1;
-  min-height: 110px;
+  min-height: 60px;
+  /* Reduced from 110px so cells can shrink proportionally */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: stretch;
   padding: 5px;
   border: 1px solid var(--mf-line);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--mf-panel-2);
   color: inherit;
   font: inherit;
@@ -807,7 +809,7 @@ select.control {
   width: 30px;
   height: 30px;
   border: 1px solid var(--mf-line);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--mf-panel-2);
   color: var(--mf-muted);
   cursor: pointer;
@@ -825,7 +827,7 @@ select.control {
   justify-content: center;
   padding: 8px 12px;
   border: 1px solid var(--mf-line);
-  border-radius: 6px;
+  border-radius: 0;
   background: var(--mf-panel-2);
   color: var(--mf-muted);
   cursor: pointer;
@@ -1190,7 +1192,7 @@ select.control {
   /* ---------- month grid ---------- */
   .calWrap {
     padding: 8px;
-    border-radius: 12px;
+    border-radius: 0;
   }
 
   .dow,
@@ -1203,7 +1205,7 @@ select.control {
      fit the screen. The gutters above are what buys the width; at 375px this lands at ~45px. */
   .cell {
     padding: 5px 4px;
-    border-radius: 7px;
+    border-radius: 0;
   }
 
   .cellNum {
@@ -1217,8 +1219,8 @@ select.control {
   }
 
   .mark svg {
-    width: 11px;
-    height: 11px;
+    width: clamp(8px, 2.8vw, 12px) !important;
+    height: clamp(8px, 2.8vw, 12px) !important;
   }
 
   .markMore {
@@ -1336,7 +1338,7 @@ select.control {
 
   .cell {
     padding: 4px 3px;
-    border-radius: 6px;
+    border-radius: 0;
   }
 
   .cellNum {

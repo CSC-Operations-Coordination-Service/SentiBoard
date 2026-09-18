@@ -1199,7 +1199,7 @@ const CSS = `
 .sx-field { display: flex; flex-direction: column; gap: 7px; padding: 12px 14px; background: var(--sx-panel); min-width: 0; }
 .sx-field label { font-family: var(--sx-mono); font-size: 9.5px; letter-spacing: 0.18em; color: var(--sx-faint); }
 .sx-field select, .sx-field input {
-  width: 100%; padding: 7px 9px; border: 1px solid var(--sx-line-2); border-radius: 2px;
+  width: 100%; padding: 7px 9px; border: 1px solid var(--sx-line-2); border-radius: 0 !important;
   background: var(--sx-panel-2); color: var(--sx-text); outline: none;
   font-family: var(--sx-mono); font-size: 11.5px; letter-spacing: 0.04em;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -1247,7 +1247,7 @@ const CSS = `
 }
 .sx-view {
   display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px;
-  border: 1px solid var(--sx-line-2); border-radius: 2px; background: transparent; color: var(--sx-dim);
+  border: 1px solid var(--sx-line-2); border-radius: 0 !important; background: transparent; color: var(--sx-dim);
   cursor: pointer; white-space: nowrap;
   font-family: var(--sx-mono); font-size: 9.5px; letter-spacing: 0.14em;
   transition: color 0.15s, border-color 0.15s;
@@ -1327,7 +1327,7 @@ const CSS = `
 .sx-btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px;
   border: 1px solid var(--sx-line-2); background: transparent; color: var(--sx-dim);
-  border-radius: 2px; cursor: pointer;
+  border-radius: 0 !important; cursor: pointer;
   font-family: var(--sx-mono); font-size: 10px; letter-spacing: 0.14em;
   transition: color 0.15s, border-color 0.15s;
 }

@@ -54,7 +54,12 @@
   text-transform: uppercase;
 }
 
-.legend { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
 
 .legendLabel {
   font-family: var(--font-mono, var(--mono));
@@ -73,7 +78,12 @@
   color: var(--sw-muted);
 }
 
-.legendDot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
 
 /* ---------------- fleet totals ---------------- */
 .totals {
@@ -82,7 +92,7 @@
   gap: 1px;
   margin: 20px 0 0;
   border: 1px solid var(--sw-line);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--sw-line);
   overflow: hidden;
 }
@@ -112,14 +122,16 @@
 }
 
 /* The one figure that is a finding rather than a fact, so the one figure that takes a colour. */
-.totalWarn { color: var(--cmp-partial); }
+.totalWarn {
+  color: var(--cmp-partial);
+}
 
 /* ---------------- filters ---------------- */
 .filters {
   margin: 16px 0 18px;
   padding: 16px;
   border: 1px solid var(--sw-line);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--sw-panel);
 }
 
@@ -161,11 +173,26 @@
   color: var(--sw-signal);
 }
 
-.reset:hover { text-decoration: underline; }
+.reset:hover {
+  text-decoration: underline;
+}
 
-.fieldRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
-.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.fieldWide { max-width: 460px; }
+.fieldRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldWide {
+  max-width: 460px;
+}
 
 .field label {
   font-family: var(--font-mono, var(--mono));
@@ -179,7 +206,7 @@
   width: 100%;
   padding: 9px 12px;
   border: 1px solid var(--sw-line);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--sw-panel-2);
   color: var(--sw-text);
   font-family: var(--font-mono, var(--mono));
@@ -189,11 +216,23 @@
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.control:hover:not(:disabled) { border-color: var(--sw-line-strong); }
-.control:focus { border-color: var(--sw-signal); box-shadow: 0 0 0 3px var(--sw-signal-soft); }
+.control:hover:not(:disabled) {
+  border-color: var(--sw-line-strong);
+}
 
-.withIcon { position: relative; display: flex; }
-.withIcon .control { padding-left: 31px; }
+.control:focus {
+  border-color: var(--sw-signal);
+  box-shadow: 0 0 0 3px var(--sw-signal-soft);
+}
+
+.withIcon {
+  position: relative;
+  display: flex;
+}
+
+.withIcon .control {
+  padding-left: 31px;
+}
 
 .lead {
   position: absolute;
@@ -218,9 +257,17 @@
   color: var(--sw-faint);
 }
 
-.clear:hover { color: var(--sw-text); }
+.clear:hover {
+  color: var(--sw-text);
+}
 
-.chipRow { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.chipRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
 
 .chipRowLabel {
   margin-right: 4px;
@@ -237,7 +284,7 @@
   gap: 6px;
   padding: 6px 11px;
   border: 1px solid var(--sw-line);
-  border-radius: 999px;
+  border-radius: 0;
   background: transparent;
   color: var(--sw-faint);
   cursor: pointer;
@@ -247,7 +294,10 @@
   transition: border-color 0.2s, color 0.2s, background 0.2s;
 }
 
-.chip:hover { border-color: var(--sw-line-strong); color: var(--sw-muted); }
+.chip:hover {
+  border-color: var(--sw-line-strong);
+  color: var(--sw-muted);
+}
 
 .chipOn {
   border-color: var(--chip, var(--sw-signal));
@@ -269,8 +319,13 @@
   cursor: pointer;
 }
 
-.filtersToggle svg { transition: transform 0.2s ease; }
-.filtersToggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.filtersToggle svg {
+  transition: transform 0.2s ease;
+}
+
+.filtersToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
 
 /* ---------------- lanes ---------------- */
 .lanesHead {
@@ -296,23 +351,36 @@
   color: var(--sw-signal);
 }
 
-.expandAll:hover { text-decoration: underline; }
+.expandAll:hover {
+  text-decoration: underline;
+}
 
-.lanes { display: flex; flex-direction: column; gap: 10px; }
+.lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .lane {
   border: 1px solid var(--sw-line);
-  border-radius: 14px;
+  border-radius: 0;
   background: var(--sw-panel);
   overflow: hidden;
   transition: border-color 0.2s;
 }
 
-.lane:hover:not(.laneEmpty) { border-color: var(--sw-line-strong); }
-.laneOpen { border-color: var(--sw-line-strong); }
+.lane:hover:not(.laneEmpty) {
+  border-color: var(--sw-line-strong);
+}
+
+.laneOpen {
+  border-color: var(--sw-line-strong);
+}
 
 /* A mission with no events this month: present, so the fleet is complete, and visibly quiet. */
-.laneEmpty { opacity: 0.5; }
+.laneEmpty {
+  opacity: 0.5;
+}
 
 .laneHead {
   display: grid;
@@ -329,8 +397,14 @@
   cursor: pointer;
 }
 
-.laneHead:disabled { cursor: default; }
-.laneHead:focus-visible { outline: 2px solid var(--sw-signal); outline-offset: -2px; }
+.laneHead:disabled {
+  cursor: default;
+}
+
+.laneHead:focus-visible {
+  outline: 2px solid var(--sw-signal);
+  outline-offset: -2px;
+}
 
 /* The mission's short form as a plate — S1, S2, S3, S5P, the same abbreviations the datatake IDs
    and the acquisition filters use. It is the fastest way to find your own row. */
@@ -340,7 +414,7 @@
   justify-content: center;
   height: 26px;
   border: 1px solid var(--sw-line-strong);
-  border-radius: 7px;
+  border-radius: 0;
   background: var(--sw-panel-2);
   font-family: var(--font-mono, var(--mono));
   font-size: 11px;
@@ -349,11 +423,23 @@
   color: var(--sw-muted);
 }
 
-.laneOpen .laneShort { border-color: var(--sw-signal); color: var(--sw-signal); }
+.laneOpen .laneShort {
+  border-color: var(--sw-signal);
+  color: var(--sw-signal);
+}
 
-.laneName { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.laneName {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
 
-.laneTitle { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.laneTitle {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
 .laneSats {
   font-family: var(--font-mono, var(--mono));
@@ -378,7 +464,7 @@
   align-items: center;
   padding: 4px 9px;
   border: 1px solid color-mix(in srgb, var(--cmp-partial) 55%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--cmp-partial) 14%, transparent);
   font-family: var(--font-mono, var(--mono));
   font-size: 10.5px;
@@ -390,8 +476,17 @@
   cursor: help;
 }
 
-.laneTypes { display: inline-flex; align-items: center; gap: 4px; }
-.lanePip { width: 7px; height: 7px; border-radius: 50%; }
+.laneTypes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lanePip {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
 
 .laneCount,
 .laneDtk {
@@ -409,8 +504,15 @@
   font-variant-numeric: tabular-nums;
 }
 
-.chev { flex: 0 0 auto; color: var(--sw-faint); transition: transform 0.18s; }
-.chevOpen { transform: rotate(90deg); }
+.chev {
+  flex: 0 0 auto;
+  color: var(--sw-faint);
+  transition: transform 0.18s;
+}
+
+.chevOpen {
+  transform: rotate(90deg);
+}
 
 /* ---------------- events inside a lane ---------------- */
 .eventList {
@@ -420,8 +522,13 @@
   border-top: 1px solid var(--sw-line);
 }
 
-.event { border-bottom: 1px solid var(--sw-line); }
-.event:last-child { border-bottom: 0; }
+.event {
+  border-bottom: 1px solid var(--sw-line);
+}
+
+.event:last-child {
+  border-bottom: 0;
+}
 
 .eventRow {
   display: grid;
@@ -446,12 +553,25 @@
   gap: 6px 14px;
 }
 
-.eventRow:hover .eventTitle { color: var(--sw-signal); }
-.eventRow:focus-visible { outline: 2px solid var(--sw-signal); outline-offset: -2px; }
+.eventRow:hover .eventTitle {
+  color: var(--sw-signal);
+}
 
-.eventIcon { display: inline-flex; }
+.eventRow:focus-visible {
+  outline: 2px solid var(--sw-signal);
+  outline-offset: -2px;
+}
 
-.eventBody { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.eventIcon {
+  display: inline-flex;
+}
+
+.eventBody {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 
 .eventTitle {
   font-size: 13.5px;
@@ -494,7 +614,9 @@
 }
 
 /* Same flex-collapses-the-leading-space fix as the calendar grid's day markers. */
-.eventCountUnit { margin-left: 0.28em; }
+.eventCountUnit {
+  margin-left: 0.28em;
+}
 
 .eventLost {
   font-style: normal;
@@ -511,7 +633,7 @@
   align-items: center;
   padding: 3px 8px;
   border: 1px solid color-mix(in srgb, var(--cmp-partial) 50%, transparent);
-  border-radius: 999px;
+  border-radius: 0;
   font-family: var(--font-mono, var(--mono));
   font-size: 9.5px;
   font-weight: 600;
@@ -522,11 +644,22 @@
   cursor: help;
 }
 
-.circle { flex: 0 0 auto; border-radius: 50%; }
+.circle {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
 
-.eventDetail { padding: 0 0 14px 23px; }
+.eventDetail {
+  padding: 0 0 14px 23px;
+}
 
-.eventSummary { margin: 0 0 12px; font-size: 12.5px; line-height: 1.6; color: var(--sw-muted); max-width: 88ch; }
+.eventSummary {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--sw-muted);
+  max-width: 88ch;
+}
 
 .dtHead {
   padding-bottom: 6px;
@@ -538,7 +671,11 @@
   color: var(--sw-faint);
 }
 
-.dtList { list-style: none; margin: 0; padding: 0; }
+.dtList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 
 .dtRow {
   display: grid;
@@ -551,10 +688,27 @@
   font-size: 11px;
 }
 
-.dtRow:last-child { border-bottom: 0; }
-.dtId { color: var(--sw-text); }
-.dtProduct { grid-column: 2; color: var(--sw-signal); font-size: 10px; letter-spacing: 0.06em; }
-.dtTime { grid-column: 2; color: var(--sw-faint); font-size: 10.5px; font-variant-numeric: tabular-nums; }
+.dtRow:last-child {
+  border-bottom: 0;
+}
+
+.dtId {
+  color: var(--sw-text);
+}
+
+.dtProduct {
+  grid-column: 2;
+  color: var(--sw-signal);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.dtTime {
+  grid-column: 2;
+  color: var(--sw-faint);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+}
 
 .dtStatus {
   grid-column: 3;
@@ -567,8 +721,18 @@
   text-align: right;
 }
 
-.dtStatusLabel { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-.dtPct { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.dtStatusLabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dtPct {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
 
 .hint {
   margin: 16px 2px 0;
@@ -579,7 +743,9 @@
   color: var(--sw-faint);
 }
 
-.badgeTail { display: inline; }
+.badgeTail {
+  display: inline;
+}
 
 /* ============================================================
    RESPONSIVE
@@ -594,36 +760,90 @@
     row-gap: 8px;
   }
 
-  .eventTail { grid-column: 3; justify-content: flex-start; }
+  .eventTail {
+    grid-column: 3;
+    justify-content: flex-start;
+  }
 }
 
 @media (max-width: 900px) {
-  .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 /* ============================================================
    MOBILE (≤760px) — one column, thumb-sized targets. Breakpoint matched to the app nav's.
    ============================================================ */
 @media (max-width: 760px) {
-  .inner { padding: 20px 14px 44px; }
+  .inner {
+    padding: 20px 14px 44px;
+  }
 
-  .monthBar { gap: 10px; padding: 12px 0; }
-  .legendLabel { flex: 0 0 100%; }
-  .legend { gap: 8px 12px; }
-  .legendItem { font-size: 11.5px; }
+  .monthBar {
+    gap: 10px;
+    padding: 12px 0;
+  }
+
+  .legendLabel {
+    flex: 0 0 100%;
+  }
+
+  .legend {
+    gap: 8px 12px;
+  }
+
+  .legendItem {
+    font-size: 11.5px;
+  }
 
   /* The label wraps to two lines on the two long ones ("Datatakes affected", "Missions with
      events"), so the tiles are given a min-height rather than letting one row jump the other. */
-  .total { padding: 12px 14px; min-height: 74px; justify-content: space-between; }
-  .total b { font-size: 19px; }
+  .total {
+    padding: 12px 14px;
+    min-height: 74px;
+    justify-content: space-between;
+  }
 
-  .filters { margin: 14px 0; padding: 4px 12px 12px; }
-  .filtersHead { min-height: 48px; margin-bottom: 0; }
-  .fieldRow { margin-top: 14px; }
-  .fieldWide { max-width: none; }
-  .control { min-height: 44px; padding: 11px 12px; font-size: 13px; }
-  .chipRowLabel { flex: 0 0 100%; margin-right: 0; font-size: 10.5px; }
-  .chip { min-height: 44px; padding: 8px 13px; font-size: 11.5px; }
+  .total b {
+    font-size: 19px;
+  }
+
+  .filters {
+    margin: 14px 0;
+    padding: 4px 12px 12px;
+  }
+
+  .filtersHead {
+    min-height: 48px;
+    margin-bottom: 0;
+  }
+
+  .fieldRow {
+    margin-top: 14px;
+  }
+
+  .fieldWide {
+    max-width: none;
+  }
+
+  .control {
+    min-height: 44px;
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+
+  .chipRowLabel {
+    flex: 0 0 100%;
+    margin-right: 0;
+    font-size: 10.5px;
+  }
+
+  .chip {
+    min-height: 44px;
+    padding: 8px 13px;
+    font-size: 11.5px;
+  }
 
   .reset,
   .clear,
@@ -652,22 +872,52 @@
     gap: 8px 12px;
   }
 
-  .laneTitle { font-size: 14.5px; }
+  .laneTitle {
+    font-size: 14.5px;
+  }
 
-  .eventList { padding: 0 14px 6px; }
+  .eventList {
+    padding: 0 14px 6px;
+  }
 
   /* On a phone the row is already stacked by the ≤1080px rule; here it only needs bigger text and
      a 44px-tall touch target. */
-  .eventRow { padding: 12px 0; min-height: 44px; }
-  .eventTitle { font-size: 14px; }
-  .eventMeta { font-size: 11px; }
-  .eventDetail { padding-left: 16px; }
-  .eventSummary { font-size: 13.5px; }
+  .eventRow {
+    padding: 12px 0;
+    min-height: 44px;
+  }
 
-  .dtRow { grid-template-columns: auto minmax(0, 1fr); gap: 3px 8px; padding: 10px 0; font-size: 12px; }
-  .dtId { overflow-wrap: anywhere; }
+  .eventTitle {
+    font-size: 14px;
+  }
+
+  .eventMeta {
+    font-size: 11px;
+  }
+
+  .eventDetail {
+    padding-left: 16px;
+  }
+
+  .eventSummary {
+    font-size: 13.5px;
+  }
+
+  .dtRow {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 8px;
+    padding: 10px 0;
+    font-size: 12px;
+  }
+
+  .dtId {
+    overflow-wrap: anywhere;
+  }
+
   .dtProduct,
-  .dtTime { font-size: 11px; }
+  .dtTime {
+    font-size: 11px;
+  }
 
   .dtStatus {
     grid-column: 2;
@@ -679,24 +929,57 @@
     text-align: left;
   }
 
-  .dtStatusLabel { font-size: 10px; }
+  .dtStatusLabel {
+    font-size: 10px;
+  }
 
-  .hint { font-size: 11.5px; }
+  .hint {
+    font-size: 11.5px;
+  }
 
-  .badge { right: 10px; bottom: 10px; max-width: calc(100vw - 20px); font-size: 9.5px; padding: 7px 10px; }
-  .badgeTail { display: none; }
+  .badge {
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100vw - 20px);
+    font-size: 9.5px;
+    padding: 7px 10px;
+  }
+
+  .badgeTail {
+    display: none;
+  }
 }
 
 @media (max-width: 430px) {
-  .inner { padding: 18px 10px 40px; }
-  .laneHead { padding: 12px; }
-  .eventList { padding: 0 12px 6px; }
+  .inner {
+    padding: 18px 10px 40px;
+  }
+
+  .laneHead {
+    padding: 12px;
+  }
+
+  .eventList {
+    padding: 0 12px 6px;
+  }
 
   /* The totals stay two-up. One column made them four full-width rows — a whole screen of
      summary before the first mission, on the page whose point is that the missions ARE the
      summary. Two-up they cost half a screen and the lanes stay reachable. */
-  .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .total { padding: 11px 12px; }
-  .total span { font-size: 9.5px; letter-spacing: 0.1em; }
-  .total b { font-size: 18px; }
+  .totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .total {
+    padding: 11px 12px;
+  }
+
+  .total span {
+    font-size: 9.5px;
+    letter-spacing: 0.1em;
+  }
+
+  .total b {
+    font-size: 18px;
+  }
 }

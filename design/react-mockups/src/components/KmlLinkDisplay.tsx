@@ -7,7 +7,7 @@ export default function KmlLinkDisplay({ datatake }: { datatake: AcqDatatake }) 
 
   if (isSentinel1or2 && datatake.kmlLink) {
     return (
-      <div className="kml-link-container">
+      <div className="kml-link-container" style={{ borderRadius: 0 }}>
         <span className="kml-label">Official source:</span>
         <a
           href={datatake.kmlLink.url}

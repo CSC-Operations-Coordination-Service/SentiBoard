@@ -893,7 +893,7 @@ export function Index1() {
             ].map((section, idx) => (
               <div key={idx} style={{
                 border: `1px solid ${openSections[idx] ? "#29c3d6" : "var(--line-soft)"}`,
-                borderRadius: "10px",
+                borderRadius: "0px",
                 overflow: "hidden",
                 marginBottom: "12px",
                 background: "rgba(10,18,24,.7)",

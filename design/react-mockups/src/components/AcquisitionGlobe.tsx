@@ -1586,14 +1586,29 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
               <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
 
               {/* Filters */}
+              {/* Filters */}
               <div style={{ display: "flex", gap: "12px", alignItems: "flex-end", flexWrap: "nowrap" }}>
+
+                {/* Satellite Filter */}
                 <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-                  <label htmlFor={`${uid}-sat-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Satellite</label>
+                  <label htmlFor={`${uid}-sat-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "4px", letterSpacing: "0.05em" }}>
+                    Satellite
+                  </label>
                   <select
                     id={`${uid}-sat-filter`}
                     value={satFilter}
                     onChange={(e) => setSatFilter(e.target.value)}
-                    style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
+                    style={{
+                      height: "34px",
+                      padding: "0 10px",
+                      background: "var(--bg)",
+                      border: "1px solid var(--line)",
+                      borderRadius: "0px",
+                      color: "var(--text)",
+                      fontSize: "12px",
+                      minWidth: "130px",
+                      boxSizing: "border-box"
+                    }}
                   >
                     <option value="*">All satellites</option>
                     {uniqueSatellites.map(sat => (
@@ -1602,13 +1617,26 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                   </select>
                 </div>
 
+                {/* Day Filter */}
                 <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-                  <label htmlFor={`${uid}-day-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>Day of acquisition</label>
+                  <label htmlFor={`${uid}-day-filter`} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "4px", letterSpacing: "0.05em" }}>
+                    Day of acquisition
+                  </label>
                   <select
                     id={`${uid}-day-filter`}
                     value={dayFilter}
                     onChange={(e) => setDayFilter(e.target.value)}
-                    style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "130px" }}
+                    style={{
+                      height: "34px",
+                      padding: "0 10px",
+                      background: "var(--bg)",
+                      border: "1px solid var(--line)",
+                      borderRadius: "0px",
+                      color: "var(--text)",
+                      fontSize: "12px",
+                      minWidth: "130px",
+                      boxSizing: "border-box"
+                    }}
                   >
                     <option value="*">Any day</option>
                     {uniqueDays.map(day => (
@@ -1617,14 +1645,29 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                   </select>
                 </div>
 
+                {/* Datatake Select */}
                 <div style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-                  <label htmlFor={selectId} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "2px", letterSpacing: "0.05em" }}>List of datatakes</label>
-                  <span className="dtk-select-field">
+                  <label htmlFor={selectId} style={{ display: "block", fontSize: "10px", fontWeight: 600, textTransform: "uppercase", color: "var(--text-mute)", marginBottom: "4px", letterSpacing: "0.05em" }}>
+                    List of datatakes
+                  </label>
+                  <span className="dtk-select-field" style={{ borderRadius: 0, display: "block" }}>
                     <select
                       id={selectId}
                       value={sel}
                       onChange={(e) => select(Number(e.target.value))}
-                      style={{ padding: "5px 8px", background: "var(--bg)", border: "1px solid var(--line)", borderRadius: "3px", color: "var(--text)", fontSize: "12px", minWidth: "280px" }}
+                      style={{
+                        height: "34px",
+                        padding: "0 10px",
+                        background: "var(--bg)",
+                        border: "1px solid var(--accent)",
+                        borderRadius: 0,
+                        outline: "none",
+                        color: "var(--text)",
+                        fontSize: "12px",
+                        minWidth: "280px",
+                        cursor: "pointer",
+                        boxSizing: "border-box"
+                      }}
                     >
                       {missionGroups.map((g) => (
                         <optgroup label={g.mission} key={g.mission}>
@@ -1642,36 +1685,53 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                 {/* Search button */}
                 <button
                   type="button"
+                  aria-label="Search datatakes"
+                  title="Search datatakes"
                   style={{
-                    background: "none",
-                    border: "1px solid var(--line)",
-                    borderRadius: "3px",
-                    padding: "5px 8px",
-                    color: "var(--text-mute)",
+                    height: "34px",
+                    width: "34px",
+                    background: "rgba(0, 229, 255, 0.12)",
+                    border: "1px solid var(--accent, #00e5ff)",
+                    borderRadius: 0,
+                    padding: 0,
+                    color: "var(--accent, #00e5ff)",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     fontSize: "12px",
-                    flexShrink: 0
+                    flexShrink: 0,
+                    boxSizing: "border-box",
+                    transition: "all 0.2s ease-in-out",
+                    boxShadow: "0 0 8px rgba(0, 229, 255, 0.15)",
                   }}
-                  title="Apply filters"
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "var(--accent, #00e5ff)";
+                    e.currentTarget.style.color = "#08090a";
+                    e.currentTarget.style.boxShadow = "0 0 14px rgba(0, 229, 255, 0.6)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(0, 229, 255, 0.12)";
+                    e.currentTarget.style.color = "var(--accent, #00e5ff)";
+                    e.currentTarget.style.boxShadow = "0 0 8px rgba(0, 229, 255, 0.15)";
+                  }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ display: "block" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ display: "block" }}>
                     <circle cx="11" cy="11" r="7" />
                     <path d="M20 20l-3.6-3.6" />
                   </svg>
                 </button>
 
-                {/* Expand/Collapse Globe Button */}
+                {/* Fullscreen Button */}
                 <button
                   type="button"
                   onClick={() => setZen(!zen)}
                   style={{
-                    background: zen ? "var(--accent)" : "var(--accent)",
-                    border: `2px solid ${zen ? "var(--accent)" : "var(--accent)"}`,
-                    borderRadius: "4px",
-                    padding: "8px 18px",
+                    height: "34px",
+                    background: "var(--accent)",
+                    border: "2px solid var(--accent)",
+                    borderRadius: 0,
+                    padding: "0 18px",
                     color: "#fff",
                     cursor: "pointer",
                     display: "flex",
@@ -1681,6 +1741,7 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                     fontSize: "12px",
                     fontWeight: 700,
                     flexShrink: 0,
+                    boxSizing: "border-box",
                     transition: "all 0.2s ease",
                     textTransform: "uppercase",
                     letterSpacing: "0.1em",
@@ -1709,19 +1770,25 @@ export default function AcquisitionGlobe({ stations, datatakes, rail = "detail" 
                   </svg>
                   {zen ? "Show Details" : "Fullscreen"}
                 </button>
+
               </div>
 
               {/* Another separator */}
               <div style={{ width: "1px", height: "24px", background: "var(--line)", flexShrink: 0 }} />
 
               {/* Counts and source on the right */}
-              <div style={{ display: "flex", gap: "20px", alignItems: "center", fontSize: "10px", color: "var(--text-mute)", marginLeft: "auto", flexShrink: 0 }}>
+              {/* Counts and source on the right */}
+              <div style={{ display: "flex", gap: "20px", alignItems: "center", fontSize: "12px", color: "var(--text-mute)", marginLeft: "auto", flexShrink: 0 }}>
                 <div style={{ display: "flex", gap: "12px", whiteSpace: "nowrap" }}>
-                  <span><strong style={{ color: "var(--text)" }}>{filteredDatatakes.length}</strong> datatake{filteredDatatakes.length === 1 ? "" : "s"}</span>
-                  <span><strong style={{ color: "var(--text)" }}>{missionGroups.length}</strong> mission{missionGroups.length === 1 ? "" : "s"}</span>
+                  <span>
+                    <strong style={{ color: "var(--text)", fontWeight: 600 }}>{filteredDatatakes.length}</strong> datatake{filteredDatatakes.length === 1 ? "" : "s"}
+                  </span>
+                  <span>
+                    <strong style={{ color: "var(--text)", fontWeight: 600 }}>{missionGroups.length}</strong> mission{missionGroups.length === 1 ? "" : "s"}
+                  </span>
                 </div>
-                <div style={{ display: "flex", gap: "4px", alignItems: "center", whiteSpace: "nowrap" }}>
-                  <span>Official source</span>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center", whiteSpace: "nowrap" }}>
+                  <span style={{ fontWeight: 600, letterSpacing: "0.05em", textTransform: "uppercase", fontSize: "10px" }}>Official source</span>
                   <KmlLinkDisplay datatake={dt} />
                 </div>
               </div>

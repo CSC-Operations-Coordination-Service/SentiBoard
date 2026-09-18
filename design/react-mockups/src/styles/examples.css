@@ -678,7 +678,7 @@
 .ed-spot {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   padding: 18px;
   margin-top: 4px;
   max-width: 620px;
@@ -1585,7 +1585,7 @@
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   background: var(--bg-2);
   transition: transform 0.25s var(--ease), border-color 0.25s;
 }
@@ -1763,7 +1763,7 @@ details.faq[open] .faq-body {
 }
 
 /* News bar in light mode */
-:root[data-theme="light"] main > div:has(> div[style*="position: \"fixed\""]) {
+:root[data-theme="light"] main>div:has(> div[style*="position: \"fixed\""]) {
   background: #ffffff !important;
 }
 

@@ -369,7 +369,7 @@ p b {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   padding: 11px 20px;
-  border-radius: 999px;
+  border-radius: 0 !important;
   border: 1px solid var(--line-strong);
   color: var(--text);
   background: transparent;
@@ -377,19 +377,22 @@ p b {
 }
 
 .btn:hover {
-  border-color: var(--text);
+  border-color: var(--accent-cyan, #00e5ff);
+  color: var(--accent-cyan, #00e5ff);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
   transform: translateY(-1px);
 }
 
 .btn.primary {
   background: var(--accent-grad);
-  border-color: transparent;
-  color: var(--on-accent);
+  border: 1px solid var(--accent-cyan, #00e5ff);
+  color: var(--on-accent, #08090a);
   font-weight: 600;
 }
 
 .btn.primary:hover {
-  box-shadow: 0 12px 30px -10px var(--accent);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+  border-color: #ffffff;
 }
 
 .btn .arrow {
@@ -411,7 +414,7 @@ p b {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--pill-bg);
   color: var(--text-dim);
   border: 1px solid var(--line);
@@ -1845,7 +1848,7 @@ table.data td.mono {
   --text-dim: #cccccc;
   --text-mute: #737373;
   position: relative;
-  border-radius: var(--r-lg);
+  border-radius: 0;
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface-bg);
@@ -2510,7 +2513,7 @@ table.data td.mono {
 }
 
 .kml-label {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: var(--track);
   text-transform: uppercase;
   color: var(--text-mute);
@@ -2584,7 +2587,8 @@ table.data td.mono {
 
 .dtk-block {
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
+  /* Updated from var(--r-lg) to square corners */
   background: var(--bg-2);
   padding: 18px;
 }
@@ -3540,7 +3544,12 @@ table.data td.mono {
 
 /* ================= FILTER-TO-CONTENT TRANSITIONS ================= */
 /* Smooth spacing between filter controls and main content below */
-.filters, .filterbar, .controlbar, .monthBar, .toolbar, .topbar {
+.filters,
+.filterbar,
+.controlbar,
+.monthBar,
+.toolbar,
+.topbar {
   border-top: none !important;
   border-bottom: none !important;
   padding-bottom: 24px !important;
