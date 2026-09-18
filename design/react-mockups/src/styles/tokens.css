@@ -7,14 +7,12 @@
    ============================================================ */
 
 :root {
-   /* Type — NotesEsa is the ESA brand face and carries BOTH body and headings, so --font-sans
-      and --font-display lead with the same family; the system stack behind it is only the
-      loading fallback. The @font-face rules are in global.css. --font-mono stays a monospace
-      family: identifiers, timestamps and figures are read down a column, which a proportional
-      face breaks. */
-   --font-sans: "NotesEsa", "Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
-   --font-display: "NotesEsa", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-   --font-mono: "IBM Plex Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
+   /* Type — Space Grotesk for bold, modern headings; Plus Jakarta Sans for legible body text;
+      JetBrains Mono for technical data. Imported from Google Fonts. System stacks provide
+      graceful fallbacks if fonts fail to load. */
+   --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
+   --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
 
    /* Brand accent (shared across themes) — SentiBoard branding: cyan from logo */
    --accent: #12b1bf;
@@ -22,6 +20,15 @@
    --accent-teal: #0f99a3;
    --accent-teal-bright: #12b1bf;
    --accent-grad: linear-gradient(90deg, #12b1bf, #1dd0dd);
+
+   /* Enhanced modern palette for high-tech aesthetic */
+   --accent-cyan: #00e5ff;
+   --accent-cyan-alt: #06b6d4;
+   --text-primary: #ffffff;
+   --text-secondary: #f8fafc;
+   --text-muted-cool: #94a3b8;
+   --text-muted-alt: #64748b;
+   --text-bold-accent: #e2e8f0;
 
    /* Semantic status (shared) */
    --ok: #34d399;

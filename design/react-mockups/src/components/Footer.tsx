@@ -14,9 +14,9 @@ export default function Footer() {
           </div>
           <div>
             <h4>Explore</h4>
-            <Link to="/acquisitions">Acquisitions Status</Link>
-            <Link to="/events">Events</Link>
-            <Link to="/availability">Data Availability</Link>
+            <Link to="/examples/acquisitions-globe">Acquisitions Status</Link>
+            <Link to="/examples/events-manifest">Events</Link>
+            <Link to="/examples/coverage-timeline">Data Availability</Link>
             <Link to="/processors">Processors</Link>
           </div>
           <div>

@@ -386,9 +386,9 @@ export function IndexReveal() {
 // ================= landing =================
 const CARDS = [
   { to: "/examples/index1", img: SCENES[3], title: "a) index_with_about", desc: " Removing the 'About' page and including tabs description and FAQ section directly on the Home page" },
-  /*{ to: "/examples/fleet", img: CARD_ART.fleet, title: "a) Ticker over video - fleet", desc: "Video hero with news scrolling on top and live events along the bottom → Sentinel fleet → image page-cards." },
+  { to: "/examples/fleet", img: CARD_ART.fleet, title: "a) Ticker over video - fleet", desc: "Video hero with news scrolling on top and live events along the bottom → Sentinel fleet → image page-cards." },
   { to: "/examples/gallery", img: CARD_ART.gallery, title: "b) Console - linkable gallery", desc: "News + real-time console as the first section (no globe) → diagonal gallery where every image links to a page." },
-  { to: "/examples/reveal", img: CARD_ART.reveal, title: "c) Editorial - reveal", desc: "Editorial first section (auto-scrolling Sentinel scenes + news + live rail, no globe) → pages revealed on scroll." },*/
+  { to: "/examples/reveal", img: CARD_ART.reveal, title: "c) Editorial - reveal", desc: "Editorial first section (auto-scrolling Sentinel scenes + news + live rail, no globe) → pages revealed on scroll." },
 ];
 
 // Proposals for pages other than the index — same idea, grouped separately so
@@ -412,10 +412,10 @@ const ABOUT_CARDS = [
 ];
 
 const PAGE_CARDS = [
-  /*{
+  {
     to: "/examples/events-swimlanes", img: CARD_ART.eventsSwimlanes, title: "a) Events · Mission swimlanes",
     desc: "Show missions by fleet with collapsible rows for each (S1, S2, S3, S5P). Row headers display event count, affected datatakes, and an 'N active' badge. Expanding a row reveals event details, replacing the chronological list.",
-  },*/
+  },
   {
     to: "/examples/events-spacex", img: CARD_ART.eventsSpacex, title: "b) Events · timeline + heatmap",
     desc: "Two layouts share a tab bar: Layout A has a Gantt ribbon by month, and Layout B features 31 day tiles with status pills.",
@@ -442,14 +442,14 @@ const AVAIL_CARDS = [
     to: "/examples/coverage-timeline", img: CARD_ART.coverageTimeline, title: "a) Data Availability · Coverage timeline",
     desc: "The heatmap shows daily mission performance, with outages as horizontal runs and sparkline chips indicating gaps. The table is sorted by recent gaps for easy issue identification.",
   },
-  /*{
+  {
     to: "/examples/data-availability-spacex", img: CARD_ART.availabilitySpacex, title: "b) Data Availability",
     desc: "The page mimicked a launch console with hairline rules, a UTC clock, donut metrics, and a table for telemetry records.",
   },
   {
     to: "/examples/data-availability", img: CARD_ART.availabilityFiltered, title: "c) Data Availability · Filtered breakdown",
     desc: "The datatake list includes filters for mission, acquisition, and publication status, ensuring consistent charts and rows, along with a sortable table of relevant details.",
-  },*/
+  },
 ];
 
 const PROC_CARDS = [
@@ -457,20 +457,20 @@ const PROC_CARDS = [
     to: "/processors", img: CARD_ART.versionMatrix, title: "a) Processors",
     desc: "The focus is on the last released processor. Historical information can be accessed by expanding the processor details.",
   },
-  /*{
+  {
     to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors · Release Timeline",
     desc: "Release notes appear in order, with filtering options and no status indicators.",
   },
   {
     to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Gantt timeline",
     desc: "A scrollable gantt-style timeline showing all baseline releases for a selected processor over time.",
-  },*/
+  },
 ];
 
 export function ExamplesHome() {
   return (
     <>
-      <PageHeader crumb="Proposals" title="Page proposals" desc="Explore different page layout proposals and design concepts for the Earth observation data dashboard. Each proposal demonstrates alternative approaches to visualizing satellite data and operational metrics."
+      <PageHeader crumb="Proposals" title="Page proposals"
       />
       <section className="wrap pad">
         <div className="section-head" style={{ marginBottom: 24 }}>

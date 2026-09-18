@@ -126,8 +126,8 @@ export default function VersionCompare() {
   return (
     <>
       <PageHeader
-        crumb="Processors proposal"
-        title="Baseline Timeline"
+        crumb="Processors"
+        title="Processors - Timeline"
         desc={PROCESSORS_COMPARE_DESCRIPTION}
         img="/assets/img/modules/processors.jpg"
       />

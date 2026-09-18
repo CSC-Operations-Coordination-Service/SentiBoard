@@ -150,8 +150,8 @@ export default function ReleaseLog() {
   return (
     <>
       <PageHeader
-        crumb="Processors proposal"
-        title="Release Timeline"
+        crumb="Processors"
+        title="Processors - Timeline"
         desc={PROCESSORS_LOG_DESCRIPTION}
         img="/assets/img/modules/processors.jpg"
       />

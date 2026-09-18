@@ -53,7 +53,7 @@ import {
   type ManifestEvent,
   type Status,
 } from "@/data/events-mock";
-import { Collapse, PageDescription, useMediaQuery } from "@/components/ui";
+import { PageHeader, Collapse, useMediaQuery } from "@/components/ui";
 import { EVENTS_SWIMLANES_DESCRIPTION } from "@/data/copy";
 import s from "./swimlanes.module.css";
 
@@ -290,6 +290,20 @@ function Lane({
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
+const DESCRIPTION = (
+  <>
+    <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+    <ul>
+      <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
+      <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
+      <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
+      <li><strong>Production:</strong> issue occurred during data processing</li>
+      <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+    </ul>
+    <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The 'green' colour indicates that the total completeness is spared; 'orange' is used in case of medium impact; the 'red' colour is used when the datatake is lost.</p>
+    <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+  </>
+);
 
 export default function EventsSwimlanes() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -298,10 +312,12 @@ export default function EventsSwimlanes() {
      that comparison. */
   const [openLanes, setOpenLanes] = useState<Set<string>>(() => new Set());
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   const narrow = useMediaQuery(NARROW);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filterFieldsId = useId();
+  const descriptionId = useId();
 
   const toggleCategory = useCallback((c: EventCategory) => {
     setFilters((f) => ({
@@ -386,113 +402,101 @@ export default function EventsSwimlanes() {
       </div>
     </>
   );
-
   return (
-    <div className={s.page}>
-      <div className={s.inner}>
-        {/* The header art — the shared /examples backdrop recipe (.ex-hero-bg in global.css),
-            sitting inside the header this page already had. The header keeps its own geometry;
-            .ex-hero-host only adds a positioning context and lifts the copy above the image. */}
-        <header className={`${s.head} ex-hero-host ${s.headArt}`}>
-          <div
-            className="ex-hero-bg"
-            style={{ ["--ex-hero-img" as string]: 'url("/assets/img/modules/Earth_rainforests.jpg")' }}
-            aria-hidden
-          />
-          <div>
-            <div className={s.eyebrow}>
-              <Link to="/examples">Home</Link>
-              <span aria-hidden>/</span>
+    <>
+      <PageHeader
+        crumb="Events"
+        title="Events"
+        desc={DESCRIPTION}
+        img="/assets/img/modules/Earth_rainforests.jpg"
+      />
+
+      <div className={s.page}>
+        <div className={s.inner}>
+          <div className={s.monthBar}>
+            <span className={s.monthLabel}>{MONTH_LABEL}</span>
+            <Legend />
+          </div>
+
+          {/* ---------- fleet totals ---------- */}
+          <div className={s.totals}>
+            <div className={s.total}>
               <span>Events</span>
+              <b>{filtered.length}</b>
             </div>
-            <h1 className={s.title}>Events</h1>
-            <PageDescription>{EVENTS_SWIMLANES_DESCRIPTION}</PageDescription>
+            <div className={s.total}>
+              <span title={ACTIVE_DEFINITION}>Active</span>
+              <b className={totalActive > 0 ? s.totalWarn : undefined}>{totalActive}</b>
+            </div>
+            <div className={s.total}>
+              <span>Datatakes affected</span>
+              <b>{totalDatatakes}</b>
+            </div>
+            <div className={s.total}>
+              <span>Missions with events</span>
+              <b>{MISSION_NAMES.filter((m) => (byMission.get(m) ?? []).length > 0).length} / {MISSION_NAMES.length}</b>
+            </div>
           </div>
-        </header>
 
-        <div className={s.monthBar}>
-          <span className={s.monthLabel}>{MONTH_LABEL}</span>
-          <Legend />
+          {/* ---------- filters ---------- */}
+          <section className={s.filters} aria-label="Filters">
+            <div className={s.filtersHead}>
+              <SlidersHorizontal size={13} aria-hidden />
+              <span className={s.filtersLabel}>Filters</span>
+              <span className={s.count}>
+                {filtered.length} event{filtered.length === 1 ? "" : "s"}
+              </span>
+              {dirty && (
+                <button type="button" className={s.reset} onClick={reset}>
+                  <RotateCcw size={12} aria-hidden /> Reset
+                </button>
+              )}
+              {narrow && (
+                <button
+                  type="button"
+                  className={s.filtersToggle}
+                  aria-expanded={filtersOpen}
+                  aria-controls={filterFieldsId}
+                  aria-label={filtersOpen ? "Hide filter controls" : "Show filter controls"}
+                  onClick={() => setFiltersOpen((v) => !v)}
+                >
+                  <ChevronDown size={16} aria-hidden />
+                </button>
+              )}
+            </div>
+
+            {narrow ? <Collapse open={filtersOpen} id={filterFieldsId}>{filterFields}</Collapse> : filterFields}
+          </section>
+
+          {/* ---------- lanes ---------- */}
+          <div className={s.lanesHead}>
+            <span className={s.filtersLabel}>Missions</span>
+            <button type="button" className={s.expandAll} onClick={toggleAll}>
+              {allOpen ? "Collapse all" : "Expand all"}
+            </button>
+          </div>
+
+          <div className={s.lanes}>
+            {MISSION_NAMES.map((m) => (
+              <Lane
+                key={m}
+                mission={m}
+                events={byMission.get(m) ?? []}
+                open={openLanes.has(m)}
+                onToggle={() => toggleLane(m)}
+                expandedEvent={expandedEvent}
+                onToggleEvent={toggleEvent}
+              />
+            ))}
+          </div>
+
+          <p className={s.hint}>
+            {filtered.length === 0
+              ? "No events match the current filters — every lane is empty."
+              : ACTIVE_DEFINITION}
+          </p>
         </div>
-
-        {/* ---------- fleet totals ---------- */}
-        <div className={s.totals}>
-          <div className={s.total}>
-            <span>Events</span>
-            <b>{filtered.length}</b>
-          </div>
-          <div className={s.total}>
-            <span title={ACTIVE_DEFINITION}>Active</span>
-            <b className={totalActive > 0 ? s.totalWarn : undefined}>{totalActive}</b>
-          </div>
-          <div className={s.total}>
-            <span>Datatakes affected</span>
-            <b>{totalDatatakes}</b>
-          </div>
-          <div className={s.total}>
-            <span>Missions with events</span>
-            <b>{MISSION_NAMES.filter((m) => (byMission.get(m) ?? []).length > 0).length} / {MISSION_NAMES.length}</b>
-          </div>
-        </div>
-
-        {/* ---------- filters ---------- */}
-        <section className={s.filters} aria-label="Filters">
-          <div className={s.filtersHead}>
-            <SlidersHorizontal size={13} aria-hidden />
-            <span className={s.filtersLabel}>Filters</span>
-            <span className={s.count}>
-              {filtered.length} event{filtered.length === 1 ? "" : "s"}
-            </span>
-            {dirty && (
-              <button type="button" className={s.reset} onClick={reset}>
-                <RotateCcw size={12} aria-hidden /> Reset
-              </button>
-            )}
-            {narrow && (
-              <button
-                type="button"
-                className={s.filtersToggle}
-                aria-expanded={filtersOpen}
-                aria-controls={filterFieldsId}
-                aria-label={filtersOpen ? "Hide filter controls" : "Show filter controls"}
-                onClick={() => setFiltersOpen((v) => !v)}
-              >
-                <ChevronDown size={16} aria-hidden />
-              </button>
-            )}
-          </div>
-
-          {narrow ? <Collapse open={filtersOpen} id={filterFieldsId}>{filterFields}</Collapse> : filterFields}
-        </section>
-
-        {/* ---------- lanes ---------- */}
-        <div className={s.lanesHead}>
-          <span className={s.filtersLabel}>Missions</span>
-          <button type="button" className={s.expandAll} onClick={toggleAll}>
-            {allOpen ? "Collapse all" : "Expand all"}
-          </button>
-        </div>
-
-        <div className={s.lanes}>
-          {MISSION_NAMES.map((m) => (
-            <Lane
-              key={m}
-              mission={m}
-              events={byMission.get(m) ?? []}
-              open={openLanes.has(m)}
-              onToggle={() => toggleLane(m)}
-              expandedEvent={expandedEvent}
-              onToggleEvent={toggleEvent}
-            />
-          ))}
-        </div>
-
-        <p className={s.hint}>
-          {filtered.length === 0
-            ? "No events match the current filters — every lane is empty."
-            : ACTIVE_DEFINITION}
-        </p>
       </div>
-    </div>
+    </>
   );
 }

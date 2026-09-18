@@ -33,83 +33,6 @@
   padding: 26px 28px 64px;
 }
 
-.page :global(.page-desc) {
-  --pd-line: var(--sw-line);
-  --pd-bg: var(--sw-panel);
-  --pd-label: var(--sw-muted);
-  --pd-label-hover: var(--sw-text);
-  --pd-accent: var(--sw-signal);
-  --pd-hover: var(--sw-signal-soft);
-  --pd-body: var(--sw-muted);
-  max-width: 74ch;
-}
-
-/* ---------------- header ---------------- */
-.head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 22px;
-}
-
-.eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-  font-family: var(--font-mono, var(--mono));
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--sw-signal);
-}
-
-.eyebrow a { color: inherit; text-decoration: none; }
-.eyebrow a:hover { text-decoration: underline; }
-
-.title {
-  margin: 0;
-  font-family: var(--font-display, var(--display, var(--font-sans)));
-  font-size: clamp(26px, 4vw, 38px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.sub {
-  margin: 8px 0 0;
-  max-width: 74ch;
-  font-size: 14px;
-  line-height: 1.6;
-  color: var(--sw-muted);
-}
-
-/* ---------------- header art ----------------
-   The shared /examples backdrop (.ex-hero-bg in global.css) sits inside the header this page
-   already had, so nothing about the header's size, padding or alignment changes — the title stays
-   on exactly the same baseline and x-position it was on before the image existed.
-
-   The one adjustment is the backdrop's inset. .ex-hero-bg defaults to `inset: 0`, which would box
-   the art to the text's own bounding rect; here it is bled out to the edges of .inner's padding so
-   it forms a band the width of the content column. That is deliberately NOT 100vw: a viewport-wide
-   band overflows horizontally whenever a scrollbar is present, and the column width lines the art
-   up with the filter and calendar panels below it, which is what makes it read as part of the page
-   rather than as a picture dropped behind the title. */
-.headArt :global(.ex-hero-bg) {
-  inset: -26px -28px 0;
-}
-
-@media (max-width: 760px) {
-  .headArt :global(.ex-hero-bg) {
-    inset: -20px -14px 0;
-  }
-}
-
-@media (max-width: 430px) {
-  .headArt :global(.ex-hero-bg) {
-    inset: -18px -10px 0;
-  }
-}
 
 /* ---------------- month bar + legend ---------------- */
 .monthBar {
@@ -676,7 +599,6 @@
 
 @media (max-width: 900px) {
   .totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .head { flex-direction: column; }
 }
 
 /* ============================================================
@@ -684,15 +606,6 @@
    ============================================================ */
 @media (max-width: 760px) {
   .inner { padding: 20px 14px 44px; }
-
-  /* Same argument as the other Events proposals: the intro repeats the Description panel's
-     opening, which on a phone pushed the lanes off the first screen. */
-  .sub { display: none; }
-
-  .title { font-size: clamp(26px, 8vw, 34px); }
-  .eyebrow { font-size: 10px; }
-  .eyebrow a { display: inline-flex; align-items: center; min-height: 44px; }
-  .page :global(.page-desc) { max-width: none; }
 
   .monthBar { gap: 10px; padding: 12px 0; }
   .legendLabel { flex: 0 0 100%; }
