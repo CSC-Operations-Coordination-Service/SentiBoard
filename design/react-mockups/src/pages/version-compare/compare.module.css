@@ -17,7 +17,7 @@
   margin-bottom: 20px;
   background: var(--timeline-section-bg);
   border: 1px solid var(--gantt-border);
-  border-radius: var(--r-lg);
+  border-radius: 0;
 }
 
 .field {
@@ -41,7 +41,7 @@
   height: 36px;
   padding: 0 32px 0 12px;
   border: 1px solid var(--gantt-border);
-  border-radius: var(--r-sm);
+  border-radius: 0;
   background-color: var(--gantt-row-bg);
   color: var(--text);
   font-family: var(--font-mono);
@@ -57,10 +57,19 @@
   transition: border-color 0.2s var(--ease);
 }
 
-.select:hover { border-color: var(--line-strong); }
-.select:focus { border-color: var(--accent-teal-bright); }
+.select:hover {
+  border-color: var(--line-strong);
+}
 
-.actions { display: flex; align-items: center; gap: 8px; }
+.select:focus {
+  border-color: var(--accent-teal-bright);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 .btn {
   display: inline-flex;
@@ -69,7 +78,7 @@
   height: 36px;
   padding: 0 14px;
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: 0;
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
@@ -86,8 +95,15 @@
   background: color-mix(in srgb, var(--accent-teal-bright) 10%, transparent);
 }
 
-.btn:disabled { opacity: 0.4; cursor: default; }
-.btn:focus-visible { outline: 2px solid var(--accent-teal-bright); outline-offset: 2px; }
+.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--accent-teal-bright);
+  outline-offset: 2px;
+}
 
 /* -------------------- summary strip -------------------- */
 .summary {
@@ -98,7 +114,7 @@
   margin-bottom: 20px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--r-md);
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -128,15 +144,22 @@
   font-variant-numeric: tabular-nums;
 }
 
-.statV.dim { color: #c1c7d0; font-size: 13px; }
+.statV.dim {
+  color: #c1c7d0;
+  font-size: 13px;
+}
 
 /* The baselines a comparison jumps over. */
-.skipped { display: flex; flex-wrap: wrap; gap: 5px; }
+.skipped {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
 
 .skip {
   display: inline-flex;
   padding: 3px 10px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   background: rgba(0, 199, 214, 0.1);
   font-family: var(--font-mono);
   font-size: 11px;
@@ -156,12 +179,14 @@
   min-width: 0;
   background: #0e1017;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   overflow: hidden;
 }
 
 /* The later baseline is the one being asked about, so its panel gets the accent edge. */
-.panel.later { border-color: rgba(0, 199, 214, 0.3); }
+.panel.later {
+  border-color: rgba(0, 199, 214, 0.3);
+}
 
 .panelHead {
   display: flex;
@@ -181,7 +206,9 @@
   color: #9aa4b4;
 }
 
-.panel.later .side { color: #00c7d6; }
+.panel.later .side {
+  color: #00c7d6;
+}
 
 .ver {
   font-family: var(--font-mono);
@@ -220,7 +247,7 @@
 .sat {
   display: inline-flex;
   padding: 3px 10px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   background: rgba(154, 164, 180, 0.15);
   font-family: var(--font-mono);
   font-size: 10.5px;
@@ -234,7 +261,10 @@
   box-shadow: inset 0 0 0 1px rgba(0, 199, 214, 0.4);
 }
 
-.sat.none { color: #9aa4b4; font-style: italic; }
+.sat.none {
+  color: #9aa4b4;
+  font-style: italic;
+}
 
 /* -------------------- diffed notes -------------------- */
 .notes {
@@ -260,11 +290,19 @@
   user-select: none;
 }
 
-.text.bullet { padding-left: 15px; text-indent: -15px; }
+.text.bullet {
+  padding-left: 15px;
+  text-indent: -15px;
+}
 
 /* Carried by both baselines: no marker at all, so the eye goes to what moved. */
-.line.same { color: #9aa4b4; }
-.line.same .glyph { color: rgba(255, 255, 255, 0.15); }
+.line.same {
+  color: #9aa4b4;
+}
+
+.line.same .glyph {
+  color: rgba(255, 255, 255, 0.15);
+}
 
 /* Present only in the earlier baseline — dropped by the later one. */
 .line.del {
@@ -273,7 +311,9 @@
   padding-left: 8px;
 }
 
-.line.del .glyph { color: #c1c7d0; }
+.line.del .glyph {
+  color: #c1c7d0;
+}
 
 /* Present only in the later baseline — what it added. */
 .line.add {
@@ -283,7 +323,9 @@
   color: #eef1f6;
 }
 
-.line.add .glyph { color: #00c7d6; }
+.line.add .glyph {
+  color: #00c7d6;
+}
 
 .noNotes {
   padding: 18px 16px;
@@ -308,16 +350,24 @@
   color: #9aa4b4;
 }
 
-.key { display: inline-flex; align-items: center; gap: 7px; }
+.key {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
 
 .key i {
   width: 14px;
   height: 3px;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--c);
 }
 
-.legendNote { margin-left: auto; text-transform: none; letter-spacing: 0.04em; }
+.legendNote {
+  margin-left: auto;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
 
 /* -------------------- gantt timeline -------------------- */
 .ganttContainer {
@@ -325,7 +375,7 @@
   padding: 16px;
   background: var(--gantt-container-bg);
   border: 1px solid var(--gantt-border);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   overflow-x: auto;
 }
 
@@ -342,7 +392,7 @@
   flex-direction: column;
   gap: 1px;
   background: var(--gantt-border);
-  border-radius: var(--r-sm);
+  border-radius: 0;
   overflow: hidden;
   grid-column: 1;
   position: sticky;
@@ -380,7 +430,7 @@
   flex-direction: column;
   gap: 1px;
   background: var(--gantt-border);
-  border-radius: var(--r-sm);
+  border-radius: 0;
   overflow: hidden;
   width: 1200px;
   grid-column: 2;
@@ -398,7 +448,7 @@
   top: 50%;
   transform: translateY(-50%);
   height: 24px;
-  border-radius: 3px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--text-mute) 20%, transparent);
   display: flex;
   align-items: center;
@@ -454,7 +504,7 @@
   padding: 20px;
   background: var(--timeline-section-bg);
   border: 1px solid var(--gantt-border);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -583,7 +633,7 @@
 .empty {
   padding: 48px 20px;
   border: 1px dashed rgba(255, 255, 255, 0.2);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   text-align: center;
   color: #9aa4b4;
   font-size: 14px;
@@ -592,22 +642,64 @@
 
 /* -------------------- responsive -------------------- */
 @media (max-width: 1080px) {
-  .picker { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .actions { grid-column: 1 / -1; }
-  .btn { flex: 1; justify-content: center; }
+  .picker {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .actions {
+    grid-column: 1 / -1;
+  }
+
+  .btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 860px) {
+
   /* Two panels side by side stop being readable well before the viewport gets narrow, because each
      one holds prose. Stacked, the later baseline sits under the earlier one, which is still the
      order the comparison reads in. */
-  .panels { grid-template-columns: minmax(0, 1fr); }
+  .panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 700px) {
-  .picker { grid-template-columns: minmax(0, 1fr); padding: 14px; }
-  .stat { min-width: 50%; }
-  .notes { font-size: 13.5px; }
-  .legend { gap: 10px 16px; }
-  .legendNote { margin-left: 0; width: 100%; }
+  .picker {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 14px;
+  }
+
+  .stat {
+    min-width: 50%;
+  }
+
+  .notes {
+    font-size: 13.5px;
+  }
+
+  .legend {
+    gap: 10px 16px;
+  }
+
+  .legendNote {
+    margin-left: 0;
+    width: 100%;
+  }
+}
+
+/* compare.module.css */
+
+.detailsSats .sat {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 0;
+  /* Updated from var(--r-sm) */
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
 }

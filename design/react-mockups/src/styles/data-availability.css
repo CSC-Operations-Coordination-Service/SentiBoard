@@ -15,7 +15,7 @@
 .da-card {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   padding: 16px;
 }
 
@@ -59,7 +59,7 @@
 .da-filters {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   padding: 16px;
   margin: 34px 0 18px;
 }
@@ -133,7 +133,7 @@
   width: 100%;
   background: var(--bg-3);
   border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border-radius: 0;
   color: var(--text);
   font-family: var(--font-mono);
   font-size: 13px;
@@ -216,7 +216,7 @@
 .da-table-wrap {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   overflow: hidden;
 }
 
@@ -319,7 +319,7 @@
   font-family: var(--font-mono);
   font-size: 12px;
   padding: 3px 9px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   background: var(--pill-bg);
   color: var(--accent-2);
 }
@@ -350,7 +350,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 9px;
-  border-radius: var(--r-sm);
+  border-radius: 0;
   font-family: var(--font-mono);
   font-size: 11px;
   white-space: nowrap;
@@ -371,14 +371,14 @@
   position: relative;
   flex: 1;
   height: 6px;
-  border-radius: 3px;
+  border-radius: 0;
   overflow: hidden;
   background: var(--pill-bg);
 }
 
 .da-bar-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 0;
   transition: width var(--dur) var(--ease);
 }
 
@@ -401,7 +401,7 @@
 .da-mcard {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: 0;
   padding: 16px;
 }
 
@@ -463,4 +463,27 @@
   .da-fields {
     grid-template-columns: 1fr;
   }
+}
+
+/* Remove border radius across all Data Availability components */
+.da-card,
+.da-filters,
+.da-field select,
+.da-field input,
+.da-table-wrap,
+.da-sat,
+.da-badge,
+.da-bar-track,
+.da-bar-fill,
+.da-mcard,
+.dtm-dialog,
+.dtm-x,
+.dtm-badge,
+.dtm-meter .track,
+.dtm-meter .fill,
+.dtm-grid,
+.dtm-act,
+.dtm-close,
+.dtm-trigger {
+  border-radius: 0 !important;
 }
