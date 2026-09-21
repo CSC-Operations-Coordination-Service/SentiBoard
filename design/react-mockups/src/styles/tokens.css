@@ -14,15 +14,16 @@
    --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
    --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
 
-   /* Brand accent (shared across themes) — SentiBoard branding: cyan from logo */
-   --accent: #12b1bf;
-   --accent-2: #1dd0dd;
-   --accent-teal: #0f99a3;
-   --accent-teal-bright: #12b1bf;
-   --accent-grad: linear-gradient(90deg, #12b1bf, #1dd0dd);
+   /* Neon brand accent — high-contrast cyan from logo */
+   --accent: #00e5ff;
+   --accent-2: #00e5ff;
+   --accent-teal: #00e5ff;
+   --accent-teal-bright: #00e5ff;
+   --accent-grad: linear-gradient(90deg, #00e5ff, #ff007f);
 
-   /* Enhanced modern palette for high-tech aesthetic */
+   /* Neon palette for Pure Black & Neon Outline design */
    --accent-cyan: #00e5ff;
+   --accent-magenta: #ff007f;
    --accent-cyan-alt: #06b6d4;
    --text-primary: #ffffff;
    --text-secondary: #f8fafc;
@@ -30,13 +31,13 @@
    --text-muted-alt: #64748b;
    --text-bold-accent: #e2e8f0;
 
-   /* Semantic status (shared) */
-   --ok: #34d399;
-   --warn: #f5b544;
-   --crit: #ef5b6e;
-   --info: #4ea8ff;
-   --planned: #9e9e9e;
-   --partial: #bb8747;
+   /* Neon semantic status palette */
+   --ok: #00e676;
+   --warn: #ffb700;
+   --crit: #ff3366;
+   --info: #00e5ff;
+   --planned: #8a99ad;
+   --partial: #ffb700;
 
    /* Motion + shape */
    --r-sm: 6px;
@@ -51,21 +52,21 @@
    --track: 0.18em;
 }
 
-/* -------------------- DARK (default) — Moderate palette -------------------- */
+/* -------------------- DARK (default) — Pure Black & Neon Outline -------------------- */
 :root,
 :root[data-theme="dark"] {
    color-scheme: dark;
 
-   --bg: #1a1f25;
-   /* ground */
-   --bg-1: #252b33;
-   /* raised surface */
-   --bg-2: #343a40;
-   /* card */
-   --bg-3: #1a5a63;
-   /* hover / input */
-   --line: rgba(18, 177, 191, 0.12);
-   --line-strong: rgba(18, 177, 191, 0.22);
+   --bg: #000000;
+   /* pure black ground */
+   --bg-1: #0a0d14;
+   /* raised surface with dark gradient */
+   --bg-2: #0f121a;
+   /* card with subtle gradient */
+   --bg-3: #141820;
+   /* hover / input state */
+   --line: rgba(0, 229, 255, 0.15);
+   --line-strong: rgba(0, 229, 255, 0.25);
 
    /* Timeline and gantt backgrounds (dark) */
    --timeline-bg: #151b27;
@@ -80,38 +81,28 @@
    --text-dim: #cccccc;
    --text-mute: #737373;
 
-   --veil: linear-gradient(180deg, rgba(26, 31, 37, 0) 0%, rgba(26, 31, 37, 0.65) 60%, rgba(26, 31, 37, 0.96) 100%);
-   --glass: rgba(34, 42, 51, 0.72);
-   --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8);
-   --grid-line: rgba(18, 177, 191, 0.05);
+   --veil: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.65) 60%, rgba(0, 0, 0, 0.96) 100%);
+   --glass: rgba(15, 18, 26, 0.72);
+   --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.1);
+   --grid-line: rgba(0, 229, 255, 0.05);
 
-   --pill-bg: rgba(18, 177, 191, 0.08);
-   --on-accent: #001f24;
-   --hpanel-divider: rgba(18, 177, 191, 0.08);
+   --pill-bg: rgba(0, 229, 255, 0.08);
+   --on-accent: #000000;
+   --hpanel-divider: rgba(0, 229, 255, 0.08);
 
-   /* Datatake completeness — production's five legend states
-     (apps/static/assets/css/dataAvailability.css → .status-circle-dt-*):
-     Planned #9e9e9e · Processing #9e9e9e · Acquired #0aa41b · Partial #bb8747 · Unavailable #FF0000.
-     Two adjustments: production paints Planned and Processing the SAME grey, which works beside a
-     label but not as a chart slice or a lone dot, so Processing is lifted a step; and #0aa41b /
-     #FF0000 go muddy and glaring on a near-black canvas, so both are lightened here. */
-   --cmp-planned: #8b9096;
-   --cmp-processing: #c3c9cf;
-   --cmp-acquired: #2fc04a;
-   --cmp-partial: #cc9a54;
-   --cmp-unavailable: #ff4d4d;
+   /* Datatake completeness — neon palette for pure black background */
+   --cmp-planned: #8a99ad;
+   --cmp-processing: #9d4edd;
+   --cmp-acquired: #00e676;
+   --cmp-partial: #ffb700;
+   --cmp-unavailable: #ff3366;
 
-   /* Event types — production's Event Types legend
-     (apps/static/assets/css/events.css → .event-acquisition etc.):
-     Acquisition #495057 · Calibration #B0DFE5 · Manoeuvre #FFAD00 · Production #7b1fa2 · Satellite #EE8216.
-     Same treatment as the completeness set: production is light-only, and its slate Acquisition and
-     deep-purple Production both vanish against a near-black card, so those two are lifted to the same
-     hue at a usable lightness. The other three are verbatim. */
-   --evt-acquisition: #aeb8c4;
-   --evt-calibration: #b0dfe5;
-   --evt-manoeuvre: #ffad00;
-   --evt-production: #c77dff;
-   --evt-satellite: #ee8216;
+   /* Event types — neon colors with high contrast */
+   --evt-acquisition: #00e5ff;
+   --evt-calibration: #00e5ff;
+   --evt-manoeuvre: #ffb700;
+   --evt-production: #9d4edd;
+   --evt-satellite: #ff3366;
 
    /* Processor baseline state, for the Version Matrix proposal. TWO values, not a status palette:
      the releases feed carries a baseline version, a release date and release notes — no status —

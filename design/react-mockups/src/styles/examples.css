@@ -117,15 +117,16 @@
 .fleet-card {
   position: relative;
   overflow: hidden;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 24px;
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  min-height: 288px;
-  transition: transform 0.25s var(--ease), border-color 0.25s;
+  gap: 12px;
+  min-height: 280px;
+  transition: transform 0.25s var(--ease), border-color 0.25s, box-shadow 0.25s;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .fleet-card::before {
@@ -154,7 +155,8 @@
 
 .fleet-card:hover {
   transform: translateY(-4px);
-  border-color: var(--line-strong);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1), 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 .fleet-top {
@@ -199,9 +201,9 @@
 /* T1 — broadcast ticker (Page A): two stacked auto-scrolling rows —
    news headlines scroll vertically (all cycle through), live events horizontally. */
 .news-ticker {
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-1);
+  border-top: 1px solid rgba(0, 229, 255, 0.15);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+  background: rgba(10, 13, 20, 0.8);
 }
 
 .nt-row {
@@ -373,10 +375,11 @@
 }
 
 .con-panel {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .con-h {
@@ -494,11 +497,12 @@
 .ed-feature {
   position: relative;
   overflow: hidden;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--line);
+  border-radius: 0;
+  border: 1px solid rgba(0, 229, 255, 0.2);
   min-height: 380px;
   display: flex;
   align-items: flex-start;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .ed-strip {
@@ -603,11 +607,12 @@
 }
 
 .ed-live {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 16px;
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
+  padding: 14px;
   margin-top: 4px;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .ed-live .h {
@@ -676,15 +681,16 @@
 
 /* ---------- variant C · 3rd news proposal: rotating spotlight ---------- */
 .ed-spot {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 0;
-  padding: 18px;
+  padding: 16px;
   margin-top: 4px;
   max-width: 620px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .ed-spot .h {
@@ -853,11 +859,12 @@
 
 /* ---------- variant B · different news proposal: mission-log timeline ---------- */
 .ed-timeline {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 18px;
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
+  padding: 16px;
   max-width: 560px;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .ed-timeline .h {
@@ -1089,9 +1096,9 @@
   display: block;
   width: clamp(190px, 20vw, 270px);
   aspect-ratio: 3/2;
-  border-radius: 12px;
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0, 229, 255, 0.2);
 }
 
 .eg-tile img {
@@ -1392,11 +1399,12 @@
 .pagecard {
   position: relative;
   aspect-ratio: 4/3;
-  border-radius: var(--r-lg);
+  border-radius: 0;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   display: flex;
   align-items: flex-end;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .pagecard img {
@@ -1584,15 +1592,17 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(0, 229, 255, 0.2);
   border-radius: 0;
-  background: var(--bg-2);
-  transition: transform 0.25s var(--ease), border-color 0.25s;
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  transition: transform 0.25s var(--ease), border-color 0.25s, box-shadow 0.25s;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .ex-card:hover {
   transform: translateY(-4px);
-  border-color: var(--line-strong);
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1), 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 .ex-card .thumb {
@@ -1677,11 +1687,12 @@
 
 /* Index1 Page: FAQ details styling */
 details.faq {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
   margin-bottom: 14px;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 details.faq summary {
@@ -1921,19 +1932,20 @@ details.faq[open] .faq-body {
 .feature-card {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
   overflow: hidden;
-  background: var(--bg-2);
+  background: linear-gradient(135deg, #0a0d14, #020305);
   color: inherit;
   text-decoration: none;
   transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .feature-card:hover {
-  border-color: var(--line-strong);
+  border-color: rgba(0, 229, 255, 0.4);
   transform: translateY(-3px);
-  box-shadow: var(--shadow);
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1), 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 .fc-media {

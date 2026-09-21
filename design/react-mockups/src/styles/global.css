@@ -176,7 +176,7 @@ p b {
   padding-block: clamp(56px, 8vw, 120px);
 }
 
-/* Uppercase mission label — the SpaceX signature */
+/* Uppercase mission label */
 .meta {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -191,9 +191,9 @@ p b {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 32px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 18px;
+  margin-bottom: 28px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+  padding-bottom: 16px;
 }
 
 .section-head h2 {
@@ -251,8 +251,6 @@ p b {
   display: block;
 }
 
-/* The wordmark's "board" text is light-grey — tuned for dark backgrounds.
-   In light mode, darken it so it stays legible while keeping the cyan brand hue. */
 :root[data-theme="light"] .brand-logo {
   filter: brightness(0.45) saturate(1.25);
 }
@@ -299,8 +297,6 @@ p b {
   background: var(--accent-grad);
 }
 
-/* margin-left:auto rather than relying on .nav-links' flex:1 to do the pushing — below
-   760px the links are hidden and there is nothing left to push with. */
 .nav-right {
   display: flex;
   align-items: center;
@@ -368,31 +364,31 @@ p b {
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 11px 20px;
+  padding: 10px 18px;
   border-radius: 0 !important;
-  border: 1px solid var(--line-strong);
-  color: var(--text);
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
   background: transparent;
   transition: all 0.25s var(--ease);
 }
 
 .btn:hover {
-  border-color: var(--accent-cyan, #00e5ff);
-  color: var(--accent-cyan, #00e5ff);
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+  border-color: #00e5ff;
+  color: #00e5ff;
+  box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 8px rgba(0, 229, 255, 0.1);
   transform: translateY(-1px);
 }
 
 .btn.primary {
-  background: var(--accent-grad);
-  border: 1px solid var(--accent-cyan, #00e5ff);
-  color: var(--on-accent, #08090a);
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.15), rgba(255, 0, 127, 0.15));
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
   font-weight: 600;
 }
 
 .btn.primary:hover {
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
-  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.5), inset 0 0 12px rgba(0, 229, 255, 0.15);
+  border-color: #00e5ff;
 }
 
 .btn .arrow {
@@ -413,11 +409,11 @@ p b {
   font-size: 10.5px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 3px 9px;
+  padding: 5px 10px;
   border-radius: 0;
-  background: var(--pill-bg);
+  background: transparent;
   color: var(--text-dim);
-  border: 1px solid var(--line);
+  border: 1px solid currentColor;
 }
 
 .pill .dot {
@@ -429,49 +425,55 @@ p b {
 
 .pill.nominal {
   color: var(--ok);
+  border-color: rgba(0, 230, 118, 0.4);
 }
 
 .pill.degraded {
   color: var(--warn);
+  border-color: rgba(255, 183, 0, 0.4);
 }
 
 .pill.critical {
   color: var(--crit);
+  border-color: rgba(255, 51, 102, 0.4);
 }
 
 .pill.info {
   color: var(--info);
+  border-color: rgba(0, 229, 255, 0.4);
 }
 
 .pill.neutral {
   color: var(--text-mute);
+  border-color: rgba(115, 115, 115, 0.4);
 }
 
-/* Datatake completeness states — see the --cmp-* tokens. Kept separate from the pills above,
-   which carry a different meaning (mission and processor health, where "nominal" is not the same
-   claim as "acquired"). */
+/* Datatake completeness states */
 .pill.planned {
   color: var(--cmp-planned);
+  border-color: rgba(138, 153, 173, 0.4);
 }
 
 .pill.processing {
   color: var(--cmp-processing);
+  border-color: rgba(157, 78, 221, 0.4);
 }
 
 .pill.acquired {
   color: var(--cmp-acquired);
+  border-color: rgba(0, 230, 118, 0.4);
 }
 
 .pill.partial {
   color: var(--cmp-partial);
+  border-color: rgba(255, 183, 0, 0.4);
 }
 
 .pill.unavailable {
   color: var(--cmp-unavailable);
+  border-color: rgba(255, 51, 102, 0.4);
 }
 
-/* Period selector — the dashboard's time-range filter, sitting above the completeness chips it
-   shares the table with. FROM/TO stand beside it as the custom range. */
 .periodbar {
   display: flex;
   align-items: flex-end;
@@ -506,7 +508,6 @@ p b {
   color: var(--text-dim);
 }
 
-/* Filter chips double as the completeness legend, so each carries its state's dot. */
 .chipbtn .dot {
   width: 8px;
   height: 8px;
@@ -523,20 +524,22 @@ p b {
 
 /* ================= CARDS ================= */
 .card {
-  background: var(--bg-2);
+  background: linear-gradient(135deg, #0a0d14, #020305);
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 24px;
+  border-radius: 0;
+  padding: 16px;
   transition: border-color 0.25s, transform 0.25s var(--ease), box-shadow 0.25s;
+  box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.15);
 }
 
 .card:hover {
   border-color: var(--line-strong);
+  box-shadow: inset 0 0 0 1px rgba(0, 229, 255, 0.25), 0 0 15px rgba(0, 229, 255, 0.2);
 }
 
 a.card:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), inset 0 0 0 1px rgba(0, 229, 255, 0.25);
 }
 
 .card h3 {
@@ -558,8 +561,6 @@ a.card:hover {
   position: relative;
 }
 
-/* Full-page background image, fixed so it stays behind the content as the whole
-   page scrolls. A theme veil keeps it subtle enough for text to stay readable. */
 .about-bg {
   position: fixed;
   inset: 0;
@@ -576,38 +577,11 @@ a.card:hover {
   background-image: linear-gradient(rgba(244, 246, 250, 0.82), rgba(244, 246, 250, 0.94)), url("/assets/img/modules/acquisitions.jpg");
 }
 
-/* PageHeader on About goes transparent so the backdrop shows through at the top. */
 .about-page .page-head {
   background: transparent;
 }
 
-/* ---------- proposal header art (/examples/*) ----------------------------------------------
-   Header photography for the Events and Data Availability concept pages, without any of them
-   growing a hero band. It is a BACKDROP, not a layout box: absolutely positioned inside whatever
-   header the page already has, so the header keeps its own padding, height and flow, and the art
-   fills the area the header was already occupying.
-
-   Lives in global.css rather than examples.css because six pages share it and examples.css is
-   imported by only two of them — in dev that would leave the rest unstyled.
-
-   It combines the app's two existing backdrop recipes, and the combination is deliberate:
-
-     · the THEME VEIL is .about-bg's (a two-stop gradient in the theme's own canvas colour, 0.68 →
-       0.90 dark, 0.82 → 0.94 light). .ab-hero-bg instead thins its art with `opacity`, which works
-       for nebula.jpg because that image is nearly black to begin with. It does NOT work here: the
-       ESA Earth-observation set is mostly bright — icefields, snow, cloud — and at 50% opacity a
-       snowfield lifted the header background above the page's own text colours and left the
-       standfirst barely legible. A veil composited OVER the image darkens bright and dark art
-       alike, so legibility no longer depends on which photograph a page happens to get.
-     · the MASK FADE is .ab-hero-bg's, so the art dissolves before the header ends and the copy
-       lower down sits on the page's own background rather than on the photograph.
-     · the accent tint is also .ab-hero-bg's, kept so the art reads as part of the page rather
-       than as a stock photo dropped in behind it.
-     · center/cover because the ESA set mixes portrait and landscape and a header is always wider
-       than tall — cover crops, `contain` would letterbox.
-
-   Background layers paint first-listed on top: veil, then tint, then the photograph.
-   The image is supplied per page as --ex-hero-img. */
+/* Header art backdrop */
 .ex-hero-bg {
   position: absolute;
   inset: 0;
@@ -619,14 +593,6 @@ a.card:hover {
   mask-image: linear-gradient(180deg, #000 0%, #000 45%, transparent 100%);
 }
 
-/* Dark is the default theme, so its veil is the unqualified one.
-
-   The values start from .about-bg's (0.68 → 0.90) and are two steps heavier. .about-bg only ever
-   veils one image, acquisitions.jpg; this rule has to hold for whichever of the ESA set a page is
-   given, and the brightest of them — Tibetan_Plateau.jpg, a sunlit snowfield — left the standfirst
-   at 3.9:1 against the veil's original alphas, under the 4.5:1 needed for body text. At 0.76 → 0.95
-   the brightest image in the set clears AA and the darker ones keep plenty of headroom. Measured,
-   not guessed: see the contrast figures in the DEVOCS-219 notes. */
 .ex-hero-bg {
   --ex-hero-veil: linear-gradient(rgba(5, 7, 12, 0.76), rgba(5, 7, 12, 0.95));
 }
@@ -635,8 +601,6 @@ a.card:hover {
   --ex-hero-veil: linear-gradient(rgba(244, 246, 250, 0.82), rgba(244, 246, 250, 0.94));
 }
 
-/* The two self-contained concept pages paint their own near-black canvas (--evx-bg / --sx-bg,
-   #08090a) rather than the app's --bg, so the shared veil would sit a shade light against them. */
 .evx .ex-hero-bg,
 .sx .ex-hero-bg {
   --ex-hero-veil: linear-gradient(rgba(8, 9, 10, 0.78), rgba(8, 9, 10, 0.95));
@@ -647,8 +611,6 @@ a.card:hover {
   --ex-hero-veil: linear-gradient(rgba(244, 246, 250, 0.82), rgba(244, 246, 250, 0.94));
 }
 
-/* The header that hosts the backdrop. Only two declarations, so no page's geometry changes:
-   a positioning context for the backdrop, and a stacking context for the copy above it. */
 .ex-hero-host {
   position: relative;
 }
@@ -658,8 +620,6 @@ a.card:hover {
   z-index: 1;
 }
 
-/* Module links — a clean divider-separated list (no card boxes), so it sits over
-   the backdrop without borders or overlap in either theme. */
 .about-links {
   border-top: 1px solid var(--line);
 }
@@ -762,7 +722,7 @@ a.card:hover {
 /* ================= PAGE HEADER ================= */
 .page-head {
   border: none !important;
-  border-bottom: none !important;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.1) !important;
   background: transparent;
   padding: 24px 0 34px 0;
 }
@@ -832,8 +792,6 @@ a.card:hover {
   font-size: 15px;
 }
 
-/* Accordion slide, shared by every collapsible panel (see <Collapse> in components/ui.tsx).
-   0fr -> 1fr resolves to the content's own height, so one rule fits panels of any length. */
 .collapsible {
   display: grid;
   grid-template-rows: 0fr;
@@ -844,8 +802,6 @@ a.card:hover {
   grid-template-rows: 1fr;
 }
 
-/* Hidden while closed so links inside a collapsed panel stay out of the tab order; the delay
-   holds visibility until the slide has finished. */
 .collapsible>.collapsible-inner {
   overflow: hidden;
   visibility: hidden;
@@ -863,10 +819,6 @@ a.card:hover {
   }
 }
 
-/* Collapsible page description — the legacy "Description" accordion, open by default. Sized for a
-   page header; driven by React state rather than <details> (see <PageDescription>). The colours
-   are indirected through --pd-* so proposals that carry their own canvas palette can re-point
-   them instead of restating the rules. */
 .page-desc {
   --pd-line: var(--line);
   --pd-bg: var(--bg-2);
@@ -889,9 +841,9 @@ a.card:hover {
   max-width: max-content !important;
   cursor: pointer;
   padding: 8px 16px !important;
-  border: 1px solid #2a3440 !important;
+  border: 1px solid var(--line-strong) !important;
   border-radius: 0 !important;
-  background-color: #1e262e !important;
+  background-color: var(--bg-2) !important;
   display: inline-flex !important;
   align-items: center;
   gap: 8px;
@@ -899,13 +851,13 @@ a.card:hover {
   font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
-  color: #a0aec0 !important;
+  color: var(--text-dim) !important;
   transition: color 0.2s var(--ease), background 0.2s var(--ease);
 }
 
 .page-desc-head:hover {
-  color: #ffffff !important;
-  background: #2a3440 !important;
+  color: var(--text) !important;
+  background: var(--bg-3) !important;
 }
 
 .page-desc-head .chev {
@@ -965,11 +917,6 @@ a.card:hover {
 }
 
 .hpanel {
-  /* These panels always float over the dark cinematic hero image, so they use a
-     dark glass in BOTH themes (like hero-overlaid UI on spacex.com). In light mode
-     this stops them reading as stark white boxes — they camouflage into the image
-     with no visible edge. The scoped variable overrides keep the text light-on-dark
-     regardless of the site theme. */
   --text: #eef2f8;
   --text-dim: #b4bdca;
   --text-mute: #7e8899;
@@ -1015,7 +962,6 @@ a.card:hover {
   padding-bottom: 20px;
 }
 
-/* temporary feature video in the centre column */
 .hero-cap-video {
   width: 100%;
   max-height: 68vh;
@@ -1099,7 +1045,7 @@ a.card:hover {
   box-shadow: 0 0 10px var(--crit);
 }
 
-/* News list (accordion) */
+/* News list */
 .nitem {
   border-bottom: 1px solid var(--hpanel-divider);
 }
@@ -1117,7 +1063,6 @@ a.card:hover {
   display: none;
 }
 
-/* status badge (per the News reference): amber "!" for warn, green check for ok */
 .nstat {
   flex-shrink: 0;
   width: 18px;
@@ -1218,11 +1163,7 @@ a.card:hover {
   z-index: 3;
 }
 
-/* ================= MODULE SCROLLER (home) — SpaceX-style =================
-   Full-bleed panels that pin to the viewport (position: sticky) and stack: as you
-   scroll, each big image slides up over the previous one, so images transition
-   seamlessly. Panel media is always dark (with a veil) so overlaid text stays
-   white in both light and dark themes — like a cinematic hero reel. */
+/* ================= MODULE SCROLLER (home) ================= */
 .arrow {
   transition: transform 0.25s var(--ease);
   display: inline-block;
@@ -1238,7 +1179,6 @@ a.card:hover {
   text-align: center;
 }
 
-/* section title above the scroll cue — centred, matching the page's heading scale */
 .px-cue-text {
   display: block;
   margin: 0 auto 18px;
@@ -1259,7 +1199,6 @@ a.card:hover {
   background: var(--accent-grad);
 }
 
-/* scroll-down cue (icon only) that replaces the intro heading — click to jump to the first module */
 .px-cue {
   display: block;
   margin: 0 auto;
@@ -1345,8 +1284,6 @@ a.card:hover {
       rgba(3, 5, 10, 0.35) 58%, rgba(3, 5, 10, 0.9) 100%);
 }
 
-/* Light theme: brighten the module images and lighten the veil (keep the bottom
-   band dark enough for the white overlaid text). */
 :root[data-theme="light"] .px-panel-bg {
   filter: brightness(1.12) saturate(1.03);
 }
@@ -1433,8 +1370,10 @@ a.card:hover {
 /* ================= TABLE ================= */
 .tbl-wrap {
   overflow-x: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1), 0 0 15px rgba(0, 229, 255, 0.05);
 }
 
 table.data {
@@ -1447,8 +1386,8 @@ table.data {
 table.data th,
 table.data td {
   text-align: left;
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--line);
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.1);
 }
 
 table.data th {
@@ -1457,9 +1396,11 @@ table.data th {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-mute);
-  background: var(--bg-1);
+  background: rgba(10, 13, 20, 0.8);
   position: sticky;
   top: 0;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+  border-top: 1px solid rgba(0, 229, 255, 0.15);
 }
 
 table.data tbody tr {
@@ -1467,7 +1408,7 @@ table.data tbody tr {
 }
 
 table.data tbody tr:hover {
-  background: var(--bg-1);
+  background: rgba(0, 229, 255, 0.05);
 }
 
 table.data td.mono {
@@ -1488,24 +1429,26 @@ table.data td.mono {
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--bg-2);
+  padding: 7px 13px;
+  border-radius: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: transparent;
   color: var(--text-dim);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .chipbtn:hover {
-  border-color: var(--line-strong);
+  border-color: rgba(0, 229, 255, 0.4);
   color: var(--text);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.15);
 }
 
 .chipbtn.on {
-  background: var(--accent-grad);
-  color: var(--on-accent);
-  border-color: transparent;
+  background: rgba(0, 229, 255, 0.1);
+  color: #00e5ff;
+  border-color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25), inset 0 0 8px rgba(0, 229, 255, 0.1);
 }
 
 .field {
@@ -1589,7 +1532,7 @@ table.data td.mono {
 .donut-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 18px;
+  gap: 16px;
 }
 
 .donut {
@@ -1597,10 +1540,11 @@ table.data td.mono {
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  padding: 20px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  padding: 16px;
+  background: linear-gradient(135deg, #0a0d14, #020305);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .donut svg {
@@ -1639,11 +1583,12 @@ table.data td.mono {
 
 /* ================= TIMELINE (processors) ================= */
 .timeline {
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: 20px;
-  background: var(--bg-2);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
+  padding: 18px;
+  background: linear-gradient(135deg, #0a0d14, #020305);
   overflow-x: auto;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .tl-row {
@@ -1710,19 +1655,22 @@ table.data td.mono {
 
 .cal .cell {
   min-height: 92px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 0;
   padding: 6px;
-  background: var(--bg-2);
+  background: linear-gradient(135deg, #0a0d14, #020305);
   font-size: 11px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1), inset 0 -1px 0 rgba(0, 229, 255, 0.1);
 }
 
 .cal .cell.empty {
   background: transparent;
   border-color: transparent;
+  box-shadow: none;
 }
 
 .cal .cell .dnum {
@@ -1741,16 +1689,19 @@ table.data td.mono {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 20px;
-  border-radius: 5px;
-  color: var(--on-accent);
+  width: 20px;
+  height: 18px;
+  border-radius: 0;
+  border: 1px solid currentColor;
+  color: inherit;
   cursor: pointer;
-  transition: transform 0.12s var(--ease);
+  transition: transform 0.12s var(--ease), box-shadow 0.12s var(--ease);
+  background: rgba(0, 229, 255, 0.1);
 }
 
 .cal .ev:hover {
   transform: scale(1.12);
+  box-shadow: 0 0 8px currentColor;
 }
 
 .chip-ico {
@@ -1760,8 +1711,7 @@ table.data td.mono {
   text-transform: capitalize;
 }
 
-/* Event Details panel — mirrors the current app: type icon in a left gutter,
-   top-aligned with the first line (Occurrence date). */
+/* Event Details panel */
 .evd {
   display: flex;
   align-items: flex-start;
@@ -1808,9 +1758,10 @@ table.data td.mono {
   font-family: var(--font-mono);
   font-size: 12px;
   padding: 5px 11px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--bg-1);
+  border: 1px solid rgba(0, 229, 255, 0.25);
+  border-radius: 0;
+  background: rgba(0, 229, 255, 0.05);
+  color: var(--text-dim);
 }
 
 .dt-dot {
@@ -1832,10 +1783,7 @@ table.data td.mono {
   background: var(--crit);
 }
 
-/* ================= GLOBE (acquisitions — interactive canvas) =================
-   The globe stage is always a dark "space" surface in both themes (like the hero
-   overlay). Text tokens are scoped to light-on-dark inside .globe-card so labels
-   stay readable regardless of the site theme. */
+/* ================= GLOBE (acquisitions — interactive canvas) ================= */
 .acq-layout {
   display: grid;
   grid-template-columns: 1.55fr 1fr;
@@ -1848,13 +1796,12 @@ table.data td.mono {
   --text-dim: #cccccc;
   --text-mute: #737373;
   position: relative;
-  border-radius: 0;
+  border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface-bg);
 }
 
-/* Light mode: medium-light background for the globe section */
 :root[data-theme="light"] .globe-card {
   --text: #1a2332;
   --text-dim: #4a5a6a;
@@ -1878,16 +1825,11 @@ table.data td.mono {
   cursor: grab;
 }
 
-/* The canvas is a tab stop (role="img", keyboard-rotatable) so the focus ring has
-   to be visible against the dark stage. Inset so it isn't clipped by the card. */
 .globe-canvas:focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: -3px;
 }
 
-/* Screen-reader-only content: the live globe description, the keyboard help and the
-   mirror buttons for the canvas markers. Kept in the accessibility tree and
-   focusable, but removed from the visual layout. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1901,8 +1843,6 @@ table.data td.mono {
   border: 0;
 }
 
-/* The marker mirror holds real buttons, so a sighted keyboard user can tab into it.
-   Reveal it on focus (the skip-link pattern) rather than leaving focus invisible. */
 .globe-stage .sr-only:focus-within {
   top: 12px;
   left: 12px;
@@ -2084,9 +2024,6 @@ table.data td.mono {
   color: rgba(205, 217, 236, 0.5);
 }
 
-/* The scrub is a real <input type="range">: it keeps the thin gradient-filled bar of
-   the original div, but arrives with keyboard operation, a value and a value text
-   for free. --fill is written by the component as the clock advances. */
 .scrub {
   --fill: 0%;
   flex: 1;
@@ -2147,9 +2084,6 @@ table.data td.mono {
   flex-shrink: 0;
 }
 
-/* Sensing marks: one button per datatake at its acquisition time along the simulated
-   day. A single tab stop with a roving tabindex, so the marks never add N tab stops
-   however many acquisitions are plotted. */
 .simtrack {
   position: relative;
   height: 26px;
@@ -2261,8 +2195,6 @@ table.data td.mono {
   color: var(--text-mute);
 }
 
-/* A <button>, not a div: selecting a datatake is the same action whether it comes
-   from the list, a marker click or the keyboard, so it needs to be a real control. */
 .acq-item {
   display: flex;
   align-items: center;
@@ -2393,11 +2325,7 @@ table.data td.mono {
   color: var(--accent-2);
 }
 
-/* ================= DATATAKE DROPDOWN =================
-   Single selector over every datatake, grouped by mission — the proposal variant's
-   replacement for the satellite/day filter bar. Deliberately a native <select>: it
-   is what the legacy page uses, it gets platform keyboard and touch behaviour and
-   type-ahead for free, and the option list scrolls itself however long it grows. */
+/* ================= DATATAKE DROPDOWN ================= */
 .dtk-select {
   display: flex;
   align-items: center;
@@ -2438,8 +2366,6 @@ table.data td.mono {
   outline-offset: 1px;
 }
 
-/* The closed control gets a real coloured dot; the option list has to make do with
-   a glyph, since a native <option> cannot carry an element. */
 .dtk-select-field .dd-dot {
   width: 9px;
   height: 9px;
@@ -2567,12 +2493,8 @@ table.data td.mono {
   }
 }
 
-/* ================= DATATAKE RAIL (completeness plates + downlink) =================
-   Proposal-only right column for /examples/acquisitions-globe. Everything is scoped
-   under .dtk-rail so it cannot leak into the /acquisitions rail. */
+/* ================= DATATAKE RAIL ================= */
 .acq-side-scroll {
-  /* Matches .globe-stage so the two columns finish level; the rail scrolls rather
-     than stretching the page to three times the globe's height. */
   max-height: min(72vh, 640px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -2587,8 +2509,7 @@ table.data td.mono {
 
 .dtk-block {
   border: 1px solid var(--line);
-  border-radius: 0;
-  /* Updated from var(--r-lg) to square corners */
+  border-radius: var(--r-lg);
   background: var(--bg-2);
   padding: 18px;
 }
@@ -2744,7 +2665,7 @@ table.data td.mono {
   font-family: var(--font-mono);
 }
 
-/* ---- isometric completeness plate ---- */
+/* Isometric completeness plate */
 .plate {
   margin: 18px 0 0;
 }
@@ -2780,7 +2701,6 @@ table.data td.mono {
   color: var(--text-mute);
 }
 
-/* Per-instrument roll-up above a level that mixes instruments — Sentinel-3 only. */
 .plate-instr {
   display: flex;
   flex-wrap: wrap;
@@ -2813,7 +2733,6 @@ table.data td.mono {
   margin-right: 1px;
 }
 
-/* The capped tail. Present so a cap is never mistaken for the whole set. */
 .plate-more {
   display: flex;
   flex-wrap: wrap;
@@ -2863,7 +2782,6 @@ table.data td.mono {
   stroke-width: 0.6;
 }
 
-/* Three faces of one tone: the top catches the light, the left falls away. */
 .plate-svg .prism-top {
   fill: color-mix(in srgb, var(--tone) 78%, white);
 }
@@ -2876,7 +2794,6 @@ table.data td.mono {
   fill: color-mix(in srgb, var(--tone) 72%, black);
 }
 
-/* The missing volume: an empty wireframe standing on top of what was published. */
 .plate-svg .cage {
   stroke: color-mix(in srgb, var(--tone) 55%, transparent);
   stroke-width: 0.9;
@@ -2943,7 +2860,7 @@ table.data td.mono {
   border: 1px dashed color-mix(in srgb, var(--text) 40%, transparent);
 }
 
-/* ---- downlink passes ---- */
+/* Downlink passes */
 .passes {
   display: flex;
   flex-direction: column;
@@ -3012,10 +2929,7 @@ table.data td.mono {
   color: var(--text-mute);
 }
 
-/* Acquisitions breakpoints — the standard three tiers used across the mockups:
-   980px drops the side column under the globe, 780px is the tablet/large-phone
-   step, 560px is the compact phone step. The canvas itself is resized by a
-   ResizeObserver on .globe-stage, so each tier only has to state a height. */
+/* Acquisitions breakpoints */
 @media (max-width: 980px) {
   .acq-layout {
     grid-template-columns: 1fr;
@@ -3025,8 +2939,6 @@ table.data td.mono {
     height: min(62vh, 560px);
   }
 
-  /* Stacked, the rail has the full width to itself — an inner scroller would just
-     trap the page scroll, so it flows. */
   .acq-side-scroll {
     max-height: none;
     overflow-y: visible;
@@ -3077,9 +2989,6 @@ table.data td.mono {
     height: 28px;
   }
 
-  /* On the narrowest tier the play button, clock and speed pill already fill the
-     row, so the scrub wraps onto a line of its own instead of being squeezed to
-     nothing, and the readout drops to the time alone. */
   .simctl {
     flex-wrap: wrap;
     row-gap: 8px;
@@ -3102,8 +3011,6 @@ table.data td.mono {
     margin-left: auto;
   }
 
-  /* The mark ids collide well before this width, so the marks keep their positions
-     and drop their labels. */
   .simtrack {
     height: 14px;
   }
@@ -3168,8 +3075,6 @@ table.data td.mono {
   color: var(--text);
 }
 
-/* Partner logos (ESA / EC / Copernicus) — theme-swapped artwork, shown directly on
-   the surface (no plate). See Partners.tsx for the dark/light source selection. */
 .partners-label {
   display: block;
   margin: 18px 0 12px;
@@ -3203,8 +3108,6 @@ table.data td.mono {
   display: block;
 }
 
-/* Copernicus has no light-background artwork yet: darken its white logo so it
-   reads on light surfaces (keeps the gold accent as a dark amber). */
 .partner-logo-link img.needs-dark {
   filter: brightness(0.32) saturate(1.6);
 }
@@ -3221,7 +3124,7 @@ table.data td.mono {
   color: var(--text-mute);
 }
 
-/* ================= REVEAL animation ================= */
+/* ================= REVEAL ANIMATION ================= */
 .reveal {
   opacity: 0;
   transform: translateY(20px);
@@ -3264,8 +3167,6 @@ table.data td.mono {
     display: none;
   }
 
-  /* 44px square — the minimum comfortable tap target. The negative margin lets the target
-     grow inwards from the wrap's own gutter instead of pushing the row wider. */
   .nav-burger {
     display: inline-flex;
     align-items: center;
@@ -3280,9 +3181,6 @@ table.data td.mono {
     background: var(--bg-3);
   }
 
-  /* The links become a sheet under the bar. Rows rather than a wrapped strip: each one is a
-     full-width 48px target, which is what a thumb needs and what the 11.5px desktop pills,
-     sized for a cursor, are not. */
   .nav.open .nav-links {
     display: flex;
     position: absolute;
@@ -3317,8 +3215,6 @@ table.data td.mono {
     border-bottom: 0;
   }
 
-  /* The desktop marker is an underline that sits below the label; inside a flex row it would
-     become a stray flex item, so the active row is marked by its own edge bar instead. */
   .nav.open .nav-links a.active::after {
     display: none;
   }
@@ -3338,8 +3234,6 @@ table.data td.mono {
     padding: 11px 14px;
   }
 
-  /* The wordmark is a link home — on a phone it is the only way back, so it gets a full
-     target rather than the logo's own 30px height. */
   .brand {
     min-height: 44px;
   }
@@ -3348,7 +3242,6 @@ table.data td.mono {
     min-height: 0;
   }
 
-  /* Footer links are 21px rows on a desktop, which is a cursor target, not a thumb one. */
   .footer a:not(.partner-logo-link) {
     min-height: 44px;
     display: flex;
@@ -3357,8 +3250,6 @@ table.data td.mono {
     font-size: 14px;
   }
 
-  /* The partner logos are sized by their own artwork, which is shorter than 44px. The target
-     grows around the image instead of scaling it — the lockup keeps its proportions. */
   .partner-logo-link {
     min-height: 44px;
     justify-content: center;
@@ -3384,8 +3275,6 @@ table.data td.mono {
   }
 }
 
-/* About page: two layout proposals share one source text (src/data/about.ts).
-   This switcher keeps both reachable so they can be compared side by side. */
 .ab-variant {
   display: flex;
   align-items: center;
@@ -3408,9 +3297,7 @@ table.data td.mono {
   border-bottom-color: var(--accent)
 }
 
-/* ===== Legal / document pages (Terms & Conditions, Cookie Notice) — ported from the Next.js app's .legal block
-   (frontend/app/globals.css) with its colours remapped onto this mockup's tokens, so the same
-   markup renders in both themes instead of the dark-only original. ===== */
+/* ================= LEGAL / DOCUMENT PAGES ================= */
 .legal {
   max-width: 768px;
   margin: 0 auto
@@ -3542,8 +3429,7 @@ table.data td.mono {
   }
 }
 
-/* ================= FILTER-TO-CONTENT TRANSITIONS ================= */
-/* Smooth spacing between filter controls and main content below */
+/* ================= FILTER TRANSITIONS ================= */
 .filters,
 .filterbar,
 .controlbar,
@@ -3611,4 +3497,48 @@ table.data td.mono {
 .description-modal strong {
   color: var(--text);
   font-weight: 600;
+}
+
+/* Reusable Panel Container */
+.sx-card,
+.ui-panel {
+  position: relative;
+  padding: 16px;
+  background: var(--sx-panel);
+  border: 1px solid var(--sx-line);
+  border-radius: 2px;
+  box-shadow: inset 0 0 12px rgba(0, 229, 255, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sx-card:hover,
+.ui-panel:hover {
+  border-color: var(--sx-accent);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.08);
+}
+
+/* Reusable Form Inputs */
+.sx-input,
+.sx-select {
+  width: 100%;
+  padding: 8px 12px;
+  background: #000000;
+  border: 1px solid var(--sx-line);
+  color: var(--sx-text);
+  font-family: var(--sx-mono);
+  outline: none;
+}
+
+.sx-input:focus,
+.sx-select:focus {
+  border-color: var(--sx-accent);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+}
+
+/* Reusable Tables */
+.sx-tablewrap {
+  border: 1px solid var(--sx-line);
+  background: var(--sx-panel-solid);
+  border-radius: 2px;
+  overflow-x: auto;
 }
