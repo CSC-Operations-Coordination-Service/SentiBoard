@@ -24,6 +24,7 @@ import CoverageTimeline from "./pages/coverage-timeline/CoverageTimeline";
 import VersionMatrix from "./pages/version-matrix/VersionMatrix";
 import ReleaseLog from "./pages/release-log/ReleaseLog";
 import VersionCompare from "./pages/version-compare/VersionCompare";
+import ProcessorsInteractive from "./pages/ProcessorsInteractive";
 import CookieNotice from "./pages/CookieNotice";
 import TermsConditions from "./pages/TermsConditions";
 
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/examples/version-matrix" element={<VersionMatrix />} />
           <Route path="/examples/release-log" element={<ReleaseLog />} />
           <Route path="/examples/version-compare" element={<VersionCompare />} />
+          <Route path="/examples/processors-interactive" element={<ProcessorsInteractive />} />
 
           {/* Remaining functional pages — styled placeholders carrying the real feature copy */}
           <Route path="/product-timeliness" element={<StatPage crumb="Product Timeliness" title="Product Timeliness"

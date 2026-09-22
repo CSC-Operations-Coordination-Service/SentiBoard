@@ -151,7 +151,7 @@ export default function ReleaseLog() {
     <>
       <PageHeader
         crumb="Processors"
-        title="Processors - Timeline"
+        title="Processors"
         desc={PROCESSORS_LOG_DESCRIPTION}
         img="/assets/img/modules/processors.jpg"
       />

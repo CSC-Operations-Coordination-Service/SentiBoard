@@ -1599,6 +1599,51 @@
   box-shadow: inset 0 1px 0 rgba(0, 229, 255, 0.1);
 }
 
+/* Light mode overrides for example cards */
+:root[data-theme="light"] .ex-card {
+  background: #ffffff;
+  border: 1px solid var(--line-strong);
+  box-shadow: none;
+}
+
+:root[data-theme="light"] .ex-card h3 {
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .ex-card p {
+  color: var(--text-dim) !important;
+}
+
+:root[data-theme="light"] .ex-card .go {
+  color: #32848f !important;
+}
+
+/* Light mode headings */
+:root[data-theme="light"] .section-head h2 {
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .section-head .meta {
+  color: var(--text-dim) !important;
+}
+
+/* Light mode page header */
+:root[data-theme="light"] .page-head {
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .page-head h1 {
+  color: var(--text) !important;
+}
+
+:root[data-theme="light"] .page-head .crumb {
+  color: var(--accent-2) !important;
+}
+
+:root[data-theme="light"] .page-head .desc {
+  color: var(--text-dim) !important;
+}
+
 .ex-card:hover {
   transform: translateY(-4px);
   border-color: rgba(0, 229, 255, 0.4);
@@ -1771,6 +1816,55 @@ details.faq[open] .faq-body {
 
 :root[data-theme="light"] section#faq p[style*="color: #29c3d6"] {
   color: #29c3d6 !important;
+}
+
+/* Override for FAQ icon colors in light mode */
+:root[data-theme="light"] section#faq svg {
+  color: #36d0e0 !important;
+  stroke: #36d0e0 !important;
+}
+
+/* Light mode FAQ section styling */
+:root[data-theme="light"] section#faq button span {
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] section#faq button {
+  color: #ffffff !important;
+}
+
+:root[data-theme="light"] section#faq > div > div:first-child span,
+:root[data-theme="light"] section#faq > div > div:first-child h2 {
+  color: #4a4a4a !important;
+}
+
+:root[data-theme="light"] section#faq > div > div:first-child p {
+  color: #666666 !important;
+}
+
+:root[data-theme="light"] section#faq > div > p {
+  color: #4a4a4a !important;
+}
+
+:root[data-theme="light"] section#faq a {
+  color: #36d0e0 !important;
+  text-decoration: underline !important;
+}
+
+:root[data-theme="light"] section#faq a:visited {
+  color: #36d0e0 !important;
+}
+
+:root[data-theme="light"] section#faq a:hover {
+  color: #36d0e0 !important;
+}
+
+:root[data-theme="light"] section#faq a:active {
+  color: #36d0e0 !important;
+}
+
+:root[data-theme="light"] section#faq div[style*="padding: 0 20px 16px"] p {
+  color: #e0e0e0 !important;
 }
 
 /* News bar in light mode */

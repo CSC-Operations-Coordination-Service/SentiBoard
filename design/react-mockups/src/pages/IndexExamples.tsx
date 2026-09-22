@@ -465,6 +465,10 @@ const PROC_CARDS = [
     to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Gantt timeline",
     desc: "A scrollable gantt-style timeline showing all baseline releases for a selected processor over time.",
   },
+  {
+    to: "/examples/processors-interactive", img: CARD_ART.versionCompare, title: "d) Processors · Interactive dashboard",
+    desc: "Dual-view interactive release timeline (Gantt bars & chronological nodes) with KPI cards, mission filters, date range picker, and detailed processor inspection panel.",
+  },
 ];
 
 export function ExamplesHome() {
@@ -892,7 +896,7 @@ export function Index1() {
               },
             ].map((section, idx) => (
               <div key={idx} style={{
-                border: `1px solid ${openSections[idx] ? "#29c3d6" : "var(--line-soft)"}`,
+                border: `1px solid ${openSections[idx] ? "#36d0e0" : "var(--line-soft)"}`,
                 borderRadius: "0px",
                 overflow: "hidden",
                 marginBottom: "12px",
@@ -912,27 +916,27 @@ export function Index1() {
                   fontWeight: 600,
                   transition: "all .2s ease",
                 }}>
-                  <span style={{ flex: "none", width: "19px", display: "grid", placeItems: "center", color: "#29c3d6" }}>
+                  <span style={{ flex: "none", width: "19px", display: "grid", placeItems: "center", color: "#29c3d6  !important" } as any}>
                     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
                       {section.icon}
                     </svg>
                   </span>
                   <span style={{ flex: 1, textAlign: "left", color: "var(--text)" }}>{section.title}</span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" style={{
-                    color: "#29c3d6",
+                    color: "#36d0e0 !important",
                     transform: openSections[idx] ? "rotate(180deg)" : "rotate(0deg)",
                     transition: "transform .2s ease",
-                  }}>
+                  } as any}>
                     <path d="M6 9l6 6 6-6" />
                   </svg>
                 </button>
                 {openSections[idx] && (
-                  <div style={{ padding: "0 20px 16px 20px", borderTop: "1px solid rgba(41,195,214,.2)" }}>
+                  <div style={{ padding: "0 20px 16px 20px", borderTop: "1px solid var(--line-strong)" }}>
                     {section.items.map((item, itemIdx) => (
                       <div key={itemIdx} style={{
                         paddingTop: "12px",
                       }}>
-                        <p style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 600, color: "#29c3d6" }}>{item.q}</p>
+                        <p style={{ margin: "0 0 6px 0", fontSize: "14px", fontWeight: 600, color: "#36d0e0 !important" } as any}>{item.q}</p>
                         <p style={{ margin: "0", fontSize: "13px", lineHeight: 1.6, color: "rgba(255,255,255,.74)" }}>{item.a}</p>
                       </div>
                     ))}

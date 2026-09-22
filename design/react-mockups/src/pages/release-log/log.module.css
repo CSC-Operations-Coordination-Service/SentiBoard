@@ -725,6 +725,43 @@
 }
 
 
+/* -------------------- light mode overrides -------------------- */
+:root[data-theme="light"] .segmented {
+  background: var(--line) !important;
+  border: 1px solid var(--line) !important;
+}
+
+:root[data-theme="light"] .segmented button {
+  color: var(--text) !important;
+  background: var(--bg-2) !important;
+}
+
+:root[data-theme="light"] .segmented button:hover {
+  color: var(--text) !important;
+  background: color-mix(in srgb, var(--accent) 10%, transparent) !important;
+}
+
+:root[data-theme="light"] .segmented button.on {
+  background: color-mix(in srgb, #1a5f6f 15%, transparent) !important;
+  color: #1a5f6f !important;
+  border-bottom: 2px solid #1a5f6f !important;
+}
+
+:root[data-theme="light"] .eventDot {
+  background: #1a5f6f !important;
+  box-shadow: 0 0 0 3px var(--timeline-bg), 0 0 8px 0 color-mix(in srgb, #1a5f6f 40%, transparent) !important;
+}
+
+:root[data-theme="light"] .procChip {
+  background: color-mix(in srgb, #1a5f6f 10%, transparent) !important;
+  color: #1a5f6f !important;
+  border: 1px solid color-mix(in srgb, #1a5f6f 30%, transparent) !important;
+}
+
+:root[data-theme="light"] .timelineEvent.selected .eventDot {
+  box-shadow: 0 0 0 3px var(--timeline-bg), 0 0 12px 2px color-mix(in srgb, #1a5f6f 60%, transparent) !important;
+}
+
 /* -------------------- responsive -------------------- */
 @media (max-width: 900px) {
   .counters {
