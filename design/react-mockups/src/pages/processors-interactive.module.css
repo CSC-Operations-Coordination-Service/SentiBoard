@@ -206,13 +206,7 @@
   display: flex;
   flex: 1;
   overflow: hidden;
-}
-
-.contentArea {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 24px 28px;
+  gap: 0;
 }
 
 /* ============================================================
@@ -220,9 +214,13 @@
    ============================================================ */
 
 .ganttView {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 24px 28px;
 }
 
 .ganttHeader {
@@ -371,15 +369,142 @@
 }
 
 /* ============================================================
+   Table View
+   ============================================================ */
+
+.tableView {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px;
+  gap: 0;
+}
+
+.tableHeader {
+  display: grid;
+  grid-template-columns: 28px 1fr 120px 140px 100px;
+  gap: 16px;
+  padding: 0 12px 12px 12px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 10;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-mute);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.tableColIcon {
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.tableColProcessor {
+  flex: 1;
+}
+
+.tableColBaseline {
+  width: 120px;
+}
+
+.tableColDate {
+  width: 140px;
+}
+
+.tableColNotes {
+  width: 100px;
+}
+
+.tableGroup {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
+  margin-bottom: 12px;
+}
+
+.tableGroupRow {
+  display: grid;
+  grid-template-columns: 28px 1fr 120px 140px 100px;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  background: var(--bg-1);
+  border: none;
+  cursor: pointer;
+  padding: 12px 12px;
+  font-family: var(--font-sans);
+  color: var(--text);
+  transition: background 0.2s ease;
+  text-align: left;
+}
+
+.tableGroupRow:hover {
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.tableGroupExpanded {
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.tableDataRow {
+  border-bottom: 1px solid rgba(0, 229, 255, 0.05);
+}
+
+.tableDataRow:last-child {
+  border-bottom: none;
+}
+
+.tableDataRowHeader {
+  display: grid;
+  grid-template-columns: 28px 1fr 120px 140px 100px;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+  color: var(--text);
+  transition: background 0.2s ease;
+  text-align: left;
+  font-size: 12px;
+}
+
+.tableDataRowHeader:hover {
+  background: rgba(0, 229, 255, 0.03);
+}
+
+.tableDataRowNotes {
+  padding: 12px 40px 12px 40px;
+  background: rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 229, 255, 0.05);
+}
+
+/* ============================================================
    Timeline View
    ============================================================ */
 
 .timelineView {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
   gap: 20px;
   position: relative;
-  padding: 0;
 }
 
 .timelineView::before {
@@ -390,6 +515,7 @@
   bottom: 0;
   width: 1px;
   background: linear-gradient(to bottom, var(--accent), var(--text-mute));
+  z-index: 0;
 }
 
 .timelineItem {
