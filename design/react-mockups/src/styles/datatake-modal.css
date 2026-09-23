@@ -25,12 +25,18 @@
   display: flex;
   flex-direction: column;
   background: linear-gradient(135deg, #0a0d14, #020305);
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid var(--line);
   border-radius: 0;
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(0, 229, 255, 0.1);
+  box-shadow: var(--shadow), inset 0 1px 0 var(--line);
   overflow: hidden;
   outline: none;
   animation: dtm-rise 0.22s var(--ease);
+}
+
+:root[data-theme="light"] .dtm-dialog {
+  background: #ffffff;
+  border-color: var(--line);
+  box-shadow: var(--shadow), inset 0 1px 0 var(--line);
 }
 
 /* The compact variant carries only the product percentages, so it keeps production's narrower
@@ -63,8 +69,13 @@
   justify-content: space-between;
   gap: 16px;
   padding: 16px 18px 12px;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+  border-bottom: 1px solid var(--line-strong);
   background: rgba(10, 13, 20, 0.8);
+}
+
+:root[data-theme="light"] .dtm-head {
+  background: #f8f9fa;
+  border-color: var(--line-strong);
 }
 
 .dtm-head .eyebrow {
@@ -90,7 +101,7 @@
   width: 32px;
   height: 32px;
   border-radius: 0;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid var(--line);
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
@@ -98,9 +109,15 @@
 }
 
 .dtm-x:hover {
-  color: #00e5ff;
-  border-color: #00e5ff;
+  color: var(--accent);
+  border-color: var(--accent);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.25);
+}
+
+:root[data-theme="light"] .dtm-x:hover {
+  color: var(--brand-teal, #18585C);
+  border-color: var(--brand-teal, #18585C);
+  box-shadow: 0 0 8px rgba(24, 88, 92, 0.2);
 }
 
 /* -------------------- body -------------------- */
@@ -261,7 +278,7 @@
   min-width: 34px;
   padding: 6px 10px;
   border-radius: 0;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid var(--line);
   background: transparent;
   color: var(--text-dim);
   font-family: var(--font-mono);
@@ -271,16 +288,29 @@
 }
 
 .dtm-pager button:hover:not(:disabled):not(.on) {
-  color: #00e5ff;
-  border-color: #00e5ff;
+  color: var(--accent);
+  border-color: var(--accent);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+:root[data-theme="light"] .dtm-pager button:hover:not(:disabled):not(.on) {
+  color: var(--brand-teal, #18585C);
+  border-color: var(--brand-teal, #18585C);
+  box-shadow: 0 0 8px rgba(24, 88, 92, 0.2);
 }
 
 .dtm-pager button.on {
   background: rgba(0, 229, 255, 0.1);
-  border-color: #00e5ff;
-  color: #00e5ff;
+  border-color: var(--accent);
+  color: var(--accent);
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.25), inset 0 0 8px rgba(0, 229, 255, 0.1);
+}
+
+:root[data-theme="light"] .dtm-pager button.on {
+  background: var(--brand-teal, #18585C);
+  border-color: var(--brand-teal, #18585C);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(24, 88, 92, 0.3), inset 0 0 6px rgba(24, 88, 92, 0.15);
 }
 
 .dtm-pager button:disabled {
@@ -294,8 +324,13 @@
   align-items: center;
   gap: 10px;
   padding: 12px 18px;
-  border-top: 1px solid rgba(0, 229, 255, 0.15);
+  border-top: 1px solid var(--line-strong);
   background: rgba(10, 13, 20, 0.8);
+}
+
+:root[data-theme="light"] .dtm-foot {
+  background: #f8f9fa;
+  border-color: var(--line-strong);
 }
 
 .dtm-act {
@@ -322,17 +357,27 @@
   margin-left: auto;
   padding: 8px 16px;
   border-radius: 0;
-  border: 1px solid #00e5ff;
+  border: 1px solid var(--accent);
   background: rgba(0, 229, 255, 0.1);
-  color: #00e5ff;
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s var(--ease);
 }
 
+:root[data-theme="light"] .dtm-close {
+  border-color: var(--brand-teal, #18585C);
+  background: rgba(24, 88, 92, 0.08);
+  color: var(--brand-teal, #18585C);
+}
+
 .dtm-close:hover {
   box-shadow: 0 0 15px rgba(0, 229, 255, 0.4), inset 0 0 8px rgba(0, 229, 255, 0.1);
+}
+
+:root[data-theme="light"] .dtm-close:hover {
+  box-shadow: 0 0 12px rgba(24, 88, 92, 0.25), inset 0 0 6px rgba(24, 88, 92, 0.1);
 }
 
 /* -------------------- trigger in the datatake tables -------------------- */
@@ -342,9 +387,9 @@
   gap: 6px;
   padding: 5px 10px;
   border-radius: 0;
-  border: 1px solid #00e5ff;
+  border: 1px solid var(--accent);
   background: transparent;
-  color: #00e5ff;
+  color: var(--accent);
   font-family: var(--font-mono);
   font-size: 11px;
   white-space: nowrap;
@@ -352,10 +397,21 @@
   transition: border-color 0.2s var(--ease), background 0.2s var(--ease), box-shadow 0.2s var(--ease);
 }
 
+:root[data-theme="light"] .dtm-trigger {
+  border-color: var(--brand-teal, #18585C);
+  color: var(--brand-teal, #18585C);
+}
+
 .dtm-trigger:hover {
-  border-color: #00e5ff;
+  border-color: var(--accent);
   background: rgba(0, 229, 255, 0.08);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.25);
+}
+
+:root[data-theme="light"] .dtm-trigger:hover {
+  border-color: var(--brand-teal, #18585C);
+  background: rgba(24, 88, 92, 0.08);
+  box-shadow: 0 0 8px rgba(24, 88, 92, 0.2);
 }
 
 .dtm-trigger:focus-visible {

@@ -13,14 +13,14 @@
   display: flex;
   gap: 8px;
   padding: 18px 28px 14px 56px;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+  border-bottom: 1px solid var(--line);
   background: var(--bg);
   flex-wrap: wrap;
 }
 
 .tabBtn {
   padding: 7px 14px;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid var(--line);
   border-radius: 0;
   background: transparent;
   color: var(--text-dim);
@@ -34,16 +34,29 @@
 }
 
 .tabBtn:hover {
-  border-color: #00e5ff;
-  color: #00e5ff;
+  border-color: var(--accent);
+  color: var(--accent);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+:root[data-theme="light"] .tabBtn:hover {
+  border-color: var(--brand-teal, #18585C);
+  color: var(--brand-teal, #18585C);
+  box-shadow: 0 0 8px rgba(24, 88, 92, 0.2);
 }
 
 .tabBtn.active {
   background: rgba(0, 229, 255, 0.1);
-  border-color: #00e5ff;
-  color: #00e5ff;
+  border-color: var(--accent);
+  color: var(--accent);
   box-shadow: 0 0 12px rgba(0, 229, 255, 0.25), inset 0 0 8px rgba(0, 229, 255, 0.1);
+}
+
+:root[data-theme="light"] .tabBtn.active {
+  background: var(--brand-teal, #18585C);
+  border-color: var(--brand-teal, #18585C);
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(24, 88, 92, 0.3), inset 0 0 6px rgba(24, 88, 92, 0.15);
 }
 
 /* Split layout */
@@ -65,7 +78,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  border-right: 1px solid rgba(0, 229, 255, 0.1);
+  border-right: 1px solid var(--line);
+}
+
+:root[data-theme="light"] .satpane {
+  background: #ffffff;
+  border-color: var(--line);
 }
 
 .artGlow,
@@ -155,7 +173,7 @@
 }
 
 .plist {
-  border-top: 1px solid rgba(0, 229, 255, 0.1);
+  border-top: 1px solid var(--line);
 }
 
 .prow {
@@ -292,9 +310,14 @@
   flex-wrap: nowrap;
   margin: 2px 0 20px;
   padding: 10px 12px;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid var(--line);
   border-radius: 0;
-  background: rgba(0, 229, 255, 0.05);
+  background: var(--pill-bg);
+}
+
+:root[data-theme="light"] .vsel {
+  border-color: var(--line);
+  background: rgba(24, 88, 92, 0.05);
 }
 
 .vsel label {
@@ -311,7 +334,7 @@
   width: 30px;
   height: 30px;
   border-radius: 0;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: 1px solid var(--line);
   background: transparent;
   color: var(--text-dim);
   cursor: pointer;
@@ -321,9 +344,15 @@
 }
 
 .step:hover:not(:disabled) {
-  border-color: #00e5ff;
-  color: #00e5ff;
+  border-color: var(--accent);
+  color: var(--accent);
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+}
+
+:root[data-theme="light"] .step:hover:not(:disabled) {
+  border-color: var(--brand-teal, #18585C);
+  color: var(--brand-teal, #18585C);
+  box-shadow: 0 0 8px rgba(24, 88, 92, 0.2);
 }
 
 .step:disabled {

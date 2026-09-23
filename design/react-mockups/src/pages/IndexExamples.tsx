@@ -67,6 +67,7 @@ const CARD_ART = {
   versionMatrix: "/assets/img/modules/processors.jpg",
   releaseLog: ESA("Landing_asteroid.jpg"),
   versionCompare: ESA("Hera_onboard_computer.jpg"),
+  versionInteractive: ESA("processor_2.jpg"),
 } as const;
 
 const HERO_EYEBROW = "Copernicus · EOF-CSC · Real-time operations";
@@ -458,15 +459,15 @@ const PROC_CARDS = [
     desc: "The focus is on the last released processor. Historical information can be accessed by expanding the processor details.",
   },
   {
-    to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors · Release Timeline",
+    to: "/examples/release-log", img: CARD_ART.releaseLog, title: "b) Processors",
     desc: "Release notes appear in order, with filtering options and no status indicators.",
   },
   {
-    to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors · Gantt timeline",
+    to: "/examples/version-compare", img: CARD_ART.versionCompare, title: "c) Processors",
     desc: "A scrollable gantt-style timeline showing all baseline releases for a selected processor over time.",
   },
   {
-    to: "/examples/processors-interactive", img: CARD_ART.versionCompare, title: "d) Processors · Interactive dashboard",
+    to: "/examples/processors-interactive", img: CARD_ART.versionInteractive, title: "d) Processors",
     desc: "Dual-view interactive release timeline (Gantt bars & chronological nodes) with KPI cards, mission filters, date range picker, and detailed processor inspection panel.",
   },
 ];

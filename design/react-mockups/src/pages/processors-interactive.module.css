@@ -30,12 +30,13 @@
 
 .kpiCard {
   background: var(--bg-1);
-  border: 1px solid var(--line);
+  border: none;
+  border-radius: 0;
   padding: 16px;
-  border-radius: 6px;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .kpiLabel {
@@ -86,7 +87,7 @@
 
 .tab {
   padding: 6px 12px;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: none;
   background: transparent;
   color: var(--text-mute);
   font-size: 11px;
@@ -95,32 +96,31 @@
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 4px;
+  border-radius: 0;
   font-weight: 600;
 }
 
 .tab:hover {
-  border-color: var(--accent);
+  background: rgba(0, 229, 255, 0.08);
   color: var(--accent);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
 }
 
 .tab.active {
-  background: rgba(0, 229, 255, 0.1);
-  border-color: var(--accent);
+  background: rgba(0, 229, 255, 0.12);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+  box-shadow: inset 0 2px 0 var(--accent);
 }
 
 .searchContainer {
   display: flex;
   align-items: center;
   background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  border: none;
+  border-radius: 0;
   padding: 6px 12px;
   flex: 1;
   min-width: 250px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .searchInput {
@@ -145,19 +145,19 @@
 
 .dateInput {
   background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  border: none;
+  border-radius: 0;
   padding: 6px 10px;
   color: var(--text);
   font-size: 11px;
   font-family: var(--font-mono);
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .dateInput:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 229, 255, 0.3);
 }
 
 .viewToggle {
@@ -171,7 +171,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border: 1px solid rgba(0, 229, 255, 0.2);
+  border: none;
   background: transparent;
   color: var(--text-mute);
   font-size: 11px;
@@ -180,22 +180,20 @@
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s ease;
-  border-radius: 4px;
+  border-radius: 0;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .viewBtn:hover {
-  border-color: var(--accent);
+  background: rgba(0, 229, 255, 0.08);
   color: var(--accent);
-  box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
 }
 
 .viewBtn.active {
-  background: rgba(0, 229, 255, 0.1);
-  border-color: var(--accent);
+  background: rgba(0, 229, 255, 0.12);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.25);
+  box-shadow: inset 0 2px 0 var(--accent);
 }
 
 /* ============================================================
@@ -221,12 +219,15 @@
   flex-direction: column;
   gap: 16px;
   padding: 24px 28px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1500px;
 }
 
 .ganttHeader {
   display: flex;
   gap: 16px;
-  padding: 0 0 16px 0;
+  padding: 0 0 12px 0;
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
@@ -249,38 +250,42 @@
   flex: 1;
 }
 
-.ganttAxisLabels {
+.ganttYearHeaders {
+  position: relative;
+  height: 28px;
   display: flex;
-  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+}
+
+.ganttYearHeader {
+  position: absolute;
   font-size: 11px;
-  color: var(--text-mute);
   font-family: var(--font-mono);
+  color: var(--text-mute);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid var(--line);
 }
 
 .ganttGroup {
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
   overflow: hidden;
-  background: var(--bg-1);
 }
 
-.ganttGroupHeader {
+.ganttGroupLabel {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
   background: var(--bg-1);
-  border: none;
-  cursor: pointer;
-  padding: 12px 16px;
+  padding: 10px 16px;
   font-family: var(--font-sans);
   color: var(--text);
-  transition: background 0.2s ease;
-  text-align: left;
-}
-
-.ganttGroupHeader:hover {
-  background: rgba(0, 229, 255, 0.05);
+  border-bottom: 1px solid var(--line);
 }
 
 .groupInfo {
@@ -289,37 +294,42 @@
 
 .groupLabel {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
   margin: 0;
 }
 
 .groupSub {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-mute);
   margin: 2px 0 0 0;
 }
 
 .ganttExpanded {
-  background: rgba(0, 0, 0, 0.2);
-  padding: 12px 16px;
-  border-top: 1px solid var(--line);
+  background: var(--bg);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
 .ganttRow {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 40px;
+  height: 28px;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.05);
+}
+
+.ganttRow:last-child {
+  border-bottom: none;
 }
 
 .ganttLabel {
   width: 80px;
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 10px;
   font-family: var(--font-mono);
   color: var(--text-mute);
   text-align: right;
@@ -327,27 +337,28 @@
 
 .ganttBar {
   flex: 1;
-  height: 24px;
-  background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+  height: 18px;
+  background: linear-gradient(90deg, transparent 0%, #18585C 50%, transparent 100%);
   background-size: 200% 100%;
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border: none;
+  border-radius: 0;
   cursor: pointer;
   position: relative;
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .ganttBar:hover {
-  border-color: var(--accent);
+  border-color: #18585C;
+  box-shadow: 0 0 8px rgba(24, 88, 92, 0.3);
 }
 
 .ganttDot {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 12px;
-  height: 12px;
-  background: var(--text-mute);
+  width: 10px;
+  height: 10px;
+  background: #18585C;
   border-radius: 50%;
   transition: all 0.2s ease;
 }
@@ -355,14 +366,14 @@
 .ganttDot.selected {
   background: var(--accent);
   box-shadow: 0 0 8px var(--accent);
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .ganttDate {
   width: 60px;
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--text-mute);
   font-family: var(--font-mono);
   text-align: left;
@@ -380,6 +391,9 @@
   flex-direction: column;
   padding: 24px 28px;
   gap: 0;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1500px;
 }
 
 .tableHeader {
@@ -422,8 +436,8 @@
 }
 
 .tableGroup {
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
   background: var(--bg-1);
   margin-bottom: 12px;
@@ -493,6 +507,484 @@
 }
 
 /* ============================================================
+   Time Slider Section
+   ============================================================ */
+
+.timeSliderSection {
+  padding: 20px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.presetButtons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.presetBtn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.presetBtn:hover {
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--accent);
+}
+
+.presetBtn.active {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.timeSlider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.timeSliderLabel {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-mute);
+  min-width: 100px;
+  white-space: nowrap;
+}
+
+.timeSliderInput {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--line) 0%, var(--line) 100%);
+  border-radius: 0;
+  outline: none;
+  cursor: pointer;
+}
+
+.timeSliderInput::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.timeSliderInput::-webkit-slider-thumb:hover {
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+}
+
+.timeSliderInput::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.4);
+  transition: all 0.2s ease;
+}
+
+.timeSliderInput::-moz-range-thumb:hover {
+  width: 20px;
+  height: 20px;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+}
+
+/* ============================================================
+   Timeline Stream View
+   ============================================================ */
+
+.streamView {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  margin: 0 auto;
+  width: 100%;
+}
+
+.streamTimeline {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 40px 28px;
+  scroll-behavior: smooth;
+  max-width: 1500px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.streamTimeline::-webkit-scrollbar {
+  height: 6px;
+}
+
+.streamTimeline::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+.streamTimeline::-webkit-scrollbar-thumb {
+  background: var(--line);
+  border-radius: 0;
+}
+
+.streamTimeline::-webkit-scrollbar-thumb:hover {
+  background: var(--text-mute);
+}
+
+.streamAxis {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--text-mute) 50%, var(--accent) 100%);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
+}
+
+.streamNode {
+  position: relative;
+  flex-shrink: 0;
+  cursor: pointer;
+  animation: slideInNode 0.4s ease;
+  margin-right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.streamNode:nth-child(odd) {
+  transform: translateY(-120px);
+}
+
+.streamNode:nth-child(even) {
+  transform: translateY(120px);
+}
+
+@keyframes slideInNode {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.streamNode:nth-child(odd) {
+  animation: slideInNodeAbove 0.4s ease;
+}
+
+.streamNode:nth-child(even) {
+  animation: slideInNodeBelow 0.4s ease;
+}
+
+@keyframes slideInNodeAbove {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-120px);
+  }
+}
+
+@keyframes slideInNodeBelow {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(120px);
+  }
+}
+
+.streamNodeContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.streamCard {
+  background: var(--bg-1);
+  border: none;
+  border-radius: 0;
+  padding: 8px;
+  min-width: 130px;
+  width: 130px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.streamCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.streamNode.selected .streamCard {
+  background: rgba(0, 229, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.4);
+}
+
+.streamCardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.streamCardHeader > div:first-child {
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text);
+  word-break: break-word;
+  line-height: 1.2;
+}
+
+.streamBaselineTag {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  background: rgba(0, 229, 255, 0.1);
+  color: var(--accent);
+  padding: 2px 5px;
+  border-radius: 0;
+  font-size: 8px;
+  flex-shrink: 0;
+}
+
+.streamSatTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+  justify-content: center;
+}
+
+.streamSatTag {
+  font-size: 8px;
+  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-mute);
+  padding: 1px 4px;
+  border-radius: 0;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.streamNode::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  transition: all 0.2s ease;
+}
+
+.streamNode.selected::before {
+  width: 14px;
+  height: 14px;
+  box-shadow: 0 0 12px var(--accent);
+}
+
+/* ============================================================
+   Cards View
+   ============================================================ */
+
+.cardsView {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 28px;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1500px;
+}
+
+.cardsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 100%;
+}
+
+.processorCard {
+  background: var(--bg-1);
+  border: none;
+  border-radius: 0;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.processorCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.processorCard.selected {
+  background: rgba(0, 229, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 229, 255, 0.3);
+}
+
+.cardHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 4px;
+  word-break: break-word;
+}
+
+.cardSub {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.statusBadge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 0;
+  border: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cardMetadata {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metaLabel {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 600;
+}
+
+.metaValue {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.cardSatellites {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardCta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--pill-bg);
+  border: none;
+  color: var(--accent);
+  padding: 10px 12px;
+  border-radius: 0;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cardCta:hover {
+  background: var(--line);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--line-strong);
+  transform: translateX(2px);
+}
+
+.cardCta:active {
+  transform: translateX(0);
+}
+
+/* ============================================================
    Timeline View
    ============================================================ */
 
@@ -500,99 +992,149 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 24px 28px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 0;
   position: relative;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 1500px;
+}
+
+.timelineYearFilter {
+  display: flex;
+  gap: 8px;
+  padding: 16px 28px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-wrap: wrap;
+}
+
+.yearFilterBtn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  font-weight: 600;
+}
+
+.yearFilterBtn:hover {
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--accent);
+}
+
+.yearFilterBtn.active {
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--accent);
+  box-shadow: inset 0 2px 0 var(--accent);
 }
 
 .timelineView::before {
   content: '';
   position: absolute;
-  left: 20px;
-  top: 0;
+  left: 28px;
+  top: 56px;
   bottom: 0;
   width: 1px;
   background: linear-gradient(to bottom, var(--accent), var(--text-mute));
-  z-index: 0;
+  z-index: 1;
 }
 
 .timelineItem {
   position: relative;
   margin-left: 56px;
+  padding: 12px 28px;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.03);
 }
 
 .timelineNode {
   position: absolute;
-  left: -40px;
-  top: 20px;
-  width: 12px;
-  height: 12px;
+  left: 20px;
+  top: 22px;
+  width: 10px;
+  height: 10px;
   background: var(--text-mute);
   border-radius: 50%;
   transition: all 0.2s ease;
   border: 2px solid var(--bg);
+  z-index: 2;
 }
 
 .timelineNode.selected {
   background: var(--accent);
-  width: 18px;
-  height: 18px;
-  left: -43px;
-  top: 17px;
+  width: 14px;
+  height: 14px;
+  left: 18px;
+  top: 20px;
   box-shadow: 0 0 12px var(--accent);
 }
 
 .timelineCard {
-  background: var(--bg-1);
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  padding: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .timelineCard:hover {
-  border-color: var(--accent);
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+  transform: translateX(4px);
 }
 
 .timelineCardHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+}
+
+.timelineCardMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .baselineTag {
-  font-size: 10px;
+  font-size: 9px;
   font-family: var(--font-mono);
   background: rgba(0, 229, 255, 0.1);
   color: var(--accent);
-  padding: 4px 8px;
-  border-radius: 3px;
+  padding: 3px 7px;
+  border-radius: 0;
   flex-shrink: 0;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .timelineCardDate {
   display: flex;
   align-items: center;
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-mute);
-  margin-bottom: 8px;
+  margin-bottom: 2px;
   font-family: var(--font-mono);
 }
 
 .timelineCardNotes {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-dim);
-  margin: 8px 0;
-  line-height: 1.5;
+  margin: 4px 0 0 0;
+  line-height: 1.4;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -610,63 +1152,165 @@
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-mute);
   padding: 3px 8px;
-  border-radius: 3px;
+  border-radius: 0;
   display: inline-block;
 }
 
 /* ============================================================
-   Detail Panel
+   Modal — Release Details
    ============================================================ */
 
-.detailPanel {
-  width: 320px;
-  border-left: 1px solid var(--line);
-  background: var(--bg-1);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+.modalBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  cursor: pointer;
+  animation: fadeIn 0.2s ease;
 }
 
-.detailHeader {
+.modalContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  max-width: 700px;
+  width: 90vw;
+  max-height: 85vh;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -45%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.modalContent {
+  background: var(--bg-1);
+  border: none;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.modalHeader {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--line);
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: none;
+  border-top: 1px solid var(--line);
   flex-shrink: 0;
 }
 
-.detailTitle {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--accent);
-  margin: 0;
-  font-family: var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.modalTitleSection {
+  flex: 1;
 }
 
-.closeBtn {
+.modalTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  font-family: var(--font-sans);
+}
+
+.modalCloseBtn {
   background: none;
   border: none;
   cursor: pointer;
   color: var(--text-mute);
-  padding: 4px;
+  padding: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
+  border-radius: 0;
+  flex-shrink: 0;
 }
 
-.closeBtn:hover {
+.modalCloseBtn:hover {
   color: var(--accent);
+  background: var(--pill-bg);
 }
 
 .detailContent {
   flex: 1;
-  padding: 16px;
+  padding: 20px 24px;
   overflow-y: auto;
+}
+
+.modalSummarySection {
+  margin-bottom: 20px;
+}
+
+.summaryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.summaryProcessorName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.summaryProcessorSub {
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(0, 229, 255, 0.03);
+  border: none;
+  border-radius: 0;
+}
+
+.summaryLabel {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  font-weight: 600;
 }
 
 .detailSection {
@@ -686,7 +1330,7 @@
 .detailDivider {
   height: 1px;
   background: var(--line);
-  margin: 16px 0;
+  margin: 20px 0;
 }
 
 /* ============================================================
@@ -704,6 +1348,14 @@
 
   .contentArea {
     padding: 16px 20px;
+  }
+
+  .cardsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .streamTimeline {
+    height: 500px;
   }
 
   .detailPanel {
@@ -754,11 +1406,79 @@
     flex-direction: column;
   }
 
-  .detailPanel {
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid var(--line);
-    max-height: 50%;
+  .cardsView {
+    padding: 16px 20px;
+  }
+
+  .cardsGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .timeSliderSection {
+    padding: 16px 20px;
+  }
+
+  .presetButtons {
+    gap: 6px;
+  }
+
+  .presetBtn {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  .streamView {
+    padding: 8px 0;
+  }
+
+  .streamTimeline {
+    padding: 30px 16px;
+  }
+
+  .streamNode {
+    margin-right: 12px;
+  }
+
+  .streamNode:nth-child(odd) {
+    transform: translateY(-80px);
+  }
+
+  .streamNode:nth-child(even) {
+    transform: translateY(80px);
+  }
+
+  .streamCard {
+    min-width: 110px;
+    width: 110px;
+    padding: 6px;
+  }
+
+  .streamCardHeader {
+    font-size: 10px;
+    gap: 3px;
+  }
+
+  .streamBaselineTag {
+    font-size: 7px;
+    padding: 1px 4px;
+  }
+
+  .modalContainer {
+    width: 95vw;
+    max-height: 90vh;
+  }
+
+  .modalHeader {
+    padding: 16px 20px;
+  }
+
+  .detailContent {
+    padding: 16px 20px;
+  }
+
+  .summaryGrid {
+    grid-template-columns: 1fr;
   }
 
   .contentArea {

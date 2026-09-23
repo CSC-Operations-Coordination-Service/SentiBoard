@@ -99,6 +99,10 @@
   transition: opacity 0.2s var(--ease);
 }
 
+:root[data-theme="light"] .da-reset {
+  color: var(--brand-teal, #18585C);
+}
+
 .da-reset:disabled {
   color: var(--text-mute);
   cursor: default;
@@ -165,6 +169,12 @@
 .da-field input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.3), inset 0 0 8px rgba(0, 229, 255, 0.1);
+}
+
+:root[data-theme="light"] .da-field select:focus,
+:root[data-theme="light"] .da-field input:focus {
+  border-color: var(--brand-teal, #18585C);
+  box-shadow: 0 0 10px rgba(24, 88, 92, 0.2), inset 0 0 8px rgba(24, 88, 92, 0.08);
 }
 
 .da-field select:disabled {
@@ -281,6 +291,10 @@
   color: var(--accent-2);
 }
 
+:root[data-theme="light"] .da-sort.on {
+  color: var(--brand-teal, #18585C);
+}
+
 /* Header of the non-sortable Actions column — matches .da-sort without being a control. */
 .da-th {
   font-family: var(--font-mono);
@@ -329,6 +343,12 @@
   border: 1px solid var(--line-strong);
 }
 
+:root[data-theme="light"] .da-sat {
+  background: rgba(24, 88, 92, 0.08);
+  color: var(--brand-teal, #18585C);
+  border-color: var(--brand-teal, #18585C);
+}
+
 .da-mode {
   font-size: 13px;
   color: var(--text-dim);
@@ -363,6 +383,11 @@
   background: transparent;
   border: 1px solid var(--badge);
   opacity: 0.9;
+}
+
+:root[data-theme="light"] .da-badge {
+  color: var(--badge);
+  border-color: var(--badge);
 }
 
 /* -------------------- completeness meter -------------------- */

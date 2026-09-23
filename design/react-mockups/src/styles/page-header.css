@@ -5,7 +5,7 @@
 .page-header {
   position: relative;
   padding: 3rem 0 0.5rem;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.1);
+  border-bottom: 1px solid var(--line);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

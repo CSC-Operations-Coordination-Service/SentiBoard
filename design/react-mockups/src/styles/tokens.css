@@ -14,7 +14,11 @@
    --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
    --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
 
-   /* Neon brand accent — high-contrast cyan from logo */
+   /* Brand colors from logo */
+   --brand-teal: #18585C;
+   --brand-gray: #6B6D6E;
+
+   /* Neon brand accent — high-contrast cyan from logo (dark mode default) */
    --accent: #00e5ff;
    --accent-2: #00e5ff;
    --accent-teal: #00e5ff;
@@ -117,12 +121,17 @@
 :root[data-theme="light"] {
    color-scheme: light;
 
+   /* Brand colors override for light mode */
+   --accent: var(--brand-teal);
+   --accent-2: var(--brand-teal);
+   --accent-cyan: var(--brand-teal);
+
    --bg: #f4f6fa;
    --bg-1: #ffffff;
    --bg-2: #ffffff;
    --bg-3: #eef1f6;
-   --line: rgba(9, 20, 40, 0.10);
-   --line-strong: rgba(9, 20, 40, 0.18);
+   --line: rgba(24, 88, 92, 0.12);
+   --line-strong: rgba(24, 88, 92, 0.2);
 
    /* Timeline and gantt backgrounds (light) */
    --timeline-bg: #eff1f6;
