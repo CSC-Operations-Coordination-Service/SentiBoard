@@ -338,18 +338,18 @@
 .ganttBar {
   flex: 1;
   height: 18px;
-  background: linear-gradient(90deg, transparent 0%, #18585C 50%, transparent 100%);
-  background-size: 200% 100%;
+  background: var(--accent);
   border: none;
   border-radius: 0;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
+  opacity: 0.85;
 }
 
 .ganttBar:hover {
-  border-color: #18585C;
-  box-shadow: 0 0 8px rgba(24, 88, 92, 0.3);
+  opacity: 1;
+  box-shadow: 0 0 8px var(--accent);
 }
 
 .ganttDot {
@@ -358,7 +358,8 @@
   transform: translateY(-50%);
   width: 10px;
   height: 10px;
-  background: #18585C;
+  background: var(--bg);
+  border: 2px solid var(--accent);
   border-radius: 50%;
   transition: all 0.2s ease;
 }
