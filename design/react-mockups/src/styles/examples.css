@@ -1197,9 +1197,50 @@
     url("/assets/img/nebula.jpg");
 }
 
+
 :root[data-theme="light"] .rv-scene {
   /* TEMP placeholder — "something clear" until the light-theme background is decided */
   background-image: linear-gradient(rgba(244, 246, 250, 0.82), rgba(255, 255, 255, 0.94));
+}
+
+/* --- FAQ Theme Text Overrides --- */
+
+/* Dark Theme: Cyan Accent */
+:root[data-theme="dark"] section#faq,
+:root[data-theme="dark"] section#faq * {
+  color: var(--accent-cyan, #00e5ff) !important;
+}
+
+/* Light Theme: High-Contrast White */
+:root[data-theme="light"] section#faq,
+:root[data-theme="light"] section#faq * {
+  color: #ffffff !important;
+}
+
+/* Change the button text, number, and arrow icon color */
+button[style*="rgb(61, 220, 132)"],
+button[style*="rgb(61, 220, 132)"] span,
+button[style*="rgb(61, 220, 132)"] svg {
+  color: var(--accent-cyan, #00e5ff) !important;
+}
+
+/* Change the glowing green dot indicator */
+button[style*="rgb(61, 220, 132)"] i {
+  background: var(--accent-cyan, #00e5ff) !important;
+  box-shadow: 0 0 11px var(--accent-cyan, #00e5ff) !important;
+}
+/* Light theme overrides: turn everything inside the button cyan */
+:root[data-theme="light"] button[style*="rgb(61, 220, 132)"],
+:root[data-theme="light"] button[style*="rgb(61, 220, 132)"] *,
+:root[data-theme="light"] button[style*="rgb(61, 220, 132)"] span,
+:root[data-theme="light"] button[style*="rgb(61, 220, 132)"] svg {
+  color: #0088a3 !important; /* Deeper cyan for readability on white */
+}
+
+/* Glowing dot indicator */
+:root[data-theme="light"] button[style*="rgb(61, 220, 132)"] i {
+  background: #0088a3 !important;
+  box-shadow: 0 0 8px rgba(0, 136, 163, 0.4) !important;
 }
 
 /* ---------- variant C: scroll reveal ---------- */
