@@ -30,6 +30,9 @@ from urllib.parse import urlparse, urljoin
 from apps.routes.home import blueprint
 from functools import wraps
 import re
+import httpx
+from apps.utils.marker_parser import MarkerExtractor
+from apps.utils.chat_session import ChatSessionState
 import apps.cache.modules.acquisitions as acquisitions_cache
 import apps.cache.modules.timeliness as timeliness_cache
 import apps.cache.modules.events as events_cache
@@ -2840,3 +2843,225 @@ def sortable_date(value):
     if dt_obj:
         return dt_obj.strftime("%Y%m%d%H%M%S")
     return value
+
+
+# ============================================================================
+# CHATBOT INTEGRATION - Routes for /chat and /chat/data endpoints
+# ============================================================================
+
+@blueprint.route("/chat", methods=["POST"])
+@login_required
+def chatbot_send_message():
+    """POST /chat - Send user message to chatbot, return response with markers.
+
+    Per UI Integration Guide §1:
+    Request: {message, session_id (optional)}
+    Response: {status, response, clean_prose, markers, latex_blocks, session_id, model_name, messages_count}
+    """
+    try:
+        data = request.get_json()
+        if not data or "message" not in data:
+            return jsonify({
+                "status": "error",
+                "code": "invalid_request",
+                "message": "Missing 'message' field"
+            }), 400
+
+        user_message = data.get("message", "").strip()
+        if not user_message:
+            return jsonify({
+                "status": "error",
+                "code": "invalid_request",
+                "message": "Message cannot be empty"
+            }), 400
+
+        # Session management
+        chat_state = ChatSessionState(session)
+
+        # Start new conversation if requested
+        if data.get("new_conversation", False):
+            chat_state.clear()
+            session_id = None
+        else:
+            session_id = chat_state.get_session_id()
+
+        # Record user message in history
+        chat_state.add_user_message(user_message)
+
+        # Call chatbot API backend
+        chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
+        if not chatbot_api_url:
+            return jsonify({
+                "status": "error",
+                "code": "config_error",
+                "message": "Chatbot API not configured"
+            }), 500
+
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                api_payload = {"message": user_message}
+                if session_id:
+                    api_payload["session_id"] = str(session_id)
+
+                api_response = client.post(f"{chatbot_api_url}/chat", json=api_payload)
+                api_response.raise_for_status()
+                api_data = api_response.json()
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                # Session expired
+                chat_state.clear()
+                return jsonify({
+                    "status": "error",
+                    "code": "session_expired",
+                    "message": "Conversation session expired. Please start a new conversation."
+                }), 200
+            elif e.response.status_code == 422:
+                return jsonify({
+                    "status": "error",
+                    "code": "invalid_request",
+                    "message": "Invalid request to chatbot API"
+                }), 400
+            else:
+                logger.error(f"Chatbot API error: {e}")
+                return jsonify({
+                    "status": "error",
+                    "code": "api_error",
+                    "message": "Chatbot API error"
+                }), 502
+        except httpx.RequestError as e:
+            logger.error(f"Chatbot API request failed: {e}")
+            return jsonify({
+                "status": "error",
+                "code": "api_error",
+                "message": "Failed to reach chatbot API"
+            }), 503
+
+        # Update session with new API session_id (if new conversation)
+        if not session_id:
+            chat_state.start_conversation(
+                model_name=api_data.get("model_name"),
+                session_id=api_data.get("session_id"),
+                thread_id=api_data.get("thread_id")
+            )
+
+        # Parse response: extract markers, LaTeX, clean prose
+        response_text = api_data.get("response", "")
+        extractor = MarkerExtractor(response_text)
+
+        # Record assistant response (with full markers) in history
+        chat_state.add_assistant_message(response_text)
+
+        return jsonify({
+            "status": "success",
+            "response": response_text,
+            "clean_prose": extractor.clean_prose,
+            "markers": [
+                {
+                    "type": marker.type.value,
+                    "attributes": marker.attributes,
+                    "raw": marker.raw
+                }
+                for marker in extractor.markers
+            ],
+            "latex_blocks": [
+                {
+                    "kind": latex.kind,
+                    "content": latex.content,
+                    "raw": latex.raw
+                }
+                for latex in extractor.latex_blocks
+            ],
+            "session_id": chat_state.get_session_id(),
+            "model_name": chat_state.get_model_name(),
+            "messages_count": len(chat_state.get_messages())
+        }), 200
+
+    except Exception as e:
+        logger.exception("Unexpected error in /chat")
+        return jsonify({
+            "status": "error",
+            "code": "internal_error",
+            "message": "Internal server error"
+        }), 500
+
+
+@blueprint.route("/chat/data/<data_id>", methods=["GET"])
+@login_required
+def chatbot_fetch_artifact(data_id: str):
+    """GET /chat/data/{data_id} - Fetch artifact referenced by a marker.
+
+    Per UI Integration Guide §3-4:
+    Query params: session_id (required)
+    Response: {status, data} or {status, code, message}
+    """
+    try:
+        session_id = request.args.get("session_id")
+        if not session_id:
+            return jsonify({
+                "status": "error",
+                "code": "missing_session",
+                "message": "session_id query parameter required"
+            }), 400
+
+        # Validate data_id format
+        if not data_id.startswith("artifact_"):
+            return jsonify({
+                "status": "error",
+                "code": "invalid_artifact",
+                "message": "Invalid artifact ID format"
+            }), 400
+
+        chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
+        if not chatbot_api_url:
+            return jsonify({
+                "status": "error",
+                "code": "config_error",
+                "message": "Chatbot API not configured"
+            }), 500
+
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                api_response = client.get(
+                    f"{chatbot_api_url}/chat/data/{data_id}",
+                    params={"session_id": str(session_id)}
+                )
+                api_response.raise_for_status()
+                artifact_data = api_response.json()
+
+            return jsonify({
+                "status": "success",
+                "data": artifact_data
+            }), 200
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                # Expected per contract §4: artifact or session expired
+                return jsonify({
+                    "status": "error",
+                    "code": "session_expired",
+                    "message": "Data no longer available; please ask again."
+                }), 200
+            else:
+                logger.error(f"Chatbot API error fetching {data_id}: {e}")
+                return jsonify({
+                    "status": "error",
+                    "code": "api_error",
+                    "message": "Failed to fetch artifact data"
+                }), 502
+
+        except httpx.RequestError as e:
+            logger.error(f"Chatbot API request failed: {e}")
+            return jsonify({
+                "status": "error",
+                "code": "api_error",
+                "message": "Failed to reach chatbot API"
+            }), 503
+
+    except Exception as e:
+        logger.exception(f"Unexpected error fetching artifact {data_id}")
+        return jsonify({
+            "status": "error",
+            "code": "internal_error",
+            "message": "Internal server error"
+        }), 500
