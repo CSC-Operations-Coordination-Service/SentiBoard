@@ -543,52 +543,6 @@ class CalendarWidget {
             : '<p>No valid datatakes</p>';
     }
 
-    calcDatatakeStatus(anomaly, datatake_id) {
-        const dtCompletenessArray = anomaly.datatakes_completeness || [];
-        if (!dtCompletenessArray.length) return null;
-
-        for (let dtObj of dtCompletenessArray) {
-            try {
-                // Normalize both string and object cases
-                const parsed = typeof dtObj === "string"
-                    ? JSON.parse(dtObj.replaceAll("'", '"'))
-                    : dtObj;
-
-                // Case 1: Old format -> {"S1C-35496": {"L0_":86.3,"L1_":0,"L2_":0}}
-                for (const [key, val] of Object.entries(parsed)) {
-                    if (key.trim().toUpperCase() === datatake_id.trim().toUpperCase()) {
-                        const numericValues = Object.values(val).filter(v => typeof v === "number");
-                        const completeness = this.calcDatatakeCompleteness(numericValues);
-
-                        if (completeness >= 90) return 'ok';
-                        if (completeness >= 10 && completeness < 90) return 'partial';
-                        if (completeness < 10) return 'failed';
-                    }
-                }
-
-                // Case 2: New format -> {datatakeID:"S1C-35496", L0_:86.3, L1_:0, L2_:0}
-                if (
-                    parsed.datatakeID &&
-                    parsed.datatakeID.trim().toUpperCase() === datatake_id.trim().toUpperCase()
-                ) {
-                    const numericValues = [parsed.L0_, parsed.L1_, parsed.L2_]
-                        .filter(v => typeof v === "number");
-                    const completeness = this.calcDatatakeCompleteness(numericValues);
-
-                    if (completeness >= 90) return 'ok';
-                    if (completeness >= 10 && completeness < 90) return 'partial';
-                    if (completeness < 10) return 'failed';
-                }
-
-            } catch (ex) {
-                console.warn("Error parsing dt completeness", ex, dtObj);
-                continue;
-            }
-        }
-
-        return null;
-    }
-
     overrideS1DatatakesId(datatake_id) {
         let num = datatake_id.trim().substring(4);
         let hexaNum = parseInt(num).toString(16);

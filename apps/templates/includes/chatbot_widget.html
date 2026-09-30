@@ -1,0 +1,63 @@
+<!-- Floating Chatbot Widget -->
+<div id="chatbot-widget" class="chatbot-widget">
+  <!-- Toggle button -->
+  <button id="chatbot-toggle" class="chatbot-toggle" aria-label="Open chatbot" title="Ask the chatbot">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12h-8v-2h8v2zm0-4h-8V8h8v2z"/>
+    </svg>
+  </button>
+
+  <!-- Chat window (hidden by default) -->
+  <div id="chatbot-window" class="chatbot-window" style="display: none;">
+    <div class="chatbot-header">
+      <h5 class="mb-0">Chatbot Assistant</h5>
+      <button id="chatbot-close" class="btn-close" aria-label="Close chatbot"></button>
+    </div>
+
+    <div id="chatbot-messages" class="chatbot-messages">
+      <div class="chatbot-message system">
+        <div class="message-content">
+          <p>Hi! I can help answer questions about the Copernicus dashboard. What would you like to know?</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="chatbot-input-area">
+      <form id="chatbot-form" class="d-flex gap-2">
+        <input
+          type="text"
+          id="chatbot-input"
+          class="form-control form-control-sm"
+          placeholder="Ask a question..."
+          autocomplete="off"
+          required
+        />
+        <button type="submit" class="btn btn-sm btn-primary">Send</button>
+      </form>
+      <div id="chatbot-error" class="alert alert-danger alert-sm mt-2" style="display: none; margin: 0.5rem 0;"></div>
+    </div>
+
+    <!-- Session info (optional, hidden by default) -->
+    <div class="chatbot-footer">
+      <small class="text-muted" id="chatbot-model">Model: —</small>
+    </div>
+  </div>
+</div>
+
+<!-- KaTeX for LaTeX rendering -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" integrity="sha384-GvrOXuhMATgEsSwCs4smul74iNQ5RSoIbXviik3G29NyNLtzjkxDRhS6PlLDZf/0n" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" integrity="sha384-cpR3gR3vG35gSYmYV8zQ2+gmlPyonrtSmMsXDU7MRZichv+56WFCqvaEC2q0n8qiy" crossorigin="anonymous"></script>
+
+<!-- Plotly.js for charts (if not already loaded) -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<!-- Markdown-it (from static assets) -->
+<script src="{{ url_for('static', filename='assets/lib/markdown-it/markdown-it.min.js') }}"></script>
+
+<!-- Chatbot scripts and styles -->
+<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/chatbot-widget.css') }}">
+
+<script src="{{ url_for('static', filename='assets/js/chatbot/marker-parser.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/chatbot/widget-renderer.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/chatbot/artifact-fetcher.js') }}"></script>
+<script src="{{ url_for('static', filename='assets/js/chatbot/chatbot-widget.js') }}"></script>

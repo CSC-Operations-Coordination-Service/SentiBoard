@@ -516,7 +516,9 @@ def add_anomaly():
             data["newsTitle"],
         )
 
-        events_cache.load_anomalies_cache_previous_quarter()  # Explicitly force cache reloading
+        events_cache.load_anomalies_cache_previous_quarter(
+            force=True
+        )  # Explicitly force cache reloading
     except Exception as ex:
         return Response(
             json.dumps({"error": "500"}), mimetype="application/json", status=500
@@ -549,7 +551,9 @@ def update_anomaly():
             data["newsTitle"],
         )
 
-        events_cache.load_anomalies_cache_previous_quarter()  # Explicitly force cache reloading
+        events_cache.load_anomalies_cache_previous_quarter(
+            force=True
+        )  # Explicitly force cache reloading
     except Exception as ex:
         return Response(
             json.dumps({"error": "500"}), mimetype="application/json", status=500

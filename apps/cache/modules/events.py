@@ -84,17 +84,21 @@ def load_anomalies_cache_last_quarter():
     )
 
 
-def load_anomalies_cache_previous_quarter():
+def load_anomalies_cache_previous_quarter(force=False):
     """
     Fetch the anomalies since the beginning of the previous, completed quarter up to today from the local MYSQL DB,
     and store results in cache for future reuse. The start time is set at 00:00 of the first day of the temporal
     interval; the stop time is set at 23:59:59 of today
+
+    Pass force=True to rebuild the cache even when the key is still warm. The
+    scheduler does so hourly: without it, the first run warms the key and every
+    later run returns here, leaving the cache frozen until its TTL expires.
     """
 
     cache_key = anomalies_cache_key.format("previous", "quarter")
-    if flask_cache.get(cache_key):
-        return 
-    
+    if not force and flask_cache.get(cache_key):
+        return
+
     logger.info("[BEG] Loading Anomalies Cache since the previous quarter...")
     cache_start_time = perf_counter()
 
@@ -136,9 +140,16 @@ def load_anomalies_cache_previous_quarter():
     )
 
 
-def load_anomalies_cache_full_history():
+def load_anomalies_cache_full_history(force=False):
+    """
+    Fetch the whole anomaly history from the local DB and cache it.
+
+    This cache now only serves calendar months older than the recent window (see
+    load_anomalies_for_month); anomalies that far back no longer change, so the
+    long TTL is intentional. Pass force=True to rebuild it on demand.
+    """
     cache_key = anomalies_cache_key.format("full", "history")
-    if flask_cache.get(cache_key):
+    if not force and flask_cache.get(cache_key):
         logger.debug("[SKIP] full history cache already warm")
         return
 
@@ -170,6 +181,11 @@ def _set_anomalies_cache(period_id, period_data):
         seconds_validity = 3600          # 1 hour
     elif period_id in ("7d", "30d"):
         seconds_validity = 43200         # 12 hours
+    elif period_id == "previous-quarter":
+        # Serves the recent months of the events calendar, so it must not go
+        # stale: the scheduler rebuilds it hourly, and this TTL bounds how old
+        # the data can get should the scheduler thread stop running.
+        seconds_validity = 3600          # 1 hour
     else:
         seconds_validity = events_cache_duration  # 7 days for quarter/history
     if period_id == "previous-quarter":
@@ -188,6 +204,41 @@ def _set_anomalies_cache(period_id, period_data):
         ),
         seconds_validity,
     )
+
+
+def load_anomalies_for_month(year, month):
+    """
+    Return (raw_anomalies, cache_key) for the anomalies that should populate the
+    events calendar for the given month.
+
+    Recent months - those from the start of the previous completed quarter
+    onwards - are served by the "previous-quarter" cache, which the scheduler
+    rebuilds hourly, so newly ingested anomalies reach the calendar within the
+    hour. Older months are served by the long-lived "full-history" cache, which
+    avoids replaying a 2022-to-today query on every calendar navigation.
+    """
+
+    recent_start, _ = date_utils.prev_quarter_interval_from_date(datetime.today())
+
+    if (year, month) >= (recent_start.year, recent_start.month):
+        period = ("previous", "quarter")
+        loader = load_anomalies_cache_previous_quarter
+    else:
+        period = ("full", "history")
+        loader = load_anomalies_cache_full_history
+
+    cache_key = anomalies_cache_key.format(*period)
+    logger.debug("Serving anomalies for %04d-%02d from %s", year, month, cache_key)
+
+    # Populates the key when cold or expired; a no-op while it is still warm
+    loader()
+
+    cache_entry = flask_cache.get(cache_key)
+    if not cache_entry:
+        logger.warning("Anomalies cache %s still empty after load", cache_key)
+        return [], cache_key
+
+    return json.loads(cache_entry.data), cache_key
 
 
 def load_news_cache_last_quarter():
