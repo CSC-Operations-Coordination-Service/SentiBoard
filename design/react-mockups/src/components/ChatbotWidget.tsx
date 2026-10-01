@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { X, Send, Satellite } from "lucide-react";
+
 
 interface Message {
   id: string;
@@ -86,6 +87,7 @@ export default function ChatbotWidget() {
           justifyContent: "center",
           transition: "all 0.3s ease",
           padding: 0,
+          fontSize: "24px",
         }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.1)";
@@ -100,7 +102,7 @@ export default function ChatbotWidget() {
         aria-label="Open chatbot"
         title="Ask the chatbot"
       >
-        <MessageCircle size={24} />
+        <Satellite size={28} />
       </button>
 
       {/* Chat Window */}
