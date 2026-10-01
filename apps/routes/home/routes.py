@@ -1841,6 +1841,14 @@ def admin_space_segment():
         for _d in datatakes_sources
         if _d.get("datatake_id")
     }
+    # Track ES-ticketed datatakes (those with verified ticket) to detect if they've been reprocessed.
+    # This prevents false positives: if a datatake was once impacted but has since been reprocessed
+    # to 100% completeness and is now in the ES feed, don't mark it as impacted.
+    _es_ticketed = {
+        _d.get("datatake_id"): acquisitions_utils.recalc_completeness(_d)
+        for _d in datatakes_sources
+        if _d.get("datatake_id") and _d.get("last_attached_ticket")
+    }
 
     # Satellite issues are re-sourced from this same anomaly join (matching the
     # events page): a Platform-category anomaly with >=1 L0-impacted datatake in
@@ -1891,6 +1899,13 @@ def admin_space_segment():
             ):
                 continue
             _compl = acquisitions_utils.recalc_completeness(_dt)
+
+            # Skip if this anomaly-referenced datatake has been reprocessed to 100% and is now
+            # verified in the ES feed. This prevents false positives where a datatake was once
+            # impacted but has since recovered (e.g., S2C 2026-09-10 reprocessed after initial correlation).
+            if _did in _es_ticketed and _es_ticketed[_did] >= 100.0:
+                continue
+
             if _compl >= 100.0:
                 continue
             _sat = _did.split("-")[0].upper().replace("SNP", "S5P")
