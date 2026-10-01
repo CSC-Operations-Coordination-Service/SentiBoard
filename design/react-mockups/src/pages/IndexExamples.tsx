@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Radio, Camera, Waves, Wind } from "lucide-react";
 import { PageHeader, Pill, Reveal } from "@/components/ui";
+import ChatbotWidget from "@/components/ChatbotWidget";
 import { NEWS, REALTIME, MODULES } from "@/data/mock";
 import { useTheme } from "@/theme";
 import "@/styles/examples.css";
@@ -158,6 +159,9 @@ export function IndexFleet() {
           ))}
         </div>
       </section>
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </>
   );
 }
@@ -204,6 +208,9 @@ export function IndexGallery() {
           ))}
         </div>
       </section>
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </>
   );
 }
@@ -380,6 +387,9 @@ export function IndexReveal() {
           ))}
         </div>
       </section>
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </>
   );
 }
@@ -960,6 +970,9 @@ export function Index1() {
           </div>
         </div>
       </section>
+
+      {/* Chatbot Widget */}
+      <ChatbotWidget />
     </>
   );
 }
