@@ -1259,116 +1259,43 @@ export default function AcquisitionGlobe({
     function drawBase(c: CanvasRenderingContext2D) {
       const { cx, cy, R } = s;
       c.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
-      // Pitch black space background
-      c.fillStyle = "#000000";
+
+      // Deep dark background with subtle starfield
+      c.fillStyle = "#05070b";
       c.fillRect(0, 0, s.W, s.H);
 
-      const colors = isDarkRef.current
-        ? {
-            // Dark mode — atmospheric glow with soft dark-blue fade
-            atmGlow: [
-              "rgba(30,72,128,0.28)",
-              "rgba(10,20,36,0.12)",
-              "rgba(0,0,0,0)",
-            ],
-            sphereLight: "#081220",
-            sphereMid: "#0a0f18",
-            sphereDark: "#040810",
-            rimGlow: "rgba(31,72,128,0.3)",
-            equator: "rgba(92,194,255,0.4)",
-            meridian: "rgba(92,194,255,0.15)",
-            meridianThin: "rgba(255,255,255,0.08)",
-            coastWide: "rgba(92,194,255,0.5)",
-            coastThin: "rgba(92,194,255,1)",
-            coverage: "rgba(0,180,216,0.12)",
-          }
-        : {
-            // Light mode
-            atmGlow: [
-              "rgba(59,130,246,0.16)",
-              "rgba(59,130,246,0.04)",
-              "rgba(59,130,246,0)",
-            ],
-            sphereLight: "#e8edf3",
-            sphereMid: "#d8e0e8",
-            sphereDark: "#c8d3e0",
-            rimGlow: "rgba(59,130,246,0.25)",
-            equator: "rgba(148,163,184,0.4)",
-            meridian: "rgba(148,163,184,0.15)",
-            meridianThin: "rgba(148,163,184,0.08)",
-            coastWide: "rgba(51,65,85,0.28)",
-            coastThin: "rgba(51,65,85,0.7)",
-            coverage: "rgba(100,116,139,0.2)",
-          };
+      // Add subtle starry dots
+      c.fillStyle = "rgba(255, 255, 255, 0.08)";
+      for (let i = 0; i < 50; i++) {
+        const x = Math.random() * s.W;
+        const y = Math.random() * s.H;
+        const size = Math.random() * 0.8;
+        c.beginPath();
+        c.arc(x, y, size, 0, 6.2832);
+        c.fill();
+      }
 
-      // Multi-layer atmospheric glow: outer halo + inner rim
-      const agOuter = c.createRadialGradient(cx, cy, R * 0.95, cx, cy, R * 1.6);
-      agOuter.addColorStop(0, colors.atmGlow[0]);
-      agOuter.addColorStop(0.6, colors.atmGlow[1]);
-      agOuter.addColorStop(1, colors.atmGlow[2]);
-      c.fillStyle = agOuter;
+      // Soft dark-blue atmospheric halo around globe perimeter
+      const atmHalo = c.createRadialGradient(cx, cy, R * 0.95, cx, cy, R * 1.45);
+      atmHalo.addColorStop(0, "rgba(30, 80, 160, 0.25)");
+      atmHalo.addColorStop(0.6, "rgba(20, 50, 100, 0.12)");
+      atmHalo.addColorStop(1, "rgba(10, 30, 60, 0)");
+      c.fillStyle = atmHalo;
       c.beginPath();
-      c.arc(cx, cy, R * 1.6, 0, 6.2832);
+      c.arc(cx, cy, R * 1.45, 0, 6.2832);
       c.fill();
 
-      // Inner atmospheric rim for depth
-      const agInner = c.createRadialGradient(
-        cx,
-        cy,
-        R * 0.92,
-        cx,
-        cy,
-        R * 1.15,
-      );
-      agInner.addColorStop(0, "rgba(0,0,0,0)");
-      agInner.addColorStop(0.5, colors.rimGlow);
-      agInner.addColorStop(1, "rgba(0,0,0,0.1)");
-      c.fillStyle = agInner;
-      c.beginPath();
-      c.arc(cx, cy, R * 1.15, 0, 6.2832);
-      c.fill();
-
-      // Sphere with enhanced 3D lighting: offset light source top-left for sun-facing curvature
-      const sg = c.createRadialGradient(
-        cx - R * 0.35,
-        cy - R * 0.4,
-        R * 0.1,
-        cx,
-        cy,
-        R * 1.12,
-      );
-      sg.addColorStop(0, colors.sphereLight);
-      sg.addColorStop(0.45, colors.sphereMid);
-      sg.addColorStop(1, colors.sphereDark);
-      c.fillStyle = sg;
+      // Deep dark slate blue ocean sphere fill
+      c.fillStyle = "#0a101d";
       c.beginPath();
       c.arc(cx, cy, R, 0, 6.2832);
       c.fill();
 
-      // Graticule: equator brighter, meridians subtle with refined opacity
-      for (let la = -60; la <= 60; la += 30) {
-        const ring: P[] = [];
-        for (let lo = 0; lo <= 360; lo += 5) ring.push(proj(la, lo));
-        strokePath(
-          c,
-          ring,
-          la === 0 ? colors.equator : colors.meridian,
-          la === 0 ? 1.3 : 1,
-        );
-      }
-      for (let lo2 = 0; lo2 < 360; lo2 += 30) {
-        const mer: P[] = [];
-        for (let la2 = -90; la2 <= 90; la2 += 5) mer.push(proj(la2, lo2));
-        strokePath(c, mer, colors.meridianThin, 0.9);
-      }
-
-      // Landmass rendering with fill + outline
+      // Landmass rendering with translucent fill
       const land = landVectors(landDecim());
-      const wide = colors.coastWide,
-        thin = colors.coastThin;
 
-      // Fill pass: bright steel-blue translucent landmass polygons
-      c.fillStyle = "#2b5e91";
+      // Landmass fill - dark blue-gray with no outlines
+      c.fillStyle = "rgba(20, 32, 48, 0.8)";
       c.beginPath();
       for (let r = 0; r < land.ringStart.length - 1; r++) {
         let started = false;
@@ -1385,49 +1312,6 @@ export default function AcquisitionGlobe({
         }
       }
       c.fill();
-
-      // Outline pass: crisp bright blue coastline vectors
-      c.lineWidth = 1.5;
-      c.strokeStyle = "#5cc2ff";
-      c.beginPath();
-      for (let r = 0; r < land.ringStart.length - 1; r++) {
-        let started = false;
-        for (let i = land.ringStart[r]; i < land.ringStart[r + 1]; i++) {
-          const p = projVec(
-            land.xyz[3 * i],
-            land.xyz[3 * i + 1],
-            land.xyz[3 * i + 2],
-          );
-          if (p.z > 0) {
-            started ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y);
-            started = true;
-          } else started = false;
-        }
-      }
-      c.stroke();
-
-      // Station coverage circles with translucent teal/cyan fill
-      for (const stn of stations) {
-        const pts = coverageRing(stn).map(([lon, lat]) => proj(lat, lon));
-        // Translucent teal/cyan fill
-        c.fillStyle = "rgba(0, 180, 216, 0.12)";
-        c.beginPath();
-        let started = false;
-        for (const p of pts) {
-          if (p.z > 0) {
-            started ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y);
-            started = true;
-          } else started = false;
-        }
-        c.closePath();
-        c.fill();
-
-        // Subtle teal/cyan stroke outline
-        c.setLineDash([3, 5]);
-        c.lineWidth = 1;
-        strokePath(c, pts, "rgba(0, 180, 216, 0.6)", 1);
-        c.setLineDash([]);
-      }
     }
 
     function baseLayer(): Layer {
@@ -1499,7 +1383,7 @@ export default function AcquisitionGlobe({
       ctx.arc(s.cx, s.cy, s.R, 0, 6.2832);
       ctx.clip();
 
-      // Multi-layer footprint fill for depth and visual hierarchy
+      // Multi-layer footprint fill with enhanced depth
       if (selected || hovered) {
         // Shadow layer
         ctx.beginPath();
@@ -1507,23 +1391,23 @@ export default function AcquisitionGlobe({
           i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y),
         );
         ctx.closePath();
-        ctx.fillStyle = hexA(col, 0.08);
+        ctx.fillStyle = hexA(col, 0.12);
         ctx.fill();
       }
 
-      // Main fill
+      // Main translucent fill layer - larger and more prominent
       ctx.beginPath();
       path.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
       ctx.closePath();
-      ctx.fillStyle = hexA(col, selected ? 0.28 : hovered ? 0.22 : 0.12);
+      ctx.fillStyle = hexA(col, selected ? 0.35 : hovered ? 0.28 : 0.15);
       ctx.fill();
 
-      // Outline with enhanced visibility
+      // Solid outline with enhanced visibility
       ctx.strokeStyle = hexA(
         selected ? "#ffffff" : col,
-        selected ? 0.98 : hovered ? 0.75 : 0.5,
+        selected ? 0.95 : hovered ? 0.8 : 0.6,
       );
-      ctx.lineWidth = selected ? 2 : hovered ? 1.3 : 1.2;
+      ctx.lineWidth = selected ? 2.2 : hovered ? 1.5 : 1.3;
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       ctx.stroke();
@@ -1550,8 +1434,8 @@ export default function AcquisitionGlobe({
     function draw() {
       refreshView();
       const { cx, cy, R } = s;
-      // Pure black background for high-contrast aesthetic
-      ctx.fillStyle = "#000000";
+      // Deep dark background matching atmosphere
+      ctx.fillStyle = "#05070b";
       ctx.fillRect(0, 0, s.W, s.H);
       ctx.drawImage(baseLayer().cv, 0, 0, s.W, s.H);
 
@@ -1609,8 +1493,8 @@ export default function AcquisitionGlobe({
       const sats = orbits.current.map((o) => groundPoint(o, o.u));
 
       orbits.current.forEach((o, idx) => {
-        // Enhanced orbital traces with refined visibility and lighting
-        ctx.lineWidth = 1.2;
+        // Orbital traces with thinner, more transparent lines
+        ctx.lineWidth = 0.8;
         let prev: P | null = null;
         let prevHid = false;
 
@@ -1624,9 +1508,9 @@ export default function AcquisitionGlobe({
             ctx.beginPath();
             ctx.moveTo(prev.x, prev.y);
             ctx.lineTo(p.x, p.y);
-            // Front part (visible): enhanced opacity for visibility | Back part (hidden): minimal opacity
+            // Front part (visible): semi-transparent | Back part (hidden): very subtle
             ctx.strokeStyle =
-              hid || prevHid ? hexA(o.col, 0.12) : hexA(o.col, 0.72);
+              hid || prevHid ? hexA(o.col, 0.08) : hexA(o.col, 0.45);
             ctx.lineCap = "round";
             ctx.stroke();
           }
@@ -1679,20 +1563,23 @@ export default function AcquisitionGlobe({
           drawSatelliteIcon(ctx, sp.x, sp.y, angle, o.col, iconScale);
           ctx.shadowBlur = 0;
 
-          // Satellite label with refined styling
-          ctx.font = "bold 9px ui-monospace, monospace";
+          // Satellite label with crisp styling
+          ctx.font = "bold 9px ui-sans-serif, sans-serif";
           const satLabel = ["S1C", "S2A", "S3B", "S5P"][idx] || `SAT${idx}`;
           const w = ctx.measureText(satLabel).width;
-          const labelBg = isDarkRef.current
-            ? "rgba(8,15,20,0.82)"
-            : "rgba(255,255,255,0.85)";
-          ctx.fillStyle = labelBg;
-          ctx.fillRect(sp.x + 13, sp.y - 17, w + 10, 14);
-          ctx.strokeStyle = hexA(o.col, 0.6);
-          ctx.lineWidth = 1;
-          ctx.strokeRect(sp.x + 13, sp.y - 17, w + 10, 14);
-          ctx.fillStyle = o.col;
-          ctx.fillText(satLabel, sp.x + 18, sp.y - 6);
+
+          // Background badge
+          ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
+          ctx.fillRect(sp.x + 12, sp.y - 18, w + 12, 15);
+
+          // Subtle border
+          ctx.strokeStyle = hexA(o.col, 0.4);
+          ctx.lineWidth = 0.8;
+          ctx.strokeRect(sp.x + 12, sp.y - 18, w + 12, 15);
+
+          // White text
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(satLabel, sp.x + 18, sp.y - 7);
         }
 
         // Transmission pulse animation when satellite is in station contact
@@ -1841,18 +1728,19 @@ export default function AcquisitionGlobe({
         ctx.globalAlpha = 1;
         ctx.shadowBlur = 0;
 
-        // Station label with black background badge
+        // Station label with semi-transparent badge
         ctx.font = "bold 10px ui-monospace,monospace";
         const stationMetrics = ctx.measureText(stn.name);
         const stationLabelWidth = stationMetrics.width + 10;
 
-        // Black background badge
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        // Semi-transparent background badge
+        ctx.fillStyle = "rgba(0, 0, 0, 0.75)";
         ctx.fillRect(p.x + 6, p.y - 3, stationLabelWidth, 14);
 
-        // Dark border
-        ctx.strokeStyle = "#2b3a4a";
-        ctx.lineWidth = 1;
+        // Subtle colored border based on station status
+        const stationBorderColor = live ? stationLiveColor : stationIdleColor;
+        ctx.strokeStyle = hexA(stationBorderColor, 0.6);
+        ctx.lineWidth = 1.2;
         ctx.strokeRect(p.x + 6, p.y - 3, stationLabelWidth, 14);
 
         // White text label
