@@ -1844,6 +1844,15 @@ def admin_space_segment():
         for _d in datatakes_sources
         if _d.get("datatake_id")
     }
+    # Track ALL current datatakes with 100% completeness (not just ticketed ones).
+    # This prevents false positives: if a datatake was anomaly-linked but has since been
+    # reprocessed to 100% completeness in the current feed, don't mark it as impacted.
+    # This catches both ES-ticketed and non-ticketed datatakes (e.g., S2C anomaly-linked).
+    _current_completed = {
+        _d.get("datatake_id"): acquisitions_utils.recalc_completeness(_d)
+        for _d in datatakes_sources
+        if _d.get("datatake_id")
+    }
 
     # Satellite issues are re-sourced from this same anomaly join (matching the
     # events page): a Platform-category anomaly with >=1 L0-impacted datatake in
@@ -1894,6 +1903,19 @@ def admin_space_segment():
             ):
                 continue
             _compl = acquisitions_utils.recalc_completeness(_dt)
+
+            # Skip if this anomaly-referenced datatake is now in the current feed with 100% completeness.
+            # This prevents false positives where a datatake was once impacted but has since recovered
+            # (e.g., S2C 2026-09-10 reprocessed after initial correlation). Checks all datatakes,
+            # not just ES-ticketed ones, to catch anomaly-linked datatakes like S2C.
+            if _did in _current_completed and _current_completed[_did] >= 100.0:
+                continue
+
+            # ADDITIONAL CHECK: If cache might be stale, also check final_completeness_percentage.
+            # Some datatakes use this field after reprocessing instead of L0_/L1_/L2_.
+            if _dt.get("final_completeness_percentage") and float(_dt.get("final_completeness_percentage", 0)) >= 100.0:
+                continue
+
             if _compl >= 100.0:
                 continue
             _sat = _did.split("-")[0].upper().replace("SNP", "S5P")

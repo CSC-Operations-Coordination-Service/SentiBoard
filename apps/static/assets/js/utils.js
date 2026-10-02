@@ -85,8 +85,8 @@ function sleep(ms) {
 }
 // TODO: Create a class to manage Size computations/conversions
 volume_units_suffixes = {
-    1000: 'iB',
-    1024: 'B'
+    1000: 'B',
+    1024: 'iB'
 }
 function normalize_size(size, factor) {
     // Compute size in biggest volume unit possible
