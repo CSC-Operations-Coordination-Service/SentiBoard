@@ -1851,11 +1851,6 @@ def admin_space_segment():
         if _d.get("datatake_id")
     }
 
-    # Debug: log S2C completeness values from cache
-    s2c_dts = [dt_id for dt_id in _current_completed if dt_id and ('S2C-10522' in dt_id or 'S2C-10523' in dt_id)]
-    if s2c_dts:
-        current_app.logger.info(f"[SPACE SEGMENT] S2C 2026-09-10 completeness in cache: {[(dt, _current_completed.get(dt)) for dt in s2c_dts]}")
-
     # Satellite issues are re-sourced from this same anomaly join (matching the
     # events page): a Platform-category anomaly with >=1 L0-impacted datatake in
     # the period. Hours = the datatakes' actual L0-lost hours. This supersedes the
@@ -1911,17 +1906,11 @@ def admin_space_segment():
             # (e.g., S2C 2026-09-10 reprocessed after initial correlation). Checks all datatakes,
             # not just ES-ticketed ones, to catch anomaly-linked datatakes like S2C.
             if _did in _current_completed and _current_completed[_did] >= 100.0:
-                current_app.logger.info(
-                    f"[SPACE SEGMENT] Skipping {_did}: anomaly-linked but now 100% in current feed"
-                )
                 continue
 
             # ADDITIONAL CHECK: If cache might be stale, also check final_completeness_percentage.
             # Some datatakes use this field after reprocessing instead of L0_/L1_/L2_.
             if _dt.get("final_completeness_percentage") and float(_dt.get("final_completeness_percentage", 0)) >= 100.0:
-                current_app.logger.info(
-                    f"[SPACE SEGMENT] Skipping {_did}: final_completeness_percentage=100% (reprocessed, cache might have stale L0_)"
-                )
                 continue
 
             if _compl >= 100.0:
