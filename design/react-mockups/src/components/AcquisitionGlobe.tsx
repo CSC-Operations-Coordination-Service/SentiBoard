@@ -663,7 +663,7 @@ function Plate({ level }: { level: AcqLevel }) {
  * track width — re-renders the parent many times over the life of the page; none of
  * it changes `dt`, so none of it reaches the plates.
  */
-const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
+const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatatake; onClose: () => void }) {
   const m = useMemo(() => {
     const startMs = sensingMs(dt);
     const passes = passesFor(dt.id);
@@ -671,9 +671,6 @@ const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
     return {
       startMs,
       passes,
-      // Levels are whatever this mission actually produces — S5P has no L0 entry at
-      // all, S3A carries an UNKNOWN bucket — so an empty level renders nothing rather
-      // than an empty plate.
       levels: dt.levels.filter((l) => l.products.length > 0),
       types: expectedTypes(dt.levels).length,
       allTypes: all.length,
@@ -695,161 +692,125 @@ const DatatakeRail = memo(function DatatakeRail({ dt }: { dt: AcqDatatake }) {
   return (
     <aside className="dtk-rail" aria-label={`Datatake ${dt.id}`}>
       <div className="dtk-block">
-        <div className="dtk-head">
-          <span className="sel-id">
-            <span className="eyebrow">Datatake</span>
-            <span className="dtk-id num">{dt.id}</span>
-            <span className="mission">{dt.unit}</span>
-          </span>
-          <span className={"pill " + pill}>{dt.status}</span>
+        {/* Header */}
+        <div className="dtk-header">
+          <div className="dtk-header-left">
+            <span className="eyebrow">DATATAKE</span>
+          </div>
+          <div className="dtk-header-right">
+            <span className={"pill-badge " + pill}>
+              <span className="dot"></span>
+              {dt.status}
+            </span>
+            <button className="close-btn" onClick={onClose}>✕</button>
+          </div>
         </div>
 
+        {/* Datatake Title */}
+        <div className="dtk-title">
+          <h2>{dt.id}</h2>
+          <div className="unit">{dt.unit}</div>
+        </div>
+
+        {/* KPI Section */}
         <div className="dtk-kpi">
-          <div className="big num">
-            {dt.comp.toFixed(1)}
-            <sup>%</sup>
+          <div className="kpi-left">
+            <div className="big-percentage">
+              {dt.comp.toFixed(1)}<span className="percent">%</span>
+            </div>
           </div>
-          <dl className="dtk-aside">
-            <div>
-              <dt>Sensing</dt>
-              <dd className="num">{dur(dt.sensingS)}</dd>
+          <div className="kpi-right">
+            <div className="kpi-item">
+              <div className="kpi-label">SENSING</div>
+              <div className="kpi-value">{dur(dt.sensingS)}</div>
             </div>
-            <div>
-              {/* Summed across product types, so it can exceed the sensing window —
-                  spelled out rather than left to be misread as an interval. */}
-              <dt
-                title={`Missing sensing summed across ${m.types} expected product types`}
-              >
-                Missing
-              </dt>
-              <dd className={"num" + (m.missingS > 0.5 ? " gap" : "")}>
-                {m.missingS > 0.5 ? dur(m.missingS) : "none"}
-              </dd>
+            <div className="kpi-item">
+              <div className="kpi-label">MISSING</div>
+              <div className="kpi-value">{m.missingS > 0.5 ? dur(m.missingS) : "none"}</div>
             </div>
-          </dl>
+          </div>
         </div>
         <p className="dtk-kpi-note">
-          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"}
-          {m.allTypes > m.types
-            ? ` (${m.allTypes - m.types} not expected)`
-            : ""}{" "}
-          · missing time summed across types
+          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"} · missing time summed across types
         </p>
 
-        <dl className="meta-grid">
-          <div>
-            <dt>Sensing start</dt>
-            <dd className="num">
-              {m.startMs === null ? "—" : hhmmss(m.startMs) + "Z"}
-            </dd>
-          </div>
-          <div>
-            <dt>Date</dt>
-            <dd className="num">
-              {m.startMs === null ? "—" : clockText(m.startMs).slice(0, 10)}
-            </dd>
-          </div>
-          <div>
-            <dt>Mode</dt>
-            <dd>{dt.mode}</dd>
-          </div>
-          <div>
-            <dt>Abs. orbit</dt>
-            <dd className="num">{dt.absOrbit}</dd>
-          </div>
-          <div>
-            <dt>Station</dt>
-            <dd>{dt.station}</dd>
-          </div>
-          <div>
-            <dt>Satellite</dt>
+        {/* Metadata List - Single Column */}
+        <dl className="meta-list">
+          <div className="meta-row">
+            <dt>SATELLITE ID</dt>
             <dd>{dt.sat}</dd>
           </div>
-        </dl>
-      </div>
-
-      <div className="dtk-block">
-        <div className="block-head">
-          <span className="lbl">Production completeness by level</span>
-          <span className="eyebrow">Volume = published / expected sensing</span>
-        </div>
-        <p className="dtk-kpi-note">
-          {m.allTypes} product type{m.allTypes === 1 ? "" : "s"} across{" "}
-          {m.levels.length} level{m.levels.length === 1 ? "" : "s"}
-          {m.instruments.length > 1
-            ? ` · ${m.instruments.join(", ")}`
-            : m.instruments.length === 1
-              ? ` · ${m.instruments[0]}`
-              : ""}
-        </p>
-        <div className="levels-legend">
-          {m.levels.map((l) => {
-            const v = levelMean(l);
-            return (
-              <span
-                className="lvl-chip"
-                key={l.level}
-                style={{ ["--tone" as string]: TONE[l.level] }}
-              >
-                <i aria-hidden="true" />
-                {LEVEL_LABEL[l.level]}{" "}
-                <b>{v === null ? "n/a" : `${v.toFixed(1)}%`}</b>
-              </span>
-            );
-          })}
-        </div>
-        {m.levels.map((l) => (
-          <Plate key={l.level} level={l} />
-        ))}
-        <p className="plate-key" aria-hidden="true">
-          <span className="k-solid" />
-          Published volume
-          <span className="k-void" />
-          Missing volume
-        </p>
-      </div>
-
-      <div className="dtk-block">
-        <div className="block-head">
-          <span className="lbl">Downlink passes</span>
-          <span className="eyebrow">
-            {m.passes.length} pass{m.passes.length === 1 ? "" : "es"}
-            {m.passes.length > 0 ? ` · ${groupMb(m.totalMb)} Mb` : ""}
-          </span>
-        </div>
-        {m.passes.length === 0 ? (
-          <p className="dtk-empty">
-            No downlink passes recorded for this datatake.
-          </p>
-        ) : (
-          <div className="passes">
-            {m.passes.map((p, i) => (
-              <div
-                className="pass"
-                key={p.station + i}
-                style={{
-                  ["--c" as string]: TONE[(["L0", "L1", "L2"] as const)[i % 3]],
-                }}
-              >
-                <i aria-hidden="true" />
-                <span className="who">
-                  <b>{p.stationName}</b>
-                  <em>
-                    {p.station} · acquired {hhmmss(Date.parse(p.atIso))}Z
-                  </em>
-                </span>
-                <span className="fig">
-                  {groupMb(p.volumeMb)} Mb
-                  <em>{p.durationS}s downlink</em>
-                </span>
-              </div>
-            ))}
+          <div className="meta-row">
+            <dt>DATATAKE ID</dt>
+            <dd>{dt.id}</dd>
           </div>
-        )}
-        <p className="dtk-note">
-          Mock data — the backend has no datatake-to-pass join yet (see
-          data/downlink.ts).
-        </p>
+          <div className="meta-row">
+            <dt>MODE</dt>
+            <dd>{dt.mode || "NA"}</dd>
+          </div>
+          <div className="meta-row">
+            <dt>SWATH</dt>
+            <dd>NA</dd>
+          </div>
+          <div className="meta-row">
+            <dt>POLARISATION</dt>
+            <dd>NA</dd>
+          </div>
+          <div className="meta-row">
+            <dt>OBSERVATION TIME START</dt>
+            <dd>
+              {m.startMs === null ? "—" : clockText(m.startMs)}
+            </dd>
+          </div>
+          <div className="meta-row">
+            <dt>OBSERVATION TIME STOP</dt>
+            <dd>
+              {m.startMs === null ? "—" : clockText(m.startMs + dt.sensingS * 1000)}
+            </dd>
+          </div>
+          <div className="meta-row">
+            <dt>OBSERVATION DURATION</dt>
+            <dd>{dur(dt.sensingS)}</dd>
+          </div>
+          <div className="meta-row">
+            <dt>ORBIT ABSOLUTE</dt>
+            <dd>{dt.absOrbit}</dd>
+          </div>
+          <div className="meta-row">
+            <dt>ORBIT RELATIVE</dt>
+            <dd>{(dt as any).relOrbit || "80"}</dd>
+          </div>
+          <div className="meta-row">
+            <dt>ACQUISITION STATUS</dt>
+            <dd>Acquired (100.00%)</dd>
+          </div>
+          <div className="meta-row">
+            <dt>PUBLICATION STATUS</dt>
+            <dd>{dt.status} ({(dt.comp * 100).toFixed(2)}%)</dd>
+          </div>
+          <div className="meta-row">
+            <dt>DOWNLINK STATION</dt>
+            <dd>{dt.station}</dd>
+          </div>
+          <div className="meta-row">
+            <dt>DOWNLINK TIME</dt>
+            <dd>
+              {m.passes && m.passes.length > 0
+                ? clockText(
+                    (m.startMs ?? 0) + 24 * 60 * 60 * 1000
+                  )
+                : "—"}
+            </dd>
+          </div>
+          <div className="meta-row">
+            <dt>DOWNLINK VOLUME</dt>
+            <dd>{(m.totalMb).toFixed(0)} Mb</dd>
+          </div>
+          <div className="meta-row last">
+            <dt>DOWNLINK DURATION</dt>
+            <dd>{dur(m.totalMb / 50)}</dd>
+          </div>
+        </dl>
       </div>
     </aside>
   );
@@ -948,7 +909,6 @@ export default function AcquisitionGlobe({
     const sats = new Set(datatakes.map((dt) => dt.sat));
     return Array.from(sats).sort();
   }, [datatakes]);
-
 
   useEffect(() => {
     setSel(0);
@@ -1260,11 +1220,11 @@ export default function AcquisitionGlobe({
       const { cx, cy, R } = s;
       c.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
 
-      // Deep dark background with subtle starfield
-      c.fillStyle = "#05070b";
+      // 1. Outer canvas background
+      c.fillStyle = "#020409";
       c.fillRect(0, 0, s.W, s.H);
 
-      // Add subtle starry dots
+      // 2. Background stars
       c.fillStyle = "rgba(255, 255, 255, 0.08)";
       for (let i = 0; i < 50; i++) {
         const x = Math.random() * s.W;
@@ -1275,27 +1235,38 @@ export default function AcquisitionGlobe({
         c.fill();
       }
 
-      // Soft dark-blue atmospheric halo around globe perimeter
-      const atmHalo = c.createRadialGradient(cx, cy, R * 0.95, cx, cy, R * 1.45);
-      atmHalo.addColorStop(0, "rgba(30, 80, 160, 0.25)");
-      atmHalo.addColorStop(0.6, "rgba(20, 50, 100, 0.12)");
-      atmHalo.addColorStop(1, "rgba(10, 30, 60, 0)");
+      // 3. Soft atmospheric outer glow
+      const atmHalo = c.createRadialGradient(
+        cx,
+        cy,
+        R * 0.96,
+        cx,
+        cy,
+        R * 1.35,
+      );
+      atmHalo.addColorStop(0, "rgba(20, 75, 140, 0.35)");
+      atmHalo.addColorStop(0.5, "rgba(12, 45, 90, 0.15)");
+      atmHalo.addColorStop(1, "rgba(2, 4, 9, 0)");
       c.fillStyle = atmHalo;
       c.beginPath();
-      c.arc(cx, cy, R * 1.45, 0, 6.2832);
+      c.arc(cx, cy, R * 1.35, 0, 6.2832);
       c.fill();
 
-      // Deep dark slate blue ocean sphere fill
-      c.fillStyle = "#0a101d";
+      // 4. Base ocean sphere fill - Deep Dark Navy
+      c.fillStyle = "#0d1f33";
       c.beginPath();
       c.arc(cx, cy, R, 0, 6.2832);
       c.fill();
 
-      // Landmass rendering with translucent fill
+      // 4B. Subtle Graticule Grid Lines (Latitude / Longitude)
+      c.strokeStyle = "rgba(45, 95, 145, 0.18)";
+      c.lineWidth = 0.7;
+
+      // 5. Landmass rendering
       const land = landVectors(landDecim());
 
-      // Landmass fill - dark blue-gray with no outlines
-      c.fillStyle = "rgba(20, 32, 48, 0.8)";
+      // --- A. Landmass Fill (Steel Blue-Gray) ---
+      c.fillStyle = "#1f364d";
       c.beginPath();
       for (let r = 0; r < land.ringStart.length - 1; r++) {
         let started = false;
@@ -1306,12 +1277,66 @@ export default function AcquisitionGlobe({
             land.xyz[3 * i + 2],
           );
           if (p.z > 0) {
-            started ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y);
-            started = true;
-          } else started = false;
+            if (!started) {
+              c.moveTo(p.x, p.y);
+              started = true;
+            } else {
+              c.lineTo(p.x, p.y);
+            }
+          } else if (started) {
+            c.closePath();
+            started = false;
+          }
         }
+        if (started) c.closePath();
       }
       c.fill();
+
+      // --- B. Globe Lighting Overlay (Darkens edges & creates depth) ---
+      const globeShading = c.createRadialGradient(
+        cx - R * 0.3,
+        cy - R * 0.3,
+        R * 0.2,
+        cx,
+        cy,
+        R,
+      );
+      globeShading.addColorStop(0, "rgba(255, 255, 255, 0.07)");
+      globeShading.addColorStop(0.6, "rgba(0, 0, 0, 0)");
+      globeShading.addColorStop(1, "rgba(0, 5, 15, 0.55)");
+
+      c.fillStyle = globeShading;
+      c.beginPath();
+      c.arc(cx, cy, R, 0, 6.2832);
+      c.fill();
+
+      // --- C. Crisp Coastline Outlines ---
+      c.strokeStyle = "#3872a3";
+      c.lineWidth = 0.8;
+      c.beginPath();
+      for (let r = 0; r < land.ringStart.length - 1; r++) {
+        let prevP: { x: number; y: number; z: number } | null = null;
+        for (let i = land.ringStart[r]; i < land.ringStart[r + 1]; i++) {
+          const p = projVec(
+            land.xyz[3 * i],
+            land.xyz[3 * i + 1],
+            land.xyz[3 * i + 2],
+          );
+          if (p.z > 0 && prevP && prevP.z > 0) {
+            c.moveTo(prevP.x, prevP.y);
+            c.lineTo(p.x, p.y);
+          }
+          prevP = p;
+        }
+      }
+      c.stroke();
+
+      // 6. Globe Rim Outline
+      c.strokeStyle = "rgba(45, 120, 190, 0.65)";
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.arc(cx, cy, R, 0, 6.2832);
+      c.stroke();
     }
 
     function baseLayer(): Layer {
@@ -2740,7 +2765,7 @@ export default function AcquisitionGlobe({
                     >
                       {new Date(calendarYear, calendarMonth).toLocaleDateString(
                         "en-US",
-                        { month: "long", year: "numeric" }
+                        { month: "long", year: "numeric" },
                       )}
                     </div>
                     <button
@@ -2801,9 +2826,15 @@ export default function AcquisitionGlobe({
                   >
                     {(() => {
                       const firstDay = new Date(calendarYear, calendarMonth, 1);
-                      const lastDay = new Date(calendarYear, calendarMonth + 1, 0);
+                      const lastDay = new Date(
+                        calendarYear,
+                        calendarMonth + 1,
+                        0,
+                      );
                       const startDate = new Date(firstDay);
-                      startDate.setDate(startDate.getDate() - firstDay.getDay() + 1);
+                      startDate.setDate(
+                        startDate.getDate() - firstDay.getDay() + 1,
+                      );
 
                       const days = [];
                       const current = new Date(startDate);
@@ -2859,7 +2890,8 @@ export default function AcquisitionGlobe({
                             }}
                             onMouseLeave={(e) => {
                               if (isCurrentMonth && !isSelected) {
-                                e.currentTarget.style.background = "transparent";
+                                e.currentTarget.style.background =
+                                  "transparent";
                                 e.currentTarget.style.color = "#ffffff";
                               }
                             }}
@@ -2989,7 +3021,7 @@ export default function AcquisitionGlobe({
                     left: "0",
                     background: "rgba(0, 0, 0, 0.95)",
                     border: "1px solid rgba(255, 255, 255, 0.15)",
-                    minWidth: "280px",
+                    minWidth: "420px",
                     maxHeight: "320px",
                     overflow: "hidden",
                     marginTop: "8px",
@@ -3111,8 +3143,10 @@ export default function AcquisitionGlobe({
                             style={{
                               flex: 1,
                               display: "flex",
-                              flexDirection: "column",
-                              gap: "2px",
+                              flexDirection: "row",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              gap: "12px",
                             }}
                           >
                             <div
@@ -3133,9 +3167,10 @@ export default function AcquisitionGlobe({
                                 fontWeight: 500,
                                 textTransform: "uppercase",
                                 letterSpacing: "0.04em",
+                                whiteSpace: "nowrap",
                               }}
                             >
-                              {(a.comp * 100).toFixed(1)}% - {statusInfo.label}
+                              {a.comp.toFixed(1)}% - {statusInfo.label}
                             </div>
                           </div>
                         </div>
@@ -3231,6 +3266,7 @@ export default function AcquisitionGlobe({
                 height: "100%",
                 position: "relative",
                 flex: 1,
+                background: "#0a0d14",
               }}
             >
               <canvas
@@ -3468,7 +3504,7 @@ export default function AcquisitionGlobe({
             )}
 
             {rail === "plates" ? (
-              <DatatakeRail dt={dt} />
+              <DatatakeRail dt={dt} onClose={() => setShowDetails(false)} />
             ) : (
               <aside
                 className="acq-detail"

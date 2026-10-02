@@ -2724,6 +2724,177 @@ table.data td.mono {
   color: var(--text-mute);
 }
 
+/* New Header Styles */
+.dtk-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dtk-header-left {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #718096;
+}
+
+.dtk-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pill-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #b968f0;
+  padding: 4px 8px;
+  background: rgba(185, 104, 240, 0.1);
+  border-radius: 3px;
+}
+
+.pill-badge .dot {
+  width: 6px;
+  height: 6px;
+  background: #b968f0;
+  border-radius: 50%;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #718096;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #ffffff;
+}
+
+/* Datatake Title */
+.dtk-title {
+  margin-bottom: 16px;
+}
+
+.dtk-title h2 {
+  margin: 0 0 4px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: ui-monospace, monospace;
+}
+
+.dtk-title .unit {
+  font-size: 0.875rem;
+  color: #718096;
+  font-weight: 500;
+  font-family: ui-monospace, monospace;
+}
+
+/* KPI Layout - Side by side */
+.dtk-kpi {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+.kpi-left {
+  flex-shrink: 0;
+}
+
+.big-percentage {
+  font-size: 48px;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: ui-monospace, monospace;
+  line-height: 1;
+}
+
+.big-percentage .percent {
+  font-size: 20px;
+  margin-left: 2px;
+}
+
+.kpi-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.kpi-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #718096;
+}
+
+.kpi-value {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  font-family: ui-monospace, monospace;
+}
+
+/* Single Column Metadata List */
+.meta-list {
+  display: flex;
+  flex-direction: column;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.meta-row.last {
+  border-bottom: none;
+}
+
+.meta-row dt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #718096;
+  font-family: ui-monospace, monospace;
+}
+
+.meta-row dd {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ffffff;
+  font-family: ui-monospace, monospace;
+  text-align: right;
+}
+
 .meta-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
