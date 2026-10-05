@@ -442,8 +442,12 @@ const ACQ_CARDS = [
     to: "/examples/acquisitions-globe", img: CARD_ART.acquisitionsGlobe, title: "a) Acquisitions status",
     desc: "The 3D globe includes on-demand frames, cached coastlines, and a pause feature.",
   },
+  {
+    to: "/examples/acquisitions-globe-earth", img: CARD_ART.acquisitionsGlobe, title: "b) Acquisitions Globe Earth view",
+    desc: "Interactive 3D globe showing real-time satellite acquisition data and ground station coverage with Earth visualization.",
+  },
   /*{
-    to: "/examples/acquisitions-ladder", img: CARD_ART.acquisitionsLadder, title: "b) Acquisitions · Level ladder",
+    to: "/examples/acquisitions-ladder", img: CARD_ART.acquisitionsLadder, title: "c) Acquisitions · Level ladder",
     desc: "Satellite data is categorized into flown, sensing, and scheduled. Sentinel-5P has two levels, and Sentinel-3's Level 2 has five instrument groups.",
   },*/
 ];
