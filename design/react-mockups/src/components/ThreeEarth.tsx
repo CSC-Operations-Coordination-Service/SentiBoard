@@ -42,6 +42,10 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     scene.add(dirLight);
 
     // 3. Globe Mesh + Safe Texture Loading
+    const earthGroup = new THREE.Group();
+    earthGroup.name = "EarthGroup";
+    scene.add(earthGroup);
+
     const geometry = new THREE.SphereGeometry(1, 64, 64);
 
     // Default fallback material if image textures fail
@@ -52,27 +56,35 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
       shininess: 15,
     });
 
+    // FIXED: Added earthMesh directly into earthGroup so rotation affects it[cite: 18]
     const earthMesh = new THREE.Mesh(geometry, earthMaterial);
-    scene.add(earthMesh);
+    earthGroup.add(earthMesh);
 
     // Atmosphere Glow Outer Shell
-    const atmosphereGeom = new THREE.SphereGeometry(1.02, 32, 32);
+    const atmosphereGeom = new THREE.SphereGeometry(1.05, 64, 64);
     const atmosphereMat = new THREE.MeshBasicMaterial({
-      color: 0x0284c7,
+      color: 0x00e5ff,
       transparent: true,
-      opacity: 0.15,
+      opacity: 0.12,
       side: THREE.BackSide,
     });
     const atmosphereMesh = new THREE.Mesh(atmosphereGeom, atmosphereMat);
-    scene.add(atmosphereMesh);
+    earthGroup.add(atmosphereMesh); // FIXED: Added to group[cite: 18]
+
+    // Inner Specular Atmosphere Rim
+    const innerGlowGeom = new THREE.SphereGeometry(1.008, 64, 64);
+    const innerGlowMat = new THREE.MeshBasicMaterial({
+      color: 0x0284c7,
+      transparent: true,
+      opacity: 0.25,
+      side: THREE.BackSide,
+    });
+    const innerGlowMesh = new THREE.Mesh(innerGlowGeom, innerGlowMat);
+    earthGroup.add(innerGlowMesh); // FIXED: Added to group[cite: 18]
 
     // Load texture with CORS & Fallback
     const textureLoader = new THREE.TextureLoader();
     textureLoader.setCrossOrigin("anonymous");
-
-    // Reliable Wikimedia / High-res CORS texture
-    // NEW (clean equirectangular earth texture):
-    // NEW (clean equirectangular earth texture):
     const textureUrl = "/assets/textures/earth_atmos_2048.jpg";
 
     textureLoader.load(
@@ -95,8 +107,9 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     // 4. Resize Handler
     const handleResize = () => {
       if (!containerRef.current) return;
-      const w = containerRef.current.clientWidth;
-      const h = containerRef.current.clientHeight;
+      // FIXED: Safeguard against clientHeight returning 0[cite: 18]
+      const w = containerRef.current.clientWidth || window.innerWidth;
+      const h = containerRef.current.clientHeight || 500;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -107,6 +120,7 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
+      earthGroup.rotation.y += 0.0005; // Rotates earthMesh, atmosphereMesh, and innerGlowMesh[cite: 18]
       renderer.render(scene, camera);
     };
     animate();
@@ -125,6 +139,8 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
       earthMaterial.dispose();
       atmosphereGeom.dispose();
       atmosphereMat.dispose();
+      innerGlowGeom.dispose();
+      innerGlowMat.dispose();
     };
   }, []);
 
@@ -134,6 +150,7 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
       style={{
         width: "100%",
         height: "100%",
+        minHeight: "500px", // FIXED: Prevents container height collapsing to 0[cite: 18]
         position: "relative",
         background: "#020409",
         overflow: "hidden",

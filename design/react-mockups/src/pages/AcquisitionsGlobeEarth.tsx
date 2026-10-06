@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { PageHeader, Reveal, DescriptionModal } from "@/components/ui";
+import { PageHeader, DescriptionModal } from "@/components/ui";
 import * as THREE from "three";
 import ThreeEarth from "@/components/ThreeEarth";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
@@ -15,11 +15,84 @@ interface DataOverlays {
   orbits?: THREE.Line[];
 }
 
+const SAMPLE_SWATHS = [
+  {
+    id: "S2A-48201-1",
+    color: 0x10b981, // Green swath (Central Europe)
+    opacity: 0.35,
+    coords: [
+      [2, 60],
+      [35, 56],
+      [28, 38],
+      [-2, 42],
+    ],
+  },
+  {
+    id: "S1C-57622",
+    color: 0xef4444, // Red swath (Svalbard)
+    opacity: 0.35,
+    coords: [
+      [14, 80],
+      [28, 76],
+      [22, 69],
+      [8, 72],
+    ],
+  },
+  {
+    id: "S3B-080-345",
+    color: 0x06b6d4, // Cyan swath (High Arctic)
+    opacity: 0.35,
+    coords: [
+      [-135, 72],
+      [-110, 68],
+      [-120, 60],
+      [-142, 64],
+    ],
+  },
+  {
+    id: "S2B-42050-1",
+    color: 0x38bdf8, // Blue swath (North America)
+    opacity: 0.35,
+    coords: [
+      [-105, 50],
+      [-80, 48],
+      [-85, 30],
+      [-110, 32],
+    ],
+  },
+  {
+    id: "S5P-60012",
+    color: 0xd97706, // Orange swath (Atlantic / Maspalomas)
+    opacity: 0.35,
+    coords: [
+      [-20, 32],
+      [-7, 30],
+      [-12, 16],
+      [-24, 18],
+    ],
+  },
+  {
+    id: "S3A-055-358",
+    color: 0xf59e0b, // Yellow swath (Mediterranean)
+    opacity: 0.35,
+    coords: [
+      [8, 46],
+      [18, 44],
+      [13, 38],
+      [5, 40],
+    ],
+  },
+];
+
 export default function AcquisitionsGlobeEarthPage() {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const overlaysRef = useRef<DataOverlays>({});
+
+  // ADD THESE TWO REFS HERE:
+  const isAnimatingRef = useRef(false);
+  const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
 
   const [selectedDataTake, setSelectedDataTake] = useState(0);
   const [satelliteFilter, setSatelliteFilter] = useState("*");
@@ -31,6 +104,23 @@ export default function AcquisitionsGlobeEarthPage() {
   const [stationPositions, setStationPositions] = useState<
     Record<string, { x: number; y: number; visible: boolean }>
   >({});
+
+  // State for tracking satellite screen coordinates and labels
+  const [satPositions, setSatPositions] = useState<
+    Record<string, { x: number; y: number; visible: boolean }>
+  >({});
+
+  const satObjectsRef = useRef<
+    {
+      name: string;
+      inc: number;
+      omega: number;
+      speed: number;
+      progress: number;
+      satGroup: THREE.Group;
+      beamLine: THREE.Line;
+    }[]
+  >([]);
 
   const filteredDatatakes = ACQ_DATATAKES.filter((dt) => {
     if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
@@ -56,13 +146,16 @@ export default function AcquisitionsGlobeEarthPage() {
     new Set(ACQ_DATATAKES.map((dt) => dt.sat)),
   ).sort();
 
-  const addDataOverlays = (scene: THREE.Scene) => {
+  const addDataOverlays = (scene: THREE.Scene, overlayGroup: THREE.Group) => {
     if (!scene) return;
 
-    const overlayGroup = new THREE.Group();
+    const earthGroup = scene.getObjectByName("EarthGroup") || scene;
     overlayGroup.name = "DataOverlays";
     scene.add(overlayGroup);
 
+    earthGroup.add(overlayGroup);
+
+    // 1. Ground Stations
     STATIONS.forEach((station) => {
       const lat = station.lat * D;
       const lon = station.lon * D;
@@ -101,77 +194,147 @@ export default function AcquisitionsGlobeEarthPage() {
       overlayGroup.add(circleMesh);
     });
 
+    // 2. Datatake Footprint Overlay Swaths
     footprintMeshesRef.current = [];
-    ACQ_DATATAKES.slice(0, 5).forEach((datatake, idx) => {
-      if (datatake.footprint && datatake.footprint.length >= 4) {
-        const points: THREE.Vector3[] = [];
-        const baseColor =
-          datatake.cls === "ok"
-            ? 0x3dd68c
-            : datatake.cls === "warn"
-              ? 0xf5b544
-              : 0xff5c6c;
 
-        datatake.footprint.forEach(([lon, lat]) => {
-          const lat_rad = lat * D;
-          const lon_rad = lon * D;
-          points.push(
-            new THREE.Vector3(
-              Math.cos(lat_rad) * Math.sin(lon_rad),
-              Math.sin(lat_rad),
-              Math.cos(lat_rad) * Math.cos(lon_rad),
-            ),
-          );
-        });
+    SAMPLE_SWATHS.forEach((swath, idx) => {
+      const points: THREE.Vector3[] = [];
+      const radius = 1.003; // Slightly above ground to avoid depth fighting
 
-        const polygonGeometry = new THREE.BufferGeometry().setFromPoints(
-          points,
+      swath.coords.forEach(([lon, lat]) => {
+        const lat_rad = lat * D;
+        const lon_rad = lon * D;
+        points.push(
+          new THREE.Vector3(
+            Math.cos(lat_rad) * Math.sin(lon_rad) * radius,
+            Math.sin(lat_rad) * radius,
+            Math.cos(lat_rad) * Math.cos(lon_rad) * radius,
+          ),
         );
-        const polygonMaterial = new THREE.MeshBasicMaterial({
-          color: baseColor,
-          opacity: 0.12,
-          transparent: true,
-          side: THREE.DoubleSide,
-          depthWrite: false,
-          depthTest: true,
-        });
-        const polygonMesh = new THREE.Mesh(polygonGeometry, polygonMaterial);
-        polygonMesh.renderOrder = 14 + idx;
-        overlayGroup.add(polygonMesh);
+      });
 
-        const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-        const lineMaterial = new THREE.LineBasicMaterial({
-          color: baseColor,
-          opacity: 0.8,
-          transparent: true,
-          linewidth: 2,
-          depthWrite: false,
-          depthTest: true,
-        });
+      // Triangulated Mesh (Filled Quad Surface)
+      const positions = new Float32Array([
+        // First Triangle
+        points[0].x,
+        points[0].y,
+        points[0].z,
+        points[1].x,
+        points[1].y,
+        points[1].z,
+        points[2].x,
+        points[2].y,
+        points[2].z,
 
-        const lineSegments = new THREE.LineSegments(lineGeometry, lineMaterial);
-        lineSegments.renderOrder = 18 + idx;
-        lineSegments.userData = {
-          datatakeId: datatake.id,
-          isFootprint: true,
-          baseColor,
-        };
-        overlayGroup.add(lineSegments);
-        footprintMeshesRef.current.push(lineSegments);
-      }
+        // Second Triangle
+        points[0].x,
+        points[0].y,
+        points[0].z,
+        points[2].x,
+        points[2].y,
+        points[2].z,
+        points[3].x,
+        points[3].y,
+        points[3].z,
+      ]);
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+      geo.computeVertexNormals(); // Recompute normals to prevent invisible faces
+
+      const mat = new THREE.MeshBasicMaterial({
+        color: swath.color,
+        opacity: swath.opacity,
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        depthTest: true,
+      });
+
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.renderOrder = 14 + idx;
+      overlayGroup.add(mesh);
+
+      // Border Stroke Line
+      const closedPoints = [...points, points[0]];
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(closedPoints);
+      const lineMat = new THREE.LineBasicMaterial({
+        color: swath.color,
+        opacity: 0.9,
+        transparent: true,
+        linewidth: 2,
+      });
+
+      const lineMesh = new THREE.Line(lineGeo, lineMat);
+      lineMesh.renderOrder = 18 + idx;
+      lineMesh.userData = {
+        datatakeId: swath.id,
+        fillMesh: mesh,
+        baseColor: swath.color,
+      };
+      overlayGroup.add(lineMesh);
+      footprintMeshesRef.current.push(lineMesh);
     });
 
+    // 3. Orbit Lines & 3D Satellite Models
     const orbits = [
-      { inc: 98, omega: 30, col: 0x36d0e0, name: "S1C", pos: 0.2 },
-      { inc: 98.6, omega: 150, col: 0x2e7df6, name: "S2A", pos: 0.5 },
-      { inc: 98.2, omega: 255, col: 0x00c7d6, name: "S3B", pos: 0.75 },
+      {
+        inc: 98.1,
+        omega: 30,
+        col: 0x00e5ff,
+        name: "S1C",
+        pos: 0.2,
+        speed: 0.005,
+      },
+      {
+        inc: 98.6,
+        omega: 150,
+        col: 0x38bdf8,
+        name: "S2A",
+        pos: 0.45,
+        speed: 0.004,
+      },
+      {
+        inc: 98.6,
+        omega: 330,
+        col: 0x34d399,
+        name: "S2B",
+        pos: 0.85,
+        speed: 0.004,
+      },
+      {
+        inc: 98.6,
+        omega: 220,
+        col: 0xf59e0b,
+        name: "S3A",
+        pos: 0.3,
+        speed: 0.0045,
+      },
+      {
+        inc: 98.6,
+        omega: 255,
+        col: 0x00c7d6,
+        name: "S3B",
+        pos: 0.75,
+        speed: 0.0045,
+      },
+      {
+        inc: 98.7,
+        omega: 110,
+        col: 0xe11d48,
+        name: "S5P",
+        pos: 0.6,
+        speed: 0.0052,
+      },
     ];
+
+    satObjectsRef.current = [];
 
     orbits.forEach((orbit, idx) => {
       const points: THREE.Vector3[] = [];
-      let satPositionPoint: THREE.Vector3 | null = null;
+      const orbitRadius = 1.18;
 
-      for (let d = 0; d <= 360; d += 5) {
+      for (let d = 0; d <= 360; d += 4) {
         const angle = (d * Math.PI) / 180;
         const inc = orbit.inc * D;
         const om = orbit.omega * D;
@@ -179,20 +342,19 @@ export default function AcquisitionsGlobeEarthPage() {
         const lon =
           om + Math.atan2(Math.cos(inc) * Math.sin(angle), Math.cos(angle));
 
-        const pt = new THREE.Vector3(
-          Math.cos(lat) * Math.sin(lon),
-          Math.sin(lat),
-          Math.cos(lat) * Math.cos(lon),
+        points.push(
+          new THREE.Vector3(
+            Math.cos(lat) * Math.sin(lon) * orbitRadius,
+            Math.sin(lat) * orbitRadius,
+            Math.cos(lat) * Math.cos(lon) * orbitRadius,
+          ),
         );
-        points.push(pt);
-
-        if (d === Math.floor(360 * orbit.pos)) satPositionPoint = pt;
       }
 
       const orbitGeometry = new THREE.BufferGeometry().setFromPoints(points);
       const orbitMaterial = new THREE.LineBasicMaterial({
         color: orbit.col,
-        opacity: 0.3,
+        opacity: 0.35,
         transparent: true,
         depthWrite: false,
         depthTest: true,
@@ -202,19 +364,83 @@ export default function AcquisitionsGlobeEarthPage() {
       orbitLine.renderOrder = 10 + idx;
       overlayGroup.add(orbitLine);
 
-      if (satPositionPoint) {
-        const satMarkerGeometry = new THREE.SphereGeometry(0.012, 8, 8);
-        const satMarkerMaterial = new THREE.MeshBasicMaterial({
-          color: orbit.col,
-          depthWrite: false,
-          depthTest: true,
-        });
-        const satMarker = new THREE.Mesh(satMarkerGeometry, satMarkerMaterial);
-        satMarker.position.copy(satPositionPoint);
-        satMarker.renderOrder = 25;
-        overlayGroup.add(satMarker);
-      }
+      const satGroup = new THREE.Group();
+
+      // Satellite Center Point
+      const dotGeo = new THREE.SphereGeometry(0.012, 12, 12);
+      const dotMat = new THREE.MeshBasicMaterial({ color: 0x3dd68c });
+      const dotMesh = new THREE.Mesh(dotGeo, dotMat);
+      satGroup.add(dotMesh);
+
+      // Satellite Main Body
+      const bodyGeo = new THREE.BoxGeometry(0.01, 0.01, 0.02);
+      const bodyMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+      satGroup.add(bodyMesh);
+
+      // Solar Panels
+      const panelGeo = new THREE.BoxGeometry(0.065, 0.002, 0.012);
+      const panelMat = new THREE.MeshBasicMaterial({ color: orbit.col });
+      const panelMesh = new THREE.Mesh(panelGeo, panelMat);
+      satGroup.add(panelMesh);
+
+      satGroup.renderOrder = 30;
+      overlayGroup.add(satGroup);
+
+      const beamGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(),
+        new THREE.Vector3(),
+      ]);
+      const beamMat = new THREE.LineBasicMaterial({
+        color: orbit.col,
+        transparent: true,
+        opacity: 0.5,
+      });
+      const beamLine = new THREE.Line(beamGeo, beamMat);
+      overlayGroup.add(beamLine);
+
+      satObjectsRef.current.push({
+        name: orbit.name,
+        inc: orbit.inc,
+        omega: orbit.omega,
+        speed: orbit.speed,
+        progress: orbit.pos * Math.PI * 2,
+        satGroup,
+        beamLine,
+      });
     });
+
+    // 4. Background Starfield
+    const starsCount = 1500;
+    const starGeometry = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starsCount * 3);
+
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      const radius = 12 + Math.random() * 20;
+      const u = Math.random();
+      const v = Math.random();
+      const theta = u * 2.0 * Math.PI;
+      const phi = Math.acos(2.0 * v - 1.0);
+
+      starPositions[i] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i + 1] = radius * Math.sin(phi) * Math.sin(theta);
+      starPositions[i + 2] = radius * Math.cos(phi);
+    }
+
+    starGeometry.setAttribute(
+      "position",
+      new THREE.BufferAttribute(starPositions, 3),
+    );
+
+    const starMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.05,
+      transparent: true,
+      opacity: 0.8,
+    });
+
+    const starField = new THREE.Points(starGeometry, starMaterial);
+    scene.add(starField);
 
     overlaysRef.current = {
       footprints: footprintMeshesRef.current,
@@ -226,18 +452,58 @@ export default function AcquisitionsGlobeEarthPage() {
     if (!footprintMeshesRef.current) return;
     footprintMeshesRef.current.forEach((mesh, idx) => {
       const isSelected = idx === selectedDataTake;
-      const lineSegments = mesh as any as THREE.LineSegments;
-      const material = lineSegments.material as THREE.LineBasicMaterial;
+      const line = mesh as THREE.Line;
+      const lineMat = line.material as THREE.LineBasicMaterial;
+      const fillMesh = line.userData?.fillMesh as THREE.Mesh;
+      const fillMat = fillMesh?.material as THREE.MeshBasicMaterial;
+      const baseColor = line.userData?.baseColor || 0x00e5ff;
+
       if (isSelected) {
-        material.color.set(0x00c7d6);
-        material.opacity = 1.0;
+        lineMat.color.set(0x00e5ff);
+        lineMat.opacity = 1.0;
+        if (fillMat) {
+          fillMat.color.set(0x00e5ff);
+          fillMat.opacity = 0.55; // Brighter fill on selection
+        }
       } else {
-        const baseColor = lineSegments.userData?.baseColor || 0x3dd68c;
-        material.color.set(baseColor);
-        material.opacity = 0.7;
+        lineMat.color.set(baseColor);
+        lineMat.opacity = 0.7;
+        if (fillMat) {
+          fillMat.color.set(baseColor);
+          fillMat.opacity = 0.3;
+        }
       }
     });
   }, [selectedDataTake]);
+
+  // Helper to compute geographic center of polygon coordinates
+  const getSwathCentroid = (coords: number[][]) => {
+    const avgLon = coords.reduce((sum, c) => sum + c[0], 0) / coords.length;
+    const avgLat = coords.reduce((sum, c) => sum + c[1], 0) / coords.length;
+    return { lon: avgLon, lat: avgLat };
+  };
+
+  // Function to move the camera focus to a target datatake coordinate
+  const focusOnDatatake = (coords: number[][]) => {
+    if (!cameraRef.current) return;
+
+    const { lon, lat } = getSwathCentroid(coords);
+    const latRad = lat * D;
+    const lonRad = lon * D;
+
+    // Keep the current zoom level (distance from earth center)
+    const distance = cameraRef.current.position.length();
+
+    // Compute unit vector on sphere for target position
+    const targetDir = new THREE.Vector3(
+      Math.cos(latRad) * Math.sin(lonRad),
+      Math.sin(latRad),
+      Math.cos(latRad) * Math.cos(lonRad),
+    ).normalize();
+
+    targetCamPosRef.current = targetDir.multiplyScalar(distance);
+    isAnimatingRef.current = true;
+  };
 
   const handleSceneReady = (
     scene: THREE.Scene,
@@ -251,7 +517,8 @@ export default function AcquisitionsGlobeEarthPage() {
     camera.position.set(0, 0, 3.0);
     camera.lookAt(0, 0, 0);
 
-    addDataOverlays(scene);
+    const overlayGroup = new THREE.Group();
+    addDataOverlays(scene, overlayGroup);
 
     let isDragging = false;
     let previousMousePosition = { x: 0, y: 0 };
@@ -312,44 +579,121 @@ export default function AcquisitionsGlobeEarthPage() {
   };
 
   useEffect(() => {
-    const updateStationPositions = () => {
-      if (!cameraRef.current || !rendererRef.current) return;
+    let animId: number;
 
-      const camera = cameraRef.current as THREE.PerspectiveCamera;
-      const renderer = rendererRef.current;
-      const positions: Record<
-        string,
-        { x: number; y: number; visible: boolean }
-      > = {};
+    const animateSatellites = () => {
+      // --- ADD THIS CAMERA INTERPOLATION BLOCK AT THE TOP ---
+      if (
+        isAnimatingRef.current &&
+        targetCamPosRef.current &&
+        cameraRef.current
+      ) {
+        cameraRef.current.position.lerp(targetCamPosRef.current, 0.06);
+        cameraRef.current.lookAt(0, 0, 0);
 
-      STATIONS.forEach((station) => {
-        const lat = station.lat * D;
-        const lon = station.lon * D;
+        // Stop animating once camera gets very close
+        if (
+          cameraRef.current.position.distanceTo(targetCamPosRef.current) < 0.005
+        ) {
+          cameraRef.current.position.copy(targetCamPosRef.current);
+          isAnimatingRef.current = false;
+        }
+      }
 
-        const x = Math.cos(lat) * Math.sin(lon);
-        const y = Math.sin(lat);
-        const z = Math.cos(lat) * Math.cos(lon);
+      const orbitRadius = 1.18;
 
-        const worldPos = new THREE.Vector3(x, y, z);
-        const camPos = camera.position.clone();
+      satObjectsRef.current.forEach((sat) => {
+        // Advance progress angle
+        sat.progress += sat.speed;
+        if (sat.progress > Math.PI * 2) sat.progress -= Math.PI * 2;
 
-        const isVisible =
-          worldPos.clone().normalize().dot(camPos.normalize()) > 0.15;
+        const inc = sat.inc * D;
+        const om = sat.omega * D;
+        const angle = sat.progress;
 
-        const vector = worldPos.clone().project(camera);
-        const canvas = renderer.domElement;
-        const x2d = (vector.x * 0.5 + 0.5) * canvas.clientWidth;
-        const y2d = (-vector.y * 0.5 + 0.5) * canvas.clientHeight;
+        const lat = Math.asin(Math.sin(inc) * Math.sin(angle));
+        const lon =
+          om + Math.atan2(Math.cos(inc) * Math.sin(angle), Math.cos(angle));
 
-        positions[station.name] = { x: x2d, y: y2d, visible: isVisible };
+        const satPos = new THREE.Vector3(
+          Math.cos(lat) * Math.sin(lon) * orbitRadius,
+          Math.sin(lat) * orbitRadius,
+          Math.cos(lat) * Math.cos(lon) * orbitRadius,
+        );
+
+        sat.satGroup.position.copy(satPos);
+        sat.satGroup.lookAt(0, 0, 0);
+
+        // Update ground beam path line
+        const groundPos = satPos.clone().normalize().multiplyScalar(1.0);
+        const positions = sat.beamLine.geometry.attributes
+          .position as THREE.BufferAttribute;
+        if (positions) {
+          positions.setXYZ(0, satPos.x, satPos.y, satPos.z);
+          positions.setXYZ(1, groundPos.x, groundPos.y, groundPos.z);
+          positions.needsUpdate = true;
+        }
       });
 
-      setStationPositions(positions);
+      // Update Screen Coordinates for 2D Labels
+      if (cameraRef.current && rendererRef.current) {
+        const camera = cameraRef.current as THREE.PerspectiveCamera;
+        const renderer = rendererRef.current;
+        const canvas = renderer.domElement;
+        const stationPosMap: Record<
+          string,
+          { x: number; y: number; visible: boolean }
+        > = {};
+        const satPosMap: Record<
+          string,
+          { x: number; y: number; visible: boolean }
+        > = {};
+
+        // Update Ground Stations 2D Positions
+        STATIONS.forEach((station) => {
+          const lat = station.lat * D;
+          const lon = station.lon * D;
+          const worldPos = new THREE.Vector3(
+            Math.cos(lat) * Math.sin(lon),
+            Math.sin(lat),
+            Math.cos(lat) * Math.cos(lon),
+          );
+          const camPos = camera.position.clone();
+          const isVisible =
+            worldPos.clone().normalize().dot(camPos.normalize()) > 0.15;
+          const vector = worldPos.clone().project(camera);
+          stationPosMap[station.name] = {
+            x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
+            y: (-vector.y * 0.5 + 0.5) * canvas.clientHeight,
+            visible: isVisible,
+          };
+        });
+
+        // Update Satellites 2D Positions
+        satObjectsRef.current.forEach((sat) => {
+          const worldPos = sat.satGroup.position.clone();
+          const camPos = camera.position.clone();
+          const isVisible =
+            worldPos.clone().normalize().dot(camPos.normalize()) > 0.0;
+          const vector = worldPos.clone().project(camera);
+          satPosMap[sat.name] = {
+            x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
+            y: (-vector.y * 0.5 + 0.5) * canvas.clientHeight,
+            visible: isVisible,
+          };
+        });
+
+        setStationPositions(stationPosMap);
+        setSatPositions(satPosMap);
+      }
+
+      animId = requestAnimationFrame(animateSatellites);
     };
 
-    const interval = setInterval(updateStationPositions, 30);
-    return () => clearInterval(interval);
+    animateSatellites();
+    return () => cancelAnimationFrame(animId);
   }, []);
+
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   return (
@@ -362,16 +706,6 @@ export default function AcquisitionsGlobeEarthPage() {
         position: "relative",
       }}
     >
-      <style>{`
-        @keyframes ed-slide {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .animate-ed-slide {
-          animation: ed-slide 45s linear infinite;
-        }
-      `}</style>
-
       {/* PAGE HEADER */}
       <PageHeader
         crumb="Acquisitions Status"
@@ -588,7 +922,7 @@ export default function AcquisitionsGlobeEarthPage() {
             letterSpacing: "0.05em",
           }}
         >
-          15 – 16 JULY 2026
+          15 - 16 JULY 2026
         </div>
 
         {/* SATELLITE Dropdown */}
@@ -902,6 +1236,12 @@ export default function AcquisitionsGlobeEarthPage() {
                       setDatatakeFilter(dt.id);
                       setSelectedDataTake(ACQ_DATATAKES.indexOf(dt));
                       setOpenDropdown(null);
+                      const matchedSwath = SAMPLE_SWATHS.find(
+                        (s) => s.id === dt.id,
+                      );
+                      if (matchedSwath) {
+                        focusOnDatatake(matchedSwath.coords);
+                      }
                     }}
                     style={{
                       display: "flex",
@@ -969,51 +1309,11 @@ export default function AcquisitionsGlobeEarthPage() {
           minHeight: "550px",
           position: "relative",
           overflow: "hidden",
-          background: "transparent",
           width: "100%",
         }}
       >
-        {/* SLIDING BACKGROUND TRACK DIRECTLY BEHIND THE GLOBE */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: 0,
-            overflow: "hidden",
-          }}
-        >
-          <div className="flex h-full w-max animate-ed-slide">
-            <img
-              src="/assets/img/nebula.jpg"
-              className="h-full w-auto object-cover"
-              alt=""
-            />
-            <img
-              src="/assets/img/nebula.jpg"
-              className="h-full w-auto object-cover"
-              alt=""
-            />
-          </div>
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(circle at center, rgba(2,4,9,0.1) 0%, rgba(2,4,9,0.85) 100%)",
-            }}
-          />
-        </div>
-
         {/* THREE.JS CANVAS */}
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            width: "100%",
-            height: "100%",
-          }}
-        >
+        <div style={{ width: "100%", height: "100%", position: "relative" }}>
           <ThreeEarth onReady={handleSceneReady} />
         </div>
 
@@ -1047,10 +1347,9 @@ export default function AcquisitionsGlobeEarthPage() {
             style={{
               width: "36px",
               height: "36px",
-              background: "rgba(15, 23, 42, 0.8)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "4px",
-              color: "#fff",
+              background: "rgba(15, 23, 42, 0.85)",
+              border: "1px solid rgba(0, 229, 255, 0.4)",
+              color: "#00e5ff",
               fontSize: "18px",
               cursor: "pointer",
             }}
@@ -1063,10 +1362,9 @@ export default function AcquisitionsGlobeEarthPage() {
                 const direction = cameraRef.current.position
                   .clone()
                   .normalize();
-                const currentDistance = cameraRef.current.position.length();
-                const newDistance = Math.min(6, currentDistance * 1.15);
+                const dist = cameraRef.current.position.length();
                 cameraRef.current.position.copy(
-                  direction.multiplyScalar(newDistance),
+                  direction.multiplyScalar(Math.min(6, dist * 1.15)),
                 );
                 cameraRef.current.lookAt(0, 0, 0);
               }
@@ -1074,10 +1372,9 @@ export default function AcquisitionsGlobeEarthPage() {
             style={{
               width: "36px",
               height: "36px",
-              background: "rgba(15, 23, 42, 0.8)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "4px",
-              color: "#fff",
+              background: "rgba(15, 23, 42, 0.85)",
+              border: "1px solid rgba(0, 229, 255, 0.4)",
+              color: "#00e5ff",
               fontSize: "18px",
               cursor: "pointer",
             }}
@@ -1094,11 +1391,10 @@ export default function AcquisitionsGlobeEarthPage() {
             style={{
               width: "36px",
               height: "36px",
-              background: "rgba(15, 23, 42, 0.8)",
-              border: "1px solid rgba(255,255,255,0.15)",
-              borderRadius: "4px",
-              color: "#fff",
-              fontSize: "14px",
+              background: "rgba(15, 23, 42, 0.85)",
+              border: "1px solid rgba(0, 229, 255, 0.4)",
+              color: "#00e5ff",
+              fontSize: "18px",
               cursor: "pointer",
             }}
           >
@@ -1120,7 +1416,6 @@ export default function AcquisitionsGlobeEarthPage() {
         >
           {STATIONS.map((station, idx) => {
             const pos = stationPositions[station.name];
-
             if (!pos || !pos.visible || (pos.x === 0 && pos.y === 0))
               return null;
 
@@ -1132,21 +1427,82 @@ export default function AcquisitionsGlobeEarthPage() {
                   left: `${pos.x}px`,
                   top: `${pos.y}px`,
                   transform: "translate(-50%, -100%)",
-                  background: "rgba(15, 23, 42, 0.85)",
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
+                  background: "rgba(9, 21, 37, 0.88)",
+                  border: "1px solid #00e5ff",
                   borderRadius: "4px",
-                  padding: "4px 8px",
-                  color: "#fff",
-                  fontSize: "10px",
-                  fontFamily: "monospace",
+                  padding: "3px 8px",
+                  color: "#ffffff",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  fontFamily: "sans-serif",
                   whiteSpace: "nowrap",
                   display: "flex",
                   alignItems: "center",
                   gap: "6px",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.5)",
+                  boxShadow: "0 0 10px rgba(0,229,255,0.35)",
                 }}
               >
-                <span>📡 {station.name}</span>
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#00e5ff"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 2a10 10 0 0 0-10 10" />
+                  <path d="M12 6a6 6 0 0 0-6 6" />
+                  <circle cx="12" cy="12" r="2" />
+                  <path d="M12 14v8" />
+                </svg>{" "}
+                <span>{station.name}</span>
+              </div>
+            );
+          })}
+          {/* Satellite Orbit Labels (matching S3B, S1C, S2A in image) */}
+          {Object.entries(satPositions).map(([satName, pos]) => {
+            if (!pos || !pos.visible) return null;
+
+            return (
+              <div
+                key={`sat-${satName}`}
+                style={{
+                  position: "absolute",
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
+                  transform: "translate(-50%, -50%)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "5px",
+                  pointerEvents: "none",
+                }}
+              >
+                {/* Green Status Dot Circle */}
+                <div
+                  style={{
+                    width: "7px",
+                    height: "7px",
+                    borderRadius: "50%",
+                    background: "#3dd68c",
+                    border: "1px solid #000",
+                    boxShadow: "0 0 6px #3dd68c",
+                  }}
+                />
+                {/* Clean Semi-Transparent Font Overlay */}
+                <span
+                  style={{
+                    color: "#ffffff",
+                    fontSize: "10.5px",
+                    fontWeight: 700,
+                    fontFamily: "sans-serif",
+                    letterSpacing: "0.03em",
+                    textShadow: "0 0 4px #000, 0 0 2px #000",
+                  }}
+                >
+                  {satName}
+                </span>
               </div>
             );
           })}
