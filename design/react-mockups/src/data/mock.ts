@@ -316,12 +316,12 @@ function swath(lat: number, lon: number, along: number, across: number, heading:
 }
 
 // Copernicus core ground stations.
-export const STATIONS: Station[] = [
-  { name: "Svalbard", lat: 78.23, lon: 15.39 },
-  { name: "Matera", lat: 40.65, lon: 16.7 },
-  { name: "Maspalomas", lat: 27.76, lon: -15.63 },
-  { name: "Inuvik", lat: 68.35, lon: -133.72 },
-  { name: "Neustrelitz", lat: 53.33, lon: 13.07 },
+export const STATIONS = [
+  { name: "Svalbard", lat: 78.2297, lon: 15.4077 },
+  { name: "Inuvik", lat: 68.3607, lon: -133.7230 },
+  { name: "Neustrelitz", lat: 53.3286, lon: 13.0718 },
+  { name: "Matera", lat: 40.6491, lon: 16.7044 },
+  { name: "Maspalomas", lat: 27.7629, lon: -15.6338 },
 ];
 
 // Product-type completeness per datatake. These drive `comp` and `cls`, so the
