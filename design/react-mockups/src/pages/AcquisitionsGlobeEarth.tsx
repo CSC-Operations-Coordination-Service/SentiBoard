@@ -98,10 +98,13 @@ export default function AcquisitionsGlobeEarthPage() {
   const isAnimatingRef = useRef(false);
   const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
 
-  const [selectedDataTake, setSelectedDataTake] = useState(0);
+  const [selectedDataTake, setSelectedDataTake] = useState<number>(0);
   const [satelliteFilter, setSatelliteFilter] = useState("*");
   const [dayFilter, setDayFilter] = useState("*");
-  const [datatakeFilter, setDatatakeFilter] = useState("*");
+  const [datatakeFilter, setDatatakeFilter] = useState<string>(
+    ACQ_DATATAKES[0]?.id || "*",
+  );
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const footprintMeshesRef = useRef<THREE.Object3D[]>([]);
@@ -1093,8 +1096,11 @@ export default function AcquisitionsGlobeEarthPage() {
                     key={dt.id}
                     onClick={() => {
                       setDatatakeFilter(dt.id);
-                      setSelectedDataTake(ACQ_DATATAKES.indexOf(dt));
+                      const idx = ACQ_DATATAKES.indexOf(dt);
+                      setSelectedDataTake(idx);
                       setOpenDropdown(null);
+                      setIsModalOpen(true); // <--- OPENS THE MODAL WINDOW
+
                       const matchedSwath = SAMPLE_SWATHS.find(
                         (s) => s.id === dt.id,
                       );
@@ -1131,7 +1137,7 @@ export default function AcquisitionsGlobeEarthPage() {
                       <span>{dt.id}</span>
                     </div>
                     <span style={{ fontSize: "13px", color: "#8a96a8" }}>
-                      {Math.round(dt.comp * 100)}% · {dt.status}
+                      {Math.round(dt.comp)}% · {dt.status}
                     </span>
                   </div>
                 );
@@ -1174,6 +1180,245 @@ export default function AcquisitionsGlobeEarthPage() {
         <div style={{ width: "100%", height: "100%", position: "relative" }}>
           <ThreeEarth onReady={handleSceneReady} />
         </div>
+
+        {/* --- DATATAKE DETAIL POP-UP MODAL (PASTE HERE) --- */}
+        {isModalOpen &&
+          datatakeFilter !== "*" &&
+          (() => {
+            const dt = ACQ_DATATAKES[selectedDataTake] || ACQ_DATATAKES[0];
+            if (!dt) return null;
+
+            const percent = Math.round(dt.comp || 0);
+            const statusColor =
+              dt.cls === "ok"
+                ? "#3dd68c"
+                : dt.cls === "warn"
+                  ? "#f5b544"
+                  : "#ef4444";
+
+            return (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "24px",
+                  right: "80px", // Pushed left slightly to avoid overlapping Zoom buttons
+                  zIndex: 100,
+                  width: "320px",
+                  background: "rgba(11, 18, 30, 0.92)",
+                  backdropFilter: "blur(8px)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
+                  borderRadius: "12px",
+                  padding: "20px",
+                  boxShadow: "0 12px 32px rgba(0, 0, 0, 0.6)",
+                  fontFamily: "monospace",
+                  color: "#fff",
+                }}
+              >
+                {/* Header */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#00c7d6",
+                      letterSpacing: "0.1em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    DATATAKE
+                  </span>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        background:
+                          dt.cls === "ok"
+                            ? "rgba(61, 214, 140, 0.15)"
+                            : "rgba(239, 68, 68, 0.15)",
+                        color: statusColor,
+                        padding: "2px 8px",
+                        borderRadius: "12px",
+                        border: `1px solid ${statusColor}40`,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "5px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: "6px",
+                          height: "6px",
+                          borderRadius: "50%",
+                          background: statusColor,
+                        }}
+                      />
+                      {dt.status ? dt.status.toUpperCase() : "PROCESSING"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#8a96a8",
+                        fontSize: "16px",
+                        cursor: "pointer",
+                        padding: 0,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+
+                {/* Title & Subtitle */}
+                <div style={{ marginBottom: "20px" }}>
+                  <div
+                    style={{
+                      fontSize: "20px",
+                      fontWeight: "800",
+                      letterSpacing: "0.05em",
+                      fontFamily: "sans-serif",
+                    }}
+                  >
+                    {dt.id}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#8a96a8",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {dt.sat}
+                  </div>
+                </div>
+
+                {/* Completion & Sensing KPI */}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: "16px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "38px",
+                      fontWeight: "800",
+                      fontFamily: "sans-serif",
+                    }}
+                  >
+                    {percent}.0
+                    <span style={{ fontSize: "20px", color: "#8a96a8" }}>
+                      %
+                    </span>
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#8a96a8" }}>
+                    <div>SENSING</div>
+                    <div style={{ color: "#fff", fontWeight: 700 }}>3m 25s</div>
+                    <div style={{ marginTop: "4px" }}>MISSING</div>
+                    <div style={{ color: "#fff", fontWeight: 700 }}>5m 40s</div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    fontSize: "10px",
+                    color: "#6b7280",
+                    marginBottom: "20px",
+                    borderBottom: "1px solid rgba(255,255,255,0.08)",
+                    paddingBottom: "12px",
+                  }}
+                >
+                  Mean across 8 expected product types · missing time summed
+                  across types
+                </div>
+
+                {/* Details Table */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "10px",
+                    fontSize: "11px",
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>SATELLITE ID</span>
+                    <span style={{ fontWeight: 700 }}>{dt.sat}</span>
+                  </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>DATATAKE ID</span>
+                    <span style={{ fontWeight: 700 }}>{dt.id}</span>
+                  </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>MODE</span>
+                    <span style={{ fontWeight: 700 }}>IW · DV</span>
+                  </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>SWATH</span>
+                    <span style={{ fontWeight: 700 }}>NA</span>
+                  </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>POLARISATION</span>
+                    <span style={{ fontWeight: 700 }}>NA</span>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>
+                      OBSERVATION TIME START
+                    </span>
+                    <span style={{ fontWeight: 700 }}>
+                      {dt.startIso
+                        ? dt.startIso.replace("T", " ") + "Z"
+                        : "2026-07-16 09:33:10Z"}
+                    </span>
+                  </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span style={{ color: "#8a96a8" }}>
+                      OBSERVATION TIME STOP
+                    </span>
+                    <span style={{ fontWeight: 700 }}>
+                      2026-07-16 09:36:35Z
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
         {/* Zoom Controls */}
         <div
@@ -1286,10 +1531,9 @@ export default function AcquisitionsGlobeEarthPage() {
                   left: `${pos.x}px`,
                   top: `${pos.y}px`,
                   transform: "translate(-50%, -100%)",
-                  background: "rgba(9, 21, 37, 0.88)",
-                  border: "1px solid #00e5ff",
-                  borderRadius: "4px",
-                  padding: "3px 8px",
+                  background: "transparent", // Removed black background
+                  border: "none", // Removed white border
+                  padding: "0",
                   color: "#ffffff",
                   fontSize: "11px",
                   fontWeight: 700,
@@ -1297,24 +1541,25 @@ export default function AcquisitionsGlobeEarthPage() {
                   whiteSpace: "nowrap",
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px",
-                  boxShadow: "0 0 10px rgba(0,229,255,0.35)",
+                  gap: "4px",
+                  textShadow: "0 0 4px #000000, 0 0 2px #000000",
                 }}
               >
                 <svg
-                  width="13"
-                  height="13"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#00e5ff"
-                  strokeWidth="2.5"
+                  stroke="#00c7d6"
+                  strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 >
-                  <path d="M12 2a10 10 0 0 0-10 10" />
-                  <path d="M12 6a6 6 0 0 0-6 6" />
-                  <circle cx="12" cy="12" r="2" />
-                  <path d="M12 14v8" />
+                  <path d="M4 15a12 12 0 0 1 14-8" />
+                  <path d="M12 5l-2 2" />
+                  <line x1="9" y1="11" x2="15" y2="5" />
+                  <path d="M12 15v6" />
+                  <path d="M8 21h8" />
                 </svg>
                 <span>{station.name}</span>
               </div>

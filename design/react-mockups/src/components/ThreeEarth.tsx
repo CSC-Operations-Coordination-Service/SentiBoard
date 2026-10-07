@@ -22,6 +22,32 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020409);
 
+    // Create Starfield Background Particles
+    const starsGeometry = new THREE.BufferGeometry();
+    const starsCount = 1200;
+    const starPositions = new Float32Array(starsCount * 3);
+
+    for (let i = 0; i < starsCount * 3; i += 3) {
+      starPositions[i] = (Math.random() - 0.5) * 100;
+      starPositions[i + 1] = (Math.random() - 0.5) * 100;
+      starPositions[i + 2] = (Math.random() - 0.5) * 100;
+    }
+
+    starsGeometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(starPositions, 3),
+    );
+
+    const starsMaterial = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.12,
+      transparent: true,
+      opacity: 0.8,
+    });
+
+    const starField = new THREE.Points(starsGeometry, starsMaterial);
+    scene.add(starField);
+
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 0, 3.0);
 
