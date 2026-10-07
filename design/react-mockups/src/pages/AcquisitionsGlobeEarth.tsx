@@ -96,6 +96,8 @@ export default function AcquisitionsGlobeEarthPage() {
   const [datatakeFilter, setDatatakeFilter] = useState<string>(
     ACQ_DATATAKES[0]?.id || "*",
   );
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
@@ -121,9 +123,16 @@ export default function AcquisitionsGlobeEarthPage() {
     }[]
   >([]);
 
+  // Unified Filtering Logic
   const filteredDatatakes = ACQ_DATATAKES.filter((dt) => {
     if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
     if (dayFilter !== "*" && !dt.startIso.startsWith(dayFilter)) return false;
+    if (searchQuery.trim() !== "") {
+      const q = searchQuery.trim().toLowerCase();
+      const matchId = dt.id.toLowerCase().includes(q);
+      const matchSat = dt.sat.toLowerCase().includes(q);
+      if (!matchId && !matchSat) return false;
+    }
     return true;
   });
 
@@ -168,7 +177,7 @@ export default function AcquisitionsGlobeEarthPage() {
     return { lon: avgLon, lat: avgLat };
   };
 
-  // Function to move camera focus to target datatake coordinate
+  // Move camera focus to target datatake coordinate
   const focusOnDatatake = (coords: number[][]) => {
     if (!cameraRef.current) return;
 
@@ -180,7 +189,71 @@ export default function AcquisitionsGlobeEarthPage() {
     isAnimatingRef.current = true;
   };
 
-  // Build Swath Polygons without holes using dense triangulated sub-patches
+  // Select datatake, open modal, and re-orient camera
+  const handleSelectDatatake = (dtId: string) => {
+    const index = ACQ_DATATAKES.findIndex((dt) => dt.id === dtId);
+    if (index !== -1) {
+      setSelectedDataTake(index);
+    }
+    setIsModalOpen(true);
+
+    const matchedSwath = SAMPLE_SWATHS.find((s) => s.id === dtId);
+    if (matchedSwath) {
+      focusOnDatatake(matchedSwath.coords);
+    }
+  };
+
+  useEffect(() => {
+    if (filteredDatatakes.length > 0) {
+      const firstDt = filteredDatatakes[0];
+      const index = ACQ_DATATAKES.findIndex((dt) => dt.id === firstDt.id);
+      if (index !== -1) {
+        setSelectedDataTake(index);
+      }
+    }
+  }, []);
+
+  // Synchronize 3D globe swaths visibility and highlighting with current active filters
+  useEffect(() => {
+    const allowedIds = new Set(filteredDatatakes.map((dt) => dt.id));
+
+    // Update fill meshes
+    clickableMeshesRef.current.forEach((mesh) => {
+      const dtId = mesh.userData.datatakeId;
+      mesh.visible = allowedIds.has(dtId);
+    });
+
+    // Update border outline meshes & selections
+    footprintMeshesRef.current.forEach((mesh, idx) => {
+      const line = mesh as THREE.Line;
+      const dtId = line.userData?.datatakeId;
+      line.visible = allowedIds.has(dtId);
+
+      const isSelected = idx === selectedDataTake;
+      const lineMat = line.material as THREE.LineBasicMaterial;
+      const fillMesh = line.userData?.fillMesh as THREE.Mesh;
+      const fillMat = fillMesh?.material as THREE.MeshBasicMaterial;
+      const baseColor = line.userData?.baseColor || 0x00e5ff;
+
+      if (isSelected) {
+        lineMat.color.set(0x00e5ff);
+        lineMat.opacity = 1.0;
+        if (fillMat) {
+          fillMat.color.set(0x00e5ff);
+          fillMat.opacity = 0.65;
+        }
+      } else {
+        lineMat.color.set(baseColor);
+        lineMat.opacity = 0.7;
+        if (fillMat) {
+          fillMat.color.set(baseColor);
+          fillMat.opacity = 0.35;
+        }
+      }
+    });
+  }, [filteredDatatakes, selectedDataTake]);
+
+  // Build Swath Polygons using dense triangulated sub-patches
   const addDataOverlays = (scene: THREE.Scene, overlayGroup: THREE.Group) => {
     if (!scene) return;
 
@@ -197,7 +270,6 @@ export default function AcquisitionsGlobeEarthPage() {
       const radius = 1.004;
       const corners = swath.coords;
 
-      // Subdivide quad into a smooth dense grid to fit Earth curvature cleanly without gaps
       const gridSteps = 24;
       const positions: number[] = [];
 
@@ -208,7 +280,6 @@ export default function AcquisitionsGlobeEarthPage() {
           const v1 = v / gridSteps;
           const v2 = (v + 1) / gridSteps;
 
-          // Bilinear interpolation across corners
           const getPt = (uVal: number, vVal: number) => {
             const lon =
               (1 - uVal) * (1 - vVal) * corners[0][0] +
@@ -228,12 +299,10 @@ export default function AcquisitionsGlobeEarthPage() {
           const p11 = getPt(u2, v2);
           const p01 = getPt(u1, v2);
 
-          // Triangle 1
           positions.push(p00.x, p00.y, p00.z);
           positions.push(p10.x, p10.y, p10.z);
           positions.push(p11.x, p11.y, p11.z);
 
-          // Triangle 2
           positions.push(p00.x, p00.y, p00.z);
           positions.push(p11.x, p11.y, p11.z);
           positions.push(p01.x, p01.y, p01.z);
@@ -295,7 +364,7 @@ export default function AcquisitionsGlobeEarthPage() {
       footprintMeshesRef.current.push(lineMesh);
     });
 
-    // 2. Initialize Satellites, 3D Orbit Lines, & Ground Projection Lines
+    // 2. Initialize Satellites, Orbit Lines, & Ground Beam Lines
     const orbitRadius = 1.18;
     SAMPLE_SATELLITES.forEach((satData, idx) => {
       const orbitPoints: THREE.Vector3[] = [];
@@ -361,34 +430,6 @@ export default function AcquisitionsGlobeEarthPage() {
     });
   };
 
-  useEffect(() => {
-    if (!footprintMeshesRef.current) return;
-    footprintMeshesRef.current.forEach((mesh, idx) => {
-      const isSelected = idx === selectedDataTake;
-      const line = mesh as THREE.Line;
-      const lineMat = line.material as THREE.LineBasicMaterial;
-      const fillMesh = line.userData?.fillMesh as THREE.Mesh;
-      const fillMat = fillMesh?.material as THREE.MeshBasicMaterial;
-      const baseColor = line.userData?.baseColor || 0x00e5ff;
-
-      if (isSelected) {
-        lineMat.color.set(0x00e5ff);
-        lineMat.opacity = 1.0;
-        if (fillMat) {
-          fillMat.color.set(0x00e5ff);
-          fillMat.opacity = 0.65;
-        }
-      } else {
-        lineMat.color.set(baseColor);
-        lineMat.opacity = 0.7;
-        if (fillMat) {
-          fillMat.color.set(baseColor);
-          fillMat.opacity = 0.35;
-        }
-      }
-    });
-  }, [selectedDataTake]);
-
   const handleSceneReady = (
     scene: THREE.Scene,
     camera: THREE.Camera,
@@ -436,39 +477,27 @@ export default function AcquisitionsGlobeEarthPage() {
       }
     };
 
-    // Click handler for Datatake selection on 3D globe
     const onMouseUp = (e: MouseEvent) => {
       isDragging = false;
 
-      // Only handle selection click if user didn't drag/orbit globe
       if (dragDistance < 5 && camera && renderer) {
         const rect = renderer.domElement.getBoundingClientRect();
         mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
         raycaster.setFromCamera(mouseVector, camera);
-        const intersects = raycaster.intersectObjects(
-          clickableMeshesRef.current,
-          false,
+
+        // Filter clickable meshes to only include visible ones
+        const activeClickables = clickableMeshesRef.current.filter(
+          (m) => m.visible,
         );
+        const intersects = raycaster.intersectObjects(activeClickables, false);
 
         if (intersects.length > 0) {
           const hitMesh = intersects[0].object as THREE.Mesh;
           const dtId = hitMesh.userData.datatakeId;
-          const swathIndex = hitMesh.userData.swathIndex;
-
           if (dtId) {
-            setDatatakeFilter(dtId);
-            const matchingIdx = ACQ_DATATAKES.findIndex((dt) => dt.id === dtId);
-            const targetIdx = matchingIdx !== -1 ? matchingIdx : swathIndex;
-
-            setSelectedDataTake(targetIdx);
-            setIsModalOpen(true);
-
-            const matchedSwath = SAMPLE_SWATHS.find((s) => s.id === dtId);
-            if (matchedSwath) {
-              focusOnDatatake(matchedSwath.coords);
-            }
+            handleSelectDatatake(dtId);
           }
         }
       }
@@ -1102,7 +1131,7 @@ export default function AcquisitionsGlobeEarthPage() {
           >
             <span style={{ textTransform: "uppercase" }}>DATATAKE</span>
             <span style={{ color: "#fff", fontWeight: "800" }}>
-              {datatakeFilter === "*" ? "None" : datatakeFilter}
+              {datatakeFilter === "*" ? "All" : datatakeFilter}
             </span>
             <span style={{ fontSize: "15px", color: "#8a96a8" }}>▼</span>
           </button>
@@ -1121,7 +1150,23 @@ export default function AcquisitionsGlobeEarthPage() {
                 padding: "8px 0",
               }}
             >
-              {ACQ_DATATAKES.slice(0, 10).map((dt) => {
+              <div
+                onClick={() => {
+                  setDatatakeFilter("*");
+                  setOpenDropdown(null);
+                }}
+                style={{
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  color: datatakeFilter === "*" ? "#00c7d6" : "#fff",
+                  borderBottom: "1px solid rgba(255,255,255,0.1)",
+                  fontSize: "13px",
+                  fontWeight: "bold",
+                }}
+              >
+                ALL DATATAKES
+              </div>
+              {filteredDatatakes.map((dt) => {
                 const statusColor =
                   dt.cls === "ok"
                     ? "#3dd68c"
@@ -1132,18 +1177,8 @@ export default function AcquisitionsGlobeEarthPage() {
                   <div
                     key={dt.id}
                     onClick={() => {
-                      setDatatakeFilter(dt.id);
-                      const idx = ACQ_DATATAKES.indexOf(dt);
-                      setSelectedDataTake(idx);
                       setOpenDropdown(null);
-                      setIsModalOpen(true);
-
-                      const matchedSwath = SAMPLE_SWATHS.find(
-                        (s) => s.id === dt.id,
-                      );
-                      if (matchedSwath) {
-                        focusOnDatatake(matchedSwath.coords);
-                      }
+                      handleSelectDatatake(dt.id);
                     }}
                     style={{
                       display: "flex",
@@ -1153,7 +1188,7 @@ export default function AcquisitionsGlobeEarthPage() {
                       padding: "8px 16px",
                       borderBottom: "1px solid rgba(255,255,255,0.1)",
                       color: datatakeFilter === dt.id ? "#00c7d6" : "#fff",
-                      fontSize: "15px",
+                      fontSize: "14px",
                     }}
                   >
                     <div
@@ -1173,7 +1208,7 @@ export default function AcquisitionsGlobeEarthPage() {
                       />
                       <span>{dt.id}</span>
                     </div>
-                    <span style={{ fontSize: "13px", color: "#8a96a8" }}>
+                    <span style={{ fontSize: "12px", color: "#8a96a8" }}>
                       {Math.round(dt.comp)}% · {dt.status}
                     </span>
                   </div>
@@ -1183,24 +1218,46 @@ export default function AcquisitionsGlobeEarthPage() {
           )}
         </div>
 
-        {/* SEARCH INPUT */}
+        {/* SEARCH INPUT & CLEAR BUTTON */}
         <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ color: "#8a96a8", fontSize: "15px" }}>🔍</span>
           <input
             type="text"
-            placeholder="Datatake ID"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && filteredDatatakes.length > 0) {
+                handleSelectDatatake(filteredDatatakes[0].id);
+              }
+            }}
+            placeholder="Search ID (e.g. S2A)"
             style={{
               background: "none",
               border: "none",
               borderBottom: "1px solid rgba(255,255,255,0.3)",
               color: "#fff",
-              fontSize: "15px",
+              fontSize: "14px",
               fontFamily: "monospace",
               outline: "none",
-              width: "100px",
+              width: "140px",
               paddingBottom: "2px",
             }}
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#8a96a8",
+                fontSize: "14px",
+                cursor: "pointer",
+                padding: "0 2px",
+              }}
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
@@ -1220,7 +1277,6 @@ export default function AcquisitionsGlobeEarthPage() {
 
         {/* DATATAKE DETAIL POP-UP MODAL */}
         {isModalOpen &&
-          datatakeFilter !== "*" &&
           (() => {
             const dt = ACQ_DATATAKES[selectedDataTake] || ACQ_DATATAKES[0];
             if (!dt) return null;
