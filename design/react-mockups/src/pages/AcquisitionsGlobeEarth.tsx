@@ -7,17 +7,10 @@ import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
 
 const D = Math.PI / 180;
 
-interface DataOverlays {
-  footprints?: THREE.Object3D[];
-  stations?: THREE.Group;
-  satellites?: THREE.Group;
-  orbits?: THREE.Line[];
-}
-
 const SAMPLE_SWATHS = [
   {
     id: "S2A-48201-1",
-    color: 0x10b981, // Green swath (Central Europe)
+    color: 0x10b981, // Green swath
     opacity: 0.35,
     coords: [
       [2, 60],
@@ -39,7 +32,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S3B-080-345",
-    color: 0x06b6d4, // Cyan swath (High Arctic)
+    color: 0x06b6d4, // Cyan swath (Inuvik / High Arctic)
     opacity: 0.35,
     coords: [
       [-135, 72],
@@ -61,7 +54,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S5P-60012",
-    color: 0xd97706, // Orange swath (Atlantic / Maspalomas)
+    color: 0xd97706, // Orange swath (Maspalomas)
     opacity: 0.35,
     coords: [
       [-20, 32],
@@ -94,7 +87,6 @@ export default function AcquisitionsGlobeEarthPage() {
   const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
-  // ADD THESE TWO REFS HERE:
   const isAnimatingRef = useRef(false);
   const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
 
@@ -108,11 +100,11 @@ export default function AcquisitionsGlobeEarthPage() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const footprintMeshesRef = useRef<THREE.Object3D[]>([]);
+  const clickableMeshesRef = useRef<THREE.Mesh[]>([]);
+
   const [stationPositions, setStationPositions] = useState<
     Record<string, { x: number; y: number; visible: boolean }>
   >({});
-
-  // State for tracking satellite screen coordinates and labels
   const [satPositions, setSatPositions] = useState<
     Record<string, { x: number; y: number; visible: boolean }>
   >({});
@@ -153,15 +145,13 @@ export default function AcquisitionsGlobeEarthPage() {
     new Set(ACQ_DATATAKES.map((dt) => dt.sat)),
   ).sort();
 
-  // 1. Helper function: Converts Lat/Lon (in degrees) to 3D Cartesian coordinates
-  // adjusted to align +0° Longitude with the Greenwich Meridian on standard UV maps
+  // Helper function: Converts Lat/Lon (degrees) to 3D Cartesian coordinates
   const latLonToVector3 = (
     latDeg: number,
     lonDeg: number,
     radius: number = 1.004,
   ): THREE.Vector3 => {
     const lat = latDeg * D;
-    // +90 deg offset aligns 0° Longitude with Three.js texture coordinate system
     const lon = (lonDeg + 90) * D;
 
     return new THREE.Vector3(
@@ -171,7 +161,26 @@ export default function AcquisitionsGlobeEarthPage() {
     );
   };
 
-  // Build Swath Polygons, Satellites, Orbit Lines, and Ground Beams
+  // Helper to compute geographic center of polygon coordinates
+  const getSwathCentroid = (coords: number[][]) => {
+    const avgLon = coords.reduce((sum, c) => sum + c[0], 0) / coords.length;
+    const avgLat = coords.reduce((sum, c) => sum + c[1], 0) / coords.length;
+    return { lon: avgLon, lat: avgLat };
+  };
+
+  // Function to move camera focus to target datatake coordinate
+  const focusOnDatatake = (coords: number[][]) => {
+    if (!cameraRef.current) return;
+
+    const { lon, lat } = getSwathCentroid(coords);
+    const targetDir = latLonToVector3(lat, lon, 1.0).normalize();
+    const distance = cameraRef.current.position.length();
+
+    targetCamPosRef.current = targetDir.multiplyScalar(distance);
+    isAnimatingRef.current = true;
+  };
+
+  // Build Swath Polygons without holes using dense triangulated sub-patches
   const addDataOverlays = (scene: THREE.Scene, overlayGroup: THREE.Group) => {
     if (!scene) return;
 
@@ -180,42 +189,55 @@ export default function AcquisitionsGlobeEarthPage() {
     earthGroup.add(overlayGroup);
 
     footprintMeshesRef.current = [];
+    clickableMeshesRef.current = [];
     satObjectsRef.current = [];
 
-    // 1. Datatake Footprint Overlay Swaths (Quad Strip generation)
+    // 1. Solid Datatake Footprint Overlay Swaths
     SAMPLE_SWATHS.forEach((swath, idx) => {
       const radius = 1.004;
       const corners = swath.coords;
 
-      const steps = 32;
+      // Subdivide quad into a smooth dense grid to fit Earth curvature cleanly without gaps
+      const gridSteps = 24;
       const positions: number[] = [];
 
-      for (let i = 0; i < steps; i++) {
-        const t1 = i / steps;
-        const t2 = (i + 1) / steps;
+      for (let u = 0; u < gridSteps; u++) {
+        for (let v = 0; v < gridSteps; v++) {
+          const u1 = u / gridSteps;
+          const u2 = (u + 1) / gridSteps;
+          const v1 = v / gridSteps;
+          const v2 = (v + 1) / gridSteps;
 
-        const lonL1 = corners[0][0] + (corners[3][0] - corners[0][0]) * t1;
-        const latL1 = corners[0][1] + (corners[3][1] - corners[0][1]) * t1;
-        const lonL2 = corners[0][0] + (corners[3][0] - corners[0][0]) * t2;
-        const latL2 = corners[0][1] + (corners[3][1] - corners[0][1]) * t2;
+          // Bilinear interpolation across corners
+          const getPt = (uVal: number, vVal: number) => {
+            const lon =
+              (1 - uVal) * (1 - vVal) * corners[0][0] +
+              uVal * (1 - vVal) * corners[1][0] +
+              uVal * vVal * corners[2][0] +
+              (1 - uVal) * vVal * corners[3][0];
+            const lat =
+              (1 - uVal) * (1 - vVal) * corners[0][1] +
+              uVal * (1 - vVal) * corners[1][1] +
+              uVal * vVal * corners[2][1] +
+              (1 - uVal) * vVal * corners[3][1];
+            return latLonToVector3(lat, lon, radius);
+          };
 
-        const lonR1 = corners[1][0] + (corners[2][0] - corners[1][0]) * t1;
-        const latR1 = corners[1][1] + (corners[2][1] - corners[1][1]) * t1;
-        const lonR2 = corners[1][0] + (corners[2][0] - corners[1][0]) * t2;
-        const latR2 = corners[1][1] + (corners[2][1] - corners[1][1]) * t2;
+          const p00 = getPt(u1, v1);
+          const p10 = getPt(u2, v1);
+          const p11 = getPt(u2, v2);
+          const p01 = getPt(u1, v2);
 
-        const vL1 = latLonToVector3(latL1, lonL1, radius);
-        const vR1 = latLonToVector3(latR1, lonR1, radius);
-        const vL2 = latLonToVector3(latL2, lonL2, radius);
-        const vR2 = latLonToVector3(latR2, lonR2, radius);
+          // Triangle 1
+          positions.push(p00.x, p00.y, p00.z);
+          positions.push(p10.x, p10.y, p10.z);
+          positions.push(p11.x, p11.y, p11.z);
 
-        positions.push(vL1.x, vL1.y, vL1.z);
-        positions.push(vR1.x, vR1.y, vR1.z);
-        positions.push(vL2.x, vL2.y, vL2.z);
-
-        positions.push(vR1.x, vR1.y, vR1.z);
-        positions.push(vR2.x, vR2.y, vR2.z);
-        positions.push(vL2.x, vL2.y, vL2.z);
+          // Triangle 2
+          positions.push(p00.x, p00.y, p00.z);
+          positions.push(p11.x, p11.y, p11.z);
+          positions.push(p01.x, p01.y, p01.z);
+        }
       }
 
       const geo = new THREE.BufferGeometry();
@@ -235,7 +257,9 @@ export default function AcquisitionsGlobeEarthPage() {
 
       const mesh = new THREE.Mesh(geo, mat);
       mesh.renderOrder = 14 + idx;
+      mesh.userData = { datatakeId: swath.id, swathIndex: idx };
       overlayGroup.add(mesh);
+      clickableMeshesRef.current.push(mesh);
 
       // Polygon Outer Border
       const borderPoints: THREE.Vector3[] = [];
@@ -274,11 +298,10 @@ export default function AcquisitionsGlobeEarthPage() {
     // 2. Initialize Satellites, 3D Orbit Lines, & Ground Projection Lines
     const orbitRadius = 1.18;
     SAMPLE_SATELLITES.forEach((satData, idx) => {
-      // Draw 3D Orbit Path Ring
       const orbitPoints: THREE.Vector3[] = [];
       const orbitSegments = 128;
       const inc = satData.inc * D;
-      const om = (satData.omega + 90) * D; // +90 deg offset to match Earth UV alignment
+      const om = (satData.omega + 90) * D;
 
       for (let i = 0; i <= orbitSegments; i++) {
         const angle = (i / orbitSegments) * Math.PI * 2;
@@ -304,7 +327,6 @@ export default function AcquisitionsGlobeEarthPage() {
       const orbitLine = new THREE.Line(orbitGeo, orbitMat);
       overlayGroup.add(orbitLine);
 
-      // Satellite Object Mesh (Glow Sphere)
       const satGroup = new THREE.Group();
       const satGeo = new THREE.SphereGeometry(0.02, 16, 16);
       const satMat = new THREE.MeshBasicMaterial({
@@ -314,7 +336,6 @@ export default function AcquisitionsGlobeEarthPage() {
       satGroup.add(satMesh);
       overlayGroup.add(satGroup);
 
-      // Beam Line projecting from satellite down to Earth surface
       const beamGeo = new THREE.BufferGeometry();
       beamGeo.setAttribute(
         "position",
@@ -355,37 +376,18 @@ export default function AcquisitionsGlobeEarthPage() {
         lineMat.opacity = 1.0;
         if (fillMat) {
           fillMat.color.set(0x00e5ff);
-          fillMat.opacity = 0.55;
+          fillMat.opacity = 0.65;
         }
       } else {
         lineMat.color.set(baseColor);
         lineMat.opacity = 0.7;
         if (fillMat) {
           fillMat.color.set(baseColor);
-          fillMat.opacity = 0.3;
+          fillMat.opacity = 0.35;
         }
       }
     });
   }, [selectedDataTake]);
-
-  // Helper to compute geographic center of polygon coordinates
-  const getSwathCentroid = (coords: number[][]) => {
-    const avgLon = coords.reduce((sum, c) => sum + c[0], 0) / coords.length;
-    const avgLat = coords.reduce((sum, c) => sum + c[1], 0) / coords.length;
-    return { lon: avgLon, lat: avgLat };
-  };
-
-  // Function to move the camera focus to a target datatake coordinate
-  const focusOnDatatake = (coords: number[][]) => {
-    if (!cameraRef.current) return;
-
-    const { lon, lat } = getSwathCentroid(coords);
-    const targetDir = latLonToVector3(lat, lon, 1.0).normalize();
-    const distance = cameraRef.current.position.length();
-
-    targetCamPosRef.current = targetDir.multiplyScalar(distance);
-    isAnimatingRef.current = true;
-  };
 
   const handleSceneReady = (
     scene: THREE.Scene,
@@ -403,10 +405,14 @@ export default function AcquisitionsGlobeEarthPage() {
     addDataOverlays(scene, overlayGroup);
 
     let isDragging = false;
+    let dragDistance = 0;
     let previousMousePosition = { x: 0, y: 0 };
+    const raycaster = new THREE.Raycaster();
+    const mouseVector = new THREE.Vector2();
 
     const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
+      dragDistance = 0;
       previousMousePosition = { x: e.clientX, y: e.clientY };
     };
 
@@ -414,6 +420,7 @@ export default function AcquisitionsGlobeEarthPage() {
       if (isDragging && camera) {
         const deltaX = e.clientX - previousMousePosition.x;
         const deltaY = e.clientY - previousMousePosition.y;
+        dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
 
         camera.position.applyAxisAngle(
           new THREE.Vector3(0, 1, 0),
@@ -429,8 +436,42 @@ export default function AcquisitionsGlobeEarthPage() {
       }
     };
 
-    const onMouseUp = () => {
+    // Click handler for Datatake selection on 3D globe
+    const onMouseUp = (e: MouseEvent) => {
       isDragging = false;
+
+      // Only handle selection click if user didn't drag/orbit globe
+      if (dragDistance < 5 && camera && renderer) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouseVector, camera);
+        const intersects = raycaster.intersectObjects(
+          clickableMeshesRef.current,
+          false,
+        );
+
+        if (intersects.length > 0) {
+          const hitMesh = intersects[0].object as THREE.Mesh;
+          const dtId = hitMesh.userData.datatakeId;
+          const swathIndex = hitMesh.userData.swathIndex;
+
+          if (dtId) {
+            setDatatakeFilter(dtId);
+            const matchingIdx = ACQ_DATATAKES.findIndex((dt) => dt.id === dtId);
+            const targetIdx = matchingIdx !== -1 ? matchingIdx : swathIndex;
+
+            setSelectedDataTake(targetIdx);
+            setIsModalOpen(true);
+
+            const matchedSwath = SAMPLE_SWATHS.find((s) => s.id === dtId);
+            if (matchedSwath) {
+              focusOnDatatake(matchedSwath.coords);
+            }
+          }
+        }
+      }
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -487,7 +528,7 @@ export default function AcquisitionsGlobeEarthPage() {
         if (sat.progress > Math.PI * 2) sat.progress -= Math.PI * 2;
 
         const inc = sat.inc * D;
-        const om = (sat.omega + 90) * D; // aligned +90 offset
+        const om = (sat.omega + 90) * D;
         const angle = sat.progress;
 
         const lat = Math.asin(Math.sin(inc) * Math.sin(angle));
@@ -503,7 +544,6 @@ export default function AcquisitionsGlobeEarthPage() {
         sat.satGroup.position.copy(satPos);
         sat.satGroup.lookAt(0, 0, 0);
 
-        // Beam down to ground surface
         const groundPos = satPos.clone().normalize().multiplyScalar(1.004);
         const positions = sat.beamLine.geometry.attributes
           .position as THREE.BufferAttribute;
@@ -514,7 +554,6 @@ export default function AcquisitionsGlobeEarthPage() {
         }
       });
 
-      // Update Screen Coordinates for 2D Badges
       if (cameraRef.current && rendererRef.current && sceneRef.current) {
         const camera = cameraRef.current as THREE.PerspectiveCamera;
         const renderer = rendererRef.current;
@@ -531,7 +570,6 @@ export default function AcquisitionsGlobeEarthPage() {
 
         const earthGroup = sceneRef.current.getObjectByName("EarthGroup");
 
-        // 1. Update Ground Stations 2D Positions using latLonToVector3
         STATIONS.forEach((station) => {
           const localPos = latLonToVector3(station.lat, station.lon, 1.0);
 
@@ -552,7 +590,6 @@ export default function AcquisitionsGlobeEarthPage() {
           };
         });
 
-        // 2. Update Satellites 2D Positions
         satObjectsRef.current.forEach((sat) => {
           const worldPos = sat.satGroup.position.clone();
           const camPos = camera.position.clone();
@@ -1099,7 +1136,7 @@ export default function AcquisitionsGlobeEarthPage() {
                       const idx = ACQ_DATATAKES.indexOf(dt);
                       setSelectedDataTake(idx);
                       setOpenDropdown(null);
-                      setIsModalOpen(true); // <--- OPENS THE MODAL WINDOW
+                      setIsModalOpen(true);
 
                       const matchedSwath = SAMPLE_SWATHS.find(
                         (s) => s.id === dt.id,
@@ -1181,7 +1218,7 @@ export default function AcquisitionsGlobeEarthPage() {
           <ThreeEarth onReady={handleSceneReady} />
         </div>
 
-        {/* --- DATATAKE DETAIL POP-UP MODAL (PASTE HERE) --- */}
+        {/* DATATAKE DETAIL POP-UP MODAL */}
         {isModalOpen &&
           datatakeFilter !== "*" &&
           (() => {
@@ -1201,7 +1238,7 @@ export default function AcquisitionsGlobeEarthPage() {
                 style={{
                   position: "absolute",
                   top: "24px",
-                  right: "80px", // Pushed left slightly to avoid overlapping Zoom buttons
+                  right: "80px",
                   zIndex: 100,
                   width: "320px",
                   background: "rgba(11, 18, 30, 0.92)",
@@ -1531,8 +1568,8 @@ export default function AcquisitionsGlobeEarthPage() {
                   left: `${pos.x}px`,
                   top: `${pos.y}px`,
                   transform: "translate(-50%, -100%)",
-                  background: "transparent", // Removed black background
-                  border: "none", // Removed white border
+                  background: "transparent",
+                  border: "none",
                   padding: "0",
                   color: "#ffffff",
                   fontSize: "11px",
