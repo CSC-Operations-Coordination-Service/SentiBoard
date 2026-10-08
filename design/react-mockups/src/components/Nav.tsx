@@ -36,19 +36,35 @@ export default function Nav() {
   return (
     <header className={"nav" + (open ? " open" : "")}>
       <div className="nav-inner">
-        <Link to="/examples/index1" className="brand" onClick={() => setOpen(false)} aria-label="SentiBoard — home">
-          <img className="brand-logo" src="/assets/img/sentiboard.png" alt="SentiBoard" />
+        <Link
+          to="/index"
+          className="brand"
+          onClick={() => setOpen(false)}
+          aria-label="SentiBoard — home"
+        >
+          <img
+            className="brand-logo"
+            src="/assets/img/sentiboard.png"
+            alt="SentiBoard"
+          />
         </Link>
         <nav className="nav-links" id="nav-links">
           {LINKS.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} onClick={() => setOpen(false)}
-              className={({ isActive }) => (isActive ? "active" : "")}>
+            <NavLink
+              key={l.to}
+              to={l.to}
+              end={l.end}
+              onClick={() => setOpen(false)}
+              className={({ isActive }) => (isActive ? "active" : "")}
+            >
               {l.label}
             </NavLink>
           ))}
         </nav>
         <div className="nav-right">
-          <div className="nav-partners"><Partners compact /></div>
+          <div className="nav-partners">
+            <Partners compact />
+          </div>
           <ThemeToggle />
           <button
             className="nav-burger"
@@ -57,7 +73,11 @@ export default function Nav() {
             aria-controls="nav-links"
             onClick={() => setOpen((o) => !o)}
           >
-            {open ? <X size={22} aria-hidden /> : <Menu size={22} aria-hidden />}
+            {open ? (
+              <X size={22} aria-hidden />
+            ) : (
+              <Menu size={22} aria-hidden />
+            )}
           </button>
         </div>
       </div>

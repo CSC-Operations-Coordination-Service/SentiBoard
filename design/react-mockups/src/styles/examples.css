@@ -1206,15 +1206,65 @@
 /* --- FAQ Theme Text Overrides --- */
 
 /* Dark Theme: Cyan Accent */
-:root[data-theme="dark"] section#faq,
-:root[data-theme="dark"] section#faq * {
-  color: var(--accent-cyan, #00e5ff) !important;
+/* Light Theme: High-Contrast White */
+/* Dark Mode: White FAQ title, buttons, and text */
+:root[data-theme="dark"] section#faq h2,
+:root section#faq h2 {
+  color: #ffffff !important;
 }
 
-/* Light Theme: High-Contrast White */
-:root[data-theme="light"] section#faq,
-:root[data-theme="light"] section#faq * {
+:root[data-theme="dark"] section#faq button span,
+:root section#faq button span {
   color: #ffffff !important;
+}
+
+:root[data-theme="dark"] section#faq p,
+:root section#faq p {
+  color: #ffffff !important;
+}
+
+/* Dark Mode: Keep original white colors */
+:root[data-theme="dark"] section#faq svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+/* Light Mode: Grey FAQ styling */
+:root[data-theme="light"] section#faq h2 {
+  color: #4a4a4a !important;
+}
+
+:root[data-theme="light"] section#faq svg {
+  color: #4a4a4a !important;
+  stroke: #4a4a4a !important;
+}
+
+:root[data-theme="light"] section#faq button span {
+  color: #4a4a4a !important;
+}
+
+:root[data-theme="light"] section#faq p {
+  color: #4a4a4a !important;
+}
+
+/* Media query fallback for light mode */
+@media (prefers-color-scheme: light) {
+  section#faq h2 {
+    color: #4a4a4a !important;
+  }
+
+  section#faq svg {
+    color: #4a4a4a !important;
+    stroke: #4a4a4a !important;
+  }
+
+  section#faq button span {
+    color: #4a4a4a !important;
+  }
+
+  section#faq p {
+    color: #4a4a4a !important;
+  }
 }
 
 /* Change the button text, number, and arrow icon color */
@@ -1861,17 +1911,17 @@ details.faq[open] .faq-body {
 
 /* Override for FAQ icon colors in light mode */
 :root[data-theme="light"] section#faq svg {
-  color: #36d0e0 !important;
-  stroke: #36d0e0 !important;
+  color: #4a4a4a !important;
+  stroke: #4a4a4a !important;
 }
 
 /* Light mode FAQ section styling */
 :root[data-theme="light"] section#faq button span {
-  color: #ffffff !important;
+  color: #4a4a4a !important;
 }
 
 :root[data-theme="light"] section#faq button {
-  color: #ffffff !important;
+  color: #4a4a4a !important;
 }
 
 :root[data-theme="light"] section#faq > div > div:first-child span,

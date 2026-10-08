@@ -559,7 +559,7 @@ export function IndexReveal() {
 // ================= landing =================
 const CARDS = [
   {
-    to: "/examples/index1",
+    to: "/index",
     img: SCENES[3],
     title: "a) index_with_about",
     desc: " Removing the 'About' page and including tabs description and FAQ section directly on the Home page",
@@ -858,7 +858,7 @@ export function Index1() {
               fontSize: "12px",
               letterSpacing: ".18em",
               textTransform: "uppercase",
-              color: "#3ddc84",
+              color: "#3DDC84 !important",
               cursor: "pointer",
             }}
           >
@@ -867,16 +867,16 @@ export function Index1() {
                 width: "8px",
                 height: "8px",
                 borderRadius: "50%",
-                background: "#3ddc84",
-                boxShadow: "0 0 11px #3ddc84",
+                background: "#3DDC84",
+                boxShadow: "0 0 11px #3DDC84",
               }}
             />
-            News
+            <span style={{ color: "#3DDC84" }}>News</span>
             <span
               style={{
                 fontFamily: "var(--mono)",
                 fontSize: "11px",
-                color: "#3ddc84",
+                color: "#3DDC84",
               }}
             >
               {REALTIME.length}
@@ -889,9 +889,9 @@ export function Index1() {
               stroke="currentColor"
               strokeWidth="3"
               style={{
-                transition: "transform .3s ease",
+                transition: "transform 720ms cubic-bezier(.65,0,.25,1)",
                 transform: newsOpen ? "rotate(180deg)" : "rotate(0deg)",
-                color: "#3ddc84",
+                color: "#3DDC84",
               }}
             >
               <path d="M5 9l7 7 7-7" />
@@ -951,51 +951,54 @@ export function Index1() {
             </div>
           </div>
         </div>
-        {newsOpen && (
-          <div
-            style={{
-              maxHeight: newsOpen ? "400px" : "0",
-              overflow: "auto",
-              transition: "max-height .42s cubic-bezier(.22,.61,.36,1)",
-              background: "rgba(6,12,16,.94)",
-              backdropFilter: "blur(10px)",
-              borderTop: "1px solid rgba(255,255,255,.10)",
-              zIndex: 1,
-            }}
-          >
-            <ul style={{ margin: 0, padding: "6px 0 12px", listStyle: "none" }}>
-              {REALTIME.slice(0, 5).map((item, idx) => (
-                <li
-                  key={idx}
+        <div
+          style={{
+            maxHeight: newsOpen ? "400px" : "0",
+            overflow: "hidden",
+            opacity: newsOpen ? 1 : 0,
+            transition:
+              "max-height 720ms cubic-bezier(.65,0,.25,1), opacity 720ms cubic-bezier(.65,0,.25,1)",
+            background: "rgba(6,12,16,.94)",
+            backdropFilter: "blur(10px)",
+            borderTop: newsOpen
+              ? "1px solid rgba(255,255,255,.10)"
+              : "1px solid rgba(255,255,255,0)",
+            zIndex: 1,
+            pointerEvents: newsOpen ? "auto" : "none",
+          }}
+        >
+          <ul style={{ margin: 0, padding: "6px 0 12px", listStyle: "none" }}>
+            {REALTIME.slice(0, 5).map((item, idx) => (
+              <li
+                key={idx}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "140px 1fr",
+                  gap: "18px",
+                  padding: "13px 26px",
+                  borderBottom:
+                    idx < 4 ? "1px solid rgba(255,255,255,.06)" : "none",
+                  fontSize: "13px",
+                  lineHeight: 1.5,
+                  color: "var(--text)",
+                }}
+              >
+                <time
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "140px 1fr",
-                    gap: "18px",
-                    padding: "13px 26px",
-                    borderBottom:
-                      idx < 4 ? "1px solid rgba(255,255,255,.06)" : "none",
-                    fontSize: "13px",
-                    lineHeight: 1.5,
-                    color: "var(--text)",
+                    fontFamily: "var(--mono)",
+                    fontSize: "10.5px",
+                    letterSpacing: ".04em",
+                    color: "var(--text-dim)",
+                    paddingTop: "2px",
                   }}
                 >
-                  <time
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "10.5px",
-                      letterSpacing: ".04em",
-                      color: "var(--text-dim)",
-                      paddingTop: "2px",
-                    }}
-                  >
-                    {item.date} {item.time}
-                  </time>
-                  <span>{item.text}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                  {item.date} {item.time}
+                </time>
+                <span>{item.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
 
       <section
@@ -1106,9 +1109,7 @@ export function Index1() {
                     color: "#36d0e0",
                     marginBottom: "14px",
                   }}
-                >
-                  {String(i + 1).padStart(2, "0")} — Module
-                </span>
+                ></span>
                 <h2
                   style={{
                     margin: "0 0 15px",
@@ -1181,9 +1182,7 @@ export function Index1() {
                 color: "var(--accent-cyan)",
                 marginBottom: "16px",
               }}
-            >
-              05 — Support
-            </span>
+            ></span>
             <h2
               style={{
                 margin: "0 0 12px",
@@ -1191,7 +1190,6 @@ export function Index1() {
                 fontWeight: 700,
                 letterSpacing: "-.025em",
                 lineHeight: 1.08,
-                color: "#fff",
               }}
             >
               FAQs
@@ -1349,7 +1347,7 @@ export function Index1() {
                   borderRadius: "0px",
                   overflow: "hidden",
                   marginBottom: "12px",
-                  background: "rgba(10,18,24,.7)",
+                  background: "transparent",
                   transition: "border-color 0.2s ease",
                 }}
               >
@@ -1381,7 +1379,7 @@ export function Index1() {
                         width: "19px",
                         display: "grid",
                         placeItems: "center",
-                        color: "#29c3d6  !important",
+                        color: "#ffffff !important",
                       } as any
                     }
                   >
@@ -1399,7 +1397,7 @@ export function Index1() {
                     </svg>
                   </span>
                   <span
-                    style={{ flex: 1, textAlign: "left", color: "var(--text)" }}
+                    style={{ flex: 1, textAlign: "left" }}
                   >
                     {section.title}
                   </span>
@@ -1412,7 +1410,7 @@ export function Index1() {
                     strokeWidth="2.4"
                     style={
                       {
-                        color: "#36d0e0 !important",
+                        color: "#ffffff !important",
                         transform: openSections[idx]
                           ? "rotate(180deg)"
                           : "rotate(0deg)",
@@ -1443,7 +1441,7 @@ export function Index1() {
                               margin: "0 0 6px 0",
                               fontSize: "14px",
                               fontWeight: 600,
-                              color: "#36d0e0 !important",
+                              color: "#ffffff !important",
                             } as any
                           }
                         >

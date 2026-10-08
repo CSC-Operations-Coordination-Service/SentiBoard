@@ -51,7 +51,7 @@ export default function App() {
 
           {/* PROPOSAL examples (do not affect the real pages above) */}
           <Route path="/examples" element={<ExamplesHome />} />
-          <Route path="/examples/index1" element={<Index1 />} />
+          <Route path="/index" element={<Index1 />} />
           <Route path="/examples/fleet" element={<IndexFleet />} />
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route path="/examples/fleet-gallery" element={<IndexFleetGallery />} />
