@@ -10,7 +10,7 @@ const D = Math.PI / 180;
 const SAMPLE_SWATHS = [
   {
     id: "S2A-48201-1",
-    color: 0x10b981, // Green swath
+    color: 0x10b981,
     opacity: 0.35,
     coords: [
       [2, 60],
@@ -21,7 +21,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S1C-57622",
-    color: 0xef4444, // Red swath (Svalbard)
+    color: 0xef4444,
     opacity: 0.35,
     coords: [
       [14, 80],
@@ -32,7 +32,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S3B-080-345",
-    color: 0x06b6d4, // Cyan swath (Inuvik / High Arctic)
+    color: 0x06b6d4,
     opacity: 0.35,
     coords: [
       [-135, 72],
@@ -43,7 +43,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S2B-42050-1",
-    color: 0x38bdf8, // Blue swath (North America)
+    color: 0x38bdf8,
     opacity: 0.35,
     coords: [
       [-105, 50],
@@ -54,7 +54,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S5P-60012",
-    color: 0xd97706, // Orange swath (Maspalomas)
+    color: 0xd97706,
     opacity: 0.35,
     coords: [
       [-20, 32],
@@ -65,7 +65,7 @@ const SAMPLE_SWATHS = [
   },
   {
     id: "S3A-055-358",
-    color: 0xf59e0b, // Yellow swath (Mediterranean)
+    color: 0xf59e0b,
     opacity: 0.35,
     coords: [
       [8, 46],
@@ -82,6 +82,15 @@ const SAMPLE_SATELLITES = [
   { name: "S3B", inc: 98.65, omega: 140, speed: 0.002, color: 0xf59e0b },
 ];
 
+const SPEED_OPTIONS = [1, 10, 60, 100, 300, 1000];
+
+const formatSimTime = (seconds: number) => {
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}Z`;
+};
+
 export default function AcquisitionsGlobeEarthPage() {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
@@ -93,9 +102,7 @@ export default function AcquisitionsGlobeEarthPage() {
   const [selectedDataTake, setSelectedDataTake] = useState<number>(0);
   const [satelliteFilter, setSatelliteFilter] = useState("*");
   const [dayFilter, setDayFilter] = useState("*");
-  const [datatakeFilter, setDatatakeFilter] = useState<string>(
-    ACQ_DATATAKES[0]?.id || "*",
-  );
+  const [datatakeFilter, setDatatakeFilter] = useState<string>("*");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
@@ -111,6 +118,17 @@ export default function AcquisitionsGlobeEarthPage() {
     Record<string, { x: number; y: number; visible: boolean }>
   >({});
 
+  // Simulation Time States
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
+  const [simTime, setSimTime] = useState<number>(0);
+  const [speedMultiplier, setSpeedMultiplier] = useState<number>(60);
+
+  const isPlayingRef = useRef(isPlaying);
+  isPlayingRef.current = isPlaying;
+
+  const speedMultiplierRef = useRef(speedMultiplier);
+  speedMultiplierRef.current = speedMultiplier;
+
   const satObjectsRef = useRef<
     {
       name: string;
@@ -123,8 +141,8 @@ export default function AcquisitionsGlobeEarthPage() {
     }[]
   >([]);
 
-  // Unified Filtering Logic
-  const filteredDatatakes = ACQ_DATATAKES.filter((dt) => {
+  // List of datatakes available for the dropdown options ( filtered by Satellite, Day, and Search — but NOT Datatake ID )
+  const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
     if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
     if (dayFilter !== "*" && !dt.startIso.startsWith(dayFilter)) return false;
     if (searchQuery.trim() !== "") {
@@ -133,6 +151,12 @@ export default function AcquisitionsGlobeEarthPage() {
       const matchSat = dt.sat.toLowerCase().includes(q);
       if (!matchId && !matchSat) return false;
     }
+    return true;
+  });
+
+  // Final filtered datatakes applied to globe 3D view and KPI calculation
+  const filteredDatatakes = dropdownDatatakes.filter((dt) => {
+    if (datatakeFilter !== "*" && dt.id !== datatakeFilter) return false;
     return true;
   });
 
@@ -154,7 +178,6 @@ export default function AcquisitionsGlobeEarthPage() {
     new Set(ACQ_DATATAKES.map((dt) => dt.sat)),
   ).sort();
 
-  // Helper function: Converts Lat/Lon (degrees) to 3D Cartesian coordinates
   const latLonToVector3 = (
     latDeg: number,
     lonDeg: number,
@@ -170,14 +193,12 @@ export default function AcquisitionsGlobeEarthPage() {
     );
   };
 
-  // Helper to compute geographic center of polygon coordinates
   const getSwathCentroid = (coords: number[][]) => {
     const avgLon = coords.reduce((sum, c) => sum + c[0], 0) / coords.length;
     const avgLat = coords.reduce((sum, c) => sum + c[1], 0) / coords.length;
     return { lon: avgLon, lat: avgLat };
   };
 
-  // Move camera focus to target datatake coordinate
   const focusOnDatatake = (coords: number[][]) => {
     if (!cameraRef.current) return;
 
@@ -189,12 +210,12 @@ export default function AcquisitionsGlobeEarthPage() {
     isAnimatingRef.current = true;
   };
 
-  // Select datatake, open modal, and re-orient camera
   const handleSelectDatatake = (dtId: string) => {
     const index = ACQ_DATATAKES.findIndex((dt) => dt.id === dtId);
     if (index !== -1) {
       setSelectedDataTake(index);
     }
+    setDatatakeFilter(dtId);
     setIsModalOpen(true);
 
     const matchedSwath = SAMPLE_SWATHS.find((s) => s.id === dtId);
@@ -203,27 +224,31 @@ export default function AcquisitionsGlobeEarthPage() {
     }
   };
 
+  const handleCycleSpeed = () => {
+    const currentIndex = SPEED_OPTIONS.indexOf(speedMultiplier);
+    const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
+    setSpeedMultiplier(SPEED_OPTIONS[nextIndex]);
+  };
+
   useEffect(() => {
     if (filteredDatatakes.length > 0) {
       const firstDt = filteredDatatakes[0];
       const index = ACQ_DATATAKES.findIndex((dt) => dt.id === firstDt.id);
       if (index !== -1) {
         setSelectedDataTake(index);
+        setDatatakeFilter(firstDt.id); // <-- ADD THIS LINE
       }
     }
   }, []);
 
-  // Synchronize 3D globe swaths visibility and highlighting with current active filters
   useEffect(() => {
     const allowedIds = new Set(filteredDatatakes.map((dt) => dt.id));
 
-    // Update fill meshes
     clickableMeshesRef.current.forEach((mesh) => {
       const dtId = mesh.userData.datatakeId;
       mesh.visible = allowedIds.has(dtId);
     });
 
-    // Update border outline meshes & selections
     footprintMeshesRef.current.forEach((mesh, idx) => {
       const line = mesh as THREE.Line;
       const dtId = line.userData?.datatakeId;
@@ -253,7 +278,6 @@ export default function AcquisitionsGlobeEarthPage() {
     });
   }, [filteredDatatakes, selectedDataTake]);
 
-  // Build Swath Polygons using dense triangulated sub-patches
   const addDataOverlays = (scene: THREE.Scene, overlayGroup: THREE.Group) => {
     if (!scene) return;
 
@@ -265,7 +289,6 @@ export default function AcquisitionsGlobeEarthPage() {
     clickableMeshesRef.current = [];
     satObjectsRef.current = [];
 
-    // 1. Solid Datatake Footprint Overlay Swaths
     SAMPLE_SWATHS.forEach((swath, idx) => {
       const radius = 1.004;
       const corners = swath.coords;
@@ -330,7 +353,6 @@ export default function AcquisitionsGlobeEarthPage() {
       overlayGroup.add(mesh);
       clickableMeshesRef.current.push(mesh);
 
-      // Polygon Outer Border
       const borderPoints: THREE.Vector3[] = [];
       const borderSteps = 16;
 
@@ -364,7 +386,6 @@ export default function AcquisitionsGlobeEarthPage() {
       footprintMeshesRef.current.push(lineMesh);
     });
 
-    // 2. Initialize Satellites, Orbit Lines, & Ground Beam Lines
     const orbitRadius = 1.18;
     SAMPLE_SATELLITES.forEach((satData, idx) => {
       const orbitPoints: THREE.Vector3[] = [];
@@ -487,7 +508,6 @@ export default function AcquisitionsGlobeEarthPage() {
 
         raycaster.setFromCamera(mouseVector, camera);
 
-        // Filter clickable meshes to only include visible ones
         const activeClickables = clickableMeshesRef.current.filter(
           (m) => m.visible,
         );
@@ -532,8 +552,20 @@ export default function AcquisitionsGlobeEarthPage() {
 
   useEffect(() => {
     let animId: number;
+    let lastTimestamp = performance.now();
 
-    const animateSatellites = () => {
+    const animateSatellites = (now: number) => {
+      const deltaSec = (now - lastTimestamp) / 1000;
+      lastTimestamp = now;
+
+      if (isPlayingRef.current) {
+        setSimTime((prevTime) => {
+          const nextTime =
+            (prevTime + deltaSec * speedMultiplierRef.current) % 86400;
+          return nextTime;
+        });
+      }
+
       if (
         isAnimatingRef.current &&
         targetCamPosRef.current &&
@@ -553,8 +585,10 @@ export default function AcquisitionsGlobeEarthPage() {
       const orbitRadius = 1.18;
 
       satObjectsRef.current.forEach((sat) => {
-        sat.progress += sat.speed;
-        if (sat.progress > Math.PI * 2) sat.progress -= Math.PI * 2;
+        if (isPlayingRef.current) {
+          sat.progress += sat.speed * (speedMultiplierRef.current / 30);
+          if (sat.progress > Math.PI * 2) sat.progress -= Math.PI * 2;
+        }
 
         const inc = sat.inc * D;
         const om = (sat.omega + 90) * D;
@@ -639,7 +673,7 @@ export default function AcquisitionsGlobeEarthPage() {
       animId = requestAnimationFrame(animateSatellites);
     };
 
-    animateSatellites();
+    animId = requestAnimationFrame(animateSatellites);
     return () => cancelAnimationFrame(animId);
   }, []);
 
@@ -1166,7 +1200,7 @@ export default function AcquisitionsGlobeEarthPage() {
               >
                 ALL DATATAKES
               </div>
-              {filteredDatatakes.map((dt) => {
+              {dropdownDatatakes.map((dt) => {
                 const statusColor =
                   dt.cls === "ok"
                     ? "#3dd68c"
@@ -1275,6 +1309,126 @@ export default function AcquisitionsGlobeEarthPage() {
           <ThreeEarth onReady={handleSceneReady} />
         </div>
 
+        {/* FLOATING BOTTOM OVERLAY CONTROL BAR */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: "28px",
+            left: "32px",
+            right: "32px",
+            zIndex: 50,
+            display: "flex",
+            alignItems: "center",
+            gap: "20px",
+            pointerEvents: "auto",
+            fontFamily: "system-ui, -apple-system, sans-serif",
+          }}
+        >
+          {/* Circular Play / Pause Button */}
+          <button
+            onClick={() => setIsPlaying(!isPlaying)}
+            style={{
+              width: "42px",
+              height: "42px",
+              borderRadius: "50%",
+              background: "#00a8b5",
+              border: "none",
+              color: "#090d16",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              flexShrink: 0,
+              boxShadow: "0 0 12px rgba(0, 168, 181, 0.4)",
+            }}
+          >
+            {isPlaying ? (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+            ) : (
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Timestamp Display */}
+          <div
+            style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}
+          >
+            <span
+              style={{
+                color: "#ffffff",
+                fontSize: "14px",
+                fontWeight: 700,
+                letterSpacing: "0.5px",
+              }}
+            >
+              2026-07-16 {formatSimTime(simTime)}
+            </span>
+            <span
+              style={{
+                color: "#6b7280",
+                fontSize: "10px",
+                fontWeight: 700,
+                letterSpacing: "1px",
+              }}
+            >
+              SIMULATION TIME
+            </span>
+          </div>
+
+          {/* Timeline Slider Track */}
+          <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+            <input
+              type="range"
+              min={0}
+              max={86400}
+              step={1}
+              value={Math.floor(simTime)}
+              onChange={(e) => setSimTime(Number(e.target.value))}
+              style={{
+                width: "100%",
+                accentColor: "#00c7d6",
+                cursor: "pointer",
+                height: "4px",
+              }}
+            />
+          </div>
+
+          {/* Single Speed Control Pill Button */}
+          <button
+            onClick={handleCycleSpeed}
+            style={{
+              background: "rgba(15, 23, 42, 0.85)",
+              color: "#ffffff",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              borderRadius: "16px",
+              padding: "6px 14px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              backdropFilter: "blur(8px)",
+              flexShrink: 0,
+            }}
+          >
+            ×{speedMultiplier}
+          </button>
+        </div>
+
         {/* DATATAKE DETAIL POP-UP MODAL */}
         {isModalOpen &&
           (() => {
@@ -1295,6 +1449,7 @@ export default function AcquisitionsGlobeEarthPage() {
                   position: "absolute",
                   top: "24px",
                   right: "80px",
+                  bottom: "90px",
                   zIndex: 100,
                   width: "320px",
                   background: "rgba(11, 18, 30, 0.92)",
@@ -1305,6 +1460,7 @@ export default function AcquisitionsGlobeEarthPage() {
                   boxShadow: "0 12px 32px rgba(0, 0, 0, 0.6)",
                   fontFamily: "monospace",
                   color: "#fff",
+                  overflowY: "auto",
                 }}
               >
                 {/* Header */}
@@ -1610,7 +1766,6 @@ export default function AcquisitionsGlobeEarthPage() {
             zIndex: 5,
           }}
         >
-          {/* Ground Station Labels */}
           {STATIONS.map((station, idx) => {
             const pos = stationPositions[station.name];
             if (!pos || !pos.visible || (pos.x === 0 && pos.y === 0))
@@ -1659,7 +1814,6 @@ export default function AcquisitionsGlobeEarthPage() {
             );
           })}
 
-          {/* Satellite Orbit Labels */}
           {Object.entries(satPositions).map(([satName, pos]) => {
             if (!pos || !pos.visible) return null;
 
