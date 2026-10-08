@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { PageHeader, DescriptionModal } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { PROCESSORS_DESCRIPTION } from "@/data/copy";
-import { PROCESSOR_GROUPS, MISSION_ORDER, MISSION_NAMES, MissionId } from "@/data/processor-releases";
+import {
+  PROCESSOR_GROUPS,
+  MISSION_ORDER,
+  MISSION_NAMES,
+  MissionId,
+} from "@/data/processor-releases";
 import CustomSelect, { type SelectOption } from "./CustomSelect";
 import s from "./processors.module.css";
 
@@ -13,69 +18,29 @@ const SATELLITE_IMAGES: Record<MissionId, string> = {
   "5P": "/assets/img/satellites/s5.jpg",
 };
 
+const DESCRIPTION = (
+  <>
+    <p>{PROCESSORS_DESCRIPTION}</p>
+  </>
+);
+
 export default function Processors() {
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
   const [activeMission, setActiveMission] = useState<MissionId>("1");
   const [expandedProc, setExpandedProc] = useState<string | null>(null);
-  const [selectedVersion, setSelectedVersion] = useState<Record<string, string>>({});
-  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<
+    Record<string, string>
+  >({});
 
   const satelliteImageUrl = SATELLITE_IMAGES[activeMission];
 
   return (
     <>
-      <PageHeader crumb="Processors" title="Processors"
-        img="/assets/img/modules/processors.jpg"
+      <PageHeader
+        title="Processors"
+        desc={DESCRIPTION}
+        img="/assets/img/modules/Landing_asteroid.jpg"
       />
-
-      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", margin: "0", padding: "0" }}>
-          <div style={{ marginTop: "16px" }}>
-            <button
-              type="button"
-              style={{
-                cursor: "pointer",
-                padding: "12px 16px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "0",
-                background: "#343a40",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#9aa4b4",
-                transition: "color 0.2s, background 0.2s",
-                whiteSpace: "nowrap",
-                marginLeft: "0 !important" as any,
-                alignSelf: "flex-start !important" as any,
-              }}
-              onClick={() => setDescriptionOpen(true)}
-              aria-expanded={descriptionOpen}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#eef1f6";
-                e.currentTarget.style.background = "rgba(0, 199, 214, 0.13)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#9aa4b4";
-                e.currentTarget.style.background = "#343a40";
-              }}
-            >
-              <span>Description</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-          </div>
-          <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
-            <div style={{ color: "#eef1f6" }}>
-              <p>{PROCESSORS_DESCRIPTION}</p>
-            </div>
-          </DescriptionModal>
-        </div>
-      </div>
 
       <section className={s.container}>
         {/* Satellite selector tabs - all four buttons always visible */}
@@ -108,7 +73,9 @@ export default function Processors() {
             )}
 
             <div className={s.placeholder}>
-              <div className={s.placeholderText}>Sentinel-{activeMission} Visualization</div>
+              <div className={s.placeholderText}>
+                Sentinel-{activeMission} Visualization
+              </div>
             </div>
           </section>
 
@@ -119,137 +86,182 @@ export default function Processors() {
             </div>
 
             <div className={s.plist}>
-              {PROCESSOR_GROUPS.filter((g) => g.mission === activeMission).map((group) => {
-                const isExpanded = expandedProc === group.ipf;
-                const currentRelease = group.releases[group.releases.length - 1];
-                const selectedVersionValue = selectedVersion[group.ipf] ?? currentRelease?.baseline;
-                const selectedReleaseIdx = group.releases.findIndex((r) => r.baseline === selectedVersionValue);
-                const selectedRelease = group.releases[selectedReleaseIdx] || currentRelease;
-                const isCurrentVersion = selectedRelease === currentRelease;
+              {PROCESSOR_GROUPS.filter((g) => g.mission === activeMission).map(
+                (group) => {
+                  const isExpanded = expandedProc === group.ipf;
+                  const currentRelease =
+                    group.releases[group.releases.length - 1];
+                  const selectedVersionValue =
+                    selectedVersion[group.ipf] ?? currentRelease?.baseline;
+                  const selectedReleaseIdx = group.releases.findIndex(
+                    (r) => r.baseline === selectedVersionValue,
+                  );
+                  const selectedRelease =
+                    group.releases[selectedReleaseIdx] || currentRelease;
+                  const isCurrentVersion = selectedRelease === currentRelease;
 
-                return group.releases.length > 0 ? (
-                  <div
-                    key={group.ipf}
-                    className={`${s.prow} ${isExpanded ? s.on : ""}`}
-                  >
-                    <button
-                      className={s.phdr}
-                      aria-expanded={isExpanded}
-                      onClick={() => setExpandedProc(isExpanded ? null : group.ipf)}
+                  return group.releases.length > 0 ? (
+                    <div
+                      key={group.ipf}
+                      className={`${s.prow} ${isExpanded ? s.on : ""}`}
                     >
-                      <span className={s.nm}>
-                        <b>{group.label}</b>
-                        <span>{group.sub}</span>
-                      </span>
-                      <span className={s.cur}>
-                        <b>{currentRelease.baseline}</b>
-                        <span>
-                          <i></i>in force · {currentRelease.from.toUpperCase()}
-                        </span>
-                      </span>
-                      <svg
-                        className={s.chev}
-                        width="15"
-                        height="15"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.4"
-                        aria-hidden="true"
+                      <button
+                        className={s.phdr}
+                        aria-expanded={isExpanded}
+                        onClick={() =>
+                          setExpandedProc(isExpanded ? null : group.ipf)
+                        }
                       >
-                        <path d="M6 9l6 6 6-6"></path>
-                      </svg>
-                    </button>
+                        <span className={s.nm}>
+                          <b>{group.label}</b>
+                          <span>{group.sub}</span>
+                        </span>
+                        <span className={s.cur}>
+                          <b>{currentRelease.baseline}</b>
+                          <span>
+                            <i></i>in force ·{" "}
+                            {currentRelease.from.toUpperCase()}
+                          </span>
+                        </span>
+                        <svg
+                          className={s.chev}
+                          width="15"
+                          height="15"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.4"
+                          aria-hidden="true"
+                        >
+                          <path d="M6 9l6 6 6-6"></path>
+                        </svg>
+                      </button>
 
-                    {isExpanded && (
-                      <div className={s.panel}>
-                        <div className={s.in}>
-                          {/* Version selector with prev/next buttons */}
-                          <div className={s.vsel}>
-                            <label htmlFor={`v-${group.ipf}`}>Baseline version</label>
-                            <button
-                              className={`${s.step} ${s.prev}`}
-                              disabled={selectedReleaseIdx <= 0}
-                              onClick={() => {
-                                if (selectedReleaseIdx > 0) {
+                      {isExpanded && (
+                        <div className={s.panel}>
+                          <div className={s.in}>
+                            {/* Version selector with prev/next buttons */}
+                            <div className={s.vsel}>
+                              <label htmlFor={`v-${group.ipf}`}>
+                                Baseline version
+                              </label>
+                              <button
+                                className={`${s.step} ${s.prev}`}
+                                disabled={selectedReleaseIdx <= 0}
+                                onClick={() => {
+                                  if (selectedReleaseIdx > 0) {
+                                    setSelectedVersion({
+                                      ...selectedVersion,
+                                      [group.ipf]:
+                                        group.releases[selectedReleaseIdx - 1]
+                                          .baseline,
+                                    });
+                                  }
+                                }}
+                                aria-label="Previous version"
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.4"
+                                >
+                                  <path d="M15 5l-7 7 7 7"></path>
+                                </svg>
+                              </button>
+                              <CustomSelect
+                                id={`v-${group.ipf}`}
+                                value={selectedVersionValue}
+                                options={group.releases.map((r, idx) => ({
+                                  value: r.baseline,
+                                  label: `${r.baseline} · ${r.from}${idx === group.releases.length - 1 ? " · in force" : ""}`,
+                                  isCurrent: idx === group.releases.length - 1,
+                                }))}
+                                onChange={(value) =>
                                   setSelectedVersion({
                                     ...selectedVersion,
-                                    [group.ipf]: group.releases[selectedReleaseIdx - 1].baseline,
-                                  });
+                                    [group.ipf]: value,
+                                  })
                                 }
-                              }}
-                              aria-label="Previous version"
-                            >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                                <path d="M15 5l-7 7 7 7"></path>
-                              </svg>
-                            </button>
-                            <CustomSelect
-                              id={`v-${group.ipf}`}
-                              value={selectedVersionValue}
-                              options={group.releases.map((r, idx) => ({
-                                value: r.baseline,
-                                label: `${r.baseline} · ${r.from}${idx === group.releases.length - 1 ? " · in force" : ""}`,
-                                isCurrent: idx === group.releases.length - 1,
-                              }))}
-                              onChange={(value) => setSelectedVersion({ ...selectedVersion, [group.ipf]: value })}
-                            />
-                            <button
-                              className={`${s.step} ${s.next}`}
-                              disabled={selectedReleaseIdx >= group.releases.length - 1}
-                              onClick={() => {
-                                if (selectedReleaseIdx < group.releases.length - 1) {
-                                  setSelectedVersion({
-                                    ...selectedVersion,
-                                    [group.ipf]: group.releases[selectedReleaseIdx + 1].baseline,
-                                  });
+                              />
+                              <button
+                                className={`${s.step} ${s.next}`}
+                                disabled={
+                                  selectedReleaseIdx >=
+                                  group.releases.length - 1
                                 }
-                              }}
-                              aria-label="Next version"
-                            >
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-                                <path d="M9 5l7 7-7 7"></path>
-                              </svg>
-                            </button>
-                            {isCurrentVersion && <span className={`${s.vtag} ${s.now}`}>In force</span>}
-                          </div>
-
-                          {/* Metadata */}
-                          <dl className={s.meta}>
-                            <div>
-                              <dt>Processor Baseline ID:</dt>
-                              <dd>{selectedRelease.baseline}</dd>
-                            </div>
-                            <div>
-                              <dt>Operational since:</dt>
-                              <dd>{selectedRelease.day}</dd>
-                            </div>
-                            <div>
-                              <dt>Impacted satellite(s):</dt>
-                              <dd>{selectedRelease.sats.join(", ")}</dd>
-                            </div>
-                          </dl>
-
-                          {/* Release notes */}
-                          {selectedRelease.notes && (
-                            <div className={s.rn}>
-                              <h4>Release notes</h4>
-                              <p>{selectedRelease.notes}</p>
-                              {selectedRelease.sats.length > 0 && (
-                                <div className={s.sats}>
-                                  {selectedRelease.sats.map((sat) => (
-                                    <span key={sat}>{sat}</span>
-                                  ))}
-                                </div>
+                                onClick={() => {
+                                  if (
+                                    selectedReleaseIdx <
+                                    group.releases.length - 1
+                                  ) {
+                                    setSelectedVersion({
+                                      ...selectedVersion,
+                                      [group.ipf]:
+                                        group.releases[selectedReleaseIdx + 1]
+                                          .baseline,
+                                    });
+                                  }
+                                }}
+                                aria-label="Next version"
+                              >
+                                <svg
+                                  width="13"
+                                  height="13"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.4"
+                                >
+                                  <path d="M9 5l7 7-7 7"></path>
+                                </svg>
+                              </button>
+                              {isCurrentVersion && (
+                                <span className={`${s.vtag} ${s.now}`}>
+                                  In force
+                                </span>
                               )}
                             </div>
-                          )}
+
+                            {/* Metadata */}
+                            <dl className={s.meta}>
+                              <div>
+                                <dt>Processor Baseline ID:</dt>
+                                <dd>{selectedRelease.baseline}</dd>
+                              </div>
+                              <div>
+                                <dt>Operational since:</dt>
+                                <dd>{selectedRelease.day}</dd>
+                              </div>
+                              <div>
+                                <dt>Impacted satellite(s):</dt>
+                                <dd>{selectedRelease.sats.join(", ")}</dd>
+                              </div>
+                            </dl>
+
+                            {/* Release notes */}
+                            {selectedRelease.notes && (
+                              <div className={s.rn}>
+                                <h4>Release notes</h4>
+                                <p>{selectedRelease.notes}</p>
+                                {selectedRelease.sats.length > 0 && (
+                                  <div className={s.sats}>
+                                    {selectedRelease.sats.map((sat) => (
+                                      <span key={sat}>{sat}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                ) : null;
-              })}
+                      )}
+                    </div>
+                  ) : null;
+                },
+              )}
             </div>
           </section>
         </div>

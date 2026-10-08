@@ -12,7 +12,15 @@
 
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, ChevronLeft, ChevronRight, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import {
   ALL_SATELLITES,
@@ -75,7 +83,11 @@ function StatusCircle({ status, size = 9 }: { status: Status; size?: number }) {
   return (
     <span
       className={s.circle}
-      style={{ background: COMPLETENESS[status].color, width: size, height: size }}
+      style={{
+        background: COMPLETENESS[status].color,
+        width: size,
+        height: size,
+      }}
       title={COMPLETENESS[status].label}
     />
   );
@@ -87,7 +99,11 @@ function Legend() {
       <span className={s.legendLabel}>Completeness status</span>
       {STATUS_ORDER.map((k) => (
         <span key={k} className={s.legendItem}>
-          <span className={s.legendDot} style={{ background: COMPLETENESS[k].color }} aria-hidden />
+          <span
+            className={s.legendDot}
+            style={{ background: COMPLETENESS[k].color }}
+            aria-hidden
+          />
           {COMPLETENESS[k].label}
         </span>
       ))}
@@ -106,7 +122,10 @@ function DatatakeRow({ dt }: { dt: Datatake }) {
       <span className={s.dtId}>{dt.id}</span>
       <span className={s.dtProduct}>{dt.product}</span>
       <span className={s.dtTime}>{sensingWindow(dt)}</span>
-      <span className={s.dtStatus} style={{ color: COMPLETENESS[dt.status].color }}>
+      <span
+        className={s.dtStatus}
+        style={{ color: COMPLETENESS[dt.status].color }}
+      >
         <span className={s.dtStatusLabel}>{COMPLETENESS[dt.status].label}</span>
         <span className={s.dtPct}>{completenessLabel(dt)}</span>
       </span>
@@ -124,7 +143,11 @@ function OccurrenceList({
   onToggle: (id: string) => void;
 }) {
   if (events.length === 0) {
-    return <p className={s.emptyDetail}>No events on this day match the current filters.</p>;
+    return (
+      <p className={s.emptyDetail}>
+        No events on this day match the current filters.
+      </p>
+    );
   }
 
   return (
@@ -133,7 +156,9 @@ function OccurrenceList({
         const Icon = CATEGORY_ICONS[e.category];
         const status = eventStatus(e);
         const open = expanded.has(e.id);
-        const unavailable = e.datatakes.filter((d) => d.status === "unavailable").length;
+        const unavailable = e.datatakes.filter(
+          (d) => d.status === "unavailable",
+        ).length;
 
         return (
           <li key={e.id} className={s.occ}>
@@ -145,14 +170,24 @@ function OccurrenceList({
               aria-controls={`occ-${e.id}`}
             >
               <span className={s.occTime}>{e.time}</span>
-              <ChevronRight size={13} className={`${s.chev} ${open ? s.chevOpen : ""}`} aria-hidden />
+              <ChevronRight
+                size={13}
+                className={`${s.chev} ${open ? s.chevOpen : ""}`}
+                aria-hidden
+              />
               <span className={s.occBody}>
                 <span className={s.occTitle}>{e.title}</span>
                 <span className={s.occMeta}>
-                  <span style={{ color: CATEGORY_COLOR[e.category], display: "inline-flex", alignItems: "center" }}>
+                  <span
+                    style={{
+                      color: CATEGORY_COLOR[e.category],
+                      display: "inline-flex",
+                      alignItems: "center",
+                    }}
+                  >
                     <Icon size={12} strokeWidth={CATEGORY_STROKE} aria-hidden />
-                  </span>
-                  {" "}{e.category} · {e.satellite}
+                  </span>{" "}
+                  {e.category} · {e.satellite}
                 </span>
               </span>
               <StatusCircle status={status} />
@@ -170,7 +205,10 @@ function OccurrenceList({
                 </div>
                 <ul className={s.dtList}>
                   {e.datatakes.map((dt) => (
-                    <DatatakeRow key={`${e.id}-${dt.id}-${dt.product}`} dt={dt} />
+                    <DatatakeRow
+                      key={`${e.id}-${dt.id}-${dt.product}`}
+                      dt={dt}
+                    />
                   ))}
                 </ul>
               </div>
@@ -191,7 +229,8 @@ function DaySummary({ events }: { events: ManifestEvent[] }) {
   );
   return (
     <span className={s.detailSub}>
-      {events.length} occurrence{events.length === 1 ? "" : "s"} · {datatakes} datatake
+      {events.length} occurrence{events.length === 1 ? "" : "s"} · {datatakes}{" "}
+      datatake
       {datatakes === 1 ? "" : "s"}
       {unavailable > 0 ? ` · ${unavailable} unavailable` : ""}
     </span>
@@ -222,15 +261,24 @@ export default function EventsManifest() {
     setFilters((f) => ({ ...f, mission, satellite: "" }));
   }, []);
   const setSatellite = useCallback((satellite: string) => {
-    setFilters((f) => ({ ...f, satellite, mission: satellite ? missionOf(satellite) : f.mission }));
+    setFilters((f) => ({
+      ...f,
+      satellite,
+      mission: satellite ? missionOf(satellite) : f.mission,
+    }));
   }, []);
   const toggleCategory = useCallback((c: EventCategory) => {
     setFilters((f) => ({
       ...f,
-      categories: f.categories.includes(c) ? f.categories.filter((x) => x !== c) : [...f.categories, c],
+      categories: f.categories.includes(c)
+        ? f.categories.filter((x) => x !== c)
+        : [...f.categories, c],
     }));
   }, []);
-  const setQuery = useCallback((query: string) => setFilters((f) => ({ ...f, query })), []);
+  const setQuery = useCallback(
+    (query: string) => setFilters((f) => ({ ...f, query })),
+    [],
+  );
   const reset = useCallback(() => setFilters(EMPTY_FILTERS), []);
 
   const filtered = useMemo(() => filterEvents(EVENTS, filters), [filters]);
@@ -243,7 +291,9 @@ export default function EventsManifest() {
     filters.query !== "" ||
     filters.categories.length !== CATEGORIES.length;
 
-  const satellites = filters.mission ? MISSIONS[filters.mission] : ALL_SATELLITES;
+  const satellites = filters.mission
+    ? MISSIONS[filters.mission]
+    : ALL_SATELLITES;
   // Sentinel-5P flies alone, so there is nothing to choose — the production page disables the
   // selector in exactly this case rather than offering a list of one.
   const satelliteDisabled = satellites.length < 2;
@@ -266,7 +316,7 @@ export default function EventsManifest() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openDay, close]);
 
-  const dayEvents = openDay === null ? [] : byDay.get(openDay) ?? [];
+  const dayEvents = openDay === null ? [] : (byDay.get(openDay) ?? []);
 
   const toggleAllExpanded = useCallback(() => {
     if (expanded.size === dayEvents.length && dayEvents.length > 0) {
@@ -293,7 +343,9 @@ export default function EventsManifest() {
           >
             <option value="">All missions</option>
             {MISSION_NAMES.map((m) => (
-              <option key={m} value={m}>{m}</option>
+              <option key={m} value={m}>
+                {m}
+              </option>
             ))}
           </select>
         </div>
@@ -306,11 +358,17 @@ export default function EventsManifest() {
             value={filters.satellite}
             onChange={(e) => setSatellite(e.target.value)}
             disabled={satelliteDisabled}
-            title={satelliteDisabled ? "Sentinel-5P has a single satellite" : undefined}
+            title={
+              satelliteDisabled
+                ? "Sentinel-5P has a single satellite"
+                : undefined
+            }
           >
             <option value="">All satellites</option>
             {satellites.map((sat) => (
-              <option key={sat} value={sat}>{sat}</option>
+              <option key={sat} value={sat}>
+                {sat}
+              </option>
             ))}
           </select>
         </div>
@@ -318,7 +376,9 @@ export default function EventsManifest() {
         <div className={`${s.field} ${s.fieldWide}`}>
           <label htmlFor="mf-search">Search</label>
           <div className={s.withIcon}>
-            <span className={s.lead} aria-hidden><Search size={13} /></span>
+            <span className={s.lead} aria-hidden>
+              <Search size={13} />
+            </span>
             <input
               id="mf-search"
               className={s.control}
@@ -328,7 +388,12 @@ export default function EventsManifest() {
               onChange={(e) => setQuery(e.target.value)}
             />
             {filters.query && (
-              <button type="button" className={s.clear} onClick={() => setQuery("")} aria-label="Clear search">
+              <button
+                type="button"
+                className={s.clear}
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+              >
                 <X size={13} />
               </button>
             )}
@@ -352,14 +417,15 @@ export default function EventsManifest() {
               style={
                 on
                   ? {
-                    borderColor: categoryColor,
-                    backgroundColor: `${categoryColor}24`,
-                    color: categoryColor,
-                  }
+                      borderColor: categoryColor,
+                      backgroundColor: `${categoryColor}24`,
+                      color: categoryColor,
+                    }
                   : undefined
               }
             >
-              <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden /> {c.charAt(0).toUpperCase() + c.slice(1)}
+              <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden />{" "}
+              {c.charAt(0).toUpperCase() + c.slice(1)}
             </button>
           );
         })}
@@ -369,106 +435,166 @@ export default function EventsManifest() {
 
   const DESCRIPTION = (
     <>
-      <p>This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:</p>
+      <p>
+        This view shows the events occurred on a given date and the possible
+        impact on user products completeness. Events are categorized according
+        to the following issue types:
+      </p>
       <ul>
-        <li><strong>Acquisition:</strong> issue occurring during the reception of the data at the ground station</li>
-        <li><strong>Calibration:</strong> issue occurred during sensor calibration</li>
-        <li><strong>Manoeuvre:</strong> issue occurred during the execution of a manoeuvre</li>
-        <li><strong>Production:</strong> issue occurred during data processing</li>
-        <li><strong>Satellite:</strong> issue due to instrument unavailability</li>
+        <li>
+          <strong>Acquisition:</strong> issue occurring during the reception of
+          the data at the ground station
+        </li>
+        <li>
+          <strong>Calibration:</strong> issue occurred during sensor calibration
+        </li>
+        <li>
+          <strong>Manoeuvre:</strong> issue occurred during the execution of a
+          manoeuvre
+        </li>
+        <li>
+          <strong>Production:</strong> issue occurred during data processing
+        </li>
+        <li>
+          <strong>Satellite:</strong> issue due to instrument unavailability
+        </li>
       </ul>
-      <p>When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The "green" colour indicates that the total completeness is spared; "orange" is used in case of medium impact; the "red" colour is used when the datatake is lost.</p>
-      <p>Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.</p>
+      <p>
+        When an occurrence is clicked, the bottom panel shows a list of
+        potentially impacted datatakes, determined by their sensing times, along
+        with further details about the event. The impact on datatake
+        completeness is represented by the right-side coloured circle. The
+        "green" colour indicates that the total completeness is spared; "orange"
+        is used in case of medium impact; the "red" colour is used when the
+        datatake is lost.
+      </p>
+      <p>
+        Events can be filtered by mission, event type, satellite name (e.g.,
+        'Sentinel-1A'), or by entering a category of interest in the search box.
+      </p>
     </>
   );
 
   return (
     <>
-      <PageHeader crumb="Events" title="Events" desc={DESCRIPTION} img="/assets/img/modules/Tibetan_Plateau.jpg" />
+      <PageHeader
+        title="Events"
+        desc={DESCRIPTION}
+        img="/assets/img/modules/events.jpg"
+      />
 
       <div className={s.page}>
         <div className={s.inner}>
           <div className={s.monthBar}>
-          <div className={s.monthNav}>
-            <button type="button" disabled title="Mock data covers August 2026 only" aria-label="Previous month">
-              <ChevronLeft size={15} aria-hidden />
-            </button>
-            <span className={s.monthLabel}>{MONTH_LABEL}</span>
-            <button type="button" disabled title="Mock data covers August 2026 only" aria-label="Next month">
-              <ChevronRight size={15} aria-hidden />
-            </button>
-          </div>
-          <Legend />
-        </div>
-
-        {/* ---------- filters ---------- */}
-        <section className={s.filters} aria-label="Filters">
-          <div className={s.filtersHead}>
-            <SlidersHorizontal size={13} aria-hidden />
-            <span className={s.filtersLabel}>Filters</span>
-            <span className={s.count}>
-              {filtered.length} event{filtered.length === 1 ? "" : "s"}
-            </span>
-            {dirty && (
-              <button type="button" className={s.reset} onClick={reset}>
-                <RotateCcw size={12} aria-hidden /> Reset
-              </button>
-            )}
-            {/* Its own button rather than the whole head row: the reset lives in that row too, and
-                a button cannot be nested inside another button. */}
-            {narrow && (
+            <div className={s.monthNav}>
               <button
                 type="button"
-                className={s.filtersToggle}
-                aria-expanded={filtersOpen}
-                aria-controls={filterFieldsId}
-                aria-label={filtersOpen ? "Hide filter controls" : "Show filter controls"}
-                onClick={() => setFiltersOpen((v) => !v)}
+                disabled
+                title="Mock data covers August 2026 only"
+                aria-label="Previous month"
               >
-                <ChevronDown size={16} aria-hidden />
+                <ChevronLeft size={15} aria-hidden />
               </button>
-            )}
+              <span className={s.monthLabel}>{MONTH_LABEL}</span>
+              <button
+                type="button"
+                disabled
+                title="Mock data covers August 2026 only"
+                aria-label="Next month"
+              >
+                <ChevronRight size={15} aria-hidden />
+              </button>
+            </div>
+            <Legend />
           </div>
 
-          {narrow ? <Collapse open={filtersOpen} id={filterFieldsId}>{filterFields}</Collapse> : filterFields}
-        </section>
-
-        {/* ---------- month grid ---------- */}
-        <div className={s.calWrap}>
-          <div className={s.dow} aria-hidden>
-            {WEEKDAYS.map((d) => (
-              <span key={d}>{d}</span>
-            ))}
-          </div>
-          <div className={s.grid}>
-            {cells.map((c, i) => {
-              // Neighbouring-month cells exist only so the weeks line up; they carry no events and
-              // are inert <div>s rather than disabled buttons, which keeps them out of the tab order.
-              if (c.dim) return <div key={`dim-${i}`} className={`${s.cell} ${s.cellDim}`} aria-hidden />;
-
-              const events = byDay.get(c.day) ?? [];
-              const status = events.length ? dayStatus(events) : null;
-              const selected = openDay === c.day;
-
-              return (
+          {/* ---------- filters ---------- */}
+          <section className={s.filters} aria-label="Filters">
+            <div className={s.filtersHead}>
+              <SlidersHorizontal size={13} aria-hidden />
+              <span className={s.filtersLabel}>Filters</span>
+              <span className={s.count}>
+                {filtered.length} event{filtered.length === 1 ? "" : "s"}
+              </span>
+              {dirty && (
+                <button type="button" className={s.reset} onClick={reset}>
+                  <RotateCcw size={12} aria-hidden /> Reset
+                </button>
+              )}
+              {/* Its own button rather than the whole head row: the reset lives in that row too, and
+                a button cannot be nested inside another button. */}
+              {narrow && (
                 <button
-                  key={c.day}
                   type="button"
-                  className={`${s.cell} ${selected ? s.cellSel : ""}`}
-                  onClick={() => selectDay(c.day)}
-                  aria-pressed={selected}
-                  /* The glyphs are aria-hidden, so the types they now encode have to reach a
+                  className={s.filtersToggle}
+                  aria-expanded={filtersOpen}
+                  aria-controls={filterFieldsId}
+                  aria-label={
+                    filtersOpen
+                      ? "Hide filter controls"
+                      : "Show filter controls"
+                  }
+                  onClick={() => setFiltersOpen((v) => !v)}
+                >
+                  <ChevronDown size={16} aria-hidden />
+                </button>
+              )}
+            </div>
+
+            {narrow ? (
+              <Collapse open={filtersOpen} id={filterFieldsId}>
+                {filterFields}
+              </Collapse>
+            ) : (
+              filterFields
+            )}
+          </section>
+
+          {/* ---------- month grid ---------- */}
+          <div className={s.calWrap}>
+            <div className={s.dow} aria-hidden>
+              {WEEKDAYS.map((d) => (
+                <span key={d}>{d}</span>
+              ))}
+            </div>
+            <div className={s.grid}>
+              {cells.map((c, i) => {
+                // Neighbouring-month cells exist only so the weeks line up; they carry no events and
+                // are inert <div>s rather than disabled buttons, which keeps them out of the tab order.
+                if (c.dim)
+                  return (
+                    <div
+                      key={`dim-${i}`}
+                      className={`${s.cell} ${s.cellDim}`}
+                      aria-hidden
+                    />
+                  );
+
+                const events = byDay.get(c.day) ?? [];
+                const status = events.length ? dayStatus(events) : null;
+                const selected = openDay === c.day;
+
+                return (
+                  <button
+                    key={c.day}
+                    type="button"
+                    className={`${s.cell} ${selected ? s.cellSel : ""}`}
+                    onClick={() => selectDay(c.day)}
+                    aria-pressed={selected}
+                    /* The glyphs are aria-hidden, so the types they now encode have to reach a
                      screen reader through the label. The dots carried no type at all, so this is
                      information the cell gained rather than information it is repeating. */
-                  aria-label={
-                    events.length
-                      ? `${c.day} August, ${events.length} event${events.length === 1 ? "" : "s"}, ${typeSummary(events)}, worst completeness ${COMPLETENESS[status!].label}`
-                      : `${c.day} August, no events`
-                  }
-                >
-                  <span className={s.cellNum}>{String(c.day).padStart(2, "0")}</span>
+                    aria-label={
+                      events.length
+                        ? `${c.day} August, ${events.length} event${events.length === 1 ? "" : "s"}, ${typeSummary(events)}, worst completeness ${COMPLETENESS[status!].label}`
+                        : `${c.day} August, no events`
+                    }
+                  >
+                    <span className={s.cellNum}>
+                      {String(c.day).padStart(2, "0")}
+                    </span>
 
-                  {/* One mark per event, drawn with that event's TYPE GLYPH — the same five icons
+                    {/* One mark per event, drawn with that event's TYPE GLYPH — the same five icons
                       the filter pills carry at the top of the page (components/EventIcon's set), so
                       a day reads as "a manoeuvre and a production issue" rather than "two things".
                       Replaces the neutral dots that were here.
@@ -477,97 +603,117 @@ export default function EventsManifest() {
                       draw these same glyphs in the accent rather than in a per-type hue, so a second
                       palette would contradict both. The glyph identifies the type; the stripe below
                       identifies the loss. */}
-                  {events.length > 0 && (
-                    <span className={s.marks}>
-                      {events.slice(0, MARKS_SHOWN).map((e) => {
-                        const Icon = CATEGORY_ICONS[e.category];
-                        const categoryColor = CATEGORY_COLOR[e.category];
-                        return (
-                          <span
-                            key={e.id}
-                            className={s.mark}
-                            title={`${e.time} · ${e.category} · ${e.satellite}`}
-                            style={{ color: categoryColor }}
-                          >
-                            <Icon size={13} strokeWidth={CATEGORY_STROKE} aria-hidden />
-                          </span>
-                        );
-                      })}
-                      {/* A glyph is far bigger than the 5px dot it replaces, so a busy day can no
+                    {events.length > 0 && (
+                      <span className={s.marks}>
+                        {events.slice(0, MARKS_SHOWN).map((e) => {
+                          const Icon = CATEGORY_ICONS[e.category];
+                          const categoryColor = CATEGORY_COLOR[e.category];
+                          return (
+                            <span
+                              key={e.id}
+                              className={s.mark}
+                              title={`${e.time} · ${e.category} · ${e.satellite}`}
+                              style={{ color: categoryColor }}
+                            >
+                              <Icon
+                                size={13}
+                                strokeWidth={CATEGORY_STROKE}
+                                aria-hidden
+                              />
+                            </span>
+                          );
+                        })}
+                        {/* A glyph is far bigger than the 5px dot it replaces, so a busy day can no
                           longer show one mark per event. The mock's busiest day has two; a real
                           month will have more, and silently dropping them would make the grid
                           under-report. */}
-                      {events.length > MARKS_SHOWN && (
-                        <em className={s.markMore}>+{events.length - MARKS_SHOWN}</em>
-                      )}
-                    </span>
-                  )}
-
-                </button>
-              );
-            })}
+                        {events.length > MARKS_SHOWN && (
+                          <em className={s.markMore}>
+                            +{events.length - MARKS_SHOWN}
+                          </em>
+                        )}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* ---------- Day Manifest drawer ---------- */}
-      {/* The scrim is a button rather than a div with onClick: click-to-dismiss then comes with
+        {/* ---------- Day Manifest drawer ---------- */}
+        {/* The scrim is a button rather than a div with onClick: click-to-dismiss then comes with
           keyboard access for free, and screen readers announce it instead of finding a bare
           clickable region. */}
-      <button
-        type="button"
-        className={`${s.scrim} ${openDay !== null ? s.scrimOn : ""}`}
-        onClick={close}
-        tabIndex={openDay !== null ? 0 : -1}
-        aria-label="Close day manifest"
-      />
+        <button
+          type="button"
+          className={`${s.scrim} ${openDay !== null ? s.scrimOn : ""}`}
+          onClick={close}
+          tabIndex={openDay !== null ? 0 : -1}
+          aria-label="Close day manifest"
+        />
 
-      <aside
-        className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
-        aria-label="Day manifest"
-        aria-hidden={openDay === null}
-      >
-        {openDay !== null && (
-          <>
-            <div className={s.drawerHead}>
-              <div>
-                <span className={s.detailEyebrow}>Day manifest</span>
-                <h2 className={s.detailDay}>{dayLabel(openDay)}</h2>
-                <DaySummary events={dayEvents} />
-              </div>
-              <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                <button
-                  type="button"
-                  className={s.expandAllBtn}
-                  onClick={toggleAllExpanded}
-                  title={expanded.size === dayEvents.length ? "Collapse all events" : "Expand all events"}
+        <aside
+          className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
+          aria-label="Day manifest"
+          aria-hidden={openDay === null}
+        >
+          {openDay !== null && (
+            <>
+              <div className={s.drawerHead}>
+                <div>
+                  <span className={s.detailEyebrow}>Day manifest</span>
+                  <h2 className={s.detailDay}>{dayLabel(openDay)}</h2>
+                  <DaySummary events={dayEvents} />
+                </div>
+                <div
+                  style={{ display: "flex", gap: "8px", alignItems: "center" }}
                 >
-                  {expanded.size === dayEvents.length ? "Collapse All" : "Expand All"}
-                </button>
-                <button type="button" className={s.iconBtn} onClick={close} aria-label="Close">
-                  <X size={15} aria-hidden />
-                </button>
+                  <button
+                    type="button"
+                    className={s.expandAllBtn}
+                    onClick={toggleAllExpanded}
+                    title={
+                      expanded.size === dayEvents.length
+                        ? "Collapse all events"
+                        : "Expand all events"
+                    }
+                  >
+                    {expanded.size === dayEvents.length
+                      ? "Collapse All"
+                      : "Expand All"}
+                  </button>
+                  <button
+                    type="button"
+                    className={s.iconBtn}
+                    onClick={close}
+                    aria-label="Close"
+                  >
+                    <X size={15} aria-hidden />
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className={s.drawerBody}>
-              <OccurrenceList
-                events={dayEvents}
-                expanded={expanded}
-                onToggle={(id) => setExpanded((prev) => {
-                  const newSet = new Set(prev);
-                  if (newSet.has(id)) {
-                    newSet.delete(id);
-                  } else {
-                    newSet.add(id);
+              <div className={s.drawerBody}>
+                <OccurrenceList
+                  events={dayEvents}
+                  expanded={expanded}
+                  onToggle={(id) =>
+                    setExpanded((prev) => {
+                      const newSet = new Set(prev);
+                      if (newSet.has(id)) {
+                        newSet.delete(id);
+                      } else {
+                        newSet.add(id);
+                      }
+                      return newSet;
+                    })
                   }
-                  return newSet;
-                })}
-              />
-            </div>
-          </>
-        )}
-      </aside>
-    </div>
+                />
+              </div>
+            </>
+          )}
+        </aside>
+      </div>
     </>
   );
 }

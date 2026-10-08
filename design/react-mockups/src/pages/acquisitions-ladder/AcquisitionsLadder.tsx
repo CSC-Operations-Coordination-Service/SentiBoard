@@ -4,9 +4,19 @@ import { PageHeader, Reveal } from "@/components/ui";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { passesFor } from "@/data/downlink";
 import {
-  ACQ_DATATAKES, COMPLETENESS_COLOR, LEVEL_LABEL,
-  expectedTypes, levelMean, meanCompleteness, missingSeconds, sensingMs,
-  type AcqDatatake, type AcqLevel, type AcqProductType, type Completeness, type ProductLevel,
+  ACQ_DATATAKES,
+  COMPLETENESS_COLOR,
+  LEVEL_LABEL,
+  expectedTypes,
+  levelMean,
+  meanCompleteness,
+  missingSeconds,
+  sensingMs,
+  type AcqDatatake,
+  type AcqLevel,
+  type AcqProductType,
+  type Completeness,
+  type ProductLevel,
 } from "@/data/mock";
 import s from "./ladder.module.css";
 
@@ -81,7 +91,11 @@ function phaseOf(dt: AcqDatatake, nowMs: number): Phase {
 function stateOf(dt: AcqDatatake, phase: Phase): Completeness {
   if (phase === "scheduled") return "planned";
   if (phase === "sensing") return "processing";
-  return dt.cls === "ok" ? "acquired" : dt.cls === "warn" ? "partial" : "unavailable";
+  return dt.cls === "ok"
+    ? "acquired"
+    : dt.cls === "warn"
+      ? "partial"
+      : "unavailable";
 }
 
 // ---------------------------------------------------------------------------
@@ -97,12 +111,18 @@ function missionOf(unit: string): string {
 const MISSIONS = ["S1", "S2", "S3", "S5P"] as const;
 
 const MISSION_NAME: Record<string, string> = {
-  S1: "Sentinel-1", S2: "Sentinel-2", S3: "Sentinel-3", S5P: "Sentinel-5P",
+  S1: "Sentinel-1",
+  S2: "Sentinel-2",
+  S3: "Sentinel-3",
+  S5P: "Sentinel-5P",
 };
 
 /** Muted accent per mission, matching the Processors timeline's lane-group treatment. */
 const MISSION_HUE: Record<string, string> = {
-  S1: "#7aa2f7", S2: "#7fd4a2", S3: "#e0b177", S5P: "#c79bd8",
+  S1: "#7aa2f7",
+  S2: "#7fd4a2",
+  S3: "#e0b177",
+  S5P: "#c79bd8",
 };
 
 /* Level labels are MISSION-AWARE, which is the point of the concept. Sentinel-5P's L1 bucket
@@ -118,8 +138,10 @@ function levelLabel(level: ProductLevel, mission: string): string {
    hole in the data rather than as a property of the mission. */
 function baseNote(mission: string, levels: AcqLevel[]): string | null {
   const first = levels[0]?.level;
-  if (mission === "S5P") return "TROPOMI downlink → Level 1B · this mission publishes no Level 0 product";
-  if (first === "L0") return "Instrument downlink → Level 0 · chain starts at the raw product";
+  if (mission === "S5P")
+    return "TROPOMI downlink → Level 1B · this mission publishes no Level 0 product";
+  if (first === "L0")
+    return "Instrument downlink → Level 0 · chain starts at the raw product";
   return null;
 }
 
@@ -181,7 +203,10 @@ function groupByInstrument(products: AcqProductType[]) {
   const byInst = new Map<string, AcqProductType[]>();
   for (const p of products) {
     const key = p.instrument ?? "—";
-    if (!byInst.has(key)) { byInst.set(key, []); order.push(key); }
+    if (!byInst.has(key)) {
+      byInst.set(key, []);
+      order.push(key);
+    }
     byInst.get(key)!.push(p);
   }
   return order.map((inst) => ({
@@ -191,9 +216,20 @@ function groupByInstrument(products: AcqProductType[]) {
   }));
 }
 
-function Rung({ level, mission, phase, sensingS, open, onToggle }: {
-  level: AcqLevel; mission: string; phase: Phase; sensingS: number;
-  open: boolean; onToggle: () => void;
+function Rung({
+  level,
+  mission,
+  phase,
+  sensingS,
+  open,
+  onToggle,
+}: {
+  level: AcqLevel;
+  mission: string;
+  phase: Phase;
+  sensingS: number;
+  open: boolean;
+  onToggle: () => void;
 }) {
   const mean = levelMean(level);
   const notExpected = mean === null;
@@ -206,16 +242,34 @@ function Rung({ level, mission, phase, sensingS, open, onToggle }: {
   const headId = `rung-${mission}-${level.level}`;
 
   return (
-    <div className={`${s.rung} ${notExpected ? s.rungNE : ""} ${!pending && !notExpected && (mean as number) < 95 ? s.rungAlarm : ""}`}>
-      <button type="button" className={s.rungHead} onClick={onToggle} aria-expanded={open} aria-controls={`${headId}-tbl`}>
+    <div
+      className={`${s.rung} ${notExpected ? s.rungNE : ""} ${!pending && !notExpected && (mean as number) < 95 ? s.rungAlarm : ""}`}
+    >
+      <button
+        type="button"
+        className={s.rungHead}
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${headId}-tbl`}
+      >
         <span className={s.rungLab}>
           {levelLabel(level.level, mission)}
-          {mission === "S2" && level.level === "L1" && <span className={s.rungTag}>collapsed L1A/B/C</span>}
-          {multiInstrument && <span className={s.rungTag}>{groups.length} instruments</span>}
+          {mission === "S2" && level.level === "L1" && (
+            <span className={s.rungTag}>collapsed L1A/B/C</span>
+          )}
+          {multiInstrument && (
+            <span className={s.rungTag}>{groups.length} instruments</span>
+          )}
           {notExpected && <span className={s.rungTag}>not expected</span>}
         </span>
-        <span className={`${s.rungPct} ${pending ? s.none : s[sev(mean)] ?? ""}`}>
-          {pending ? "pending" : notExpected ? "not expected" : pct1(mean as number)}
+        <span
+          className={`${s.rungPct} ${pending ? s.none : (s[sev(mean)] ?? "")}`}
+        >
+          {pending
+            ? "pending"
+            : notExpected
+              ? "not expected"
+              : pct1(mean as number)}
         </span>
       </button>
 
@@ -225,7 +279,9 @@ function Rung({ level, mission, phase, sensingS, open, onToggle }: {
             {multiInstrument && (
               <div className={s.groupHead}>
                 <span>{g.inst}</span>
-                <span>{pending ? "—" : g.mean === null ? "n/e" : pct1(g.mean)}</span>
+                <span>
+                  {pending ? "—" : g.mean === null ? "n/e" : pct1(g.mean)}
+                </span>
               </div>
             )}
             <div className={s.segs}>
@@ -241,12 +297,21 @@ function Rung({ level, mission, phase, sensingS, open, onToggle }: {
                   <span
                     key={p.type}
                     className={`${s.seg} ${cls}`}
-                    style={ne || pending ? undefined : { ["--segLine" as string]: segHue(p.pct as number) }}
+                    style={
+                      ne || pending
+                        ? undefined
+                        : { ["--segLine" as string]: segHue(p.pct as number) }
+                    }
                     title={title}
                     role="img"
                     aria-label={title}
                   >
-                    {!ne && !pending && <span className={s.segFill} style={{ height: `${p.pct}%` }} />}
+                    {!ne && !pending && (
+                      <span
+                        className={s.segFill}
+                        style={{ height: `${p.pct}%` }}
+                      />
+                    )}
                   </span>
                 );
               })}
@@ -257,7 +322,10 @@ function Rung({ level, mission, phase, sensingS, open, onToggle }: {
 
       {open && (
         <table className={s.tbl} id={`${headId}-tbl`}>
-          <caption>{levelLabel(level.level, mission)} · {level.products.length} product types</caption>
+          <caption>
+            {levelLabel(level.level, mission)} · {level.products.length} product
+            types
+          </caption>
           <thead>
             <tr>
               <th scope="col">Product type</th>
@@ -271,11 +339,25 @@ function Rung({ level, mission, phase, sensingS, open, onToggle }: {
               <tr key={p.type}>
                 <td>{p.type}</td>
                 {multiInstrument && <td>{p.instrument ?? "—"}</td>}
-                <td className={p.pct === null ? s.ne : pending ? s.ne : s[sev(p.pct)] ?? ""}>
-                  {pending ? "pending" : p.pct === null ? "not expected" : pct1(p.pct)}
+                <td
+                  className={
+                    p.pct === null
+                      ? s.ne
+                      : pending
+                        ? s.ne
+                        : (s[sev(p.pct)] ?? "")
+                  }
+                >
+                  {pending
+                    ? "pending"
+                    : p.pct === null
+                      ? "not expected"
+                      : pct1(p.pct)}
                 </td>
                 <td className={s.ne}>
-                  {pending || p.pct === null ? "—" : dur(sensingS * (1 - p.pct / 100))}
+                  {pending || p.pct === null
+                    ? "—"
+                    : dur(sensingS * (1 - p.pct / 100))}
                 </td>
               </tr>
             ))}
@@ -296,7 +378,15 @@ function segHue(pct: number): string {
 }
 
 /** The connector between two rungs — the yield drop. */
-function Yield({ from, to, pending }: { from: number | null; to: number | null; pending: boolean }) {
+function Yield({
+  from,
+  to,
+  pending,
+}: {
+  from: number | null;
+  to: number | null;
+  pending: boolean;
+}) {
   let hue = "var(--line-strong)";
   let txt = "—";
   let note = "no comparable level";
@@ -306,17 +396,30 @@ function Yield({ from, to, pending }: { from: number | null; to: number | null; 
   } else if (from !== null && to !== null) {
     const d = to - from;
     const mag = Math.abs(d);
-    hue = mag < 2 ? "var(--cmp-acquired)"
-      : mag < 15 ? "var(--cmp-partial)"
-        : "var(--cmp-unavailable)";
+    hue =
+      mag < 2
+        ? "var(--cmp-acquired)"
+        : mag < 15
+          ? "var(--cmp-partial)"
+          : "var(--cmp-unavailable)";
     txt = `${d < 0 ? "−" : d > 0 ? "+" : "±"}${mag.toFixed(1)} pts`;
-    note = d < -2 ? "loss enters here" : d < 0 ? "slight loss" : d > 0 ? "recovered" : "carried through";
+    note =
+      d < -2
+        ? "loss enters here"
+        : d < 0
+          ? "slight loss"
+          : d > 0
+            ? "recovered"
+            : "carried through";
   }
 
   return (
     <div className={s.link} style={{ ["--linkHue" as string]: hue }}>
       <span className={s.linkRail} aria-hidden />
-      <span className={s.linkTxt}>{txt}<em>{note}</em></span>
+      <span className={s.linkTxt}>
+        {txt}
+        <em>{note}</em>
+      </span>
     </div>
   );
 }
@@ -332,7 +435,10 @@ function missionLadder(dts: AcqDatatake[]) {
   const order: ProductLevel[] = [];
   for (const dt of dts) {
     for (const lv of dt.levels) {
-      if (!byLevel.has(lv.level)) { byLevel.set(lv.level, []); order.push(lv.level); }
+      if (!byLevel.has(lv.level)) {
+        byLevel.set(lv.level, []);
+        order.push(lv.level);
+      }
       byLevel.get(lv.level)!.push(...lv.products);
     }
   }
@@ -386,24 +492,29 @@ export default function AcquisitionsLadder() {
   }, [span, nowMs, extent]);
 
   const viewSpan = view.to - view.from;
-  const posOf = useCallback((ms: number) => ((ms - view.from) / viewSpan) * 100, [view.from, viewSpan]);
+  const posOf = useCallback(
+    (ms: number) => ((ms - view.from) / viewSpan) * 100,
+    [view.from, viewSpan],
+  );
 
   const lanes = useMemo(() => {
     const units = Array.from(new Set(ACQ_DATATAKES.map((d) => d.unit)));
     return units.sort((a, b) => {
-      const ma = MISSIONS.indexOf(missionOf(a) as typeof MISSIONS[number]);
-      const mb = MISSIONS.indexOf(missionOf(b) as typeof MISSIONS[number]);
+      const ma = MISSIONS.indexOf(missionOf(a) as (typeof MISSIONS)[number]);
+      const mb = MISSIONS.indexOf(missionOf(b) as (typeof MISSIONS)[number]);
       return ma - mb || a.localeCompare(b);
     });
   }, []);
 
   // Datatakes inside the drawn window, in time order — this is also the ←/→ walk order.
   const visible = useMemo(
-    () => ACQ_DATATAKES
-      .filter((d) => endOf(d) >= view.from && startOf(d) <= view.to)
-      .slice()
-      .sort((a, b) => startOf(a) - startOf(b)),
-    [view.from, view.to]
+    () =>
+      ACQ_DATATAKES.filter(
+        (d) => endOf(d) >= view.from && startOf(d) <= view.to,
+      )
+        .slice()
+        .sort((a, b) => startOf(a) - startOf(b)),
+    [view.from, view.to],
   );
 
   const outside = ACQ_DATATAKES.length - visible.length;
@@ -411,12 +522,14 @@ export default function AcquisitionsLadder() {
   useEffect(() => {
     if (!wantFocus.current) return;
     wantFocus.current = false;
-    gridRef.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
+    gridRef.current
+      ?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')
+      ?.focus();
   }, [selId]);
 
   const selected = useMemo(
     () => ACQ_DATATAKES.find((d) => d.id === selId) ?? ACQ_DATATAKES[0],
-    [selId]
+    [selId],
   );
 
   const selMission = missionOf(selected.unit);
@@ -432,7 +545,14 @@ export default function AcquisitionsLadder() {
   /* Hour ticks across the window. Step chosen so a 2-hour window does not draw one rule per
      minute and the full scenario does not draw one per hour. */
   const ticks = useMemo(() => {
-    const stepH = viewSpan <= 3 * HOUR_MS ? 0.5 : viewSpan <= 8 * HOUR_MS ? 1 : viewSpan <= 26 * HOUR_MS ? 3 : 6;
+    const stepH =
+      viewSpan <= 3 * HOUR_MS
+        ? 0.5
+        : viewSpan <= 8 * HOUR_MS
+          ? 1
+          : viewSpan <= 26 * HOUR_MS
+            ? 3
+            : 6;
     const step = stepH * HOUR_MS;
     const first = Math.ceil(view.from / step) * step;
     const out: { ms: number; label: string }[] = [];
@@ -447,7 +567,17 @@ export default function AcquisitionsLadder() {
      widget rather than N separate stops. */
   const onStripKey = (e: React.KeyboardEvent) => {
     const k = e.key;
-    if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(k)) return;
+    if (
+      ![
+        "ArrowLeft",
+        "ArrowRight",
+        "ArrowUp",
+        "ArrowDown",
+        "Home",
+        "End",
+      ].includes(k)
+    )
+      return;
     e.preventDefault();
 
     let next: AcqDatatake | undefined;
@@ -455,7 +585,10 @@ export default function AcquisitionsLadder() {
     else if (k === "End") next = visible[visible.length - 1];
     else if (k === "ArrowLeft" || k === "ArrowRight") {
       const i = visible.findIndex((d) => d.id === selId);
-      const j = k === "ArrowLeft" ? Math.max(0, i - 1) : Math.min(visible.length - 1, i + 1);
+      const j =
+        k === "ArrowLeft"
+          ? Math.max(0, i - 1)
+          : Math.min(visible.length - 1, i + 1);
       next = visible[i === -1 ? 0 : j];
     } else {
       const laneIdx = lanes.indexOf(selected.unit);
@@ -468,12 +601,17 @@ export default function AcquisitionsLadder() {
         if (inLane.length) {
           const t = startOf(selected);
           next = inLane.reduce((best, d) =>
-            Math.abs(startOf(d) - t) < Math.abs(startOf(best) - t) ? d : best);
+            Math.abs(startOf(d) - t) < Math.abs(startOf(best) - t) ? d : best,
+          );
           break;
         }
       }
     }
-    if (next) { wantFocus.current = true; setSelId(next.id); setOpenRung(null); }
+    if (next) {
+      wantFocus.current = true;
+      setSelId(next.id);
+      setOpenRung(null);
+    }
   };
 
   const pickMission = (m: string) => {
@@ -482,18 +620,20 @@ export default function AcquisitionsLadder() {
     if (nextMission) {
       // Jump to that mission's most recent datatake so the ladder follows the card.
       const own = ACQ_DATATAKES.filter((d) => missionOf(d.unit) === nextMission)
-        .slice().sort((a, b) => startOf(b) - startOf(a));
-      if (own.length) { setSelId(own[0].id); setOpenRung(null); }
+        .slice()
+        .sort((a, b) => startOf(b) - startOf(a));
+      if (own.length) {
+        setSelId(own[0].id);
+        setOpenRung(null);
+      }
     }
   };
 
   return (
     <>
-      <PageHeader crumb="Acquisitions · Ladder" title="Acquisitions Status"
-      />
+      <PageHeader title="Acquisitions Status" />
 
       <section className="wrap pad">
-
         {/* ---------------- BAND 1 · fleet strip ---------------- */}
         <Reveal>
           <div className={s.band}>
@@ -505,15 +645,27 @@ export default function AcquisitionsLadder() {
               <div className={s.ctrls}>
                 <span className={s.ctrlK}>window</span>
                 {WINDOWS.map((w) => (
-                  <button key={w.id} type="button" className={s.btn}
-                    aria-pressed={windowId === w.id} onClick={() => setWindowId(w.id)}>
+                  <button
+                    key={w.id}
+                    type="button"
+                    className={s.btn}
+                    aria-pressed={windowId === w.id}
+                    onClick={() => setWindowId(w.id)}
+                  >
                     {w.label}
                   </button>
                 ))}
-                <span className={s.ctrlK} style={{ marginLeft: 8 }}>mission</span>
+                <span className={s.ctrlK} style={{ marginLeft: 8 }}>
+                  mission
+                </span>
                 {MISSIONS.map((m) => (
-                  <button key={m} type="button" className={s.btn}
-                    aria-pressed={mission === m} onClick={() => pickMission(m)}>
+                  <button
+                    key={m}
+                    type="button"
+                    className={s.btn}
+                    aria-pressed={mission === m}
+                    onClick={() => pickMission(m)}
+                  >
                     {m}
                   </button>
                 ))}
@@ -538,7 +690,8 @@ export default function AcquisitionsLadder() {
                   aria-valuetext={`${utcDate(nowMs)} ${utcHms(nowMs)} UTC`}
                 />
                 <span className={s.clockVal} style={{ fontSize: 12 }}>
-                  <UtcClock /><small>WALL UTC</small>
+                  <UtcClock />
+                  <small>WALL UTC</small>
                 </span>
               </div>
 
@@ -552,14 +705,24 @@ export default function AcquisitionsLadder() {
               >
                 <div className={s.ticks}>
                   {ticks.map((t) => (
-                    <span key={t.ms} className={s.tick} style={{ left: `${posOf(t.ms)}%` }}>{t.label}</span>
+                    <span
+                      key={t.ms}
+                      className={s.tick}
+                      style={{ left: `${posOf(t.ms)}%` }}
+                    >
+                      {t.label}
+                    </span>
                   ))}
                 </div>
 
                 {/* One rule for the whole plot rather than one per lane. */}
                 {nowMs >= view.from && nowMs <= view.to && (
-                  <div className={s.nowLine}
-                    style={{ left: `calc(var(--laneLabelW) + (100% - var(--laneLabelW)) * ${(posOf(nowMs) / 100).toFixed(5)})` }}>
+                  <div
+                    className={s.nowLine}
+                    style={{
+                      left: `calc(var(--laneLabelW) + (100% - var(--laneLabelW)) * ${(posOf(nowMs) / 100).toFixed(5)})`,
+                    }}
+                  >
                     <span className={s.nowFlag}>T</span>
                   </div>
                 )}
@@ -569,8 +732,11 @@ export default function AcquisitionsLadder() {
                   const dim = mission !== null && mission !== m;
                   const own = visible.filter((d) => d.unit === unit);
                   return (
-                    <div key={unit} className={`${s.lane} ${dim ? s.laneDim : ""}`}
-                      style={{ ["--laneHue" as string]: MISSION_HUE[m] }}>
+                    <div
+                      key={unit}
+                      className={`${s.lane} ${dim ? s.laneDim : ""}`}
+                      style={{ ["--laneHue" as string]: MISSION_HUE[m] }}
+                    >
                       <div className={s.laneLab}>
                         <span className={s.laneHue} aria-hidden />
                         {unit}
@@ -581,7 +747,10 @@ export default function AcquisitionsLadder() {
                           const state = stateOf(d, phase);
                           const hue = COMPLETENESS_COLOR[state];
                           const left = Math.max(0, posOf(startOf(d)));
-                          const width = Math.min(((endOf(d) - startOf(d)) / viewSpan) * 100, 100 - left);
+                          const width = Math.min(
+                            ((endOf(d) - startOf(d)) / viewSpan) * 100,
+                            100 - left,
+                          );
                           const sel = d.id === selId;
                           const stations = passesFor(d.id);
                           return (
@@ -598,16 +767,23 @@ export default function AcquisitionsLadder() {
                               }}
                               aria-pressed={sel}
                               tabIndex={sel ? 0 : -1}
-                              onClick={() => { setSelId(d.id); setOpenRung(null); }}
+                              onClick={() => {
+                                setSelId(d.id);
+                                setOpenRung(null);
+                              }}
                               title={`${d.id} · ${d.sat} · ${PHASE_LABEL[phase]} · sensing ${utcHms(startOf(d))}Z for ${dur(d.sensingS)}`}
                             >
                               {/* Past ~70% of the window the label would run off the plot and be
                                   clipped by the band, so it anchors to the bar's right edge and
                                   extends leftwards instead. Every lane holds one datatake, so a
                                   flipped label has no neighbour to collide with. */}
-                              <span className={`${s.barLab} ${left > 70 ? s.barLabEnd : ""}`}>
+                              <span
+                                className={`${s.barLab} ${left > 70 ? s.barLabEnd : ""}`}
+                              >
                                 <b>{d.id}</b>
-                                {stations.map((p) => <span key={p.station}>{p.station}</span>)}
+                                {stations.map((p) => (
+                                  <span key={p.station}>{p.station}</span>
+                                ))}
                               </span>
                             </button>
                           );
@@ -620,16 +796,40 @@ export default function AcquisitionsLadder() {
 
               <div className={s.stripFoot}>
                 <div className={s.legend}>
-                  <span style={{ color: COMPLETENESS_COLOR.acquired }}><i style={{ background: "currentColor" }} />acquired</span>
-                  <span style={{ color: COMPLETENESS_COLOR.partial }}><i style={{ background: "currentColor" }} />partial</span>
-                  <span style={{ color: COMPLETENESS_COLOR.unavailable }}><i style={{ background: "currentColor" }} />unavailable</span>
-                  <span style={{ color: COMPLETENESS_COLOR.processing }}><i className={s.barSensing} style={{ ["--barLine" as string]: "currentColor" }} />sensing at T</span>
-                  <span style={{ color: COMPLETENESS_COLOR.planned }}><i style={{ borderStyle: "dashed" }} />scheduled</span>
+                  <span style={{ color: COMPLETENESS_COLOR.acquired }}>
+                    <i style={{ background: "currentColor" }} />
+                    acquired
+                  </span>
+                  <span style={{ color: COMPLETENESS_COLOR.partial }}>
+                    <i style={{ background: "currentColor" }} />
+                    partial
+                  </span>
+                  <span style={{ color: COMPLETENESS_COLOR.unavailable }}>
+                    <i style={{ background: "currentColor" }} />
+                    unavailable
+                  </span>
+                  <span style={{ color: COMPLETENESS_COLOR.processing }}>
+                    <i
+                      className={s.barSensing}
+                      style={{ ["--barLine" as string]: "currentColor" }}
+                    />
+                    sensing at T
+                  </span>
+                  <span style={{ color: COMPLETENESS_COLOR.planned }}>
+                    <i style={{ borderStyle: "dashed" }} />
+                    scheduled
+                  </span>
                 </div>
               </div>
               <div className={s.stripFoot}>
-                <span>{visible.length} of {ACQ_DATATAKES.length} datatakes in window{outside > 0 ? ` · ${outside} outside` : ""}</span>
-                <span>bars shorter than the minimum are drawn at 14 px so a 3-minute datatake stays clickable next to a 20-minute one</span>
+                <span>
+                  {visible.length} of {ACQ_DATATAKES.length} datatakes in window
+                  {outside > 0 ? ` · ${outside} outside` : ""}
+                </span>
+                <span>
+                  bars shorter than the minimum are drawn at 14 px so a 3-minute
+                  datatake stays clickable next to a 20-minute one
+                </span>
               </div>
             </div>
           </div>
@@ -643,21 +843,30 @@ export default function AcquisitionsLadder() {
                 <span className={s.bandK}>Band 2</span>
                 <h2 className={s.bandN}>Level ladder — {selected.id}</h2>
               </div>
-              <span className={s.bandK}>{rungs.length} rungs · {expectedTypes(selected.levels).length} expected product types</span>
+              <span className={s.bandK}>
+                {rungs.length} rungs · {expectedTypes(selected.levels).length}{" "}
+                expected product types
+              </span>
             </div>
 
             <div className={s.ladderWrap}>
               <div className={s.ladder}>
                 <div className={s.dtHead}>
                   <span className={s.dtId}>{selected.id}</span>
-                  <span className={s.dtPhase}
-                    style={{ ["--barLine" as string]: COMPLETENESS_COLOR[stateOf(selected, selPhase)] }}>
+                  <span
+                    className={s.dtPhase}
+                    style={{
+                      ["--barLine" as string]:
+                        COMPLETENESS_COLOR[stateOf(selected, selPhase)],
+                    }}
+                  >
                     {PHASE_LABEL[selPhase]}
                   </span>
                 </div>
                 <p className={s.dtMeta}>
                   {selected.sat} · {selected.mode} · orbit {selected.absOrbit} ·
-                  sensing {utcDate(startOf(selected))} {utcHms(startOf(selected))}Z for {dur(selected.sensingS)} ·
+                  sensing {utcDate(startOf(selected))}{" "}
+                  {utcHms(startOf(selected))}Z for {dur(selected.sensingS)} ·
                   status {selected.status}
                 </p>
 
@@ -677,7 +886,9 @@ export default function AcquisitionsLadder() {
                         phase={selPhase}
                         sensingS={selected.sensingS}
                         open={openRung === lv.level}
-                        onToggle={() => setOpenRung(openRung === lv.level ? null : lv.level)}
+                        onToggle={() =>
+                          setOpenRung(openRung === lv.level ? null : lv.level)
+                        }
                       />
                     </div>
                   ))}
@@ -691,12 +902,23 @@ export default function AcquisitionsLadder() {
               <div className={s.side}>
                 <div className={s.kpi}>
                   <span className={s.kpiK}>datatake completeness</span>
-                  <span className={`${s.kpiV} ${selPending ? s.mute : s[sev(comp)] ?? ""}`}>
-                    {selPending ? "not yet sensed" : <>{comp.toFixed(1)}<small>%</small></>}
+                  <span
+                    className={`${s.kpiV} ${selPending ? s.mute : (s[sev(comp)] ?? "")}`}
+                  >
+                    {selPending ? (
+                      "not yet sensed"
+                    ) : (
+                      <>
+                        {comp.toFixed(1)}
+                        <small>%</small>
+                      </>
+                    )}
                   </span>
                   <p className={s.kpiNote}>
-                    Unweighted mean across the {expectedTypes(selected.levels).length} expected product
-                    types — <code>meanCompleteness()</code>, the same function the globe's header KPI uses.
+                    Unweighted mean across the{" "}
+                    {expectedTypes(selected.levels).length} expected product
+                    types — <code>meanCompleteness()</code>, the same function
+                    the globe's header KPI uses.
                   </p>
                 </div>
 
@@ -706,36 +928,43 @@ export default function AcquisitionsLadder() {
                     {selPending ? "—" : dur(missing)}
                   </span>
                   <p className={s.kpiNote}>
-                    Summed across product types, so it can exceed the {dur(selected.sensingS)} sensing
-                    window. It is a backlog figure, not an interval.
+                    Summed across product types, so it can exceed the{" "}
+                    {dur(selected.sensingS)} sensing window. It is a backlog
+                    figure, not an interval.
                   </p>
                 </div>
 
                 <div className={s.dl}>
                   <span className={s.kpiK}>downlink passes</span>
-                  {passes.length === 0
-                    ? <p className={s.dlNone}>no passes recorded</p>
-                    : passes.map((p) => (
+                  {passes.length === 0 ? (
+                    <p className={s.dlNone}>no passes recorded</p>
+                  ) : (
+                    passes.map((p) => (
                       <div className={s.dlRow} key={p.station + p.atIso}>
                         <b>{p.station}</b>
                         <span>{utcHms(Date.parse(p.atIso))}Z</span>
                         <span>{(p.volumeMb / 1000).toFixed(1)} Gb</span>
                         <span>{p.durationS}s</span>
                       </div>
-                    ))}
+                    ))
+                  )}
                   <p className={s.kpiNote}>
-                    Mock — the backend has no datatake-to-pass join, no per-pass volume and no per-pass
-                    duration yet. Isolated in <code>data/downlink.ts</code>, same as the globe.
+                    Mock — the backend has no datatake-to-pass join, no per-pass
+                    volume and no per-pass duration yet. Isolated in{" "}
+                    <code>data/downlink.ts</code>, same as the globe.
                   </p>
                 </div>
 
                 <div className={s.geo}>
                   <span className={s.kpiK}>geography</span>
                   {selected.lat.toFixed(1)}° {selected.lat >= 0 ? "N" : "S"},{" "}
-                  {Math.abs(selected.lon).toFixed(1)}° {selected.lon >= 0 ? "E" : "W"}<br />
+                  {Math.abs(selected.lon).toFixed(1)}°{" "}
+                  {selected.lon >= 0 ? "E" : "W"}
+                  <br />
                   station {selected.station}
                   <p className={s.kpiNote}>
-                    A coordinate, not a picture — see the note at the top of the page.
+                    A coordinate, not a picture — see the note at the top of the
+                    page.
                   </p>
                 </div>
               </div>
@@ -754,47 +983,71 @@ export default function AcquisitionsLadder() {
               <span className={s.bandK}>four missions, four ladder shapes</span>
             </div>
             <p className={s.bandSub}>
-              The same rungs collapsed to one bar per level, rolled up over every datatake that mission
-              has in the scenario. The point is the silhouette: Sentinel-5P is two rungs because it
-              publishes no Level 0, Sentinel-2's Level 1 is one rung carrying three collapsed
-              sub-levels, Sentinel-3's rungs are the widest because it flies four science instruments.
-              A three-plate layout has to treat each of those as a special case; a ragged ladder does not.
+              The same rungs collapsed to one bar per level, rolled up over
+              every datatake that mission has in the scenario. The point is the
+              silhouette: Sentinel-5P is two rungs because it publishes no Level
+              0, Sentinel-2's Level 1 is one rung carrying three collapsed
+              sub-levels, Sentinel-3's rungs are the widest because it flies
+              four science instruments. A three-plate layout has to treat each
+              of those as a special case; a ragged ladder does not.
             </p>
             <div className={s.fleet} style={{ marginTop: 16 }}>
               {MISSIONS.map((m) => {
-                const own = ACQ_DATATAKES.filter((d) => missionOf(d.unit) === m);
+                const own = ACQ_DATATAKES.filter(
+                  (d) => missionOf(d.unit) === m,
+                );
                 const ladder = missionLadder(own);
                 const overall = levelMean({
                   level: "L0",
-                  products: own.flatMap((d) => d.levels.flatMap((l) => l.products)),
+                  products: own.flatMap((d) =>
+                    d.levels.flatMap((l) => l.products),
+                  ),
                 });
                 return (
-                  <button key={m} type="button" className={s.mcard}
+                  <button
+                    key={m}
+                    type="button"
+                    className={s.mcard}
                     style={{ ["--laneHue" as string]: MISSION_HUE[m] }}
                     aria-pressed={mission === m}
-                    onClick={() => pickMission(m)}>
+                    onClick={() => pickMission(m)}
+                  >
                     <div className={s.mcardTop}>
                       <span className={s.mcardName}>{MISSION_NAME[m]}</span>
-                      <span className={`${s.mcardMean} ${s[sev(overall)] ?? ""}`}>
+                      <span
+                        className={`${s.mcardMean} ${s[sev(overall)] ?? ""}`}
+                      >
                         {overall === null ? "n/e" : pct1(overall)}
                       </span>
                     </div>
                     <div className={s.mini}>
                       {ladder.map((r) => (
                         <div className={s.miniRow} key={r.level}>
-                          <span className={s.miniLab}>{levelLabel(r.level, m).replace("Level ", "L").replace("Unclassified", "n/c")}</span>
+                          <span className={s.miniLab}>
+                            {levelLabel(r.level, m)
+                              .replace("Level ", "L")
+                              .replace("Unclassified", "n/c")}
+                          </span>
                           <span className={s.miniBar}>
                             {r.mean !== null && (
-                              <span className={s.miniFill}
-                                style={{ width: `${r.mean}%`, ["--segLine" as string]: segHue(r.mean) }} />
+                              <span
+                                className={s.miniFill}
+                                style={{
+                                  width: `${r.mean}%`,
+                                  ["--segLine" as string]: segHue(r.mean),
+                                }}
+                              />
                             )}
                           </span>
-                          <span className={s.miniVal}>{r.mean === null ? "n/e" : `${r.mean.toFixed(0)}%`}</span>
+                          <span className={s.miniVal}>
+                            {r.mean === null ? "n/e" : `${r.mean.toFixed(0)}%`}
+                          </span>
                         </div>
                       ))}
                     </div>
                     <span className={s.mcardFoot}>
-                      {ladder.length} rungs · {own.length} datatake{own.length === 1 ? "" : "s"} ·{" "}
+                      {ladder.length} rungs · {own.length} datatake
+                      {own.length === 1 ? "" : "s"} ·{" "}
                       {ladder.reduce((n, r) => n + r.types, 0)} product types
                     </span>
                   </button>

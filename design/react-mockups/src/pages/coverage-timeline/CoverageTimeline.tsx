@@ -1,21 +1,49 @@
 import { useCallback, useMemo, useState } from "react";
 import { Eye, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
-import { PageHeader, Reveal, DescriptionModal } from "@/components/ui";
+import { PageHeader, Reveal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import DatatakeModal from "@/components/DatatakeModal";
 import type { DatatakeSummary } from "@/data/datatake-details";
-import { DEFAULT_PERIOD, PERIODS, periodStart, type PeriodId } from "@/data/period";
 import {
-  ALL_SATELLITES, DATA, DAY_MS, MISSIONS, MISSION_NAMES, STATUS_COLOR, WINDOW,
-  type Datatake, type DayCell, type Status,
-  daysOf, daysSinceGap, fmtDate, fmtDateTime, isGap, missionRow, pad, trendSeries,
+  DEFAULT_PERIOD,
+  PERIODS,
+  periodStart,
+  type PeriodId,
+} from "@/data/period";
+import {
+  ALL_SATELLITES,
+  DATA,
+  DAY_MS,
+  MISSIONS,
+  MISSION_NAMES,
+  STATUS_COLOR,
+  WINDOW,
+  type Datatake,
+  type DayCell,
+  type Status,
+  daysOf,
+  daysSinceGap,
+  fmtDate,
+  fmtDateTime,
+  isGap,
+  missionRow,
+  pad,
+  trendSeries,
 } from "./mock";
 import s from "./coverage.module.css";
 import "@/styles/data-availability.css";
 
 type Slice = { key: string; label: string; value: number; color: string };
 
-function Donut({ slices, total, caption }: { slices: Slice[]; total: number; caption: string }) {
+function Donut({
+  slices,
+  total,
+  caption,
+}: {
+  slices: Slice[];
+  total: number;
+  caption: string;
+}) {
   const SIZE = 120;
   const THICK = 9;
   const r = (SIZE - THICK) / 2;
@@ -48,9 +76,22 @@ function Donut({ slices, total, caption }: { slices: Slice[]; total: number; cap
 
   return (
     <div className={s.donutChart}>
-      <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} role="img" aria-label={caption}>
+      <svg
+        width={SIZE}
+        height={SIZE}
+        viewBox={`0 0 ${SIZE} ${SIZE}`}
+        role="img"
+        aria-label={caption}
+      >
         <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
-          <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" strokeWidth={THICK} className={s.donutTrack} />
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={r}
+            fill="none"
+            strokeWidth={THICK}
+            className={s.donutTrack}
+          />
           {arcs}
         </g>
       </svg>
@@ -68,40 +109,41 @@ function DonutLegend({ slices, total }: { slices: Slice[]; total: number }) {
     <ul className={s.donutLegend}>
       {slices.map((slice) => (
         <li key={slice.key}>
-          <span className={s.donutDot} style={{ background: slice.color }} aria-hidden />
+          <span
+            className={s.donutDot}
+            style={{ background: slice.color }}
+            aria-hidden
+          />
           <span className={s.donutLabel}>{slice.label}</span>
           <span className={s.donutValue}>{slice.value}</span>
-          <span className={s.donutPercent}>{Math.round((slice.value / denom) * 100)}%</span>
+          <span className={s.donutPercent}>
+            {Math.round((slice.value / denom) * 100)}%
+          </span>
         </li>
       ))}
     </ul>
   );
 }
 
-/* Data Availability PROPOSAL 3 — "Coverage timeline". An ALTERNATIVE to /availability, which is
-   untouched, and a third reading alongside /examples/data-availability-spacex (telemetry console)
-   and /examples/data-availability (filtered breakdown).
-
-   The other two answer "what is the state right now". This one answers "where did coverage break,
-   and is it recovering" — so the donuts are gone entirely. In their place:
-
-     · a heatmap, one row per mission and one column per day of the selected range, shaded by that
-       day's mean publication completeness. Outages read as horizontal runs, which is the shape
-       they actually have and the shape a snapshot cannot show;
-     · a sparkline chip per mission over 7 / 30 / 90 days, carrying the one number an operator can
-       act on — days since the last gap;
-     · the same table and filters as the "Filtered breakdown" proposal, but sorted by MOST RECENT
-       GAP rather than chronologically, so what is broken sits at the top rather than whatever
-       happens to be newest.
-
-   Colour comes entirely from the shared tokens, so this follows the app's global light/dark switch
-   with no palette of its own — see coverage.module.css. Static mock data throughout. */
-
 function statusSlices(rows: Datatake[]): Slice[] {
-  const STATUS_ORDER: Status[] = ["Planned", "Processing", "Acquired", "Partial", "Unavailable"];
-  const acc = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<Status, number>;
+  const STATUS_ORDER: Status[] = [
+    "Planned",
+    "Processing",
+    "Acquired",
+    "Partial",
+    "Unavailable",
+  ];
+  const acc = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<
+    Status,
+    number
+  >;
   rows.forEach((r) => (acc[r.status] += 1));
-  return STATUS_ORDER.map((s) => ({ key: s, label: s.toUpperCase(), value: acc[s], color: STATUS_COLOR[s] }));
+  return STATUS_ORDER.map((s) => ({
+    key: s,
+    label: s.toUpperCase(),
+    value: acc[s],
+    color: STATUS_COLOR[s],
+  }));
 }
 
 function modeSlices(rows: Datatake[]): Slice[] {
@@ -143,23 +185,54 @@ function Sparkline({ series }: { series: (number | null)[] }) {
   const W = 100;
   const H = 34;
   const points = series
-    .map((v, i) => (v === null ? null : { x: (i / Math.max(1, series.length - 1)) * W, y: H - 3 - (v / 100) * (H - 6) }))
+    .map((v, i) =>
+      v === null
+        ? null
+        : {
+            x: (i / Math.max(1, series.length - 1)) * W,
+            y: H - 3 - (v / 100) * (H - 6),
+          },
+    )
     .filter(Boolean) as { x: number; y: number }[];
 
-  if (points.length < 2) return <svg className={s.spark} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" />;
+  if (points.length < 2)
+    return (
+      <svg
+        className={s.spark}
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+      />
+    );
 
-  const line = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+  const line = points
+    .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
+    .join(" ");
   const area = `${points[0].x.toFixed(1)},${H} ${line} ${points[points.length - 1].x.toFixed(1)},${H}`;
 
   return (
-    <svg className={s.spark} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden>
+    <svg
+      className={s.spark}
+      viewBox={`0 0 ${W} ${H}`}
+      preserveAspectRatio="none"
+      aria-hidden
+    >
       <polygon className={s.sparkArea} points={area} />
       {/* 100% reference, so a line sitting below it reads as a shortfall rather than just a shape */}
       <line className={s.sparkBase} x1="0" y1="3" x2={W} y2="3" />
-      <polyline className={s.sparkLine} points={line} vectorEffect="non-scaling-stroke" />
+      <polyline
+        className={s.sparkLine}
+        points={line}
+        vectorEffect="non-scaling-stroke"
+      />
     </svg>
   );
 }
+
+const DESCRIPTION = (
+  <>
+    <p>{AVAILABILITY_DESCRIPTION}</p>
+  </>
+);
 
 export default function CoverageTimeline() {
   /* A trend view opens on a month: "Last 7 Days" is seven columns, which is not a timeline. The
@@ -172,11 +245,18 @@ export default function CoverageTimeline() {
   const [search, setSearch] = useState("");
   const [trend, setTrend] = useState<TrendWindow>(30);
   const [sort, setSort] = useState<SortKey>("gap");
-  const [focus, setFocus] = useState<{ mission: string; key: string; date: Date } | null>(null);
+  const [focus, setFocus] = useState<{
+    mission: string;
+    key: string;
+    date: Date;
+  } | null>(null);
   const [selected, setSelected] = useState<DatatakeSummary | null>(null);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
-  const satelliteOptions = mission === "All" ? ["All", ...ALL_SATELLITES] : ["All", ...MISSIONS[mission]];
+  const satelliteOptions =
+    mission === "All"
+      ? ["All", ...ALL_SATELLITES]
+      : ["All", ...MISSIONS[mission]];
 
   const onCustomDate = useCallback((which: "from" | "to", value: string) => {
     (which === "from" ? setDateFrom : setDateTo)(value);
@@ -195,7 +275,10 @@ export default function CoverageTimeline() {
 
   /** The visible range — the heatmap's columns and the table's bounds are the same window. */
   const range = useMemo(() => {
-    const to = dateTo && period === "custom" ? new Date(`${dateTo}T23:59:59Z`) : WINDOW.today;
+    const to =
+      dateTo && period === "custom"
+        ? new Date(`${dateTo}T23:59:59Z`)
+        : WINDOW.today;
     const from =
       period === "custom"
         ? dateFrom
@@ -210,7 +293,12 @@ export default function CoverageTimeline() {
   /** Everything in range, before the mission/satellite/id filters — the heatmap keeps every
    *  mission visible so a filtered view still shows what else was happening. */
   const inRange = useMemo(
-    () => DATA.filter((r) => r.start >= range.from && r.start <= new Date(range.to.getTime() + DAY_MS - 1)),
+    () =>
+      DATA.filter(
+        (r) =>
+          r.start >= range.from &&
+          r.start <= new Date(range.to.getTime() + DAY_MS - 1),
+      ),
     [range],
   );
 
@@ -222,7 +310,10 @@ export default function CoverageTimeline() {
       const q = search.trim().toLowerCase();
       out = out.filter((r) => r.id.toLowerCase().includes(q));
     }
-    if (focus) out = out.filter((r) => r.mission === focus.mission && fmtDate(r.start) === focus.key);
+    if (focus)
+      out = out.filter(
+        (r) => r.mission === focus.mission && fmtDate(r.start) === focus.key,
+      );
     return out;
   }, [inRange, mission, satellite, search, focus]);
 
@@ -231,8 +322,14 @@ export default function CoverageTimeline() {
      argument of this concept over a chronological list. */
   const sorted = useMemo(() => {
     const out = [...rows];
-    if (sort === "recent") return out.sort((a, b) => b.start.getTime() - a.start.getTime());
-    if (sort === "worst") return out.sort((a, b) => a.completeness - b.completeness || b.start.getTime() - a.start.getTime());
+    if (sort === "recent")
+      return out.sort((a, b) => b.start.getTime() - a.start.getTime());
+    if (sort === "worst")
+      return out.sort(
+        (a, b) =>
+          a.completeness - b.completeness ||
+          b.start.getTime() - a.start.getTime(),
+      );
     return out.sort((a, b) => {
       const ga = isGap(a) ? 0 : 1;
       const gb = isGap(b) ? 0 : 1;
@@ -242,14 +339,26 @@ export default function CoverageTimeline() {
 
   const visible = sorted.slice(0, 15);
   const active =
-    period !== "month" || mission !== "All" || satellite !== "All" || dateFrom !== "" || dateTo !== "" || search !== "" || focus !== null;
+    period !== "month" ||
+    mission !== "All" ||
+    satellite !== "All" ||
+    dateFrom !== "" ||
+    dateTo !== "" ||
+    search !== "" ||
+    focus !== null;
 
   const gaps = rows.filter(isGap).length;
   const lost = rows.filter((r) => r.status === "Unavailable").length;
-  const mean = rows.length ? Math.round(rows.reduce((n, r) => n + r.completeness, 0) / rows.length) : 0;
+  const mean = rows.length
+    ? Math.round(rows.reduce((n, r) => n + r.completeness, 0) / rows.length)
+    : 0;
 
   const heat = useMemo(
-    () => MISSION_NAMES.map((m) => ({ mission: m, cells: missionRow(inRange, m, days) })),
+    () =>
+      MISSION_NAMES.map((m) => ({
+        mission: m,
+        cells: missionRow(inRange, m, days),
+      })),
     [inRange, days],
   );
 
@@ -276,58 +385,11 @@ export default function CoverageTimeline() {
 
   return (
     <>
-      <PageHeader crumb="Data Availability" title="Data Availability"
-        img="/assets/img/modules/Protecting_Atlantic.jpg" />
-
-      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", margin: "0", padding: "0" }}>
-          <div style={{ marginTop: "16px" }}>
-            <button
-              type="button"
-              style={{
-                cursor: "pointer",
-                padding: "12px 16px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "0",
-                background: "#343a40",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#9aa4b4",
-                transition: "color 0.2s, background 0.2s",
-                whiteSpace: "nowrap",
-                marginLeft: "0 !important" as any,
-                alignSelf: "flex-start !important" as any,
-              }}
-              onClick={() => setDescriptionOpen(true)}
-              aria-expanded={descriptionOpen}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#eef1f6";
-                e.currentTarget.style.background = "rgba(0, 199, 214, 0.13)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#9aa4b4";
-                e.currentTarget.style.background = "#343a40";
-              }}
-            >
-              <span>Description</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-          </div>
-          <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
-            <div style={{ color: "#eef1f6" }}>
-              <p>{AVAILABILITY_DESCRIPTION}</p>
-            </div>
-          </DescriptionModal>
-        </div>
-      </div>
+      <PageHeader
+        title="Data Availability"
+        desc={DESCRIPTION}
+        img="/assets/img/modules/galaxy_star.jpg"
+      />
 
       <section className="wrap pad">
         {/* ---------------- counters ---------------- */}
@@ -358,7 +420,11 @@ export default function CoverageTimeline() {
           </div>
           <div className={s.segmented}>
             {([7, 30, 90] as TrendWindow[]).map((w) => (
-              <button key={w} className={trend === w ? s.on : ""} onClick={() => setTrend(w)}>
+              <button
+                key={w}
+                className={trend === w ? s.on : ""}
+                onClick={() => setTrend(w)}
+              >
                 {w}D
               </button>
             ))}
@@ -369,11 +435,22 @@ export default function CoverageTimeline() {
           {MISSION_NAMES.map((m) => {
             const series = trendSeries(DATA, m, trend, WINDOW.today);
             const seen = series.filter((v): v is number => v !== null);
-            const avg = seen.length ? Math.round(seen.reduce((a, b) => a + b, 0) / seen.length) : 0;
+            const avg = seen.length
+              ? Math.round(seen.reduce((a, b) => a + b, 0) / seen.length)
+              : 0;
             const since = daysSinceGap(DATA, m, WINDOW.today);
-            const color = avg >= 95 ? "var(--cmp-acquired)" : avg >= 60 ? "var(--cmp-partial)" : "var(--cmp-unavailable)";
+            const color =
+              avg >= 95
+                ? "var(--cmp-acquired)"
+                : avg >= 60
+                  ? "var(--cmp-partial)"
+                  : "var(--cmp-unavailable)";
             return (
-              <div className={s.chip} key={m} style={{ ["--c" as string]: color }}>
+              <div
+                className={s.chip}
+                key={m}
+                style={{ ["--c" as string]: color }}
+              >
                 <div className={s.chipHead}>
                   <span className={s.chipName}>{m}</span>
                   <span className={s.chipMean}>{avg}%</span>
@@ -382,7 +459,11 @@ export default function CoverageTimeline() {
                 <div className={s.chipFoot}>
                   <span>{trend}-DAY MEAN</span>
                   <span className={s.chipGap}>
-                    {since === null ? "NO GAPS" : since === 0 ? "GAP TODAY" : `LAST GAP ${since}D AGO`}
+                    {since === null
+                      ? "NO GAPS"
+                      : since === 0
+                        ? "GAP TODAY"
+                        : `LAST GAP ${since}D AGO`}
                   </span>
                 </div>
               </div>
@@ -394,9 +475,13 @@ export default function CoverageTimeline() {
         <Reveal className={s.panel}>
           <div className={s.panelHead}>
             <span className={s.panelTitle}>
-              Coverage map · {fmtDate(range.from)} → {fmtDate(range.to)} · {days.length} days
+              Coverage map · {fmtDate(range.from)} → {fmtDate(range.to)} ·{" "}
+              {days.length} days
             </span>
-            <span className={s.panelTitle} style={{ color: "var(--text-mute)" }}>
+            <span
+              className={s.panelTitle}
+              style={{ color: "var(--text-mute)" }}
+            >
               Select a cell to focus the table
             </span>
           </div>
@@ -406,7 +491,9 @@ export default function CoverageTimeline() {
               <div className={s.mapAxis}>
                 {days.map((d, i) => (
                   <span className={s.axisTick} key={d.toISOString()}>
-                    {i % tickEvery === 0 ? `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}` : ""}
+                    {i % tickEvery === 0
+                      ? `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`
+                      : ""}
                   </span>
                 ))}
               </div>
@@ -414,7 +501,10 @@ export default function CoverageTimeline() {
               {heat.map(({ mission: m, cells }) => {
                 const covered = cells.filter((c) => c.mean !== null);
                 const rowMean = covered.length
-                  ? Math.round(covered.reduce((n, c) => n + (c.mean ?? 0), 0) / covered.length)
+                  ? Math.round(
+                      covered.reduce((n, c) => n + (c.mean ?? 0), 0) /
+                        covered.length,
+                    )
                   : 0;
                 return (
                   <div className={s.mapRow} key={m}>
@@ -443,7 +533,13 @@ export default function CoverageTimeline() {
                             style={{ ["--c" as string]: color }}
                             title={`${c.key} · ${m} · ${c.count} datatakes · ${c.mean}% mean${c.lost ? ` · ${c.lost} incomplete` : ""}`}
                             aria-label={`${c.key}, ${m}, ${c.mean}% mean completeness, ${c.count} datatakes`}
-                            onClick={() => setFocus(on ? null : { mission: m, key: c.key, date: c.date })}
+                            onClick={() =>
+                              setFocus(
+                                on
+                                  ? null
+                                  : { mission: m, key: c.key, date: c.date },
+                              )
+                            }
                           />
                         );
                       })}
@@ -481,7 +577,8 @@ export default function CoverageTimeline() {
           <>
             <div className={s.focusedHeader}>
               <h3>
-                {focus.mission} · {focus.key} · {rows.length} datatake{rows.length !== 1 ? "s" : ""}
+                {focus.mission} · {focus.key} · {rows.length} datatake
+                {rows.length !== 1 ? "s" : ""}
               </h3>
               <button className={s.focusClear} onClick={() => setFocus(null)}>
                 <X size={14} />
@@ -494,14 +591,25 @@ export default function CoverageTimeline() {
                 <div className={s.listHeader}>DATATAKES</div>
                 <ul className={s.listItems}>
                   {rows.map((row) => (
-                    <li key={row.id} className={row.status === "Unavailable" ? s.lossItem : isGap(row) ? s.gapItem : undefined}>
+                    <li
+                      key={row.id}
+                      className={
+                        row.status === "Unavailable"
+                          ? s.lossItem
+                          : isGap(row)
+                            ? s.gapItem
+                            : undefined
+                      }
+                    >
                       <div className={s.listIdRow}>
                         <span className={s.listId}>{row.id}</span>
                         <span className={s.listSat}>{row.satellite}</span>
                       </div>
                       <div className={s.listDetails}>
                         <span className={s.listMode}>{row.sensorMode}</span>
-                        <span className={s.listTime}>{fmtDateTime(row.start)}</span>
+                        <span className={s.listTime}>
+                          {fmtDateTime(row.start)}
+                        </span>
                       </div>
                     </li>
                   ))}
@@ -510,19 +618,35 @@ export default function CoverageTimeline() {
 
               <div className={s.focusedCharts}>
                 {rows.length === 0 ? (
-                  <p className={s.emptyCharts}>No datatakes for this selection.</p>
+                  <p className={s.emptyCharts}>
+                    No datatakes for this selection.
+                  </p>
                 ) : (
                   <>
                     <div className={s.chartCard}>
                       <h4 className={s.chartTitle}>STATUS DISTRIBUTION</h4>
-                      <Donut slices={statusSlices(rows)} total={rows.length} caption="DATATAKES" />
-                      <DonutLegend slices={statusSlices(rows)} total={rows.length} />
+                      <Donut
+                        slices={statusSlices(rows)}
+                        total={rows.length}
+                        caption="DATATAKES"
+                      />
+                      <DonutLegend
+                        slices={statusSlices(rows)}
+                        total={rows.length}
+                      />
                     </div>
 
                     <div className={s.chartCard}>
                       <h4 className={s.chartTitle}>SENSOR MODES</h4>
-                      <Donut slices={modeSlices(rows)} total={modeSlices(rows).length} caption="MODES" />
-                      <DonutLegend slices={modeSlices(rows)} total={rows.length} />
+                      <Donut
+                        slices={modeSlices(rows)}
+                        total={modeSlices(rows).length}
+                        caption="MODES"
+                      />
+                      <DonutLegend
+                        slices={modeSlices(rows)}
+                        total={rows.length}
+                      />
                     </div>
                   </>
                 )}
@@ -532,7 +656,9 @@ export default function CoverageTimeline() {
         )}
       </section>
 
-      {selected && <DatatakeModal datatake={selected} onClose={() => setSelected(null)} />}
+      {selected && (
+        <DatatakeModal datatake={selected} onClose={() => setSelected(null)} />
+      )}
     </>
   );
 }

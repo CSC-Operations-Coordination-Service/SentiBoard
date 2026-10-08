@@ -2,7 +2,12 @@ import { useEffect, useId, useRef, useState, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { ChevronDown, X } from "lucide-react";
-import { COMPLETENESS_LABEL, type Completeness, type Status } from "@/data/mock";
+import {
+  COMPLETENESS_LABEL,
+  type Completeness,
+  type Status,
+} from "@/data/mock";
+import "../styles/page-header.css";
 
 /** Matches a CSS media query from JS, kept in sync as the viewport changes.
  *
@@ -11,7 +16,9 @@ import { COMPLETENESS_LABEL, type Completeness, type Status } from "@/data/mock"
  *  React state, not a rule. Read synchronously on first render so a component that only
  *  consults it on mount (a `defaultOpen`, say) gets the right answer without a re-render. */
 export function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(() => window.matchMedia?.(query).matches ?? false);
+  const [matches, setMatches] = useState(
+    () => window.matchMedia?.(query).matches ?? false,
+  );
   useEffect(() => {
     const mq = window.matchMedia?.(query);
     if (!mq) return;
@@ -24,31 +31,70 @@ export function useMediaQuery(query: string) {
 }
 
 /** Fade/slide element into view on scroll (SpaceX-style reveal). */
-export function Reveal({ children, as: Tag = "div", className = "", style }: {
-  children: ReactNode; as?: any; className?: string; style?: React.CSSProperties;
+export function Reveal({
+  children,
+  as: Tag = "div",
+  className = "",
+  style,
+}: {
+  children: ReactNode;
+  as?: any;
+  className?: string;
+  style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLElement>(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
-    const el = ref.current; if (!el) return;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setSeen(true); io.disconnect(); }
-    }, { threshold: 0.12 });
-    io.observe(el); return () => io.disconnect();
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.12 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
-  return <Tag ref={ref} className={`reveal ${seen ? "in" : ""} ${className}`} style={style}>{children}</Tag>;
+  return (
+    <Tag
+      ref={ref}
+      className={`reveal ${seen ? "in" : ""} ${className}`}
+      style={style}
+    >
+      {children}
+    </Tag>
+  );
 }
 
 // Pills carry two different vocabularies: mission/processor health (Status) and datatake
 // completeness (Completeness). Both key their own colour off the class name, so one component
 // serves both without either borrowing the other's wording.
 const LABELS: Record<Status | Completeness, string> = {
-  nominal: "Nominal", degraded: "Degraded", critical: "Critical", info: "Processing", neutral: "Planned",
+  nominal: "Nominal",
+  degraded: "Degraded",
+  critical: "Critical",
+  info: "Processing",
+  neutral: "Planned",
   ...COMPLETENESS_LABEL,
 };
 
-export function Pill({ status, label }: { status: Status | Completeness; label?: string }) {
-  return <span className={`pill ${status}`}><span className="dot" />{label ?? LABELS[status]}</span>;
+export function Pill({
+  status,
+  label,
+}: {
+  status: Status | Completeness;
+  label?: string;
+}) {
+  return (
+    <span className={`pill ${status}`}>
+      <span className="dot" />
+      {label ?? LABELS[status]}
+    </span>
+  );
 }
 
 /** The slide behind every accordion here — the page "Description" panel and the occurrence rows in
@@ -56,8 +102,14 @@ export function Pill({ status, label }: { status: Status | Completeness; label?:
  *  what lets one rule animate panels of any length; `height:auto` cannot be animated at all, and a
  *  max-height guess either clips the longest copy or spends the transition on empty space.
  *  Stateless on purpose: the caller owns the open flag. */
-export function Collapse({ open, id, children }: {
-  open: boolean; id?: string; children: ReactNode;
+export function Collapse({
+  open,
+  id,
+  children,
+}: {
+  open: boolean;
+  id?: string;
+  children: ReactNode;
 }) {
   return (
     <div className={`collapsible ${open ? "open" : ""}`} id={id}>
@@ -68,15 +120,19 @@ export function Collapse({ open, id, children }: {
 }
 
 /** Inline description rendered directly without accordion toggle. */
-export function PageDescription({ children }: {
-  children: ReactNode;
-}) {
+export function PageDescription({ children }: { children: ReactNode }) {
   return <div className="page-description">{children}</div>;
 }
 
 /** Modal dialog for Description content. Mounts/unmounts completely without leaving DOM artifacts. */
-export function DescriptionModal({ open, onClose, children }: {
-  open: boolean; onClose: () => void; children: ReactNode;
+export function DescriptionModal({
+  open,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -153,17 +209,23 @@ export function DescriptionModal({ open, onClose, children }: {
           }}
           aria-label="Close"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-        <div style={{ paddingRight: "32px" }}>
-          {children}
-        </div>
+        <div style={{ paddingRight: "32px" }}>{children}</div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 }
 
@@ -172,63 +234,71 @@ export function DescriptionModal({ open, onClose, children }: {
  *  `img` puts a veiled photograph behind the header — the /examples/about hero recipe, shared as
  *  .ex-hero-bg in global.css. It is a backdrop inside the header the page already has, so passing
  *  it changes nothing about the header's size or spacing; omit it and the markup is unchanged. */
-export function PageHeader({ title, sub, crumb, desc, img }: {
-  title: string; sub?: string; crumb: string; desc?: ReactNode; img?: string;
+export function PageHeader({
+  title,
+  sub,
+  crumb,
+  desc,
+  img,
+  description,
+  subtitle,
+}: {
+  title: string;
+  sub?: string;
+  crumb?: string;
+  desc?: ReactNode;
+  img?: string;
+  description?: ReactNode;
+  subtitle?: string;
 }) {
   const [descOpen, setDescOpen] = useState(false);
+  const displaySub = subtitle || sub;
+  const displayDesc = description || desc;
 
   return (
-    <>
-      <div className={`page-head${img ? " ex-hero-host" : ""}`} style={{ width: "100%", boxSizing: "border-box" } as any}>
-      {img && (
-        <div className="ex-hero-bg" style={{ ["--ex-hero-img" as string]: `url("${img}")` }} aria-hidden />
-      )}
-      <div className="wrap" style={{ maxWidth: "none", margin: "0", padding: "0", boxSizing: "border-box" } as any}>
-        <nav className="crumbs" aria-label="Breadcrumb">
-          <a href="/examples/index1">HOME</a><span className="sep">/</span><span>{crumb.toUpperCase()}</span>
-        </nav>
-        <h1>{title}</h1>
-        {sub && <p className="sub">{sub}</p>}
+    <section
+      className={`hero ${displayDesc && descOpen ? "open" : ""}`}
+      style={img ? { backgroundImage: `url(${img})` } : {}}
+    >
+      <div className="hero-ph sharp">
+        <i style={img ? { backgroundImage: `url(${img})` } : {}}></i>
       </div>
-    </div>
+      <div className="hero-ph soft">
+        <i style={img ? { backgroundImage: `url(${img})` } : {}}></i>
+      </div>
+      <div className="scrim-x"></div>
+      <div className="scrim-y"></div>
+      <div className="hero-blend"></div>
 
-    {desc && (
-      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" } as any}>
-        <div style={{ marginTop: '16px' }}>
-          <button
-            type="button"
-            aria-expanded={descOpen}
-            onClick={() => setDescOpen(true)}
-            style={{
-              cursor: 'pointer',
-              padding: '12px 16px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '0px',
-              background: 'rgb(52, 58, 64)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '12px',
-              fontFamily: 'var(--font-mono)',
-              fontSize: '11px',
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'rgb(154, 164, 180)',
-              transition: 'color 0.2s, background 0.2s',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <span>Description</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-        </div>
-        <DescriptionModal open={descOpen} onClose={() => setDescOpen(false)}>
-          <div className="body">{desc}</div>
-        </DescriptionModal>
+      <div className="hero-in">
+        {crumb && <div className="breadcrumb">{crumb}</div>}
+        <h1 className="hero-title">{title}</h1>
+        {displaySub && <p className="lede">{displaySub}</p>}
+
+        {displayDesc && (
+          <div className="descbar">
+            <button
+              id="descBtn"
+              aria-expanded={descOpen}
+              aria-controls="descPanel"
+              className={`desc-btn ${descOpen ? "open" : ""}`}
+              onClick={() => setDescOpen(!descOpen)}
+            >
+              DESCRIPTION {descOpen ? "▲" : "▼"}
+            </button>
+
+            <Collapse open={descOpen} id="descPanel">
+              <div className="desc-panel" style={{ maxWidth: "680px" }}>
+                {typeof displayDesc === "string" ? (
+                  <p>{displayDesc}</p>
+                ) : (
+                  displayDesc
+                )}
+              </div>
+            </Collapse>
+          </div>
+        )}
       </div>
-    )}
-    </>
+    </section>
   );
 }

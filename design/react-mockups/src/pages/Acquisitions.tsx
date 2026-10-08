@@ -17,14 +17,17 @@ export default function Acquisitions() {
 
   const satellites = useMemo(
     () => Array.from(new Set(ACQ_DATATAKES.map((d) => d.sat))).sort(),
-    []
+    [],
   );
 
   // Days that actually carry acquisitions — the day filter uses these as its bounds
   // so it can never offer a future or empty date.
   const coveredDates = useMemo(
-    () => Array.from(new Set(ACQ_DATATAKES.map(acquisitionDate).filter(Boolean))).sort(),
-    []
+    () =>
+      Array.from(
+        new Set(ACQ_DATATAKES.map(acquisitionDate).filter(Boolean)),
+      ).sort(),
+    [],
   );
 
   const filtered = useMemo(() => {
@@ -36,15 +39,22 @@ export default function Acquisitions() {
   }, [selectedSats, date]);
 
   const toggleSat = (sat: string) =>
-    setSelectedSats((prev) => (prev.includes(sat) ? prev.filter((s) => s !== sat) : [...prev, sat]));
+    setSelectedSats((prev) =>
+      prev.includes(sat) ? prev.filter((s) => s !== sat) : [...prev, sat],
+    );
 
-  const resetFilters = () => { setSelectedSats([]); setDate(""); };
+  const resetFilters = () => {
+    setSelectedSats([]);
+    setDate("");
+  };
 
   return (
     <>
-      <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
+      <PageHeader
+        title="Acquisitions Status"
         sub="Past, current and future Copernicus Sentinels' acquisitions on an interactive 3D globe. Inspect the status of a past acquisition, or explore the planned acquisitions for the mission of interest. By default, the real-time sensing scenario is displayed."
-        desc={ACQUISITIONS_DESCRIPTION} />
+        desc={ACQUISITIONS_DESCRIPTION}
+      />
 
       <section className="wrap pad">
         <Reveal>
@@ -61,7 +71,13 @@ export default function Acquisitions() {
           {filtered.length > 0 ? (
             <AcquisitionGlobe stations={STATIONS} datatakes={filtered} />
           ) : (
-            <div style={{ padding: "48px 0", textAlign: "center", color: "rgba(205,217,236,.55)" }}>
+            <div
+              style={{
+                padding: "48px 0",
+                textAlign: "center",
+                color: "rgba(205,217,236,.55)",
+              }}
+            >
               No datatakes match your filters.
             </div>
           )}

@@ -1,11 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { PageHeader, DescriptionModal } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import * as THREE from "three";
 import ThreeEarth from "@/components/ThreeEarth";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
 
 const D = Math.PI / 180;
+
+const DESCRIPTION = (
+  <>
+    <p>{ACQUISITIONS_DESCRIPTION}</p>
+  </>
+);
 
 const SAMPLE_SWATHS = [
   {
@@ -92,6 +98,8 @@ const formatSimTime = (seconds: number) => {
 };
 
 export default function AcquisitionsGlobeEarthPage() {
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -677,8 +685,6 @@ export default function AcquisitionsGlobeEarthPage() {
     return () => cancelAnimationFrame(animId);
   }, []);
 
-  const [descriptionOpen, setDescriptionOpen] = useState(false);
-
   return (
     <div
       style={{
@@ -690,77 +696,11 @@ export default function AcquisitionsGlobeEarthPage() {
       }}
     >
       <PageHeader
-        crumb="Acquisitions Status"
         title="Acquisitions Status"
-        img="/assets/img/nebula.jpg"
+        subtitle="Past, current and planned Sentinel acquisitions on an interactive 3D globe."
+        desc={DESCRIPTION}
+        img="/assets/img/modules/acquisitions.jpg"
       />
-
-      <div
-        style={{
-          width: "100%",
-          padding: "0 clamp(18px, 4vw, 48px)",
-          boxSizing: "border-box",
-          marginBottom: "24px",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "flex-start",
-            justifyContent: "flex-start",
-            margin: "0",
-            padding: "0",
-          }}
-        >
-          <div style={{ marginTop: "16px" }}>
-            <button
-              type="button"
-              style={{
-                cursor: "pointer",
-                padding: "12px 16px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "0",
-                background: "#343a40",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#9aa4b4",
-                transition: "color 0.2s, background 0.2s",
-                whiteSpace: "nowrap",
-              }}
-              onClick={() => setDescriptionOpen(true)}
-              aria-expanded={descriptionOpen}
-            >
-              <span>Description</span>
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#00c7d6"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-              >
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-          </div>
-          <DescriptionModal
-            open={descriptionOpen}
-            onClose={() => setDescriptionOpen(false)}
-          >
-            <div style={{ color: "#eef1f6" }}>
-              <p>{ACQUISITIONS_DESCRIPTION}</p>
-            </div>
-          </DescriptionModal>
-        </div>
-      </div>
 
       {/* KPI Section */}
       <div

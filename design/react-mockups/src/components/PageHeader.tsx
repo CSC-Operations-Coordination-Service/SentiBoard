@@ -1,59 +1,90 @@
 import React, { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { Collapse } from "./ui";
 import "../styles/page-header.css";
-
-interface Breadcrumb {
-  label: string;
-  href?: string;
-}
 
 interface PageHeaderProps {
   title: string;
+  crumb?: string;
+  subtitle?: string;
   description?: React.ReactNode;
-  breadcrumbs?: Breadcrumb[];
-  descriptionTitle?: string;
-  descriptionOpen?: boolean;
   backgroundImage?: string;
+  img?: string;
 }
 
 export default function PageHeader({
   title,
+  crumb,
+  subtitle,
   description,
-  breadcrumbs,
-  descriptionTitle = "Description",
-  descriptionOpen = true,
   backgroundImage,
+  img,
 }: PageHeaderProps) {
-  return (
-    <div
-      className="page-header"
-      style={backgroundImage ? { backgroundImage: `url(${backgroundImage})` } : {}}
-    >
-      <div className="page-header-inner">
-        {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav className="breadcrumbs" aria-label="Breadcrumb">
-            {breadcrumbs.map((crumb, idx) => (
-              <span key={idx} className="breadcrumb-item">
-                {crumb.href ? (
-                  <a href={crumb.href}>{crumb.label}</a>
-                ) : (
-                  <span className="current">{crumb.label}</span>
-                )}
-                {idx < breadcrumbs.length - 1 && <span className="separator">/</span>}
-              </span>
-            ))}
-          </nav>
-        )}
+  const [isDescOpen, setIsDescOpen] = useState(false);
+  const bgImage = backgroundImage || img;
 
-        <div className="page-header-content">
-          <h1 className="page-title">{title}</h1>
-          {description && (
-            <div className="page-description">
-              {description}
-            </div>
-          )}
-        </div>
+  return (
+    <section
+      className="hero"
+      style={bgImage ? { backgroundImage: `url(${bgImage})` } : {}}
+    >
+      <div className="hero-ph sharp">
+        <i style={bgImage ? { backgroundImage: `url(${bgImage})` } : {}}></i>
       </div>
-    </div>
+      <div className="hero-ph soft">
+        <i style={bgImage ? { backgroundImage: `url(${bgImage})` } : {}}></i>
+      </div>
+      <div className="scrim-x"></div>
+      <div className="scrim-y"></div>
+      <div className="hero-blend"></div>
+
+      <div className="hero-in">
+        {crumb && <div className="breadcrumb">{crumb}</div>}
+        <h1 className="hero-title">{title}</h1>
+        {subtitle && <p className="lede">{subtitle}</p>}
+
+        {description && (
+          <div className="page-desc">
+            <button
+              id="descBtn"
+              type="button"
+              aria-expanded={isDescOpen}
+              aria-controls="descPanel"
+              className={`page-desc-head ${isDescOpen ? "open" : ""}`}
+              onClick={() => setIsDescOpen((prev) => !prev)}
+            >
+              <span>Description</span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 16 16"
+                fill="none"
+                aria-hidden="true"
+                style={{
+                  transform: isDescOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                <path
+                  d="M3 6l5 5 5-5"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                />
+              </svg>
+            </button>
+
+            {/* Collapse wrapper handles smooth height expansion */}
+            <Collapse open={isDescOpen} id="descPanel">
+              <div className="desc-panel-body" style={{ padding: "12px 0" }}>
+                {typeof description === "string" ? (
+                  <p>{description}</p>
+                ) : (
+                  description
+                )}
+              </div>
+            </Collapse>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }

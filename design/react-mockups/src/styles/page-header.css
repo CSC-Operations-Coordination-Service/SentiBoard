@@ -1,133 +1,214 @@
 /* ============================================================
-   PageHeader — Reusable page header component
+   Hero Section — Page header with expandable description
    ============================================================ */
 
-.page-header {
+.hero {
   position: relative;
-  padding: 3rem 0 0.5rem;
-  border-bottom: 1px solid var(--line);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  overflow: visible !important;
-  width: 100vw !important;
-  margin-left: calc(-50vw + 50%) !important;
-  box-sizing: border-box !important;
+  background-attachment: fixed;
+  overflow: visible;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  box-sizing: border-box;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  transition: min-height 0.35s ease;
 }
 
-.page-header::before {
-  content: "";
+.hero.open {
+  min-height: 600px;
+}
+
+/* Background layers */
+.hero-ph {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.4) 100%);
+  z-index: 0;
+}
+
+.hero-ph i {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+
+.hero-ph.sharp i {
+  filter: contrast(1.2) saturate(0.8);
+}
+
+.hero-ph.soft i {
+  filter: blur(80px) opacity(0.5) saturate(1.2);
+}
+
+.scrim-x {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(90deg,
+    rgba(2, 4, 9, 0.7) 0%,
+    transparent 20%,
+    transparent 80%,
+    rgba(2, 4, 9, 0.7) 100%);
   pointer-events: none;
 }
 
-.page-header-inner {
-  position: relative;
+.scrim-y {
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  width: 100% !important;
-  padding: 0 clamp(18px, 4vw, 48px) !important;
-  box-sizing: border-box !important;
+  background: linear-gradient(180deg,
+    rgba(2, 4, 9, 0.3) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(2, 4, 9, 0.5) 100%);
+  pointer-events: none;
 }
 
-/* Breadcrumbs */
-.breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.hero-blend {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(ellipse at center, rgba(0, 199, 214, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+
+.breadcrumb {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 11px;
   letter-spacing: 0.1em;
-  margin-bottom: 1rem;
+  text-transform: uppercase;
+  color: rgba(115, 115, 115, 0.9);
+  margin-bottom: 16px;
+  display: block;
 }
 
-.breadcrumb-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.breadcrumb-item a {
-  color: var(--text-dim);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.breadcrumb-item a:hover {
-  color: var(--accent-2);
-}
-
-.breadcrumb-item .current {
-  color: var(--text);
-  font-weight: 600;
-}
-
-.breadcrumb-item .separator {
-  color: var(--text-mute);
-}
-
-/* Header content row */
-.page-header-content {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  width: 100%;
-}
-
-/* Page Title */
-.page-title {
+/* Hero Title */
+.hero-title {
   font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(28px, 4.5vw, 48px);
   font-weight: 700;
   letter-spacing: -0.02em;
   margin: 0;
   color: var(--text);
-  line-height: 1.1;
-  flex-shrink: 0;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+/* Subtitle / Lede */
+.lede {
+  font-size: clamp(13px, 1.8vw, 16px);
+  line-height: 1.4;
+  color: rgba(238, 241, 246, 0.8);
+  margin: 8px 0 0 0;
+  max-width: 700px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
+
+/* Description bar */
+.descbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: 12px;
+  width: fit-content;
+}
+
+/* Description button */
+.desc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  color: rgba(154, 164, 180, 1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: fit-content;
+  font-weight: 600;
   white-space: nowrap;
 }
 
-/* Description inline */
-.page-description {
-  color: var(--text-dim);
-  font-size: 14px;
-  line-height: 1.65;
-  flex: 1;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background: none;
-  overflow: visible;
+.desc-btn:hover {
+  color: rgba(200, 210, 220, 1);
+  border-bottom-color: rgba(154, 164, 180, 0.5);
 }
 
-.page-description p {
+.desc-btn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
+.desc-btn svg {
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.desc-btn.open svg {
+  transform: rotate(180deg);
+}
+
+/* Description panel - hidden by default */
+.desc-panel {
+  max-width: 680px; /* Limits width so it matches Image 2 */
+  margin-top: 12px;
+  line-height: 1.6;
+  color: var(--text-dim, #a0a0a0);
+}
+
+.desc-panel p {
+  margin: 0 0 12px 0;
+  max-width: 680px;
+}
+/* Expand panel when it has open class */
+.desc-panel.open {
+  max-height: 400px;
+  opacity: 1;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.desc-panel p {
+  color: rgba(238, 241, 246, 0.85);
+  font-size: 14px;
+  line-height: 1.65;
   margin: 0;
+  font-weight: 400;
 }
 
 /* Responsive */
 @media (max-width: 760px) {
-  .page-header {
-    padding: 2rem 0 0.5rem;
+  .hero {
+    padding: clamp(40px, 6vw, 80px) clamp(16px, 3vw, 32px);
+    min-height: 320px;
   }
 
-  .page-header-content {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+  .hero-title {
+    font-size: clamp(24px, 5vw, 40px);
   }
 
-  .page-title {
-    font-size: clamp(24px, 3vw, 32px);
-    white-space: normal;
+  .lede {
+    font-size: clamp(14px, 1.8vw, 16px);
+    margin-bottom: 24px;
   }
 
-  .breadcrumbs {
-    font-size: 10px;
-    margin-bottom: 0.75rem;
-  }
-
-  .page-description {
-    font-size: 13px;
+  .descbar {
+    margin-top: 24px;
   }
 }

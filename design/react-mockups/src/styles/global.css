@@ -2,6 +2,8 @@
    SentiBoard v2 — Global + component styles
    ============================================================ */
 
+@import "./tokens.css";
+
 /* ============================================================
    Self-hosted modern fonts — no CDN dependency
    ============================================================ */
@@ -223,8 +225,8 @@ p b {
   background: var(--glass);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+  width: 100%; /* Changed from 100vw */
+  margin-left: 0; /* Removed fixed margin bleed */
   box-sizing: border-box;
   padding: 0 clamp(18px, 4vw, 48px);
 }
@@ -369,6 +371,7 @@ p b {
   align-items: center;
   gap: 8px;
   cursor: pointer;
+  background-color: var(--bg-2); /* Added property */
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.06em;
@@ -767,17 +770,21 @@ a.card:hover {
 /* ================= PAGE HEADER ================= */
 .page-head {
   border: none !important;
-  border-bottom: 1px solid var(--line) !important;
   background: transparent;
-  padding: 24px 0 34px 0;
+  padding: 16px 0 0 0; /* Removed bottom padding */
+  width: 100%;
+  position: relative;
+  z-index: 1;
 }
 
 .page-head .wrap {
   width: 100%;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 clamp(18px, 4vw, 48px) !important;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 clamp(18px, 4vw, 48px);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .page-head .crumbs,
@@ -797,9 +804,7 @@ a.card:hover {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--accent);
-  margin: 0 0 8px 0 !important;
-  padding-left: 0 !important;
-  margin-left: 0 !important;
+  margin: 0 0 12px 0;
   line-height: 1.2;
 }
 
@@ -835,10 +840,7 @@ a.card:hover {
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary, #ffffff);
-  margin: 0 !important;
-  margin-left: 0 !important;
-  padding: 0 !important;
-  padding-left: 0 !important;
+  margin: 0 0 16px 0;
   line-height: 1.1;
 }
 
@@ -859,13 +861,13 @@ a.card:hover {
   grid-template-rows: 1fr;
 }
 
-.collapsible>.collapsible-inner {
+.collapsible > .collapsible-inner {
   overflow: hidden;
   visibility: hidden;
   transition: visibility 0s linear 0.2s;
 }
 
-.collapsible.open>.collapsible-inner {
+.collapsible.open > .collapsible-inner {
   visibility: visible;
   transition-delay: 0s;
 }
@@ -885,30 +887,27 @@ a.card:hover {
   --pd-hover: transparent;
   --pd-body: var(--text-dim);
 
-  margin-top: 12px !important;
-  margin-left: 0 !important;
-  padding-left: 0 !important;
-  width: fit-content !important;
-  max-width: max-content !important;
-  display: inline-block !important;
+  margin-top: 8px;
+  margin-left: 0;
+  padding-left: 0;
+  width: 100%;
 }
 
+
 .page-desc-head {
-  width: auto !important;
-  max-width: max-content !important;
   cursor: pointer;
-  padding: 8px 16px !important;
-  border: 1px solid var(--line-strong) !important;
-  border-radius: 0 !important;
-  background-color: var(--bg-2) !important;
-  display: inline-flex !important;
+  padding: 8px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  background-color: var(--bg-2);
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: var(--track);
   text-transform: uppercase;
-  color: var(--text-dim) !important;
+  color: var(--text-dim);
   transition: color 0.2s var(--ease), background 0.2s var(--ease);
 }
 
@@ -933,10 +932,22 @@ a.card:hover {
 /* ================= HOME HERO ================= */
 .hero {
   position: relative;
-  min-height: calc(100vh - var(--nav-h));
+  min-height: 360px;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
   overflow: hidden;
+  padding-top: 0;
+}
+
+.hero-in {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  margin: 0;
+  padding: 48px 0 16px clamp(18px, 4vw, 48px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .hero-media {
@@ -3811,6 +3822,7 @@ table.data td.mono {
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.15), inset 0 0 15px rgba(0, 229, 255, 0.08);
 }
 
+
 /* Reusable Form Inputs */
 .sx-input,
 .sx-select {
@@ -3835,4 +3847,70 @@ table.data td.mono {
   background: var(--sx-panel-solid);
   border-radius: 2px;
   overflow-x: auto;
+}
+
+/* Append custom rules at the end of global_5.css */
+.custom-panel {
+  padding: 16px;
+  background-color: var(--bg-2);
+  border: 1px solid var(--line);
+}
+
+/* ================= COLLAPSIBLE ANIMATION FIX ================= */
+/* Container toggles grid row height */
+.collapsible {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden; /* Prevents text from leaking out when height is 0 */
+}
+
+/* Expanded state */
+.collapsible.open {
+  grid-template-rows: 1fr;
+}
+
+/* Inner wrapper enables smooth zero-height collapse */
+.collapsible-inner {
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 8px; /* Optional spacing inside the panel */
+}
+
+
+.collapsible > .collapsible-inner {
+  min-height: 0; /* <--- ADD THIS */
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 0.2s;
+}
+
+.collapsible.open > .collapsible-inner {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collapsible {
+    transition: none;
+  }
+}
+
+
+.page-desc-head .chev {
+  flex: 0 0 auto;
+  color: var(--pd-accent);
+  transition: transform 0.3s var(--ease), color 0.2s var(--ease);
+}
+
+.collapsible.open + .page-desc-head .chev,
+.page-desc.open .chev {
+  transform: rotate(180deg);
+}
+
+.page-desc .body {
+  padding: 12px 16px 16px;
+  color: var(--pd-body);
+  font-size: 13.5px;
+  line-height: 1.7;
 }

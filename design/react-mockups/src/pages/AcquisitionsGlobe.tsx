@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { PageHeader, Reveal, DescriptionModal } from "@/components/ui";
+import { PageHeader, Reveal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
@@ -10,142 +10,62 @@ import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
    This route exists so the upgrade can be reviewed next to the other proposals
    under /examples. */
 
-const CHANGES: [string, string][] = [
-  ["Demand-driven rendering",
-    "The unconditional requestAnimationFrame loop is gone. Frames are drawn when something asks for one — a drag, a zoom, a hover, a selection — or while the simulation clock is genuinely running."],
-  ["Frame-rate independent",
-    "Every rate is per second and scaled by a frame delta clamped to 48 ms, so the globe turns at the same speed on a 60 Hz and a 144 Hz display and a stalled tab resumes instead of teleporting the clock forward."],
-  ["No per-vertex trigonometry",
-    "Coastline coordinates are pre-resolved to unit vectors once and memoised per decimation level (full detail wide, coarser under 780 and 420px). A frame applies the view rotation with four trig values and six multiplies per vertex."],
-  ["Cached base layer",
-    "Sphere shading, graticule, coastlines and station coverage circles render into an OffscreenCanvas memoised per canvas resolution, redrawn only when the view actually moves — so a hover-only frame is a single blit."],
-  ["Paused when unseen",
-    "An IntersectionObserver and the document visibility event stop the canvas once it scrolls away or the tab goes to the background, and resume it where it left off."],
-  ["Footprints clipped at the limb",
-    "Each datatake draws its acquired swath as a polygon. Rings crossing the horizon have the crossing interpolated between the two 3D vertices and renormalised onto the sphere, so the fill stops at the limb instead of wrapping round the far side."],
-  ["Picking hits the polygon",
-    "Clicking tests whether the cursor is genuinely inside a footprint — the screen point is inverted back to coordinates and ray-cast against the ring — so the whole swath is the target, not a radius around its centre."],
-  ["One pointer path",
-    "Pointer Events with pointer capture replace the separate mouse and touch handlers: a drag keeps tracking after it leaves the canvas, and the wheel only swallows the scroll when the zoom actually moved."],
-  ["Station contact",
-    "Coverage circles are drawn per station and light up while a satellite is inside them; the contact set is announced in the globe's live description and is the only part of the animation that reaches React state."],
-  ["Keyboard and screen readers",
-    "The canvas is a focusable role=\"img\" with a live description and aria-keyshortcuts; arrow keys rotate, +/- zoom, brackets step through datatakes. Every footprint has a mirror button that highlights it on focus, and the datatake list is real buttons."],
-  ["Sensing marks on the timeline",
-    "The clock track carries one button per datatake at its acquisition time — a single tab stop with a roving tabindex, arrow keys between marks, Home and End to the ends. Activating a mark seeks the clock to it and selects it. Marks outside the simulated day are dropped, and ids are shown only where there is room."],
-  ["Completeness plates",
-    "The right column becomes the datatake rail: per-level isometric plates where the solid volume is published sensing and the dashed cage above it is what is still missing. One prism per product type, an alarm outline below 95%, and a flat dashed pad for a type that is not expected at all — which is not the same as 0%."],
-  ["Levels follow the mission",
-    "Each mission identifies levels its own way in the backend — Sentinel-1 by a digit inside the product type, Sentinel-2 by collapsing L1A/L1B/L1C into one L1, Sentinel-3 from the product's own product_level, Sentinel-5P with an L1B token rather than L1 — plus an UNKNOWN bucket when nothing matches. The plates are driven by whatever levels the selected datatake actually carries, so Sentinel-5P shows no Level 0 and a datatake with an unrecognised type shows an Unclassified plate."],
-  ["Wide missions cap gracefully",
-    "Sentinel-3 is the only four-instrument mission, and its Level 2 carries fourteen product types against Sentinel-1's four. A plate draws at most eight prisms, lowest completeness first so a cap can only ever hide healthy types, and names the remainder with their percentages underneath. The level percentage above is computed over every type, not the drawn subset. Levels that mix instruments also get a per-instrument roll-up, because fourteen bare prisms from four instruments do not read."],
-  ["Completeness is one number",
-    "The header KPI is the mean across expected product types, so it agrees with the plates. comp and the marker colour are derived from the same product data in mock.ts and cannot be hand-set out of step. Missing time is summed across product types, so it can exceed the sensing window — the rail says so rather than leaving it to be misread."],
-  ["Downlink passes (mock)",
-    "Station, volume and pass duration per datatake, isolated in data/downlink.ts because the backend has no datatake-to-pass join, no per-pass volume and no per-pass duration yet. Swap the body of passesFor() for the API call and nothing else moves."],
-  ["Rail isolated from the canvas",
-    "The rail is memoised on the selected datatake alone, so the globe's own churn — contact flipping mid-animation, playback, the roving tabindex — never re-renders the plates, and the canvas setup effect carries no rail state, so selecting never tears the canvas down."],
-  ["One dropdown, every mission",
-    "The satellite chips and day picker are gone. Selection is a single native dropdown over every datatake, grouped by mission so Sentinel-1, -2, -3 and -5P sit in one list — the way the legacy Acquisitions page picks a datatake. It also replaces the right column's list panel, which would otherwise be a second control with the same name. The coverage-aware day filter is still live on /acquisitions."],
-  ["Three layout tiers",
-    "560 / 780 / 980px breakpoints, with the canvas sized by a ResizeObserver on its stage rather than window resize events."],
-];
+const DESCRIPTION = (
+  <>
+    <p>{ACQUISITIONS_DESCRIPTION}</p>
+  </>
+);
 
 export default function AcquisitionsGlobe() {
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
   return (
     <>
-      <PageHeader crumb="Acquisitions Status" title="Acquisitions Status"
-        img="/assets/img/nebula.jpg" />
+      <PageHeader
+        title="Acquisitions Status"
+        subtitle="Past, current and planned Sentinel acquisitions on an interactive 3D globe."
+        img="/assets/img/modules/acquisitions.jpg"
+        desc={DESCRIPTION}
+      />
 
-      <div style={{ width: "100%", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box", marginBottom: "24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "flex-start", margin: "0", padding: "0" }}>
-          <div style={{ marginTop: "16px" }}>
-            <button
-              type="button"
-              style={{
-                cursor: "pointer",
-                padding: "12px 16px",
-                border: "1px solid rgba(255, 255, 255, 0.1)",
-                borderRadius: "0",
-                background: "#343a40",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "#9aa4b4",
-                transition: "color 0.2s, background 0.2s",
-                whiteSpace: "nowrap",
-                marginLeft: "0 !important" as any,
-                alignSelf: "flex-start !important" as any,
-              }}
-              onClick={() => setDescriptionOpen(true)}
-              aria-expanded={descriptionOpen}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "#eef1f6";
-                e.currentTarget.style.background = "rgba(0, 199, 214, 0.13)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "#9aa4b4";
-                e.currentTarget.style.background = "#343a40";
-              }}
-            >
-              <span>Description</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00c7d6" strokeWidth="2.5" strokeLinecap="round">
-                <polyline points="6 9 12 15 18 9" />
-              </svg>
-            </button>
-          </div>
-          <DescriptionModal open={descriptionOpen} onClose={() => setDescriptionOpen(false)}>
-            <div style={{ color: "#eef1f6" }}>
-              <p>{ACQUISITIONS_DESCRIPTION}</p>
-            </div>
-          </DescriptionModal>
-        </div>
-      </div>
-
-      <section style={{ width: "100vw", position: "relative", left: "50%", transform: "translateX(-50%)", boxSizing: "border-box", paddingBlock: "clamp(56px, 8vw, 120px)" } as any}>
-        <div style={{ width: "100%", maxWidth: "none", margin: "0", padding: "0 clamp(18px, 4vw, 48px)", boxSizing: "border-box" } as any}>
+      <section
+        style={
+          {
+            width: "100vw",
+            position: "relative",
+            left: "50%",
+            transform: "translateX(-50%)",
+            boxSizing: "border-box",
+            paddingTop: "0",
+            paddingBottom: "clamp(56px, 8vw, 120px)",
+          } as any
+        }
+      >
+        <div
+          style={
+            {
+              width: "100%",
+              maxWidth: "none",
+              margin: "0",
+              padding: "0 clamp(18px, 4vw, 48px)",
+              boxSizing: "border-box",
+            } as any
+          }
+        >
           {/* Cross-link to the second Acquisitions concept. The two answer different questions —
               this one is the geographic reading, the ladder is the pipeline reading — so they are
               reviewed together rather than one replacing the other. */}
 
           <Reveal>
-            <AcquisitionGlobe stations={STATIONS} datatakes={ACQ_DATATAKES} rail="plates" />
+            <AcquisitionGlobe
+              stations={STATIONS}
+              datatakes={ACQ_DATATAKES}
+              rail="plates"
+            />
           </Reveal>
         </div>
       </section>
 
-      <style>{`
-        .acq-variant {
-          display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-          font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em;
-          text-transform: uppercase; color: var(--text-mute); margin: 0 0 22px;
-        }
-        .acq-variant a { color: var(--accent-2); text-decoration: none; border-bottom: 1px solid transparent; }
-        .acq-variant a:hover, .acq-variant a:focus-visible { border-bottom-color: currentColor; }
-        .acq-changelog {
-          display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 16px; margin: 0;
-        }
-        .acq-changelog > div {
-          padding: 16px 18px; border: 1px solid var(--line);
-          border-radius: var(--r-lg); background: var(--bg-2);
-        }
-        .acq-changelog dt {
-          font-family: var(--font-mono); font-size: 12px;
-          letter-spacing: .04em; color: var(--accent-2); margin-bottom: 6px;
-        }
-        .acq-changelog dd {
-          margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-dim);
-        }
-        @media (max-width: 780px) { .acq-changelog { grid-template-columns: 1fr; } }
-      `}</style>
     </>
   );
 }

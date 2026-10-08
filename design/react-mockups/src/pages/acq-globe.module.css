@@ -1,0 +1,157 @@
+/* Acquisitions Globe — drawer + collapse pattern matching EventsManifest */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 210;
+  width: min(440px, 92vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-2);
+  border-left: 1px solid var(--line-strong);
+  box-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.8);
+  transform: translateX(100%);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawerOn {
+  transform: translateX(0);
+}
+
+.drawerHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.drawerTitle {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+
+.drawerClose {
+  flex: 0 0 auto;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-mute);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.drawerClose:hover {
+  color: var(--text);
+}
+
+.drawerBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 20px 24px;
+}
+
+.changeItem {
+  margin-bottom: 20px;
+  padding: 0;
+}
+
+.changeItem dt {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--accent-2);
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.changeItem dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+/* Collapse pattern for header description */
+.descriptionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.descriptionHead {
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.descriptionHead:hover {
+  color: var(--text);
+  background: rgba(0, 199, 214, 0.08);
+}
+
+.descriptionChev {
+  flex: 0 0 auto;
+  color: var(--accent-2);
+  transition: transform 0.2s ease;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.descriptionCard :global(.collapsible.open) .descriptionChev {
+  transform: rotate(180deg);
+}
+
+.descriptionBody {
+  padding: 12px 16px 16px;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* Responsive */
+@media (max-width: 760px) {
+  .drawer {
+    width: min(440px, 100vw - 24px);
+  }
+
+  .drawerHead {
+    padding: 16px 14px 14px;
+  }
+
+  .drawerBody {
+    padding: 4px 14px 24px;
+  }
+
+  .drawerClose {
+    width: 44px;
+    height: 44px;
+    margin: -6px -6px 0 0;
+  }
+}
