@@ -832,3 +832,20 @@
     max-height: none;
   }
 }
+
+/* The shared PageHeader draws its photo with global classes, so this wrapper scopes the overlay to
+   it. The gradient covers the whole section and sits above the photo layers but below .hero-in, so
+   the title and description stay legible whatever the header image is. */
+.headArt :global(.hero)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(3, 5, 10, 0.88) 0%,
+    rgba(3, 5, 10, 0.62) 50%,
+    rgba(3, 5, 10, 0.12) 100%
+  );
+}

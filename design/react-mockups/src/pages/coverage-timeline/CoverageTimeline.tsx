@@ -385,11 +385,13 @@ export default function CoverageTimeline() {
 
   return (
     <>
-      <PageHeader
-        title="Data Availability"
-        desc={DESCRIPTION}
-        img="/assets/img/modules/galaxy_star.jpg"
-      />
+      <div className={s.headArt}>
+        <PageHeader
+          title="Data Availability"
+          desc={DESCRIPTION}
+          img="/assets/img/modules/availability.jpg"
+        />
+      </div>
 
       <section className="wrap pad">
         {/* ---------------- counters ---------------- */}

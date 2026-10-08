@@ -477,11 +477,13 @@ export default function EventsManifest() {
 
   return (
     <>
-      <PageHeader
-        title="Events"
-        desc={DESCRIPTION}
-        img="/assets/img/modules/events.jpg"
-      />
+      <div className={s.headArt}>
+        <PageHeader
+          title="Events"
+          desc={DESCRIPTION}
+          img="/assets/img/modules/events.jpg"
+        />
+      </div>
 
       <div className={s.page}>
         <div className={s.inner}>

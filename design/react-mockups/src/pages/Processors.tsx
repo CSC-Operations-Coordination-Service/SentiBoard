@@ -36,11 +36,13 @@ export default function Processors() {
 
   return (
     <>
-      <PageHeader
-        title="Processors"
-        desc={DESCRIPTION}
-        img="/assets/img/modules/Landing_asteroid.jpg"
-      />
+      <div className={s.headArt}>
+        <PageHeader
+          title="Processors"
+          desc={DESCRIPTION}
+          img="/assets/img/modules/processors.jpg"
+        />
+      </div>
 
       <section className={s.container}>
         {/* Satellite selector tabs - all four buttons always visible */}

@@ -310,6 +310,23 @@
   }
 }
 
+/* The header's photo is drawn by the shared PageHeader with global classes. The gradient covers the
+   whole section, not just the text column (which is only as tall as its content), and sits above
+   the photo layers but below .hero-in, so the title and description stay legible. */
+.headArt :global(.hero)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(3, 5, 10, 0.88) 0%,
+    rgba(3, 5, 10, 0.62) 50%,
+    rgba(3, 5, 10, 0.12) 100%
+  );
+}
+
 /* ---------------- month bar + legend ---------------- */
 .monthBar {
   display: flex;
