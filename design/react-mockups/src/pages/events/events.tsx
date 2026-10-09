@@ -10,7 +10,14 @@
 // shared module to keep honest, and a stakeholder reading the proposal can now follow it top to
 // bottom. Mock-up only — data is local (mock.ts); the shipping page is /v1/events.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type TransitionEvent,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   ChevronLeft,
@@ -106,16 +113,15 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
-const MONTH_SHORT_NAMES = MONTH_NAMES.map((m) => m.slice(0, 3));
 
 /** "August 2026" for a 1-based month. */
 function monthLabel(month: number) {
   return `${MONTH_NAMES[month - 1]} ${YEAR}`;
 }
 
-/** "05 Aug 2026" for a day of a 1-based month. */
+/** "AUGUST 5, 2026" for a day of a 1-based month. */
 function dayHeading(day: number, month: number) {
-  return `${String(day).padStart(2, "0")} ${MONTH_SHORT_NAMES[month - 1]} ${YEAR}`;
+  return `${MONTH_NAMES[month - 1].toUpperCase()} ${day}, ${YEAR}`;
 }
 
 /** Where a cell sits in the sky grid: column 0–6, row, and its top-left in SVG units. */
@@ -128,6 +134,44 @@ function skyCell(index: number) {
 /** How many marks a day cell can show before it starts summarising. Four fits two rows of glyphs in
  *  the wide cell and in the ~45px phone cell; beyond that the marks would crowd out the day number. */
 const MARKS_SHOWN = 4;
+
+/** The marks inside a day cell. Closed, one coloured dot per event; while a day is zoomed in
+ *  (`isZoomed`), the same events as their type icons. Past MARKS_SHOWN the rest collapse to "+N". */
+function renderDayIndicators(events: ManifestEvent[], isZoomed: boolean) {
+  if (events.length === 0) return null;
+  return (
+    <span className={`${s.marks} ${isZoomed ? s.zoomedIn : ""}`}>
+      {events.slice(0, MARKS_SHOWN).map((e) => {
+        const color = CATEGORY_COLOR[e.category];
+        const title = `${e.time} · ${e.category} · ${e.satellite}`;
+        if (!isZoomed) {
+          return (
+            <span
+              key={e.id}
+              className={s.dotMark}
+              style={{ backgroundColor: color }}
+              title={title}
+            />
+          );
+        }
+        const Icon = CATEGORY_ICONS[e.category];
+        return (
+          <span
+            key={e.id}
+            className={s.iconMark}
+            style={{ color }}
+            title={title}
+          >
+            <Icon size={14} strokeWidth={CATEGORY_STROKE} aria-hidden />
+          </span>
+        );
+      })}
+      {events.length > MARKS_SHOWN && (
+        <em className={s.markMore}>+{events.length - MARKS_SHOWN}</em>
+      )}
+    </span>
+  );
+}
 
 /** "1 acquisition, 1 production" — what the day's glyphs say, for the cell's aria-label. In
  *  CATEGORIES order rather than event order, so the same mix of types always reads the same way. */
@@ -273,7 +317,12 @@ function OccurrenceList({
                   {e.category} · {e.satellite}
                 </span>
               </span>
-              <StatusCircle status={status} />
+              <span
+                className={s.occBadge}
+                style={{ color: COMPLETENESS[status].color }}
+              >
+                {COMPLETENESS[status].label}
+              </span>
             </button>
 
             {/* Rendered whether or not it is open, so the datatakes have a height to slide from —
@@ -327,6 +376,13 @@ function DaySummary({ events }: { events: ManifestEvent[] }) {
 export default function EventsManifest() {
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [openDay, setOpenDay] = useState<number | null>(null);
+  // What the drawer shows. Kept after the drawer closes so its content does not vanish mid
+  // slide-out; cleared once the panel has finished sliding away.
+  const [panelDay, setPanelDay] = useState<{
+    day: number;
+    month: number;
+    events: ManifestEvent[];
+  } | null>(null);
   const [currentMonth, setCurrentMonth] = useState<number>(MONTH);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [descriptionOpen, setDescriptionOpen] = useState(false);
@@ -386,6 +442,21 @@ export default function EventsManifest() {
   const typeFilter = filters.categories.length === 1 ? filters.categories[0] : "";
 
   const cells = useMemo(() => calendarCells(YEAR, currentMonth), [currentMonth]);
+  // The zoom scales the grid about the selected day's own centre, so the day expands where it sits
+  // instead of jumping to the middle of the grid. The origin follows panelDay, which outlives the
+  // drawer's close, so the grid shrinks back about the same point rather than snapping.
+  const zoomStyle = useMemo<CSSProperties>(() => {
+    const i = panelDay ? cells.findIndex((c) => !c.dim && c.day === panelDay.day) : -1;
+    if (i < 0) return { transform: "none" };
+    const rows = Math.ceil(cells.length / 7);
+    const ox = (((i % 7) + 0.5) / 7) * 100;
+    const oy = ((Math.floor(i / 7) + 0.5) / rows) * 100;
+    return {
+      transformOrigin: `${ox.toFixed(2)}% ${oy.toFixed(2)}%`,
+      transform: openDay !== null ? "scale(1.6)" : "none",
+    };
+  }, [panelDay, openDay, cells]);
+
   const sign = SIGN_BY_MONTH[currentMonth - 1];
   const monthName = MONTH_NAMES[currentMonth - 1];
   const canGoBack = currentMonth > 1;
@@ -411,12 +482,26 @@ export default function EventsManifest() {
   const satelliteDisabled = satellites.length < 2;
 
   const close = useCallback(() => setOpenDay(null), []);
-  const selectDay = useCallback((day: number) => {
-    setOpenDay(day);
-    // A newly opened day starts collapsed: the timeline answers "what happened", and
-    // auto-expanding the first event would bury it under one event's datatakes.
-    setExpanded(new Set());
-  }, []);
+  const selectDay = useCallback(
+    (day: number) => {
+      const events = byDay.get(day) ?? [];
+      // A day with nothing on it neither selects nor opens: the drawer is for occurrences only.
+      if (events.length === 0) return;
+      setOpenDay(day);
+      setPanelDay({ day, month: currentMonth, events });
+      // A newly opened day starts collapsed: the timeline answers "what happened", and
+      // auto-expanding the first event would bury it under one event's datatakes.
+      setExpanded(new Set());
+    },
+    [byDay, currentMonth],
+  );
+  const onPanelTransitionEnd = useCallback(
+    (e: TransitionEvent<HTMLElement>) => {
+      // Child transitions (rows, the chevron) bubble up here too; only the panel's own slide counts.
+      if (e.target === e.currentTarget && openDay === null) setPanelDay(null);
+    },
+    [openDay],
+  );
 
   // Escape closes the drawer — the overlay is modal in feel, so it should behave like one.
   useEffect(() => {
@@ -428,7 +513,7 @@ export default function EventsManifest() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openDay, close]);
 
-  const dayEvents = openDay === null ? [] : (byDay.get(openDay) ?? []);
+  const dayEvents = panelDay?.events ?? [];
 
   const toggleAllExpanded = useCallback(() => {
     if (expanded.size === dayEvents.length && dayEvents.length > 0) {
@@ -682,7 +767,7 @@ export default function EventsManifest() {
                 <span key={d}>{d}</span>
               ))}
             </div>
-            <div className={s.grid}>
+            <div className={s.grid} style={zoomStyle}>
               {cells.map((c, i) => {
                 const pos = skyCell(i);
                 // Neighbouring-month cells exist only so the weeks line up; they carry no events and
@@ -728,46 +813,7 @@ export default function EventsManifest() {
                       {String(c.day).padStart(2, "0")}
                     </span>
 
-                    {/* One mark per event, drawn with that event's TYPE GLYPH — the same five icons
-                      the filter pills carry at the top of the page (components/EventIcon's set), so
-                      a day reads as "a manoeuvre and a production issue" rather than "two things".
-                      Replaces the neutral dots that were here.
-
-                      Still uncoloured: this page reserves colour for completeness, and the pills
-                      draw these same glyphs in the accent rather than in a per-type hue, so a second
-                      palette would contradict both. The glyph identifies the type; the stripe below
-                      identifies the loss. */}
-                    {events.length > 0 && (
-                      <span className={s.marks}>
-                        {events.slice(0, MARKS_SHOWN).map((e) => {
-                          const Icon = CATEGORY_ICONS[e.category];
-                          const categoryColor = CATEGORY_COLOR[e.category];
-                          return (
-                            <span
-                              key={e.id}
-                              className={s.mark}
-                              title={`${e.time} · ${e.category} · ${e.satellite}`}
-                              style={{ color: categoryColor }}
-                            >
-                              <Icon
-                                size={13}
-                                strokeWidth={CATEGORY_STROKE}
-                                aria-hidden
-                              />
-                            </span>
-                          );
-                        })}
-                        {/* A glyph is far bigger than the 5px dot it replaces, so a busy day can no
-                          longer show one mark per event. The mock's busiest day has two; a real
-                          month will have more, and silently dropping them would make the grid
-                          under-report. */}
-                        {events.length > MARKS_SHOWN && (
-                          <em className={s.markMore}>
-                            +{events.length - MARKS_SHOWN}
-                          </em>
-                        )}
-                      </span>
-                    )}
+                    {renderDayIndicators(events, openDay !== null)}
                   </button>
                 );
               })}
@@ -793,14 +839,15 @@ export default function EventsManifest() {
           className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
           aria-label="Day manifest"
           aria-hidden={openDay === null}
+          onTransitionEnd={onPanelTransitionEnd}
         >
-          {openDay !== null && (
+          {panelDay !== null && (
             <>
               <div className={s.drawerHead}>
                 <div>
                   <span className={s.detailEyebrow}>Day manifest</span>
                   <h2 className={s.detailDay}>
-                    {dayHeading(openDay, currentMonth)}
+                    {dayHeading(panelDay.day, panelDay.month)}
                   </h2>
                   <DaySummary events={dayEvents} />
                 </div>

@@ -22,7 +22,7 @@
   /* the calendar sits straight on the starfield: no panel, transparent cells, crisp outlines */
   --mf-cal: transparent;
   --mf-cell: rgba(0, 0, 0, 0.4);
-  --mf-cell-line: rgba(255, 255, 255, 0.15);
+  --mf-cell-line: rgba(255, 255, 255, 0.45);
   --mf-line: rgba(255, 255, 255, 0.1);
   /* faint stars sprinkled over the canvas, tiled every 360×300px */
   --mf-stars:
@@ -770,6 +770,7 @@ select.control {
   position: relative;
   overflow: hidden;
   min-width: 0;
+  perspective: 1000px; /* 3D perspective for the zoom */
 }
 
 /* Row holding the constellation column and the calendar: the sky sits to the left of the grid. */
@@ -823,6 +824,12 @@ select.control {
   gap: 5px;
 }
 
+/* the zoom: the grid moves and scales as one, from the selected day's inline transform */
+.grid {
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: center center;
+}
+
 .dow {
   margin-bottom: 6px;
 }
@@ -854,10 +861,10 @@ select.control {
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.15s, background 0.15s;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.cell:hover {
+.cell:not(.cellDim):hover {
   border-color: var(--mf-line-strong);
 }
 
@@ -867,15 +874,19 @@ select.control {
 }
 
 /* neighbouring-month padding: present so the weeks line up, and nothing more */
-.cellDim {
+.cellDim,
+.cellDim:hover {
   background: transparent;
   border-color: transparent;
   cursor: default;
 }
 
 .cellSel {
-  border-color: var(--mf-signal);
-  box-shadow: inset 0 0 0 1px var(--mf-signal);
+  z-index: 10 !important;
+  border-color: var(--mf-signal) !important;
+  background: var(--mf-signal-soft) !important;
+  box-shadow: inset 0 0 0 2px var(--mf-signal), 0 0 25px rgba(0, 199, 214, 0.6) !important;
+  transform: scale(1.25) translateZ(30px) !important; /* zoom-in on the selected day */
 }
 
 .cellNum {
@@ -890,34 +901,52 @@ select.control {
   color: var(--mf-text);
 }
 
-/* One mark per event, each drawn with its event type's glyph — the icons the filter pills carry.
-   Replaces the neutral dots that were here. */
+/* One mark per event. Closed, each day shows a coloured dot per event (the category colour); zoomed
+   in, the same events show their type icons instead. The zoom state picks which set renders. */
 .marks {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px 3px;
-  padding-bottom: 1px;
+  gap: 3px 4px;
+  padding-top: 4px;
 }
 
-/* The glyph inherits its colour rather than taking a per-type hue: this page spends colour on
-   completeness only, and the pills draw these same icons in the accent, not in five hues. The
-   SHAPE is what identifies the type; the stripe under the cell is what identifies the loss. */
-.mark {
+/* dots: 6px rounded, filled with the event category's colour (set inline) */
+.dotMark {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.dotMark:hover {
+  transform: scale(1.4);
+}
+
+/* icons: 18px wrappers around the category glyph, shown only while a day is zoomed */
+.zoomedIn {
+  gap: 4px;
+}
+
+.iconMark {
   display: inline-flex;
   flex: 0 0 auto;
-  color: var(--mf-faint);
-  transition: color 0.15s;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.2s ease;
 }
 
-.mark svg {
-  width: 18px !important;
-  height: 18px !important;
+.iconMark svg {
+  width: 14px;
+  height: 14px;
 }
 
-.cell:hover .mark,
-.cellSel .mark {
-  color: var(--mf-signal);
+.iconMark:hover {
+  transform: scale(1.2);
 }
 
 /* "+2" when a day has more events than the cell can draw. Sized to sit on the glyphs' baseline
@@ -939,10 +968,6 @@ select.control {
   color: var(--mf-signal);
 }
 
-/* the loss stripe: bottom edge of the cell, colour set inline from the day's worst impact */
-.lossBar {
-  display: none;
-}
 
 .hint {
   margin: 12px 2px 0;
@@ -990,7 +1015,7 @@ select.control {
 .scrim {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 9998;
   border: 0;
   padding: 0;
   background: var(--mf-scrim);
@@ -1010,7 +1035,7 @@ select.control {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 210;
+  z-index: 9999;
   width: min(440px, 92vw);
   display: flex;
   flex-direction: column;
@@ -1168,6 +1193,19 @@ select.control {
 .circle {
   flex: 0 0 auto;
   border-radius: 50%;
+}
+
+/* status name on each occurrence row, in the completeness colour set inline */
+.occBadge {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .occDetail {
