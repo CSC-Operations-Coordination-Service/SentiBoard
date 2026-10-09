@@ -810,9 +810,50 @@ select.control {
 }
 
 /* Star nodes glow a little so they read as lights rather than flat dots. */
+/* Each star starts dark and lights in turn. The delay comes inline (i × 150ms), so the stars light
+   one after another from the first point of the figure. `both` holds the dark start during the
+   delay and the lit end afterwards. */
 .zodiacStars circle {
   fill: #ffffff;
   filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
+  opacity: 0.1;
+  transform: scale(0.5);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illuminateStar 0.4s ease-out both;
+}
+
+@keyframes illuminateStar {
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1));
+  }
+}
+
+/* The line draws from nothing to the whole figure. Duration is set inline to match the stars. */
+.zodiacPath {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: drawZodiacPath;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes drawZodiacPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zodiacStars circle,
+  .zodiacPath {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
 }
 
 .dow,
@@ -1039,9 +1080,21 @@ select.control {
   width: min(440px, 92vw);
   display: flex;
   flex-direction: column;
-  background: var(--mf-panel);
-  border-left: 1px solid var(--mf-line-strong);
-  box-shadow: var(--mf-drawer-shadow);
+  /* a dark panel whatever the page theme: its text tokens are set here, not inherited */
+  --mf-text: #e6edf5;
+  --mf-muted: #9aa7b4;
+  --mf-faint: #6b7785;
+  --mf-line: rgba(0, 229, 255, 0.15);
+  --mf-line-strong: rgba(0, 229, 255, 0.3);
+  --mf-signal: #00e5ff;
+  --mf-signal-soft: rgba(0, 229, 255, 0.1);
+  color: var(--mf-text);
+  background: linear-gradient(135deg, rgb(10, 13, 20), rgb(2, 3, 5));
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-right: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 40px rgba(0, 229, 255, 0.04), var(--mf-drawer-shadow);
+  backdrop-filter: blur(3px);
   transform: translateX(100%);
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1056,7 +1109,8 @@ select.control {
   justify-content: space-between;
   gap: 14px;
   padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--mf-line);
+  background: rgba(0, 0, 0, 0.35);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.2);
 }
 
 .drawerBody {
@@ -1084,6 +1138,7 @@ select.control {
 .iconBtn:hover {
   border-color: var(--mf-signal);
   color: var(--mf-signal);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
 }
 
 .expandAllBtn {
@@ -1229,70 +1284,151 @@ select.control {
   color: var(--mf-faint);
 }
 
-.dtList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+/* key-value grid: the occurrence's metadata */
+.kv {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0 0 14px;
 }
 
-.dtRow {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 4px 9px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--mf-line);
+.kv dt {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.kv dd {
+  margin: 3px 0 0;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 12px;
+  color: var(--mf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* datatake table: ID, product, start, status */
+.dtTable {
+  width: 100%;
+  border-collapse: collapse;
   font-family: var(--font-mono, var(--mono));
   font-size: 11px;
 }
 
-.dtRow:last-child {
-  border-bottom: 0;
+.dtTable th {
+  padding: 8px 6px 6px 0;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
 }
 
-.dtId {
+.dtTable td {
+  padding: 9px 6px 9px 0;
+  border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+  vertical-align: middle;
+}
+
+.dtTable tbody tr:hover td {
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.dtNum {
+  font-variant-numeric: tabular-nums;
   color: var(--mf-text);
 }
 
-/* product code and sensing window share the second row of the datatake cell, under the ID */
-.dtProduct {
-  grid-column: 2;
+.dtProductCell {
   color: var(--mf-signal);
-  font-size: 10px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
 }
 
-.dtTime {
-  grid-column: 2;
-  color: var(--mf-faint);
-  font-size: 10.5px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* status name over the percentage, right-aligned: with five states the colour alone no longer
-   identifies which one this is, so the label carries it and the colour reinforces it. */
-.dtStatus {
-  grid-column: 3;
-  grid-row: 1 / span 3;
-  align-self: center;
-  display: flex;
+.dtStatusCell {
+  display: inline-flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 1px;
-  text-align: right;
-}
-
-.dtStatusLabel {
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.dtPct {
+.dtStatusCell .dtNum {
   font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+
+/* status pills in the header: one per state present on the day */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pill {
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* footer: separated from the body by a cyan rule, always in view at the foot of the panel */
+.drawerFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(0, 229, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.footBtn {
+  padding: 9px 14px;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  border-radius: 0;
+  background: transparent;
+  color: var(--mf-muted);
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.footBtn:hover:not(:disabled) {
+  border-color: var(--mf-signal);
+  color: var(--mf-signal);
+}
+
+.footBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.footPrimary {
+  margin-left: auto;
+  border-color: var(--mf-signal);
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--mf-signal);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+}
+
+.footPrimary:hover:not(:disabled) {
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.5);
 }
 
 /* ---------------- responsive ---------------- */

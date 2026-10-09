@@ -19,13 +19,7 @@ import {
   type TransitionEvent,
 } from "react";
 import { Link } from "react-router-dom";
-import {
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
-  Search,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import {
   ALL_SATELLITES,
@@ -50,7 +44,6 @@ import {
   groupByDay,
   marksLoss,
   missionOf,
-  sensingWindow,
   type Datatake,
   type EventCategory,
   type Filters,
@@ -73,45 +66,202 @@ const START_Y = 80;
 /* Stylised constellation line-work, centred on (0,0) in its own units. These are decorative
  * shapes, not astronomical positions. */
 const ZODIAC: Record<string, string> = {
-  Capricornus: "M-200 -40 L-120 -80 L-40 -30 L40 -60 L120 -20 L200 -90 M120 -20 L90 60 L0 100 L-80 40 L-40 -30",
-  Aquarius: "M-220 -40 L-160 -90 L-100 -40 L-40 -90 L20 -40 L80 -90 L140 -40 L200 -90 M-220 60 L-160 10 L-100 60 L-40 10 L20 60 L80 10 L140 60 L200 10",
-  Pisces: "M-240 -110 Q-160 -40 -90 0 Q-160 40 -240 110 M90 -110 Q160 -40 240 0 Q160 40 90 110 M-90 0 L90 0",
+  Capricornus:
+    "M-200 -40 L-120 -80 L-40 -30 L40 -60 L120 -20 L200 -90 M120 -20 L90 60 L0 100 L-80 40 L-40 -30",
+  Aquarius:
+    "M-220 -40 L-160 -90 L-100 -40 L-40 -90 L20 -40 L80 -90 L140 -40 L200 -90 M-220 60 L-160 10 L-100 60 L-40 10 L20 60 L80 10 L140 60 L200 10",
+  Pisces:
+    "M-240 -110 Q-160 -40 -90 0 Q-160 40 -240 110 M90 -110 Q160 -40 240 0 Q160 40 90 110 M-90 0 L90 0",
   Aries: "M-200 40 Q-150 -130 -30 -70 L60 -20 L200 20",
-  Taurus: "M-200 -120 L-40 0 L-200 120 M-40 0 L140 -40 M140 -40 L60 -140 M140 -40 L200 -130 M120 60 L130 40 L140 60 L120 62 Z",
-  Gemini: "M-130 -150 L-120 110 M130 -150 L120 110 M-130 -150 Q-60 -170 -20 -120 M130 -150 Q60 -170 20 -120 M-120 -10 L120 -10",
-  Cancer: "M-160 0 Q0 -180 160 0 Q0 180 -160 0 Z M-60 -120 L-120 -190 M60 -120 L120 -190 M-60 120 L-120 190 M60 120 L120 190",
+  Taurus:
+    "M-200 -120 L-40 0 L-200 120 M-40 0 L140 -40 M140 -40 L60 -140 M140 -40 L200 -130 M120 60 L130 40 L140 60 L120 62 Z",
+  Gemini:
+    "M-130 -150 L-120 110 M130 -150 L120 110 M-130 -150 Q-60 -170 -20 -120 M130 -150 Q60 -170 20 -120 M-120 -10 L120 -10",
+  Cancer:
+    "M-160 0 Q0 -180 160 0 Q0 180 -160 0 Z M-60 -120 L-120 -190 M60 -120 L120 -190 M-60 120 L-120 190 M60 120 L120 190",
   Leo: "M-220 -40 L-160 -90 L-100 -60 L-40 -20 L30 -60 L100 0 L200 10 L180 110 L80 90 L-20 60 L-80 110 L-160 120 Z",
-  Virgo: "M-120 -180 L-60 -20 L-30 150 M-60 -20 L40 -60 L120 -150 M-60 -20 L60 40 L200 80 M-30 150 L80 190",
-  Libra: "M-200 -40 L200 -40 M0 -40 L0 -130 M-200 -40 Q-150 60 -100 -40 M200 -40 Q150 60 100 -40 M-60 -130 L60 -130",
-  Scorpius: "M-200 -120 L-120 -60 L-60 -120 L0 -40 L60 -20 L120 20 L170 90 L200 60 M120 20 L110 -40 L150 -80",
-  Sagittarius: "M-180 120 L160 -120 M160 -120 L80 -110 M160 -120 L150 -40 M-120 40 L40 -20 M-60 80 L80 0",
+  Virgo:
+    "M-120 -180 L-60 -20 L-30 150 M-60 -20 L40 -60 L120 -150 M-60 -20 L60 40 L200 80 M-30 150 L80 190",
+  Libra:
+    "M-200 -40 L200 -40 M0 -40 L0 -130 M-200 -40 Q-150 60 -100 -40 M200 -40 Q150 60 100 -40 M-60 -130 L60 -130",
+  Scorpius:
+    "M-200 -120 L-120 -60 L-60 -120 L0 -40 L60 -20 L120 20 L170 90 L200 60 M120 20 L110 -40 L150 -80",
+  Sagittarius:
+    "M-180 120 L160 -120 M160 -120 L80 -110 M160 -120 L150 -40 M-120 40 L40 -20 M-60 80 L80 0",
 };
 
 /* Star nodes for each sign: the line vertices of ZODIAC, in the same units. */
 const ZODIAC_STARS: Record<string, [number, number][]> = {
-  Capricornus: [[-200, -40], [-120, -80], [-40, -30], [40, -60], [120, -20], [200, -90], [90, 60], [0, 100], [-80, 40]],
-  Aquarius: [[-220, -40], [-160, -90], [-100, -40], [-40, -90], [20, -40], [80, -90], [140, -40], [200, -90], [-220, 60], [-160, 10], [-100, 60], [-40, 10], [20, 60], [80, 10], [140, 60], [200, 10]],
-  Pisces: [[-240, -110], [-90, 0], [-240, 110], [90, -110], [240, 0], [90, 110]],
-  Aries: [[-200, 40], [-30, -70], [60, -20], [200, 20]],
-  Taurus: [[-200, -120], [-40, 0], [-200, 120], [140, -40], [60, -140], [200, -130], [120, 60], [130, 40], [140, 60], [120, 62]],
-  Gemini: [[-130, -150], [-120, 110], [130, -150], [120, 110], [-20, -120], [20, -120], [-120, -10], [120, -10]],
-  Cancer: [[-160, 0], [160, 0], [-60, -120], [-120, -190], [60, -120], [120, -190], [-60, 120], [-120, 190], [60, 120], [120, 190]],
-  Leo: [[-220, -40], [-160, -90], [-100, -60], [-40, -20], [30, -60], [100, 0], [200, 10], [180, 110], [80, 90], [-20, 60], [-80, 110], [-160, 120]],
-  Virgo: [[-120, -180], [-60, -20], [-30, 150], [40, -60], [120, -150], [60, 40], [200, 80], [80, 190]],
-  Libra: [[-200, -40], [200, -40], [0, -40], [0, -130], [-100, -40], [100, -40], [-60, -130], [60, -130]],
-  Scorpius: [[-200, -120], [-120, -60], [-60, -120], [0, -40], [60, -20], [120, 20], [170, 90], [200, 60], [110, -40], [150, -80]],
-  Sagittarius: [[-180, 120], [160, -120], [80, -110], [150, -40], [-120, 40], [40, -20], [-60, 80], [80, 0]],
+  Capricornus: [
+    [-200, -40],
+    [-120, -80],
+    [-40, -30],
+    [40, -60],
+    [120, -20],
+    [200, -90],
+    [90, 60],
+    [0, 100],
+    [-80, 40],
+  ],
+  Aquarius: [
+    [-220, -40],
+    [-160, -90],
+    [-100, -40],
+    [-40, -90],
+    [20, -40],
+    [80, -90],
+    [140, -40],
+    [200, -90],
+    [-220, 60],
+    [-160, 10],
+    [-100, 60],
+    [-40, 10],
+    [20, 60],
+    [80, 10],
+    [140, 60],
+    [200, 10],
+  ],
+  Pisces: [
+    [-240, -110],
+    [-90, 0],
+    [-240, 110],
+    [90, -110],
+    [240, 0],
+    [90, 110],
+  ],
+  Aries: [
+    [-200, 40],
+    [-30, -70],
+    [60, -20],
+    [200, 20],
+  ],
+  Taurus: [
+    [-200, -120],
+    [-40, 0],
+    [-200, 120],
+    [140, -40],
+    [60, -140],
+    [200, -130],
+    [120, 60],
+    [130, 40],
+    [140, 60],
+    [120, 62],
+  ],
+  Gemini: [
+    [-130, -150],
+    [-120, 110],
+    [130, -150],
+    [120, 110],
+    [-20, -120],
+    [20, -120],
+    [-120, -10],
+    [120, -10],
+  ],
+  Cancer: [
+    [-160, 0],
+    [160, 0],
+    [-60, -120],
+    [-120, -190],
+    [60, -120],
+    [120, -190],
+    [-60, 120],
+    [-120, 190],
+    [60, 120],
+    [120, 190],
+  ],
+  Leo: [
+    [-220, -40],
+    [-160, -90],
+    [-100, -60],
+    [-40, -20],
+    [30, -60],
+    [100, 0],
+    [200, 10],
+    [180, 110],
+    [80, 90],
+    [-20, 60],
+    [-80, 110],
+    [-160, 120],
+  ],
+  Virgo: [
+    [-120, -180],
+    [-60, -20],
+    [-30, 150],
+    [40, -60],
+    [120, -150],
+    [60, 40],
+    [200, 80],
+    [80, 190],
+  ],
+  Libra: [
+    [-200, -40],
+    [200, -40],
+    [0, -40],
+    [0, -130],
+    [-100, -40],
+    [100, -40],
+    [-60, -130],
+    [60, -130],
+  ],
+  Scorpius: [
+    [-200, -120],
+    [-120, -60],
+    [-60, -120],
+    [0, -40],
+    [60, -20],
+    [120, 20],
+    [170, 90],
+    [200, 60],
+    [110, -40],
+    [150, -80],
+  ],
+  Sagittarius: [
+    [-180, 120],
+    [160, -120],
+    [80, -110],
+    [150, -40],
+    [-120, 40],
+    [40, -20],
+    [-60, 80],
+    [80, 0],
+  ],
 };
+
+/* Timing of the lighting sequence: each star lights STAR_STEP_MS after the one before it, and each
+ * star's own fade takes STAR_FADE_MS. Kept here, not only in CSS, because the path's draw length
+ * is derived from the star count. */
+const STAR_STEP_MS = 150;
+const STAR_FADE_MS = 400;
 
 /* Month number (1 = January, as in mock.ts) → the sign that dominates that month. */
 const SIGN_BY_MONTH = [
-  "Capricornus", "Aquarius", "Pisces", "Aries", "Taurus", "Gemini",
-  "Cancer", "Leo", "Virgo", "Libra", "Scorpius", "Sagittarius",
+  "Capricornus",
+  "Aquarius",
+  "Pisces",
+  "Aries",
+  "Taurus",
+  "Gemini",
+  "Cancer",
+  "Leo",
+  "Virgo",
+  "Libra",
+  "Scorpius",
+  "Sagittarius",
 ];
 
 const MONTH_NAMES = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 /** "August 2026" for a 1-based month. */
@@ -119,9 +269,9 @@ function monthLabel(month: number) {
   return `${MONTH_NAMES[month - 1]} ${YEAR}`;
 }
 
-/** "AUGUST 5, 2026" for a day of a 1-based month. */
+/** "09 SEPTEMBER 2026" for a day of a 1-based month, as the detail header sets it. */
 function dayHeading(day: number, month: number) {
-  return `${MONTH_NAMES[month - 1].toUpperCase()} ${day}, ${YEAR}`;
+  return `${String(day).padStart(2, "0")} ${MONTH_NAMES[month - 1].toUpperCase()} ${YEAR}`;
 }
 
 /** Where a cell sits in the sky grid: column 0–6, row, and its top-left in SVG units. */
@@ -188,20 +338,6 @@ function typeSummary(events: ManifestEvent[]): string {
 // Status marks
 // ---------------------------------------------------------------------------
 
-function StatusCircle({ status, size = 9 }: { status: Status; size?: number }) {
-  return (
-    <span
-      className={s.circle}
-      style={{
-        background: COMPLETENESS[status].color,
-        width: size,
-        height: size,
-      }}
-      title={COMPLETENESS[status].label}
-    />
-  );
-}
-
 /** One figure in the summary row. A lost count is the only one drawn in the alarm colour. */
 function Metric({
   value,
@@ -242,22 +378,91 @@ function Legend() {
 // Drawer body: occurrences and their datatakes
 // ---------------------------------------------------------------------------
 
-function DatatakeRow({ dt }: { dt: Datatake }) {
+/** The datatakes behind one occurrence, as a table: ID, product, start time, status and completion. */
+function DatatakeTable({ datatakes }: { datatakes: Datatake[] }) {
   return (
-    <li className={s.dtRow}>
-      <StatusCircle status={dt.status} size={7} />
-      <span className={s.dtId}>{dt.id}</span>
-      <span className={s.dtProduct}>{dt.product}</span>
-      <span className={s.dtTime}>{sensingWindow(dt)}</span>
-      <span
-        className={s.dtStatus}
-        style={{ color: COMPLETENESS[dt.status].color }}
-      >
-        <span className={s.dtStatusLabel}>{COMPLETENESS[dt.status].label}</span>
-        <span className={s.dtPct}>{completenessLabel(dt)}</span>
-      </span>
-    </li>
+    <table className={s.dtTable}>
+      <thead>
+        <tr>
+          <th scope="col">ID / Rung</th>
+          <th scope="col">Product / Type</th>
+          <th scope="col">Start UTC</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {datatakes.map((dt) => (
+          <tr key={`${dt.id}-${dt.product}`}>
+            <td className={s.dtNum}>{dt.id}</td>
+            <td className={s.dtProductCell}>{dt.product}</td>
+            <td className={s.dtNum}>
+              {new Date(dt.sensingStart).toISOString().slice(11, 16)}
+            </td>
+            <td>
+              <span
+                className={s.dtStatusCell}
+                style={{ color: COMPLETENESS[dt.status].color }}
+              >
+                {COMPLETENESS[dt.status].label}
+                <span className={s.dtNum}>{completenessLabel(dt)}</span>
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
+}
+
+/** Satellite, mission, start, span and completion of one occurrence, for its key-value grid. */
+function occurrenceFacts(e: ManifestEvent) {
+  const starts = e.datatakes.map((d) => Date.parse(d.sensingStart));
+  const stops = e.datatakes.map((d) => Date.parse(d.sensingStop));
+  const spanMin = starts.length
+    ? Math.round((Math.max(...stops) - Math.min(...starts)) / 60000)
+    : 0;
+  const scored = e.datatakes.filter((d) => d.status !== "planned");
+  const completion = scored.length
+    ? `${Math.round(scored.reduce((n, d) => n + d.completeness, 0) / scored.length)}%`
+    : "—";
+  return { span: `${spanMin} min`, completion };
+}
+
+/** The day's status mix as pills, one per state present, in STATUS_ORDER. */
+function StatusPills({ events }: { events: ManifestEvent[] }) {
+  const counts = new Map<Status, number>();
+  events.forEach((e) =>
+    e.datatakes.forEach((d) =>
+      counts.set(d.status, (counts.get(d.status) ?? 0) + 1),
+    ),
+  );
+  return (
+    <div className={s.pills}>
+      {STATUS_ORDER.filter((k) => counts.has(k)).map((k) => (
+        <span
+          key={k}
+          className={s.pill}
+          style={{ color: COMPLETENESS[k].color }}
+        >
+          {counts.get(k)} {COMPLETENESS[k].label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** Downloads the day's occurrences, with their datatakes, as a JSON file. */
+function exportDay(day: number, month: number, events: ManifestEvent[]) {
+  const date = `${YEAR}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const blob = new Blob([JSON.stringify({ date, occurrences: events }, null, 2)], {
+    type: "application/json",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `sentiboard-events-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function OccurrenceList({
@@ -286,6 +491,7 @@ function OccurrenceList({
         const unavailable = e.datatakes.filter(
           (d) => d.status === "unavailable",
         ).length;
+        const facts = occurrenceFacts(e);
 
         return (
           <li key={e.id} className={s.occ}>
@@ -329,20 +535,33 @@ function OccurrenceList({
                 mounting them on expand would make the panel appear at full size instead. */}
             <Collapse open={open} id={`occ-${e.id}`}>
               <div className={s.occDetail}>
+                <dl className={s.kv}>
+                  <div>
+                    <dt>Satellite</dt>
+                    <dd>{e.satellite}</dd>
+                  </div>
+                  <div>
+                    <dt>Mission</dt>
+                    <dd>{missionOf(e.satellite)}</dd>
+                  </div>
+                  <div>
+                    <dt>Start</dt>
+                    <dd>{e.time} UTC</dd>
+                  </div>
+                  <div>
+                    <dt>Span</dt>
+                    <dd>{facts.span}</dd>
+                  </div>
+                  <div>
+                    <dt>Completion</dt>
+                    <dd>{facts.completion}</dd>
+                  </div>
+                </dl>
                 <div className={s.dtHead}>
-                  <span>
-                    Impacted datatakes · {e.datatakes.length}
-                    {unavailable > 0 ? ` · ${unavailable} unavailable` : ""}
-                  </span>
+                  Impacted datatakes · {e.datatakes.length}
+                  {unavailable > 0 ? ` · ${unavailable} unavailable` : ""}
                 </div>
-                <ul className={s.dtList}>
-                  {e.datatakes.map((dt) => (
-                    <DatatakeRow
-                      key={`${e.id}-${dt.id}-${dt.product}`}
-                      dt={dt}
-                    />
-                  ))}
-                </ul>
+                <DatatakeTable datatakes={e.datatakes} />
               </div>
             </Collapse>
           </li>
@@ -387,7 +606,6 @@ export default function EventsManifest() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
-
   // A satellite from the old mission would contradict the new one, leaving zero results with no
   // visible cause, so changing mission clears it. Conversely a satellite implies its mission —
   // filling it in beats showing "All missions" next to "Sentinel-1A".
@@ -426,27 +644,37 @@ export default function EventsManifest() {
   // would show August's events on its own dates, so those months open empty instead.
   const hasMockEvents = currentMonth === MONTH;
   const byDay = useMemo(
-    () => (hasMockEvents ? groupByDay(filtered) : new Map<number, ManifestEvent[]>()),
+    () =>
+      hasMockEvents ? groupByDay(filtered) : new Map<number, ManifestEvent[]>(),
     [filtered, hasMockEvents],
   );
   // The summary row describes what the month shows: the events that survive the filters, and the
   // datatakes they carry. A lost datatake is one whose status marks a loss, as on the day cells.
   const monthEvents = hasMockEvents ? filtered : [];
-  const datatakesInScope = monthEvents.reduce((n, e) => n + e.datatakes.length, 0);
+  const datatakesInScope = monthEvents.reduce(
+    (n, e) => n + e.datatakes.length,
+    0,
+  );
   const lostDatatakes = monthEvents.reduce(
     (n, e) => n + e.datatakes.filter((d) => marksLoss(d.status)).length,
     0,
   );
   const satellitesMonitored = new Set(monthEvents.map((e) => e.satellite)).size;
   // The event-type dropdown is single-choice: one category shows, and "All" stands for every one.
-  const typeFilter = filters.categories.length === 1 ? filters.categories[0] : "";
+  const typeFilter =
+    filters.categories.length === 1 ? filters.categories[0] : "";
 
-  const cells = useMemo(() => calendarCells(YEAR, currentMonth), [currentMonth]);
+  const cells = useMemo(
+    () => calendarCells(YEAR, currentMonth),
+    [currentMonth],
+  );
   // The zoom scales the grid about the selected day's own centre, so the day expands where it sits
   // instead of jumping to the middle of the grid. The origin follows panelDay, which outlives the
   // drawer's close, so the grid shrinks back about the same point rather than snapping.
   const zoomStyle = useMemo<CSSProperties>(() => {
-    const i = panelDay ? cells.findIndex((c) => !c.dim && c.day === panelDay.day) : -1;
+    const i = panelDay
+      ? cells.findIndex((c) => !c.dim && c.day === panelDay.day)
+      : -1;
     if (i < 0) return { transform: "none" };
     const rows = Math.ceil(cells.length / 7);
     const ox = (((i % 7) + 0.5) / 7) * 100;
@@ -547,7 +775,10 @@ export default function EventsManifest() {
               key: "Manoeuvre",
               text: "issue occurred during the execution of a manoeuvre",
             },
-            { key: "Production", text: "issue occurred during data processing" },
+            {
+              key: "Production",
+              text: "issue occurred during data processing",
+            },
             {
               key: "Satellite",
               text: "issue due to instrument unavailability",
@@ -731,96 +962,115 @@ export default function EventsManifest() {
 
           {/* ---------- month grid ---------- */}
           <div className={s.calRow}>
-          <aside className={s.zodiac} aria-hidden>
-            <svg
-              className={s.zodiacSvg}
-              viewBox={ZODIAC_VIEW}
-              focusable="false"
-            >
-              <text
-                className={s.zodiacLabel}
-                x={0}
-                y={-196}
-                textAnchor="middle"
+            <aside className={s.zodiac} aria-hidden>
+              {/* key={sign}: a new month means a new figure, so the SVG remounts and the lighting
+                sequence starts again from dark instead of being left in its finished state. */}
+              <svg
+                key={sign}
+                className={s.zodiacSvg}
+                viewBox={ZODIAC_VIEW}
+                focusable="false"
               >
-                {sign.toUpperCase()}
-              </text>
-              <g
-                className="zodiac-path"
-                data-sign={sign}
-                stroke="rgba(255, 255, 255, 0.15)"
-                fill="none"
-                strokeWidth="1.5"
-              >
-                <path d={ZODIAC[sign]} vectorEffect="non-scaling-stroke" />
-              </g>
-              <g className={s.zodiacStars}>
-                {ZODIAC_STARS[sign].map(([x, y], i) => (
-                  <circle key={i} cx={x} cy={y} r={4} />
+                <text
+                  className={s.zodiacLabel}
+                  x={0}
+                  y={-196}
+                  textAnchor="middle"
+                >
+                  {sign.toUpperCase()}
+                </text>
+                <g
+                  className="zodiac-path"
+                  data-sign={sign}
+                  stroke="rgba(255, 255, 255, 0.15)"
+                  fill="none"
+                  strokeWidth="1.5"
+                >
+                  {/* The line draws itself over the same span the stars take to light, so each star
+                    lands as the stroke reaches it. pathLength="1" lets the dash cover the whole
+                    figure however many subpaths it has. */}
+                  <path
+                    className={s.zodiacPath}
+                    d={ZODIAC[sign]}
+                    pathLength={1}
+                    vectorEffect="non-scaling-stroke"
+                    style={{
+                      animationDuration: `${ZODIAC_STARS[sign].length * STAR_STEP_MS + STAR_FADE_MS}ms`,
+                    }}
+                  />
+                </g>
+                <g className={s.zodiacStars}>
+                  {ZODIAC_STARS[sign].map(([x, y], i) => (
+                    <circle
+                      key={i}
+                      cx={x}
+                      cy={y}
+                      r={4}
+                      style={{ animationDelay: `${i * STAR_STEP_MS}ms` }}
+                    />
+                  ))}
+                </g>
+              </svg>
+            </aside>
+            <div className={s.calWrap}>
+              <div className={s.dow} aria-hidden>
+                {WEEKDAYS.map((d) => (
+                  <span key={d}>{d}</span>
                 ))}
-              </g>
-            </svg>
-          </aside>
-          <div className={s.calWrap}>
-            <div className={s.dow} aria-hidden>
-              {WEEKDAYS.map((d) => (
-                <span key={d}>{d}</span>
-              ))}
-            </div>
-            <div className={s.grid} style={zoomStyle}>
-              {cells.map((c, i) => {
-                const pos = skyCell(i);
-                // Neighbouring-month cells exist only so the weeks line up; they carry no events and
-                // are inert <div>s rather than disabled buttons, which keeps them out of the tab order.
-                if (c.dim)
+              </div>
+              <div className={s.grid} style={zoomStyle}>
+                {cells.map((c, i) => {
+                  const pos = skyCell(i);
+                  // Neighbouring-month cells exist only so the weeks line up; they carry no events and
+                  // are inert <div>s rather than disabled buttons, which keeps them out of the tab order.
+                  if (c.dim)
+                    return (
+                      <div
+                        key={`dim-${i}`}
+                        className={`${s.cell} ${s.cellDim}`}
+                        data-col={pos.col}
+                        data-row={pos.row}
+                        data-x={pos.x}
+                        data-y={pos.y}
+                        aria-hidden
+                      />
+                    );
+
+                  const events = byDay.get(c.day) ?? [];
+                  const status = events.length ? dayStatus(events) : null;
+                  const selected = openDay === c.day;
+
                   return (
-                    <div
-                      key={`dim-${i}`}
-                      className={`${s.cell} ${s.cellDim}`}
+                    <button
+                      key={c.day}
+                      type="button"
+                      className={`${s.cell} ${selected ? s.cellSel : ""}`}
                       data-col={pos.col}
                       data-row={pos.row}
                       data-x={pos.x}
                       data-y={pos.y}
-                      aria-hidden
-                    />
-                  );
-
-                const events = byDay.get(c.day) ?? [];
-                const status = events.length ? dayStatus(events) : null;
-                const selected = openDay === c.day;
-
-                return (
-                  <button
-                    key={c.day}
-                    type="button"
-                    className={`${s.cell} ${selected ? s.cellSel : ""}`}
-                    data-col={pos.col}
-                    data-row={pos.row}
-                    data-x={pos.x}
-                    data-y={pos.y}
-                    onClick={() => selectDay(c.day)}
-                    aria-pressed={selected}
-                    /* The glyphs are aria-hidden, so the types they now encode have to reach a
+                      onClick={() => selectDay(c.day)}
+                      aria-pressed={selected}
+                      /* The glyphs are aria-hidden, so the types they now encode have to reach a
                      screen reader through the label. The dots carried no type at all, so this is
                      information the cell gained rather than information it is repeating. */
-                    aria-label={
-                      events.length
-                        ? `${c.day} ${monthName}, ${events.length} event${events.length === 1 ? "" : "s"}, ${typeSummary(events)}, worst completeness ${COMPLETENESS[status!].label}`
-                        : `${c.day} ${monthName}, no events`
-                    }
-                  >
-                    <span className={s.cellNum}>
-                      {String(c.day).padStart(2, "0")}
-                    </span>
+                      aria-label={
+                        events.length
+                          ? `${c.day} ${monthName}, ${events.length} event${events.length === 1 ? "" : "s"}, ${typeSummary(events)}, worst completeness ${COMPLETENESS[status!].label}`
+                          : `${c.day} ${monthName}, no events`
+                      }
+                    >
+                      <span className={s.cellNum}>
+                        {String(c.day).padStart(2, "0")}
+                      </span>
 
-                    {renderDayIndicators(events, openDay !== null)}
-                  </button>
-                );
-              })}
+                      {renderDayIndicators(events, openDay !== null)}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-          </div>
-          <Legend />
         </div>
 
         {/* ---------- Day Manifest drawer ---------- */}
@@ -845,11 +1095,12 @@ export default function EventsManifest() {
             <>
               <div className={s.drawerHead}>
                 <div>
-                  <span className={s.detailEyebrow}>Day manifest</span>
+                  <span className={s.detailEyebrow}>Selected day</span>
                   <h2 className={s.detailDay}>
                     {dayHeading(panelDay.day, panelDay.month)}
                   </h2>
                   <DaySummary events={dayEvents} />
+                  <StatusPills events={dayEvents} />
                 </div>
                 <div
                   style={{ display: "flex", gap: "8px", alignItems: "center" }}
@@ -895,6 +1146,23 @@ export default function EventsManifest() {
                   }
                 />
               </div>
+              <footer className={s.drawerFoot}>
+                <button
+                  type="button"
+                  className={s.footBtn}
+                  onClick={() => exportDay(panelDay.day, panelDay.month, dayEvents)}
+                  disabled={dayEvents.length === 0}
+                >
+                  Export JSON
+                </button>
+                <button
+                  type="button"
+                  className={`${s.footBtn} ${s.footPrimary}`}
+                  onClick={close}
+                >
+                  Close
+                </button>
+              </footer>
             </>
           )}
         </aside>
