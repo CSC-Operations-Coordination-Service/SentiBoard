@@ -55,7 +55,7 @@ import {
   type Status,
 } from "./mock";
 import { Collapse, DescriptionModal, useMediaQuery } from "@/components/ui";
-import s from "./manifest.module.css";
+import s from "./events.module.css";
 
 /* Matched to the nav's own breakpoint, so the burger and this layout arrive together. */
 const NARROW = "(max-width: 760px)";

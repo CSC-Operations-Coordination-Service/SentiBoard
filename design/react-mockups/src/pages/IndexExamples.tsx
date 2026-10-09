@@ -624,7 +624,7 @@ const PAGE_CARDS = [
     desc: "Two layouts share a tab bar: Layout A has a Gantt ribbon by month, and Layout B features 31 day tiles with status pills.",
   },
   {
-    to: "/examples/events-manifest",
+    to: "/events",
     img: CARD_ART.eventsManifest,
     title: "c) Events · filters",
     desc: "Shows mission events on a grid with icons for each event type. Selecting a day reveals occurrences and affected datatakes.",
@@ -633,13 +633,13 @@ const PAGE_CARDS = [
 
 const ACQ_CARDS = [
   {
-    to: "/examples/acquisitions-globe",
+    to: "/acquisitions-globe",
     img: CARD_ART.acquisitionsGlobe,
     title: "a) Acquisitions status",
     desc: "The 3D globe includes on-demand frames, cached coastlines, and a pause feature.",
   },
   {
-    to: "/examples/acquisitions-globe-earth",
+    to: "/acquisitions-globe-earth",
     img: CARD_ART.acquisitionsLadder,
     title: "b) Acquisitions Globe Earth view",
     desc: "Interactive 3D globe showing real-time satellite acquisition data and ground station coverage with Earth visualization.",
@@ -652,7 +652,7 @@ const ACQ_CARDS = [
 
 const AVAIL_CARDS = [
   {
-    to: "/examples/coverage-timeline",
+    to: "/availability",
     img: CARD_ART.coverageTimeline,
     title: "a) Data Availability · Coverage timeline",
     desc: "The heatmap shows daily mission performance, with outages as horizontal runs and sparkline chips indicating gaps. The table is sorted by recent gaps for easy issue identification.",

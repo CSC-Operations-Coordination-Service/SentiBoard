@@ -6,22 +6,22 @@ import Home from "./pages/Home";
 import Acquisitions from "./pages/Acquisitions";
 import Events from "./pages/Events";
 import Availability from "./pages/Availability";
-import Processors from "./pages/Processors";
+import Processors from "./pages/processors/processors";
 import About from "./pages/About";
 import { NotFoundPage, StatPage } from "./pages/Simple";
 import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal, IndexFleetGallery, Index1 } from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
 import AboutBriefing from "./pages/about-briefing/AboutBriefing";
 import AboutDossier from "./pages/about-dossier/AboutDossier";
-import EventsManifest from "./pages/events-manifest/EventsManifest";
+import EventsManifest from "./pages/events/events";
 import EventsSwimlanes from "./pages/events-swimlanes/EventsSwimlanes";
 import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
-import AcquisitionsGlobe from "./pages/AcquisitionsGlobe";
-import AcquisitionsGlobeEarth from "./pages/AcquisitionsGlobeEarth";
+import AcquisitionsGlobe from "./pages/acquisitions/AcquisitionsGlobe";
+import AcquisitionsGlobeEarth from "./pages/acquisitions/AcquisitionsGlobeEarth";
 import AcquisitionsLadder from "./pages/acquisitions-ladder/AcquisitionsLadder";
 import DataAvailability from "./pages/DataAvailability";
 import DataAvailabilitySpaceX from "./pages/DataAvailabilitySpaceX";
-import CoverageTimeline from "./pages/coverage-timeline/CoverageTimeline";
+import CoverageTimeline from "./pages/data_availability/data-availability";
 import VersionMatrix from "./pages/version-matrix/VersionMatrix";
 import ReleaseLog from "./pages/release-log/ReleaseLog";
 import VersionCompare from "./pages/version-compare/VersionCompare";
@@ -44,8 +44,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
-          <Route path="/events" element={<Events />} />
-          <Route path="/availability" element={<Availability />} />
+          <Route path="/events-live" element={<Events />} />
+          <Route path="/availability-live" element={<Availability />} />
           <Route path="/processors" element={<Processors />} />
           <Route path="/about" element={<About />} />
 
@@ -59,15 +59,15 @@ export default function App() {
           <Route path="/examples/about" element={<AboutRedesign />} />
           <Route path="/examples/about-briefing" element={<AboutBriefing />} />
           <Route path="/examples/about-dossier" element={<AboutDossier />} />
-          <Route path="/examples/events-manifest" element={<EventsManifest />} />
+          <Route path="/events" element={<EventsManifest />} />
           <Route path="/examples/events-spacex" element={<EventsSpaceXConcepts />} />
           <Route path="/examples/events-swimlanes" element={<EventsSwimlanes />} />
-          <Route path="/examples/acquisitions-globe" element={<AcquisitionsGlobe />} />
-          <Route path="/examples/acquisitions-globe-earth" element={<AcquisitionsGlobeEarth />} />
+          <Route path="/acquisitions-globe" element={<AcquisitionsGlobe />} />
+          <Route path="/acquisitions-globe-earth" element={<AcquisitionsGlobeEarth />} />
           <Route path="/examples/acquisitions-ladder" element={<AcquisitionsLadder />} />
           <Route path="/examples/data-availability" element={<DataAvailability />} />
           <Route path="/examples/data-availability-spacex" element={<DataAvailabilitySpaceX />} />
-          <Route path="/examples/coverage-timeline" element={<CoverageTimeline />} />
+          <Route path="/availability" element={<CoverageTimeline />} />
           <Route path="/examples/version-matrix" element={<VersionMatrix />} />
           <Route path="/examples/release-log" element={<ReleaseLog />} />
           <Route path="/examples/version-compare" element={<VersionCompare />} />

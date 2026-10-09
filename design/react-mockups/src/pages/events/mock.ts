@@ -96,7 +96,7 @@ export const CATEGORIES = Object.keys(CATEGORY_ICONS) as EventCategory[];
 /** Labels and colours taken from production's own datatake legend, so this page cannot disagree
  *  with the shipping dashboard about what "Partial" looks like. Planned and Processing share the
  *  neutral grey: neither has lost anything, they are simply not finished. The values live in
- *  manifest.module.css. */
+ *  events.module.css. */
 export const COMPLETENESS: Record<Status, { label: string; color: string }> = {
   planned: { label: "Planned", color: "var(--mf-grey)" },
   processing: { label: "Processing", color: "var(--mf-grey)" },

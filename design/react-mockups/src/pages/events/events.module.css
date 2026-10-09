@@ -1,5 +1,5 @@
 /* DEVOCS-219 — "Mission Manifest" Events mock-up, shared by both layout variants
-   rendered by EventsManifest.tsx.
+   rendered by events.tsx.
 
    PORTED from frontend/app/examples/events/ so the proposals are reachable from this app's
    gallery too. Font/width tokens are read through a fallback chain (--font-sans, then --sans)

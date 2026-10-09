@@ -5,11 +5,6 @@ import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
 
-/* PROPOSAL — Acquisitions globe, rebuilt around demand-driven rendering.
-   Same page composition as /acquisitions; what changes is underneath the canvas.
-   This route exists so the upgrade can be reviewed next to the other proposals
-   under /examples. */
-
 const DESCRIPTION = (
   <>
     <p>{ACQUISITIONS_DESCRIPTION}</p>
@@ -65,7 +60,6 @@ export default function AcquisitionsGlobe() {
           </Reveal>
         </div>
       </section>
-
     </>
   );
 }

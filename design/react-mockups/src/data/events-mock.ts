@@ -1,6 +1,6 @@
 // DEVOCS-219 — Events mock data for the Mission swimlanes proposal (/examples/events-swimlanes).
 //
-// It began as `pages/events-manifest/mock.ts` and carries the same August 2026 dataset, with three
+// It began as `pages/events/mock.ts` and carries the same August 2026 dataset, with three
 // deliberate changes:
 //
 //   1. Colours point at the APP-LEVEL tokens in styles/tokens.css (--cmp-* for completeness,
@@ -14,7 +14,7 @@
 //
 // It was briefly shared with a consolidated calendar-grid proposal, which was not taken forward;
 // the calendar geometry and per-day helpers that only that page used are gone. The surviving
-// surface is what EventsSwimlanes imports. `pages/events-manifest/mock.ts` is a separate file and
+// surface is what EventsSwimlanes imports. `pages/events/mock.ts` is a separate file and
 // stays byte-identical with its copy in the Next.js frontend (frontend/app/examples/events/).
 //
 // Everything is a literal: no Date.now(), no argument-less `new Date()`, no RNG — so a server

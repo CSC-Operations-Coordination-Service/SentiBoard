@@ -7,3 +7,4 @@ apps/config
 
 # Build artifacts
 *.tsbuildinfo
+node_modules

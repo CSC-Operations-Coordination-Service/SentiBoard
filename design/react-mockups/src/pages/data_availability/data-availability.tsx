@@ -30,7 +30,7 @@ import {
   pad,
   trendSeries,
 } from "./mock";
-import s from "./coverage.module.css";
+import s from "./availability.module.css";
 import "@/styles/data-availability.css";
 
 type Slice = { key: string; label: string; value: number; color: string };

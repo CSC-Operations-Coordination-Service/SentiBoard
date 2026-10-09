@@ -21,7 +21,7 @@ import {
 import s from "./ladder.module.css";
 
 /* Acquisitions PROPOSAL 2 — "Acquisition Ladder". An ALTERNATIVE to /acquisitions, which is
-   untouched, and a second reading alongside /examples/acquisitions-globe.
+   untouched, and a second reading alongside /acquisitions-globe.
 
    The globe answers "where is the fleet acquiring?". This answers "where in the processing chain
    is the data being lost?" — geography is dropped entirely and the PRODUCT-LEVEL CHAIN becomes the

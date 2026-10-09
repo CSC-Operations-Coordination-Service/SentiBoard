@@ -7,7 +7,7 @@ import {
   MISSION_NAMES,
   MissionId,
 } from "@/data/processor-releases";
-import CustomSelect, { type SelectOption } from "./CustomSelect";
+import CustomSelect, { type SelectOption } from "../CustomSelect";
 import s from "./processors.module.css";
 
 // Map mission IDs to satellite image paths
