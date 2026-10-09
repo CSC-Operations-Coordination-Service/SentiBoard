@@ -16,9 +16,24 @@
 
 .page {
   /* canvas */
-  --mf-bg: #1a1f25;
+  --mf-bg: #05070a;
   --mf-panel: #343a40;
   --mf-panel-2: #252b33;
+  /* the calendar sits straight on the starfield: no panel, transparent cells, crisp outlines */
+  --mf-cal: transparent;
+  --mf-cell: rgba(0, 0, 0, 0.4);
+  --mf-cell-line: rgba(255, 255, 255, 0.15);
+  --mf-line: rgba(255, 255, 255, 0.1);
+  /* faint stars sprinkled over the canvas, tiled every 360×300px */
+  --mf-stars:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 140px 90px, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1.5px 1.5px at 260px 40px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 330px 150px, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 90px 200px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 210px 250px, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 300px 270px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 60px 120px, rgba(255, 255, 255, 0.4), transparent);
   --mf-line: rgba(255, 255, 255, 0.1);
   --mf-line-strong: rgba(255, 255, 255, 0.2);
 
@@ -46,7 +61,9 @@
   position: relative;
   min-height: calc(100vh - var(--nav-h, 0px));
   width: 100%;
-  background: var(--mf-bg);
+  background-color: var(--mf-bg);
+  background-image: var(--mf-stars, none);
+  background-size: 360px 300px;
   color: var(--mf-text);
   font-family: var(--font-sans, var(--sans));
 }
@@ -67,6 +84,10 @@
   --mf-bg: #f4f6fa;
   --mf-panel: #ffffff;
   --mf-panel-2: #ffffff;
+  --mf-cal: var(--mf-panel);
+  --mf-cell: rgba(255, 255, 255, 0.35);
+  --mf-cell-line: var(--mf-line);
+  --mf-stars: none;
   --mf-line: rgba(9, 20, 40, 0.12);
   --mf-line-strong: rgba(9, 20, 40, 0.22);
 
@@ -375,8 +396,8 @@
   min-width: 128px;
   text-align: center;
   font-family: var(--font-mono, var(--mono));
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -608,6 +629,133 @@ select.control {
   color: var(--mf-signal);
 }
 
+/* ---------------- key metrics ---------------- */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 28px clamp(18px, 4vw, 48px) 8px;
+  box-sizing: border-box;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 24px;
+  border-left: 1px solid var(--mf-line);
+}
+
+.metric:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.metricValue {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-text);
+}
+
+.metricLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-muted);
+}
+
+.metricLost .metricValue {
+  color: var(--mf-red);
+}
+
+/* ---------------- month + filter row ---------------- */
+.barFilters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+}
+
+.inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--mf-muted);
+}
+
+.inlineLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Minimal dropdown: no box, a single underline, and a small chevron drawn in the background. */
+.inlineSelect {
+  appearance: none;
+  min-width: 92px;
+  padding: 6px 22px 6px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--mf-line-strong);
+  border-radius: 0;
+  background-color: transparent;
+  background-image: linear-gradient(45deg, transparent 50%, var(--mf-muted) 50%),
+    linear-gradient(135deg, var(--mf-muted) 50%, transparent 50%);
+  background-position: calc(100% - 9px) center, calc(100% - 4px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  color: var(--mf-text);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.inlineSelect option {
+  background: var(--mf-panel);
+  color: var(--mf-text);
+}
+
+.inlineSelect:hover:not(:disabled),
+.inlineSelect:focus-visible,
+.inlineInput:focus {
+  outline: none;
+  border-bottom-color: var(--mf-signal);
+}
+
+.inlineSelect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inlineSearch {
+  color: var(--mf-faint);
+}
+
+.inlineInput {
+  width: 180px;
+  padding: 6px 2px;
+  border: 0;
+  border-bottom: 1px solid var(--mf-line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--mf-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.inlineInput::placeholder {
+  color: var(--mf-faint);
+}
+
 /* ---------------- month grid ---------------- */
 .calWrap {
   width: 100%;
@@ -617,12 +765,59 @@ select.control {
   padding: 14px clamp(18px, 4vw, 48px);
   border: 1px solid var(--mf-line);
   border-radius: 0;
-  background: var(--mf-panel);
+  background: var(--mf-cal);
   box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Row holding the constellation column and the calendar: the sky sits to the left of the grid. */
+.calRow {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 40px);
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.calRow > .calWrap {
+  flex: 1 1 auto;
+  max-width: 800px;
+  margin: 0 0 64px;
+}
+
+.zodiac {
+  flex: 0 0 300px;
+  margin-bottom: 64px;
+}
+
+.zodiacSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.zodiacLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  fill: var(--mf-muted);
+}
+
+/* Star nodes glow a little so they read as lights rather than flat dots. */
+.zodiacStars circle {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
 }
 
 .dow,
 .grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
@@ -651,9 +846,9 @@ select.control {
   justify-content: space-between;
   align-items: stretch;
   padding: 5px;
-  border: 1px solid var(--mf-line);
+  border: 1px solid var(--mf-cell-line);
   border-radius: 0;
-  background: var(--mf-panel-2);
+  background: var(--mf-cell);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -1364,6 +1559,87 @@ select.control {
 
   .badgeTail {
     display: none;
+  }
+}
+
+/* Narrow screens: the constellation stacks above the grid at a reduced size, so it never sits on a
+   day. The grid keeps the full width it had before the sky column existed. */
+@media (max-width: 760px) {
+  .calRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .calRow > .calWrap {
+    width: 100%;
+    max-width: none;
+    margin-bottom: 24px;
+  }
+
+  .zodiac {
+    flex: none;
+    width: 100%;
+    max-width: 260px;
+    margin: 8px auto 0;
+  }
+
+  .zodiacLabel {
+    font-size: 34px;
+  }
+
+  /* Metrics: a 2×2 block, with the divider moved to the second column. */
+  .metrics {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 22px;
+  }
+
+  .metric,
+  .metric:first-child {
+    padding: 0 0 0 16px;
+    border-left: 0;
+  }
+
+  .metric:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .metric:nth-child(even) {
+    border-left: 1px solid var(--mf-line);
+  }
+
+  .metricValue {
+    font-size: 28px;
+  }
+
+  /* Filters stack into a column, each field full width with its value on the right. */
+  .barFilters {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 14px;
+  }
+
+  .inline {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .inlineSelect {
+    min-width: 0;
+    flex: 0 1 60%;
+  }
+
+  .inlineSearch {
+    width: 100%;
+  }
+
+  .inlineInput {
+    flex: 1;
+    width: auto;
+  }
+
+  .monthLabel {
+    font-size: 15px;
   }
 }
 

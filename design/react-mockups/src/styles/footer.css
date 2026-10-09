@@ -1,0 +1,184 @@
+/* ============================================================
+   SentiBoard v2 — Site footer
+   Dark canvas in both themes, matching the approved mockup.
+   ============================================================ */
+
+.footer {
+  --mf-bg: #080b10;
+  --mf-text: #eef1f6;
+  --mf-dim: #b8c0cc;
+  --mf-faint: #67707f;
+  --mf-accent: #00c7d6;
+  --mf-line: rgba(255, 255, 255, 0.1);
+
+  background: var(--mf-bg);
+  color: var(--mf-text);
+  border-top: 1px solid var(--mf-line);
+  margin-top: 40px;
+}
+
+.footer-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px 36px;
+}
+
+/* ---------- top row: logo left, legal links right ---------- */
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding-bottom: 36px;
+}
+
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+}
+
+.footer-logo img {
+  height: 28px;
+  width: auto;
+  display: block;
+}
+
+.footer-legal {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+}
+
+.footer-legal a {
+  color: var(--mf-text);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-legal a:hover {
+  color: var(--mf-accent);
+}
+
+.footer-legal .divider {
+  width: 1px;
+  height: 12px;
+  background: var(--mf-line);
+}
+
+/* ---------- three-column grid ---------- */
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.footer-col h4 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mf-line);
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.footer-links a,
+.footer-mail {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--mf-text);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover,
+.footer-mail:hover {
+  color: var(--mf-accent);
+}
+
+.footer-mail svg {
+  color: var(--mf-accent);
+}
+
+.footer-social {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.footer-social a {
+  display: inline-flex;
+  color: var(--mf-text);
+  transition: color 0.2s;
+}
+
+.footer-social a:hover {
+  color: var(--mf-accent);
+}
+
+.footer-social svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* ---------- copyright bar ---------- */
+.footer-bot {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--mf-line);
+  font-size: 12px;
+  color: var(--mf-faint);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 1080px) {
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .footer-inner {
+    padding: 32px 16px 28px;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  /* 44px touch targets for links on phones */
+  .footer-links a,
+  .footer-mail,
+  .footer-legal a {
+    min-height: 44px;
+    font-size: 14px;
+  }
+
+  .footer-social a {
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+  }
+}
