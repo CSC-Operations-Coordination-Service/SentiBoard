@@ -924,10 +924,9 @@ select.control {
 
 .cellSel {
   z-index: 10 !important;
-  border-color: var(--mf-signal) !important;
-  background: var(--mf-signal-soft) !important;
-  box-shadow: inset 0 0 0 2px var(--mf-signal), 0 0 25px rgba(0, 199, 214, 0.6) !important;
-  transform: scale(1.25) translateZ(30px) !important; /* zoom-in on the selected day */
+  border-color: var(--mf-cell-line) !important;
+  box-shadow: none !important;
+  transform: scale(1.25) translateZ(30px) !important;
 }
 
 .cellNum {
