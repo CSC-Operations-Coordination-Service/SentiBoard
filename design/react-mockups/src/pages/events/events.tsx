@@ -32,7 +32,6 @@ import {
   EVENTS,
   MISSIONS,
   MISSION_NAMES,
-  MONTH,
   STATUS_ORDER,
   WEEKDAYS,
   YEAR,
@@ -40,6 +39,7 @@ import {
   completenessLabel,
   dayStatus,
   eventStatus,
+  eventsInMonth,
   filterEvents,
   groupByDay,
   marksLoss,
@@ -454,9 +454,12 @@ function StatusPills({ events }: { events: ManifestEvent[] }) {
 /** Downloads the day's occurrences, with their datatakes, as a JSON file. */
 function exportDay(day: number, month: number, events: ManifestEvent[]) {
   const date = `${YEAR}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const blob = new Blob([JSON.stringify({ date, occurrences: events }, null, 2)], {
-    type: "application/json",
-  });
+  const blob = new Blob(
+    [JSON.stringify({ date, occurrences: events }, null, 2)],
+    {
+      type: "application/json",
+    },
+  );
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -602,7 +605,9 @@ export default function EventsManifest() {
     month: number;
     events: ManifestEvent[];
   } | null>(null);
-  const [currentMonth, setCurrentMonth] = useState<number>(MONTH);
+  // Opens on the real current month, read once on mount. The mock's events are all in YEAR, so a
+  // month outside that year still renders — it just has no events to show.
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
@@ -640,17 +645,16 @@ export default function EventsManifest() {
   const reset = useCallback(() => setFilters(EMPTY_FILTERS), []);
 
   const filtered = useMemo(() => filterEvents(EVENTS, filters), [filters]);
-  // The mock only holds August's events, and it keys them by day-of-month alone. Any other month
-  // would show August's events on its own dates, so those months open empty instead.
-  const hasMockEvents = currentMonth === MONTH;
   const byDay = useMemo(
-    () =>
-      hasMockEvents ? groupByDay(filtered) : new Map<number, ManifestEvent[]>(),
-    [filtered, hasMockEvents],
+    () => groupByDay(filtered, YEAR, currentMonth),
+    [filtered, currentMonth],
   );
   // The summary row describes what the month shows: the events that survive the filters, and the
   // datatakes they carry. A lost datatake is one whose status marks a loss, as on the day cells.
-  const monthEvents = hasMockEvents ? filtered : [];
+  const monthEvents = useMemo(
+    () => eventsInMonth(filtered, YEAR, currentMonth),
+    [filtered, currentMonth],
+  );
   const datatakesInScope = monthEvents.reduce(
     (n, e) => n + e.datatakes.length,
     0,
@@ -1150,7 +1154,9 @@ export default function EventsManifest() {
                 <button
                   type="button"
                   className={s.footBtn}
-                  onClick={() => exportDay(panelDay.day, panelDay.month, dayEvents)}
+                  onClick={() =>
+                    exportDay(panelDay.day, panelDay.month, dayEvents)
+                  }
                   disabled={dayEvents.length === 0}
                 >
                   Export JSON
