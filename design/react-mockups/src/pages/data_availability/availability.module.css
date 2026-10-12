@@ -8,36 +8,40 @@
    ============================================================ */
 
 /* -------------------- counters -------------------- */
+/* Flat stats: no box, no border, no fill. Each figure sits centred above its label, on the page. */
 .counters {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  margin-bottom: 24px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 0;
-  overflow: hidden;
+  gap: 16px;
+  margin-bottom: 28px;
+  background: none;
+  border: 0;
 }
 
 .counter {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 13px 16px;
-  background: var(--bg-2);
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  border: 0;
+  text-align: center;
 }
 
 .counterK {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 10.5px;
+  font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-mute);
 }
 
 .counterV {
-  font-family: var(--font-mono);
-  font-size: 23px;
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   color: var(--text);
@@ -131,10 +135,13 @@
 }
 
 /* -------------------- heatmap -------------------- */
+/* The map sits flat on the page: no panel box, no header or footer rule. */
 .panel {
-  background: var(--bg-2);
-  border: 1px solid var(--line);
+  max-width: 100%;
+  background: none;
+  border: 0;
   border-radius: 0;
+  box-shadow: none;
   overflow: hidden;
   margin-bottom: 18px;
 }
@@ -145,9 +152,9 @@
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-3);
+  padding: 0 0 14px;
+  border-bottom: 0;
+  background: none;
 }
 
 .panelTitle {
@@ -193,8 +200,9 @@
 }
 
 .mapInner {
+  --gap: 3px;
   min-width: 780px;
-  padding: 14px 16px 16px;
+  padding: 16px 0;
 }
 
 .mapRow {
@@ -205,25 +213,26 @@
 }
 
 .mapRow+.mapRow {
-  margin-top: 6px;
+  margin-top: 10px;
 }
 
-.mapAxis {
-  display: flex;
-  gap: 2px;
-  margin-left: 116px;
-  margin-bottom: 7px;
+/* The date axis is a grid with the same columns as the track, so each label sits under its own
+   day's column. A label may run past its column; it is never wrapped. */
+.axis {
+  position: relative;
+  height: 12px;
+  margin-top: 6px;
+  width: 100%;
 }
 
 .axisTick {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  top: 0;
+  left: calc(var(--i) * (100% / (var(--total-slots, 90))));
   font-family: var(--font-mono);
   font-size: 9px;
   color: var(--text-mute);
-  text-align: center;
   white-space: nowrap;
-  overflow: hidden;
 }
 
 .mapLabel {
@@ -246,109 +255,71 @@
   color: var(--text-mute);
 }
 
-.cells {
-  display: flex;
-  gap: 2px;
+/* Every datatake is one tile, and every tile is the same fixed size. The row is a plain flex line:
+   nothing stretches or merges, so a tile's width never depends on how many share its day. */
+/* The page spans the viewport, like the navbar: the same side padding, and no 1320px cap. */
+.page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: clamp(18px, 4vw, 48px);
+  padding-block: clamp(56px, 8vw, 120px);
 }
 
-/* The cell itself. --c is mixed in per cell from the completeness ramp; days with nothing
-   scheduled stay empty rather than reading as zero, which is a different fact. */
-.cell {
-  flex: 1;
-  min-width: 6px;
-  height: 26px;
+.lane {
+  min-width: 0;
+  width: 100%;
+}
+
+/* One column per calendar day, the same count in every row, so all four tracks fill the same width
+   and line up by date. The columns share the width, so the window never scrolls sideways. */
+.track {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--gap, 2px);
+  width: 100%;
+}
+
+/* A day's summary tile: fills its column and is 52px tall. An idle day uses the same size. */
+.tile {
+  flex: 1 1 0%;
+  min-width: 0;
+  height: 52px;
+  box-sizing: border-box;
   padding: 0;
-  border: 1px solid transparent;
-  border-radius: 0;
+  border: 0;
+  border-radius: 1px;
   background: var(--c);
   cursor: pointer;
-  transition: transform 0.12s var(--ease), border-color 0.12s var(--ease);
+  transition: box-shadow 0.15s var(--ease);
 }
 
-.cell:hover {
-  transform: scaleY(1.18);
-  border-color: var(--text);
+.tile:hover {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--text) 16%, transparent);
 }
 
-.cell:focus-visible {
+/* Every tile of the selected day gets a veil, so the chosen day stands out on the line. */
+.tileOn {
+  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.tile:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-.cellEmpty {
-  background: repeating-linear-gradient(45deg,
-      transparent,
-      transparent 3px,
-      var(--line) 3px,
-      var(--line) 4px);
+/* A datatake the filters have set aside: it keeps its slot, but fades so the matches stand out. */
+.tileDim {
+  opacity: 0.18;
+}
+
+/* A slot with no datatake: a muted grey tile of the same size as an active one. */
+.tileIdle {
+  background: var(--cmp-planned);
+  opacity: 0.35;
   cursor: default;
-}
-
-.cellEmpty:hover {
-  transform: none;
-  border-color: transparent;
-}
-
-.cellOn {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
-
-/* -------------------- legend + focus -------------------- */
-.legend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 11px 16px;
-  border-top: 1px solid var(--line);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: var(--text-mute);
-}
-
-.ramp {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.rampBar {
-  width: 132px;
-  height: 8px;
-  border-radius: 0;
-  background: linear-gradient(90deg,
-      var(--cmp-unavailable),
-      var(--cmp-partial) 50%,
-      var(--cmp-acquired));
-}
-
-.legendItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.legendItem i {
-  width: 11px;
-  height: 11px;
-  border-radius: 0;
-}
-
-.legendItem i.none {
-  background: repeating-linear-gradient(45deg, transparent, transparent 3px, var(--line) 3px, var(--line) 4px);
-  border: 1px solid var(--line);
-}
-
-.focus {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin-left: auto;
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  color: var(--text-dim);
 }
 
 .focusClear {
@@ -786,6 +757,319 @@
   text-align: center;
   font-size: 13px;
   color: var(--text-mute);
+}
+
+/* -------------------- filters: one toolbar row -------------------- */
+/* Left to right as the reference: the period heading and presets, the date pager, Mission, Status,
+   the search, and Reset pushed to the far right. On desktop the row never wraps: the fields shrink
+   to their floor instead. Below 1100px the groups wrap as whole units. Colours are shared tokens. */
+.filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 22px;
+  overflow-x: auto;
+}
+
+.filterGroup {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 16px 20px;
+  min-width: 0;
+}
+
+.filterHeading {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.frange {
+  display: flex;
+  gap: 18px;
+}
+
+.frange button {
+  min-height: 34px;
+  padding: 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  transition: color 0.2s var(--ease);
+}
+
+.frange button:hover {
+  color: var(--text);
+}
+
+.frange button[aria-pressed="true"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+/* The pager: arrows either side of the window's two dates, and a calendar that opens the picker. */
+.pager {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.pagerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--text-mute);
+  transition: color 0.2s var(--ease);
+}
+
+.pagerBtn:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.pagerBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dateBtn {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  transition: color 0.2s var(--ease);
+}
+
+.dateBtn:hover {
+  color: var(--accent-2);
+}
+
+.dateSep {
+  font-size: 13px;
+  color: var(--text-mute);
+}
+
+.hiddenDate {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Mission and Status: an underlined field that opens its list in place. */
+.fdrop {
+  display: flex;
+  flex: 0 1 168px;
+  flex-direction: column;
+  min-width: 120px;
+}
+
+.fdropHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  text-align: left;
+  transition: border-color 0.2s var(--ease);
+}
+
+.fdropHead:hover,
+.fdropHead[aria-expanded="true"] {
+  border-bottom-color: var(--accent);
+}
+
+.fdropLabel {
+  flex: 1;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.fdropVal {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-2);
+}
+
+.fdropHead svg {
+  flex-shrink: 0;
+  transition: transform 0.3s var(--ease);
+}
+
+.fdropHead[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.fdropInner {
+  padding: 12px 0 16px;
+}
+
+.fitem {
+  width: 100%;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.2s var(--ease);
+}
+
+.fitem:hover {
+  color: var(--text);
+}
+
+.fitem[aria-pressed="true"] {
+  color: var(--accent-2);
+}
+
+.fsearch {
+  display: flex;
+  flex: 0 1 200px;
+  align-items: center;
+  gap: 9px;
+  min-width: 150px;
+  height: 44px;
+  padding-bottom: 2px;
+  color: var(--text-mute);
+  border-bottom: 1px solid var(--line);
+  transition: border-color 0.2s var(--ease);
+}
+
+.fsearch:focus-within {
+  border-bottom-color: var(--accent);
+}
+
+.fsearch input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.fsearch input::placeholder {
+  color: var(--text-mute);
+}
+
+.freset {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.2s var(--ease);
+}
+
+.freset:hover:not(:disabled) {
+  color: var(--accent-2);
+}
+
+.freset:disabled {
+  color: var(--text-mute);
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 1100px) {
+  .filters {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    overflow-x: visible;
+    gap: 16px 28px;
+  }
+
+  .filterGroup {
+    flex-wrap: wrap;
+    gap: 16px 26px;
+  }
+
+  .freset {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .filterGroup {
+    width: 100%;
+    gap: 14px 20px;
+  }
+
+  .fdrop {
+    flex: 1 1 140px;
+    min-width: 0;
+  }
+
+  .fsearch {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .freset {
+    margin-left: 0;
+  }
 }
 
 /* -------------------- responsive -------------------- */

@@ -1,32 +1,38 @@
-import { useCallback, useMemo, useState } from "react";
-import { Eye, RotateCcw, Search, SlidersHorizontal, X } from "lucide-react";
-import { PageHeader, Reveal } from "@/components/ui";
+import { useCallback, useMemo, useRef, useState } from "react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
+import { Collapse, PageHeader, Reveal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import DatatakeModal from "@/components/DatatakeModal";
 import type { DatatakeSummary } from "@/data/datatake-details";
 import {
   DEFAULT_PERIOD,
   PERIODS,
+  PERIOD_LABEL,
   periodStart,
   type PeriodId,
 } from "@/data/period";
 import {
-  ALL_SATELLITES,
   DATA,
   DAY_MS,
-  MISSIONS,
   MISSION_NAMES,
   STATUS_COLOR,
   WINDOW,
   type Datatake,
-  type DayCell,
   type Status,
   daysOf,
   daysSinceGap,
   fmtDate,
   fmtDateTime,
   isGap,
-  missionRow,
   pad,
   trendSeries,
 } from "./mock";
@@ -159,6 +165,15 @@ function modeSlices(rows: Datatake[]): Slice[] {
     }));
 }
 
+/** How bad a day looks when several datatakes fall on it: a loss outranks everything. */
+const SEVERITY: Record<Status, number> = {
+  Acquired: 0,
+  Planned: 1,
+  Processing: 2,
+  Partial: 3,
+  Unavailable: 4,
+};
+
 type TrendWindow = 7 | 30 | 90;
 type SortKey = "gap" | "recent" | "worst";
 
@@ -167,19 +182,6 @@ const SORTS: { id: SortKey; label: string }[] = [
   { id: "recent", label: "Most recent" },
   { id: "worst", label: "Lowest completeness" },
 ];
-
-/** The heatmap ramp: unavailable → partial → acquired, mixed live so each theme re-weights it.
- *  Days with nothing scheduled return null and are hatched instead — "no pass planned" is a
- *  different fact from "nothing was published", and flattening the two would invent outages. */
-function cellColor(mean: number | null): string | null {
-  if (mean === null) return null;
-  if (mean >= 50) {
-    const t = Math.round(((mean - 50) / 50) * 100);
-    return `color-mix(in srgb, var(--cmp-acquired) ${t}%, var(--cmp-partial))`;
-  }
-  const t = Math.round((mean / 50) * 100);
-  return `color-mix(in srgb, var(--cmp-partial) ${t}%, var(--cmp-unavailable))`;
-}
 
 function Sparkline({ series }: { series: (number | null)[] }) {
   const W = 100;
@@ -234,15 +236,43 @@ const DESCRIPTION = (
   </>
 );
 
+/* The reference's range buttons, mapped onto the page's periods. 30D is the default, as in the
+   reference, and Custom is the state the pager and the date fields put the page into. */
+const RANGES: { id: PeriodId; label: string }[] = [
+  { id: "day", label: "1D" },
+  { id: "week", label: "7D" },
+  { id: "month", label: "30D" },
+  { id: "custom", label: "Custom" },
+];
+
+const STATUSES: Status[] = [
+  "Planned",
+  "Processing",
+  "Acquired",
+  "Partial",
+  "Unavailable",
+];
+
+function ChevronDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 export default function CoverageTimeline() {
   /* A trend view opens on a month: "Last 7 Days" is seven columns, which is not a timeline. The
      other proposals default to the production default (week) because they are snapshots. */
   const [period, setPeriod] = useState<PeriodId>("month");
   const [mission, setMission] = useState("All");
-  const [satellite, setSatellite] = useState("All");
+  const [status, setStatus] = useState<Status | "All">("All");
+  const [openDrop, setOpenDrop] = useState<"mission" | "status" | null>(null);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
+  const fromPicker = useRef<HTMLInputElement>(null);
+  const toPicker = useRef<HTMLInputElement>(null);
   const [trend, setTrend] = useState<TrendWindow>(30);
   const [sort, setSort] = useState<SortKey>("gap");
   const [focus, setFocus] = useState<{
@@ -253,24 +283,23 @@ export default function CoverageTimeline() {
   const [selected, setSelected] = useState<DatatakeSummary | null>(null);
   const [descriptionOpen, setDescriptionOpen] = useState(false);
 
-  const satelliteOptions =
-    mission === "All"
-      ? ["All", ...ALL_SATELLITES]
-      : ["All", ...MISSIONS[mission]];
-
-  const onCustomDate = useCallback((which: "from" | "to", value: string) => {
-    (which === "from" ? setDateFrom : setDateTo)(value);
+  /** Any change to the dates pins both bounds and leaves the presets, so the pager and the
+   *  FROM/TO fields always describe the same window. */
+  const pinRange = useCallback((from: string, to: string) => {
+    setDateFrom(from);
+    setDateTo(to);
     setPeriod("custom");
   }, []);
 
   const reset = useCallback(() => {
     setPeriod("month");
     setMission("All");
-    setSatellite("All");
+    setStatus("All");
     setDateFrom("");
     setDateTo("");
     setSearch("");
     setFocus(null);
+    setOpenDrop(null);
   }, []);
 
   /** The visible range — the heatmap's columns and the table's bounds are the same window. */
@@ -290,6 +319,16 @@ export default function CoverageTimeline() {
 
   const days = useMemo(() => daysOf(range.from, range.to), [range]);
 
+  /** The pager moves the window by its own length, so "earlier" and "later" are the same step. */
+  const shiftRange = (direction: -1 | 1) => {
+    const step = direction * days.length * DAY_MS;
+    pinRange(
+      fmtDate(new Date(range.from.getTime() + step)),
+      fmtDate(new Date(range.to.getTime() + step)),
+    );
+  };
+  const atToday = range.to.getTime() >= WINDOW.today.getTime();
+
   /** Everything in range, before the mission/satellite/id filters — the heatmap keeps every
    *  mission visible so a filtered view still shows what else was happening. */
   const inRange = useMemo(
@@ -302,20 +341,29 @@ export default function CoverageTimeline() {
     [range],
   );
 
-  const rows = useMemo(() => {
+  /** Datatakes that pass the mission, status and ID filters. The heatmap dims everything else,
+   *  so a filtered-out slot stays on the grid instead of looking like a day with no data. */
+  const matching = useMemo(() => {
     let out = inRange;
     if (mission !== "All") out = out.filter((r) => r.mission === mission);
-    if (satellite !== "All") out = out.filter((r) => r.satellite === satellite);
+    if (status !== "All") out = out.filter((r) => r.status === status);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       out = out.filter((r) => r.id.toLowerCase().includes(q));
     }
-    if (focus)
-      out = out.filter(
-        (r) => r.mission === focus.mission && fmtDate(r.start) === focus.key,
-      );
     return out;
-  }, [inRange, mission, satellite, search, focus]);
+  }, [inRange, mission, status, search]);
+
+  const rows = useMemo(
+    () =>
+      focus
+        ? matching.filter(
+            (r) =>
+              r.mission === focus.mission && fmtDate(r.start) === focus.key,
+          )
+        : matching,
+    [matching, focus],
+  );
 
   /* Default order: the most recent GAP first. A datatake that published in full is not news, so
      complete rows fall below the incomplete ones however recent they are — which is the whole
@@ -341,7 +389,7 @@ export default function CoverageTimeline() {
   const active =
     period !== "month" ||
     mission !== "All" ||
-    satellite !== "All" ||
+    status !== "All" ||
     dateFrom !== "" ||
     dateTo !== "" ||
     search !== "" ||
@@ -353,17 +401,71 @@ export default function CoverageTimeline() {
     ? Math.round(rows.reduce((n, r) => n + r.completeness, 0) / rows.length)
     : 0;
 
-  const heat = useMemo(
+  /* One column per calendar day. A day with datatakes shows one summary tile in the worst status
+     among them (SEVERITY), so a loss is never hidden. A day with none keeps its column as an idle
+     tile. Every row has exactly one column per day, so the rows line up by date. Date labels fall
+     every 6 days and sit inside the same grid, so each one is directly under its day's column. */
+  const SLOTS_PER_DAY = 3; // 3 slots per day * 30 days = 90 total tiles
+  const TICK_STEP = 6; // Date tick every 6 days
+
+  const lanes = useMemo(
     () =>
-      MISSION_NAMES.map((m) => ({
-        mission: m,
-        cells: missionRow(inRange, m, days),
-      })),
+      MISSION_NAMES.map((m) => {
+        const own = inRange.filter((r) => r.mission === m);
+        const byDay = new Map<string, Datatake[]>();
+
+        own.forEach((r) => {
+          const k = fmtDate(r.start);
+          byDay.set(k, [...(byDay.get(k) ?? []), r]);
+        });
+
+        // Build ~90 slots total (3 slots for every calendar day)
+        const slots: Array<{
+          key: string;
+          date: Date;
+          item: Datatake | null;
+          slotIndex: number;
+        }> = [];
+
+        days.forEach((d) => {
+          const key = fmtDate(d);
+          const dayItems = (byDay.get(key) ?? []).sort(
+            (a, b) => a.start.getTime() - b.start.getTime(),
+          );
+
+          // Fill 3 slots per day with actual datatakes or null (grey idle tile)
+          for (let s = 0; s < SLOTS_PER_DAY; s++) {
+            slots.push({
+              key: `${key}-slot-${s}`,
+              date: d,
+              item: dayItems[s] ?? null,
+              slotIndex: s,
+            });
+          }
+        });
+
+        // Date ticks sit at the first slot of every 6th day
+        const ticks = days
+          .map((d, dayIdx) => ({
+            key: fmtDate(d),
+            index: dayIdx * SLOTS_PER_DAY,
+            label: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`,
+          }))
+          .filter((_, dayIdx) => dayIdx % TICK_STEP === 0);
+
+        const mean = own.length
+          ? Math.round(own.reduce((n, r) => n + r.completeness, 0) / own.length)
+          : 0;
+
+        return { mission: m, mean, slots, ticks };
+      }),
     [inRange, days],
   );
 
-  // Axis ticks: every day when the range is short, otherwise roughly every seventh column.
-  const tickEvery = days.length <= 14 ? 1 : days.length <= 40 ? 7 : 14;
+  const matchingIds = useMemo(
+    () => new Set(matching.map((r) => r.id)),
+    [matching],
+  );
 
   const toSummary = (d: Datatake): DatatakeSummary => ({
     id: d.id,
@@ -393,187 +495,290 @@ export default function CoverageTimeline() {
         />
       </div>
 
-      <section className="wrap pad">
+      <section className={s.page}>
         {/* ---------------- counters ---------------- */}
         <Reveal className={s.counters}>
           <div className={s.counter}>
-            <span className={s.counterK}>Datatakes in range</span>
             <span className={s.counterV}>{pad(rows.length)}</span>
+            <span className={s.counterK}>Datatakes in range</span>
           </div>
           <div className={s.counter}>
-            <span className={s.counterK}>Mean completeness</span>
             <span className={s.counterV}>{mean}%</span>
+            <span className={s.counterK}>Mean completeness</span>
           </div>
           <div className={s.counter}>
-            <span className={s.counterK}>Coverage gaps</span>
             <span className={`${s.counterV} ${s.warn}`}>{pad(gaps)}</span>
+            <span className={s.counterK}>Coverage gaps</span>
           </div>
           <div className={s.counter}>
-            <span className={s.counterK}>Datatakes lost</span>
             <span className={`${s.counterV} ${s.crit}`}>{pad(lost)}</span>
+            <span className={s.counterK}>Datatakes lost</span>
           </div>
         </Reveal>
+        {/* ---------------- filters: one row, left to right as the reference toolbar ---------------- */}
+        <div className={s.filters}>
+          <div className={s.filterGroup}>
+            <span className={s.filterHeading}>{PERIOD_LABEL[period]}</span>
 
-        {/* ---------------- trend chips ---------------- */}
-        <div className="section-head" style={{ marginBottom: 14 }}>
-          <div>
-            <div className="eyebrow">Trend · mean completeness per day</div>
-            <h2 style={{ fontSize: 21 }}>By mission</h2>
-          </div>
-          <div className={s.segmented}>
-            {([7, 30, 90] as TrendWindow[]).map((w) => (
+            <div className={s.frange} role="group" aria-label="Time range">
+              {RANGES.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  aria-pressed={period === r.id}
+                  onClick={() => setPeriod(r.id)}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+
+            <div className={s.pager}>
               <button
-                key={w}
-                className={trend === w ? s.on : ""}
-                onClick={() => setTrend(w)}
+                type="button"
+                className={s.pagerBtn}
+                aria-label="Earlier days"
+                onClick={() => shiftRange(-1)}
               >
-                {w}D
+                <ChevronLeft size={13} aria-hidden />
               </button>
-            ))}
-          </div>
-        </div>
-
-        <Reveal className={s.chips}>
-          {MISSION_NAMES.map((m) => {
-            const series = trendSeries(DATA, m, trend, WINDOW.today);
-            const seen = series.filter((v): v is number => v !== null);
-            const avg = seen.length
-              ? Math.round(seen.reduce((a, b) => a + b, 0) / seen.length)
-              : 0;
-            const since = daysSinceGap(DATA, m, WINDOW.today);
-            const color =
-              avg >= 95
-                ? "var(--cmp-acquired)"
-                : avg >= 60
-                  ? "var(--cmp-partial)"
-                  : "var(--cmp-unavailable)";
-            return (
-              <div
-                className={s.chip}
-                key={m}
-                style={{ ["--c" as string]: color }}
+              <button
+                type="button"
+                className={s.dateBtn}
+                onClick={() => fromPicker.current?.showPicker()}
               >
-                <div className={s.chipHead}>
-                  <span className={s.chipName}>{m}</span>
-                  <span className={s.chipMean}>{avg}%</span>
+                {fmtDate(range.from)}
+              </button>
+              <span className={s.dateSep} aria-hidden>
+                →
+              </span>
+              <button
+                type="button"
+                className={s.dateBtn}
+                onClick={() => toPicker.current?.showPicker()}
+              >
+                {fmtDate(range.to)}
+              </button>
+              <button
+                type="button"
+                className={s.pagerBtn}
+                aria-label="Pick the dates on a calendar"
+                onClick={() => fromPicker.current?.showPicker()}
+              >
+                <CalendarDays size={13} aria-hidden />
+              </button>
+              <button
+                type="button"
+                className={s.pagerBtn}
+                aria-label="Later days"
+                disabled={atToday}
+                onClick={() => shiftRange(1)}
+              >
+                <ChevronRight size={13} aria-hidden />
+              </button>
+              {/* The native pickers behind the dates. Kept off-screen rather than display:none,
+                  because a picker only opens from an element that is rendered. */}
+              <input
+                ref={fromPicker}
+                className={s.hiddenDate}
+                type="date"
+                tabIndex={-1}
+                aria-hidden
+                value={fmtDate(range.from)}
+                onChange={(e) => pinRange(e.target.value, fmtDate(range.to))}
+              />
+              <input
+                ref={toPicker}
+                className={s.hiddenDate}
+                type="date"
+                tabIndex={-1}
+                aria-hidden
+                value={fmtDate(range.to)}
+                onChange={(e) => pinRange(fmtDate(range.from), e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className={s.filterGroup}>
+            <div className={s.fdrop}>
+              <button
+                type="button"
+                className={s.fdropHead}
+                aria-expanded={openDrop === "mission"}
+                aria-controls="avail-mission"
+                onClick={() =>
+                  setOpenDrop(openDrop === "mission" ? null : "mission")
+                }
+              >
+                <span className={s.fdropLabel}>Mission</span>
+                {mission !== "All" && (
+                  <span className={s.fdropVal}>{mission}</span>
+                )}
+                <ChevronDown />
+              </button>
+              <Collapse open={openDrop === "mission"} id="avail-mission">
+                <div className={s.fdropInner}>
+                  {["All", ...MISSION_NAMES].map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={s.fitem}
+                      aria-pressed={mission === m}
+                      onClick={() => {
+                        setMission(m);
+                        setOpenDrop(null);
+                      }}
+                    >
+                      {m}
+                    </button>
+                  ))}
                 </div>
-                <Sparkline series={series} />
-                <div className={s.chipFoot}>
-                  <span>{trend}-DAY MEAN</span>
-                  <span className={s.chipGap}>
-                    {since === null
-                      ? "NO GAPS"
-                      : since === 0
-                        ? "GAP TODAY"
-                        : `LAST GAP ${since}D AGO`}
-                  </span>
+              </Collapse>
+            </div>
+
+            <div className={s.fdrop}>
+              <button
+                type="button"
+                className={s.fdropHead}
+                aria-expanded={openDrop === "status"}
+                aria-controls="avail-status"
+                onClick={() =>
+                  setOpenDrop(openDrop === "status" ? null : "status")
+                }
+              >
+                <span className={s.fdropLabel}>Status</span>
+                {status !== "All" && (
+                  <span className={s.fdropVal}>{status}</span>
+                )}
+                <ChevronDown />
+              </button>
+              <Collapse open={openDrop === "status"} id="avail-status">
+                <div className={s.fdropInner}>
+                  {(["All", ...STATUSES] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      className={s.fitem}
+                      aria-pressed={status === st}
+                      onClick={() => {
+                        setStatus(st);
+                        setOpenDrop(null);
+                      }}
+                    >
+                      {st}
+                    </button>
+                  ))}
                 </div>
-              </div>
-            );
-          })}
-        </Reveal>
+              </Collapse>
+            </div>
+
+            <span className={s.fsearch}>
+              <Search size={13} aria-hidden />
+              <label className="sr-only" htmlFor="avail-q">
+                Search datatakes
+              </label>
+              <input
+                id="avail-q"
+                type="search"
+                placeholder="Datatake ID"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className={s.freset}
+            onClick={reset}
+            disabled={!active}
+          >
+            Reset filters
+          </button>
+        </div>
 
         {/* ---------------- heatmap ---------------- */}
         <Reveal className={s.panel}>
-          <div className={s.panelHead}>
-            <span className={s.panelTitle}>
-              Coverage map · {fmtDate(range.from)} → {fmtDate(range.to)} ·{" "}
-              {days.length} days
-            </span>
-            <span
-              className={s.panelTitle}
-              style={{ color: "var(--text-mute)" }}
-            >
-              Select a cell to focus the table
-            </span>
-          </div>
-
           <div className={s.mapScroll}>
-            <div className={s.mapInner}>
-              <div className={s.mapAxis}>
-                {days.map((d, i) => (
-                  <span className={s.axisTick} key={d.toISOString()}>
-                    {i % tickEvery === 0
-                      ? `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`
-                      : ""}
-                  </span>
-                ))}
-              </div>
+            <div
+              className={s.mapInner}
+              style={{ ["--n" as string]: days.length }}
+            >
+              {lanes.map(({ mission: m, mean, slots, ticks }) => (
+                <div className={s.mapRow} key={m}>
+                  <div className={s.mapLabel}>
+                    <b>{m.replace("Sentinel-", "S")}</b>
+                    <span>{mean}% MEAN</span>
+                  </div>
 
-              {heat.map(({ mission: m, cells }) => {
-                const covered = cells.filter((c) => c.mean !== null);
-                const rowMean = covered.length
-                  ? Math.round(
-                      covered.reduce((n, c) => n + (c.mean ?? 0), 0) /
-                        covered.length,
-                    )
-                  : 0;
-                return (
-                  <div className={s.mapRow} key={m}>
-                    <div className={s.mapLabel}>
-                      <b>{m.replace("Sentinel-", "S")}</b>
-                      <span>{rowMean}% MEAN</span>
-                    </div>
-                    <div className={s.cells}>
-                      {cells.map((c: DayCell) => {
-                        const color = cellColor(c.mean);
-                        const on = focus?.mission === m && focus.key === c.key;
-                        if (color === null) {
+                  <div className={s.lane}>
+                    <div className={s.track}>
+                      {slots.map((slot) => {
+                        const { item, key, date } = slot;
+
+                        // Empty slot -> grey idle tile
+                        if (!item) {
                           return (
                             <span
-                              className={`${s.cell} ${s.cellEmpty}`}
-                              key={c.key}
-                              title={`${c.key} · ${m} · no datatakes`}
+                              key={key}
+                              className={`${s.tile} ${s.tileIdle}`}
                               aria-hidden
                             />
                           );
                         }
+
+                        const on =
+                          focus?.mission === m && focus.key === fmtDate(date);
+                        const dim = !matchingIds.has(item.id);
+                        const cls = [
+                          s.tile,
+                          on ? s.tileOn : "",
+                          dim ? s.tileDim : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ");
+
                         return (
                           <button
-                            key={c.key}
-                            className={on ? `${s.cell} ${s.cellOn}` : s.cell}
-                            style={{ ["--c" as string]: color }}
-                            title={`${c.key} · ${m} · ${c.count} datatakes · ${c.mean}% mean${c.lost ? ` · ${c.lost} incomplete` : ""}`}
-                            aria-label={`${c.key}, ${m}, ${c.mean}% mean completeness, ${c.count} datatakes`}
+                            key={item.id}
+                            type="button"
+                            className={cls}
+                            style={{
+                              ["--c" as string]: STATUS_COLOR[item.status],
+                            }}
+                            title={`${item.id} · ${m} · ${item.status}`}
                             onClick={() =>
                               setFocus(
                                 on
                                   ? null
-                                  : { mission: m, key: c.key, date: c.date },
+                                  : { mission: m, key: fmtDate(date), date },
                               )
                             }
                           />
                         );
                       })}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
 
-          <div className={s.legend}>
-            <div className={s.ramp}>
-              <span>0%</span>
-              <span className={s.rampBar} aria-hidden />
-              <span>100% MEAN COMPLETENESS</span>
+                    <div
+                      className={s.axis}
+                      style={{ ["--total-slots" as string]: slots.length }}
+                    >
+                      {ticks.map((t) => (
+                        <span
+                          className={s.axisTick}
+                          key={t.key}
+                          style={{ ["--i" as string]: t.index }}
+                        >
+                          {t.label}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-            <span className={s.legendItem}>
-              <i className={s.none} aria-hidden />
-              NO DATATAKES
-            </span>
-            {focus && (
-              <span className={s.focus}>
-                FOCUS · {focus.mission} · {focus.key}
-                <button className={s.focusClear} onClick={() => setFocus(null)}>
-                  <X size={11} />
-                  CLEAR
-                </button>
-              </span>
-            )}
           </div>
         </Reveal>
-
         {/* ---------------- focused view (charts + list) — only shown when a cell is clicked -------- */}
         {focus && (
           <>
