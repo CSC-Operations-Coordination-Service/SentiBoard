@@ -17,7 +17,7 @@ class News(BaseModel):
     text: str
     link: str
     publication_date: ApiDate
-    occurence_date: ApiDate
+    occurrence_date: ApiDate
     category: str
     impacted_satellite: str
     environment: str

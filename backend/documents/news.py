@@ -4,7 +4,7 @@ DA0 classes generated from index templates.
 
 **DO NOT EDIT, ONLY INHERIT !**
 
-Generated date: 2026-10-12T15:35:46.334090+00:00
+Generated date: 2026-10-13T16:02:59.116846+00:00
 
 Generated from:
     - ../tests/fixtures/news_template.json
@@ -47,7 +47,7 @@ class News(MAASDocument):
 
     modify_date = ZuluDate()
 
-    occurence_date = ZuluDate()
+    occurrence_date = ZuluDate()
 
     publication_date = ZuluDate()
 
