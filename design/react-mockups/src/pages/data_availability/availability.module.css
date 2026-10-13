@@ -406,6 +406,44 @@
   outline: none;
 }
 
+.trackWeek {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  height: 52px;
+  width: 100%;
+  gap: 0;
+  overflow: visible;
+}
+
+.trackWeek.trackFocused {
+  height: 120px !important;
+}
+
+.trackWeek .tile {
+  position: absolute;
+  top: 0;
+  width: 10px;
+  max-width: 10px;
+  height: 52px;
+  transform: translateX(-50%);
+  border-radius: 1px;
+}
+
+.trackWeek .tileSelected {
+  position: absolute !important;
+  bottom: 0 !important;
+  top: auto !important;
+  height: 96px !important;
+  width: 10px !important;
+  z-index: 10 !important;
+  transform-origin: bottom center !important;
+  transform: translateX(-50%) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7), 0 0 40px rgba(255, 255, 255, 0.25) !important;
+  outline: none;
+}
+
 .focusClear {
   display: inline-flex;
   align-items: center;

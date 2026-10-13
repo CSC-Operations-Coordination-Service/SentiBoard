@@ -375,7 +375,7 @@ export default function CoverageTimeline() {
 
         let ticks: Array<{ key: string; index: number; label: string }> = [];
 
-        if (period === "day") {
+        if (period === "day" || period === "week") {
           const startMs = range.from.getTime();
           const totalMs = Math.max(1, days.length * DAY_MS);
 
@@ -392,24 +392,21 @@ export default function CoverageTimeline() {
           });
 
           days.forEach((d, dayIdx) => {
-            [0, 6, 12, 18].forEach((h) => {
-              const tickMs = d.getTime() + h * 3600 * 1000;
-              const pct = Math.max(
-                0,
-                Math.min(100, ((tickMs - startMs) / totalMs) * 100),
-              );
-              const dateStr = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
-              const timeStr = `${pad(h)}:00`;
-              ticks.push({
-                key: `tick-${dayIdx}-${h}`,
-                index: pct,
-                label: `${dateStr} ${timeStr}`,
-              });
+            const tickMs = d.getTime();
+            const pct = Math.max(
+              0,
+              Math.min(100, ((tickMs - startMs) / totalMs) * 100),
+            );
+            const dateStr = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
+            ticks.push({
+              key: `tick-${dayIdx}`,
+              index: pct,
+              label: dateStr,
             });
           });
         } else {
-          const SLOTS_PER_DAY = period === "week" ? 6 : 3;
-          const TICK_STEP = period === "week" ? 1 : 6;
+          const SLOTS_PER_DAY = 3;
+          const TICK_STEP = 6;
 
           const byDay = new Map<string, Datatake[]>();
           own.forEach((r) => {
@@ -687,14 +684,15 @@ export default function CoverageTimeline() {
 
                       <div className={s.lane}>
                         <div
-                          className={`${s.track} ${period === "day" ? s.trackDay : ""} ${isRowFocused ? s.trackFocused : ""}`}
+                          className={`${s.track} ${period === "day" ? s.trackDay : period === "week" ? s.trackWeek : ""} ${isRowFocused ? s.trackFocused : ""}`}
                           style={{ ["--total-slots" as string]: slots.length }}
                         >
                           {slots.map((slot: any) => {
                             const { item, key, date, leftPct } = slot;
 
                             if (!item) {
-                              if (period === "day") return null;
+                              if (period === "day" || period === "week")
+                                return null;
                               return (
                                 <span
                                   key={key}
@@ -724,7 +722,8 @@ export default function CoverageTimeline() {
                                 style={{
                                   ["--c" as string]:
                                     STATUS_COLOR[item.status as Status],
-                                  ...(period === "day" && leftPct !== undefined
+                                  ...((period === "day" || period === "week") &&
+                                  leftPct !== undefined
                                     ? { left: `${leftPct}%` }
                                     : {}),
                                 }}
@@ -755,7 +754,7 @@ export default function CoverageTimeline() {
                               className={s.axisTick}
                               key={t.key}
                               style={{
-                                ...(period === "day"
+                                ...(period === "day" || period === "week"
                                   ? { left: `${t.index}%` }
                                   : {
                                       left: `calc(${t.index} * (100% / var(--total-slots, 24)))`,
