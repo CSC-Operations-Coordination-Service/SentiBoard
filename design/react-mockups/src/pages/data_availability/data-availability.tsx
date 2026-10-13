@@ -412,46 +412,84 @@ export default function CoverageTimeline() {
     () =>
       MISSION_NAMES.map((m) => {
         const own = inRange.filter((r) => r.mission === m);
-        const byDay = new Map<string, Datatake[]>();
 
-        own.forEach((r) => {
-          const k = fmtDate(r.start);
-          byDay.set(k, [...(byDay.get(k) ?? []), r]);
-        });
-
-        // Build ~90 slots total (3 slots for every calendar day)
-        const slots: Array<{
+        let slots: Array<{
           key: string;
           date: Date;
           item: Datatake | null;
           slotIndex: number;
         }> = [];
 
-        days.forEach((d) => {
-          const key = fmtDate(d);
-          const dayItems = (byDay.get(key) ?? []).sort(
-            (a, b) => a.start.getTime() - b.start.getTime(),
-          );
+        let ticks: Array<{ key: string; index: number; label: string }> = [];
 
-          // Fill 3 slots per day with actual datatakes or null (grey idle tile)
-          for (let s = 0; s < SLOTS_PER_DAY; s++) {
-            slots.push({
-              key: `${key}-slot-${s}`,
-              date: d,
-              item: dayItems[s] ?? null,
-              slotIndex: s,
+        if (period === "day") {
+          // ---------------- 1D / 24-HOUR MODE ----------------
+          const startMs = range.from.getTime();
+          const totalMs = Math.max(1, days.length * DAY_MS);
+
+          slots = own.map((r, idx) => {
+            const offsetMs = r.start.getTime() - startMs;
+            const pct = Math.max(0, Math.min(100, (offsetMs / totalMs) * 100));
+            return {
+              key: `dt-${r.id}-${idx}`,
+              date: r.start,
+              item: r,
+              slotIndex: idx,
+              leftPct: pct,
+            };
+          });
+
+          days.forEach((d, dayIdx) => {
+            [0, 6, 12, 18].forEach((h) => {
+              const tickMs = d.getTime() + h * 3600 * 1000;
+              const pct = Math.max(
+                0,
+                Math.min(100, ((tickMs - startMs) / totalMs) * 100),
+              );
+              const dateStr = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
+              const timeStr = `${pad(h)}:00`;
+              ticks.push({
+                key: `tick-${dayIdx}-${h}`,
+                index: pct,
+                label: `${dateStr} ${timeStr}`,
+              });
             });
-          }
-        });
+          });
+        } else {
+          // ---------------- MULTI-DAY (30D) MODE ----------------
+          const SLOTS_PER_DAY = 3;
+          const TICK_STEP = 6;
 
-        // Date ticks sit at the first slot of every 6th day
-        const ticks = days
-          .map((d, dayIdx) => ({
-            key: fmtDate(d),
-            index: dayIdx * SLOTS_PER_DAY,
-            label: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`,
-          }))
-          .filter((_, dayIdx) => dayIdx % TICK_STEP === 0);
+          const byDay = new Map<string, Datatake[]>();
+          own.forEach((r) => {
+            const k = fmtDate(r.start);
+            byDay.set(k, [...(byDay.get(k) ?? []), r]);
+          });
+
+          days.forEach((d) => {
+            const key = fmtDate(d);
+            const dayItems = (byDay.get(key) ?? []).sort(
+              (a, b) => a.start.getTime() - b.start.getTime(),
+            );
+
+            for (let s = 0; s < SLOTS_PER_DAY; s++) {
+              slots.push({
+                key: `${key}-slot-${s}`,
+                date: d,
+                item: dayItems[s] ?? null,
+                slotIndex: s,
+              });
+            }
+          });
+
+          ticks = days
+            .map((d, dayIdx) => ({
+              key: fmtDate(d),
+              index: dayIdx * SLOTS_PER_DAY,
+              label: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`,
+            }))
+            .filter((_, dayIdx) => dayIdx % TICK_STEP === 0);
+        }
 
         const mean = own.length
           ? Math.round(own.reduce((n, r) => n + r.completeness, 0) / own.length)
@@ -459,7 +497,7 @@ export default function CoverageTimeline() {
 
         return { mission: m, mean, slots, ticks };
       }),
-    [inRange, days],
+    [inRange, days, period, range],
   );
 
   const matchingIds = useMemo(
@@ -712,12 +750,15 @@ export default function CoverageTimeline() {
                   </div>
 
                   <div className={s.lane}>
-                    <div className={s.track}>
-                      {slots.map((slot) => {
-                        const { item, key, date } = slot;
+                    <div
+                      className={`${s.track} ${period === "day" ? s.trackDay : ""}`}
+                      style={{ ["--total-slots" as string]: slots.length }}
+                    >
+                      {slots.map((slot: any) => {
+                        const { item, key, date, leftPct } = slot;
 
-                        // Empty slot -> grey idle tile
                         if (!item) {
+                          if (period === "day") return null;
                           return (
                             <span
                               key={key}
@@ -740,11 +781,15 @@ export default function CoverageTimeline() {
 
                         return (
                           <button
-                            key={item.id}
+                            key={item.id ?? key}
                             type="button"
                             className={cls}
                             style={{
-                              ["--c" as string]: STATUS_COLOR[item.status],
+                              ["--c" as string]:
+                                STATUS_COLOR[item.status as Status],
+                              ...(period === "day" && leftPct !== undefined
+                                ? { left: `${leftPct}%` }
+                                : {}),
                             }}
                             title={`${item.id} · ${m} · ${item.status}`}
                             onClick={() =>
@@ -763,11 +808,17 @@ export default function CoverageTimeline() {
                       className={s.axis}
                       style={{ ["--total-slots" as string]: slots.length }}
                     >
-                      {ticks.map((t) => (
+                      {ticks.map((t: any) => (
                         <span
                           className={s.axisTick}
                           key={t.key}
-                          style={{ ["--i" as string]: t.index }}
+                          style={{
+                            ...(period === "day"
+                              ? { left: `${t.index}%` }
+                              : {
+                                  left: `calc(${t.index} * (100% / var(--total-slots, 24)))`,
+                                }),
+                          }}
                         >
                           {t.label}
                         </span>
