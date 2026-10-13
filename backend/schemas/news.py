@@ -1,14 +1,14 @@
 from pydantic import BaseModel
 
 from maas_model.schema_adapter import ApiDate
-from typing import List
+from typing import List, Optional
 
 
 class NewsDatatakesCompleteness(BaseModel):
     datatakeID: str
-    L0_: float
-    L1_: float
-    L2_: float
+    L0_: Optional[float] = None
+    L1_: Optional[float] = None
+    L2_: Optional[float] = None
 
 
 class News(BaseModel):
