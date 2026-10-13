@@ -375,7 +375,7 @@ export default function CoverageTimeline() {
 
         let ticks: Array<{ key: string; index: number; label: string }> = [];
 
-        if (period === "day" || period === "week") {
+        if (period === "day" || period === "week" || period === "custom") {
           const startMs = range.from.getTime();
           const totalMs = Math.max(1, days.length * DAY_MS);
 
@@ -684,14 +684,18 @@ export default function CoverageTimeline() {
 
                       <div className={s.lane}>
                         <div
-                          className={`${s.track} ${period === "day" ? s.trackDay : period === "week" ? s.trackWeek : ""} ${isRowFocused ? s.trackFocused : ""}`}
+                          className={`${s.track} ${period === "day" ? s.trackDay : period === "week" || period === "custom" ? s.trackWeek : ""} ${isRowFocused ? s.trackFocused : ""}`}
                           style={{ ["--total-slots" as string]: slots.length }}
                         >
                           {slots.map((slot: any) => {
                             const { item, key, date, leftPct } = slot;
 
                             if (!item) {
-                              if (period === "day" || period === "week")
+                              if (
+                                period === "day" ||
+                                period === "week" ||
+                                period === "custom"
+                              )
                                 return null;
                               return (
                                 <span
@@ -722,7 +726,9 @@ export default function CoverageTimeline() {
                                 style={{
                                   ["--c" as string]:
                                     STATUS_COLOR[item.status as Status],
-                                  ...((period === "day" || period === "week") &&
+                                  ...((period === "day" ||
+                                    period === "week" ||
+                                    period === "custom") &&
                                   leftPct !== undefined
                                     ? { left: `${leftPct}%` }
                                     : {}),
@@ -754,7 +760,9 @@ export default function CoverageTimeline() {
                               className={s.axisTick}
                               key={t.key}
                               style={{
-                                ...(period === "day" || period === "week"
+                                ...(period === "day" ||
+                                period === "week" ||
+                                period === "custom"
                                   ? { left: `${t.index}%` }
                                   : {
                                       left: `calc(${t.index} * (100% / var(--total-slots, 24)))`,
