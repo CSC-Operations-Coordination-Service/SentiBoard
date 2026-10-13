@@ -318,6 +318,10 @@
   overflow: visible;
 }
 
+.trackDay.trackFocused {
+  height: 120px !important;
+}
+
 /* A day's summary tile: fills its column and is 52px tall. An idle day uses the same size. */
 .tile {
   flex: 1 1 0%;
@@ -386,6 +390,20 @@
 
 .trackDay .tileIdle {
    display: none;
+}
+
+.trackDay .tileSelected {
+  position: absolute !important;
+  bottom: 0 !important;
+  top: auto !important;
+  height: 96px !important;
+  width: 16px !important;
+  z-index: 10 !important;
+  transform-origin: bottom center !important;
+  transform: translateX(-50%) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7), 0 0 40px rgba(255, 255, 255, 0.25) !important;
+  outline: none;
 }
 
 .focusClear {

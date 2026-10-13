@@ -408,8 +408,8 @@ export default function CoverageTimeline() {
             });
           });
         } else {
-          const SLOTS_PER_DAY = 3;
-          const TICK_STEP = 6;
+          const SLOTS_PER_DAY = period === "week" ? 6 : 3;
+          const TICK_STEP = period === "week" ? 1 : 6;
 
           const byDay = new Map<string, Datatake[]>();
           own.forEach((r) => {
