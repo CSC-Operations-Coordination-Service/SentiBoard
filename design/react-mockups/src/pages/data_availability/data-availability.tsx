@@ -139,16 +139,16 @@ function statusSlices(rows: Datatake[]): Slice[] {
     "Partial",
     "Unavailable",
   ];
-  const acc = Object.fromEntries(STATUS_ORDER.map((s) => [s, 0])) as Record<
+  const acc = Object.fromEntries(STATUS_ORDER.map((st) => [st, 0])) as Record<
     Status,
     number
   >;
   rows.forEach((r) => (acc[r.status] += 1));
-  return STATUS_ORDER.map((s) => ({
-    key: s,
-    label: s.toUpperCase(),
-    value: acc[s],
-    color: STATUS_COLOR[s],
+  return STATUS_ORDER.map((st) => ({
+    key: st,
+    label: st.toUpperCase(),
+    value: acc[st],
+    color: STATUS_COLOR[st],
   }));
 }
 
@@ -165,79 +165,9 @@ function modeSlices(rows: Datatake[]): Slice[] {
     }));
 }
 
-/** How bad a day looks when several datatakes fall on it: a loss outranks everything. */
-const SEVERITY: Record<Status, number> = {
-  Acquired: 0,
-  Planned: 1,
-  Processing: 2,
-  Partial: 3,
-  Unavailable: 4,
-};
-
 type TrendWindow = 7 | 30 | 90;
 type SortKey = "gap" | "recent" | "worst";
 
-const SORTS: { id: SortKey; label: string }[] = [
-  { id: "gap", label: "Most recent gap" },
-  { id: "recent", label: "Most recent" },
-  { id: "worst", label: "Lowest completeness" },
-];
-
-function Sparkline({ series }: { series: (number | null)[] }) {
-  const W = 100;
-  const H = 34;
-  const points = series
-    .map((v, i) =>
-      v === null
-        ? null
-        : {
-            x: (i / Math.max(1, series.length - 1)) * W,
-            y: H - 3 - (v / 100) * (H - 6),
-          },
-    )
-    .filter(Boolean) as { x: number; y: number }[];
-
-  if (points.length < 2)
-    return (
-      <svg
-        className={s.spark}
-        viewBox={`0 0 ${W} ${H}`}
-        preserveAspectRatio="none"
-      />
-    );
-
-  const line = points
-    .map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`)
-    .join(" ");
-  const area = `${points[0].x.toFixed(1)},${H} ${line} ${points[points.length - 1].x.toFixed(1)},${H}`;
-
-  return (
-    <svg
-      className={s.spark}
-      viewBox={`0 0 ${W} ${H}`}
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <polygon className={s.sparkArea} points={area} />
-      {/* 100% reference, so a line sitting below it reads as a shortfall rather than just a shape */}
-      <line className={s.sparkBase} x1="0" y1="3" x2={W} y2="3" />
-      <polyline
-        className={s.sparkLine}
-        points={line}
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
-
-const DESCRIPTION = (
-  <>
-    <p>{AVAILABILITY_DESCRIPTION}</p>
-  </>
-);
-
-/* The reference's range buttons, mapped onto the page's periods. 30D is the default, as in the
-   reference, and Custom is the state the pager and the date fields put the page into. */
 const RANGES: { id: PeriodId; label: string }[] = [
   { id: "day", label: "1D" },
   { id: "week", label: "7D" },
@@ -261,9 +191,69 @@ function ChevronDown() {
   );
 }
 
+function GaugeRing({
+  percent,
+  label,
+  caption,
+  status,
+}: {
+  percent: number;
+  label: string;
+  caption: string;
+  status: Status;
+}) {
+  const SIZE = 100;
+  const THICK = 8;
+  const r = (SIZE - THICK) / 2;
+  const circumference = 2 * Math.PI * r;
+  const dash = (percent / 100) * circumference;
+  const ringColor = STATUS_COLOR[status] || "var(--accent-2, #38bdf8)";
+
+  return (
+    <div className={s.gaugeBox}>
+      <span className={s.gaugeHeader}>{caption}</span>
+      <div className={s.gaugeRingWrap}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
+            <circle
+              cx={SIZE / 2}
+              cy={SIZE / 2}
+              r={r}
+              fill="none"
+              stroke="var(--line)"
+              strokeWidth={THICK}
+            />
+            <circle
+              cx={SIZE / 2}
+              cy={SIZE / 2}
+              r={r}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth={THICK}
+              strokeDasharray={`${dash} ${circumference - dash}`}
+            />
+          </g>
+        </svg>
+        <div className={s.gaugeInner}>
+          <span className={s.gaugeSub}>COMPLETENESS</span>
+          <span className={s.gaugeVal}>{percent.toFixed(2)}%</span>
+        </div>
+      </div>
+      <div className={s.gaugeFooterList}>
+        <div className={s.gaugeFooterItem}>
+          <span className={s.gaugeDot} style={{ background: ringColor }} />
+          <span>{label}</span>
+        </div>
+        <div className={s.gaugeFooterItem}>
+          <span className={s.gaugeDotMissing} />
+          <span>MISSING</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CoverageTimeline() {
-  /* A trend view opens on a month: "Last 7 Days" is seven columns, which is not a timeline. The
-     other proposals default to the production default (week) because they are snapshots. */
   const [period, setPeriod] = useState<PeriodId>("month");
   const [mission, setMission] = useState("All");
   const [status, setStatus] = useState<Status | "All">("All");
@@ -273,18 +263,14 @@ export default function CoverageTimeline() {
   const [search, setSearch] = useState("");
   const fromPicker = useRef<HTMLInputElement>(null);
   const toPicker = useRef<HTMLInputElement>(null);
-  const [trend, setTrend] = useState<TrendWindow>(30);
-  const [sort, setSort] = useState<SortKey>("gap");
   const [focus, setFocus] = useState<{
     mission: string;
     key: string;
     date: Date;
+    item: Datatake;
   } | null>(null);
   const [selected, setSelected] = useState<DatatakeSummary | null>(null);
-  const [descriptionOpen, setDescriptionOpen] = useState(false);
 
-  /** Any change to the dates pins both bounds and leaves the presets, so the pager and the
-   *  FROM/TO fields always describe the same window. */
   const pinRange = useCallback((from: string, to: string) => {
     setDateFrom(from);
     setDateTo(to);
@@ -302,7 +288,6 @@ export default function CoverageTimeline() {
     setOpenDrop(null);
   }, []);
 
-  /** The visible range — the heatmap's columns and the table's bounds are the same window. */
   const range = useMemo(() => {
     const to =
       dateTo && period === "custom"
@@ -319,7 +304,6 @@ export default function CoverageTimeline() {
 
   const days = useMemo(() => daysOf(range.from, range.to), [range]);
 
-  /** The pager moves the window by its own length, so "earlier" and "later" are the same step. */
   const shiftRange = (direction: -1 | 1) => {
     const step = direction * days.length * DAY_MS;
     pinRange(
@@ -329,8 +313,6 @@ export default function CoverageTimeline() {
   };
   const atToday = range.to.getTime() >= WINDOW.today.getTime();
 
-  /** Everything in range, before the mission/satellite/id filters — the heatmap keeps every
-   *  mission visible so a filtered view still shows what else was happening. */
   const inRange = useMemo(
     () =>
       DATA.filter(
@@ -341,8 +323,6 @@ export default function CoverageTimeline() {
     [range],
   );
 
-  /** Datatakes that pass the mission, status and ID filters. The heatmap dims everything else,
-   *  so a filtered-out slot stays on the grid instead of looking like a day with no data. */
   const matching = useMemo(() => {
     let out = inRange;
     if (mission !== "All") out = out.filter((r) => r.mission === mission);
@@ -365,27 +345,6 @@ export default function CoverageTimeline() {
     [matching, focus],
   );
 
-  /* Default order: the most recent GAP first. A datatake that published in full is not news, so
-     complete rows fall below the incomplete ones however recent they are — which is the whole
-     argument of this concept over a chronological list. */
-  const sorted = useMemo(() => {
-    const out = [...rows];
-    if (sort === "recent")
-      return out.sort((a, b) => b.start.getTime() - a.start.getTime());
-    if (sort === "worst")
-      return out.sort(
-        (a, b) =>
-          a.completeness - b.completeness ||
-          b.start.getTime() - a.start.getTime(),
-      );
-    return out.sort((a, b) => {
-      const ga = isGap(a) ? 0 : 1;
-      const gb = isGap(b) ? 0 : 1;
-      return ga - gb || b.start.getTime() - a.start.getTime();
-    });
-  }, [rows, sort]);
-
-  const visible = sorted.slice(0, 15);
   const active =
     period !== "month" ||
     mission !== "All" ||
@@ -401,13 +360,6 @@ export default function CoverageTimeline() {
     ? Math.round(rows.reduce((n, r) => n + r.completeness, 0) / rows.length)
     : 0;
 
-  /* One column per calendar day. A day with datatakes shows one summary tile in the worst status
-     among them (SEVERITY), so a loss is never hidden. A day with none keeps its column as an idle
-     tile. Every row has exactly one column per day, so the rows line up by date. Date labels fall
-     every 6 days and sit inside the same grid, so each one is directly under its day's column. */
-  const SLOTS_PER_DAY = 3; // 3 slots per day * 30 days = 90 total tiles
-  const TICK_STEP = 6; // Date tick every 6 days
-
   const lanes = useMemo(
     () =>
       MISSION_NAMES.map((m) => {
@@ -418,12 +370,12 @@ export default function CoverageTimeline() {
           date: Date;
           item: Datatake | null;
           slotIndex: number;
+          leftPct?: number;
         }> = [];
 
         let ticks: Array<{ key: string; index: number; label: string }> = [];
 
         if (period === "day") {
-          // ---------------- 1D / 24-HOUR MODE ----------------
           const startMs = range.from.getTime();
           const totalMs = Math.max(1, days.length * DAY_MS);
 
@@ -456,7 +408,6 @@ export default function CoverageTimeline() {
             });
           });
         } else {
-          // ---------------- MULTI-DAY (30D) MODE ----------------
           const SLOTS_PER_DAY = 3;
           const TICK_STEP = 6;
 
@@ -491,11 +442,11 @@ export default function CoverageTimeline() {
             .filter((_, dayIdx) => dayIdx % TICK_STEP === 0);
         }
 
-        const mean = own.length
+        const ownMean = own.length
           ? Math.round(own.reduce((n, r) => n + r.completeness, 0) / own.length)
           : 0;
 
-        return { mission: m, mean, slots, ticks };
+        return { mission: m, mean: ownMean, slots, ticks };
       }),
     [inRange, days, period, range],
   );
@@ -505,30 +456,12 @@ export default function CoverageTimeline() {
     [matching],
   );
 
-  const toSummary = (d: Datatake): DatatakeSummary => ({
-    id: d.id,
-    platform: d.satellite,
-    mission: d.mission,
-    sensorMode: d.sensorMode,
-    sensingStart: d.start,
-    statusLabel: d.status,
-    statusColor: STATUS_COLOR[d.status],
-    completeness: d.completeness,
-  });
-
-  const ageOf = (d: Date) => {
-    const n = Math.floor((WINDOW.today.getTime() - d.getTime()) / DAY_MS);
-    if (n < 0) return "SCHEDULED";
-    if (n === 0) return "TODAY";
-    return `${n}D AGO`;
-  };
-
   return (
     <>
       <div className={s.headArt}>
         <PageHeader
           title="Data Availability"
-          desc={DESCRIPTION}
+          desc={<p>{AVAILABILITY_DESCRIPTION}</p>}
           img="/assets/img/modules/availability.jpg"
         />
       </div>
@@ -553,11 +486,11 @@ export default function CoverageTimeline() {
             <span className={s.counterK}>Datatakes lost</span>
           </div>
         </Reveal>
-        {/* ---------------- filters: one row, left to right as the reference toolbar ---------------- */}
+
+        {/* ---------------- filters ---------------- */}
         <div className={s.filters}>
           <div className={s.filterGroup}>
             <span className={s.filterHeading}>{PERIOD_LABEL[period]}</span>
-
             <div className={s.frange} role="group" aria-label="Time range">
               {RANGES.map((r) => (
                 <button
@@ -614,8 +547,6 @@ export default function CoverageTimeline() {
               >
                 <ChevronRight size={13} aria-hidden />
               </button>
-              {/* The native pickers behind the dates. Kept off-screen rather than display:none,
-                  because a picker only opens from an element that is rendered. */}
               <input
                 ref={fromPicker}
                 className={s.hiddenDate}
@@ -735,183 +666,189 @@ export default function CoverageTimeline() {
           </button>
         </div>
 
-        {/* ---------------- heatmap ---------------- */}
+        {/* ---------------- heatmap with inline row expansion below tiles ---------------- */}
         <Reveal className={s.panel}>
           <div className={s.mapScroll}>
             <div
               className={s.mapInner}
               style={{ ["--n" as string]: days.length }}
             >
-              {lanes.map(({ mission: m, mean, slots, ticks }) => (
-                <div className={s.mapRow} key={m}>
-                  <div className={s.mapLabel}>
-                    <b>{m.replace("Sentinel-", "S")}</b>
-                    <span>{mean}% MEAN</span>
-                  </div>
+              {lanes.map(({ mission: m, mean: laneMean, slots, ticks }) => {
+                const isRowFocused = focus?.mission === m;
+                const activeItem = isRowFocused ? focus?.item : null;
+                const rowRows = isRowFocused && focus.item ? [focus.item] : [];
+                return (
+                  <div className={s.mapRowContainer} key={m}>
+                    <div className={s.mapRow}>
+                      <div className={s.mapLabel}>
+                        <b>{m.replace("Sentinel-", "S")}</b>
+                        <span>{laneMean}% MEAN</span>
+                      </div>
 
-                  <div className={s.lane}>
-                    <div
-                      className={`${s.track} ${period === "day" ? s.trackDay : ""}`}
-                      style={{ ["--total-slots" as string]: slots.length }}
-                    >
-                      {slots.map((slot: any) => {
-                        const { item, key, date, leftPct } = slot;
-
-                        if (!item) {
-                          if (period === "day") return null;
-                          return (
-                            <span
-                              key={key}
-                              className={`${s.tile} ${s.tileIdle}`}
-                              aria-hidden
-                            />
-                          );
-                        }
-
-                        const on =
-                          focus?.mission === m && focus.key === fmtDate(date);
-                        const dim = !matchingIds.has(item.id);
-                        const cls = [
-                          s.tile,
-                          on ? s.tileOn : "",
-                          dim ? s.tileDim : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ");
-
-                        return (
-                          <button
-                            key={item.id ?? key}
-                            type="button"
-                            className={cls}
-                            style={{
-                              ["--c" as string]:
-                                STATUS_COLOR[item.status as Status],
-                              ...(period === "day" && leftPct !== undefined
-                                ? { left: `${leftPct}%` }
-                                : {}),
-                            }}
-                            title={`${item.id} · ${m} · ${item.status}`}
-                            onClick={() =>
-                              setFocus(
-                                on
-                                  ? null
-                                  : { mission: m, key: fmtDate(date), date },
-                              )
-                            }
-                          />
-                        );
-                      })}
-                    </div>
-
-                    <div
-                      className={s.axis}
-                      style={{ ["--total-slots" as string]: slots.length }}
-                    >
-                      {ticks.map((t: any) => (
-                        <span
-                          className={s.axisTick}
-                          key={t.key}
-                          style={{
-                            ...(period === "day"
-                              ? { left: `${t.index}%` }
-                              : {
-                                  left: `calc(${t.index} * (100% / var(--total-slots, 24)))`,
-                                }),
-                          }}
+                      <div className={s.lane}>
+                        <div
+                          className={`${s.track} ${period === "day" ? s.trackDay : ""} ${isRowFocused ? s.trackFocused : ""}`}
+                          style={{ ["--total-slots" as string]: slots.length }}
                         >
-                          {t.label}
-                        </span>
-                      ))}
+                          {slots.map((slot: any) => {
+                            const { item, key, date, leftPct } = slot;
+
+                            if (!item) {
+                              if (period === "day") return null;
+                              return (
+                                <span
+                                  key={key}
+                                  className={`${s.tile} ${s.tileIdle}`}
+                                  aria-hidden
+                                />
+                              );
+                            }
+
+                            const on =
+                              focus?.mission === m &&
+                              focus?.item?.id === item.id;
+                            const dim = !matchingIds.has(item.id);
+                            const cls = [
+                              s.tile,
+                              on ? s.tileSelected : "",
+                              dim ? s.tileDim : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ");
+
+                            return (
+                              <button
+                                key={item.id ?? key}
+                                type="button"
+                                className={cls}
+                                style={{
+                                  ["--c" as string]:
+                                    STATUS_COLOR[item.status as Status],
+                                  ...(period === "day" && leftPct !== undefined
+                                    ? { left: `${leftPct}%` }
+                                    : {}),
+                                }}
+                                title={`${item.id} · ${m} · ${item.status}`}
+                                onClick={() =>
+                                  setFocus(
+                                    on
+                                      ? null
+                                      : {
+                                          mission: m,
+                                          key: fmtDate(date),
+                                          date,
+                                          item,
+                                        },
+                                  )
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+
+                        <div
+                          className={s.axis}
+                          style={{ ["--total-slots" as string]: slots.length }}
+                        >
+                          {ticks.map((t: any) => (
+                            <span
+                              className={s.axisTick}
+                              key={t.key}
+                              style={{
+                                ...(period === "day"
+                                  ? { left: `${t.index}%` }
+                                  : {
+                                      left: `calc(${t.index} * (100% / var(--total-slots, 24)))`,
+                                    }),
+                              }}
+                            >
+                              {t.label}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     </div>
+
+                    {/* Inline Expanded Details & Zoomed View Directly Below Tiles */}
+                    {isRowFocused && activeItem && (
+                      <div className={s.referenceDetailWrap}>
+                        <button
+                          className={s.closeBtn}
+                          onClick={() => setFocus(null)}
+                          aria-label="Close details"
+                        >
+                          <X size={16} />
+                        </button>
+
+                        <div className={s.detailColumns}>
+                          {/* Left Side: ID, timestamp & gauges */}
+                          <div className={s.detailLeft}>
+                            <h2 className={s.detailTitle}>{activeItem.id}</h2>
+                            <p className={s.detailSubtime}>
+                              {fmtDateTime(activeItem.start)}
+                            </p>
+
+                            <div className={s.gaugePair}>
+                              <GaugeRing
+                                percent={activeItem.completeness}
+                                label="ACQUIRED"
+                                caption="ACQUISITION"
+                                status={activeItem.status}
+                              />
+                              <GaugeRing
+                                percent={activeItem.completeness}
+                                label="PUBLISHED"
+                                caption="PUBLICATION"
+                                status={activeItem.status}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Right Side: Key/Value Grid */}
+                          <div className={s.detailRight}>
+                            <div className={s.metaGrid}>
+                              <span className={s.metaKey}>DATA TAKE ID</span>
+                              <span className={s.metaValBold}>
+                                {activeItem.id}
+                              </span>
+
+                              <span className={s.metaKey}>PLATFORM</span>
+                              <span className={s.metaValBold}>
+                                {activeItem.satellite}
+                              </span>
+
+                              <span className={s.metaKey}>START DATE</span>
+                              <span className={s.metaVal}>
+                                {fmtDateTime(activeItem.start)}
+                              </span>
+
+                              <span className={s.metaKey}>STOP DATE</span>
+                              <span className={s.metaVal}>
+                                {fmtDateTime(
+                                  new Date(
+                                    activeItem.start.getTime() + 6 * 60000,
+                                  ),
+                                )}
+                              </span>
+
+                              <span className={s.metaKey}>ACQUISITION</span>
+                              <span className={s.metaTag}>
+                                {activeItem.status.toUpperCase()}
+                              </span>
+
+                              <span className={s.metaKey}>PUBLICATION</span>
+                              <span className={s.metaTag}>MISSING</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </Reveal>
-        {/* ---------------- focused view (charts + list) — only shown when a cell is clicked -------- */}
-        {focus && (
-          <>
-            <div className={s.focusedHeader}>
-              <h3>
-                {focus.mission} · {focus.key} · {rows.length} datatake
-                {rows.length !== 1 ? "s" : ""}
-              </h3>
-              <button className={s.focusClear} onClick={() => setFocus(null)}>
-                <X size={14} />
-                Clear focus
-              </button>
-            </div>
-
-            <div className={s.focusedLayout}>
-              <div className={s.focusedList}>
-                <div className={s.listHeader}>DATATAKES</div>
-                <ul className={s.listItems}>
-                  {rows.map((row) => (
-                    <li
-                      key={row.id}
-                      className={
-                        row.status === "Unavailable"
-                          ? s.lossItem
-                          : isGap(row)
-                            ? s.gapItem
-                            : undefined
-                      }
-                    >
-                      <div className={s.listIdRow}>
-                        <span className={s.listId}>{row.id}</span>
-                        <span className={s.listSat}>{row.satellite}</span>
-                      </div>
-                      <div className={s.listDetails}>
-                        <span className={s.listMode}>{row.sensorMode}</span>
-                        <span className={s.listTime}>
-                          {fmtDateTime(row.start)}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className={s.focusedCharts}>
-                {rows.length === 0 ? (
-                  <p className={s.emptyCharts}>
-                    No datatakes for this selection.
-                  </p>
-                ) : (
-                  <>
-                    <div className={s.chartCard}>
-                      <h4 className={s.chartTitle}>STATUS DISTRIBUTION</h4>
-                      <Donut
-                        slices={statusSlices(rows)}
-                        total={rows.length}
-                        caption="DATATAKES"
-                      />
-                      <DonutLegend
-                        slices={statusSlices(rows)}
-                        total={rows.length}
-                      />
-                    </div>
-
-                    <div className={s.chartCard}>
-                      <h4 className={s.chartTitle}>SENSOR MODES</h4>
-                      <Donut
-                        slices={modeSlices(rows)}
-                        total={modeSlices(rows).length}
-                        caption="MODES"
-                      />
-                      <DonutLegend
-                        slices={modeSlices(rows)}
-                        total={rows.length}
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </>
-        )}
       </section>
 
       {selected && (

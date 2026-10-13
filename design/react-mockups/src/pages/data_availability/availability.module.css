@@ -89,7 +89,7 @@
 
 .chipMean {
   font-family: var(--font-mono);
-  font-size: 15px;
+  font-size: 12px;
   font-variant-numeric: tabular-nums;
   color: var(--c);
 }
@@ -142,7 +142,7 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  overflow: hidden;
+  overflow: visible;
   margin-bottom: 18px;
 }
 
@@ -197,6 +197,7 @@
 
 .mapScroll {
   overflow-x: auto;
+  overflow-y: visible;
 }
 
 .mapInner {
@@ -208,8 +209,9 @@
 .mapRow {
   display: grid;
   grid-template-columns: 104px 1fr;
-  align-items: center;
+  align-items: start;
   gap: 12px;
+  overflow: visible;
 }
 
 .mapRow + .mapRow {
@@ -271,6 +273,7 @@
 .lane {
   min-width: 0;
   width: 100%;
+  overflow: visible;
 }
 
 /* One column per calendar day, the same count in every row, so all four tracks fill the same width
@@ -279,18 +282,40 @@
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 2px;
   width: 100%;
+  height: 60px; /* Elevated height for vertical headroom on selection */
+  position: relative;
+  transition: height 0.25s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.trackFocused {
+  height: 170px; /* Expands the row height to fit the 76px selected tile plus padding */
+}
+
+.trackFocused .tile {
+  height: 120px !important;
+  transform-origin: bottom center;
+  transition: height 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.trackFocused .tileSelected {
+  z-index: 10 !important;
+  transform: scaleX(1.3) scaleY(1.2) !important;
+  border: 2px solid #ffffff !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6), 0 0 32px rgba(255, 255, 255, 0.2) !important;
+  outline: none;
+}
 /* 1D / 24H specific track: space tiles evenly across full width without stretching them fat */
 .trackDay {
   position: relative;
-  display: block;
+  display: flex;
+  align-items: flex-end;
   height: 52px;
   width: 100%;
   gap: 0;
+  overflow: visible;
 }
 
 /* A day's summary tile: fills its column and is 52px tall. An idle day uses the same size. */
@@ -304,7 +329,11 @@
   border-radius: 1px;
   background: var(--c);
   cursor: pointer;
-  transition: box-shadow 0.15s var(--ease);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              height 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 1;
 }
 
 /* In 1D mode, keep tiles as slender fixed pillars (~14px to 18px wide max) */
@@ -316,6 +345,18 @@
   height: 52px;
   transform: translateX(-50%);
   border-radius: 1px;
+}
+
+/* Selected Tile Zoom Effect */
+.tileSelected {
+  height: 100px !important;
+  top: -35px !important;
+  position: relative !important;
+  z-index: 10 !important;
+  transform: scaleX(2.5) scaleY(2.2) !important;
+  border: 3px solid #ffffff !important;
+  box-shadow: 0 0 24px rgba(255, 255, 255, 0.8), 0 0 48px rgba(255, 255, 255, 0.4) !important;
+  outline: none;
 }
 
 .tile:hover {
@@ -792,8 +833,8 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px 24px;
+  justify-content: center; /* Centers the whole filter bar nicely */
+  gap: 36px;
   margin-bottom: 22px;
   overflow-x: auto;
 }
@@ -802,19 +843,19 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 16px 20px;
+  gap: 20px;
   min-width: 0;
 }
 
 .filterHeading {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.02em;
   line-height: 1;
   text-transform: uppercase;
   white-space: nowrap;
-  color: var(--text);
+  color: #ffffff !important;
 }
 
 .frange {
@@ -831,7 +872,7 @@
   background: none;
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -887,7 +928,7 @@
   cursor: pointer;
   white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
@@ -900,7 +941,7 @@
 }
 
 .dateSep {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-mute);
 }
 
@@ -934,7 +975,7 @@
   border-radius: 0;
   background: none;
   cursor: pointer;
-  color: var(--text-dim);
+  color: var(--text);
   text-align: left;
   transition: border-color 0.2s var(--ease);
 }
@@ -947,7 +988,7 @@
 .fdropLabel {
   flex: 1;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -957,7 +998,7 @@
 .fdropVal {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--accent-2);
+  color: var(--text);
 }
 
 .fdropHead svg {
@@ -1006,7 +1047,7 @@
   min-width: 150px;
   height: 44px;
   padding-bottom: 2px;
-  color: var(--text-mute);
+  color: var(--text);
   border-bottom: 1px solid var(--line);
   transition: border-color 0.2s var(--ease);
 }
@@ -1023,13 +1064,13 @@
   background: none;
   outline: none;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: 0.02em;
   color: var(--text);
 }
 
 .fsearch input::placeholder {
-  color: var(--text-mute);
+  color: var(--text);
 }
 
 .freset {
@@ -1044,7 +1085,7 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--text);
   transition: color 0.2s var(--ease);
 }
 
@@ -1053,9 +1094,17 @@
 }
 
 .freset:disabled {
-  color: var(--text-mute);
+  color: var(--text-dim);
   opacity: 0.6;
   cursor: default;
+}
+
+.fleet-card {
+  transition: transform 0.2s ease;
+}
+
+.fleet-card:active {
+  transform: scale(1.08); /* Grows when clicked/held */
 }
 
 @media (max-width: 1100px) {
@@ -1157,4 +1206,221 @@
     rgba(3, 5, 10, 0.62) 50%,
     rgba(3, 5, 10, 0.12) 100%
   );
+}
+
+/* Inline Detail Panel Layout (matches your reference image) */
+.referenceDetailWrap {
+  position: relative;
+  margin-top: 16px;
+  margin-bottom: 32px;
+  padding: 16px 20px 24px 104px;
+  background: transparent;
+  color: var(--text, #fff);
+  animation: fadeIn 0.2s ease-out;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-mute, #666);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.closeBtn:hover {
+  color: #fff;
+}
+
+.detailColumns {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+.detailLeft {
+  display: flex;
+  flex-direction: column;
+}
+
+.detailTitle {
+  font-family: var(--font-mono, monospace);
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  letter-spacing: 0.05em;
+  color: #ffffff;
+}
+
+.detailSubtime {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  color: var(--text-mute, #888);
+  margin: 0 0 24px 0;
+}
+
+.gaugePair {
+  display: flex;
+  gap: 24px;
+}
+
+.gaugeBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.gaugeHeader {
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--text, #aaa);
+}
+
+.gaugeRingWrap {
+  position: relative;
+  width: 100px;
+  height: 100px;
+}
+
+.gaugeInner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gaugeSub {
+  font-size: 7px;
+  letter-spacing: 0.08em;
+  color: var(--text, #888);
+}
+
+.gaugeVal {
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.gaugeFooter {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  color: var(--text, #aaa);
+}
+
+.gaugeFooterList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9px;
+  color: var(--text-mute, #aaa);
+  margin-top: 4px;
+}
+
+.gaugeFooterItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.gaugeDotMissing {
+  width: 5px;
+  height: 5px;
+  background: var(--text-mute, #666);
+  border-radius: 50%;
+}
+
+.gaugeDot {
+  width: 5px;
+  height: 5px;
+  background: var(--text-mute, #888);
+  border-radius: 50%;
+}
+.detailRight {
+  padding-top: 28px;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 12px;
+  column-gap: 16px;
+  align-items: center;
+  font-family: var(--font-mono, monospace);
+  font-size: 11px;
+}
+
+.metaKey {
+  color: var(--text-mute, #777);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+
+.metaValBold {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.metaVal {
+  color: #dddddd;
+}
+
+.metaTag {
+  display: inline-block;
+  padding: 3px 8px;
+  background: #2a2d34;
+  color: #b0b5c0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  border-radius: 2px;
+  width: fit-content;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* -------------------- inline row expansion below tiles -------------------- */
+.mapRowContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.inlineFocusWrap {
+  margin: 12px 0 20px 116px; /* aligns with the lane content */
+  padding: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--accent);
+  border-radius: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  animation: inlineRise 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes inlineRise {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .inlineFocusWrap {
+    margin-left: 0;
+  }
 }
