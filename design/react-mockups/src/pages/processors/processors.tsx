@@ -125,13 +125,11 @@ function buildAxis(range: Range, now: number, earliest: number): Axis {
     const isYear = m === 0;
     if (pct >= -1 && (m % every === 0 || isYear)) {
       grid.push({ pct, major: isYear });
-      if (pct <= 100 && every < 12) {
-        // <--- Changed from pct < 93
+      if (pct < 93 && every < 12) {
         monthMarks.push({ pct, label: MONTHS[m].toUpperCase() });
       }
     }
-    if (pct >= -1 && pct <= 100 && (isYear || firstYear)) {
-      // <--- Changed from pct < 95
+    if (pct >= -1 && pct < 95 && (isYear || firstYear)) {
       yearMarks.push({ pct: Math.max(0, pct), label: String(y) });
       firstYear = false;
     }
@@ -210,94 +208,90 @@ function ReleaseTimeline({
 
   return (
     <div className={s.tlScroll}>
-      {/* Mask wrapper isolates the fade effect from the outer container scrollbars */}
-      <div className={s.tlMask}>
-        <div className={s.tl} style={{ minWidth: axis.minWidth }}>
-          <div className={s.tlAxisRow}>
-            <span />
-            <div className={s.tlAxis}>
-              {axis.years.map((t) => (
-                <span
-                  key={`y${t.label}`}
-                  className={s.tlYear}
-                  style={{ left: `${t.pct}%` }}
-                >
-                  {t.label}
-                </span>
-              ))}
-              {axis.months.map((t) => (
-                <span
-                  key={`m${t.pct}`}
-                  className={s.tlMonth}
-                  style={{ left: `${t.pct}%` }}
-                >
-                  {t.label}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {groups.map((g) => {
-            const last = g.releases.length - 1;
-            const marks = g.releases
-              .map((r, i) => ({ r, isCurrent: i === last, x: toPct(r.ms) }))
-              .filter(
-                ({ x, isCurrent }) =>
-                  x >= 0 && x <= 100 && (baselineFilter === "all" || isCurrent),
-              );
-
-            return (
-              <div key={g.ipf} className={s.tlLane}>
-                <span className={s.tlName}>{laneName(g.label)}</span>
-                <div className={s.tlTrack}>
-                  {axis.grid.map((line) => (
-                    <i
-                      key={line.pct}
-                      className={line.major ? s.tlGridMajor : s.tlGrid}
-                      style={{ left: `${line.pct}%` }}
-                    />
-                  ))}
-                  {marks.map(({ r, isCurrent, x }) => {
-                    const isSelected =
-                      selected?.ipf === g.ipf &&
-                      selected.baseline === r.baseline;
-                    return (
-                      <button
-                        key={r.baseline}
-                        type="button"
-                        className={[
-                          s.mk,
-                          isCurrent ? s.mkNow : "",
-                          isSelected ? s.mkSel : "",
-                        ].join(" ")}
-                        style={{ left: `${x}%` }}
-                        title={`${r.baseline} · ${r.day}${isCurrent ? " · in force" : ""}`}
-                        aria-label={`${laneName(g.label)} ${r.baseline}, released ${r.day}${isCurrent ? ", in force" : ""}`}
-                        aria-pressed={isSelected}
-                        onClick={() => onPick(g.ipf, r.baseline)}
-                      />
-                    );
-                  })}
-                  <i
-                    className={s.tlToday}
-                    style={{ left: `${axis.today}%` }}
-                    aria-hidden="true"
-                  />
-                </div>
-              </div>
-            );
-          })}
-
-          <div className={s.tlFoot}>
-            <span />
-            <div className={s.tlTrack}>
+      <div className={s.tl} style={{ minWidth: axis.minWidth }}>
+        <div className={s.tlAxisRow}>
+          <span />
+          <div className={s.tlAxis}>
+            {axis.years.map((t) => (
               <span
-                className={`${s.tlTodayLabel} ${axis.today > 94 ? s.tlTodayEnd : ""}`}
-                style={{ left: `${axis.today}%` }}
+                key={`y${t.label}`}
+                className={s.tlYear}
+                style={{ left: `${t.pct}%` }}
               >
-                Today
+                {t.label}
               </span>
+            ))}
+            {axis.months.map((t) => (
+              <span
+                key={`m${t.pct}`}
+                className={s.tlMonth}
+                style={{ left: `${t.pct}%` }}
+              >
+                {t.label}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {groups.map((g) => {
+          const last = g.releases.length - 1;
+          const marks = g.releases
+            .map((r, i) => ({ r, isCurrent: i === last, x: toPct(r.ms) }))
+            .filter(
+              ({ x, isCurrent }) =>
+                x >= 0 && x <= 100 && (baselineFilter === "all" || isCurrent),
+            );
+
+          return (
+            <div key={g.ipf} className={s.tlLane}>
+              <span className={s.tlName}>{laneName(g.label)}</span>
+              <div className={s.tlTrack}>
+                {axis.grid.map((line) => (
+                  <i
+                    key={line.pct}
+                    className={line.major ? s.tlGridMajor : s.tlGrid}
+                    style={{ left: `${line.pct}%` }}
+                  />
+                ))}
+                {marks.map(({ r, isCurrent, x }) => {
+                  const isSelected =
+                    selected?.ipf === g.ipf && selected.baseline === r.baseline;
+                  return (
+                    <button
+                      key={r.baseline}
+                      type="button"
+                      className={[
+                        s.mk,
+                        isCurrent ? s.mkNow : "",
+                        isSelected ? s.mkSel : "",
+                      ].join(" ")}
+                      style={{ left: `${x}%` }}
+                      title={`${r.baseline} · ${r.day}${isCurrent ? " · in force" : ""}`}
+                      aria-label={`${laneName(g.label)} ${r.baseline}, released ${r.day}${isCurrent ? ", in force" : ""}`}
+                      aria-pressed={isSelected}
+                      onClick={() => onPick(g.ipf, r.baseline)}
+                    />
+                  );
+                })}
+                <i
+                  className={s.tlToday}
+                  style={{ left: `${axis.today}%` }}
+                  aria-hidden="true"
+                />
+              </div>
             </div>
+          );
+        })}
+
+        <div className={s.tlFoot}>
+          <span />
+          <div className={s.tlTrack}>
+            <span
+              className={`${s.tlTodayLabel} ${axis.today > 94 ? s.tlTodayEnd : ""}`}
+              style={{ left: `${axis.today}%` }}
+            >
+              Today
+            </span>
           </div>
         </div>
       </div>

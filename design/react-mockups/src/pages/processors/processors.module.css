@@ -483,27 +483,27 @@
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-/* Inner mask element: keeps the top header fully visible, and fades rows out at the bottom */
 .tlMask {
   width: 100%;
   -webkit-mask-image: linear-gradient(
     to bottom,
-    black 0%,
+    transparent 0%,
+    black 15%,
     black 85%,
     transparent 100%
   );
   mask-image: linear-gradient(
     to bottom,
-    black 0%,
+    transparent 0%,
+    black 15%,
     black 85%,
     transparent 100%
   );
 }
-
-/* WebKit Scrollbars (Chrome, Safari, Edge) - Invisible until container is hovered */
+/* WebKit scrollbar styling (Chrome, Safari, Edge) */
 .tlScroll::-webkit-scrollbar {
-  width: 4px;  /* Slim vertical width */
-  height: 4px; /* Slim horizontal height */
+  height: 4px;  /* Slim horizontal scrollbar height */
+  width: 0px;
 }
 
 .tlScroll::-webkit-scrollbar-track {
@@ -511,23 +511,17 @@
 }
 
 .tlScroll::-webkit-scrollbar-thumb {
-  background: transparent;
-  border-radius: 4px;
-  transition: background 0.25s ease;
-}
-
-/* Reveal custom scrollbar thumb only when hovering over the chart */
-.tlScroll:hover::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
 }
 
 .tlScroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.3);
 }
 
-/* Fixed minimum width for the chart to enable smooth horizontal scrolling */
+/* Timeline inner container that triggers horizontal scrolling when wider than the screen */
 .tl {
-  min-width: 1054px;
+  min-width: 1054px; /* Matches your required chart layout width */
   padding-right: 26px;
 }
 
@@ -983,13 +977,9 @@
     display: none;
   }
 
-  /* Timeline pane */
-.procpane {
-  min-width: 0;
-  max-width: 100%;
-  padding: 0 clamp(16px, 3vw, 48px) 96px;
-  overflow-x: visible; /* <--- Change from hidden to visible */
-}
+  .procpane {
+    padding-bottom: 48px;
+  }
 
   .detailpane {
     display: none;
