@@ -5,6 +5,7 @@
   width: 100%;
   padding-bottom: 48px;
   background: var(--bg);
+  overflow-x: hidden;
 }
 
 /* Content sits above the sky strip, which is the only layer with z-index. Without this the
@@ -374,7 +375,7 @@
 @keyframes rowReveal {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(15px);
   }
   to {
     opacity: 1;
@@ -384,11 +385,12 @@
 
 .tlLane {
   border-top: 1px solid var(--line);
-  
-  /* Modern CSS Scroll-Driven Reveal: triggers when each row enters the screen */
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  /* Triggers the fade/slide-in effect as each row enters the scroll viewport */
   animation: rowReveal auto linear both;
   animation-timeline: view();
-  animation-range: entry 10% cover 30%;
+  animation-range: entry 0% cover 25%;
 }
 /* A slow vertical drift, so the satellite never sits perfectly still. */
 @keyframes satFloat {
@@ -432,7 +434,9 @@
 /* Timeline pane */
 .procpane {
   min-width: 0;
+  max-width: 100%;
   padding: 0 clamp(16px, 3vw, 48px) 96px;
+  overflow-x: hidden;
 }
 
 .phead {
@@ -460,15 +464,71 @@
   font-style: italic;
   color: var(--text-mute);
 }
-
-/* Release timeline. Labels sit in a fixed first column; the track scrolls sideways on narrow
-   screens so the lane names stay put. */
+/* Scroll container for both horizontal timeline navigation & vertical row scrolling */
 .tlScroll {
   position: relative;
+  max-height: 380px;
+  margin-top: 8px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
+  
+  /* Firefox: Hidden by default, appears on hover */
   scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  scrollbar-color: transparent transparent;
+  overscroll-behavior-x: contain;
+  transition: scrollbar-color 0.25s ease;
+}
+
+.tlScroll:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* Inner mask element: keeps the top header fully visible, and fades rows out at the bottom */
+.tlMask {
+  width: 100%;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 85%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 85%,
+    transparent 100%
+  );
+}
+
+/* WebKit Scrollbars (Chrome, Safari, Edge) - Invisible until container is hovered */
+.tlScroll::-webkit-scrollbar {
+  width: 4px;  /* Slim vertical width */
+  height: 4px; /* Slim horizontal height */
+}
+
+.tlScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tlScroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 4px;
+  transition: background 0.25s ease;
+}
+
+/* Reveal custom scrollbar thumb only when hovering over the chart */
+.tlScroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.tlScroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Fixed minimum width for the chart to enable smooth horizontal scrolling */
+.tl {
+  min-width: 1054px;
+  padding-right: 26px;
 }
 
 /* Scan band: a faint highlight that sweeps left to right and repeats. It is an overlay, so the
@@ -488,15 +548,6 @@
   );
   pointer-events: none;
   animation: tlScan 8s linear infinite;
-}
-
-@keyframes tlScan {
-  from {
-    left: -90px;
-  }
-  to {
-    left: 100%;
-  }
 }
 
 .captionRow {
@@ -540,6 +591,18 @@
 .tl {
   min-width: 620px;
   padding-right: 26px;
+}
+
+/* Make the year/month header stay pinned at the top when scrolling vertically */
+/* Keeps the year/month header pinned at the top while scrolling vertically */
+.tlAxisRow {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg);
+  display: grid;
+  grid-template-columns: 116px minmax(0, 1fr);
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .tlAxisRow,
@@ -597,7 +660,7 @@
 
 .tlTrack {
   position: relative;
-  height: 46px;
+  height: 32px;
 }
 
 .tlGrid,
@@ -920,9 +983,13 @@
     display: none;
   }
 
-  .procpane {
-    padding-bottom: 48px;
-  }
+  /* Timeline pane */
+.procpane {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 clamp(16px, 3vw, 48px) 96px;
+  overflow-x: visible; /* <--- Change from hidden to visible */
+}
 
   .detailpane {
     display: none;

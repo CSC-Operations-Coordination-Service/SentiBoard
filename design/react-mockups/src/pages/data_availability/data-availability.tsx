@@ -41,7 +41,6 @@ import {
   AmbientSky,
   MotionToggle,
   ambientRoot,
-  ambientScan,
   useAmbientMotion,
 } from "@/components/ambient-motion";
 import "@/styles/data-availability.css";
@@ -675,7 +674,7 @@ export default function CoverageTimeline() {
 
         {/* ---------------- heatmap with inline row expansion below tiles ---------------- */}
         <Reveal className={s.panel}>
-          <div className={`${s.mapScroll} ${ambientScan}`}>
+          <div className={`${s.mapScroll}`}>
             <div
               className={s.mapInner}
               style={{ ["--n" as string]: days.length }}

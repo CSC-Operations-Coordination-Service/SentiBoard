@@ -23,7 +23,7 @@ export function ambientRoot(paused: boolean, extra = ""): string {
 }
 
 /** Class for a scrolling region that gets the scan band. */
-export const ambientScan = s.scan;
+/*export const ambientScan = s.scan;*/
 
 /** Decorative starfield strip. Place it as the first child of the element passed to ambientRoot. */
 export function AmbientSky() {
