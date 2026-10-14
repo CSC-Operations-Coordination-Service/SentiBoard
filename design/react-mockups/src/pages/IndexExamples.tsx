@@ -86,7 +86,6 @@ const CARD_ART = {
   // processors — no backdrops on these pages, so leftovers from the same set
   versionMatrix: "/assets/img/modules/processors.jpg",
   releaseLog: ESA("Landing_asteroid.jpg"),
-  versionCompare: ESA("Hera_onboard_computer.jpg"),
   versionInteractive: ESA("processor_2.jpg"),
 } as const;
 
@@ -685,15 +684,9 @@ const PROC_CARDS = [
     desc: "Release notes appear in order, with filtering options and no status indicators.",
   },
   {
-    to: "/examples/version-compare",
-    img: CARD_ART.versionCompare,
-    title: "c) Processors",
-    desc: "A scrollable gantt-style timeline showing all baseline releases for a selected processor over time.",
-  },
-  {
     to: "/examples/processors-interactive",
     img: CARD_ART.versionInteractive,
-    title: "d) Processors",
+    title: "c) Processors",
     desc: "Dual-view interactive release timeline (Gantt bars & chronological nodes) with KPI cards, mission filters, date range picker, and detailed processor inspection panel.",
   },
 ];
