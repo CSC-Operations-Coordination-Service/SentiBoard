@@ -1,8 +1,7 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import Nav from "./components/Nav";
 import Footer from "./components/Footer";
-import Home from "./pages/Home";
 import Acquisitions from "./pages/Acquisitions";
 import Events from "./pages/Events";
 import Availability from "./pages/Availability";
@@ -41,7 +40,7 @@ export default function App() {
       <Nav />
       <main>
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Navigate to="/index" replace />} />
           <Route path="/acquisitions" element={<Acquisitions />} />
           <Route path="/events-live" element={<Events />} />
           <Route path="/availability-live" element={<Availability />} />
