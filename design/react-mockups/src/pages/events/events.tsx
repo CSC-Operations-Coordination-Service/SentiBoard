@@ -52,6 +52,12 @@ import {
 } from "./mock";
 import { Collapse, DescriptionModal } from "@/components/ui";
 import s from "./events.module.css";
+import {
+  AmbientSky,
+  MotionToggle,
+  ambientRoot,
+  useAmbientMotion,
+} from "@/components/ambient-motion";
 
 /* ---------- sky ----------
  * The sign's constellation sits in a column to the left of the calendar, not behind it. The grid
@@ -610,6 +616,7 @@ export default function EventsManifest() {
   const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const motion = useAmbientMotion();
 
   // A satellite from the old mission would contradict the new one, leaving zero results with no
   // visible cause, so changing mission clears it. Conversely a satellite implies its mission —
@@ -845,7 +852,12 @@ export default function EventsManifest() {
         />
       </div>
 
-      <div className={s.page}>
+      <div className={ambientRoot(motion.paused, s.page)}>
+        <AmbientSky />
+        <MotionToggle
+          paused={motion.paused}
+          onToggle={motion.toggle}
+        />
         <div className={s.inner}>
           {/* ---------- key metrics ---------- */}
           <div className={s.metrics} aria-label="Summary for the month">

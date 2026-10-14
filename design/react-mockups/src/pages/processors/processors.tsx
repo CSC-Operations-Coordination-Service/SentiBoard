@@ -15,9 +15,9 @@ import s from "./processors.module.css";
 // Map mission IDs to satellite image paths
 const SATELLITE_IMAGES: Record<MissionId, string> = {
   "1": "/assets/img/satellites/s1.jpg",
-  "2": "/assets/img/satellites/s2.jpg",
+  "2": "/assets/img/satellites/s2.png",
   "3": "/assets/img/satellites/s3.jpg",
-  "5P": "/assets/img/satellites/s5.jpg",
+  "5P": "/assets/img/satellites/s5.png",
 };
 
 const DESCRIPTION = (
@@ -408,17 +408,15 @@ function ReleaseNotes({ notes }: { notes?: string }) {
   }
 
   const tagged = (text: string): ReactNode[] =>
-    text
-      .split(/(\b[A-Z][A-Z0-9]*(?:_+[A-Za-z0-9]+)+\b)/)
-      .map((part, i) =>
-        i % 2 ? (
-          <code key={i} className={s.tag}>
-            {part}
-          </code>
-        ) : (
-          part
-        ),
-      );
+    text.split(/(\b[A-Z][A-Z0-9]*(?:_+[A-Za-z0-9]+)+\b)/).map((part, i) =>
+      i % 2 ? (
+        <code key={i} className={s.tag}>
+          {part}
+        </code>
+      ) : (
+        part
+      ),
+    );
 
   const blocks: ReactNode[] = [];
   let items: string[] = [];
@@ -580,6 +578,13 @@ export default function Processors() {
   const [baselineFilter, setBaselineFilter] = useState<BaselineFilter>("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Selection | null>(null);
+  // Ambient motion (sky strip, satellite float, timeline scan). Reduced-motion users start paused;
+  // everyone can pause it, since the motion runs longer than five seconds.
+  const [motionPaused, setMotionPaused] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true,
+  );
 
   const satelliteImageUrl = SATELLITE_IMAGES[activeMission];
   const normalisedQuery = query.trim().toLowerCase();
@@ -672,7 +677,15 @@ export default function Processors() {
         />
       </div>
 
-      <section className={s.container}>
+      <section className={`${s.container} ${motionPaused ? s.paused : ""}`}>
+        {/* Decorative starfield that loops behind the page. Purely visual, so it is hidden from AT. */}
+        <div className={s.skyStrip} aria-hidden="true">
+          <div className={s.skyTrack}>
+            <div className={s.skyTile} />
+            <div className={s.skyTile} />
+          </div>
+        </div>
+
         {/* Headline counts for the selected mission */}
         <dl className={s.stats}>
           {stats.map((st) => (
@@ -774,7 +787,17 @@ export default function Processors() {
               {MISSION_NAMES[activeMission]} processors
             </h2>
 
-            <p className={s.caption}>Release timeline</p>
+            <div className={s.captionRow}>
+              <p className={s.caption}>Release timeline</p>
+              <button
+                type="button"
+                className={s.motionBtn}
+                aria-pressed={motionPaused}
+                onClick={() => setMotionPaused((p) => !p)}
+              >
+                {motionPaused ? "Resume motion" : "Pause motion"}
+              </button>
+            </div>
             {visibleGroups.length > 0 ? (
               <ReleaseTimeline
                 groups={visibleGroups}

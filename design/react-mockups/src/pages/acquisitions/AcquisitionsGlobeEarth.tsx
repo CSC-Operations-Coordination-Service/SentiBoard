@@ -4,6 +4,12 @@ import * as THREE from "three";
 import ThreeEarth from "@/components/ThreeEarth";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
+import {
+  AmbientSky,
+  MotionToggle,
+  ambientRoot,
+  useAmbientMotion,
+} from "@/components/ambient-motion";
 
 const D = Math.PI / 180;
 
@@ -99,6 +105,7 @@ const formatSimTime = (seconds: number) => {
 
 export default function AcquisitionsGlobeEarthPage() {
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const motion = useAmbientMotion();
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
@@ -687,6 +694,7 @@ export default function AcquisitionsGlobeEarthPage() {
 
   return (
     <div
+      className={ambientRoot(motion.paused)}
       style={{
         background: "#020409",
         minHeight: "100vh",
@@ -695,6 +703,8 @@ export default function AcquisitionsGlobeEarthPage() {
         position: "relative",
       }}
     >
+      <AmbientSky />
+      <MotionToggle paused={motion.paused} onToggle={motion.toggle} />
       <PageHeader
         title="Acquisitions Status"
         subtitle="Past, current and planned Sentinel acquisitions on an interactive 3D globe."

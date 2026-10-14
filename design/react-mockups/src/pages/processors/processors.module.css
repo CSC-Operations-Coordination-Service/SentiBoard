@@ -7,6 +7,69 @@
   background: var(--bg);
 }
 
+/* Content sits above the sky strip, which is the only layer with z-index. Without this the
+   absolutely positioned strip would paint over static content. Stacking stays at auto so the
+   dropdown menus (z-index 30) still overlay the page. */
+.container > * {
+  position: relative;
+}
+
+/* Sky strip: a starfield tile repeated twice and translated by one tile, so the loop is seamless.
+   The tile is 1800px, a multiple of the 600px star cell, which keeps the pattern continuous at the
+   seam. It is decorative only and never receives pointer events. */
+.skyStrip {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.skyTrack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 3600px;
+  height: 100%;
+  animation: skyDrift 150s linear infinite;
+}
+
+.skyTile {
+  flex: none;
+  width: 1800px;
+  height: 100%;
+  background-image:
+    radial-gradient(1px 1px at 40px 60px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 180px 310px, #cfe6ff 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 330px 120px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 470px 240px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 540px 380px, #9fd8ea 50%, transparent 100%),
+    radial-gradient(1px 1px at 260px 20px, #fff 50%, transparent 100%);
+  background-size: 600px 420px;
+}
+
+@keyframes skyDrift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-1800px);
+  }
+}
+
+/* Paused: every ambient motion stops where it is. The scan band is hidden rather than frozen so it
+   does not sit half-way across the timeline. */
+.paused .skyTrack,
+.paused .satelliteImage {
+  animation-play-state: paused;
+}
+
+.paused .tlScroll::after {
+  display: none;
+}
+
 /* Headline counts. A definition list so each label stays paired with its value. */
 .stats {
   display: grid;
@@ -253,9 +316,11 @@
 }
 
 .satpane {
-  position: relative;
+ position: sticky; /* Keeps the satellite pane pinned while scrolling long tables */
+  top: 24px;        /* Distance from top of the viewport when fixed */
+  align-self: start;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
   min-width: 0;
   padding: 32px 24px 0;
@@ -302,6 +367,38 @@
   opacity: 0.92;
   mix-blend-mode: screen;
   transition: opacity 0.4s ease;
+  animation: satFloat 9s ease-in-out infinite;
+}
+
+/* Animation for rows appearing as you scroll down the page */
+@keyframes rowReveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tlLane {
+  border-top: 1px solid var(--line);
+  
+  /* Modern CSS Scroll-Driven Reveal: triggers when each row enters the screen */
+  animation: rowReveal auto linear both;
+  animation-timeline: view();
+  animation-range: entry 10% cover 30%;
+}
+/* A slow vertical drift, so the satellite never sits perfectly still. */
+@keyframes satFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 :root[data-theme="light"] .satelliteImage {
@@ -367,10 +464,77 @@
 /* Release timeline. Labels sit in a fixed first column; the track scrolls sideways on narrow
    screens so the lane names stay put. */
 .tlScroll {
+  position: relative;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
+}
+
+/* Scan band: a faint highlight that sweeps left to right and repeats. It is an overlay, so the
+   axis, the markers and the TODAY line never move. */
+.tlScroll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -90px;
+  width: 90px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  animation: tlScan 8s linear infinite;
+}
+
+@keyframes tlScan {
+  from {
+    left: -90px;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+.captionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.captionRow .caption {
+  margin: 0;
+}
+
+/* Pause/resume for the ambient motion. Sized and set in the same mono as the other controls. */
+.motionBtn {
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.motionBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.motionBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .tl {
@@ -825,6 +989,16 @@
   .step {
     animation: none;
     transition: none;
+  }
+
+  /* Ambient motion is removed outright, not just slowed. */
+  .skyTrack,
+  .satelliteImage {
+    animation: none;
+  }
+
+  .tlScroll::after {
+    display: none;
   }
 }
 

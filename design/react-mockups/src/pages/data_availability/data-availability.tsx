@@ -37,6 +37,13 @@ import {
   trendSeries,
 } from "./mock";
 import s from "./availability.module.css";
+import {
+  AmbientSky,
+  MotionToggle,
+  ambientRoot,
+  ambientScan,
+  useAmbientMotion,
+} from "@/components/ambient-motion";
 import "@/styles/data-availability.css";
 
 type Slice = { key: string; label: string; value: number; color: string };
@@ -254,6 +261,8 @@ function GaugeRing({
 }
 
 export default function CoverageTimeline() {
+  const motion = useAmbientMotion();
+
   const [period, setPeriod] = useState<PeriodId>("month");
   const [mission, setMission] = useState("All");
   const [status, setStatus] = useState<Status | "All">("All");
@@ -463,7 +472,9 @@ export default function CoverageTimeline() {
         />
       </div>
 
-      <section className={s.page}>
+      <section className={ambientRoot(motion.paused, s.page)}>
+        <AmbientSky />
+        <MotionToggle paused={motion.paused} onToggle={motion.toggle} />
         {/* ---------------- counters ---------------- */}
         <Reveal className={s.counters}>
           <div className={s.counter}>
@@ -665,7 +676,7 @@ export default function CoverageTimeline() {
 
         {/* ---------------- heatmap with inline row expansion below tiles ---------------- */}
         <Reveal className={s.panel}>
-          <div className={s.mapScroll}>
+          <div className={`${s.mapScroll} ${ambientScan}`}>
             <div
               className={s.mapInner}
               style={{ ["--n" as string]: days.length }}

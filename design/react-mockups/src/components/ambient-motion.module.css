@@ -1,0 +1,140 @@
+/* Ambient motion shared by the pages: a looping starfield strip, an optional scan band over a
+   scrolling region, and the pause control. Every animation here is decorative and stops when the
+   viewer pauses it or prefers reduced motion. */
+
+/* The root is its own stacking context, so the sky (z-index -1) paints above the root's background
+   and beneath all of its content. Pages put this class on the element that already has the
+   background, so the stars sit on that background rather than being hidden under it. */
+.host {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Starfield strip: one 1800px tile repeated twice and translated by one tile, so the loop is
+   seamless. 1800px is a multiple of the 600px star cell, which keeps the pattern continuous. */
+.sky {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 3600px;
+  height: 100%;
+  animation: skyDrift 150s linear infinite;
+}
+
+.tile {
+  flex: none;
+  width: 1800px;
+  height: 100%;
+  background-image:
+    radial-gradient(1px 1px at 40px 60px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 180px 310px, #cfe6ff 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 330px 120px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 470px 240px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 540px 380px, #9fd8ea 50%, transparent 100%),
+    radial-gradient(1px 1px at 260px 20px, #fff 50%, transparent 100%);
+  background-size: 600px 420px;
+}
+
+@keyframes skyDrift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-1800px);
+  }
+}
+
+/* Scan band: a faint highlight that sweeps across a scroll region and repeats. It is an overlay,
+   so the content underneath never moves. Add .scan to the scrolling element itself. */
+.scan {
+  position: relative;
+}
+
+.scan::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -90px;
+  width: 90px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 12%, transparent),
+    transparent
+  );
+  pointer-events: none;
+  animation: scanSweep 8s linear infinite;
+}
+
+@keyframes scanSweep {
+  from {
+    left: -90px;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+/* Paused: the strip stops where it is, and the scan band is hidden rather than frozen partway. */
+.paused .track {
+  animation-play-state: paused;
+}
+
+.paused .scan::after {
+  display: none;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 clamp(18px, 4vw, 48px) 12px;
+  position: relative;
+}
+
+.toggle {
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion removes the ambient animation outright, not just slows it. The pause control
+   still renders so the viewer can see the state, and it starts in the paused state. */
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation: none;
+  }
+
+  .scan::after {
+    display: none;
+  }
+}

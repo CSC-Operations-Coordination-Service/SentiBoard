@@ -4,6 +4,12 @@ import { PageHeader, Reveal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
+import {
+  AmbientSky,
+  MotionToggle,
+  ambientRoot,
+  useAmbientMotion,
+} from "@/components/ambient-motion";
 
 const DESCRIPTION = (
   <>
@@ -13,6 +19,7 @@ const DESCRIPTION = (
 
 export default function AcquisitionsGlobe() {
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const motion = useAmbientMotion();
 
   return (
     <>
@@ -24,6 +31,7 @@ export default function AcquisitionsGlobe() {
       />
 
       <section
+        className={ambientRoot(motion.paused)}
         style={
           {
             width: "100vw",
@@ -47,6 +55,9 @@ export default function AcquisitionsGlobe() {
             } as any
           }
         >
+          <AmbientSky />
+          <MotionToggle paused={motion.paused} onToggle={motion.toggle} />
+
           {/* Cross-link to the second Acquisitions concept. The two answer different questions —
               this one is the geographic reading, the ladder is the pipeline reading — so they are
               reviewed together rather than one replacing the other. */}
