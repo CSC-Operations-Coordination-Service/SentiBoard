@@ -613,7 +613,9 @@ export default function EventsManifest() {
   } | null>(null);
   // Opens on the real current month, read once on mount. The mock's events are all in YEAR, so a
   // month outside that year still renders — it just has no events to show.
-  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
+  const [currentMonth, setCurrentMonth] = useState<number>(
+    () => new Date().getMonth() + 1,
+  );
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const motion = useAmbientMotion();
@@ -854,10 +856,6 @@ export default function EventsManifest() {
 
       <div className={ambientRoot(motion.paused, s.page)}>
         <AmbientSky />
-        <MotionToggle
-          paused={motion.paused}
-          onToggle={motion.toggle}
-        />
         <div className={s.inner}>
           {/* ---------- key metrics ---------- */}
           <div className={s.metrics} aria-label="Summary for the month">

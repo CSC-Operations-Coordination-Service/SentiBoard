@@ -474,7 +474,6 @@ export default function CoverageTimeline() {
 
       <section className={ambientRoot(motion.paused, s.page)}>
         <AmbientSky />
-        <MotionToggle paused={motion.paused} onToggle={motion.toggle} />
         {/* ---------------- counters ---------------- */}
         <Reveal className={s.counters}>
           <div className={s.counter}>

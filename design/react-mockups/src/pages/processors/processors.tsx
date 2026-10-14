@@ -787,17 +787,6 @@ export default function Processors() {
               {MISSION_NAMES[activeMission]} processors
             </h2>
 
-            <div className={s.captionRow}>
-              <p className={s.caption}>Release timeline</p>
-              <button
-                type="button"
-                className={s.motionBtn}
-                aria-pressed={motionPaused}
-                onClick={() => setMotionPaused((p) => !p)}
-              >
-                {motionPaused ? "Resume motion" : "Pause motion"}
-              </button>
-            </div>
             {visibleGroups.length > 0 ? (
               <ReleaseTimeline
                 groups={visibleGroups}

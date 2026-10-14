@@ -704,7 +704,6 @@ export default function AcquisitionsGlobeEarthPage() {
       }}
     >
       <AmbientSky />
-      <MotionToggle paused={motion.paused} onToggle={motion.toggle} />
       <PageHeader
         title="Acquisitions Status"
         subtitle="Past, current and planned Sentinel acquisitions on an interactive 3D globe."

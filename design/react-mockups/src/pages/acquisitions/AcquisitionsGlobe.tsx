@@ -56,7 +56,6 @@ export default function AcquisitionsGlobe() {
           }
         >
           <AmbientSky />
-          <MotionToggle paused={motion.paused} onToggle={motion.toggle} />
 
           {/* Cross-link to the second Acquisitions concept. The two answer different questions —
               this one is the geographic reading, the ladder is the pipeline reading — so they are
