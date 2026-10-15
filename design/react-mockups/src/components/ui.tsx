@@ -8,6 +8,7 @@ import {
   type Status,
 } from "@/data/mock";
 import "../styles/page-header.css";
+export { default as PageHeader } from "./PageHeader";
 
 /** Matches a CSS media query from JS, kept in sync as the viewport changes.
  *
@@ -234,7 +235,7 @@ export function DescriptionModal({
  *  `img` puts a veiled photograph behind the header — the /examples/about hero recipe, shared as
  *  .ex-hero-bg in global.css. It is a backdrop inside the header the page already has, so passing
  *  it changes nothing about the header's size or spacing; omit it and the markup is unchanged. */
-export function PageHeader({
+/*export function PageHeader({
   title,
   sub,
   crumb,
@@ -301,4 +302,4 @@ export function PageHeader({
       </div>
     </section>
   );
-}
+}*/

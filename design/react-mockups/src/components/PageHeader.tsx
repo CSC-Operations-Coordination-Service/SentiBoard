@@ -1,57 +1,61 @@
 import React, { useState } from "react";
-import { Collapse } from "./ui";
 import "../styles/page-header.css";
-import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 
 interface PageHeaderProps {
   title: string;
   crumb?: string;
   subtitle?: string;
+  /** @deprecated use subtitle */
+  sub?: string;
+  /** HTML string (from data/copy) or JSX */
   description?: React.ReactNode;
-  backgroundImage?: string;
+  /** @deprecated use description */
+  desc?: React.ReactNode;
   img?: string;
+  backgroundImage?: string;
 }
 
 export default function PageHeader({
   title,
   crumb,
   subtitle,
+  sub,
   description,
-  backgroundImage,
+  desc,
   img,
+  backgroundImage,
 }: PageHeaderProps) {
-  const [isDescOpen, setIsDescOpen] = useState(false);
-  const bgImage = backgroundImage || img;
+  const [open, setOpen] = useState(false);
+  const bg = backgroundImage || img;
+  const lede = subtitle || sub;
+  const body = description ?? desc;
+  const bgStyle = bg ? { backgroundImage: `url(${bg})` } : undefined;
 
   return (
-    <section
-      className="hero"
-      style={bgImage ? { backgroundImage: `url(${bgImage})` } : {}}
-    >
+    <section className={`hero ${open ? "open" : ""}`} style={bgStyle}>
       <div className="hero-ph sharp">
-        <i style={bgImage ? { backgroundImage: `url(${bgImage})` } : {}}></i>
+        <i style={bgStyle} />
       </div>
       <div className="hero-ph soft">
-        <i style={bgImage ? { backgroundImage: `url(${bgImage})` } : {}}></i>
+        <i style={bgStyle} />
       </div>
-      <div className="scrim-x"></div>
-      <div className="scrim-y"></div>
-      <div className="hero-blend"></div>
+      <div className="scrim-x" />
+      <div className="scrim-y" />
+      <div className="hero-blend" />
 
       <div className="hero-in">
         {crumb && <div className="breadcrumb">{crumb}</div>}
         <h1 className="hero-title">{title}</h1>
-        {subtitle && <p className="lede">{subtitle}</p>}
+        {lede && <p className="lede">{lede}</p>}
 
-        {description && (
+        {body && (
           <div className="descbar">
             <button
-              id="descBtn"
               type="button"
-              aria-expanded={isDescOpen}
+              aria-expanded={open}
               aria-controls="descPanel"
-              className={`desc-btn ${isDescOpen ? "open" : ""}`}
-              onClick={() => setIsDescOpen((prev) => !prev)}
+              className={`desc-btn ${open ? "open" : ""}`}
+              onClick={() => setOpen((o) => !o)}
             >
               <span>Description</span>
               <svg
@@ -68,16 +72,16 @@ export default function PageHeader({
                 />
               </svg>
             </button>
-            {/* Slide-up animation wrapper */}
-            <div
-              className={`desc-wrap ${isDescOpen ? "open" : ""}`}
-              id="descWrap"
-            >
+            <div className={`desc-wrap ${open ? "open" : ""}`}>
               <div className="desc" id="descPanel">
-                <div
-                  className="desc-in"
-                  dangerouslySetInnerHTML={{ __html: description }}
-                />
+                {typeof body === "string" ? (
+                  <div
+                    className="desc-in"
+                    dangerouslySetInnerHTML={{ __html: body }}
+                  />
+                ) : (
+                  <div className="desc-in">{body}</div>
+                )}
               </div>
             </div>
           </div>

@@ -9,6 +9,35 @@
    ============================================================ */
 
    @font-face {
+  font-family: "Noto Sans";
+  src: url("/fonts/NotoSans-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans";
+  src: url("/fonts/NotoSans-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans";
+  src: url("/fonts/NotoSans-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Noto Sans";
+  src: url("/fonts/NotoSans-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+   @font-face {
   font-family: 'Barlow Condensed';
   src: url('/fonts/barlow-condensed-v12-latin-600.woff2') format('woff2');
   font-weight: 600;
@@ -1044,25 +1073,6 @@ a.card:hover {
 }
 
 /* ================= HOME HERO ================= */
-.hero {
-  position: relative;
-  min-height: 360px;
-  display: flex;
-  align-items: flex-start;
-  overflow: hidden;
-  padding-top: 0;
-}
-
-.hero-in {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  margin: 0;
-  padding: 48px 0 16px clamp(18px, 4vw, 48px);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-}
 
 .hero-media {
   position: absolute;
@@ -3946,31 +3956,22 @@ table.data td.mono {
 
 /* ================= COLLAPSIBLE ANIMATION FIX ================= */
 /* Container toggles grid row height */
+/* ================= COLLAPSIBLE ================= */
 .collapsible {
   display: grid;
   grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease-out;
-  overflow: hidden; /* Prevents text from leaking out when height is 0 */
+  transition: grid-template-rows 0.25s var(--ease);
 }
 
-/* Expanded state */
 .collapsible.open {
   grid-template-rows: 1fr;
 }
 
-/* Inner wrapper enables smooth zero-height collapse */
-.collapsible-inner {
+.collapsible > .collapsible-inner {
   min-height: 0;
   overflow: hidden;
-  padding-top: 65px; /* Optional spacing inside the panel */
-}
-
-
-.collapsible > .collapsible-inner {
-  min-height: 0; /* <--- ADD THIS */
-  overflow: hidden;
   visibility: hidden;
-  transition: visibility 0s linear 0.2s;
+  transition: visibility 0s linear 0.25s;
 }
 
 .collapsible.open > .collapsible-inner {
@@ -3979,9 +3980,7 @@ table.data td.mono {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .collapsible {
-    transition: none;
-  }
+  .collapsible { transition: none; }
 }
 
 

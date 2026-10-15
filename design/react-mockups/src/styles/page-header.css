@@ -200,6 +200,9 @@
   padding-top: 0 !important;
 }
 
+.desc-in ul { margin: 12px 0; padding: 0; }
+
+.desc-in li { margin: 8px 0; }
 
 /* Description button */
 .desc-btn {
@@ -244,20 +247,7 @@
 
 /* Description panel - hidden by default. The panel (events, DescriptionModal) and the body inside
    components/PageHeader share one text style: one font, one size, one line height, one colour. */
-.desc-panel {
-  color: #b0b8c4;
-  font-size: 15px;
-  line-height: 1.6;
-  white-space: pre-line; /* Preserves the line breaks from your string */
-}
 
-/*.desc-panel p:nth-of-type(3),
-.desc-panel > *:nth-child(3) {
-  border-left: 3px solid #00d2ff;
-  padding-left: 12px;
-  margin: 20px 0;
-  color: #ffffff;
-}*/
 
 .callout-line {
   border-left: 3px solid #00d2ff;
@@ -270,61 +260,6 @@
 .desc-in p {
   border-left: none !important;
   padding-left: 0 !important;
-}
-
-/* 2. Target the Completeness Section Title */
-.desc-panel h4,
-.desc-panel > *:nth-child(4) {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  color: #8a96a3;
-  margin-top: 24px;
-  margin-bottom: 12px;
-  text-transform: uppercase;
-}
-
-.desc-panel,
-.desc-panel-body {
-  font-family: var(--font-sans, var(--sans));
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.6;
-  color: var(--mf-muted, rgba(255, 255, 255, 0.75));
-}
-
-.desc-panel p,
-.desc-panel-body p {
-  margin: 0 0 12px 0;
-  max-width: 940px;
-  font-size: 16px;
-  line-height: 1.75;
-  color: rgba(234,240,246,0.70);
-  font-weight: 500;
-}
-
-.desc-panel ul,
-.desc-panel-body ul {
-  margin: 12px 0;
-  padding: 0;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.desc-panel li,
-.desc-panel-body li {
-  margin: 8px 0;
-  font-size: 15px;
-  line-height: 1.75;
-}
-
-/* Expand panel when it has open class */
-.desc-panel.open {
-  max-height: 400px;
-  opacity: 1;
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top-color: rgba(255, 255, 255, 0.08);
 }
 
 .desc-legend {
