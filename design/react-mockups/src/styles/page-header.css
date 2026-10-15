@@ -24,6 +24,15 @@
   min-height: 600px;
 }
 
+/* --- NEW: Uniform Dark Overlay Layer --- */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5); /* Adjust opacity (0.4 to 0.6) to match your reference */
+  z-index: 1;
+  pointer-events: none;
+}
 /* Background layers */
 .hero-ph {
   position: absolute;
@@ -44,6 +53,12 @@
 
 .hero-ph.soft i {
   filter: blur(80px) opacity(0.5) saturate(1.2);
+}
+
+/* --- NEW: Ensure text content sits on top of the dark layer --- */
+.hero-in {
+  position: relative;
+  z-index: 2;
 }
 
 .scrim-x {
@@ -122,6 +137,48 @@
   width: fit-content;
 }
 
+/* Description Wrap Container (Grid-based smooth expand) */
+.desc-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+}
+
+.desc-wrap.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 16px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.desc {
+  overflow: hidden;
+}
+
+/* Inner content slides up from the bottom */
+.desc-in {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--mf-muted, rgba(255, 255, 255, 0.75));
+  transform: translateY(30px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desc-wrap.open .desc-in {
+  transform: translateY(0);
+}
+
+.desc-in p {
+  margin: 0 0 12px 0;
+  max-width: 680px;
+  color: inherit;
+}
 /* Description button */
 .desc-btn {
   display: inline-flex;
@@ -166,8 +223,43 @@
 /* Description panel - hidden by default. The panel (events, DescriptionModal) and the body inside
    components/PageHeader share one text style: one font, one size, one line height, one colour. */
 .desc-panel {
-  max-width: 680px; /* Limits width so it matches Image 2 */
-  margin-top: 12px;
+  color: #b0b8c4;
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-line; /* Preserves the line breaks from your string */
+}
+
+/*.desc-panel p:nth-of-type(3),
+.desc-panel > *:nth-child(3) {
+  border-left: 3px solid #00d2ff;
+  padding-left: 12px;
+  margin: 20px 0;
+  color: #ffffff;
+}*/
+
+.callout-line {
+  border-left: 3px solid #00d2ff;
+  padding-left: 12px;
+  margin: 20px 0;
+  color: #ffffff;
+}
+
+.descriptionBody p,
+.desc-in p {
+  border-left: none !important;
+  padding-left: 0 !important;
+}
+
+/* 2. Target the Completeness Section Title */
+.desc-panel h4,
+.desc-panel > *:nth-child(4) {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #8a96a3;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
 }
 
 .desc-panel,
@@ -212,6 +304,41 @@
   border-top-color: rgba(255, 255, 255, 0.08);
 }
 
+.desc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #d1d5db;
+  text-transform: uppercase;
+}
+
+/* Dot styles matching your exact color palette */
+.legend-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-planned { background-color: #7A8696; }
+.dot-processing { background-color: #5B9BE8; }
+.dot-acquired { background-color: #3FCF7F; }
+.dot-partial { background-color: #F0A63A; }
+.dot-unavailable { background-color: #E8514B; }
+
+
 /* Responsive */
 @media (max-width: 760px) {
   .hero {
@@ -223,10 +350,17 @@
     font-size: clamp(24px, 5vw, 40px);
   }
 
-  .lede {
-    font-size: clamp(14px, 1.8vw, 16px);
-    margin-bottom: 24px;
-  }
+  /* Subtitle / Lede Text */
+.lede {
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(14px, 1.6vw, 16px);
+  line-height: 1.5;
+  color: rgba(220, 226, 235, 0.75); /* Soft light grey */
+  margin: 12px 0 20px 0;
+  max-width: 680px;
+  font-weight: 400;
+  letter-spacing: -0.005em;
+}
 
   .descbar {
     margin-top: 24px;

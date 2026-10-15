@@ -184,6 +184,11 @@
   margin: 0.35rem 0;
 }
 
+.descriptionBody p,
+.desc-in p {
+  border-left: none !important;
+  padding-left: 0 !important;
+}
 /* ---------------- header ---------------- */
 
 /* Make horizontal dark overlay stronger */

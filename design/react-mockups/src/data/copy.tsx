@@ -9,19 +9,56 @@
    copy from a page that does not exist yet. */
 
 import Events from "@/pages/Events";
+import React from "react";
 
-export const AVAILABILITY_SUMMARY =
-  "";
+export const AVAILABILITY_SUMMARY = "";
 
-export const AVAILABILITY_DESCRIPTION =
-  "This page displays all datatakes from the past three months, including those scheduled up to 23:59:59 of the following day. " +
-  "For each datatake, key information is shown—such as the acquisition platform, sensor mode, acquisition status, and total " +
-  "publication completeness (expressed as a percentage)—with updates refreshed hourly. You can filter the records by mission " +
-  "and, optionally, by satellite. Alternatively, filtering by satellite alone is also possible. For Sentinel-5P, the satellite " +
-  "selector is disabled, as only one satellite is available. Additional filters include a custom date range (aligned with the " +
-  "time filter selected at the top of the page), as well as direct searches by datatake ID. Please note: the selected " +
-  '"from"-"to" time range applies to the start date of the datatakes.';
+export const AVAILABILITY_DESCRIPTION = (
+  <div className="availability-description">
+    <p>
+      This page displays all datatakes from the past three months, including
+      those scheduled up to 23:59:59 of the following day. For each datatake,
+      key information is shown—such as the acquisition platform, sensor mode,
+      acquisition status, and total publication completeness (expressed as a
+      percentage)—with updates refreshed hourly.
+    </p>
 
+    <p>
+      You can filter the records by mission and, optionally, by satellite.
+      Alternatively, filtering by satellite alone is also possible. For
+      Sentinel-5P, the satellite selector is disabled, as only one satellite is
+      available. Additional filters include a custom date range (aligned with
+      the time filter selected at the top of the page), as well as direct
+      searches by datatake ID.
+    </p>
+
+    <div className="callout-line">
+      <strong>Please note:</strong> the selected “from”–“to” time range applies
+      to the start date of the datatakes.
+    </div>
+
+    <div className="completeness-section">
+      <h4 className="completeness-title">COMPLETENESS</h4>
+      <div className="desc-legend" id="descLegend">
+        <div className="legend-item">
+          <span className="dot dot-planned"></span> PLANNED
+        </div>
+        <div className="legend-item">
+          <span className="dot dot-processing"></span> PROCESSING
+        </div>
+        <div className="legend-item">
+          <span className="dot dot-acquired"></span> ACQUIRED
+        </div>
+        <div className="legend-item">
+          <span className="dot dot-partial"></span> PARTIAL
+        </div>
+        <div className="legend-item">
+          <span className="dot dot-unavailable"></span> UNAVAILABLE
+        </div>
+      </div>
+    </div>
+  </div>
+);
 /* Events — the "Mission Manifest" calendar proposal: month grid plus the Day Manifest drawer. */
 export const EVENTS_DESCRIPTION =
   "This view shows the events occurred on a given date and the possible impact on user products completeness. Events are categorized according to the following issue types:\n" +
@@ -30,8 +67,10 @@ export const EVENTS_DESCRIPTION =
   "- Manoeuvre: issue occurred during the execution of a manoeuvre\n" +
   "- Production: issue occurred during data processing\n" +
   "- Satellite: issue due to instrument unavailability\n" +
-  "When an occurrence is clicked, the bottom panel shows a list of potentially impacted datatakes, determined by their sensing times, along with further details about the event. The impact on datatake completeness is represented by the right-side coloured circle. The \"green\" colour indicates that the total completeness is spared; \"orange\" is used in case of medium impact; the \"red\" colour is used when the datatake is lost.\n" +
-  "Events can be filtered by mission, event type, satellite name (e.g., 'Sentinel-1A'), or by entering a category of interest in the search box.";
+  "Clicking a star flies into that day and lists the datatakes it potentially impacted, determined " +
+  "by their sensing times, along with further details about the event. The impact on datatake completeness " +
+  "is given by the coloured dot beside each datatake: green when the total completeness is spared, orange in " +
+  "case of medium impact, red when the datatake is lost.\n";
 
 /* Events — the mission swimlanes (the /examples/events-swimlanes proposal). The top level is the
    fleet rather than time, so the description leads with the row and says what "active" means: the

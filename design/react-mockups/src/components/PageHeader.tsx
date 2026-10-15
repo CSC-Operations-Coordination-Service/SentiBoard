@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Collapse } from "./ui";
 import "../styles/page-header.css";
+import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 
 interface PageHeaderProps {
   title: string;
@@ -71,17 +72,18 @@ export default function PageHeader({
                 />
               </svg>
             </button>
-
-            {/* Collapse wrapper handles smooth height expansion */}
-            <Collapse open={isDescOpen} id="descPanel">
-              <div className="desc-panel-body" style={{ padding: "12px 0" }}>
-                {typeof description === "string" ? (
-                  <p>{description}</p>
-                ) : (
-                  description
-                )}
+            {/* Slide-up animation wrapper */}
+            <div
+              className={`desc-wrap ${isDescOpen ? "open" : ""}`}
+              id="descWrap"
+            >
+              <div className="desc" id="descPanel">
+                <div
+                  className="desc-in"
+                  dangerouslySetInnerHTML={{ __html: AVAILABILITY_DESCRIPTION }}
+                />
               </div>
-            </Collapse>
+            </div>
           </div>
         )}
       </div>

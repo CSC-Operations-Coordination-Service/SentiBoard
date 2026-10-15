@@ -23,6 +23,25 @@ const SATELLITE_IMAGES: Record<MissionId, string> = {
 const DESCRIPTION = (
   <>
     <p>{PROCESSORS_DESCRIPTION}</p>
+    <p>Select a release on the timeline to read its baseline notes.</p>
+    <div className="desc-legend" style={{ marginTop: "16px" }}>
+      <span className="legend-item">
+        <span
+          className="dot"
+          style={{ backgroundColor: "var(--ok, #3fe096)" }}
+          aria-hidden="true"
+        />
+        Current Baseline
+      </span>
+      <span className="legend-item">
+        <span
+          className="dot"
+          style={{ backgroundColor: "var(--text-mute, #7a8696)" }}
+          aria-hidden="true"
+        />
+        Superseded
+      </span>
+    </div>
   </>
 );
 
@@ -672,6 +691,7 @@ export default function Processors() {
       <div className={s.headArt}>
         <PageHeader
           title="Processors"
+          subtitle="The complete list of Copernicus Sentinel processor releases on an interactive timeline."
           desc={DESCRIPTION}
           img="/assets/img/modules/processors.jpg"
         />

@@ -829,17 +829,12 @@ export default function EventsManifest() {
         })}
       </ul>
       <p>
-        When an occurrence is clicked, the bottom panel shows a list of
-        potentially impacted datatakes, determined by their sensing times, along
-        with further details about the event. The impact on datatake
-        completeness is represented by the right-side coloured circle. The
-        "green" colour indicates that the total completeness is spared; "orange"
-        is used in case of medium impact; the "red" colour is used when the
+        Clicking a star flies into that day and lists the datatakes it
+        potentially impacted, determined by their sensing times, along with
+        further details about the event. The impact on datatake completeness is
+        given by the coloured dot beside each datatake: green when the total
+        completeness is spared, orange in case of medium impact, red when the
         datatake is lost.
-      </p>
-      <p>
-        Events can be filtered by mission, event type, satellite name (e.g.,
-        'Sentinel-1A'), or by entering a category of interest in the search box.
       </p>
     </>
   );
@@ -849,6 +844,7 @@ export default function EventsManifest() {
       <div className={s.headArt}>
         <PageHeader
           title="Events"
+          subtitle="Every occurrence across the constellation, mapped onto the datatakes it puts at risk. Pick a day to inspect its events, their origin and the completeness they cost."
           desc={DESCRIPTION}
           img="/assets/img/modules/events.jpg"
         />

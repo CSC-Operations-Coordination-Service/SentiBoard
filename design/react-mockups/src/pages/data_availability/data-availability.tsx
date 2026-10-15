@@ -466,6 +466,7 @@ export default function CoverageTimeline() {
       <div className={s.headArt}>
         <PageHeader
           title="Data Availability"
+          subtitle="Real-time list of available collections delivered by the missions, with key metrics."
           desc={<p>{AVAILABILITY_DESCRIPTION}</p>}
           img="/assets/img/modules/availability.jpg"
         />
