@@ -87,26 +87,15 @@ const RELEASES: RawRelease[] = [
   { mission: "S1", satellite_units: ["S1A"], target_ipfs: ["S1_L0:001.00"], validity_start_date: "18/01/2023", release_notes: "<p>First Level-0 baseline of the routine phase.</p>" },
   { mission: "S1", satellite_units: ["S1A", "S1C"], target_ipfs: ["S1_L0:001.02"], validity_start_date: "09/04/2024", release_notes: "<p>Annotation fixes for the extended orbit set.</p>" },
   { mission: "S1", satellite_units: ["S1A", "S1C", "S1D"], target_ipfs: ["S1_L0:001.03"], validity_start_date: "12/08/2025", release_notes: "<p>Improved downlink packet handling.</p>" },
-
   { mission: "S1", satellite_units: "S1A", target_ipfs: ["S1_L1L2:003.40"], validity_start_date: "06/09/2022", release_notes: "<p>Extended-timeliness SLC support; revised noise vectors for the wide-swath modes.</p>" },
-  // The two standing lines below recur across this processor's baselines, as they do in the real
-  // notes: every baseline restates its auxiliary-data and reprocessing position. They are the reason
-  // the "Version compare" proposal has anything to hold constant — a line diff of two baselines whose
-  // notes share nothing can only report "wholly rewritten", which is true but useless.
   { mission: "S1", satellite_units: "S1A", target_ipfs: ["S1_L1L2:003.52"], validity_start_date: "14/03/2023", release_notes: "<p>Radiometric calibration update for SLC and GRD. Azimuth geolocation corrected over high terrain.</p><p>Auxiliary data files are updated in step with this baseline.</p><p>No bulk reprocessing of the archive is planned.</p>" },
   { mission: "S1", satellite_units: "S1A, S1C", target_ipfs: ["S1_L1L2:003.61"], validity_start_date: "11/06/2024", release_notes: "<p>Revised OCN wind retrieval; DEM refresh.</p><p>Auxiliary data files are updated in step with this baseline.</p><p>No bulk reprocessing of the archive is planned.</p>" },
-  // A longer, multi-paragraph note with a bullet list — the release log is the concept that has to
-  // render these in full, so the fixture has to contain at least one of them.
   { mission: "S1", satellite_units: ["S1A", "S1C", "S1D"], target_ipfs: ["S1_L1L2:003.71"], validity_start_date: "16/06/2026", release_notes: "<p>Absolute geolocation improvement across SLC, GRD and OCN, and the first baseline to cover S1D alongside S1A and S1C.</p><ul><li>Thermal-noise removal reworked for the wide-swath modes; residual scalloping in EW sub-swath 1 reduced by roughly a factor of three.</li><li>Denoising vectors regenerated against the current instrument characterisation.</li><li>OCN wind retrieval now uses the updated GMF, changing wind speed by up to 0.3 m/s in the 4-12 m/s range.</li></ul><p>Products generated under 003.61 remain valid.</p><p>Auxiliary data files are updated in step with this baseline.</p>" },
-
-  // A release the feed carries no notes for at all — real, and reported as such rather than hidden.
   { mission: "S1", satellite_units: ["S1A"], target_ipfs: ["S1_SETAP:001.04"], validity_start_date: "05/09/2023", release_notes: "" },
   { mission: "S1", satellite_units: ["S1A", "S1C"], target_ipfs: ["S1_SETAP:001.06"], validity_start_date: "18/02/2025", release_notes: "<p>Auxiliary set-up parameter refresh.</p>" },
 
   // ---- Sentinel-2 ---------------------------------------------------------
   { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L0:06.03"], validity_start_date: "24/01/2023", release_notes: "" },
-  // One release, two target IPFs — the fan-out the real feed does for paired S2 packages. The log
-  // shows it as two entries on the same date, because it targets two processors.
   { mission: "S2", satellite_units: ["S2A", "S2B", "S2C"], target_ipfs: ["S2_L0:06.05", "S2_L1:06.05"], validity_start_date: "04/02/2026", release_notes: "<p>TLM marker in JP2K; antemeridian nodata fix.</p>" },
   { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L1:05.09"], validity_start_date: "24/01/2023", release_notes: "<p>Geometric refinement using the global reference image.</p>" },
   { mission: "S2", satellite_units: ["S2A", "S2B", "S2C"], target_ipfs: ["S2_L1:05.11"], validity_start_date: "11/03/2025", release_notes: "<p>Cloud mask and radiometric offset update.</p>" },
@@ -121,18 +110,27 @@ const RELEASES: RawRelease[] = [
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_06.10"], validity_start_date: "16/05/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_07.01"], validity_start_date: "24/09/2024", release_notes: "<p>Water and land colour retrieval aligned to the L1 characterisation.</p>" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_07.02"], validity_start_date: "02/06/2026", release_notes: "<p>Revised chlorophyll-a algorithm for Case-2 coastal and inland water. Open-ocean products agree with OL_07.01 to within 2%.</p>" },
-
   { mission: "S3", satellite_units: ["S3A"], target_ipfs: ["S3_SL1:SL_06.08"], validity_start_date: "11/07/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SL1:SL_07.00"], validity_start_date: "04/11/2025", release_notes: "<p>SLSTR geolocation and cloud flag improvements.</p>" },
   { mission: "S3", satellite_units: ["S3A"], target_ipfs: ["S3_SL2_LST:SL_06.08"], validity_start_date: "11/07/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SL2_LST:SL_07.00"], validity_start_date: "04/11/2025", release_notes: "<p>Land surface temperature split-window coefficients refreshed.</p>" },
-
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SR1:SR_06.20"], validity_start_date: "09/03/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SR1:SR_07.00"], validity_start_date: "21/01/2026", release_notes: "<p>SAR-mode retracking update for the altimeter.</p>" },
-  // S3_SR2 is deliberately absent from this list. It is on the roster below, so it is a processor
-  // with no baselines — "tracked, nothing published" — which the timeline shows as an empty lane,
-  // the matrix as an empty row, and the log by simply having no entries for it.
-
+// ---- Sentinel-3 (Additional Processors from Roster) ---------------------
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_PUG:03.02"], validity_start_date: "15/01/2023", release_notes: "<p>Updated Product User Guide detailing collection format specifications.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_L0:03.00"], validity_start_date: "16/05/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL1_RAC:07.01"], validity_start_date: "24/09/2024", release_notes: "<p>OLCI Radiometric Calibration auxiliary data baseline update aligned with L1 characterisation.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL1_SPC:07.00"], validity_start_date: "10/01/2024", release_notes: "<p>Spectral calibration refinement across all camera modules.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SL2:07.00"], validity_start_date: "04/11/2025", release_notes: "<p>SLSTR Land surface temperature and general vegetation parameters update.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SL2_FRP:07.00"], validity_start_date: "04/11/2025", release_notes: "<p>Fire Radiative Power dynamic detection threshold calibration.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SM2:06.10"], validity_start_date: "19/03/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SM2_LI:06.10"], validity_start_date: "19/03/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SM2_SI:06.10"], validity_start_date: "19/03/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_MW1:06.05"], validity_start_date: "11/02/2023", release_notes: "<p>Microwave radiometer wet troposospheric correction calibration.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2_AOD:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2_VGS:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2_VGP:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
   // ---- Sentinel-5P --------------------------------------------------------
   { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.01"], validity_start_date: "20/06/2023", release_notes: "" },
   { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.06"], validity_start_date: "25/02/2025", release_notes: "<p>Irradiance degradation correction extended to the full mission archive.</p>" },
