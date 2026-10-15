@@ -103,7 +103,7 @@ const RELEASES: RawRelease[] = [
   { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L2:05.09"], validity_start_date: "07/02/2023", release_notes: "<p>Sen2Cor 2.10 atmospheric correction.</p>" },
   { mission: "S2", satellite_units: ["S2A", "S2B", "S2C"], target_ipfs: ["S2_L2:05.11"], validity_start_date: "11/03/2025", release_notes: "<p>Sen2Cor atmospheric correction update; aerosol optical thickness revised over bright surfaces.</p>" },
   { mission: "S2", satellite_units: ["S2A", "S2B", "S2C"], target_ipfs: ["S2_L2:06.05"], validity_start_date: "04/02/2026", release_notes: "<p>Sen2Cor 3.0 — a new aerosol inversion and a per-scene water-vapour retrieval.</p><ul><li>Surface reflectance over vegetated and urban targets agrees with 05.11 to within 0.005.</li><li>Bright-target scenes (desert, salt flat, fresh snow) change by up to 0.02 in the blue bands.</li></ul>" },
-
+  { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_EUP:05.09"], validity_start_date: "07/02/2023", release_notes: "<p>End User Product packaging update for format consistency.</p>" },
   // ---- Sentinel-3 ---------------------------------------------------------
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL1:OL_06.10"], validity_start_date: "16/05/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL1:OL_07.01"], validity_start_date: "24/09/2024", release_notes: "<p>OLCI radiometric characterisation update.</p>" },
