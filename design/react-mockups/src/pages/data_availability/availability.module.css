@@ -195,6 +195,16 @@
   padding-block: clamp(56px, 8vw, 120px);
 }
 
+.page {
+  position: relative;
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px); /* room for the planet */
+}
+
+.page > :not(:first-child) {
+  position: relative;
+  z-index: 1; /* content above the stars */
+}
+
 .mapScroll {
   overflow: visible;
 }
@@ -1421,4 +1431,13 @@
   .inlineFocusWrap {
     margin-left: 0;
   }
+}
+
+/* Pull the content up into the header's faded bottom, as in SentiBoard.html:
+   cancel the spacer PageHeader leaves for the Description panel and drop the page's own top
+   padding. The Description panel still pushes everything down when it opens. */
+.headArt + .page {
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding-top: 0;
+  background: transparent; /* let the header photo show through behind the counters */
 }

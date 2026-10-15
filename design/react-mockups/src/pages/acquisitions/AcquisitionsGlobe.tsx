@@ -4,6 +4,8 @@ import { PageHeader, Reveal } from "@/components/ui";
 import AcquisitionGlobe from "@/components/AcquisitionGlobe";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
+import SpaceBackdrop from "@/components/SpaceBackdrop";
+
 import {
   AmbientSky,
   MotionToggle,
@@ -55,7 +57,7 @@ export default function AcquisitionsGlobe() {
             } as any
           }
         >
-          <AmbientSky />
+          <SpaceBackdrop page={1} paused={motion.paused} />
 
           {/* Cross-link to the second Acquisitions concept. The two answer different questions —
               this one is the geographic reading, the ladder is the pipeline reading — so they are

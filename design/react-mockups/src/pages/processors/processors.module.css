@@ -1241,3 +1241,23 @@
     rgba(3, 5, 10, 0.12) 100%
   );
 }
+
+.headArt + .container {
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  background: transparent;
+}
+
+.headArt + .container .stats {
+  padding-top: 22px;
+}
+
+/* the drifting stars fade in over the photo instead of starting on a hard edge */
+.headArt + .container .skyStrip {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
+}
+
+/* room under the content for the planet, as on Data Availability */
+.container {
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
+}

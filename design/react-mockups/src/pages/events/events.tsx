@@ -59,6 +59,7 @@ import {
   ambientRoot,
   useAmbientMotion,
 } from "@/components/ambient-motion";
+import SpaceBackdrop from "@/components/SpaceBackdrop";
 
 /* ---------- sky ----------
  * The sign's constellation sits in a column to the left of the calendar, not behind it. The grid
@@ -1000,7 +1001,7 @@ export default function EventsManifest() {
       </div>
 
       <div className={ambientRoot(motion.paused, s.page)}>
-        <AmbientSky />
+        <SpaceBackdrop page={1} paused={motion.paused} />
         <div className={s.inner}>
           {/* ---------- key metrics ---------- */}
           <div className={s.metrics} aria-label="Summary for the month">

@@ -19,6 +19,13 @@ import {
   type ReleaseRecord,
 } from "@/data/processor-releases";
 import s from "./processors.module.css";
+import {
+  AmbientSky,
+  MotionToggle,
+  ambientRoot,
+  useAmbientMotion,
+} from "@/components/ambient-motion";
+import SpaceBackdrop from "@/components/SpaceBackdrop";
 
 // Map mission IDs to satellite image paths
 const SATELLITE_IMAGES: Record<MissionId, string> = {
@@ -1011,6 +1018,7 @@ export default function Processors() {
       </div>
 
       <section className={`${s.container} ${motionPaused ? s.paused : ""}`}>
+        <SpaceBackdrop page={1} paused={motionPaused} />
         {/* Decorative starfield that loops behind the page. Purely visual, so it is hidden from AT. */}
         <div className={s.skyStrip} aria-hidden="true">
           <div className={s.skyTrack}>

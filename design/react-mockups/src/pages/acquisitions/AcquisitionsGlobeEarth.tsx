@@ -10,6 +10,7 @@ import {
   ambientRoot,
   useAmbientMotion,
 } from "@/components/ambient-motion";
+import SpaceBackdrop from "@/components/SpaceBackdrop";
 
 const D = Math.PI / 180;
 
@@ -703,7 +704,7 @@ export default function AcquisitionsGlobeEarthPage() {
         position: "relative",
       }}
     >
-      <AmbientSky />
+      <SpaceBackdrop page={1} paused={motion.paused} />
       <PageHeader
         title="Acquisitions Status"
         subtitle="Past, current and planned Sentinel acquisitions on an interactive 3D globe."

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import "../styles/page-header.css";
 
 interface PageHeaderProps {
@@ -29,11 +29,61 @@ export default function PageHeader({
   const btnRef = useRef<HTMLButtonElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const descRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  const innRef = useRef<HTMLDivElement>(null);
+  const afterRef = useRef<HTMLDivElement>(null);
 
   const bg = backgroundImage || img;
   const lede = subtitle || sub;
   const body = description ?? desc;
   const photo = bg ? { backgroundImage: `url(${bg})` } : undefined;
+
+  // Same rule as SentiBoard.html: the title block sits in the middle of the space between the top of the
+  // hero (under the menu) and the line where the content below starts rising over it. The block is
+  // measured as if its sentence took two lines, so the title lands at the same height on every page.
+  useLayoutEffect(() => {
+    const hero = heroRef.current;
+    const inn = innRef.current;
+    const after = afterRef.current;
+    if (!hero || !inn || !after) return;
+
+    const place = () => {
+      if (window.innerWidth <= 640) {
+        inn.style.removeProperty("--hero-top");
+        return;
+      }
+      const h1 = inn.querySelector<HTMLElement>(".hero-title");
+      const ledeEl = inn.querySelector<HTMLElement>(".lede");
+      const bar = inn.querySelector<HTMLElement>(".descbar");
+      if (!h1) return;
+
+      const gap = parseFloat(getComputedStyle(inn).rowGap) || 0;
+      let h = h1.offsetHeight;
+      if (ledeEl) {
+        const ls = getComputedStyle(ledeEl);
+        const lh = parseFloat(ls.lineHeight) || parseFloat(ls.fontSize) * 1.6;
+        h += gap + 2 * lh;
+      }
+      if (bar) {
+        h +=
+          gap +
+          (parseFloat(getComputedStyle(bar).marginTop) || 0) +
+          bar.offsetHeight;
+      }
+
+      // where the content below begins (the hero's height minus the overlap)
+      const skyTop =
+        after.getBoundingClientRect().top - hero.getBoundingClientRect().top;
+      const top = Math.max(12, Math.round((skyTop - h) / 2));
+      inn.style.setProperty("--hero-top", `${top}px`);
+    };
+
+    place();
+    const ro = new ResizeObserver(place);
+    ro.observe(hero);
+    document.fonts?.ready.then(place);
+    return () => ro.disconnect();
+  }, [title, lede, body]);
 
   // Same rule as the HTML: measured while closed (the button never moves), the panel is pulled up so
   // the first line of text opens 40–56px under the button, whatever the viewport.
@@ -57,7 +107,7 @@ export default function PageHeader({
 
   return (
     <>
-      <section className="hero">
+      <section className="hero" ref={heroRef}>
         <div className="hero-ph sharp">
           <i style={photo} />
         </div>
@@ -68,7 +118,7 @@ export default function PageHeader({
         <div className="scrim-y" />
         <div className="hero-blend" />
 
-        <div className="hero-in">
+        <div className="hero-in" ref={innRef}>
           {crumb && <div className="breadcrumb">{crumb}</div>}
           <h1 className="hero-title">{title}</h1>
           {lede && <p className="lede">{lede}</p>}
@@ -103,7 +153,7 @@ export default function PageHeader({
         </div>
       </section>
 
-      <div className="hero-after">
+      <div className="hero-after" ref={afterRef}>
         {body && (
           <div ref={wrapRef} className={`desc-wrap ${open ? "open" : ""}`}>
             <div

@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
+import SpaceBackdrop from "@/components/SpaceBackdrop";
+
 import {
   CalendarDays,
   ChevronLeft,
@@ -412,7 +414,7 @@ export default function CoverageTimeline() {
       </div>
 
       <section className={ambientRoot(motion.paused, s.page)}>
-        <AmbientSky />
+        <SpaceBackdrop page={1} paused={motion.paused} />
         {/* ---------------- counters ---------------- */}
         <Reveal className={s.counters}>
           <div className={s.counter}>

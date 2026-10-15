@@ -1904,3 +1904,12 @@ select.control {
   mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.6) 50px, rgba(0,0,0,.95) 110px, #000 160px);
 }
 .headArt + .page > .inner { position: relative; z-index: 1; }
+
+/* Pull the content up into the header's faded bottom, as in SentiBoard.html:
+   cancel the spacer PageHeader leaves for the Description panel and drop the page's own top
+   padding. The Description panel still pushes everything down when it opens. */
+.headArt + .page {
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding-top: 0;
+  background: transparent; /* let the header photo show through behind the counters */
+}
