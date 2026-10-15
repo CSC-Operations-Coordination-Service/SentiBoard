@@ -59,6 +59,20 @@
 .hero-in {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* Adjust top/bottom padding to match your desired height */
+  padding: clamp(32px, 6vh, 64px) clamp(18px, 4vw, 48px);
+}
+
+.hero-in h1 {
+  margin: 0 0 12px 0; /* Tightens space right below the main title */
+}
+
+.hero-in .lede {
+  margin: 0 0 24px 0; /* Controls the exact distance between the subtitle text and the description button */
+  max-width: 680px;
 }
 
 .scrim-x {
@@ -95,7 +109,7 @@
 
 
 .breadcrumb {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -106,7 +120,7 @@
 
 /* Hero Title */
 .hero-title {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
   font-size: clamp(28px, 4.5vw, 48px);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -121,7 +135,7 @@
 .lede {
   font-size: clamp(13px, 1.8vw, 16px);
   line-height: 1.4;
-  color: rgba(238, 241, 246, 0.8);
+  color: #93A0B0; 
   margin: 8px 0 0 0;
   max-width: 700px;
   font-weight: 400;
@@ -133,7 +147,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-top: 12px;
+  margin-top: 30px;
   width: fit-content;
 }
 
@@ -150,9 +164,9 @@
 .desc-wrap.open {
   grid-template-rows: 1fr;
   opacity: 1;
-  margin-top: 16px;
-  padding-top: 4px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none;
 }
 
 .desc {
@@ -162,12 +176,13 @@
 /* Inner content slides up from the bottom */
 .desc-in {
   font-family: var(--font-sans, var(--sans));
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.6;
   color: var(--mf-muted, rgba(255, 255, 255, 0.75));
   transform: translateY(30px);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding-top: 4px;
 }
 
 .desc-wrap.open .desc-in {
@@ -179,6 +194,13 @@
   max-width: 680px;
   color: inherit;
 }
+
+.desc-in p:first-child {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+
 /* Description button */
 .desc-btn {
   display: inline-flex;
@@ -190,7 +212,7 @@
   border-bottom: 1px solid transparent;
   border-radius: 0;
   color: rgba(154, 164, 180, 1);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -224,7 +246,7 @@
    components/PageHeader share one text style: one font, one size, one line height, one colour. */
 .desc-panel {
   color: #b0b8c4;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.6;
   white-space: pre-line; /* Preserves the line breaks from your string */
 }
@@ -253,7 +275,7 @@
 /* 2. Target the Completeness Section Title */
 .desc-panel h4,
 .desc-panel > *:nth-child(4) {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1.5px;
   color: #8a96a3;
@@ -265,7 +287,7 @@
 .desc-panel,
 .desc-panel-body {
   font-family: var(--font-sans, var(--sans));
-  font-size: 13.5px;
+  font-size: 15px;
   font-weight: 400;
   line-height: 1.6;
   color: var(--mf-muted, rgba(255, 255, 255, 0.75));
@@ -274,25 +296,26 @@
 .desc-panel p,
 .desc-panel-body p {
   margin: 0 0 12px 0;
-  max-width: 680px;
-  font-size: 13.5px;
-  line-height: 1.6;
-  color: inherit;
+  max-width: 940px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: rgba(234,240,246,0.70);
+  font-weight: 500;
 }
 
 .desc-panel ul,
 .desc-panel-body ul {
   margin: 12px 0;
   padding: 0;
-  font-size: 13.5px;
+  font-size: 15px;
   line-height: 1.6;
 }
 
 .desc-panel li,
 .desc-panel-body li {
   margin: 8px 0;
-  font-size: 13.5px;
-  line-height: 1.6;
+  font-size: 15px;
+  line-height: 1.75;
 }
 
 /* Expand panel when it has open class */
@@ -352,10 +375,10 @@
 
   /* Subtitle / Lede Text */
 .lede {
-  font-family: var(--font-sans, var(--sans));
+  font-family: var(--font-sans);
   font-size: clamp(14px, 1.6vw, 16px);
-  line-height: 1.5;
-  color: rgba(220, 226, 235, 0.75); /* Soft light grey */
+  line-height: 1.6;
+  color: #93A0B0; /* Soft light grey */
   margin: 12px 0 20px 0;
   max-width: 680px;
   font-weight: 400;

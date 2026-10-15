@@ -19,6 +19,7 @@ import {
   type TransitionEvent,
 } from "react";
 import { Link } from "react-router-dom";
+import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import {
@@ -754,6 +755,40 @@ export default function EventsManifest() {
     return () => window.removeEventListener("keydown", onKey);
   }, [openDay, close]);
 
+  // While the drawer is open the page behind it must not move at all. Overflow is cleared on the
+  // root and the body, with the scrollbar's width padded back in so the layout does not shift. Wheel
+  // and touch gestures are cancelled everywhere except inside the drawer's own scrolling list, and
+  // that list is set to contain its scroll so it cannot chain the gesture through to the page.
+  const drawerOpen = openDay !== null;
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const { documentElement: html, body } = document;
+    const prev = {
+      html: html.style.overflow,
+      body: body.style.overflow,
+      pad: body.style.paddingRight,
+    };
+    const gutter = window.innerWidth - html.clientWidth;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    if (gutter > 0) body.style.paddingRight = `${gutter}px`;
+
+    const freeze = (e: Event) => {
+      const inList =
+        e.target instanceof Element && e.target.closest(`.${s.drawerBody}`);
+      if (!inList) e.preventDefault();
+    };
+    window.addEventListener("wheel", freeze, { passive: false });
+    window.addEventListener("touchmove", freeze, { passive: false });
+    return () => {
+      window.removeEventListener("wheel", freeze);
+      window.removeEventListener("touchmove", freeze);
+      html.style.overflow = prev.html;
+      body.style.overflow = prev.body;
+      body.style.paddingRight = prev.pad;
+    };
+  }, [drawerOpen]);
+
   const dayEvents = panelDay?.events ?? [];
 
   const toggleAllExpanded = useCallback(() => {
@@ -1084,100 +1119,111 @@ export default function EventsManifest() {
         </div>
 
         {/* ---------- Day Manifest drawer ---------- */}
-        {/* The scrim is a button rather than a div with onClick: click-to-dismiss then comes with
+        {/* Portalled to <body>: .page is an isolated stacking context, so inside it the drawer's
+          z-index could not rise above the sticky nav, which then cut off the top of the header. */}
+        {createPortal(
+          <>
+            {/* The scrim is a button rather than a div with onClick: click-to-dismiss then comes with
           keyboard access for free, and screen readers announce it instead of finding a bare
           clickable region. */}
-        <button
-          type="button"
-          className={`${s.scrim} ${openDay !== null ? s.scrimOn : ""}`}
-          onClick={close}
-          tabIndex={openDay !== null ? 0 : -1}
-          aria-label="Close day manifest"
-        />
+            <button
+              type="button"
+              className={`${s.scrim} ${openDay !== null ? s.scrimOn : ""}`}
+              onClick={close}
+              tabIndex={openDay !== null ? 0 : -1}
+              aria-label="Close day manifest"
+            />
 
-        <aside
-          className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
-          aria-label="Day manifest"
-          aria-hidden={openDay === null}
-          onTransitionEnd={onPanelTransitionEnd}
-        >
-          {panelDay !== null && (
-            <>
-              <div className={s.drawerHead}>
-                <div>
-                  <span className={s.detailEyebrow}>Selected day</span>
-                  <h2 className={s.detailDay}>
-                    {dayHeading(panelDay.day, panelDay.month)}
-                  </h2>
-                  <DaySummary events={dayEvents} />
-                  <StatusPills events={dayEvents} />
-                </div>
-                <div
-                  style={{ display: "flex", gap: "8px", alignItems: "center" }}
-                >
-                  <button
-                    type="button"
-                    className={s.expandAllBtn}
-                    onClick={toggleAllExpanded}
-                    title={
-                      expanded.size === dayEvents.length
-                        ? "Collapse all events"
-                        : "Expand all events"
-                    }
-                  >
-                    {expanded.size === dayEvents.length
-                      ? "Collapse All"
-                      : "Expand All"}
-                  </button>
-                  <button
-                    type="button"
-                    className={s.iconBtn}
-                    onClick={close}
-                    aria-label="Close"
-                  >
-                    <X size={15} aria-hidden />
-                  </button>
-                </div>
-              </div>
-              <div className={s.drawerBody}>
-                <OccurrenceList
-                  events={dayEvents}
-                  expanded={expanded}
-                  onToggle={(id) =>
-                    setExpanded((prev) => {
-                      const newSet = new Set(prev);
-                      if (newSet.has(id)) {
-                        newSet.delete(id);
-                      } else {
-                        newSet.add(id);
+            <aside
+              className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
+              aria-label="Day manifest"
+              aria-hidden={openDay === null}
+              onTransitionEnd={onPanelTransitionEnd}
+            >
+              {panelDay !== null && (
+                <>
+                  <div className={s.drawerHead}>
+                    <div>
+                      <span className={s.detailEyebrow}>Selected day</span>
+                      <h2 className={s.detailDay}>
+                        {dayHeading(panelDay.day, panelDay.month)}
+                      </h2>
+                      <DaySummary events={dayEvents} />
+                      <StatusPills events={dayEvents} />
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "8px",
+                        alignItems: "center",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className={s.expandAllBtn}
+                        onClick={toggleAllExpanded}
+                        title={
+                          expanded.size === dayEvents.length
+                            ? "Collapse all events"
+                            : "Expand all events"
+                        }
+                      >
+                        {expanded.size === dayEvents.length
+                          ? "Collapse All"
+                          : "Expand All"}
+                      </button>
+                      <button
+                        type="button"
+                        className={s.iconBtn}
+                        onClick={close}
+                        aria-label="Close"
+                      >
+                        <X size={15} aria-hidden />
+                      </button>
+                    </div>
+                  </div>
+                  <div className={s.drawerBody}>
+                    <OccurrenceList
+                      events={dayEvents}
+                      expanded={expanded}
+                      onToggle={(id) =>
+                        setExpanded((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(id)) {
+                            newSet.delete(id);
+                          } else {
+                            newSet.add(id);
+                          }
+                          return newSet;
+                        })
                       }
-                      return newSet;
-                    })
-                  }
-                />
-              </div>
-              <footer className={s.drawerFoot}>
-                <button
-                  type="button"
-                  className={s.footBtn}
-                  onClick={() =>
-                    exportDay(panelDay.day, panelDay.month, dayEvents)
-                  }
-                  disabled={dayEvents.length === 0}
-                >
-                  Export JSON
-                </button>
-                <button
-                  type="button"
-                  className={`${s.footBtn} ${s.footPrimary}`}
-                  onClick={close}
-                >
-                  Close
-                </button>
-              </footer>
-            </>
-          )}
-        </aside>
+                    />
+                  </div>
+                  <footer className={s.drawerFoot}>
+                    <button
+                      type="button"
+                      className={s.footBtn}
+                      onClick={() =>
+                        exportDay(panelDay.day, panelDay.month, dayEvents)
+                      }
+                      disabled={dayEvents.length === 0}
+                    >
+                      Export JSON
+                    </button>
+                    <button
+                      type="button"
+                      className={`${s.footBtn} ${s.footPrimary}`}
+                      onClick={close}
+                    >
+                      Close
+                    </button>
+                  </footer>
+                </>
+              )}
+            </aside>
+          </>,
+          document.body,
+        )}
       </div>
     </>
   );

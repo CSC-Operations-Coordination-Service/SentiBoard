@@ -288,7 +288,7 @@ export function PageHeader({
             </button>
 
             <Collapse open={descOpen} id="descPanel">
-              <div className="desc-panel" style={{ maxWidth: "680px" }}>
+              <div className="desc-panel">
                 {typeof displayDesc === "string" ? (
                   <p>{displayDesc}</p>
                 ) : (

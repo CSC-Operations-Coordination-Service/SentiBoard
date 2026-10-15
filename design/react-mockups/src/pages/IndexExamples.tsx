@@ -241,7 +241,7 @@ export function IndexFleet() {
       </section>
 
       {/* Chatbot Widget */}
-      <ChatbotWidget />
+      {/* <ChatbotWidget /> */}
     </>
   );
 }
@@ -294,7 +294,7 @@ export function IndexGallery() {
       </section>
 
       {/* Chatbot Widget */}
-      <ChatbotWidget />
+      {/*  <ChatbotWidget /> */}
     </>
   );
 }
@@ -550,7 +550,7 @@ export function IndexReveal() {
       </section>
 
       {/* Chatbot Widget */}
-      <ChatbotWidget />
+      {/*  <ChatbotWidget /> */}
     </>
   );
 }
@@ -1389,9 +1389,7 @@ export function Index1() {
                       {section.icon}
                     </svg>
                   </span>
-                  <span
-                    style={{ flex: 1, textAlign: "left" }}
-                  >
+                  <span style={{ flex: 1, textAlign: "left" }}>
                     {section.title}
                   </span>
                   <svg
@@ -1479,7 +1477,7 @@ export function Index1() {
       </section>
 
       {/* Chatbot Widget */}
-      <ChatbotWidget />
+      {/* <ChatbotWidget /> */}
     </>
   );
 }

@@ -44,13 +44,13 @@ export default function PageHeader({
         {subtitle && <p className="lede">{subtitle}</p>}
 
         {description && (
-          <div className="page-desc">
+          <div className="descbar">
             <button
               id="descBtn"
               type="button"
               aria-expanded={isDescOpen}
               aria-controls="descPanel"
-              className={`page-desc-head ${isDescOpen ? "open" : ""}`}
+              className={`desc-btn ${isDescOpen ? "open" : ""}`}
               onClick={() => setIsDescOpen((prev) => !prev)}
             >
               <span>Description</span>
@@ -60,10 +60,6 @@ export default function PageHeader({
                 viewBox="0 0 16 16"
                 fill="none"
                 aria-hidden="true"
-                style={{
-                  transform: isDescOpen ? "rotate(180deg)" : "rotate(0deg)",
-                  transition: "transform 0.2s ease",
-                }}
               >
                 <path
                   d="M3 6l5 5 5-5"
@@ -80,7 +76,7 @@ export default function PageHeader({
               <div className="desc" id="descPanel">
                 <div
                   className="desc-in"
-                  dangerouslySetInnerHTML={{ __html: AVAILABILITY_DESCRIPTION }}
+                  dangerouslySetInnerHTML={{ __html: description }}
                 />
               </div>
             </div>
