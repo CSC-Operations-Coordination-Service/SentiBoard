@@ -1,41 +1,32 @@
-/* ============================================================
-   Data Availability proposal 3 — "Coverage timeline".
-   Every colour here resolves to the SHARED tokens (tokens.css), so this concept
-   follows the app's global dark/light switch exactly like the other two — there is
-   no palette of its own to keep in sync. The heatmap ramp is built with color-mix
-   over --cmp-unavailable / --cmp-partial / --cmp-acquired, which means the scale
-   re-weights itself for each theme without a second set of values.
-   ============================================================ */
-
 /* -------------------- counters -------------------- */
-/* Flat stats: no box, no border, no fill. Each figure sits centred above its label, on the page. */
+/* Flat stats, centred as one group: 220px per figure, value above label, all in Noto Sans. */
 .counters {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  margin-bottom: 24px;
+  padding: 22px 0 16px;
   background: none;
   border: 0;
 }
 
 .counter {
+  flex: 0 0 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 0;
-  background: none;
-  border: 0;
+  gap: 6px;
   text-align: center;
 }
 
 .counterK {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 10.5px;
   font-weight: 500;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: rgba(255, 255, 255, 0.72);
 }
 
 .counterV {
@@ -44,7 +35,7 @@
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
-  color: var(--text);
+  color: #eaf0f6;
 }
 
 .counterV.warn {
@@ -52,7 +43,7 @@
 }
 
 .counterV.crit {
-  color: var(--cmp-unavailable);
+  color: #e8514b;
 }
 
 /* -------------------- trend chips -------------------- */
@@ -195,72 +186,6 @@
   color: var(--on-accent);
 }
 
-.mapScroll {
-  overflow-x: auto;
-  overflow-y: visible;
-}
-
-.mapInner {
-  width: 100%;
-  min-width: 0;
-  padding: 16px 0;
-}
-
-.mapRow {
-  display: grid;
-  grid-template-columns: 104px 1fr;
-  align-items: start;
-  gap: 12px;
-  overflow: visible;
-}
-
-.mapRow + .mapRow {
-  margin-top: 10px;
-}
-
-/* The date axis is a grid with the same columns as the track, so each label sits under its own
-   day's column. A label may run past its column; it is never wrapped. */
-.axis {
-  position: relative;
-  height: 18px;
-  margin-top: 8px;
-  width: 100%;
-  border-top: 1px solid var(--line);
-}
-
-.axisTick {
-  position: absolute;
-  top: 4px;
-  transform: translateX(-50%);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-dim);
-  white-space: nowrap;
-}
-
-.mapLabel {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.mapLabel b {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.mapLabel span {
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  color: var(--text-mute);
-}
-
-/* Every datatake is one tile, and every tile is the same fixed size. The row is a plain flex line:
-   nothing stretches or merges, so a tile's width never depends on how many share its day. */
 /* The page spans the viewport, like the navbar: the same side padding, and no 1320px cap. */
 .page {
   width: 100%;
@@ -270,105 +195,135 @@
   padding-block: clamp(56px, 8vw, 120px);
 }
 
+.mapScroll {
+  overflow: visible;
+}
+
+.mapInner {
+  width: 100%;
+  min-width: 0;
+  padding: 16px 0;
+}
+
+/* ---------- one row per mission (SentiBoard.html#data-availability) ----------
+   The name on the left, the strip from 60px to the right edge, the date axis under it. */
+.mapRow {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  align-items: center;
+  overflow: visible;
+  transition: padding 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.mapRowContainer + .mapRowContainer .mapRow {
+  margin-top: clamp(40px, 7vh, 72px);
+}
+
+/* the zoomed row gets the room its strip needs above and below */
+.mapRowZoom {
+  padding-block: clamp(18px, 4vh, 40px);
+}
+
+.mapLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  /* level with the middle of the strip, not with the strip + axis */
+  margin-bottom: 26px;
+}
+
+.mapLabel b {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95);
+}
+
+.mapLabel span {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.45);
+}
+
 .lane {
   min-width: 0;
   width: 100%;
-  overflow: visible;
+  /* the magnified strip is cut at the lane's edges (no sideways scrollbar) but may grow up and down */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
-/* One column per calendar day, the same count in every row, so all four tracks fill the same width
-   and line up by date. The columns share the width, so the window never scrolls sideways. */
+/* ---------- the strip ----------
+   Every bar sits at its own position (left %, centred on it) and is 76%/bars wide, between 3px and
+   30px, so a row of 96 and a row of 12 have the same rhythm. Clicking one magnifies the whole strip
+   1.9x around it; the way back runs the mirrored curve. */
 .track {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: flex-end;
-  gap: 2px;
-  width: 100%;
-  height: 60px; /* Elevated height for vertical headroom on selection */
   position: relative;
-  transition: height 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.trackFocused {
-  height: 170px; /* Expands the row height to fit the 76px selected tile plus padding */
-}
-
-.trackFocused .tile {
-  height: 120px !important;
-  transform-origin: bottom center;
-  transition: height 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.trackFocused .tileSelected {
-  z-index: 10 !important;
-  transform: scaleX(1.3) scaleY(1.2) !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.6), 0 0 32px rgba(255, 255, 255, 0.2) !important;
-  outline: none;
-}
-/* 1D / 24H specific track: space tiles evenly across full width without stretching them fat */
-.trackDay {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  height: 52px;
   width: 100%;
-  gap: 0;
-  overflow: visible;
+  height: clamp(34px, 7.6vh, 87px);
+  transform-origin: 0 50%;
+  transition: transform 700ms cubic-bezier(0.8, 0, 0.8, 0.3);
 }
 
-.trackDay.trackFocused {
-  height: 120px !important;
+.trackZoom {
+  transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-/* A day's summary tile: fills its column and is 52px tall. An idle day uses the same size. */
+.trackNone {
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
 .tile {
-  flex: 1 1 0%;
-  min-width: 0;
-  height: 52px;
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  width: clamp(3px, var(--tw), 30px);
+  height: 100%;
   box-sizing: border-box;
   padding: 0;
-  border: 0;
+  border: 1px solid #eaf0f6;
   border-radius: 1px;
   background: var(--c);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   cursor: pointer;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-              height 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  z-index: 1;
-}
-
-/* In 1D mode, keep tiles as slender fixed pillars (~14px to 18px wide max) */
-.trackDay .tile {
- position: absolute;
-  top: 0;
-  width: 16px;
-  max-width: 16px;
-  height: 52px;
   transform: translateX(-50%);
-  border-radius: 1px;
+  transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 200ms ease;
+  animation: tileIn 420ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
-/* Selected Tile Zoom Effect */
-.tileSelected {
-  height: 100px !important;
-  top: -35px !important;
-  position: relative !important;
-  z-index: 10 !important;
-  transform: scaleX(2.5) scaleY(2.2) !important;
-  border: 3px solid #ffffff !important;
-  box-shadow: 0 0 24px rgba(255, 255, 255, 0.8), 0 0 48px rgba(255, 255, 255, 0.4) !important;
-  outline: none;
+@keyframes tileIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scaleY(0.4); }
+  to { opacity: 1; transform: translateX(-50%); }
 }
 
 .tile:hover {
-  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--text) 16%, transparent);
+  z-index: 3;
+  transform: translateX(-50%) scale(1.12, 1.16);
 }
 
-.tileOn {
-  box-shadow: inset 0 0 0 999px color-mix(in srgb, var(--text) 30%, transparent);
+/* the picked bar: a white ring and a little lift, on top of the strip's zoom */
+.tileSelected,
+.tileSelected:hover {
+  z-index: 4;
+  transform: translateX(-50%) scale(1.16, 1.2);
+  box-shadow: 0 0 0 1.5px #fff, 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* while a bar is picked, every other bar steps back */
+.tileFaded {
+  opacity: 0.5;
 }
 
 .tile:focus-visible {
@@ -376,72 +331,64 @@
   outline-offset: 1px;
 }
 
-/* A datatake the filters have set aside: it keeps its slot, but fades so the matches stand out. */
+/* A datatake the filters have set aside: it keeps its place, but fades so the matches stand out. */
 .tileDim {
   opacity: 0.18;
 }
 
-/* A slot with no datatake: a muted grey tile of the same size as an active one. */
-.tileIdle {
-  background: var(--cmp-planned);
-  opacity: 0.35;
-  cursor: default;
-}
-
-.trackDay .tileIdle {
-   display: none;
-}
-
-.trackDay .tileSelected {
-  position: absolute !important;
-  bottom: 0 !important;
-  top: auto !important;
-  height: 96px !important;
-  width: 16px !important;
-  z-index: 10 !important;
-  transform-origin: bottom center !important;
-  transform: translateX(-50%) !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7), 0 0 40px rgba(255, 255, 255, 0.25) !important;
-  outline: none;
-}
-
-.trackWeek {
+/* ---------- the date axis under each strip ---------- */
+.axis {
   position: relative;
-  display: flex;
-  align-items: flex-end;
-  height: 52px;
+  height: 18px;
+  margin-top: 12px;
   width: 100%;
-  gap: 0;
-  overflow: visible;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  transition: opacity 320ms ease;
 }
 
-.trackWeek.trackFocused {
-  height: 120px !important;
-}
-
-.trackWeek .tile {
+.axisTick {
   position: absolute;
-  top: 0;
-  width: 10px;
-  max-width: 10px;
-  height: 52px;
+  top: 5px;
   transform: translateX(-50%);
-  border-radius: 1px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(234, 240, 246, 0.6);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(6, 9, 13, 0.95);
 }
 
-.trackWeek .tileSelected {
-  position: absolute !important;
-  bottom: 0 !important;
-  top: auto !important;
-  height: 96px !important;
-  width: 10px !important;
-  z-index: 10 !important;
-  transform-origin: bottom center !important;
-  transform: translateX(-50%) !important;
-  border: 2px solid #ffffff !important;
-  box-shadow: 0 0 20px rgba(255, 255, 255, 0.7), 0 0 40px rgba(255, 255, 255, 0.25) !important;
-  outline: none;
+/* a small tick above each label */
+.axisTick::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 1px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.axisFirst { transform: none; }
+.axisFirst::before { left: 0; }
+.axisLast { transform: translateX(-100%); }
+.axisLast::before { left: auto; right: 0; }
+
+/* the zoomed row's date axis steps aside while its strip is magnified */
+.axisHidden {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .trackZoom,
+  .mapRow,
+  .tile {
+    transition: none;
+    animation: none;
+  }
 }
 
 .focusClear {
@@ -881,76 +828,76 @@
   color: var(--text-mute);
 }
 
-/* -------------------- filters: one toolbar row -------------------- */
-/* Left to right as the reference: the period heading and presets, the date pager, Mission, Status,
-   the search, and Reset pushed to the far right. On desktop the row never wraps: the fields shrink
-   to their floor instead. Below 1100px the groups wrap as whole units. Colours are shared tokens. */
+/* -------------------- filters: one toolbar row (SentiBoard.html) --------------------
+   One centred, wrapping row, 34px between items, everything 49px tall and in Noto Sans: the range
+   heading, 1D/7D/30D/Custom, the date pager, Mission, Status, the search and Reset. The two
+   .filterGroup wrappers are dissolved (display: contents) so every item shares the same gap. */
 .filters {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center; /* Centers the whole filter bar nicely */
-  gap: 36px;
-  margin-bottom: 22px;
-  overflow-x: auto;
+  justify-content: center;
+  gap: 2px 34px;
+  margin: 0 0 38px;
+  font-family: var(--font-sans);
+  color: #eaf0f6;
 }
 
 .filterGroup {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 20px;
-  min-width: 0;
+  display: contents;
 }
 
 .filterHeading {
   font-family: var(--font-sans);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 1;
+  line-height: 22px;
   text-transform: uppercase;
   white-space: nowrap;
-  color: #ffffff !important;
+  color: #eaf0f6;
 }
 
+/* 1D 7D 30D CUSTOM */
 .frange {
   display: flex;
+  align-items: center;
   gap: 18px;
 }
 
 .frange button {
-  min-height: 34px;
+  height: 49px;
   padding: 0 1px;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: none;
   cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--text-mute);
-  transition: color 0.2s var(--ease);
+  color: rgba(255, 255, 255, 0.72);
+  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 .frange button:hover {
-  color: var(--text);
+  color: #ffffff;
 }
 
 .frange button[aria-pressed="true"] {
-  color: var(--text);
-  border-bottom-color: var(--accent);
+  color: #ffffff;
+  border-bottom-color: #2fc6dc;
 }
 
-/* The pager: arrows either side of the window's two dates, and a calendar that opens the picker. */
+/* ‹  2026-08-20 → 2026-09-19 📅  › */
 .pager {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  height: 49px;
   white-space: nowrap;
 }
 
@@ -958,18 +905,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
+  width: 30px;
   height: 34px;
   padding: 0;
   border: 0;
+  border-radius: 2px;
   background: none;
   cursor: pointer;
-  color: var(--text-mute);
-  transition: color 0.2s var(--ease);
+  color: #ffffff;
+  transition: color 0.16s ease, background 0.16s ease;
 }
 
 .pagerBtn:hover:not(:disabled) {
-  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .pagerBtn:disabled {
@@ -977,28 +925,34 @@
   cursor: default;
 }
 
-.dateBtn {
-  padding: 0;
-  border: 0;
+.plabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 190px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 2px;
   background: none;
   cursor: pointer;
-  white-space: nowrap;
   font-family: var(--font-sans);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
-  color: var(--text);
-  transition: color 0.2s var(--ease);
+  color: #eaf0f6;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
 }
 
-.dateBtn:hover {
-  color: var(--accent-2);
+.plabel svg {
+  opacity: 0.8;
 }
 
-.dateSep {
-  font-size: 12px;
-  color: var(--text-mute);
+.plabel:hover {
+  border-color: #2fc6dc;
+  background: rgba(47, 198, 220, 0.1);
 }
 
 .hiddenDate {
@@ -1011,12 +965,13 @@
   pointer-events: none;
 }
 
-/* Mission and Status: an underlined field that opens its list in place. */
+/* Mission and Status: an underlined 176px field whose list drops over the page */
 .fdrop {
+  position: relative;
   display: flex;
-  flex: 0 1 168px;
   flex-direction: column;
-  min-width: 120px;
+  width: 176px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .fdropHead {
@@ -1024,181 +979,168 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  min-height: 44px;
+  height: 48px;
   padding: 0 2px;
   border: 0;
-  border-bottom: 1px solid var(--line);
   border-radius: 0;
   background: none;
   cursor: pointer;
-  color: var(--text);
+  color: #eaf0f6;
   text-align: left;
-  transition: border-color 0.2s var(--ease);
-}
-
-.fdropHead:hover,
-.fdropHead[aria-expanded="true"] {
-  border-bottom-color: var(--accent);
 }
 
 .fdropLabel {
   flex: 1;
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: #ffffff;
 }
 
 .fdropVal {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text);
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .fdropHead svg {
   flex-shrink: 0;
-  transition: transform 0.3s var(--ease);
+  color: rgba(234, 240, 246, 0.6);
+  transition: transform 0.3s ease;
 }
 
 .fdropHead[aria-expanded="true"] svg {
   transform: rotate(180deg);
 }
 
+.fdrop:hover,
+.fdrop:has(.fdropHead[aria-expanded="true"]) {
+  border-bottom-color: #2fc6dc;
+}
+
+/* the list opens over the content below, so the toolbar never jumps */
+.fdrop > :global(.collapsible) {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: rgba(9, 13, 18, 0.96);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+}
+
 .fdropInner {
-  padding: 12px 0 16px;
+  padding: 8px 10px 10px;
 }
 
 .fitem {
+  display: block;
   width: 100%;
-  min-height: 36px;
+  min-height: 34px;
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
   text-align: left;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--text-dim);
-  transition: color 0.2s var(--ease);
+  color: rgba(234, 240, 246, 0.66);
+  transition: color 0.2s ease;
 }
 
 .fitem:hover {
-  color: var(--text);
+  color: #ffffff;
 }
 
 .fitem[aria-pressed="true"] {
-  color: var(--accent-2);
+  color: #2fc6dc;
 }
 
+/* 🔍 Datatake ID */
 .fsearch {
   display: flex;
-  flex: 0 1 200px;
   align-items: center;
   gap: 9px;
-  min-width: 150px;
-  height: 44px;
+  width: 210px;
+  height: 49px;
   padding-bottom: 2px;
-  color: var(--text);
-  border-bottom: 1px solid var(--line);
-  transition: border-color 0.2s var(--ease);
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  transition: border-color 0.2s ease;
 }
 
 .fsearch:focus-within {
-  border-bottom-color: var(--accent);
+  border-bottom-color: #2fc6dc;
 }
 
 .fsearch input {
   flex: 1;
   min-width: 0;
-  padding: 0;
+  height: 100%;
+  padding: 1px 2px;
   border: 0;
   background: none;
   outline: none;
   font-family: var(--font-sans);
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
 }
 
 .fsearch input::placeholder {
-  color: var(--text);
+  color: #ffffff;
+  opacity: 1;
 }
 
 .freset {
-  flex-shrink: 0;
-  min-height: 44px;
-  padding: 0;
+  display: flex;
+  align-items: center;
+  height: 49px;
+  padding: 1px 6px;
   border: 0;
   background: none;
   cursor: pointer;
   font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text);
-  transition: color 0.2s var(--ease);
+  color: #ffffff;
+  transition: color 0.2s ease;
 }
 
 .freset:hover:not(:disabled) {
-  color: var(--accent-2);
+  color: #2fc6dc;
 }
 
+/* nothing to reset: same white as the reference, just not clickable */
 .freset:disabled {
-  color: var(--text-dim);
-  opacity: 0.6;
   cursor: default;
 }
 
-.fleet-card {
-  transition: transform 0.2s ease;
-}
-
-.fleet-card:active {
-  transform: scale(1.08); /* Grows when clicked/held */
-}
-
-@media (max-width: 1100px) {
-  .filters {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    overflow-x: visible;
-    gap: 16px 28px;
-  }
-
-  .filterGroup {
-    flex-wrap: wrap;
-    gap: 16px 26px;
-  }
-
-  .freset {
-    margin-left: auto;
-  }
-}
-
 @media (max-width: 700px) {
-  .filterGroup {
-    width: 100%;
-    gap: 14px 20px;
+  .filters {
+    justify-content: flex-start;
+    gap: 6px 22px;
   }
 
   .fdrop {
     flex: 1 1 140px;
-    min-width: 0;
+    width: auto;
   }
 
   .fsearch {
     flex: 1 1 100%;
-    min-width: 0;
-  }
-
-  .freset {
-    margin-left: 0;
+    width: auto;
   }
 }
 

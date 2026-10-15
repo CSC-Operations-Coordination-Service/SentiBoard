@@ -28,8 +28,11 @@ import {
   WINDOW,
   type Datatake,
   type Status,
+  axisTicks,
+  barColor,
   daysOf,
   daysSinceGap,
+  framesOf,
   fmtDate,
   fmtDateTime,
   isGap,
@@ -171,6 +174,9 @@ function modeSlices(rows: Datatake[]): Slice[] {
     }));
 }
 
+/** How much a row's strip is magnified around the picked bar — PICK_Z in SentiBoard.html. */
+const STRIP_ZOOM = 1.9;
+
 type TrendWindow = 7 | 30 | 90;
 type SortKey = "gap" | "recent" | "worst";
 
@@ -278,6 +284,9 @@ export default function CoverageTimeline() {
     item: Datatake;
   } | null>(null);
   const [selected, setSelected] = useState<DatatakeSummary | null>(null);
+  // Where each row's strip pivots when it zooms (px from the strip's left edge). Kept per row and
+  // never cleared, so a strip that is zooming back out keeps its pivot until it is flat again.
+  const [origins, setOrigins] = useState<Record<string, number>>({});
 
   const pinRange = useCallback((from: string, to: string) => {
     setDateFrom(from);
@@ -368,92 +377,22 @@ export default function CoverageTimeline() {
     ? Math.round(rows.reduce((n, r) => n + r.completeness, 0) / rows.length)
     : 0;
 
+  // One row per mission: its datatakes folded into at most FRAMES evenly spaced bars, and one shared
+  // set of date labels under every row — the layout of SentiBoard.html#data-availability.
+  const ticks = useMemo(() => axisTicks(days), [days]);
   const lanes = useMemo(
     () =>
       MISSION_NAMES.map((m) => {
         const own = inRange.filter((r) => r.mission === m);
-
-        let slots: Array<{
-          key: string;
-          date: Date;
-          item: Datatake | null;
-          slotIndex: number;
-          leftPct?: number;
-        }> = [];
-
-        let ticks: Array<{ key: string; index: number; label: string }> = [];
-
-        if (period === "day" || period === "week" || period === "custom") {
-          const startMs = range.from.getTime();
-          const totalMs = Math.max(1, days.length * DAY_MS);
-
-          slots = own.map((r, idx) => {
-            const offsetMs = r.start.getTime() - startMs;
-            const pct = Math.max(0, Math.min(100, (offsetMs / totalMs) * 100));
-            return {
-              key: `dt-${r.id}-${idx}`,
-              date: r.start,
-              item: r,
-              slotIndex: idx,
-              leftPct: pct,
-            };
-          });
-
-          days.forEach((d, dayIdx) => {
-            const tickMs = d.getTime();
-            const pct = Math.max(
-              0,
-              Math.min(100, ((tickMs - startMs) / totalMs) * 100),
-            );
-            const dateStr = `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`;
-            ticks.push({
-              key: `tick-${dayIdx}`,
-              index: pct,
-              label: dateStr,
-            });
-          });
-        } else {
-          const SLOTS_PER_DAY = 3;
-          const TICK_STEP = 6;
-
-          const byDay = new Map<string, Datatake[]>();
-          own.forEach((r) => {
-            const k = fmtDate(r.start);
-            byDay.set(k, [...(byDay.get(k) ?? []), r]);
-          });
-
-          days.forEach((d) => {
-            const key = fmtDate(d);
-            const dayItems = (byDay.get(key) ?? []).sort(
-              (a, b) => a.start.getTime() - b.start.getTime(),
-            );
-
-            for (let s = 0; s < SLOTS_PER_DAY; s++) {
-              slots.push({
-                key: `${key}-slot-${s}`,
-                date: d,
-                item: dayItems[s] ?? null,
-                slotIndex: s,
-              });
-            }
-          });
-
-          ticks = days
-            .map((d, dayIdx) => ({
-              key: fmtDate(d),
-              index: dayIdx * SLOTS_PER_DAY,
-              label: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}`,
-            }))
-            .filter((_, dayIdx) => dayIdx % TICK_STEP === 0);
-        }
-
-        const ownMean = own.length
+        const frames = framesOf(own);
+        const mean = own.length
           ? Math.round(own.reduce((n, r) => n + r.completeness, 0) / own.length)
           : 0;
-
-        return { mission: m, mean: ownMean, slots, ticks };
+        // Bar width: 76% of the strip shared by the bars, so ~24% is the gaps between them.
+        const tw = frames.length ? 76 / frames.length : 2;
+        return { mission: m, mean, frames, tw };
       }),
-    [inRange, days, period, range],
+    [inRange],
   );
 
   const matchingIds = useMemo(
@@ -522,28 +461,13 @@ export default function CoverageTimeline() {
               </button>
               <button
                 type="button"
-                className={s.dateBtn}
+                className={s.plabel}
+                title="Pick the days on a calendar"
                 onClick={() => fromPicker.current?.showPicker()}
               >
-                {fmtDate(range.from)}
-              </button>
-              <span className={s.dateSep} aria-hidden>
-                →
-              </span>
-              <button
-                type="button"
-                className={s.dateBtn}
-                onClick={() => toPicker.current?.showPicker()}
-              >
+                {fmtDate(range.from)} <span aria-hidden>→</span>{" "}
                 {fmtDate(range.to)}
-              </button>
-              <button
-                type="button"
-                className={s.pagerBtn}
-                aria-label="Pick the dates on a calendar"
-                onClick={() => fromPicker.current?.showPicker()}
-              >
-                <CalendarDays size={13} aria-hidden />
+                <CalendarDays size={12} aria-hidden />
               </button>
               <button
                 type="button"
@@ -680,49 +604,46 @@ export default function CoverageTimeline() {
               className={s.mapInner}
               style={{ ["--n" as string]: days.length }}
             >
-              {lanes.map(({ mission: m, mean: laneMean, slots, ticks }) => {
+              {lanes.map(({ mission: m, frames, tw }) => {
                 const isRowFocused = focus?.mission === m;
+                const zoomed = isRowFocused && focus?.item != null;
                 const activeItem = isRowFocused ? focus?.item : null;
                 const rowRows = isRowFocused && focus.item ? [focus.item] : [];
                 return (
                   <div className={s.mapRowContainer} key={m}>
-                    <div className={s.mapRow}>
+                    <div
+                      className={`${s.mapRow} ${zoomed ? s.mapRowZoom : ""}`}
+                    >
                       <div className={s.mapLabel}>
                         <b>{m.replace("Sentinel-", "S")}</b>
-                        <span>{laneMean}% MEAN</span>
                       </div>
 
                       <div className={s.lane}>
                         <div
-                          className={`${s.track} ${period === "day" ? s.trackDay : period === "week" || period === "custom" ? s.trackWeek : ""} ${isRowFocused ? s.trackFocused : ""}`}
-                          style={{ ["--total-slots" as string]: slots.length }}
+                          className={`${s.track} ${zoomed ? s.trackZoom : ""}`}
+                          style={{
+                            ["--tw" as string]: `${tw}%`,
+                            transformOrigin: `${origins[m] ?? 0}px 50%`,
+                            transform: zoomed
+                              ? `scale(${STRIP_ZOOM})`
+                              : undefined,
+                          }}
                         >
-                          {slots.map((slot: any) => {
-                            const { item, key, date, leftPct } = slot;
-
-                            if (!item) {
-                              if (
-                                period === "day" ||
-                                period === "week" ||
-                                period === "custom"
-                              )
-                                return null;
-                              return (
-                                <span
-                                  key={key}
-                                  className={`${s.tile} ${s.tileIdle}`}
-                                  aria-hidden
-                                />
-                              );
-                            }
-
+                          {frames.length === 0 && (
+                            <span className={s.trackNone}>
+                              No datatakes in range
+                            </span>
+                          )}
+                          {frames.map(({ item, n, leftPct }) => {
                             const on =
                               focus?.mission === m &&
                               focus?.item?.id === item.id;
                             const dim = !matchingIds.has(item.id);
+                            const faded = focus !== null && !on;
                             const cls = [
                               s.tile,
                               on ? s.tileSelected : "",
+                              faded ? s.tileFaded : "",
                               dim ? s.tileDim : "",
                             ]
                               .filter(Boolean)
@@ -730,54 +651,45 @@ export default function CoverageTimeline() {
 
                             return (
                               <button
-                                key={item.id ?? key}
+                                key={item.id}
                                 type="button"
                                 className={cls}
                                 style={{
-                                  ["--c" as string]:
-                                    STATUS_COLOR[item.status as Status],
-                                  ...((period === "day" ||
-                                    period === "week" ||
-                                    period === "custom") &&
-                                  leftPct !== undefined
-                                    ? { left: `${leftPct}%` }
-                                    : {}),
+                                  ["--c" as string]: barColor(item),
+                                  left: `${leftPct}%`,
                                 }}
-                                title={`${item.id} · ${m} · ${item.status}`}
-                                onClick={() =>
-                                  setFocus(
-                                    on
-                                      ? null
-                                      : {
-                                          mission: m,
-                                          key: fmtDate(date),
-                                          date,
-                                          item,
-                                        },
-                                  )
-                                }
+                                title={`${item.id} · ${item.status} · ${item.completeness}%${n > 1 ? ` (+${n - 1} more)` : ""}`}
+                                aria-label={item.id}
+                                onClick={(e) => {
+                                  if (on) {
+                                    setFocus(null); // zoom back out
+                                    return;
+                                  }
+                                  // Bars are centred on `left` by translateX(-50%), and offsetLeft
+                                  // ignores transforms: this is the bar's centre in the strip's own,
+                                  // unscaled coordinates, even when the strip is already zoomed.
+                                  const centre = e.currentTarget.offsetLeft;
+                                  setOrigins((o) => ({ ...o, [m]: centre }));
+                                  setFocus({
+                                    mission: m,
+                                    key: fmtDate(item.start),
+                                    date: item.start,
+                                    item,
+                                  });
+                                }}
                               />
                             );
                           })}
                         </div>
 
                         <div
-                          className={s.axis}
-                          style={{ ["--total-slots" as string]: slots.length }}
+                          className={`${s.axis} ${zoomed ? s.axisHidden : ""}`}
                         >
-                          {ticks.map((t: any) => (
+                          {ticks.map((t) => (
                             <span
-                              className={s.axisTick}
                               key={t.key}
-                              style={{
-                                ...(period === "day" ||
-                                period === "week" ||
-                                period === "custom"
-                                  ? { left: `${t.index}%` }
-                                  : {
-                                      left: `calc(${t.index} * (100% / var(--total-slots, 24)))`,
-                                    }),
-                              }}
+                              className={`${s.axisTick} ${t.edge === "first" ? s.axisFirst : t.edge === "last" ? s.axisLast : ""}`}
+                              style={{ left: `${t.pct}%` }}
                             >
                               {t.label}
                             </span>

@@ -1,12 +1,3 @@
-/* Data Availability proposal 3 — "Coverage timeline". Mock data and the aggregations the view
-   needs. Everything here is derived per DAY per MISSION, because that is the unit this concept
-   reads in: the other two proposals answer "what is the state right now", this one answers "where
-   did coverage break, and is it getting better or worse".
-
-   The generator matches the other proposals so the three are comparable: the same five
-   completeness states, the same three-month window plus the scheduled tail, and the same seeded
-   RNG, so the rows never reshuffle between renders. */
-
 import { makeDatatakeId } from "@/data/datatake-id";
 
 export type Status = "Planned" | "Processing" | "Acquired" | "Partial" | "Unavailable";
@@ -231,4 +222,75 @@ export function daysSinceGap(rows: Datatake[], mission: string, today: Date): nu
     .sort((a, b) => b.start.getTime() - a.start.getTime());
   if (!gaps.length) return null;
   return Math.floor((today.getTime() - gaps[0].start.getTime()) / DAY_MS);
+}
+
+// ---------------------------------------------------------------------------
+// Coverage strip — the bar colours of SentiBoard.html#data-availability
+// ---------------------------------------------------------------------------
+
+/** A bar's colour comes from its completeness band, not from its status: the strip answers "how
+ *  much of it arrived", so 85% and 99% read differently even though both are Partial/Acquired.
+ *  Planned and Processing have no final completeness yet, so they keep their state colour. */
+const BANDS: { min: number; color: string }[] = [
+  { min: 90, color: "#12E874" }, // 100–90  brilliant green
+  { min: 80, color: "#46B96A" }, //  90–80  quieter green
+  { min: 50, color: "#FFD01E" }, //  80–50  sun yellow
+  { min: 30, color: "#F0736B" }, //  49–30  light red
+  { min: 1, color: "#E8200F" }, //   30–1   fire red
+];
+const MISSING = "#8B98A6"; //          0     nothing published
+
+export function barColor(d: Datatake): string {
+  if (d.status === "Planned") return "#7A8696";
+  if (d.status === "Processing") return "#5B9BE8";
+  return BANDS.find((b) => d.completeness >= b.min)?.color ?? MISSING;
+}
+
+/** Bars per strip: the same rhythm in every row, whatever its density. */
+export const FRAMES = 96;
+
+export interface Frame {
+  /** The datatake the bar shows: the worst one in its group. */
+  item: Datatake;
+  /** How many datatakes the bar stands for (1 unless the row has more than FRAMES). */
+  n: number;
+  /** Centre of the bar along the strip, 0–100. */
+  leftPct: number;
+}
+
+/** A row's datatakes, oldest first, folded into at most FRAMES evenly spaced bars. When there are
+ *  more datatakes than bars, each bar holds a few and shows the one with the lowest completeness, so
+ *  a loss is never hidden behind a success. Not yet final (Planned/Processing) never wins. */
+export function framesOf(list: Datatake[]): Frame[] {
+  const sorted = [...list].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const nF = Math.min(sorted.length, FRAMES);
+  const rank = (d: Datatake) => (d.status === "Planned" || d.status === "Processing" ? 101 : d.completeness);
+  const frames: Frame[] = [];
+  for (let k = 0; k < nF; k++) {
+    const s0 = Math.floor((k * sorted.length) / nF);
+    const s1 = Math.floor(((k + 1) * sorted.length) / nF);
+    const grp = sorted.slice(s0, Math.max(s1, s0 + 1));
+    const item = grp.reduce((worst, d) => (rank(d) < rank(worst) ? d : worst));
+    frames.push({ item, n: grp.length, leftPct: ((k + 0.5) / nF) * 100 });
+  }
+  return frames;
+}
+
+/** The labels under each strip: evenly spaced over the window, the first flush left and the last
+ *  flush right. Windows of three days or less also show the hour. */
+export function axisTicks(days: Date[]) {
+  if (!days.length) return [];
+  const t0 = days[0].getTime();
+  const t1 = days[days.length - 1].getTime() + DAY_MS;
+  const short = days.length <= 3;
+  const n = short ? 4 : 5;
+  return Array.from({ length: n + 1 }, (_, k) => {
+    const d = new Date(t0 + ((t1 - t0) * k) / n);
+    return {
+      key: `tk-${k}`,
+      pct: (k / n) * 100,
+      edge: k === 0 ? "first" : k === n ? "last" : "",
+      label: `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}${short ? ` ${pad(d.getUTCHours())}:00` : ""}`,
+    };
+  });
 }
