@@ -38,6 +38,7 @@
   background-size: cover;
   background-position: 50% 45%;
   transform-origin: 50% 42%;
+  filter: brightness(0.7);
 }
 
 .hero-ph.sharp {
