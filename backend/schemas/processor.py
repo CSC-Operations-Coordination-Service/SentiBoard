@@ -1,10 +1,11 @@
 from pydantic import BaseModel
 
 from maas_model.schema_adapter import ApiDate
+from typing import Optional
 
 
 class Processor(BaseModel):
-    id: str
+    id: Optional[str] = None
     mission: str
     satellite_units: str
     target_ipfs: str

@@ -12,7 +12,7 @@ class AnomalyDatatakesCompleteness(BaseModel):
 
 
 class Anomaly(BaseModel):
-    id: str
+    id: Optional[str] = None
     key: str
     title: str
     text: str

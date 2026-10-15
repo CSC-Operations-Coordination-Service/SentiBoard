@@ -12,7 +12,7 @@ class NewsDatatakesCompleteness(BaseModel):
 
 
 class News(BaseModel):
-    id: str
+    id: Optional[str] = None
     title: str
     text: str
     link: str

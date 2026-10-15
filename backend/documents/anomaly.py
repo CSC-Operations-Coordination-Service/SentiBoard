@@ -4,7 +4,7 @@ DA0 classes generated from index templates.
 
 **DO NOT EDIT, ONLY INHERIT !**
 
-Generated date: 2026-10-12T15:35:44.896989+00:00
+Generated date: 2026-10-14T14:57:16.214050+00:00
 
 Generated from:
     - ../tests/fixtures/anomaly_template.json
