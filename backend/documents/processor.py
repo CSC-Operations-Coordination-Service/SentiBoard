@@ -4,7 +4,7 @@ DA0 classes generated from index templates.
 
 **DO NOT EDIT, ONLY INHERIT !**
 
-Generated date: 2026-10-14T14:57:18.600931+00:00
+Generated date: 2026-10-15T14:44:23.222644+00:00
 
 Generated from:
     - ../tests/fixtures/processor_template.json

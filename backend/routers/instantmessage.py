@@ -9,7 +9,7 @@ sibling MAASDocument via maas_model.schema_adapter.
 
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from maas_model.document_repository import (
     create_document,
@@ -27,9 +27,12 @@ router = APIRouter(prefix="/instantmessage", tags=["instantmessage"])
 
 
 @router.get("/", response_model=List[Instantmessage])
-def list_instantmessage() -> List[Instantmessage]:
+def list_instantmessage(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+) -> List[Instantmessage]:
     """List all Instantmessage resources."""
-    documents = list_documents(InstantmessageDocument)
+    documents = list_documents(InstantmessageDocument, offset=offset, limit=limit)
     return [document_to_schema(document, Instantmessage) for document in documents]
 
 

@@ -1,0 +1,3 @@
+# maas-model brings opensearch-py; [api] adds pydantic + fastapi.
+# Pinned to a commit: tag 3.0.0 predates the id/_id fix and list pagination.
+maas-model[api] @ git+https://github.com/CSC-Operations-Coordination-Service/maas-model.git@d90fc83e2d1b8c898027d94032779c18545e64c5

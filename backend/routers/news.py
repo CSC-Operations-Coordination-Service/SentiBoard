@@ -9,7 +9,7 @@ sibling MAASDocument via maas_model.schema_adapter.
 
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from maas_model.document_repository import (
     create_document,
@@ -27,9 +27,12 @@ router = APIRouter(prefix="/news", tags=["news"])
 
 
 @router.get("/", response_model=List[News])
-def list_news() -> List[News]:
+def list_news(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+) -> List[News]:
     """List all News resources."""
-    documents = list_documents(NewsDocument)
+    documents = list_documents(NewsDocument, offset=offset, limit=limit)
     return [document_to_schema(document, News) for document in documents]
 
 
