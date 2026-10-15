@@ -67,9 +67,6 @@
   animation-play-state: paused;
 }
 
-.paused .tlScroll::after {
-  display: none;
-}
 
 /* Headline counts. A definition list so each label stays paired with its value. */
 .stats {
@@ -371,27 +368,6 @@
   animation: satFloat 9s ease-in-out infinite;
 }
 
-/* Animation for rows appearing as you scroll down the page */
-@keyframes rowReveal {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.tlLane {
-  border-top: 1px solid var(--line);
-  display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
-  /* Triggers the fade/slide-in effect as each row enters the scroll viewport */
-  animation: rowReveal auto linear both;
-  animation-timeline: view();
-  animation-range: entry 0% cover 25%;
-}
 /* A slow vertical drift, so the satellite never sits perfectly still. */
 @keyframes satFloat {
   0%,
@@ -464,86 +440,6 @@
   font-style: italic;
   color: var(--text-mute);
 }
-/* Scroll container for both horizontal timeline navigation & vertical row scrolling */
-.tlScroll {
-  position: relative;
-  max-height: 380px;
-  margin-top: 8px;
-  overflow-x: auto;
-  overflow-y: auto;
-  
-  /* Firefox: Hidden by default, appears on hover */
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  overscroll-behavior-x: contain;
-  transition: scrollbar-color 0.25s ease;
-}
-
-.tlScroll:hover {
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-}
-
-.tlMask {
-  width: 100%;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 15%,
-    black 85%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 15%,
-    black 85%,
-    transparent 100%
-  );
-}
-/* WebKit scrollbar styling (Chrome, Safari, Edge) */
-.tlScroll::-webkit-scrollbar {
-  height: 4px;  /* Slim horizontal scrollbar height */
-  width: 0px;
-}
-
-.tlScroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.tlScroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
-}
-
-.tlScroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* Timeline inner container that triggers horizontal scrolling when wider than the screen */
-.tl {
-  min-width: 1054px; /* Matches your required chart layout width */
-  padding-right: 26px;
-}
-
-/* Scan band: a faint highlight that sweeps left to right and repeats. It is an overlay, so the
-   axis, the markers and the TODAY line never move. */
-.tlScroll::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -90px;
-  width: 90px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--accent) 12%, transparent),
-    transparent
-  );
-  pointer-events: none;
-  animation: tlScan 8s linear infinite;
-}
-
 .captionRow {
   display: flex;
   align-items: center;
@@ -582,165 +478,437 @@
   outline-offset: 2px;
 }
 
+/* ==================== release timeline (SentiBoard.html#processors) ====================
+   One chart, drawn with absolute positions like drawTimeline(): a 100px name column pinned to the
+   left, and a track where every release is a dot on its own row with a hairline STEM rising to the
+   month labels. Rows are 44px, 28px over 8 processors and 22px over 12, so a long roster still fits.
+   Everything is Noto Sans; colours are the reference's own. */
 .tl {
-  min-width: 620px;
-  padding-right: 26px;
-}
-
-/* Make the year/month header stay pinned at the top when scrolling vertically */
-/* Keeps the year/month header pinned at the top while scrolling vertically */
-.tlAxisRow {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  background: var(--bg);
-  display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
-  border-bottom: 1px solid var(--line-strong);
-}
-
-.tlAxisRow,
-.tlLane,
-.tlFoot {
-  display: grid;
-  grid-template-columns: 116px minmax(0, 1fr);
-}
-
-.tlAxis {
+  --tl-ink: #eaf0f6;
+  --tl-dim: #93a0b0;
+  --tl-faint: #6b7686;
+  --tl-accent: #2fc6dc;
+  --tl-inforce: #3fcf7f;
   position: relative;
-  height: 40px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  font-family: var(--font-sans);
+  text-shadow: 0 0 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.85);
 }
 
-/* Year labels sit above the month labels, both anchored to their tick line. */
-.tlYear,
-.tlMonth {
+.caption {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: rgba(234, 240, 246, 0.55);
+}
+
+/* Many processors: the list stops at a fixed height and fades out instead of ending on a hard edge,
+   as the reference fades its list 56px before the horizon. The rest scrolls up and down, and the
+   top edge fades too once rows have scrolled past it. Change --tl-max-h to show more or fewer rows.
+   The fade lengths are registered properties so they ease in and out instead of snapping. */
+@property --tl-fade-top {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --tl-fade-bottom {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.tlView {
+  --tl-max-h: clamp(260px, 42vh, 560px);
+  max-height: var(--tl-max-h);
+  margin-top: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scrollbar-width: none; /* wheel and touch scroll it; the fade is the cue that there is more */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--tl-fade-top),
+    #000 calc(100% - var(--tl-fade-bottom)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 var(--tl-fade-top),
+    #000 calc(100% - var(--tl-fade-bottom)),
+    transparent 100%
+  );
+  transition: --tl-fade-top 0.3s ease, --tl-fade-bottom 0.3s ease;
+}
+
+.tlView::-webkit-scrollbar {
+  display: none;
+}
+
+.fadeTop {
+  --tl-fade-top: 40px;
+}
+
+.fadeBottom {
+  --tl-fade-bottom: 56px;
+}
+
+/* Long windows are wider than the pane: the chart scrolls sideways under the pinned names. */
+.tlScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.tlScroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tlScroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 3px;
+}
+
+.tlScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tlChart {
+  position: relative;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  min-width: 600px;
+}
+
+/* ---- names ---- */
+.tlLabels {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: linear-gradient(to right, var(--bg, #000) 82%, transparent);
+}
+
+.tlLabels span {
   position: absolute;
-  padding-left: 4px;
+  left: 0;
+  width: 96px;
+  display: flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tl-dim);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s, opacity 0.3s;
 }
 
-.tlYear {
+.tlLabels span.on {
+  color: #fff;
+}
+
+/* ---- the track and its grid ---- */
+.tlTrack {
+  position: relative;
+  overflow: hidden;
+}
+
+.tlTrack i {
+  font-style: normal;
+}
+
+.g {
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.gYear {
   top: 0;
-  font-family: var(--font-mono);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.yl {
+  position: absolute;
+  top: 3px;
+  padding-left: 4px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: var(--text-dim);
+  color: var(--tl-dim);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
-.tlMonth {
-  top: 20px;
-  font-family: var(--font-mono);
+.ml {
+  position: absolute;
+  top: 24px;
+  padding-left: 4px;
   font-size: 9px;
   letter-spacing: 0.14em;
-  color: var(--text-mute);
-}
-
-.tlLane {
-  border-top: 1px solid var(--line);
-}
-
-.tlName {
-  display: flex;
-  align-items: center;
-  padding-right: 12px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text-dim);
-}
-
-.tlTrack {
-  position: relative;
-  height: 32px;
-}
-
-.tlGrid,
-.tlGridMajor {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
+  color: var(--tl-faint);
+  white-space: nowrap;
   pointer-events: none;
 }
 
-.tlGrid {
-  background: color-mix(in srgb, var(--line) 60%, transparent);
-}
-
-.tlGridMajor {
-  background: var(--line-strong);
-}
-
-/* TODAY: the line runs the full height of the track at today's position; the label sits in the
-   footer row, centred on the line, or right-aligned to it when it is near the window's end. */
-.tlToday {
+.rl {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--accent);
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
   pointer-events: none;
 }
 
-.tlFoot .tlTrack {
-  height: 26px;
+/* TODAY: starts under the month labels; its label sits below the last row, so it covers nothing */
+.today {
+  position: absolute;
+  top: 40px;
+  bottom: 22px;
+  width: 1px;
+  background: var(--tl-accent);
+  pointer-events: none;
 }
 
-.tlTodayLabel {
+.today b {
   position: absolute;
-  top: 6px;
+  left: 0;
+  top: calc(100% + 6px);
   transform: translateX(-50%);
-  font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--tl-accent);
   white-space: nowrap;
 }
 
-.tlTodayEnd {
+.todayEnd b {
   transform: translateX(-100%);
 }
 
-/* Release markers. Hollow for past baselines, filled with the status green for the one in force. */
+/* ---- releases ---- */
+.mkWrap {
+  display: contents;
+}
+
+/* the stem: a hairline from under the month labels down to its release */
+.stem {
+  position: absolute;
+  top: 40px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+
+/* flat dots: filled green = the baseline in force, grey ring = superseded */
 .mk {
   position: absolute;
-  top: 50%;
   z-index: 1;
   width: 13px;
   height: 13px;
   margin: -6.5px 0 0 -6.5px;
   padding: 0;
-  border: 1.5px solid var(--text-mute);
+  box-sizing: border-box;
+  border: 1.5px solid #7d8792;
   border-radius: 50%;
-  background: var(--bg);
+  background: #000;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s, border-color 0.2s;
 }
 
 .mk:hover {
+  border-color: #c3cad1;
   transform: scale(1.3);
-  border-color: var(--text-dim);
 }
 
 .mk:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--tl-accent);
   outline-offset: 3px;
 }
 
-.mkNow {
-  border-color: var(--ok);
-  background: var(--ok);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--ok) 50%, transparent);
+.mk:disabled {
+  cursor: default;
 }
 
+.mkNow {
+  background: var(--tl-inforce);
+  border-color: var(--tl-inforce);
+  box-shadow: 0 0 10px rgba(63, 207, 127, 0.45);
+}
+
+.mkNow:hover {
+  border-color: var(--tl-inforce);
+}
+
+/* the picked release: a black gap, a ring, and a soft halo */
 .mkSel {
   transform: scale(1.25);
-  box-shadow: 0 0 0 3px var(--bg), 0 0 0 4.5px var(--accent);
+  box-shadow: 0 0 0 4px #000, 0 0 0 5px #fff, 0 0 18px 6px rgba(255, 255, 255, 0.35);
+}
+
+.mkNow.mkSel {
+  box-shadow: 0 0 0 4px #000, 0 0 0 5px var(--tl-inforce), 0 0 18px 6px rgba(63, 207, 127, 0.55);
+}
+
+/* zoomed in: the version beside each dot */
+.vl {
+  position: absolute;
+  margin: -8px 0 0 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--tl-dim);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: vlIn 0.4s ease both;
+}
+
+.vlNow {
+  color: var(--tl-inforce);
+}
+
+@keyframes vlIn {
+  from { opacity: 0; }
+}
+
+/* zoomed in, the other processors step back */
+.dim {
+  opacity: 0.3;
+}
+
+/* Baseline = Current: superseded releases all but disappear and cannot be clicked */
+.off {
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* search: releases that do not match fade back */
+.faint {
+  opacity: 0.12;
+}
+
+/* ---- hover card (portalled to <body>, fixed to the window) ---- */
+.tip {
+  position: fixed;
+  z-index: 55;
+  width: 236px;
+  padding: 14px 16px 13px;
+  box-sizing: border-box;
+  background: rgba(9, 12, 16, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-sans);
+  color: #eaf0f6;
+  pointer-events: none;
+  /* anchored on the dot's centre: above it by default */
+  transform: translate(-50%, -100%);
+  animation: tipIn 0.18s ease both;
+}
+
+.tipBelow {
+  transform: translate(-50%, 0);
+}
+
+@keyframes tipIn {
+  from { opacity: 0; margin-top: 4px; }
+}
+
+.tip hr {
+  margin: 11px 0 9px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.ttTitle {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+.ttStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ttK {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.45);
+}
+
+.ttV {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #eaf0f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ttGo {
+  color: #19e27a;
+}
+
+.ttOld {
+  color: #93a0b0;
+}
+
+.ttRows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.ttRows dt {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.45);
+}
+
+.ttRows dd {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: rgba(234, 240, 246, 0.88);
+}
+
+.ttHint {
+  margin-top: 9px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2fc6dc;
 }
 
 /* Detail pane: collapsed to zero width until a release is open. */
@@ -1043,6 +1211,7 @@
   .detailOpen,
   .dtIn,
   .mk,
+  .stem,
   .step {
     animation: none;
     transition: none;
@@ -1054,9 +1223,6 @@
     animation: none;
   }
 
-  .tlScroll::after {
-    display: none;
-  }
 }
 
 /* The shared PageHeader draws its photo with global classes, so this wrapper scopes the overlay to

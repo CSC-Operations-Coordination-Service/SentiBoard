@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { createPortal } from "react-dom";
 import { PageHeader } from "@/components/ui";
 import { PROCESSORS_DESCRIPTION } from "@/data/copy";
 import {
@@ -82,12 +90,15 @@ interface GridLine {
   major: boolean;
 }
 
+/** A time window, [start, end] in ms. */
+type Win = [number, number];
+
 interface Axis {
   start: number;
   end: number;
   /** Percent position of TODAY along the track. */
   today: number;
-  /** Narrow windows keep a readable width; long ones scroll sideways. */
+  /** Long windows widen the chart (~6px a month) and scroll sideways. */
   minWidth: number;
   grid: GridLine[];
   months: Mark[];
@@ -98,7 +109,7 @@ interface Axis {
  * Window bounds, as the reference timeline draws them: from the quarter before the earliest
  * baseline (never later than Jan 2014) up to three months past today.
  */
-function timelineBounds(earliest: number, now: number): [number, number] {
+function timelineBounds(earliest: number, now: number): Win {
   const first = new Date(Math.min(earliest, Date.UTC(2014, 0, 1)));
   const today = new Date(now);
   const start = Date.UTC(
@@ -110,22 +121,96 @@ function timelineBounds(earliest: number, now: number): [number, number] {
   return [start, end];
 }
 
-/**
- * Window and ticks for the timeline. 1Y and 2Y start at the same month a year or two back; ALL
- * uses the full bounds. Tick density follows the window length: monthly labels up to 15 months,
- * every second month up to 28, quarterly up to 60, and yearly beyond that.
- */
-function buildAxis(range: Range, now: number, earliest: number): Axis {
-  const [boundsStart, end] = timelineBounds(earliest, now);
+/** 1Y and 2Y start on the same month one or two years back; ALL uses the full bounds. */
+function rangeWindow(range: Range, now: number, bounds: Win): Win {
+  if (range === "ALL") return bounds;
   const today = new Date(now);
-  const start =
-    range === "ALL"
-      ? boundsStart
-      : Date.UTC(
-          today.getUTCFullYear(),
-          today.getUTCMonth() - (range === "1Y" ? 12 : 24),
-          1,
-        );
+  return [
+    Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth() - (range === "1Y" ? 12 : 24),
+      1,
+    ),
+    bounds[1],
+  ];
+}
+
+function addMonths(ms: number, n: number): number {
+  const d = new Date(ms);
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, d.getUTCDate());
+}
+
+/** A picked release zooms the window to five months either side of it, slid back inside the
+ *  bounds when it would run past either end — zoomWin() in SentiBoard.html. */
+function zoomWindow(ms: number, bounds: Win): Win {
+  let t0 = addMonths(ms, -5);
+  let t1 = addMonths(ms, 5);
+  if (t0 < bounds[0]) {
+    t1 += bounds[0] - t0;
+    t0 = bounds[0];
+  }
+  if (t1 > bounds[1]) {
+    t0 -= t1 - bounds[1];
+    t1 = bounds[1];
+  }
+  return [t0, t1];
+}
+
+/**
+ * Glides the visible window to `target` like a camera: the centre moves on an ease-in-out curve
+ * and the WIDTH is interpolated logarithmically, so zooming from 12 years to 10 months feels as
+ * even as zooming back. 820ms, as in the reference. Returns the window to draw this frame and
+ * whether it is still moving (markers are not clickable mid-flight).
+ */
+function useAnimatedWindow(target: Win): [Win, boolean] {
+  const [win, setWin] = useState<Win>(target);
+  const [moving, setMoving] = useState(false);
+  const current = useRef<Win>(target);
+
+  useEffect(() => {
+    const [a0, a1] = current.current;
+    const [b0, b1] = target;
+    if (a0 === b0 && a1 === b1) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      current.current = target;
+      setWin(target);
+      return;
+    }
+    const c0 = (a0 + a1) / 2;
+    const c1 = (b0 + b1) / 2;
+    const w0 = a1 - a0;
+    const w1 = b1 - b0;
+    const t = performance.now();
+    const DUR = 820;
+    const ease = (k: number) =>
+      k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    let raf = 0;
+    setMoving(true);
+    const tick = (n: number) => {
+      const k = Math.min(1, (n - t) / DUR);
+      const e = ease(k);
+      const w = w0 * Math.pow(w1 / w0, e);
+      const c = c0 + (c1 - c0) * e;
+      const next: Win = k >= 1 ? target : [c - w / 2, c + w / 2];
+      current.current = next;
+      setWin(next);
+      if (k < 1) raf = requestAnimationFrame(tick);
+      else setMoving(false);
+    };
+    raf = requestAnimationFrame(tick);
+    // interrupted (a new target): the next run starts from wherever this one got to
+    return () => cancelAnimationFrame(raf);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target[0], target[1]]);
+
+  return [win, moving];
+}
+
+/**
+ * Ticks for a window. Density follows the window length: monthly labels up to 15 months, every
+ * second month up to 28, quarterly up to 60, and only the years beyond that.
+ */
+function buildAxis([start, end]: Win, now: number): Axis {
   const span = end - start;
   const months = span / MONTH_MS;
   const every = months <= 15 ? 1 : months <= 28 ? 2 : months <= 60 ? 3 : 12;
@@ -145,7 +230,7 @@ function buildAxis(range: Range, now: number, earliest: number): Axis {
     if (pct >= -1 && (m % every === 0 || isYear)) {
       grid.push({ pct, major: isYear });
       if (pct < 93 && every < 12) {
-        monthMarks.push({ pct, label: MONTHS[m].toUpperCase() });
+        monthMarks.push({ pct, label: MONTHS[m].slice(0, 3).toUpperCase() });
       }
     }
     if (pct >= -1 && pct < 95 && (isYear || firstYear)) {
@@ -163,7 +248,7 @@ function buildAxis(range: Range, now: number, earliest: number): Axis {
     start,
     end,
     today: at(now),
-    minWidth: Math.max(620, Math.round(116 + months * 6)),
+    minWidth: Math.max(600, Math.round(100 + months * 6)),
     grid,
     months: monthMarks,
     years: yearMarks,
@@ -173,18 +258,6 @@ function buildAxis(range: Range, now: number, earliest: number): Axis {
 /** "S1 SAR L1/L2" → "SAR L1/L2": the lane names drop the mission prefix the page already shows. */
 function laneName(label: string): string {
   return label.replace(/^S(?:1|2|3|5P)\s+/, "");
-}
-
-function matchesQuery(group: ProcessorGroup, query: string): boolean {
-  if (!query) return true;
-  const haystack = [
-    group.label,
-    group.sub,
-    ...group.releases.map((r) => r.baseline),
-  ]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query);
 }
 
 /** "5 February 2026" */
@@ -207,113 +280,339 @@ function baselineId(ms: number): string {
   return `${month} Release`;
 }
 
+/** "2026-02-05" */
+function isoDay(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+/** The tooltip's "Changes" line: the first two release-note headings, then "+ N more". */
+function changesOf(notes?: string): string {
+  if (!notes) return "—";
+  const heads = notes
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("•"))
+    .map((l) => {
+      const item = l.replace(/^•\s*/, "");
+      const colon = item.indexOf(": ");
+      return colon > 0 && colon < 60 ? item.slice(0, colon) : item;
+    });
+  if (!heads.length) {
+    const first = notes.trim().split("\n")[0];
+    return first.length > 90 ? `${first.slice(0, 88)}…` : first;
+  }
+  return (
+    heads.slice(0, 2).join(", ") +
+    (heads.length > 2 ? ` + ${heads.length - 2} more` : "")
+  );
+}
+
+interface Tip {
+  group: ProcessorGroup;
+  release: ReleaseRecord;
+  isCurrent: boolean;
+  isSelected: boolean;
+  /** Viewport position of the marker's centre, and where the card sits relative to it. */
+  x: number;
+  y: number;
+  below: boolean;
+}
+
 interface ReleaseTimelineProps {
   groups: ProcessorGroup[];
   axis: Axis;
   baselineFilter: BaselineFilter;
+  query: string;
   selected: Selection | null;
+  moving: boolean;
   onPick: (ipf: string, baseline: string) => void;
 }
+
+/* Row geometry, as drawTimeline() lays it out in SentiBoard.html. */
+const AXIS_TOP = 42; // rows start under the year + month labels
+const STEM_TOP = 40; // stems and TODAY start just under the month labels
+const FOOT = 26; // room under the last row for the TODAY label
 
 function ReleaseTimeline({
   groups,
   axis,
   baselineFilter,
+  query,
   selected,
+  moving,
   onPick,
 }: ReleaseTimelineProps) {
   const toPct = (ms: number) =>
     ((ms - axis.start) / (axis.end - axis.start)) * 100;
+  const scrollRef = useRef<HTMLDivElement>(null); // sideways scroll (long windows)
+  const viewRef = useRef<HTMLDivElement>(null); // up/down scroll (many processors)
+  const [tip, setTip] = useState<Tip | null>(null);
+  // Which edges of the list have more rows beyond them: those edges fade out, as the reference's
+  // list fades just above the horizon. No overflow, no fade.
+  const [fade, setFade] = useState({ top: false, bottom: false });
+  const updateFade = useCallback(() => {
+    const v = viewRef.current;
+    if (!v) return;
+    const top = v.scrollTop > 2;
+    const bottom = v.scrollTop + v.clientHeight < v.scrollHeight - 2;
+    setFade((f) =>
+      f.top === top && f.bottom === bottom ? f : { top, bottom },
+    );
+  }, []);
+
+  // Many rows (Sentinel-3) are drawn tighter, so the whole table stays in view.
+  const n = groups.length;
+  const rh = n > 12 ? 22 : n > 8 ? 28 : 44;
+  const H = AXIS_TOP + rh * n + FOOT;
+
+  const selRow = selected
+    ? groups.findIndex((g) => g.ipf === selected.ipf)
+    : -1;
+  const zoomed = selRow >= 0;
+
+  // Once the window has settled: overview → scrolled to the end (latest releases and TODAY in
+  // view); zoomed → the picked release in the middle.
+  useEffect(() => {
+    if (moving) return;
+    const sc = scrollRef.current;
+    if (!sc) return;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    sc.scrollTo({
+      left: (sc.scrollWidth - sc.clientWidth) * (zoomed ? 0.5 : 1),
+      behavior: reduce ? "auto" : "smooth",
+    });
+  }, [moving, zoomed, axis.minWidth]);
+
+  // Re-check the fades when the table changes size (mission, rows) or the window resizes.
+  useEffect(() => {
+    updateFade();
+    window.addEventListener("resize", updateFade);
+    return () => window.removeEventListener("resize", updateFade);
+  }, [updateFade, H]);
+
+  const showTip = (el: HTMLElement, t: Omit<Tip, "x" | "y" | "below">) => {
+    const box = scrollRef.current?.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    const half = 118; // half the card's 236px width
+    const x = Math.min(
+      Math.max(r.left + r.width / 2, (box?.left ?? 0) + half),
+      (box?.right ?? window.innerWidth) - half,
+    );
+    const below = r.top < 230; // no room above: open underneath
+    setTip({ ...t, x, y: below ? r.bottom + 12 : r.top - 12, below });
+  };
 
   return (
-    <div className={s.tlScroll}>
-      <div className={s.tl} style={{ minWidth: axis.minWidth }}>
-        <div className={s.tlAxisRow}>
-          <span />
-          <div className={s.tlAxis}>
-            {axis.years.map((t) => (
-              <span
-                key={`y${t.label}`}
-                className={s.tlYear}
-                style={{ left: `${t.pct}%` }}
-              >
-                {t.label}
-              </span>
-            ))}
-            {axis.months.map((t) => (
-              <span
-                key={`m${t.pct}`}
-                className={s.tlMonth}
-                style={{ left: `${t.pct}%` }}
-              >
-                {t.label}
-              </span>
-            ))}
-          </div>
-        </div>
+    <div className={s.tl}>
+      {/* Outer box: a capped height that scrolls up and down, with its edges fading out. Inner box:
+          the sideways scroll, so the names stay pinned and the fade never covers its scrollbar
+          until the bottom is reached. */}
+      <div
+        ref={viewRef}
+        className={`${s.tlView} ${fade.top ? s.fadeTop : ""} ${fade.bottom ? s.fadeBottom : ""}`}
+        onScroll={() => {
+          updateFade();
+          setTip(null);
+        }}
+      >
+        <div
+          className={s.tlScroll}
+          ref={scrollRef}
+          onScroll={() => setTip(null)}
+        >
+          <div className={s.tlChart} style={{ minWidth: axis.minWidth }}>
+            {/* names: pinned to the left while the chart scrolls under them */}
+            <div className={s.tlLabels} style={{ height: H }}>
+              {groups.map((g, i) => (
+                <span
+                  key={g.ipf}
+                  className={[
+                    zoomed && i === selRow ? s.on : "",
+                    zoomed && i !== selRow ? s.dim : "",
+                  ].join(" ")}
+                  style={{ top: AXIS_TOP + i * rh, height: rh }}
+                  title={g.label}
+                >
+                  {laneName(g.label)}
+                </span>
+              ))}
+            </div>
 
-        {groups.map((g) => {
-          const last = g.releases.length - 1;
-          const marks = g.releases
-            .map((r, i) => ({ r, isCurrent: i === last, x: toPct(r.ms) }))
-            .filter(
-              ({ x, isCurrent }) =>
-                x >= 0 && x <= 100 && (baselineFilter === "all" || isCurrent),
-            );
-
-          return (
-            <div key={g.ipf} className={s.tlLane}>
-              <span className={s.tlName}>{laneName(g.label)}</span>
-              <div className={s.tlTrack}>
-                {axis.grid.map((line) => (
-                  <i
-                    key={line.pct}
-                    className={line.major ? s.tlGridMajor : s.tlGrid}
-                    style={{ left: `${line.pct}%` }}
-                  />
-                ))}
-                {marks.map(({ r, isCurrent, x }) => {
-                  const isSelected =
-                    selected?.ipf === g.ipf && selected.baseline === r.baseline;
-                  return (
-                    <button
-                      key={r.baseline}
-                      type="button"
-                      className={[
-                        s.mk,
-                        isCurrent ? s.mkNow : "",
-                        isSelected ? s.mkSel : "",
-                      ].join(" ")}
-                      style={{ left: `${x}%` }}
-                      title={`${r.baseline} · ${r.day}${isCurrent ? " · in force" : ""}`}
-                      aria-label={`${laneName(g.label)} ${r.baseline}, released ${r.day}${isCurrent ? ", in force" : ""}`}
-                      aria-pressed={isSelected}
-                      onClick={() => onPick(g.ipf, r.baseline)}
-                    />
-                  );
-                })}
+            <div className={s.tlTrack} style={{ height: H }}>
+              {/* grid: year lines run the full height, month lines start under the year row */}
+              {axis.grid.map((line) => (
                 <i
-                  className={s.tlToday}
+                  key={`g${line.pct}`}
+                  className={`${s.g} ${line.major ? s.gYear : ""}`}
+                  style={{ left: `${line.pct}%` }}
+                />
+              ))}
+              {axis.years.map((t) => (
+                <span
+                  key={`y${t.label}`}
+                  className={s.yl}
+                  style={{ left: `${t.pct}%` }}
+                >
+                  {t.label}
+                </span>
+              ))}
+              {axis.months.map((t) => (
+                <span
+                  key={`m${t.pct}`}
+                  className={s.ml}
+                  style={{ left: `${t.pct}%` }}
+                >
+                  {t.label}
+                </span>
+              ))}
+
+              {/* one hairline between rows */}
+              {Array.from({ length: n + 1 }, (_, i) => (
+                <i
+                  key={`r${i}`}
+                  className={s.rl}
+                  style={{ top: AXIS_TOP + i * rh }}
+                />
+              ))}
+
+              {axis.today >= 0 && axis.today <= 100 && (
+                <i
+                  className={`${s.today} ${axis.today > 94 ? s.todayEnd : ""}`}
                   style={{ left: `${axis.today}%` }}
                   aria-hidden="true"
-                />
-              </div>
-            </div>
-          );
-        })}
+                >
+                  <b>Today</b>
+                </i>
+              )}
 
-        <div className={s.tlFoot}>
-          <span />
-          <div className={s.tlTrack}>
-            <span
-              className={`${s.tlTodayLabel} ${axis.today > 94 ? s.tlTodayEnd : ""}`}
-              style={{ left: `${axis.today}%` }}
-            >
-              Today
-            </span>
+              {groups.map((g, i) => {
+                const last = g.releases.length - 1;
+                const cy = AXIS_TOP + i * rh + rh / 2;
+                const rowDim = zoomed && i !== selRow;
+                const groupHit =
+                  !query || `${g.label} ${g.sub}`.toLowerCase().includes(query);
+
+                return g.releases.map((r, j) => {
+                  const x = toPct(r.ms);
+                  if (x < -2 || x > 102) return null;
+                  const isCurrent = j === last;
+                  const isSelected =
+                    selected?.ipf === g.ipf && selected.baseline === r.baseline;
+                  // Filters fade releases back instead of removing them, so the rows never jump.
+                  const off = baselineFilter === "current" && !isCurrent;
+                  const faint =
+                    !groupHit && !r.baseline.toLowerCase().includes(query);
+                  const state = [
+                    rowDim ? s.dim : "",
+                    off ? s.off : "",
+                    faint ? s.faint : "",
+                  ].join(" ");
+
+                  return (
+                    <span key={`${g.ipf}-${r.baseline}`} className={s.mkWrap}>
+                      {/* the stem: from under the axis down to the release, so every release can be
+                        read against the month labels */}
+                      <i
+                        className={`${s.stem} ${state}`}
+                        style={{ left: `${x}%`, height: cy - STEM_TOP }}
+                      />
+                      <button
+                        type="button"
+                        className={[
+                          s.mk,
+                          isCurrent ? s.mkNow : "",
+                          isSelected ? s.mkSel : "",
+                          state,
+                        ].join(" ")}
+                        style={{ left: `${x}%`, top: cy }}
+                        disabled={moving || off}
+                        aria-label={`${laneName(g.label)} ${r.baseline}, released ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
+                        aria-pressed={isSelected}
+                        onMouseEnter={(e) =>
+                          showTip(e.currentTarget, {
+                            group: g,
+                            release: r,
+                            isCurrent,
+                            isSelected,
+                          })
+                        }
+                        onFocus={(e) =>
+                          showTip(e.currentTarget, {
+                            group: g,
+                            release: r,
+                            isCurrent,
+                            isSelected,
+                          })
+                        }
+                        onMouseLeave={() => setTip(null)}
+                        onBlur={() => setTip(null)}
+                        onClick={() => {
+                          setTip(null);
+                          onPick(g.ipf, r.baseline);
+                        }}
+                      />
+                      {/* zoomed in, each release carries its version beside it */}
+                      {zoomed && (
+                        <span
+                          className={`${s.vl} ${isCurrent ? s.vlNow : ""} ${state}`}
+                          style={{ left: `${x}%`, top: cy }}
+                        >
+                          {r.baseline}
+                        </span>
+                      )}
+                    </span>
+                  );
+                });
+              })}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* The card lives on <body>, fixed to the window, so no mask or scroll box can clip it. */}
+      {tip &&
+        createPortal(
+          <div
+            className={`${s.tip} ${tip.below ? s.tipBelow : ""}`}
+            style={{ left: tip.x, top: tip.y }}
+            role="tooltip"
+          >
+            <div className={s.ttTitle}>{tip.group.label}</div>
+            <div className={s.ttStats}>
+              <div>
+                <span className={s.ttK}>Version</span>
+                <span className={`${s.ttV} ${tip.isCurrent ? s.ttGo : ""}`}>
+                  {tip.release.baseline}
+                </span>
+              </div>
+              <div>
+                <span className={s.ttK}>Status</span>
+                <span
+                  className={`${s.ttV} ${tip.isCurrent ? s.ttGo : s.ttOld}`}
+                >
+                  {tip.isCurrent ? "Current" : "Superseded"}
+                </span>
+              </div>
+            </div>
+            <hr />
+            <dl className={s.ttRows}>
+              <dt>Released</dt>
+              <dd>{isoDay(tip.release.ms)}</dd>
+              <dt>Satellites</dt>
+              <dd>{tip.release.sats.join(", ")}</dd>
+              <dt>Changes</dt>
+              <dd>{changesOf(tip.release.notes)}</dd>
+            </dl>
+            <div className={s.ttHint}>
+              {tip.isSelected
+                ? "Click to go back to the overview"
+                : "Click to zoom in and read the notes"}
+            </div>
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }
@@ -613,18 +912,32 @@ export default function Processors() {
     () => PROCESSOR_GROUPS.filter((g) => g.mission === activeMission),
     [activeMission],
   );
-  const visibleGroups = useMemo(
-    () => missionGroups.filter((g) => matchesQuery(g, normalisedQuery)),
-    [missionGroups, normalisedQuery],
-  );
-  const axis = useMemo(() => {
-    // Earliest baseline of the selected mission sets how far back the ALL window reaches.
+
+  // The window the timeline should show: the range (1Y/2Y/ALL), or — with a release picked — ten
+  // months around that release. useAnimatedWindow glides from one to the other.
+  const bounds = useMemo(() => {
     const earliest = missionGroups.reduce(
       (min, g) => g.releases.reduce((m, r) => Math.min(m, r.ms), min),
       now,
     );
-    return buildAxis(range, now, earliest);
-  }, [missionGroups, range, now]);
+    return timelineBounds(earliest, now);
+  }, [missionGroups, now]);
+  const pickedMs = useMemo(() => {
+    if (!selected) return null;
+    const g = missionGroups.find((x) => x.ipf === selected.ipf);
+    return (
+      g?.releases.find((r) => r.baseline === selected.baseline)?.ms ?? null
+    );
+  }, [selected, missionGroups]);
+  const target = useMemo<Win>(
+    () =>
+      pickedMs !== null
+        ? zoomWindow(pickedMs, bounds)
+        : rangeWindow(range, now, bounds),
+    [pickedMs, bounds, range, now],
+  );
+  const [win, moving] = useAnimatedWindow(target);
+  const axis = useMemo(() => buildAxis(win, now), [win, now]);
 
   // Keep the last selection while the pane slides shut, so its content does not vanish mid-motion.
   const lastSelected = useRef<Selection | null>(null);
@@ -736,7 +1049,10 @@ export default function Processors() {
                 type="button"
                 className={`${s.segBtn} ${range === r ? s.active : ""}`}
                 aria-pressed={range === r}
-                onClick={() => setRange(r)}
+                onClick={() => {
+                  setRange(r);
+                  setSelected(null); // a range always shows the overview
+                }}
               >
                 {r}
               </button>
@@ -807,16 +1123,19 @@ export default function Processors() {
               {MISSION_NAMES[activeMission]} processors
             </h2>
 
-            {visibleGroups.length > 0 ? (
+            <p className={s.caption}>Release timeline</p>
+            {missionGroups.length > 0 ? (
               <ReleaseTimeline
-                groups={visibleGroups}
+                groups={missionGroups}
                 axis={axis}
                 baselineFilter={baselineFilter}
+                query={normalisedQuery}
                 selected={selected}
+                moving={moving}
                 onPick={toggleRelease}
               />
             ) : (
-              <p className={s.none}>No processors match the search.</p>
+              <p className={s.none}>No processors for this mission.</p>
             )}
           </section>
 
