@@ -332,6 +332,7 @@ function renderDayIndicators(
   events: ManifestEvent[],
   isZoomed: boolean,
   onSelectDay: (day: number) => void,
+  onZoomOut: () => void,
   day: number,
 ) {
   if (events.length === 0) return null;
@@ -365,10 +366,10 @@ function renderDayIndicators(
             style={{ color }}
             onClick={(evt) => {
               evt.stopPropagation();
-              onSelectDay(day);
+              onZoomOut();
             }}
-            title={title}
-            aria-label={title}
+            title={`${title} · Back to the month`}
+            aria-label={`${title}. Back to the month`}
           >
             <Icon size={14} strokeWidth={CATEGORY_STROKE} aria-hidden />
           </button>
@@ -742,11 +743,6 @@ export default function EventsManifest() {
     () => calendarCells(YEAR, currentMonth),
     [currentMonth],
   );
-  // The zoom scales the grid about the selected day's own centre, so the day expands where it sits
-  // instead of jumping to the middle of the grid. The origin follows panelDay, which outlives the
-  // drawer's close, so the grid shrinks back about the same point rather than snapping.
-  // Center the zoom transformation on the selected day's cell coordinates
-  // Center the zoom transformation on the selected day's cell coordinates accurately
 
   const sign = SIGN_BY_MONTH[currentMonth - 1];
   const monthName = MONTH_NAMES[currentMonth - 1];
@@ -826,7 +822,7 @@ export default function EventsManifest() {
           data-row={pos.row}
         >
           <span className={s.cellNum}>{String(c.day).padStart(2, "0")}</span>
-          {renderDayIndicators(events, zoomed, selectDay, c.day)}
+          {renderDayIndicators(events, zoomed, selectDay, () => close(), c.day)}
         </div>
       );
     });

@@ -775,10 +775,6 @@ select.control {
   min-width: 0;
 }
 
-.calWrapZoomed {
-  max-width: 100% !important;
-  flex: 1 1 100% !important;
-}
 
 /* Restrict the outer row container as well */
 .calRow {
@@ -1076,30 +1072,6 @@ select.control {
   color: var(--mf-faint);
 }
 
-.backToMonthBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: auto !important;
-  height: auto !important;
-  padding: 4px 0 !important;
-  border: none !important;
-  background: transparent !important;
-  color: var(--mf-text) !important;
-  font-family: var(--font-mono, var(--mono));
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.backToMonthBtn:hover {
-  color: #ffffff !important;
-  border: none !important;
-  background: transparent !important;
-}
 
 /* ---------------- Option A: drawer ---------------- */
 /* The drawer and scrim are portalled to <body>, outside .page, so they cannot inherit the page's
@@ -1671,28 +1643,6 @@ select.control {
     flex: 0 0 44px;
   }
 
-  .monthNav button.backToMonthBtn {
-  width: auto;
-  height: auto;
-  padding: 4px 0;
-  border: none;
-  background: transparent;
-  color: var(--mf-text);
-  font-family: var(--font-mono, var(--mono));
-  font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.monthNav button.backToMonthBtn:hover {
-  color: #ffffff;
-  border: none;
-  background: transparent;
-  border-color: transparent;
-}
 
 .monthLabel {
     flex: 1;
