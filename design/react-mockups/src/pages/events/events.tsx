@@ -14,8 +14,8 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
-  type CSSProperties,
   type TransitionEvent,
 } from "react";
 import { Link } from "react-router-dom";
@@ -281,6 +281,39 @@ function dayHeading(day: number, month: number) {
   return `${String(day).padStart(2, "0")} ${MONTH_NAMES[month - 1].toUpperCase()} ${YEAR}`;
 }
 
+type ZoomGeom = {
+  left: number;
+  top: number;
+  width: number;
+  scale: number;
+  tx: number;
+  ty: number;
+};
+
+/** Where the zoomed grid copy starts (the real grid's viewport rect) and the translate/scale that
+ *  puts `day`'s cell in the middle of the area the drawer leaves free. transform-origin is 0 0, so
+ *  a local point p lands at left + tx + scale·p. */
+function measureZoom(grid: HTMLElement, day: number): ZoomGeom | null {
+  const cell = grid.querySelector<HTMLElement>(`[data-day="${day}"]`);
+  if (!cell) return null;
+  const g = grid.getBoundingClientRect();
+  const c = cell.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const drawerW = vw > 760 ? Math.min(440, vw * 0.92) : 0; // matches .drawer's width
+  const areaW = vw - drawerW;
+  const scale = Math.min((areaW * 0.42) / c.width, (vh * 0.62) / c.height);
+  const cx = c.left - g.left + c.width / 2;
+  const cy = c.top - g.top + c.height / 2;
+  return {
+    left: g.left,
+    top: g.top,
+    width: g.width,
+    scale,
+    tx: areaW / 2 - g.left - scale * cx,
+    ty: vh / 2 - g.top - scale * cy,
+  };
+}
 /** Where a cell sits in the sky grid: column 0–6, row, and its top-left in SVG units. */
 function skyCell(index: number) {
   const col = index % 7;
@@ -294,7 +327,13 @@ const MARKS_SHOWN = 4;
 
 /** The marks inside a day cell. Closed, one coloured dot per event; while a day is zoomed in
  *  (`isZoomed`), the same events as their type icons. Past MARKS_SHOWN the rest collapse to "+N". */
-function renderDayIndicators(events: ManifestEvent[], isZoomed: boolean) {
+/** The marks inside a day cell rendered as clickable buttons. */
+function renderDayIndicators(
+  events: ManifestEvent[],
+  isZoomed: boolean,
+  onSelectDay: (day: number) => void,
+  day: number,
+) {
   if (events.length === 0) return null;
   return (
     <span className={`${s.marks} ${isZoomed ? s.zoomedIn : ""}`}>
@@ -303,33 +342,54 @@ function renderDayIndicators(events: ManifestEvent[], isZoomed: boolean) {
         const title = `${e.time} · ${e.category} · ${e.satellite}`;
         if (!isZoomed) {
           return (
-            <span
+            <button
               key={e.id}
+              type="button"
               className={s.dotMark}
               style={{ backgroundColor: color }}
+              onClick={(evt) => {
+                evt.stopPropagation();
+                onSelectDay(day);
+              }}
               title={title}
+              aria-label={title}
             />
           );
         }
         const Icon = CATEGORY_ICONS[e.category];
         return (
-          <span
+          <button
             key={e.id}
+            type="button"
             className={s.iconMark}
             style={{ color }}
+            onClick={(evt) => {
+              evt.stopPropagation();
+              onSelectDay(day);
+            }}
             title={title}
+            aria-label={title}
           >
             <Icon size={14} strokeWidth={CATEGORY_STROKE} aria-hidden />
-          </span>
+          </button>
         );
       })}
       {events.length > MARKS_SHOWN && (
-        <em className={s.markMore}>+{events.length - MARKS_SHOWN}</em>
+        <button
+          type="button"
+          className={s.markMoreBtn}
+          onClick={(evt) => {
+            evt.stopPropagation();
+            onSelectDay(day);
+          }}
+          aria-label={`+${events.length - MARKS_SHOWN} more events`}
+        >
+          <em className={s.markMore}>+{events.length - MARKS_SHOWN}</em>
+        </button>
       )}
     </span>
   );
 }
-
 /** "1 acquisition, 1 production" — what the day's glyphs say, for the cell's aria-label. In
  *  CATEGORIES order rather than event order, so the same mix of types always reads the same way. */
 function typeSummary(events: ManifestEvent[]): string {
@@ -685,30 +745,13 @@ export default function EventsManifest() {
   // The zoom scales the grid about the selected day's own centre, so the day expands where it sits
   // instead of jumping to the middle of the grid. The origin follows panelDay, which outlives the
   // drawer's close, so the grid shrinks back about the same point rather than snapping.
-  const zoomStyle = useMemo<CSSProperties>(() => {
-    const i = panelDay
-      ? cells.findIndex((c) => !c.dim && c.day === panelDay.day)
-      : -1;
-    if (i < 0) return { transform: "none" };
-    const rows = Math.ceil(cells.length / 7);
-    const ox = (((i % 7) + 0.5) / 7) * 100;
-    const oy = ((Math.floor(i / 7) + 0.5) / rows) * 100;
-    return {
-      transformOrigin: `${ox.toFixed(2)}% ${oy.toFixed(2)}%`,
-      transform: openDay !== null ? "scale(1.6)" : "none",
-    };
-  }, [panelDay, openDay, cells]);
+  // Center the zoom transformation on the selected day's cell coordinates
+  // Center the zoom transformation on the selected day's cell coordinates accurately
 
   const sign = SIGN_BY_MONTH[currentMonth - 1];
   const monthName = MONTH_NAMES[currentMonth - 1];
   const canGoBack = currentMonth > 1;
   const canGoForward = currentMonth < 12;
-
-  // Moving month closes any open day: its manifest belongs to the month it was opened in.
-  const stepMonth = useCallback((delta: number) => {
-    setCurrentMonth((m) => Math.min(12, Math.max(1, m + delta)));
-    setOpenDay(null);
-  }, []);
 
   const dirty =
     filters.mission !== "" ||
@@ -722,21 +765,96 @@ export default function EventsManifest() {
   // Sentinel-5P flies alone, so there is nothing to choose — the production page disables the
   // selector in exactly this case rather than offering a list of one.
   const satelliteDisabled = satellites.length < 2;
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [zoom, setZoom] = useState<ZoomGeom | null>(null); // mounted while the stage exists
+  const [zoomOn, setZoomOn] = useState(false); // true = flown in
 
-  const close = useCallback(() => setOpenDay(null), []);
+  const close = useCallback(() => {
+    setOpenDay(null);
+    setZoomOn(false);
+    // with reduced motion there is no transitionend to unmount the stage
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      setZoom(null);
+  }, []);
+
+  // Moving month closes any open day: its manifest belongs to the month it was opened in.
+  const stepMonth = useCallback(
+    (delta: number) => {
+      setCurrentMonth((m) => Math.min(12, Math.max(1, m + delta)));
+      close();
+    },
+    [close],
+  );
+
   const selectDay = useCallback(
     (day: number) => {
       const events = byDay.get(day) ?? [];
-      // A day with nothing on it neither selects nor opens: the drawer is for occurrences only.
       if (events.length === 0) return;
+      // Always measured on the real in-page grid, which never moves now.
+      const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
+      if (!geom) return;
+      if (openDay === null) setZoomOn(false); // fresh open: mount flat first, then fly in
+      setZoom(geom); // already open: glide straight to the new day
       setOpenDay(day);
       setPanelDay({ day, month: currentMonth, events });
-      // A newly opened day starts collapsed: the timeline answers "what happened", and
-      // auto-expanding the first event would bury it under one event's datatakes.
       setExpanded(new Set());
     },
-    [byDay, currentMonth],
+    [byDay, currentMonth, openDay],
   );
+
+  const renderCells = (zoomed: boolean) =>
+    cells.map((c, i) => {
+      const pos = skyCell(i);
+      if (c.dim)
+        return (
+          <div
+            key={`dim-${i}`}
+            className={`${s.cell} ${s.cellDim}`}
+            data-col={pos.col}
+            data-row={pos.row}
+            aria-hidden
+          />
+        );
+      const events = byDay.get(c.day) ?? [];
+      const selected = zoomed && openDay === c.day;
+      return (
+        <div
+          key={c.day}
+          data-day={c.day}
+          className={`${s.cell} ${selected ? s.cellSel : ""}`}
+          data-col={pos.col}
+          data-row={pos.row}
+        >
+          <span className={s.cellNum}>{String(c.day).padStart(2, "0")}</span>
+          {renderDayIndicators(events, zoomed, selectDay, c.day)}
+        </div>
+      );
+    });
+
+  // Fly in on the frame after the flat copy has painted, so the transform has a start to animate from.
+  useEffect(() => {
+    if (openDay === null || !zoom || zoomOn) return;
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => {
+      r2 = requestAnimationFrame(() => setZoomOn(true));
+    });
+    return () => {
+      cancelAnimationFrame(r1);
+      cancelAnimationFrame(r2);
+    };
+  }, [openDay, zoom, zoomOn]);
+
+  // Keep the day centred if the window is resized while zoomed.
+  useEffect(() => {
+    if (openDay === null) return;
+    const onResize = () => {
+      const g = gridRef.current && measureZoom(gridRef.current, openDay);
+      if (g) setZoom(g);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [openDay]);
+
   const onPanelTransitionEnd = useCallback(
     (e: TransitionEvent<HTMLElement>) => {
       // Child transitions (rows, the chevron) bubble up here too; only the panel's own slide counts.
@@ -934,7 +1052,7 @@ export default function EventsManifest() {
                   <option value="">All</option>
                   {CATEGORIES.map((c) => (
                     <option key={c} value={c}>
-                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                      {c}
                     </option>
                   ))}
                 </select>
@@ -1008,8 +1126,6 @@ export default function EventsManifest() {
           {/* ---------- month grid ---------- */}
           <div className={s.calRow}>
             <aside className={s.zodiac} aria-hidden>
-              {/* key={sign}: a new month means a new figure, so the SVG remounts and the lighting
-                sequence starts again from dark instead of being left in its finished state. */}
               <svg
                 key={sign}
                 className={s.zodiacSvg}
@@ -1025,15 +1141,10 @@ export default function EventsManifest() {
                   {sign.toUpperCase()}
                 </text>
                 <g
-                  className="zodiac-path"
-                  data-sign={sign}
                   stroke="rgba(255, 255, 255, 0.15)"
                   fill="none"
                   strokeWidth="1.5"
                 >
-                  {/* The line draws itself over the same span the stars take to light, so each star
-                    lands as the stroke reaches it. pathLength="1" lets the dash cover the whole
-                    figure however many subpaths it has. */}
                   <path
                     className={s.zodiacPath}
                     d={ZODIAC[sign]}
@@ -1057,82 +1168,56 @@ export default function EventsManifest() {
                 </g>
               </svg>
             </aside>
+
             <div className={s.calWrap}>
               <div className={s.dow} aria-hidden>
                 {WEEKDAYS.map((d) => (
                   <span key={d}>{d}</span>
                 ))}
               </div>
-              <div className={s.grid} style={zoomStyle}>
-                {cells.map((c, i) => {
-                  const pos = skyCell(i);
-                  // Neighbouring-month cells exist only so the weeks line up; they carry no events and
-                  // are inert <div>s rather than disabled buttons, which keeps them out of the tab order.
-                  if (c.dim)
-                    return (
-                      <div
-                        key={`dim-${i}`}
-                        className={`${s.cell} ${s.cellDim}`}
-                        data-col={pos.col}
-                        data-row={pos.row}
-                        data-x={pos.x}
-                        data-y={pos.y}
-                        aria-hidden
-                      />
-                    );
-
-                  const events = byDay.get(c.day) ?? [];
-                  const status = events.length ? dayStatus(events) : null;
-                  const selected = openDay === c.day;
-
-                  return (
-                    <button
-                      key={c.day}
-                      type="button"
-                      className={`${s.cell} ${selected ? s.cellSel : ""}`}
-                      data-col={pos.col}
-                      data-row={pos.row}
-                      data-x={pos.x}
-                      data-y={pos.y}
-                      onClick={() => selectDay(c.day)}
-                      aria-pressed={selected}
-                      /* The glyphs are aria-hidden, so the types they now encode have to reach a
-                     screen reader through the label. The dots carried no type at all, so this is
-                     information the cell gained rather than information it is repeating. */
-                      aria-label={
-                        events.length
-                          ? `${c.day} ${monthName}, ${events.length} event${events.length === 1 ? "" : "s"}, ${typeSummary(events)}, worst completeness ${COMPLETENESS[status!].label}`
-                          : `${c.day} ${monthName}, no events`
-                      }
-                    >
-                      <span className={s.cellNum}>
-                        {String(c.day).padStart(2, "0")}
-                      </span>
-
-                      {renderDayIndicators(events, openDay !== null)}
-                    </button>
-                  );
-                })}
+              {/* The real grid: never transformed, only measured. */}
+              <div className={s.grid} ref={gridRef}>
+                {renderCells(false)}
               </div>
             </div>
           </div>
         </div>
 
-        {/* ---------- Day Manifest drawer ---------- */}
-        {/* Portalled to <body>: .page is an isolated stacking context, so inside it the drawer's
-          z-index could not rise above the sticky nav, which then cut off the top of the header. */}
+        {/* Stage and drawer are portalled to <body>, above the sticky nav. */}
         {createPortal(
           <>
-            {/* The scrim is a button rather than a div with onClick: click-to-dismiss then comes with
-          keyboard access for free, and screen readers announce it instead of finding a bare
-          clickable region. */}
-            <button
-              type="button"
-              className={`${s.scrim} ${openDay !== null ? s.scrimOn : ""}`}
-              onClick={close}
-              tabIndex={openDay !== null ? 0 : -1}
-              aria-label="Close day manifest"
-            />
+            {zoom && (
+              <div
+                className={`${s.page} ${s.stage} ${zoomOn ? s.stageOn : ""}`}
+                onClick={close}
+              >
+                <button type="button" className={s.stageBack} onClick={close}>
+                  <ChevronLeft size={15} aria-hidden /> Back to the month
+                </button>
+                <div
+                  className={`${s.grid} ${s.stageGrid}`}
+                  style={{
+                    left: zoom.left,
+                    top: zoom.top,
+                    width: zoom.width,
+                    transform: zoomOn
+                      ? `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`
+                      : "none",
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onTransitionEnd={(e) => {
+                    if (
+                      e.target === e.currentTarget &&
+                      e.propertyName === "transform" &&
+                      !zoomOn
+                    )
+                      setZoom(null);
+                  }}
+                >
+                  {renderCells(true)}
+                </div>
+              </div>
+            )}
 
             <aside
               className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
@@ -1188,13 +1273,10 @@ export default function EventsManifest() {
                       expanded={expanded}
                       onToggle={(id) =>
                         setExpanded((prev) => {
-                          const newSet = new Set(prev);
-                          if (newSet.has(id)) {
-                            newSet.delete(id);
-                          } else {
-                            newSet.add(id);
-                          }
-                          return newSet;
+                          const next = new Set(prev);
+                          if (next.has(id)) next.delete(id);
+                          else next.add(id);
+                          return next;
                         })
                       }
                     />

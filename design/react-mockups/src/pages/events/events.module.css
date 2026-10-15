@@ -761,24 +761,26 @@ select.control {
   color: var(--mf-faint);
 }
 
-/* ---------------- month grid ---------------- */
+/* Restrict the calendar wrapper width so cells remain compact and square */
 .calWrap {
   width: 100%;
-  max-width: 800px;
-  /* Limits overall grid width to shrink column widths */
+  max-width: 900px; /* Gives enough breathing room for a strong zoom */
   margin: 0 auto 64px;
-  padding: 14px clamp(18px, 4vw, 48px);
+  padding: 20px clamp(18px, 4vw, 48px);
   border: 1px solid var(--mf-line);
-  border-radius: 0;
   background: var(--mf-cal);
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
   min-width: 0;
-  perspective: 1000px; /* 3D perspective for the zoom */
 }
 
-/* Row holding the constellation column and the calendar: the sky sits to the left of the grid. */
+.calWrapZoomed {
+  max-width: 100% !important;
+  flex: 1 1 100% !important;
+}
+
+/* Restrict the outer row container as well */
 .calRow {
   display: flex;
   align-items: center;
@@ -872,8 +874,9 @@ select.control {
 
 /* the zoom: the grid moves and scales as one, from the selected day's inline transform */
 .grid {
+  width: 100%;
+  height: 100%;
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-  transform-origin: center center;
 }
 
 .dow {
@@ -931,7 +934,7 @@ select.control {
   z-index: 10 !important;
   border-color: var(--mf-cell-line) !important;
   box-shadow: none !important;
-  transform: scale(1.25) translateZ(30px) !important;
+  transform: scale(1.1) !important;
 }
 
 .cellNum {
@@ -963,6 +966,10 @@ select.control {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -982,6 +989,10 @@ select.control {
   justify-content: center;
   width: 18px;
   height: 18px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
   transition: transform 0.2s ease;
 }
 
@@ -1006,6 +1017,15 @@ select.control {
   color: var(--mf-faint);
   font-variant-numeric: tabular-nums;
   transition: color 0.15s;
+}
+
+.markMoreBtn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
 }
 
 .cell:hover .markMore,
@@ -1054,6 +1074,31 @@ select.control {
   font-family: var(--font-mono, var(--mono));
   font-size: 11.5px;
   color: var(--mf-faint);
+}
+
+.backToMonthBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: auto !important;
+  height: auto !important;
+  padding: 4px 0 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--mf-text) !important;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.backToMonthBtn:hover {
+  color: #ffffff !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 /* ---------------- Option A: drawer ---------------- */
@@ -1494,6 +1539,83 @@ select.control {
   display: inline;
 }
 
+/* ---------------- zoom stage ----------------
+   Fixed over the whole viewport, so page scroll can never push the day or the back button
+   off-screen. The starfield fades in on ::before while the grid copy flies to the day. */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 9990; /* above the sticky nav, below the drawer (9999) */
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+  background-image: none;
+}
+
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--mf-bg);
+  background-image: var(--mf-stars, none);
+  background-size: 360px 300px;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.stageOn::before {
+  opacity: 1;
+}
+
+.stageGrid {
+  position: absolute;
+  z-index: 1;
+  height: auto;
+  transform-origin: 0 0;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.stageGrid .cellSel {
+  transform: none !important;
+}
+
+.stageBack {
+  position: absolute;
+  z-index: 2;
+  top: 32px;
+  left: clamp(18px, 4vw, 48px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-muted);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s 0.2s, color 0.2s;
+}
+
+.stageOn .stageBack {
+  opacity: 1;
+}
+
+.stageBack:hover {
+  color: var(--mf-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage::before,
+  .stageGrid,
+  .stageBack {
+    transition: none;
+  }
+}
 /* ============================================================
    MOBILE (≤760px) — one column, thumb-sized targets.
 
@@ -1549,11 +1671,34 @@ select.control {
     flex: 0 0 44px;
   }
 
-  .monthLabel {
+  .monthNav button.backToMonthBtn {
+  width: auto;
+  height: auto;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--mf-text);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.monthNav button.backToMonthBtn:hover {
+  color: #ffffff;
+  border: none;
+  background: transparent;
+  border-color: transparent;
+}
+
+.monthLabel {
     flex: 1;
     min-width: 0;
     font-size: 12px;
-  }
+}
 
   .legend {
     gap: 8px 12px;
