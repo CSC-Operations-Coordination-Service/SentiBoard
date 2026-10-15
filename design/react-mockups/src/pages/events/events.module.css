@@ -282,50 +282,6 @@
   color: var(--mf-muted);
 }
 
-/* ---------------- header art ----------------
-   The shared /examples backdrop (.ex-hero-bg in global.css) sits inside the header this page
-   already had, so nothing about the header's size, padding or alignment changes — the title stays
-   on exactly the same baseline and x-position it was on before the image existed.
-
-   The one adjustment is the backdrop's inset. .ex-hero-bg defaults to `inset: 0`, which would box
-   the art to the text's own bounding rect; here it is bled out to the edges of .inner's padding so
-   it forms a band the width of the content column. That is deliberately NOT 100vw: a viewport-wide
-   band overflows horizontally whenever a scrollbar is present, and the column width lines the art
-   up with the filter and calendar panels below it, which is what makes it read as part of the page
-   rather than as a picture dropped behind the title. */
-.headArt :global(.ex-hero-bg) {
-  inset: -26px -28px 0;
-}
-
-@media (max-width: 760px) {
-  .headArt :global(.ex-hero-bg) {
-    inset: -20px -14px 0;
-  }
-}
-
-@media (max-width: 430px) {
-  .headArt :global(.ex-hero-bg) {
-    inset: -18px -10px 0;
-  }
-}
-
-/* The header's photo is drawn by the shared PageHeader with global classes. The gradient covers the
-   whole section, not just the text column (which is only as tall as its content), and sits above
-   the photo layers but below .hero-in, so the title and description stay legible. */
-.headArt :global(.hero)::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(
-    90deg,
-    rgba(3, 5, 10, 0.88) 0%,
-    rgba(3, 5, 10, 0.62) 50%,
-    rgba(3, 5, 10, 0.12) 100%
-  );
-}
-
 /* ---------------- month bar + legend ---------------- */
 .monthBar {
   display: flex;
@@ -1932,3 +1888,19 @@ select.control {
     font-size: 11px;
   }
 }
+
+/* the starfield fades in over the bottom of the hero, as in SentiBoard.html */
+.headArt + .page { background: none; }
+.headArt + .page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--mf-bg);
+  background-image: var(--mf-stars, none);
+  background-size: 360px 300px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.6) 50px, rgba(0,0,0,.95) 110px, #000 160px);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.6) 50px, rgba(0,0,0,.95) 110px, #000 160px);
+}
+.headArt + .page > .inner { position: relative; z-index: 1; }

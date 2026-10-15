@@ -1,272 +1,288 @@
 /* ============================================================
-   Hero Section — Page header with expandable description
+   Page header — React port of the hero in SentiBoard.html
+   (its base rules plus the "one visual language" overrides it loads last).
    ============================================================ */
 
+:root {
+  --hero-pad: clamp(18px, 4.4vw, 64px);          /* HTML --pad: left/right gutter */
+  --hero-overlap: clamp(140px, 17vh, 230px);     /* how far the content below rises over the hero */
+  --hero-after-pad: clamp(66px, 8vh, 112px);     /* space between that edge and the first content */
+  --hero-ink: #eaf0f6;
+  --hero-ink-70: rgba(234, 240, 246, 0.7);
+  --hero-ink-55: rgba(234, 240, 246, 0.55);
+  --hero-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ---------- frame ---------- */
 .hero {
   position: relative;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  overflow: visible;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  box-sizing: border-box;
-  min-height: 300px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-  transition: min-height 0.35s ease;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 2.54 / 1;
+  min-height: 330px;
+  background: #000;
+  color: var(--hero-ink);
 }
 
-.hero.open {
-  min-height: 600px;
-}
-
-/* --- NEW: Uniform Dark Overlay Layer --- */
-.hero::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5); /* Adjust opacity (0.4 to 0.6) to match your reference */
-  z-index: 1;
-  pointer-events: none;
-}
-/* Background layers */
+/* the photo, twice: a sharp copy that fades out at the bottom and a blurred one that fades in */
 .hero-ph {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  overflow: hidden;
 }
 
-.hero-ph i {
+.hero-ph > i {
   position: absolute;
   inset: 0;
+  display: block;
   background-size: cover;
-  background-position: center;
+  background-position: 50% 45%;
+  transform-origin: 50% 42%;
 }
 
-.hero-ph.sharp i {
-  filter: contrast(1.2) saturate(0.8);
+.hero-ph.sharp {
+  -webkit-mask-image: linear-gradient(to bottom, #000 64%, rgba(0, 0, 0, 0.8) 76%, rgba(0, 0, 0, 0.25) 86%, transparent 94%);
+  mask-image: linear-gradient(to bottom, #000 64%, rgba(0, 0, 0, 0.8) 76%, rgba(0, 0, 0, 0.25) 86%, transparent 94%);
 }
 
-.hero-ph.soft i {
-  filter: blur(80px) opacity(0.5) saturate(1.2);
+.hero-ph.soft {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 62%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0.7) 86%, rgba(0, 0, 0, 0.3) 94%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 62%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0.7) 86%, rgba(0, 0, 0, 0.3) 94%, transparent 100%);
 }
 
-/* --- NEW: Ensure text content sits on top of the dark layer --- */
-.hero-in {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  /* Adjust top/bottom padding to match your desired height */
-  padding: clamp(32px, 6vh, 64px) clamp(18px, 4vw, 48px);
+.hero-ph.soft > i {
+  filter: blur(clamp(16px, 2.6vw, 36px)) saturate(0.62) brightness(0.88);
+  transform: scale(1.07);
 }
 
-.hero-in h1 {
-  margin: 0 0 12px 0; /* Tightens space right below the main title */
-}
-
-.hero-in .lede {
-  margin: 0 0 24px 0; /* Controls the exact distance between the subtitle text and the description button */
-  max-width: 680px;
-}
-
-.scrim-x {
+/* scrims: black on the left behind the text, lighter in the middle */
+.hero .scrim-x {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background: linear-gradient(90deg,
-    rgba(2, 4, 9, 0.7) 0%,
-    transparent 20%,
-    transparent 80%,
-    rgba(2, 4, 9, 0.7) 100%);
   pointer-events: none;
+  background: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.9) 30%, rgba(0, 0, 0, 0.4) 62%, rgba(0, 0, 0, 0.55) 86%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 74%, rgba(0, 0, 0, 0.5) 88%, transparent 98%);
+  mask-image: linear-gradient(to bottom, #000 74%, rgba(0, 0, 0, 0.5) 88%, transparent 98%);
 }
 
-.scrim-y {
+.hero .scrim-y {
   position: absolute;
   inset: 0;
-  z-index: 1;
-  background: linear-gradient(180deg,
-    rgba(2, 4, 9, 0.3) 0%,
-    transparent 30%,
-    transparent 70%,
-    rgba(2, 4, 9, 0.5) 100%);
   pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 16%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.88) 86%, transparent 99%);
 }
 
 .hero-blend {
   position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: radial-gradient(ellipse at center, rgba(0, 199, 214, 0.05) 0%, transparent 70%);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
   pointer-events: none;
+  -webkit-backdrop-filter: blur(14px) saturate(0.72);
+  backdrop-filter: blur(14px) saturate(0.72);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.55) 26%, #000 54%, rgba(0, 0, 0, 0.4) 80%, transparent 96%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.55) 26%, #000 54%, rgba(0, 0, 0, 0.4) 80%, transparent 96%);
 }
 
+/* ---------- text block ----------
+   Centred in the part of the hero the content below does not cover — what the HTML's script computed. */
+.hero-in {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: clamp(12px, 1.6vh, 22px);
+  padding: 12px var(--hero-pad) var(--hero-overlap);
+}
 
 .breadcrumb {
   font-family: var(--font-sans);
   font-size: 11px;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(115, 115, 115, 0.9);
-  margin-bottom: 16px;
-  display: block;
+  color: var(--hero-ink-55);
 }
 
-/* Hero Title */
 .hero-title {
-  font-family: var(--font-sans);
-  font-size: clamp(28px, 4.5vw, 48px);
-  font-weight: 700;
-  letter-spacing: -0.02em;
   margin: 0;
-  color: var(--text);
-  line-height: 1.2;
-  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
   text-transform: uppercase;
+  color: var(--hero-ink);
 }
 
-/* Subtitle / Lede */
-.lede {
-  font-size: clamp(13px, 1.8vw, 16px);
-  line-height: 1.4;
-  color: #93A0B0; 
-  margin: 8px 0 0 0;
-  max-width: 700px;
-  font-weight: 400;
-  letter-spacing: -0.005em;
-}
-
-/* Description bar */
-.descbar {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  margin-top: 30px;
-  width: fit-content;
-}
-
-/* Description Wrap Container (Grid-based smooth expand) */
-.desc-wrap {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
-  opacity: 0;
-  overflow: hidden;
-  margin-top: 0;
-}
-
-.desc-wrap.open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-  margin-top: 8px;
-  padding-top: 0;
-  border-top: none;
-}
-
-.desc {
-  overflow: hidden;
-}
-
-/* Inner content slides up from the bottom */
-.desc-in {
-  font-family: var(--font-sans, var(--sans));
-  font-size: 15px;
+.hero .lede {
+  margin: 0;
+  max-width: 600px;
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.6vw, 16px);
   font-weight: 400;
   line-height: 1.6;
-  color: var(--mf-muted, rgba(255, 255, 255, 0.75));
-  transform: translateY(30px);
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  padding-top: 4px;
+  color: #93a0b0;
 }
 
-.desc-wrap.open .desc-in {
-  transform: translateY(0);
+.descbar {
+  margin-top: clamp(6px, 1.2vh, 16px);
 }
 
-.desc-in p {
-  margin: 0 0 12px 0;
-  max-width: 680px;
-  color: inherit;
-}
-
-.desc-in p:first-child {
-  margin-top: 0 !important;
-  padding-top: 0 !important;
-}
-
-.desc-in ul { margin: 12px 0; padding: 0; }
-
-.desc-in li { margin: 8px 0; }
-
-/* Description button */
 .desc-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 11px;
+  min-height: 44px;
   padding: 0;
+  border: 0;
   background: none;
-  border: none;
-  border-bottom: 1px solid transparent;
-  border-radius: 0;
-  color: rgba(154, 164, 180, 1);
   font-family: var(--font-sans);
   font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  width: fit-content;
   font-weight: 600;
-  white-space: nowrap;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hero-ink-55);
+  cursor: pointer;
+  transition: color 180ms ease;
 }
 
-.desc-btn:hover {
-  color: rgba(200, 210, 220, 1);
-  border-bottom-color: rgba(154, 164, 180, 0.5);
+.desc-btn:hover,
+.desc-btn.open {
+  color: #fff;
 }
 
 .desc-btn:focus-visible {
-  outline: 2px solid var(--accent-2);
+  outline: 1px solid rgba(255, 255, 255, 0.4);
   outline-offset: 2px;
 }
 
 .desc-btn svg {
-  transition: transform 0.3s ease;
-  flex-shrink: 0;
+  transition: transform 504ms var(--hero-ease);
 }
 
 .desc-btn.open svg {
   transform: rotate(180deg);
 }
 
-/* Description panel - hidden by default. The panel (events, DescriptionModal) and the body inside
-   components/PageHeader share one text style: one font, one size, one line height, one colour. */
-
-
-.callout-line {
-  border-left: 3px solid #00d2ff;
-  padding-left: 12px;
-  margin: 20px 0;
-  color: #ffffff;
+/* the title, sentence and button rise in one after the other */
+@keyframes heroUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
 }
 
-.descriptionBody p,
+.hero-in > .hero-title,
+.hero-in > .lede,
+.hero-in > .descbar {
+  animation: heroUp 760ms var(--hero-ease) backwards;
+}
+
+.hero-in > .hero-title { animation-delay: 140ms; }
+.hero-in > .lede { animation-delay: 260ms; }
+.hero-in > .descbar { animation-delay: 380ms; }
+
+/* ---------- below the hero: the Description panel ---------- */
+.hero-after {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--hero-overlap));
+  padding: var(--hero-after-pad) var(--hero-pad) 0;
+  pointer-events: none;            /* the band over the hero must not swallow clicks */
+}
+
+.hero-after > * {
+  pointer-events: auto;
+}
+
+.desc-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  transition: grid-template-rows 768ms var(--hero-ease), margin-top 768ms var(--hero-ease);
+}
+
+.desc-wrap.open {
+  grid-template-rows: 1fr;
+  margin-top: var(--desc-pull, 0px);
+}
+
+.desc {
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 0 52px;
+}
+
+.desc-wrap:not(.open) .desc {
+  padding-bottom: 0;
+  visibility: hidden;
+  transition: visibility 0s linear 768ms;
+}
+
+.desc-in {
+  max-width: 940px;
+  font-family: var(--font-sans);
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 552ms ease 144ms, transform 552ms var(--hero-ease) 144ms;
+}
+
+.desc-wrap.open .desc-in {
+  opacity: 1;
+  transform: none;
+}
+
 .desc-in p {
-  border-left: none !important;
-  padding-left: 0 !important;
+  margin: 0 0 20px;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--hero-ink-70);
 }
 
+.desc-in p:last-child {
+  margin-bottom: 0;
+}
+
+.desc-in ul {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.desc-in li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 13px;
+  align-items: start;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--hero-ink-70);
+}
+
+.desc-in li svg {
+  margin-top: 3px;
+}
+
+.desc-in li b,
+.desc-in li strong {
+  font-weight: 600;
+}
+
+/* legends inside a description */
 .desc-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 24px;
   align-items: center;
+  gap: 10px 22px;
   margin-top: 12px;
 }
 
@@ -274,15 +290,14 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-sans, var(--sans));
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #d1d5db;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  color: var(--hero-ink-55);
 }
 
-/* Dot styles matching your exact color palette */
 .legend-item .dot {
   width: 8px;
   height: 8px;
@@ -290,37 +305,30 @@
   display: inline-block;
 }
 
-.dot-planned { background-color: #7A8696; }
-.dot-processing { background-color: #5B9BE8; }
-.dot-acquired { background-color: #3FCF7F; }
-.dot-partial { background-color: #F0A63A; }
-.dot-unavailable { background-color: #E8514B; }
+.dot-planned { background-color: #7a8696; }
+.dot-processing { background-color: #5b9be8; }
+.dot-acquired { background-color: #3fcf7f; }
+.dot-partial { background-color: #f0a63a; }
+.dot-unavailable { background-color: #e8514b; }
 
-
-/* Responsive */
-@media (max-width: 760px) {
+/* ---------- phones ---------- */
+@media (max-width: 640px) {
   .hero {
-    padding: clamp(40px, 6vw, 80px) clamp(16px, 3vw, 32px);
-    min-height: 320px;
+    aspect-ratio: auto;
+  }
+
+  .hero-in {
+    justify-content: flex-end;
   }
 
   .hero-title {
-    font-size: clamp(24px, 5vw, 40px);
+    font-size: clamp(34px, 8.5vw, 56px);
   }
-
-  /* Subtitle / Lede Text */
-.lede {
-  font-family: var(--font-sans);
-  font-size: clamp(14px, 1.6vw, 16px);
-  line-height: 1.6;
-  color: #93A0B0; /* Soft light grey */
-  margin: 12px 0 20px 0;
-  max-width: 680px;
-  font-weight: 400;
-  letter-spacing: -0.005em;
 }
 
-  .descbar {
-    margin-top: 24px;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .hero-in > * { animation: none !important; }
+  .desc-wrap,
+  .desc-in,
+  .desc-btn svg { transition: none; }
 }
