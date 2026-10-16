@@ -92,15 +92,23 @@ export default function PageHeader({
     const btn = btnRef.current;
     const d = descRef.current;
     if (!open && wrap && btn && d) {
+      // The padding lives on the inner block (.desc-in), so the first line of text starts that far
+      // below the panel's top edge.
+      const inner = (d.firstElementChild as HTMLElement | null) ?? d;
       wrap.style.setProperty("--desc-pull", "0px");
       const textTop =
         wrap.getBoundingClientRect().top +
-        parseFloat(getComputedStyle(d).paddingTop);
+        parseFloat(getComputedStyle(inner).paddingTop);
       const gap = textTop - btn.getBoundingClientRect().bottom;
       const target = Math.round(
         Math.max(40, Math.min(56, window.innerHeight * 0.05)),
       );
-      wrap.style.setProperty("--desc-pull", `${-Math.max(0, gap - target)}px`);
+      // The pull and the panel's growth run on the same curve, so the content below moves by
+      // (height − pull) × progress. Capping the pull at the panel's full height keeps that never
+      // negative: the content below only ever moves down while opening, and only up while closing.
+      const full = inner.offsetHeight;
+      const pull = Math.min(Math.max(0, gap - target), full);
+      wrap.style.setProperty("--desc-pull", `${-pull}px`);
     }
     setOpen((o) => !o);
   };

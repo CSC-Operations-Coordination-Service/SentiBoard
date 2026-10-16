@@ -210,20 +210,24 @@
   margin-top: var(--desc-pull, 0px);
 }
 
+/* The grid item has NO padding of its own. Padding on the item would set a floor under the 0fr row
+   (it cannot shrink below its own padding), and the 52px bottom padding, switched on and off
+   without a transition, made the content below jump on the first frame and then bounce back as
+   the pull caught up. On the inner block it is simply part of the height that the row reveals. */
 .desc {
   min-height: 0;
   overflow: hidden;
-  padding: 14px 0 52px;
+  padding: 0;
 }
 
 .desc-wrap:not(.open) .desc {
-  padding-bottom: 0;
   visibility: hidden;
   transition: visibility 0s linear 768ms;
 }
 
 .desc-in {
   max-width: 940px;
+  padding: 14px 0 52px;
   font-family: var(--font-sans);
   opacity: 0;
   transform: translateY(-12px);
