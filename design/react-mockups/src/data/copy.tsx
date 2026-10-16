@@ -106,11 +106,15 @@ export const EVENTS_LIST_DESCRIPTION =
 
 /* Acquisitions — shared by the current globe page and the demand-driven proposal, since both
    answer the same question with the same controls. */
-export const ACQUISITIONS_DESCRIPTION =
-  "The Acquisitions Status view displays the past, current and future Copernicus Sentinels' acquisition on an interactive, 3D globe. " +
-  "Through this view, users can either inspect the status of a past acquisition, or learn about the planned acquisitions for the mission of " +
-  "interest. By default, the real-time sensing scenario is displayed. ";
-
+export const ACQUISITIONS_DESCRIPTION = (
+  <p>
+    The <b>Acquisitions Status</b> view displays the past, current and future
+    Copernicus Sentinels' acquisition on an interactive, 3D globe. Through this
+    view, users can either inspect the status of a past acquisition, or learn
+    about the planned acquisitions for the mission of interest. By default, the
+    real-time sensing scenario is displayed.
+  </p>
+);
 /* Processors — the release timeline. */
 export const PROCESSORS_DESCRIPTION =
   "The Processors tab shows the complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. The " +

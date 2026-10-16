@@ -15,6 +15,13 @@ interface PageHeaderProps {
   backgroundImage?: string;
 }
 
+/** Space between the bottom of the Description button and the top of the text panel, px — the
+ *  SentiBoard.html rule: 5% of the viewport height, kept between 40 and 56px. The button is 44px
+ *  tall for an 11px label and the first line carries its own half-leading, so the visible distance
+ *  from the word "DESCRIPTION" to the text is about this + 25px (≈ 70–80px), the same on every page. */
+const descGap = () =>
+  Math.round(Math.max(40, Math.min(56, window.innerHeight * 0.05)));
+
 export default function PageHeader({
   title,
   crumb,
@@ -85,33 +92,51 @@ export default function PageHeader({
     return () => ro.disconnect();
   }, [title, lede, body]);
 
-  // Same rule as the HTML: measured while closed (the button never moves), the panel is pulled up so
-  // the first line of text opens 40–56px under the button, whatever the viewport.
-  const toggle = () => {
+  // Measured while closed (the button never moves): the panel is moved so the first line of text
+  // opens descGap() under the button on EVERY page, whatever the title, sentence or text length.
+  //
+  // Before, the pull was capped at the panel's own height so the content below would never rise.
+  // A short description (Acquisitions: three lines) could not be pulled far enough and opened
+  // ~200px under the button, while long ones (Events, Data Availability) opened at the right
+  // distance. Now the pull is never capped; whatever exceeds the panel's height is given back as
+  // padding under it (--desc-extra), so the content below still never moves up — it simply stays
+  // where it is when the text fits in the space that was already there.
+  const measure = () => {
     const wrap = wrapRef.current;
     const btn = btnRef.current;
     const d = descRef.current;
-    if (!open && wrap && btn && d) {
-      // The padding lives on the inner block (.desc-in), so the first line of text starts that far
-      // below the panel's top edge.
-      const inner = (d.firstElementChild as HTMLElement | null) ?? d;
-      wrap.style.setProperty("--desc-pull", "0px");
-      const textTop =
-        wrap.getBoundingClientRect().top +
-        parseFloat(getComputedStyle(inner).paddingTop);
-      const gap = textTop - btn.getBoundingClientRect().bottom;
-      const target = Math.round(
-        Math.max(40, Math.min(56, window.innerHeight * 0.05)),
-      );
-      // The pull and the panel's growth run on the same curve, so the content below moves by
-      // (height − pull) × progress. Capping the pull at the panel's full height keeps that never
-      // negative: the content below only ever moves down while opening, and only up while closing.
-      const full = inner.offsetHeight;
-      const pull = Math.min(Math.max(0, gap - target), full);
-      wrap.style.setProperty("--desc-pull", `${-pull}px`);
-    }
+    if (!wrap || !btn || !d) return;
+    // The padding lives on the inner block (.desc-in), so the first line of text starts that far
+    // below the panel's top edge. Measure from the wrap's natural (unpulled) position.
+    const inner = (d.firstElementChild as HTMLElement | null) ?? d;
+    const prevPull =
+      parseFloat(wrap.style.getPropertyValue("--desc-pull")) || 0;
+    const wrapTop = wrap.getBoundingClientRect().top - (open ? prevPull : 0);
+    const textTop = wrapTop + parseFloat(getComputedStyle(inner).paddingTop);
+    const gap = textTop - btn.getBoundingClientRect().bottom;
+    // pull > 0 lifts the panel; < 0 (button already closer than the target) pushes it down
+    const pull = gap - descGap();
+    const full = inner.offsetHeight;
+    // The pull, the panel's growth and this padding run on the same curve, so the content below
+    // moves by (full − pull + extra) × progress, which is never negative.
+    const extra = Math.max(0, pull - full);
+    wrap.style.setProperty("--desc-pull", `${-pull}px`);
+    wrap.style.setProperty("--desc-extra", `${extra}px`);
+  };
+
+  const toggle = () => {
+    if (!open) measure();
     setOpen((o) => !o);
   };
+
+  // While open, keep the distance when the window is resized (the hero rescales with the width).
+  useLayoutEffect(() => {
+    if (!open) return;
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   return (
     <>

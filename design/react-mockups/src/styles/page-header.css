@@ -198,16 +198,24 @@
   pointer-events: auto;
 }
 
+/* --desc-pull (margin) puts the first line of text the same distance under the button on every
+   page; --desc-extra (padding) gives back what a short panel cannot fill, so the content below never
+   rises. All three run on one curve — see measure() in PageHeader.tsx. */
 .desc-wrap {
   display: grid;
   grid-template-rows: 0fr;
   margin-top: 0;
-  transition: grid-template-rows 768ms var(--hero-ease), margin-top 768ms var(--hero-ease);
+  padding-bottom: 0;
+  transition:
+    grid-template-rows 768ms var(--hero-ease),
+    margin-top 768ms var(--hero-ease),
+    padding-bottom 768ms var(--hero-ease);
 }
 
 .desc-wrap.open {
   grid-template-rows: 1fr;
   margin-top: var(--desc-pull, 0px);
+  padding-bottom: var(--desc-extra, 0px);
 }
 
 /* The grid item has NO padding of its own. Padding on the item would set a floor under the 0fr row
@@ -282,6 +290,39 @@
   font-weight: 600;
 }
 
+/* the "Please note" line: a thin cyan rule on the left, the text a step brighter and smaller */
+.desc-in .callout-line {
+  margin: 0 0 20px;
+  padding-left: 16px;
+  border-left: 2px solid #2fc6dc;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--hero-ink);
+}
+
+/* the whole line reads as one note: "Please note:" is not set apart */
+.desc-in .callout-line strong,
+.desc-in .callout-line b {
+  font-weight: inherit;
+  color: inherit;
+}
+
+/* "COMPLETENESS": a small spaced label above the legend */
+.desc-in .completeness-section {
+  margin: 0;
+}
+
+.desc-in .completeness-title {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hero-ink-55);
+}
+
 /* legends inside a description */
 .desc-legend {
   display: flex;
@@ -289,6 +330,11 @@
   align-items: center;
   gap: 10px 22px;
   margin-top: 12px;
+}
+
+/* directly under its label, the label's margin already spaces it */
+.desc-in .completeness-title + .desc-legend {
+  margin-top: 0;
 }
 
 .legend-item {
