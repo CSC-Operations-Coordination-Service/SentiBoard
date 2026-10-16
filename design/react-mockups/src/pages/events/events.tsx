@@ -1,21 +1,10 @@
-// DEVOCS-219 — Events page proposal: "Mission Manifest".
-//
-// The two earlier variants (full-width grid + overlay drawer, and a 65/35 split with an always-on
-// inspector) are merged here. The grid keeps the full width and day detail arrives as the Day
-// Manifest drawer; the split layout's hover-preview is deliberately gone, because previewing a day
-// on hover and opening it in an overlay are the same gesture answered twice — an overlay that
-// followed the pointer would flicker across the month.
-//
-// Everything lives in this one file except the data: with a single consumer there is nothing for a
-// shared module to keep honest, and a stakeholder reading the proposal can now follow it top to
-// bottom. Mock-up only — data is local (mock.ts); the shipping page is /v1/events.
-
 import {
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type TransitionEvent,
 } from "react";
 import { Link } from "react-router-dom";
@@ -38,6 +27,7 @@ import {
   YEAR,
   calendarCells,
   completenessLabel,
+  sensingWindow,
   dayStatus,
   eventStatus,
   eventsInMonth,
@@ -301,9 +291,13 @@ function measureZoom(grid: HTMLElement, day: number): ZoomGeom | null {
   const c = cell.getBoundingClientRect();
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const drawerW = vw > 760 ? Math.min(440, vw * 0.92) : 0; // matches .drawer's width
-  const areaW = vw - drawerW;
-  const scale = Math.min((areaW * 0.42) / c.width, (vh * 0.62) / c.height);
+  // The reference's camera (targetBox in SentiBoard.html): the view spans 1.8 cells on its tighter
+  // axis, and the day sits at 30% of the width so the manifest has the right side to itself. Below
+  // 900px the manifest rises from the bottom instead, so the day moves up to 24% of the height.
+  const wide = vw > 900;
+  const scale = Math.min(vw / (1.8 * c.width), vh / (1.8 * c.height));
+  const targetX = wide ? vw * 0.3 : vw / 2;
+  const targetY = wide ? vh / 2 : vh * 0.24;
   const cx = c.left - g.left + c.width / 2;
   const cy = c.top - g.top + c.height / 2;
   return {
@@ -311,8 +305,8 @@ function measureZoom(grid: HTMLElement, day: number): ZoomGeom | null {
     top: g.top,
     width: g.width,
     scale,
-    tx: areaW / 2 - g.left - scale * cx,
-    ty: vh / 2 - g.top - scale * cy,
+    tx: targetX - g.left - scale * cx,
+    ty: targetY - g.top - scale * cy,
   };
 }
 /** Where a cell sits in the sky grid: column 0–6, row, and its top-left in SVG units. */
@@ -444,83 +438,11 @@ function Legend() {
 }
 
 // ---------------------------------------------------------------------------
-// Drawer body: occurrences and their datatakes
+// Day manifest: occurrences and their datatakes, as SentiBoard.html's zoom panel
 // ---------------------------------------------------------------------------
 
-/** The datatakes behind one occurrence, as a table: ID, product, start time, status and completion. */
-function DatatakeTable({ datatakes }: { datatakes: Datatake[] }) {
-  return (
-    <table className={s.dtTable}>
-      <thead>
-        <tr>
-          <th scope="col">ID / Rung</th>
-          <th scope="col">Product / Type</th>
-          <th scope="col">Start UTC</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {datatakes.map((dt) => (
-          <tr key={`${dt.id}-${dt.product}`}>
-            <td className={s.dtNum}>{dt.id}</td>
-            <td className={s.dtProductCell}>{dt.product}</td>
-            <td className={s.dtNum}>
-              {new Date(dt.sensingStart).toISOString().slice(11, 16)}
-            </td>
-            <td>
-              <span
-                className={s.dtStatusCell}
-                style={{ color: COMPLETENESS[dt.status].color }}
-              >
-                {COMPLETENESS[dt.status].label}
-                <span className={s.dtNum}>{completenessLabel(dt)}</span>
-              </span>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-/** Satellite, mission, start, span and completion of one occurrence, for its key-value grid. */
-function occurrenceFacts(e: ManifestEvent) {
-  const starts = e.datatakes.map((d) => Date.parse(d.sensingStart));
-  const stops = e.datatakes.map((d) => Date.parse(d.sensingStop));
-  const spanMin = starts.length
-    ? Math.round((Math.max(...stops) - Math.min(...starts)) / 60000)
-    : 0;
-  const scored = e.datatakes.filter((d) => d.status !== "planned");
-  const completion = scored.length
-    ? `${Math.round(scored.reduce((n, d) => n + d.completeness, 0) / scored.length)}%`
-    : "—";
-  return { span: `${spanMin} min`, completion };
-}
-
-/** The day's status mix as pills, one per state present, in STATUS_ORDER. */
-function StatusPills({ events }: { events: ManifestEvent[] }) {
-  const counts = new Map<Status, number>();
-  events.forEach((e) =>
-    e.datatakes.forEach((d) =>
-      counts.set(d.status, (counts.get(d.status) ?? 0) + 1),
-    ),
-  );
-  return (
-    <div className={s.pills}>
-      {STATUS_ORDER.filter((k) => counts.has(k)).map((k) => (
-        <span
-          key={k}
-          className={s.pill}
-          style={{ color: COMPLETENESS[k].color }}
-        >
-          {counts.get(k)} {COMPLETENESS[k].label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-/** Downloads the day's occurrences, with their datatakes, as a JSON file. */
+/** Downloads the day's occurrences, with their datatakes, as a JSON file. Not wired to a button in
+ *  the reference layout (it has no footer); kept so it can be hung off a link if wanted. */
 function exportDay(day: number, month: number, events: ManifestEvent[]) {
   const date = `${YEAR}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   const blob = new Blob(
@@ -537,15 +459,49 @@ function exportDay(day: number, month: number, events: ManifestEvent[]) {
   URL.revokeObjectURL(url);
 }
 
-function OccurrenceList({
-  events,
-  expanded,
-  onToggle,
-}: {
-  events: ManifestEvent[];
-  expanded: Set<string>;
-  onToggle: (id: string) => void;
-}) {
+/** One impacted datatake: a status dot and the ID (a link-styled label with ↗), the product code and
+ *  the sensing window underneath; the status name and completeness on the right, in its colour. */
+function DatatakeRow({ dt }: { dt: Datatake }) {
+  const color = COMPLETENESS[dt.status].color;
+  return (
+    <div className={s.dtkRow}>
+      <span className={s.dtkLeft}>
+        <span className={s.dtkId}>
+          <i style={{ background: color }} aria-hidden />
+          {/* Styled as a link, as the reference's jump to Data Availability. Swap the span for a
+              <Link to=…> once that page takes a datatake ID. */}
+          <span className={s.dtkLink} title={`${dt.id} · ${dt.satellite}`}>
+            {dt.id}
+            <svg
+              width="9"
+              height="9"
+              viewBox="0 0 12 12"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M3.5 8.5l5-5M4.5 3.5h4v4"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
+            </svg>
+          </span>
+        </span>
+        <span className={s.dtkProd}>{dt.product.replace(/ /g, "_")}</span>
+        <span className={s.dtkWhen}>{sensingWindow(dt)}</span>
+      </span>
+      <span className={s.dtkRight} style={{ color }}>
+        <b>{COMPLETENESS[dt.status].label}</b>
+        <span>{completenessLabel(dt)}</span>
+      </span>
+    </div>
+  );
+}
+
+/** The whole day, every occurrence open: time | title with type · satellite | status dot, then
+ *  "Impacted datatakes · n · m unavailable" and one row per datatake. Occurrences rise in one after
+ *  another (the delay is inline), as in the reference. */
+function DayManifest({ events }: { events: ManifestEvent[] }) {
   if (events.length === 0) {
     return (
       <p className={s.emptyDetail}>
@@ -553,97 +509,54 @@ function OccurrenceList({
       </p>
     );
   }
-
   return (
-    <ol className={s.occList}>
-      {events.map((e) => {
+    <>
+      {events.map((e, i) => {
         const Icon = CATEGORY_ICONS[e.category];
-        const status = eventStatus(e);
-        const open = expanded.has(e.id);
         const unavailable = e.datatakes.filter(
           (d) => d.status === "unavailable",
         ).length;
-        const facts = occurrenceFacts(e);
-
         return (
-          <li key={e.id} className={s.occ}>
-            <button
-              type="button"
-              className={s.occRow}
-              onClick={() => onToggle(e.id)}
-              aria-expanded={open}
-              aria-controls={`occ-${e.id}`}
-            >
-              <span className={s.occTime}>{e.time}</span>
-              <ChevronRight
-                size={13}
-                className={`${s.chev} ${open ? s.chevOpen : ""}`}
-                aria-hidden
-              />
-              <span className={s.occBody}>
-                <span className={s.occTitle}>{e.title}</span>
-                <span className={s.occMeta}>
-                  <span
-                    style={{
-                      color: CATEGORY_COLOR[e.category],
-                      display: "inline-flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Icon size={12} strokeWidth={CATEGORY_STROKE} aria-hidden />
-                  </span>{" "}
+          <section
+            key={e.id}
+            className={s.ziOcc}
+            style={{ animationDelay: `${280 + i * 130}ms` }}
+          >
+            <div className={s.ziTop}>
+              <span className={s.ziTime}>{e.time}</span>
+              <span>
+                <span className={s.ziTitle}>{e.title}</span>
+                <span className={s.ziSub}>
+                  <Icon
+                    size={13}
+                    strokeWidth={CATEGORY_STROKE}
+                    color={CATEGORY_COLOR[e.category]}
+                    aria-hidden
+                  />
                   {e.category} · {e.satellite}
                 </span>
               </span>
               <span
-                className={s.occBadge}
-                style={{ color: COMPLETENESS[status].color }}
-              >
-                {COMPLETENESS[status].label}
-              </span>
-            </button>
-
-            {/* Rendered whether or not it is open, so the datatakes have a height to slide from —
-                mounting them on expand would make the panel appear at full size instead. */}
-            <Collapse open={open} id={`occ-${e.id}`}>
-              <div className={s.occDetail}>
-                <dl className={s.kv}>
-                  <div>
-                    <dt>Satellite</dt>
-                    <dd>{e.satellite}</dd>
-                  </div>
-                  <div>
-                    <dt>Mission</dt>
-                    <dd>{missionOf(e.satellite)}</dd>
-                  </div>
-                  <div>
-                    <dt>Start</dt>
-                    <dd>{e.time} UTC</dd>
-                  </div>
-                  <div>
-                    <dt>Span</dt>
-                    <dd>{facts.span}</dd>
-                  </div>
-                  <div>
-                    <dt>Completion</dt>
-                    <dd>{facts.completion}</dd>
-                  </div>
-                </dl>
-                <div className={s.dtHead}>
-                  Impacted datatakes · {e.datatakes.length}
-                  {unavailable > 0 ? ` · ${unavailable} unavailable` : ""}
-                </div>
-                <DatatakeTable datatakes={e.datatakes} />
-              </div>
-            </Collapse>
-          </li>
+                className={s.ziDot}
+                style={{ background: COMPLETENESS[eventStatus(e)].color }}
+                title={COMPLETENESS[eventStatus(e)].label}
+              />
+            </div>
+            <div className={s.ziDtkHead}>
+              Impacted datatakes · {e.datatakes.length}
+              {unavailable > 0 ? ` · ${unavailable} unavailable` : ""}
+            </div>
+            {e.datatakes.map((dt) => (
+              <DatatakeRow key={`${dt.id}-${dt.product}`} dt={dt} />
+            ))}
+          </section>
         );
       })}
-    </ol>
+    </>
   );
 }
 
-/** "2 occurrences · 4 datatakes · 1 unavailable" */
+/** "2 occurrences · 5 datatakes · 1 unavailable" — the unavailable count always shows, 0 included. */
 function DaySummary({ events }: { events: ManifestEvent[] }) {
   const datatakes = events.reduce((n, e) => n + e.datatakes.length, 0);
   const unavailable = events.reduce(
@@ -651,11 +564,9 @@ function DaySummary({ events }: { events: ManifestEvent[] }) {
     0,
   );
   return (
-    <span className={s.detailSub}>
+    <span className={s.ziSum}>
       {events.length} occurrence{events.length === 1 ? "" : "s"} · {datatakes}{" "}
-      datatake
-      {datatakes === 1 ? "" : "s"}
-      {unavailable > 0 ? ` · ${unavailable} unavailable` : ""}
+      datatake{datatakes === 1 ? "" : "s"} · {unavailable} unavailable
     </span>
   );
 }
@@ -679,7 +590,6 @@ export default function EventsManifest() {
   const [currentMonth, setCurrentMonth] = useState<number>(
     () => new Date().getMonth() + 1,
   );
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const motion = useAmbientMotion();
 
@@ -794,7 +704,6 @@ export default function EventsManifest() {
       setZoom(geom); // already open: glide straight to the new day
       setOpenDay(day);
       setPanelDay({ day, month: currentMonth, events });
-      setExpanded(new Set());
     },
     [byDay, currentMonth, openDay],
   );
@@ -814,13 +723,25 @@ export default function EventsManifest() {
         );
       const events = byDay.get(c.day) ?? [];
       const selected = zoomed && openDay === c.day;
+      // In the zoomed copy every other day goes out of focus. A blurred day that has events can
+      // still be clicked: the camera glides straight to it, as the reference does.
+      const blurred = zoomed && openDay !== c.day;
+      const pickable = blurred && events.length > 0;
       return (
         <div
           key={c.day}
           data-day={c.day}
-          className={`${s.cell} ${selected ? s.cellSel : ""}`}
+          className={`${s.cell} ${selected ? s.cellSel : ""} ${blurred ? s.cellBlur : ""} ${pickable ? s.cellPick : ""}`}
           data-col={pos.col}
           data-row={pos.row}
+          onClick={
+            pickable
+              ? (evt) => {
+                  evt.stopPropagation();
+                  selectDay(c.day);
+                }
+              : undefined
+          }
         >
           <span className={s.cellNum}>{String(c.day).padStart(2, "0")}</span>
           {renderDayIndicators(events, zoomed, selectDay, () => close(), c.day)}
@@ -905,16 +826,6 @@ export default function EventsManifest() {
   }, [drawerOpen]);
 
   const dayEvents = panelDay?.events ?? [];
-
-  const toggleAllExpanded = useCallback(() => {
-    if (expanded.size === dayEvents.length && dayEvents.length > 0) {
-      // All are expanded, collapse all
-      setExpanded(new Set());
-    } else if (dayEvents.length > 0) {
-      // Expand all events
-      setExpanded(new Set(dayEvents.map((e) => e.id)));
-    }
-  }, [expanded, dayEvents]);
 
   const DESCRIPTION = (
     <>
@@ -1020,7 +931,7 @@ export default function EventsManifest() {
                 disabled={!canGoBack}
                 aria-label="Previous month"
               >
-                <ChevronLeft size={15} aria-hidden />
+                <ChevronLeft size={16} strokeWidth={1.4} aria-hidden />
               </button>
               <span className={s.monthLabel} aria-live="polite">
                 {monthLabel(currentMonth)}
@@ -1031,7 +942,7 @@ export default function EventsManifest() {
                 disabled={!canGoForward}
                 aria-label="Next month"
               >
-                <ChevronRight size={15} aria-hidden />
+                <ChevronRight size={16} strokeWidth={1.4} aria-hidden />
               </button>
             </div>
 
@@ -1193,14 +1104,19 @@ export default function EventsManifest() {
                 </button>
                 <div
                   className={`${s.grid} ${s.stageGrid}`}
-                  style={{
-                    left: zoom.left,
-                    top: zoom.top,
-                    width: zoom.width,
-                    transform: zoomOn
-                      ? `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`
-                      : "none",
-                  }}
+                  style={
+                    {
+                      left: zoom.left,
+                      top: zoom.top,
+                      width: zoom.width,
+                      transform: zoomOn
+                        ? `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`
+                        : "none",
+                      // the zoom factor, so the CSS can keep blur and borders a constant
+                      // size on screen instead of growing with the scale
+                      "--k": zoom.scale,
+                    } as CSSProperties
+                  }
                   onClick={(e) => e.stopPropagation()}
                   onTransitionEnd={(e) => {
                     if (
@@ -1223,81 +1139,21 @@ export default function EventsManifest() {
               onTransitionEnd={onPanelTransitionEnd}
             >
               {panelDay !== null && (
-                <>
-                  <div className={s.drawerHead}>
-                    <div>
-                      <span className={s.detailEyebrow}>Selected day</span>
-                      <h2 className={s.detailDay}>
-                        {dayHeading(panelDay.day, panelDay.month)}
-                      </h2>
-                      <DaySummary events={dayEvents} />
-                      <StatusPills events={dayEvents} />
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        alignItems: "center",
-                      }}
-                    >
-                      <button
-                        type="button"
-                        className={s.expandAllBtn}
-                        onClick={toggleAllExpanded}
-                        title={
-                          expanded.size === dayEvents.length
-                            ? "Collapse all events"
-                            : "Expand all events"
-                        }
-                      >
-                        {expanded.size === dayEvents.length
-                          ? "Collapse All"
-                          : "Expand All"}
-                      </button>
-                      <button
-                        type="button"
-                        className={s.iconBtn}
-                        onClick={close}
-                        aria-label="Close"
-                      >
-                        <X size={15} aria-hidden />
-                      </button>
-                    </div>
-                  </div>
-                  <div className={s.drawerBody}>
-                    <OccurrenceList
-                      events={dayEvents}
-                      expanded={expanded}
-                      onToggle={(id) =>
-                        setExpanded((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(id)) next.delete(id);
-                          else next.add(id);
-                          return next;
-                        })
-                      }
-                    />
-                  </div>
-                  <footer className={s.drawerFoot}>
-                    <button
-                      type="button"
-                      className={s.footBtn}
-                      onClick={() =>
-                        exportDay(panelDay.day, panelDay.month, dayEvents)
-                      }
-                      disabled={dayEvents.length === 0}
-                    >
-                      Export JSON
-                    </button>
-                    <button
-                      type="button"
-                      className={`${s.footBtn} ${s.footPrimary}`}
-                      onClick={close}
-                    >
-                      Close
-                    </button>
-                  </footer>
-                </>
+                // One scrolling column, as the reference's .zoom-info: no box, no buttons — the
+                // stage's back link, a click outside the day or Escape close it.
+                <div
+                  className={s.drawerBody}
+                  key={`${panelDay.month}-${panelDay.day}`}
+                >
+                  <header className={s.ziHead}>
+                    <span className={s.detailEyebrow}>Selected day</span>
+                    <h2 className={s.ziDate}>
+                      {dayHeading(panelDay.day, panelDay.month)}
+                    </h2>
+                    <DaySummary events={dayEvents} />
+                  </header>
+                  <DayManifest events={dayEvents} />
+                </div>
               )}
             </aside>
           </>,

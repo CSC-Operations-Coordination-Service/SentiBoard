@@ -1,18 +1,3 @@
-/* DEVOCS-219 — "Mission Manifest" Events mock-up, shared by both layout variants
-   rendered by events.tsx.
-
-   PORTED from frontend/app/examples/events/ so the proposals are reachable from this app's
-   gallery too. Font/width tokens are read through a fallback chain (--font-sans, then --sans)
-   so the same file works in both apps; --nav-h is 0 in the Next app, which has no nav here.
-
-   This app has no Tailwind, so the utility classes of the original sketch are real rules here —
-   the same porting the Data Availability mock-up did.
-
-   The palette is deliberately NOT the one in globals.css: the brief asks for a near-black canvas
-   and a single signal accent. The accent is --accent-cyan (#00C7D6), which already means
-   "live / now / selected" app-wide, and the five completeness colours are lifted verbatim from
-   production's own datatake legend — so nothing here invents a colour meaning. Type,
-   radii and the page width still come from globals.css (--sans, --mono, --display, --maxw). */
 
 .page {
   /* canvas */
@@ -23,6 +8,7 @@
   --mf-cal: transparent;
   --mf-cell: rgba(0, 0, 0, 0.4);
   --mf-cell-line: rgba(255, 255, 255, 0.45);
+  --mf-cell-line-dim: rgba(255, 255, 255, 0.14); /* the empty boxes of neighbouring months */
   --mf-line: rgba(255, 255, 255, 0.1);
   /* faint stars sprinkled over the canvas, tiled every 360×300px */
   --mf-stars:
@@ -87,6 +73,7 @@
   --mf-cal: var(--mf-panel);
   --mf-cell: rgba(255, 255, 255, 0.35);
   --mf-cell-line: var(--mf-line);
+  --mf-cell-line-dim: rgba(9, 20, 40, 0.06);
   --mf-stars: none;
   --mf-line: rgba(9, 20, 40, 0.12);
   --mf-line-strong: rgba(9, 20, 40, 0.22);
@@ -283,42 +270,52 @@
 }
 
 /* ---------------- month bar + legend ---------------- */
+/* One centred row, as SentiBoard.html's .ev-toolbar: the month, then the filters beside it. */
 .monthBar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 10px;
-  padding: 24px clamp(18px, 4vw, 48px) 20px;
+  gap: 2px 26px;
+  /* the reference's .ev-toolbar spacing: a little air above, a little more below */
+  padding: 0 clamp(18px, 4vw, 48px) clamp(14px, 2vh, 24px);
   width: 100%;
   max-width: var(--wrap);
-  margin: 0 auto;
+  margin: clamp(16px, 2.6vh, 28px) auto 0;
   box-sizing: border-box;
 }
 
+/* Month stepper, as in SentiBoard.html (.fmonth / .fstep): bare chevrons with no box, faint until
+   hovered, either side of the month set in the sans display weight. */
 .monthNav {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  height: 49px;
 }
 
 .monthNav button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid var(--mf-line);
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+  padding: 0;
+  border: 0;
   border-radius: 0;
-  background: var(--mf-panel);
-  color: var(--mf-muted);
+  background: transparent;
+  color: color-mix(in srgb, var(--mf-text) 45%, transparent);
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  transition: color 180ms ease, transform 180ms ease;
 }
 
 .monthNav button:hover:not(:disabled) {
-  border-color: var(--mf-signal);
-  color: var(--mf-signal);
+  color: var(--mf-text);
+  transform: translateY(-2px);
+}
+
+.monthNav button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--mf-text) 40%, transparent);
+  outline-offset: 2px;
 }
 
 .monthNav button:disabled {
@@ -327,13 +324,15 @@
 }
 
 .monthLabel {
-  min-width: 128px;
+  min-width: 8.2em;
   text-align: center;
-  font-family: var(--font-mono, var(--mono));
-  font-size: 18px;
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(17px, 1.7vw, 22px);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.02em;
+  line-height: 1;
   text-transform: uppercase;
+  color: var(--mf-text);
 }
 
 .legend {
@@ -564,32 +563,31 @@ select.control {
 }
 
 /* ---------------- key metrics ---------------- */
+/* As SentiBoard.html's .kpis: four fixed-width columns, centred as a group, each figure centred
+   over its caption. No dividers. */
 .metrics {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
   width: 100%;
-  max-width: var(--wrap);
   margin: 0 auto;
-  padding: 28px clamp(18px, 4vw, 48px) 8px;
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
   box-sizing: border-box;
 }
 
 .metric {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 0 24px;
-  border-left: 1px solid var(--mf-line);
-}
-
-.metric:first-child {
-  padding-left: 0;
-  border-left: 0;
+  align-items: center;
+  gap: 5px;
+  width: clamp(140px, 16vw, 220px);
+  text-align: center;
 }
 
 .metricValue {
   font-family: var(--font-sans, var(--sans));
-  font-size: 34px;
+  font-size: clamp(26px, 2.9vw, 37px);
   font-weight: 700;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -597,72 +595,105 @@ select.control {
 }
 
 .metricLabel {
-  font-family: var(--font-mono, var(--mono));
+  font-family: var(--font-sans, var(--sans));
   font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  line-height: 1.5;
   text-transform: uppercase;
-  color: var(--mf-muted);
+  color: color-mix(in srgb, var(--mf-text) 72%, transparent);
 }
 
 .metricLost .metricValue {
   color: var(--mf-red);
 }
 
-/* ---------------- month + filter row ---------------- */
+/* ---------------- month + filter row ----------------
+   As SentiBoard.html's .ev-toolbar: every filter is a 200px field standing on one hairline, the
+   caption on the left and its value with a chevron on the right; the search is the same field.
+   All fields share the stepper's 49px height so the row lines up on one baseline. */
 .barFilters {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: center;
   flex-wrap: wrap;
-  gap: 18px 28px;
+  gap: 2px 26px;
 }
 
 .inline {
+  --field-line: color-mix(in srgb, var(--mf-text) 30%, transparent);
   display: flex;
   align-items: center;
-  gap: 10px;
-  color: var(--mf-muted);
+  gap: 12px;
+  width: 200px;
+  height: 49px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--field-line);
+  color: var(--mf-text);
+  transition: border-color 200ms ease;
 }
 
+/* caption: small, bold, widely tracked; the accent while the field is hovered or in use */
 .inlineLabel {
-  font-family: var(--font-mono, var(--mono));
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  flex: 1 1 auto;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   white-space: nowrap;
+  color: var(--mf-text);
+  cursor: pointer;
+  transition: color 200ms ease;
 }
 
-/* Minimal dropdown: no box, a single underline, and a small chevron drawn in the background. */
+.inline:hover .inlineLabel,
+.inline:focus-within .inlineLabel {
+  color: var(--mf-signal);
+}
+
+.inline:focus-within {
+  border-bottom-color: var(--mf-signal);
+}
+
+/* value: no box of its own, right-aligned against the chevron */
 .inlineSelect {
   appearance: none;
-  min-width: 92px;
-  padding: 6px 22px 6px 2px;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 60%;
+  padding: 6px 20px 6px 4px;
   border: 0;
-  border-bottom: 1px solid var(--mf-line-strong);
   border-radius: 0;
   background-color: transparent;
-  background-image: linear-gradient(45deg, transparent 50%, var(--mf-muted) 50%),
-    linear-gradient(135deg, var(--mf-muted) 50%, transparent 50%);
-  background-position: calc(100% - 9px) center, calc(100% - 4px) center;
-  background-size: 5px 5px, 5px 5px;
+  /* a thin outlined chevron, as the reference draws it */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='rgba(255,255,255,0.85)' stroke-width='1.3'/%3E%3C/svg%3E");
+  background-position: right 2px center;
+  background-size: 12px 12px;
   background-repeat: no-repeat;
   color: var(--mf-text);
-  font: inherit;
+  font-family: var(--font-sans, var(--sans));
   font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  text-align-last: right;
+  text-overflow: ellipsis;
   cursor: pointer;
+}
+
+:global(:root[data-theme="light"]) .inlineSelect {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='rgba(13,18,32,0.8)' stroke-width='1.3'/%3E%3C/svg%3E");
 }
 
 .inlineSelect option {
   background: var(--mf-panel);
   color: var(--mf-text);
+  text-align: left;
 }
 
-.inlineSelect:hover:not(:disabled),
-.inlineSelect:focus-visible,
-.inlineInput:focus {
+.inlineSelect:focus,
+.inlineSelect:focus-visible {
   outline: none;
-  border-bottom-color: var(--mf-signal);
 }
 
 .inlineSelect:disabled {
@@ -670,60 +701,94 @@ select.control {
   cursor: not-allowed;
 }
 
+.inline:has(.inlineSelect:disabled) .inlineLabel {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inline:has(.inlineSelect:disabled):hover .inlineLabel {
+  color: var(--mf-text);
+}
+
+/* search: the same field, icon first, the input filling the rest */
 .inlineSearch {
-  color: var(--mf-faint);
+  gap: 9px;
+}
+
+.inlineSearch svg {
+  flex: 0 0 auto;
 }
 
 .inlineInput {
-  width: 180px;
-  padding: 6px 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  padding: 0;
   border: 0;
-  border-bottom: 1px solid var(--mf-line-strong);
   border-radius: 0;
   background: transparent;
   color: var(--mf-text);
-  font: inherit;
-  font-size: 13px;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 14px;
+  outline: none;
 }
 
 .inlineInput::placeholder {
-  color: var(--mf-faint);
+  color: var(--mf-text);
+  opacity: 1;
 }
 
-/* Restrict the calendar wrapper width so cells remain compact and square */
+/* the reset sits on the same 49px line as the fields */
+.barFilters .reset {
+  height: 49px;
+  margin-left: 0;
+}
+
+/* ---------------- month grid: sized like SentiBoard.html's star chart ----------------
+   The reference draws the month in an SVG 1580 units wide: seven 200 × 168 cells (1400 units) with
+   90 units either side, 80 above and 60 below. That chart is as wide as the screen height allows —
+   min(column, (100vh − 203px) × 1580 / 1148) — and centred under the toolbar.
+
+   .calRow is that chart box; .calWrap's padding is the 90/80/60 margin, as percentages of the
+   box's width (percentage padding always resolves against the parent's width), so the grid is
+   1400/1580 of the box at every size. On a 1080p screen this gives a ~870px grid of ~124 × 104 cells. */
+.calRow {
+  position: relative;
+  width: min(100%, max(560px, calc((100vh - 203px) * 1580 / 1148)));
+  margin: 0 auto;
+  padding-bottom: clamp(20px, 2.6vw, 38px);
+}
+
 .calWrap {
+  position: relative;
   width: 100%;
-  max-width: 900px; /* Gives enough breathing room for a strong zoom */
-  margin: 0 auto 64px;
-  padding: 20px clamp(18px, 4vw, 48px);
-  border: 1px solid var(--mf-line);
+  margin: 0;
+  /* 80 / 90 / 60 units of 1580 */
+  padding: 5.063% 5.696% 3.797%;
+  border: 0;
   background: var(--mf-cal);
   box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
   min-width: 0;
 }
 
-
-/* Restrict the outer row container as well */
-.calRow {
-  display: flex;
-  align-items: center;
-  gap: clamp(16px, 3vw, 40px);
-  width: 100%;
-  max-width: 1140px;
-  margin: 0 auto;
-}
-
-.calRow > .calWrap {
-  flex: 1 1 auto;
-  max-width: 800px;
-  margin: 0 0 64px;
-}
-
+/* The constellation lives in the free space to the left of the chart, so it never pushes the
+   grid off the page's centre line. Below 1400px there is no room for it there; it then sits above
+   the grid, centred (the base rules below), as it already did on phones. */
 .zodiac {
-  flex: 0 0 300px;
-  margin-bottom: 64px;
+  width: min(260px, 100%);
+  margin: 0 auto 8px;
+}
+
+@media (min-width: 1400px) {
+  .zodiac {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + clamp(8px, 2vw, 32px));
+    width: clamp(220px, 18vw, 300px);
+    margin: 0;
+    transform: translateY(-50%);
+  }
 }
 
 .zodiacSvg {
@@ -794,17 +859,22 @@ select.control {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 5px;
+  /* no gutters: neighbouring days share one line, as the reference's adjoining rects do */
+  gap: 0;
 }
 
 /* the zoom: the grid moves and scales as one, from the selected day's inline transform */
 .grid {
   width: 100%;
   height: 100%;
+  container-type: inline-size; /* lets the day numbers scale with the grid (cqw) */
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* The reference's star chart has no weekday row, so it is hidden here; delete this rule to show
+   it again. */
 .dow {
+  display: none;
   margin-bottom: 6px;
 }
 
@@ -819,14 +889,17 @@ select.control {
 
 .cell {
   position: relative;
-  aspect-ratio: 1;
-  min-height: 60px;
-  /* Reduced from 110px so cells can shrink proportionally */
+  /* the reference's 200 × 168 cell, a little wider than tall */
+  aspect-ratio: 200 / 168;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: stretch;
-  padding: 5px;
+  /* every cell overlaps its right and lower neighbour by the border's width, so two days share
+     one 1px line instead of drawing two side by side */
+  margin: 0 -1px -1px 0;
+  padding: clamp(5px, 1cqw, 10px) clamp(6px, 1cqw, 12px);
   border: 1px solid var(--mf-cell-line);
   border-radius: 0;
   background: var(--mf-cell);
@@ -839,7 +912,8 @@ select.control {
 }
 
 .cell:not(.cellDim):hover {
-  border-color: var(--mf-line-strong);
+  z-index: 2; /* lift it so all four of its edges show the hover colour */
+  border-color: color-mix(in srgb, var(--mf-text) 70%, transparent);
 }
 
 .cell:focus-visible {
@@ -847,11 +921,12 @@ select.control {
   outline-offset: 1px;
 }
 
-/* neighbouring-month padding: present so the weeks line up, and nothing more */
+/* neighbouring-month padding: drawn as faint empty boxes, as the reference does, so the month
+   keeps its full rectangle */
 .cellDim,
 .cellDim:hover {
   background: transparent;
-  border-color: transparent;
+  border-color: var(--mf-cell-line-dim);
   cursor: default;
 }
 
@@ -862,11 +937,14 @@ select.control {
   transform: scale(1.1) !important;
 }
 
+/* day number: the reference's 20-unit Noto Sans 600 at 88% white — 1.43% of the grid width */
 .cellNum {
-  font-family: var(--font-mono, var(--mono));
-  font-size: 11px;
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(10px, 1.43cqw, 15px);
   font-weight: 600;
-  color: var(--mf-muted);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: color-mix(in srgb, var(--mf-text) 88%, transparent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1025,65 +1103,274 @@ select.control {
   pointer-events: auto;
 }
 
+/* The day manifest, as SentiBoard.html's .zoom-info: no panel at all. A transparent column on the
+   right of the screen, its text standing straight on the stage's dark gradient (.stage::after),
+   fading in once the camera is on its way and out first when it leaves. */
 .drawer {
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
   z-index: 9999;
-  width: min(440px, 92vw);
-  display: flex;
-  flex-direction: column;
-  /* a dark panel whatever the page theme: its tokens are set here, not inherited. The text ramp is
-     pushed toward white and the status colours toward their brightest form, so the drawer reads
-     against the near-black canvas without relying on the page's dimmer ink. */
+  width: min(46vw, 540px);
+  /* dark-stage tokens whatever the page theme; the light block below swaps them */
   --mf-text: #ffffff;
-  --mf-muted: #d6dee9;
-  --mf-faint: #a8b4c4;
-  --mf-line: rgba(0, 229, 255, 0.32);
-  --mf-line-strong: rgba(0, 229, 255, 0.6);
-  --mf-signal: #33f0ff;
-  --mf-signal-soft: rgba(0, 229, 255, 0.16);
-  --mf-panel-2: #1a222c;
+  --mf-muted: rgba(234, 240, 246, 0.55);
+  --mf-faint: rgba(234, 240, 246, 0.38);
+  --mf-line: rgba(255, 255, 255, 0.07);
+  --mf-signal: #2fc6dc;
   --mf-grey: #c9d0da;
-  --mf-green: #5ff5a8;
-  --mf-orange: #ffd466;
-  --mf-red: #ff8a8a;
-  --mf-drawer-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.75);
+  --mf-green: #3fcf7f;
+  --mf-orange: #f0a63a;
+  --mf-red: #e8514b;
   color: var(--mf-text);
   font-family: var(--font-sans, var(--sans));
-  background: linear-gradient(135deg, rgb(10, 13, 20), rgb(2, 3, 5));
-  border: 1px solid rgba(0, 229, 255, 0.4);
-  border-right: 0;
-  border-radius: 0;
-  box-shadow: inset 0 0 40px rgba(0, 229, 255, 0.05), var(--mf-drawer-shadow);
-  backdrop-filter: blur(3px);
-  transform: translateX(100%);
-  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  background: none;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
 }
 
 .drawerOn {
-  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 460ms ease 420ms;
 }
 
-/* Top padding is generous on purpose: the header is the first thing the eye lands on, and it must
-   sit fully inside the panel, clear of the top edge and of any browser chrome above it. */
-.drawerHead {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 36px 24px 20px;
-  background: rgba(0, 0, 0, 0.35);
-  border-bottom: 1px solid var(--mf-line-strong);
+:global(:root[data-theme="light"]) .drawer {
+  --mf-text: #0d1220;
+  --mf-muted: #4b5768;
+  --mf-faint: #7c8798;
+  --mf-line: rgba(9, 20, 40, 0.1);
+  --mf-signal: #0a8b97;
+  --mf-grey: #6b7075;
+  --mf-green: #0f9257;
+  --mf-orange: #a86a06;
+  --mf-red: #d24343;
 }
 
+/* the one scrolling column: generous top padding, flush to nothing on the left (the gradient is
+   the edge), the reference's gutter on the right */
 .drawerBody {
-  flex: 1;
-  min-height: 0;
+  height: 100%;
+  box-sizing: border-box;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px 24px 24px;
+  scrollbar-width: thin;
+  padding: clamp(56px, 10vh, 108px) clamp(22px, 4vw, 60px) 56px 0;
+}
+
+.ziHead .detailEyebrow {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+}
+
+.ziDate {
+  display: block;
+  margin: 8px 0 0;
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(25px, 2.9vw, 38px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: var(--mf-text);
+}
+
+.ziSum {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--mf-muted);
+}
+
+/* one occurrence; each rises in a beat after the one before (delay inline) */
+@keyframes ziRise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ziOcc {
+  padding: 30px 0 4px;
+  animation: ziRise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.ziTop {
+  display: grid;
+  grid-template-columns: 74px 1fr 12px;
+  gap: 14px;
+  align-items: start;
+}
+
+.ziTime {
+  padding-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mf-text) 50%, transparent);
+}
+
+.ziTitle {
+  display: block;
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--mf-text);
+}
+
+.ziSub {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mf-muted);
+}
+
+.ziDot {
+  width: 10px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 50%;
+}
+
+.ziDtkHead {
+  margin-top: 20px;
+  padding-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--mf-text) 34%, transparent);
+}
+
+/* one datatake: ID / product / window on the left, status and completeness on the right */
+.dtkRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid var(--mf-line);
+}
+
+.dtkLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dtkId {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-text);
+}
+
+.dtkId i {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dtkLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--mf-text) 22%, transparent);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.dtkLink:hover {
+  color: var(--mf-signal);
+  border-bottom-color: var(--mf-signal);
+}
+
+.dtkLink svg {
+  opacity: 0.6;
+}
+
+.dtkProd {
+  padding-left: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--mf-signal);
+}
+
+.dtkWhen {
+  padding-left: 20px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-faint);
+}
+
+.dtkRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dtkRight b {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dtkRight span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Below 900px the manifest takes the lower two thirds of the screen, full width, and the day sits
+   above it (measureZoom); the stage's gradient rises from the bottom to match. */
+@media (max-width: 900px) {
+  .drawer {
+    top: auto;
+    width: 100%;
+    height: 64%;
+  }
+
+  .drawerBody {
+    padding: 26px clamp(18px, 5vw, 28px) 40px;
+  }
+
+  .ziTop {
+    grid-template-columns: 62px 1fr 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .drawerOn {
+    transition: none;
+  }
+
+  .ziOcc {
+    animation: none;
+  }
 }
 
 .iconBtn {
@@ -1510,9 +1797,91 @@ select.control {
   color: var(--mf-text);
 }
 
+/* ---------- focus on the selected day (as in SentiBoard.html #events) ----------
+   Everything inside .stageGrid is scaled by --k (set inline from the zoom), so any length that
+   should look the same on screen is divided by it: a blur(6px / k) reads as 6px once scaled. */
+
+/* Same duration and curve as the grid's own transform, so blur and borders settle with the zoom. */
+.stageGrid .cell {
+  transition:
+    filter 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    border-width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s;
+}
+
+/* Hairline borders: the reference draws its grid with non-scaling strokes, so the lines stay 1px
+   however far the camera zooms in. Without this a 1px border shows up 3–4px thick. */
+.stageOn .stageGrid .cell {
+  border-width: calc(1px / var(--k, 1));
+}
+
+/* every day but the selected one goes out of focus and recedes */
+.stageOn .stageGrid .cellBlur {
+  filter: blur(calc(6px / var(--k, 1)));
+  opacity: 0.5;
+}
+
+/* the marks inside a blurred day are not targets of their own — the whole day is */
+.stageGrid .cellBlur .marks {
+  pointer-events: none;
+}
+
+/* a blurred day with events sharpens a little under the pointer, to say it can be picked */
+.stageOn .stageGrid .cellPick {
+  cursor: pointer;
+}
+
+.stageOn .stageGrid .cellPick:hover {
+  filter: blur(calc(2px / var(--k, 1)));
+  opacity: 0.7;
+}
+
+/* The scrim: the starfield darkens toward the drawer, so the days under it fade into the
+   background, as with the reference's .zoom-scrim. Above the grid (z 1), below the back button
+   (z 2); it fades in a beat after the zoom starts. */
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to left,
+    var(--mf-bg) 0%,
+    color-mix(in srgb, var(--mf-bg) 93%, transparent) 30%,
+    color-mix(in srgb, var(--mf-bg) 60%, transparent) 50%,
+    color-mix(in srgb, var(--mf-bg) 12%, transparent) 68%,
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.stageOn::after {
+  opacity: 1;
+  transition: opacity 0.62s ease 0.22s;
+}
+
+/* below 900px the manifest covers the screen from below, so the scrim rises from the bottom instead */
+@media (max-width: 900px) {
+  .stage::after {
+    background: linear-gradient(
+      to top,
+      var(--mf-bg) 0%,
+      color-mix(in srgb, var(--mf-bg) 93%, transparent) 40%,
+      color-mix(in srgb, var(--mf-bg) 55%, transparent) 62%,
+      transparent 84%
+    );
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .stage::before,
+  .stage::after,
+  .stageOn::after,
   .stageGrid,
+  .stageGrid .cell,
   .stageBack {
     transition: none;
   }
@@ -1655,7 +2024,7 @@ select.control {
 
   .dow,
   .grid {
-    gap: 3px;
+    gap: 0;
   }
 
   /* A day cell is the tap target for its day, so it has to clear 44px on both axes — and because
@@ -1692,16 +2061,8 @@ select.control {
   }
 
   /* ---------- day drawer ---------- */
-  .drawer {
-    width: min(440px, 100vw - 24px);
-  }
-
   .drawerHead {
     padding: 28px 16px 16px;
-  }
-
-  .drawerBody {
-    padding: 6px 16px 24px;
   }
 
   .drawerFoot {
@@ -1809,28 +2170,14 @@ select.control {
     font-size: 34px;
   }
 
-  /* Metrics: a 2×2 block, with the divider moved to the second column. */
+  /* Metrics: two centred columns, as the reference does below 900px. */
   .metrics {
-    grid-template-columns: repeat(2, 1fr);
-    row-gap: 22px;
+    gap: 10px 0;
+    padding-bottom: 26px;
   }
 
-  .metric,
-  .metric:first-child {
-    padding: 0 0 0 16px;
-    border-left: 0;
-  }
-
-  .metric:nth-child(odd) {
-    padding-left: 0;
-  }
-
-  .metric:nth-child(even) {
-    border-left: 1px solid var(--mf-line);
-  }
-
-  .metricValue {
-    font-size: 28px;
+  .metric {
+    width: clamp(130px, 44vw, 200px);
   }
 
   /* Filters stack into a column, each field full width with its value on the right. */
@@ -1838,7 +2185,7 @@ select.control {
     flex-direction: column;
     align-items: stretch;
     width: 100%;
-    gap: 14px;
+    gap: 0;
   }
 
   .inline {
