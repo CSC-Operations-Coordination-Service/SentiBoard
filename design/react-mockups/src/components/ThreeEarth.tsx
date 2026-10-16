@@ -2,14 +2,24 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 interface ThreeEarthProps {
+  /** Called once the scene exists. May return a cleanup function (event listeners, extra objects),
+   *  which runs when the globe unmounts. */
   onReady?: (
     scene: THREE.Scene,
     camera: THREE.Camera,
     renderer: THREE.WebGLRenderer,
-  ) => void;
+  ) => void | (() => void);
+  /** See-through globe, as SentiBoard.html#acquisitions: a canvas with an alpha channel cleared to
+   *  nothing, no scene colour, no wrapper fill, and none of this component's own stars or glow
+   *  shell — the page behind supplies the sky, and the page draws its own atmosphere. Off by
+   *  default, so any other page using ThreeEarth keeps its current look. */
+  transparent?: boolean;
 }
 
-export default function ThreeEarth({ onReady }: ThreeEarthProps) {
+export default function ThreeEarth({
+  onReady,
+  transparent = false,
+}: ThreeEarthProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -20,9 +30,10 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
 
     // 1. Scene, Camera, Renderer
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020409);
+    scene.background = transparent ? null : new THREE.Color(0x020409);
 
-    // Create Starfield Background Particles
+    // Create Starfield Background Particles (opaque mode only: a transparent globe shows the
+    // page's own sky instead)
     const starsGeometry = new THREE.BufferGeometry();
     const starsCount = 1200;
     const starPositions = new Float32Array(starsCount * 3);
@@ -46,12 +57,18 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     });
 
     const starField = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(starField);
+    if (!transparent) scene.add(starField);
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
     camera.position.set(0, 0, 3.0);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // The alpha channel is fixed when the context is created: without `alpha: true` the canvas can
+    // never be see-through, whatever setClearColor says later.
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: transparent,
+    });
+    if (transparent) renderer.setClearColor(0x000000, 0);
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
@@ -95,7 +112,8 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
       side: THREE.BackSide,
     });
     const atmosphereMesh = new THREE.Mesh(atmosphereGeom, atmosphereMat);
-    earthGroup.add(atmosphereMesh); // FIXED: Added to group[cite: 18]
+    // In transparent mode the page draws the reference's rim gradient instead; two glows would stack.
+    if (!transparent) earthGroup.add(atmosphereMesh); // FIXED: Added to group[cite: 18]
 
     // Load texture with CORS & Fallback
     const textureLoader = new THREE.TextureLoader();
@@ -140,13 +158,12 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     };
     animate();
 
-    // Callback to parent page
-    if (onReady) {
-      onReady(scene, camera, renderer);
-    }
+    // Callback to parent page; keep whatever cleanup it hands back
+    const pageCleanup = onReady?.(scene, camera, renderer);
 
     // Cleanup
     return () => {
+      if (typeof pageCleanup === "function") pageCleanup();
       window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animationFrameId);
       renderer.dispose();
@@ -154,6 +171,8 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
       earthMaterial.dispose();
       atmosphereGeom.dispose();
       atmosphereMat.dispose();
+      starsGeometry.dispose();
+      starsMaterial.dispose();
     };
   }, []);
 
@@ -165,7 +184,7 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
         height: "100%",
         minHeight: "500px", // FIXED: Prevents container height collapsing to 0[cite: 18]
         position: "relative",
-        background: "#020409",
+        background: transparent ? "transparent" : "#020409",
         overflow: "hidden",
       }}
     />

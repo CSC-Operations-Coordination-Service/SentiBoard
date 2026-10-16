@@ -110,6 +110,476 @@ const SAMPLE_SATELLITES = [
 
 const SPEED_OPTIONS = [1, 10, 60, 100, 300, 1000];
 
+/* ---------- map markers (SentiBoard.html#acquisitions) ---------- */
+
+/** How close (great-circle degrees) a satellite's ground point must be for a station to be "in
+ *  contact" — the reference's 22°. */
+const CONTACT_DEG = 22;
+
+/** The reference's ground-station antenna, in its own canvas units around the station point: a dish
+ *  and its rim, the feed arm, the mast and the base. */
+const DISH_PATH =
+  "M-6.5 -7.5Q-5 1.2 5.2 -1.6M-6.5 -7.5L5.2 -1.6M-0.6 -4.5L2.6 -8.2M-1.2 -1.2L-1.2 4.2M-5 5L2.6 5";
+
+/** A station: the antenna drawn twice (a dark halo under the line, so it reads over any imagery),
+ *  the feed's dot, and the name on a dark tag. Cyan, with a ring, while a satellite is in contact. */
+function StationMarker({
+  name,
+  x,
+  y,
+  contact,
+}: {
+  name: string;
+  x: number;
+  y: number;
+  contact: boolean;
+}) {
+  const c = contact ? "#00E5FF" : "#EAF0F6";
+  return (
+    <div
+      className={`${g.stn} ${contact ? g.stnOn : ""}`}
+      style={{ left: x, top: y }}
+    >
+      <svg className={g.stnIcon} viewBox="-14 -14 28 28" aria-hidden>
+        <g fill="none" strokeLinecap="round" strokeLinejoin="round">
+          <path d={DISH_PATH} stroke="rgba(4,8,14,0.85)" strokeWidth="4.2" />
+          <path d={DISH_PATH} stroke={c} strokeWidth="1.6" />
+        </g>
+        <circle cx="2.6" cy="-8.2" r="1.3" fill={c} />
+        {contact && (
+          <circle
+            r="12"
+            fill="none"
+            stroke="rgba(0,229,255,0.35)"
+            strokeWidth="1"
+          />
+        )}
+      </svg>
+      <span className={g.stnTag}>{name}</span>
+    </div>
+  );
+}
+
+/** A satellite: a small dot in its colour with a dark edge, and its name in small mono type up and to
+ *  the right. The selected datatake's satellite is drawn larger, in white. */
+function SatelliteMarker({
+  name,
+  x,
+  y,
+  color,
+  selected,
+}: {
+  name: string;
+  x: number;
+  y: number;
+  color: string;
+  selected: boolean;
+}) {
+  return (
+    <div
+      className={`${g.sat} ${selected ? g.satSel : ""}`}
+      style={{ left: x, top: y, ["--c" as string]: color }}
+    >
+      <i className={g.satDot} />
+      <span className={g.satLbl}>{name}</span>
+    </div>
+  );
+}
+
+const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
+
+/* ---------- datatake status colours (the Datatake list's dots) ---------- */
+const STATUS_HEX: Record<string, number> = {
+  ok: 0x3dd68c,
+  warn: 0xf5b544,
+  crit: 0xef4444,
+};
+const statusHexOf = (id: string, fallback: number) => {
+  const cls = ACQ_DATATAKES.find((d) => d.id === id)?.cls;
+  return (cls && STATUS_HEX[cls]) ?? fallback;
+};
+
+/* ---------- the datatake record (SentiBoard.html#acquisitions) ----------
+ * The fields the reference shows for a datatake. ACQ_DATATAKES carries only id / sat / comp / status
+ * / cls / startIso, so the rest comes from the reference's sample set, keyed by ID. A datatake that
+ * is not in this table still opens: its unknown fields read "NA". */
+interface DtkDetail {
+  /** UTC date and time the sensing starts */
+  start: string; // "2026-07-16T06:00:12"
+  /** sensing length, seconds */
+  dur: number;
+  mode: string;
+  swath: string;
+  pol: string;
+  orbit: number;
+  rel: number;
+  /** completeness of every expected product type, % — the "missing" time is summed over these */
+  types: number[];
+  /** completeness shown as the headline figure, % */
+  pct: number;
+  station: string;
+  /** downlink pass, or null when there was none */
+  pass: { at: string; mb: number; s: number } | null;
+}
+
+const DTK_DETAILS: Record<string, DtkDetail> = {
+  "S2A-48201-1": {
+    start: "2026-07-16T10:42:01",
+    dur: 205,
+    mode: "NOBS",
+    swath: "NA",
+    pol: "NA",
+    orbit: 48201,
+    rel: 22,
+    types: [100, 100, 100, 100, 100],
+    pct: 100.0,
+    station: "Svalbard",
+    pass: { at: "11:02:14", mb: 18400, s: 41 },
+  },
+  "S1C-57622": {
+    start: "2026-07-16T09:33:10",
+    dur: 130,
+    mode: "IW",
+    swath: "NA",
+    pol: "DV",
+    orbit: 57622,
+    rel: 33,
+    types: [100, 86.2, 72.6, 58.4],
+    pct: 79.3,
+    station: "Matera",
+    pass: { at: "09:48:37", mb: 11250, s: 29 },
+  },
+  "S3B-080-345": {
+    start: "2026-07-16T08:11:45",
+    dur: 183,
+    mode: "EO",
+    swath: "NA",
+    pol: "NA",
+    orbit: 40812,
+    rel: 80,
+    types: [100, 96.0, 94.0, 88.0, 84.5],
+    pct: 92.5,
+    station: "Maspalomas",
+    pass: { at: "08:26:05", mb: 9600, s: 36 },
+  },
+  "S2B-42050-1": {
+    start: "2026-07-16T07:20:50",
+    dur: 252,
+    mode: "NOBS",
+    swath: "NA",
+    pol: "NA",
+    orbit: 42050,
+    rel: 109,
+    types: [100, 100, 100, 99.5, 100],
+    pct: 99.9,
+    station: "Inuvik",
+    pass: { at: "07:39:12", mb: 22600, s: 50 },
+  },
+  "S5P-60012": {
+    start: "2026-07-16T06:00:12",
+    dur: 400,
+    mode: "NOM",
+    swath: "NA",
+    pol: "NA",
+    orbit: 60012,
+    rel: 11,
+    types: [100, 98.0, 96.5, 95.0, 95.5],
+    pct: 97.0,
+    station: "Neustrelitz",
+    pass: { at: "06:21:40", mb: 14100, s: 33 },
+  },
+  "S3A-055-358": {
+    start: "2026-07-15T22:14:30",
+    dur: 108,
+    mode: "NOM",
+    swath: "NA",
+    pol: "NA",
+    orbit: 33358,
+    rel: 55,
+    types: [0, 0, 0],
+    pct: 0.0,
+    station: "Svalbard",
+    pass: null,
+  },
+};
+
+const STATION_CODE: Record<string, string> = {
+  Svalbard: "SGS",
+  Matera: "MTI",
+  Maspalomas: "MPS",
+  Inuvik: "INU",
+  Neustrelitz: "NSG",
+};
+
+/** "6m 40s", "41s" */
+const fmtDur = (sec: number) => {
+  const s = Math.round(sec);
+  const m = Math.floor(s / 60);
+  return m ? `${m}m ${s % 60}s` : `${s}s`;
+};
+
+/** ISO without the zone, as the reference prints it: 2026-07-16T06:06:52 */
+const isoPlus = (start: string, addSec: number) =>
+  new Date(Date.parse(`${start}Z`) + addSec * 1000).toISOString().slice(0, 19);
+
+/** The datatake panel: eyebrow, ID and satellite, the status with its glowing dot and a close
+ *  button; the completeness headline beside sensing / missing time; then the record, one hairline
+ *  row per field. */
+function DatatakePanel({
+  dt,
+  onClose,
+}: {
+  dt: (typeof ACQ_DATATAKES)[number];
+  onClose: () => void;
+}) {
+  const d = DTK_DETAILS[dt.id];
+  const pct = d?.pct ?? Math.round(dt.comp || 0);
+  const status = dt.status || "Processing";
+  const tone = hex(STATUS_HEX[dt.cls] ?? 0x8a96a8);
+  const nTypes = d?.types.length ?? 0;
+  const missing = d
+    ? d.types.reduce((s, p) => s + (1 - p / 100) * d.dur, 0)
+    : null;
+  const start = d?.start ?? (dt.startIso ? dt.startIso.slice(0, 19) : "NA");
+  const failed = status === "Failed";
+  const acq = failed ? 0 : 100;
+
+  const rows: [string, string][] = [
+    ["Satellite ID", dt.sat],
+    ["Datatake ID", dt.id],
+    ["Mode", d?.mode ?? "NA"],
+    ["Swath", d?.swath ?? "NA"],
+    ["Polarisation", d?.pol ?? "NA"],
+    ["Observation time start", start],
+    ["Observation time stop", d ? isoPlus(d.start, d.dur) : "NA"],
+    ["Observation duration", d ? `${Math.round(d.dur)} s` : "NA"],
+    ["Orbit absolute", d ? String(d.orbit) : "NA"],
+    ["Orbit relative", d ? String(d.rel) : "NA"],
+    [
+      "Acquisition status",
+      `${failed ? "Failed" : "Acquired"} (${acq.toFixed(2)}%)`,
+    ],
+    [
+      "Publication status",
+      `${failed ? "Not published" : status} (${pct.toFixed(2)}%)`,
+    ],
+  ];
+  if (d) {
+    const code = STATION_CODE[d.station];
+    const station = `${d.station}${code ? ` (${code})` : ""}`;
+    if (d.pass)
+      rows.push(
+        ["Downlink station", station],
+        ["Downlink time", `${d.start.slice(0, 10)}T${d.pass.at}`],
+        ["Downlink volume", `${d.pass.mb.toLocaleString("en-US")} Mb`],
+        ["Downlink duration", `${d.pass.s} s`],
+      );
+    else rows.push(["Downlink station", station], ["Downlink", "No pass"]);
+  }
+
+  return (
+    <aside className={g.dtkPanel} aria-label={`Datatake ${dt.id}`}>
+      <div className={g.dtkHead}>
+        <span className={g.dtkSel}>
+          <span className={g.dtkEyebrow}>Datatake</span>
+          <span className={g.dtkId}>{dt.id}</span>
+          <span className={g.dtkMission}>{dt.sat}</span>
+        </span>
+        <span className={g.dtkHeadR}>
+          <span className={g.dtkPill} style={{ color: tone }}>
+            {status}
+          </span>
+          <button
+            type="button"
+            className={g.dtkClose}
+            onClick={onClose}
+            aria-label="Close the datatake"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              aria-hidden
+            >
+              <path
+                d="M3.5 3.5l9 9M12.5 3.5l-9 9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            </svg>
+          </button>
+        </span>
+      </div>
+
+      <div className={g.dtkKpi}>
+        <div className={g.dtkBig}>
+          {pct.toFixed(1)}
+          <sup>%</sup>
+        </div>
+        <dl className={g.dtkAside}>
+          <div>
+            <dt>Sensing</dt>
+            <dd>{d ? fmtDur(d.dur) : "NA"}</dd>
+          </div>
+          <div>
+            <dt
+              title={`Missing sensing summed across ${nTypes} expected product types`}
+            >
+              Missing
+            </dt>
+            <dd className={missing && missing >= 0.5 ? g.dtkGap : ""}>
+              {missing === null
+                ? "NA"
+                : missing < 0.5
+                  ? "none"
+                  : fmtDur(missing)}
+            </dd>
+          </div>
+        </dl>
+      </div>
+      {d && (
+        <p className={g.dtkNote}>
+          Mean across {nTypes} expected product types · missing time summed
+          across types
+        </p>
+      )}
+
+      <dl className={g.dtkRecord}>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </aside>
+  );
+}
+
+/* ---------- ground tracks (SentiBoard.html#acquisitions) ----------
+ * The reference draws no orbit rings in space: each satellite sits on its ground point, trailing a
+ * thin white line over the last part of its pass (the selected one also shows where it is heading,
+ * dashed). TRAIL_STEPS × TRAIL_STEP radians of orbit ≈ the reference's 24 minutes of a ~100 min
+ * orbit. Stations within CONTACT_DEG of a satellite get a faint cyan coverage circle and a dashed
+ * link to it. */
+const GROUND_R = 1.006; // just above the footprints (1.004–1.005)
+const TRAIL_STEPS = 30;
+const TRAIL_STEP = 0.05;
+
+/** A point of a satellite's ground track, in the EarthGroup frame (the page's lat/lon convention). */
+function trackPoint(
+  incRad: number,
+  omRad: number,
+  angle: number,
+  r = GROUND_R,
+) {
+  const lat = Math.asin(Math.sin(incRad) * Math.sin(angle));
+  const lon =
+    omRad + Math.atan2(Math.cos(incRad) * Math.sin(angle), Math.cos(angle));
+  return new THREE.Vector3(
+    Math.cos(lat) * Math.sin(lon) * r,
+    Math.sin(lat) * r,
+    Math.cos(lat) * Math.cos(lon) * r,
+  );
+}
+
+/** Ring of points at an angular radius around a unit direction, on a sphere of radius r. */
+function capRing(center: THREE.Vector3, angRad: number, r: number, steps = 72) {
+  const n = center.clone().normalize();
+  const e1 = new THREE.Vector3(0, 1, 0).cross(n);
+  if (e1.lengthSq() < 1e-6) e1.set(1, 0, 0);
+  e1.normalize();
+  const e2 = n.clone().cross(e1);
+  const pts: THREE.Vector3[] = [];
+  for (let i = 0; i < steps; i++) {
+    const b = (i / steps) * Math.PI * 2;
+    pts.push(
+      n
+        .clone()
+        .multiplyScalar(Math.cos(angRad))
+        .add(e1.clone().multiplyScalar(Math.cos(b) * Math.sin(angRad)))
+        .add(e2.clone().multiplyScalar(Math.sin(b) * Math.sin(angRad)))
+        .multiplyScalar(r),
+    );
+  }
+  return pts;
+}
+
+/** Writes a short great-circle arc from a to b (both on the sphere) into a line's geometry. */
+function setArc(
+  line: THREE.Line,
+  a: THREE.Vector3,
+  b: THREE.Vector3,
+  r: number,
+) {
+  const pos = line.geometry.attributes.position as THREE.BufferAttribute;
+  const n = pos.count - 1;
+  const v = new THREE.Vector3();
+  for (let i = 0; i <= n; i++) {
+    v.copy(a)
+      .lerp(b, i / n)
+      .normalize()
+      .multiplyScalar(r);
+    pos.setXYZ(i, v.x, v.y, v.z);
+  }
+  pos.needsUpdate = true;
+  line.computeLineDistances();
+}
+
+/* ---------- see-through globe (SentiBoard.html#acquisitions) ----------
+ * The reference draws the planet on a transparent canvas, so the page's starfield shows all around
+ * it, and paints a thin blue atmosphere just outside the rim: a radial gradient from 0.98 to 1.15
+ * planet radii, rgba(110,170,255) fading from 34% to nothing. */
+const ATMOS_INNER = 0.98;
+const ATMOS_OUTER = 1.15;
+
+/** The atmosphere as a camera-facing sprite at the globe's centre. Its texture is the reference's
+ *  gradient ring with the disc cut out, so it only ever shows around the planet. */
+function makeAtmosphere(): THREE.Sprite {
+  const size = 512;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const ctx = c.getContext("2d")!;
+  const mid = size / 2;
+  const unit = mid / ATMOS_OUTER; // canvas px per planet radius (at the rim)
+  const g = ctx.createRadialGradient(
+    mid,
+    mid,
+    unit * ATMOS_INNER,
+    mid,
+    mid,
+    mid,
+  );
+  g.addColorStop(0, "rgba(110,170,255,0.34)");
+  g.addColorStop(1, "rgba(110,170,255,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(mid, mid, mid, 0, Math.PI * 2);
+  ctx.arc(mid, mid, unit * 0.995, 0, Math.PI * 2, true);
+  ctx.fill("evenodd");
+  const tex = new THREE.CanvasTexture(c);
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthWrite: false,
+      depthTest: false,
+    }),
+  );
+  sprite.name = "Atmosphere";
+  sprite.renderOrder = -1; // under the swaths, orbits and satellites
+  return sprite;
+}
+
+/** Seen from distance d, a unit sphere's rim lies at d/√(d²−1) in the plane through its centre;
+ *  the sprite is scaled to that so the ring hugs the rim at every zoom. */
+function fitAtmosphere(sprite: THREE.Sprite, camera: THREE.Camera) {
+  const d = Math.max(1.05, camera.position.length());
+  const rim = d / Math.sqrt(d * d - 1);
+  sprite.scale.setScalar(2 * ATMOS_OUTER * rim);
+}
+
 /** The simulated day: simTime counts seconds from 2026-07-16 00:00 UTC. */
 const SIM_DAY_MS = Date.UTC(2026, 6, 16);
 
@@ -144,7 +614,7 @@ export default function AcquisitionsGlobeEarthPage() {
   const clickableMeshesRef = useRef<THREE.Mesh[]>([]);
 
   const [stationPositions, setStationPositions] = useState<
-    Record<string, { x: number; y: number; visible: boolean }>
+    Record<string, { x: number; y: number; visible: boolean; contact: boolean }>
   >({});
   const [satPositions, setSatPositions] = useState<
     Record<string, { x: number; y: number; visible: boolean }>
@@ -163,6 +633,7 @@ export default function AcquisitionsGlobeEarthPage() {
 
   // The SentiBoard.html planet (day imagery, night lights); its terminator follows the sim clock.
   const dayNightRef = useRef<DayNightEarth | null>(null);
+  const atmosphereRef = useRef<THREE.Sprite | null>(null);
   const simTimeRef = useRef(0);
   simTimeRef.current = simTime;
   useEffect(() => () => dayNightRef.current?.dispose(), []);
@@ -175,9 +646,28 @@ export default function AcquisitionsGlobeEarthPage() {
       speed: number;
       progress: number;
       satGroup: THREE.Group;
-      beamLine: THREE.Line;
+      trail: THREE.Line;
+      future: THREE.Line;
     }[]
   >([]);
+  /** Per station: its direction and the coverage circle + dashed link shown while in contact. */
+  const stationFxRef = useRef<
+    {
+      name: string;
+      dir: THREE.Vector3;
+      cap: THREE.Mesh;
+      ring: THREE.LineLoop;
+      link: THREE.Line;
+    }[]
+  >([]);
+  const contactRef = useRef<Record<string, boolean>>({});
+  /** The selected datatake's footprint, pulsed by the animation loop. */
+  const selectedFootRef = useRef<{
+    fill: THREE.MeshBasicMaterial | null;
+    line: THREE.LineBasicMaterial;
+  } | null>(null);
+  const selectedSatRef = useRef<string | null>(null);
+  selectedSatRef.current = ACQ_DATATAKES[selectedDataTake]?.sat ?? null;
 
   // List of datatakes available for the dropdown options ( filtered by Satellite, Day, and Search — but NOT Datatake ID )
   const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
@@ -287,31 +777,33 @@ export default function AcquisitionsGlobeEarthPage() {
       mesh.visible = allowedIds.has(dtId);
     });
 
-    footprintMeshesRef.current.forEach((mesh, idx) => {
+    // Footprints take their datatake's status colour, as the reference does: green published,
+    // amber processing, red failed. The selected one is matched by ID (the swath list and the
+    // datatake list are not in the same order), pulses in the animation loop and gets a white edge.
+    const selectedId = ACQ_DATATAKES[selectedDataTake]?.id;
+    const anySelected = !!selectedId && allowedIds.has(selectedId);
+    selectedFootRef.current = null;
+
+    footprintMeshesRef.current.forEach((mesh) => {
       const line = mesh as THREE.Line;
-      const dtId = line.userData?.datatakeId;
+      const dtId = line.userData?.datatakeId as string;
       line.visible = allowedIds.has(dtId);
 
-      const isSelected = idx === selectedDataTake;
       const lineMat = line.material as THREE.LineBasicMaterial;
       const fillMesh = line.userData?.fillMesh as THREE.Mesh;
       const fillMat = fillMesh?.material as THREE.MeshBasicMaterial;
-      const baseColor = line.userData?.baseColor || 0x00e5ff;
+      const color = statusHexOf(dtId, line.userData?.baseColor || 0x00e5ff);
 
-      if (isSelected) {
-        lineMat.color.set(0x00e5ff);
+      if (fillMat) fillMat.color.set(color);
+      if (dtId === selectedId) {
+        lineMat.color.set(0xffffff);
         lineMat.opacity = 1.0;
-        if (fillMat) {
-          fillMat.color.set(0x00e5ff);
-          fillMat.opacity = 0.65;
-        }
+        if (fillMat) fillMat.opacity = 0.43;
+        selectedFootRef.current = { fill: fillMat ?? null, line: lineMat };
       } else {
-        lineMat.color.set(baseColor);
-        lineMat.opacity = 0.7;
-        if (fillMat) {
-          fillMat.color.set(baseColor);
-          fillMat.opacity = 0.35;
-        }
+        lineMat.color.set(color);
+        lineMat.opacity = 0.9;
+        if (fillMat) fillMat.opacity = anySelected ? 0.14 : 0.24;
       }
     });
   }, [filteredDatatakes, selectedDataTake]);
@@ -424,58 +916,54 @@ export default function AcquisitionsGlobeEarthPage() {
       footprintMeshesRef.current.push(lineMesh);
     });
 
-    const orbitRadius = 1.18;
+    // Satellites: a position holder on the ground point (the dot and name are HTML markers), a
+    // white trail behind it and a dashed track ahead, shown for the selected satellite only.
     SAMPLE_SATELLITES.forEach((satData, idx) => {
-      const orbitPoints: THREE.Vector3[] = [];
-      const orbitSegments = 128;
-      const inc = satData.inc * D;
-      const om = (satData.omega + 90) * D;
-
-      for (let i = 0; i <= orbitSegments; i++) {
-        const angle = (i / orbitSegments) * Math.PI * 2;
-        const lat = Math.asin(Math.sin(inc) * Math.sin(angle));
-        const lon =
-          om + Math.atan2(Math.cos(inc) * Math.sin(angle), Math.cos(angle));
-
-        orbitPoints.push(
-          new THREE.Vector3(
-            Math.cos(lat) * Math.sin(lon) * orbitRadius,
-            Math.sin(lat) * orbitRadius,
-            Math.cos(lat) * Math.cos(lon) * orbitRadius,
-          ),
-        );
-      }
-
-      const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-      const orbitMat = new THREE.LineBasicMaterial({
-        color: satData.color,
-        opacity: 0.65,
-        transparent: true,
-      });
-      const orbitLine = new THREE.Line(orbitGeo, orbitMat);
-      overlayGroup.add(orbitLine);
-
       const satGroup = new THREE.Group();
-      const satGeo = new THREE.SphereGeometry(0.02, 16, 16);
-      const satMat = new THREE.MeshBasicMaterial({
-        color: satData.color,
-      });
-      const satMesh = new THREE.Mesh(satGeo, satMat);
-      satGroup.add(satMesh);
       overlayGroup.add(satGroup);
 
-      const beamGeo = new THREE.BufferGeometry();
-      beamGeo.setAttribute(
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute(
         "position",
-        new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3),
+        new THREE.Float32BufferAttribute(
+          new Array((TRAIL_STEPS + 1) * 3).fill(0),
+          3,
+        ),
       );
-      const beamMat = new THREE.LineBasicMaterial({
-        color: satData.color,
-        opacity: 0.5,
-        transparent: true,
-      });
-      const beamLine = new THREE.Line(beamGeo, beamMat);
-      overlayGroup.add(beamLine);
+      const trail = new THREE.Line(
+        trailGeo,
+        new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.28,
+          depthWrite: false,
+        }),
+      );
+      trail.renderOrder = 30;
+      overlayGroup.add(trail);
+
+      const futureGeo = new THREE.BufferGeometry();
+      futureGeo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(
+          new Array((TRAIL_STEPS + 1) * 3).fill(0),
+          3,
+        ),
+      );
+      const future = new THREE.Line(
+        futureGeo,
+        new THREE.LineDashedMaterial({
+          color: 0xffffff,
+          transparent: true,
+          opacity: 0.45,
+          dashSize: 0.008,
+          gapSize: 0.016,
+          depthWrite: false,
+        }),
+      );
+      future.renderOrder = 30;
+      future.visible = false;
+      overlayGroup.add(future);
 
       satObjectsRef.current.push({
         name: satData.name,
@@ -484,8 +972,74 @@ export default function AcquisitionsGlobeEarthPage() {
         speed: satData.speed,
         progress: (idx * Math.PI) / 1.5,
         satGroup,
-        beamLine,
+        trail,
+        future,
       });
+    });
+
+    // Stations: a 22° coverage circle (faint cyan cap + ring) and a dashed cyan link to the
+    // satellite in contact; all hidden until a satellite comes within range.
+    stationFxRef.current = STATIONS.map((st) => {
+      const dir = latLonToVector3(st.lat, st.lon, 1).normalize();
+      const ringPts = capRing(dir, CONTACT_DEG * D, 1.003);
+
+      const capPos: number[] = [];
+      const c = dir.clone().multiplyScalar(1.003);
+      ringPts.forEach((p, i) => {
+        const q = ringPts[(i + 1) % ringPts.length];
+        capPos.push(c.x, c.y, c.z, p.x, p.y, p.z, q.x, q.y, q.z);
+      });
+      const capGeo = new THREE.BufferGeometry();
+      capGeo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(capPos, 3),
+      );
+      const cap = new THREE.Mesh(
+        capGeo,
+        new THREE.MeshBasicMaterial({
+          color: 0x00e5ff,
+          transparent: true,
+          opacity: 0.06,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        }),
+      );
+      cap.renderOrder = 10;
+      cap.visible = false;
+
+      const ring = new THREE.LineLoop(
+        new THREE.BufferGeometry().setFromPoints(ringPts),
+        new THREE.LineBasicMaterial({
+          color: 0x00e5ff,
+          transparent: true,
+          opacity: 0.28,
+          depthWrite: false,
+        }),
+      );
+      ring.renderOrder = 11;
+      ring.visible = false;
+
+      const linkGeo = new THREE.BufferGeometry();
+      linkGeo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(new Array(25 * 3).fill(0), 3),
+      );
+      const link = new THREE.Line(
+        linkGeo,
+        new THREE.LineDashedMaterial({
+          color: 0x00e5ff,
+          transparent: true,
+          opacity: 0.75,
+          dashSize: 0.006,
+          gapSize: 0.006,
+          depthWrite: false,
+        }),
+      );
+      link.renderOrder = 31;
+      link.visible = false;
+
+      overlayGroup.add(cap, ring, link);
+      return { name: st.name, dir, cap, ring, link };
     });
   };
 
@@ -500,6 +1054,29 @@ export default function AcquisitionsGlobeEarthPage() {
 
     camera.position.set(0, 0, 3.0);
     camera.lookAt(0, 0, 0);
+
+    // See-through background: no scene colour, a fully transparent clear, and no CSS fill on the
+    // canvas or its wrapper — the page's starfield (SpaceBackdrop) shows around the planet.
+    scene.background = null;
+    renderer.setClearColor(0x000000, 0);
+    renderer.domElement.style.background = "transparent";
+    if (renderer.domElement.parentElement)
+      renderer.domElement.parentElement.style.background = "transparent";
+    // setClearColor's alpha only counts if the WebGL context itself has an alpha channel, which is
+    // fixed when ThreeEarth creates its renderer. Without it the clear stays opaque black.
+    if (renderer.getContext().getContextAttributes()?.alpha === false) {
+      console.warn(
+        "[AcquisitionsGlobe] ThreeEarth's WebGLRenderer has no alpha channel, so the globe's " +
+          "background cannot be transparent. Create it with `new THREE.WebGLRenderer({ alpha: true, ... })`.",
+      );
+    }
+
+    // the thin atmosphere around the rim
+    atmosphereRef.current?.removeFromParent();
+    const atmosphere = makeAtmosphere();
+    fitAtmosphere(atmosphere, camera);
+    scene.add(atmosphere);
+    atmosphereRef.current = atmosphere;
 
     // Swap the Earth's material before the overlays are added, so only the sphere itself is matched.
     dayNightRef.current?.dispose();
@@ -588,6 +1165,9 @@ export default function AcquisitionsGlobeEarthPage() {
     renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
 
     return () => {
+      atmosphere.removeFromParent();
+      atmosphere.material.map?.dispose();
+      atmosphere.material.dispose();
       renderer.domElement.removeEventListener("mousedown", onMouseDown);
       renderer.domElement.removeEventListener("mousemove", onMouseMove);
       renderer.domElement.removeEventListener("mouseup", onMouseUp);
@@ -629,40 +1209,75 @@ export default function AcquisitionsGlobeEarthPage() {
 
       dayNightRef.current?.setTime(SIM_DAY_MS + simTimeRef.current * 1000);
 
-      const orbitRadius = 1.18;
+      // keep the atmosphere on the rim as the camera zooms
+      if (atmosphereRef.current && cameraRef.current)
+        fitAtmosphere(atmosphereRef.current, cameraRef.current);
 
+      // Satellites on their ground points, with their trails (and the selected one's track ahead)
       satObjectsRef.current.forEach((sat) => {
         if (isPlayingRef.current) {
           sat.progress += sat.speed * (speedMultiplierRef.current / 30);
           if (sat.progress > Math.PI * 2) sat.progress -= Math.PI * 2;
         }
-
         const inc = sat.inc * D;
         const om = (sat.omega + 90) * D;
-        const angle = sat.progress;
+        sat.satGroup.position.copy(trackPoint(inc, om, sat.progress));
 
-        const lat = Math.asin(Math.sin(inc) * Math.sin(angle));
-        const lon =
-          om + Math.atan2(Math.cos(inc) * Math.sin(angle), Math.cos(angle));
-
-        const satPos = new THREE.Vector3(
-          Math.cos(lat) * Math.sin(lon) * orbitRadius,
-          Math.sin(lat) * orbitRadius,
-          Math.cos(lat) * Math.cos(lon) * orbitRadius,
-        );
-
-        sat.satGroup.position.copy(satPos);
-        sat.satGroup.lookAt(0, 0, 0);
-
-        const groundPos = satPos.clone().normalize().multiplyScalar(1.004);
-        const positions = sat.beamLine.geometry.attributes
+        const selected = selectedSatRef.current === sat.name;
+        const tp = sat.trail.geometry.attributes
           .position as THREE.BufferAttribute;
-        if (positions) {
-          positions.setXYZ(0, satPos.x, satPos.y, satPos.z);
-          positions.setXYZ(1, groundPos.x, groundPos.y, groundPos.z);
-          positions.needsUpdate = true;
+        const fp = sat.future.geometry.attributes
+          .position as THREE.BufferAttribute;
+        for (let k = 0; k <= TRAIL_STEPS; k++) {
+          const back = trackPoint(
+            inc,
+            om,
+            sat.progress - (TRAIL_STEPS - k) * TRAIL_STEP,
+          );
+          tp.setXYZ(k, back.x, back.y, back.z);
+          if (selected) {
+            const ahead = trackPoint(inc, om, sat.progress + k * TRAIL_STEP);
+            fp.setXYZ(k, ahead.x, ahead.y, ahead.z);
+          }
+        }
+        tp.needsUpdate = true;
+        const trailMat = sat.trail.material as THREE.LineBasicMaterial;
+        trailMat.opacity = selected ? 0.7 : 0.28;
+        sat.future.visible = selected;
+        if (selected) {
+          fp.needsUpdate = true;
+          sat.future.computeLineDistances();
         }
       });
+
+      // Stations in contact: coverage circle and a dashed link to the nearest satellite in range
+      const contactCos = Math.cos(CONTACT_DEG * D);
+      const contacts: Record<string, boolean> = {};
+      stationFxRef.current.forEach((fx) => {
+        let best: THREE.Vector3 | null = null;
+        let bestDot = contactCos;
+        for (const sat of satObjectsRef.current) {
+          const d = sat.satGroup.position.clone().normalize();
+          const dot = d.dot(fx.dir);
+          if (dot > bestDot) {
+            bestDot = dot;
+            best = d;
+          }
+        }
+        const on = best !== null;
+        contacts[fx.name] = on;
+        fx.cap.visible = on;
+        fx.ring.visible = on;
+        fx.link.visible = on;
+        if (best) setArc(fx.link, best, fx.dir, 1.007);
+      });
+      contactRef.current = contacts;
+
+      // the selected footprint breathes, as in the reference (fill 0.34–0.52)
+      if (selectedFootRef.current?.fill) {
+        const pulse = 0.5 + 0.5 * Math.sin(now / 420);
+        selectedFootRef.current.fill.opacity = 0.34 + 0.18 * pulse;
+      }
 
       if (cameraRef.current && rendererRef.current && sceneRef.current) {
         const camera = cameraRef.current as THREE.PerspectiveCamera;
@@ -671,7 +1286,7 @@ export default function AcquisitionsGlobeEarthPage() {
 
         const stationPosMap: Record<
           string,
-          { x: number; y: number; visible: boolean }
+          { x: number; y: number; visible: boolean; contact: boolean }
         > = {};
         const satPosMap: Record<
           string,
@@ -697,14 +1312,16 @@ export default function AcquisitionsGlobeEarthPage() {
             x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
             y: (-vector.y * 0.5 + 0.5) * canvas.clientHeight,
             visible: isVisible,
+            contact: !!contactRef.current[station.name],
           };
         });
 
         satObjectsRef.current.forEach((sat) => {
-          const worldPos = sat.satGroup.position.clone();
+          // world position: ThreeEarth keeps turning EarthGroup, and the satellites live inside it
+          const worldPos = sat.satGroup.getWorldPosition(new THREE.Vector3());
           const camPos = camera.position.clone();
           const isVisible =
-            worldPos.clone().normalize().dot(camPos.normalize()) > 0.0;
+            worldPos.clone().normalize().dot(camPos.normalize()) > 0.05;
           const vector = worldPos.clone().project(camera);
           satPosMap[sat.name] = {
             x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
@@ -975,7 +1592,7 @@ export default function AcquisitionsGlobeEarthPage() {
         }}
       >
         <div style={{ width: "100%", height: "100%", position: "relative" }}>
-          <ThreeEarth onReady={handleSceneReady} />
+          <ThreeEarth transparent onReady={handleSceneReady} />
         </div>
 
         {/* FLOATING BOTTOM OVERLAY CONTROL BAR */}
@@ -1098,245 +1715,14 @@ export default function AcquisitionsGlobeEarthPage() {
           </button>
         </div>
 
-        {/* DATATAKE DETAIL POP-UP MODAL */}
-        {isModalOpen &&
-          (() => {
-            const dt = ACQ_DATATAKES[selectedDataTake] || ACQ_DATATAKES[0];
-            if (!dt) return null;
-
-            const percent = Math.round(dt.comp || 0);
-            const statusColor =
-              dt.cls === "ok"
-                ? "#3dd68c"
-                : dt.cls === "warn"
-                  ? "#f5b544"
-                  : "#ef4444";
-
-            return (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "24px",
-                  right: "80px",
-                  bottom: "90px",
-                  zIndex: 100,
-                  width: "320px",
-                  background: "rgba(11, 18, 30, 0.92)",
-                  backdropFilter: "blur(8px)",
-                  border: "1px solid rgba(255, 255, 255, 0.12)",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  boxShadow: "0 12px 32px rgba(0, 0, 0, 0.6)",
-                  fontFamily: "monospace",
-                  color: "#fff",
-                  overflowY: "auto",
-                }}
-              >
-                {/* Header */}
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "#00c7d6",
-                      letterSpacing: "0.1em",
-                      fontWeight: 700,
-                    }}
-                  >
-                    DATATAKE
-                  </span>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "10px",
-                        background:
-                          dt.cls === "ok"
-                            ? "rgba(61, 214, 140, 0.15)"
-                            : "rgba(239, 68, 68, 0.15)",
-                        color: statusColor,
-                        padding: "2px 8px",
-                        borderRadius: "12px",
-                        border: `1px solid ${statusColor}40`,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "5px",
-                        fontWeight: 700,
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: "6px",
-                          height: "6px",
-                          borderRadius: "50%",
-                          background: statusColor,
-                        }}
-                      />
-                      {dt.status ? dt.status.toUpperCase() : "PROCESSING"}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIsModalOpen(false)}
-                      style={{
-                        background: "none",
-                        border: "none",
-                        color: "#8a96a8",
-                        fontSize: "16px",
-                        cursor: "pointer",
-                        padding: 0,
-                        lineHeight: 1,
-                      }}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                </div>
-
-                {/* Title & Subtitle */}
-                <div style={{ marginBottom: "20px" }}>
-                  <div
-                    style={{
-                      fontSize: "20px",
-                      fontWeight: "800",
-                      letterSpacing: "0.05em",
-                      fontFamily: "sans-serif",
-                    }}
-                  >
-                    {dt.id}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#8a96a8",
-                      marginTop: "2px",
-                    }}
-                  >
-                    {dt.sat}
-                  </div>
-                </div>
-
-                {/* Completion & Sensing KPI */}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "baseline",
-                    gap: "16px",
-                    marginBottom: "16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "38px",
-                      fontWeight: "800",
-                      fontFamily: "sans-serif",
-                    }}
-                  >
-                    {percent}.0
-                    <span style={{ fontSize: "20px", color: "#8a96a8" }}>
-                      %
-                    </span>
-                  </div>
-                  <div style={{ fontSize: "11px", color: "#8a96a8" }}>
-                    <div>SENSING</div>
-                    <div style={{ color: "#fff", fontWeight: 700 }}>3m 25s</div>
-                    <div style={{ marginTop: "4px" }}>MISSING</div>
-                    <div style={{ color: "#fff", fontWeight: 700 }}>5m 40s</div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: "10px",
-                    color: "#6b7280",
-                    marginBottom: "20px",
-                    borderBottom: "1px solid rgba(255,255,255,0.08)",
-                    paddingBottom: "12px",
-                  }}
-                >
-                  Mean across 8 expected product types · missing time summed
-                  across types
-                </div>
-
-                {/* Details Table */}
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "10px",
-                    fontSize: "11px",
-                  }}
-                >
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>SATELLITE ID</span>
-                    <span style={{ fontWeight: 700 }}>{dt.sat}</span>
-                  </div>
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>DATATAKE ID</span>
-                    <span style={{ fontWeight: 700 }}>{dt.id}</span>
-                  </div>
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>MODE</span>
-                    <span style={{ fontWeight: 700 }}>IW · DV</span>
-                  </div>
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>SWATH</span>
-                    <span style={{ fontWeight: 700 }}>NA</span>
-                  </div>
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>POLARISATION</span>
-                    <span style={{ fontWeight: 700 }}>NA</span>
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>
-                      OBSERVATION TIME START
-                    </span>
-                    <span style={{ fontWeight: 700 }}>
-                      {dt.startIso
-                        ? dt.startIso.replace("T", " ") + "Z"
-                        : "2026-07-16 09:33:10Z"}
-                    </span>
-                  </div>
-                  <div
-                    style={{ display: "flex", justifyContent: "space-between" }}
-                  >
-                    <span style={{ color: "#8a96a8" }}>
-                      OBSERVATION TIME STOP
-                    </span>
-                    <span style={{ fontWeight: 700 }}>
-                      2026-07-16 09:36:35Z
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+        {/* DATATAKE PANEL (SentiBoard.html#acquisitions) */}
+        {isModalOpen && ACQ_DATATAKES[selectedDataTake] && (
+          <DatatakePanel
+            key={ACQ_DATATAKES[selectedDataTake].id}
+            dt={ACQ_DATATAKES[selectedDataTake]}
+            onClose={() => setIsModalOpen(false)}
+          />
+        )}
 
         {/* Zoom Controls */}
         <div
@@ -1435,94 +1821,33 @@ export default function AcquisitionsGlobeEarthPage() {
             zIndex: 5,
           }}
         >
-          {STATIONS.map((station, idx) => {
+          {STATIONS.map((station) => {
             const pos = stationPositions[station.name];
             if (!pos || !pos.visible || (pos.x === 0 && pos.y === 0))
               return null;
-
             return (
-              <div
-                key={idx}
-                style={{
-                  position: "absolute",
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
-                  transform: "translate(-50%, -100%)",
-                  background: "transparent",
-                  border: "none",
-                  padding: "0",
-                  color: "#ffffff",
-                  fontSize: "11px",
-                  fontWeight: 700,
-                  fontFamily: "sans-serif",
-                  whiteSpace: "nowrap",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  textShadow: "0 0 4px #000000, 0 0 2px #000000",
-                }}
-              >
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#00c7d6"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M4 15a12 12 0 0 1 14-8" />
-                  <path d="M12 5l-2 2" />
-                  <line x1="9" y1="11" x2="15" y2="5" />
-                  <path d="M12 15v6" />
-                  <path d="M8 21h8" />
-                </svg>
-                <span>{station.name}</span>
-              </div>
+              <StationMarker
+                key={station.name}
+                name={station.name}
+                x={pos.x}
+                y={pos.y}
+                contact={pos.contact}
+              />
             );
           })}
 
-          {Object.entries(satPositions).map(([satName, pos]) => {
+          {SAMPLE_SATELLITES.map((sat) => {
+            const pos = satPositions[sat.name];
             if (!pos || !pos.visible) return null;
-
             return (
-              <div
-                key={`sat-${satName}`}
-                style={{
-                  position: "absolute",
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
-                  transform: "translate(-50%, -50%)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "5px",
-                  pointerEvents: "none",
-                }}
-              >
-                <div
-                  style={{
-                    width: "7px",
-                    height: "7px",
-                    borderRadius: "50%",
-                    background: "#3dd68c",
-                    border: "1px solid #000",
-                    boxShadow: "0 0 6px #3dd68c",
-                  }}
-                />
-                <span
-                  style={{
-                    color: "#ffffff",
-                    fontSize: "10.5px",
-                    fontWeight: 700,
-                    fontFamily: "sans-serif",
-                    letterSpacing: "0.03em",
-                    textShadow: "0 0 4px #000, 0 0 2px #000",
-                  }}
-                >
-                  {satName}
-                </span>
-              </div>
+              <SatelliteMarker
+                key={`sat-${sat.name}`}
+                name={sat.name}
+                x={pos.x}
+                y={pos.y}
+                color={hex(sat.color)}
+                selected={ACQ_DATATAKES[selectedDataTake]?.sat === sat.name}
+              />
             );
           })}
         </div>

@@ -1,5 +1,3 @@
-/* Acquisitions Globe — drawer + collapse pattern matching EventsManifest */
-
 .drawer {
   position: fixed;
   top: 0;
@@ -487,5 +485,338 @@
   .fsearch {
     flex: 1 1 160px;
     width: auto;
+  }
+}
+
+/* ==================== map markers (SentiBoard.html#acquisitions) ====================
+   Each marker is a zero-size box placed on its projected point; everything inside hangs off that
+   point exactly where the reference's canvas drew it. */
+
+/* ground station: antenna on the point, name tag up and to the right */
+.stn {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stnIcon {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  overflow: visible;
+}
+
+.stnTag {
+  position: absolute;
+  left: 7px;
+  top: -10px;
+  display: flex;
+  align-items: center;
+  height: 17px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  background: rgba(4, 8, 14, 0.72);
+  font-family: "Noto Sans", var(--font-sans), sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  color: #eaf0f6;
+  transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+/* a satellite is in contact: cyan border and a lighter name */
+.stnOn .stnTag {
+  border-color: rgba(0, 229, 255, 0.55);
+  color: #e8fbff;
+}
+
+/* satellite: a dot on the point, its name above and to the right */
+.sat {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.satDot {
+  position: absolute;
+  left: -3.2px;
+  top: -3.2px;
+  width: 6.4px;
+  height: 6.4px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 1.5px rgba(4, 6, 11, 0.9);
+}
+
+.satLbl {
+  position: absolute;
+  left: 7px;
+  bottom: 6px; /* the canvas drew the text with its baseline 6px above the point */
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  color: rgba(230, 236, 245, 0.8);
+}
+
+/* the selected datatake's satellite: a larger white dot and a bolder white name */
+.satSel .satDot {
+  left: -4.5px;
+  top: -4.5px;
+  width: 9px;
+  height: 9px;
+  background: #ffffff;
+}
+
+.satSel .satLbl {
+  font-weight: 600;
+  color: #ffffff;
+}
+
+/* ==================== datatake panel (SentiBoard.html#acquisitions) ====================
+   No card: the record stands on the starfield at the right of the globe. A soft dark fade at its
+   left edge keeps it readable where it overlaps the planet. Type is a step brighter than the
+   reference's 42% captions, which disappear on the black. */
+.dtkPanel {
+  --dp-ink: #ffffff;
+  --dp-ink-2: rgba(234, 240, 246, 0.62); /* mission, aside keys, note */
+  --dp-ink-3: rgba(234, 240, 246, 0.52); /* record keys */
+  --dp-line: rgba(255, 255, 255, 0.08);
+  position: absolute;
+  top: 24px;
+  right: 76px; /* clear of the zoom buttons */
+  bottom: 90px; /* clear of the time bar */
+  z-index: 100;
+  width: min(460px, 42%);
+  padding: 4px 18px 8px 40px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: linear-gradient(to right, rgba(2, 4, 9, 0) 0, rgba(2, 4, 9, 0.82) 40px, rgba(2, 4, 9, 0.82) 100%);
+  font-family: var(--font-sans);
+  color: var(--dp-ink);
+  animation: dtkPanelIn 520ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+@keyframes dtkPanelIn {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* head: eyebrow, ID, satellite · status pill and close */
+.dtkHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dtkSel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dtkEyebrow {
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dp-ink-2);
+}
+
+.dtkId {
+  font-size: clamp(26px, 2.4vw, 34px);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  overflow-wrap: anywhere;
+  color: var(--dp-ink);
+}
+
+.dtkMission {
+  margin-top: 10px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--dp-ink-2);
+}
+
+.dtkHeadR {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 2px;
+}
+
+/* status: coloured text with a glowing dot, no box */
+.dtkPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dtkPill::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.dtkClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--dp-ink-2);
+  transition: color 0.2s ease;
+}
+
+.dtkClose:hover {
+  color: #ffffff;
+}
+
+/* headline: completeness beside sensing / missing time */
+.dtkKpi {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  margin-top: 16px;
+}
+
+.dtkBig {
+  font-size: clamp(36px, 3.3vw, 46px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--dp-ink);
+}
+
+.dtkBig sup {
+  margin-left: 2px;
+  font-size: 0.38em;
+  font-weight: 600;
+  color: var(--dp-ink-2);
+}
+
+.dtkAside {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+}
+
+.dtkAside > div {
+  display: flex;
+  gap: 10px;
+}
+
+.dtkAside dt {
+  min-width: 64px;
+  align-self: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dp-ink-2);
+}
+
+.dtkAside dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--dp-ink);
+}
+
+/* missing time that is not zero */
+.dtkAside dd.dtkGap {
+  color: #f5b544;
+}
+
+.dtkNote {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--dp-ink-2);
+}
+
+/* the record: key on the left, value on the right, a hairline between rows */
+.dtkRecord {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 18px 0 0;
+}
+
+.dtkRecord > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid var(--dp-line);
+}
+
+.dtkRecord > div:last-child {
+  border-bottom: 1px solid var(--dp-line);
+}
+
+.dtkRecord dt {
+  align-self: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--dp-ink-3);
+}
+
+.dtkRecord dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+  color: #eaf0f6;
+}
+
+@media (max-width: 760px) {
+  .dtkPanel {
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: 84px;
+    width: auto;
+    max-height: 58%;
+    padding: 16px;
+    background: rgba(2, 4, 9, 0.88);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dtkPanel {
+    animation: none;
   }
 }
