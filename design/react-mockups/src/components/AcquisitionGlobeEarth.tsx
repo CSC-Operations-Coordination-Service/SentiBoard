@@ -24,6 +24,7 @@ import {
 import { passesFor } from "@/data/downlink";
 import { LAND } from "@/data/land";
 import KmlLinkDisplay from "@/components/KmlLinkDisplay";
+import { createGlobeTexture } from "@/components/globeTexture";
 import t from "@/components/acq-toolbar.module.css";
 
 // Self-contained interactive 3D globe (Canvas 2D — no external libraries):
@@ -664,7 +665,13 @@ function Plate({ level }: { level: AcqLevel }) {
  * track width — re-renders the parent many times over the life of the page; none of
  * it changes `dt`, so none of it reaches the plates.
  */
-const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatatake; onClose: () => void }) {
+const DatatakeRail = memo(function DatatakeRail({
+  dt,
+  onClose,
+}: {
+  dt: AcqDatatake;
+  onClose: () => void;
+}) {
   const m = useMemo(() => {
     const startMs = sensingMs(dt);
     const passes = passesFor(dt.id);
@@ -703,7 +710,9 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
               <span className="dot"></span>
               {dt.status}
             </span>
-            <button className="close-btn" onClick={onClose}>✕</button>
+            <button className="close-btn" onClick={onClose}>
+              ✕
+            </button>
           </div>
         </div>
 
@@ -717,7 +726,8 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
         <div className="dtk-kpi">
           <div className="kpi-left">
             <div className="big-percentage">
-              {dt.comp.toFixed(1)}<span className="percent">%</span>
+              {dt.comp.toFixed(1)}
+              <span className="percent">%</span>
             </div>
           </div>
           <div className="kpi-right">
@@ -727,12 +737,15 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
             </div>
             <div className="kpi-item">
               <div className="kpi-label">MISSING</div>
-              <div className="kpi-value">{m.missingS > 0.5 ? dur(m.missingS) : "none"}</div>
+              <div className="kpi-value">
+                {m.missingS > 0.5 ? dur(m.missingS) : "none"}
+              </div>
             </div>
           </div>
         </div>
         <p className="dtk-kpi-note">
-          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"} · missing time summed across types
+          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"}{" "}
+          · missing time summed across types
         </p>
 
         {/* Metadata List - Single Column */}
@@ -759,14 +772,14 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
           </div>
           <div className="meta-row">
             <dt>OBSERVATION TIME START</dt>
-            <dd>
-              {m.startMs === null ? "—" : clockText(m.startMs)}
-            </dd>
+            <dd>{m.startMs === null ? "—" : clockText(m.startMs)}</dd>
           </div>
           <div className="meta-row">
             <dt>OBSERVATION TIME STOP</dt>
             <dd>
-              {m.startMs === null ? "—" : clockText(m.startMs + dt.sensingS * 1000)}
+              {m.startMs === null
+                ? "—"
+                : clockText(m.startMs + dt.sensingS * 1000)}
             </dd>
           </div>
           <div className="meta-row">
@@ -787,7 +800,9 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
           </div>
           <div className="meta-row">
             <dt>PUBLICATION STATUS</dt>
-            <dd>{dt.status} ({(dt.comp * 100).toFixed(2)}%)</dd>
+            <dd>
+              {dt.status} ({(dt.comp * 100).toFixed(2)}%)
+            </dd>
           </div>
           <div className="meta-row">
             <dt>DOWNLINK STATION</dt>
@@ -797,15 +812,13 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
             <dt>DOWNLINK TIME</dt>
             <dd>
               {m.passes && m.passes.length > 0
-                ? clockText(
-                    (m.startMs ?? 0) + 24 * 60 * 60 * 1000
-                  )
+                ? clockText((m.startMs ?? 0) + 24 * 60 * 60 * 1000)
                 : "—"}
             </dd>
           </div>
           <div className="meta-row">
             <dt>DOWNLINK VOLUME</dt>
-            <dd>{(m.totalMb).toFixed(0)} Mb</dd>
+            <dd>{m.totalMb.toFixed(0)} Mb</dd>
           </div>
           <div className="meta-row last">
             <dt>DOWNLINK DURATION</dt>
@@ -1205,6 +1218,13 @@ export default function AcquisitionGlobeEarth({
     // pulse-only frame is then a single blit.
     const layers = new Map<string, Layer>();
 
+    // The SentiBoard.html planet (day imagery + night lights, WebGL). Until both images have loaded,
+    // and wherever WebGL is unavailable, drawBase falls back to the vector land below.
+    const globeTex = createGlobeTexture(() => {
+      layers.forEach((l) => (l.key = "")); // repaint the cached base with the imagery
+      invalidateLocal();
+    });
+
     function makeLayer(pw: number, ph: number): Layer {
       const off: HTMLCanvasElement =
         typeof OffscreenCanvas !== "undefined"
@@ -1227,13 +1247,42 @@ export default function AcquisitionGlobeEarth({
 
       // 2. Background stars
       c.fillStyle = "rgba(255, 255, 255, 0.08)";
+      let seed = 7;
+      const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
       for (let i = 0; i < 50; i++) {
-        const x = Math.random() * s.W;
-        const y = Math.random() * s.H;
-        const size = Math.random() * 0.8;
+        const x = rnd() * s.W;
+        const y = rnd() * s.H;
+        const size = rnd() * 0.8;
         c.beginPath();
         c.arc(x, y, size, 0, 6.2832);
         c.fill();
+      }
+
+      // 3–6 with imagery: the SentiBoard.html planet — atmosphere ring, then the WebGL globe
+      const planet = globeTex?.render({
+        width: c.canvas.width,
+        height: c.canvas.height,
+        cx,
+        cy,
+        R,
+        dpr: s.dpr,
+        yaw: s.yaw,
+        tilt: s.tilt,
+        simMs: s.simMs,
+      });
+      if (planet) {
+        const atm = c.createRadialGradient(cx, cy, R * 0.98, cx, cy, R * 1.15);
+        atm.addColorStop(0, "rgba(110,170,255,0.34)");
+        atm.addColorStop(1, "rgba(110,170,255,0)");
+        c.fillStyle = atm;
+        c.beginPath();
+        c.arc(cx, cy, R * 1.15, 0, 6.2832);
+        c.arc(cx, cy, R * 0.995, 0, 6.2832, true);
+        c.fill("evenodd");
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.drawImage(planet, 0, 0);
+        c.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
+        return;
       }
 
       // 3. Soft atmospheric outer glow
@@ -1348,7 +1397,9 @@ export default function AcquisitionGlobeEarth({
         layer = makeLayer(cv!.width, cv!.height);
         layers.set(resKey, layer);
       }
-      const viewKey = `${s.yaw.toFixed(4)}|${s.tilt.toFixed(4)}|${s.R.toFixed(2)}|${s.cx.toFixed(1)}|${s.cy.toFixed(1)}|${isDarkRef.current}`;
+      // with imagery the terminator follows the clock: repaint every 2 simulated minutes
+      const sunKey = globeTex?.ready() ? Math.floor(s.simMs / 120_000) : 0;
+      const viewKey = `${s.yaw.toFixed(4)}|${s.tilt.toFixed(4)}|${s.R.toFixed(2)}|${s.cx.toFixed(1)}|${s.cy.toFixed(1)}|${isDarkRef.current}|${sunKey}`;
       if (layer.key !== viewKey) {
         drawBase(layer.ctx);
         layer.key = viewKey;
@@ -2129,6 +2180,7 @@ export default function AcquisitionGlobeEarth({
       cv.removeEventListener("wheel", onWheel);
       cv.removeEventListener("keydown", onKeyDown);
       layers.clear();
+      globeTex?.dispose();
     };
     // INVARIANT — keep this dependency list free of anything that changes on
     // selection, hover, playback or contact. `select` depends on [datatakes,
@@ -2348,7 +2400,9 @@ export default function AcquisitionGlobeEarth({
               <span className={t.kpiK}>Published</span>
             </div>
             <div className={t.kpi}>
-              <b className={`${t.kpiV} ${metrics.failed > 0 ? t.kpiCrit : ""}`}>{metrics.failed}</b>
+              <b className={`${t.kpiV} ${metrics.failed > 0 ? t.kpiCrit : ""}`}>
+                {metrics.failed}
+              </b>
               <span className={t.kpiK}>Failed acquisitions</span>
             </div>
           </div>
@@ -2363,12 +2417,28 @@ export default function AcquisitionGlobeEarth({
                 type="button"
                 className={t.fdropHead}
                 aria-expanded={openDropdown === "satellite"}
-                onClick={() => setOpenDropdown(openDropdown === "satellite" ? null : "satellite")}
+                onClick={() =>
+                  setOpenDropdown(
+                    openDropdown === "satellite" ? null : "satellite",
+                  )
+                }
               >
                 <span className={t.fdropLabel}>Satellite</span>
-                <span className={t.fdropVal}>{satFilter === "*" ? "All" : satFilter}</span>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+                <span className={t.fdropVal}>
+                  {satFilter === "*" ? "All" : satFilter}
+                </span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M3 6l5 5 5-5"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  />
                 </svg>
               </button>
               {openDropdown === "satellite" && (
@@ -2397,12 +2467,26 @@ export default function AcquisitionGlobeEarth({
                 type="button"
                 className={t.fdropHead}
                 aria-expanded={openDropdown === "day"}
-                onClick={() => setOpenDropdown(openDropdown === "day" ? null : "day")}
+                onClick={() =>
+                  setOpenDropdown(openDropdown === "day" ? null : "day")
+                }
               >
                 <span className={t.fdropLabel}>Day of acquisition</span>
-                <span className={t.fdropVal}>{dayFilter === "*" ? "Any" : dayFilter}</span>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+                <span className={t.fdropVal}>
+                  {dayFilter === "*" ? "Any" : dayFilter}
+                </span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M3 6l5 5 5-5"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  />
                 </svg>
               </button>
 
@@ -2662,12 +2746,28 @@ export default function AcquisitionGlobeEarth({
                 type="button"
                 className={t.fdropHead}
                 aria-expanded={openDropdown === "datatake"}
-                onClick={() => setOpenDropdown(openDropdown === "datatake" ? null : "datatake")}
+                onClick={() =>
+                  setOpenDropdown(
+                    openDropdown === "datatake" ? null : "datatake",
+                  )
+                }
               >
                 <span className={t.fdropLabel}>Datatake</span>
-                <span className={t.fdropVal}>{filteredDatatakes[sel]?.id || "None"}</span>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-                  <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+                <span className={t.fdropVal}>
+                  {filteredDatatakes[sel]?.id || "None"}
+                </span>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M3 6l5 5 5-5"
+                    stroke="currentColor"
+                    strokeWidth="1.4"
+                  />
                 </svg>
               </button>
 
@@ -2842,11 +2942,23 @@ export default function AcquisitionGlobeEarth({
             {/* Search Input */}
             {/* Search */}
             <label className={t.fsearch}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                aria-hidden
+              >
                 <circle cx="11" cy="11" r="7" />
                 <path d="M20 20l-4-4" />
               </svg>
-              <input type="search" placeholder="Datatake ID" aria-label="Search datatakes" />
+              <input
+                type="search"
+                placeholder="Datatake ID"
+                aria-label="Search datatakes"
+              />
             </label>
           </div>
         </div>

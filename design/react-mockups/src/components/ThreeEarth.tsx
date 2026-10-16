@@ -89,24 +89,13 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
     // Atmosphere Glow Outer Shell
     const atmosphereGeom = new THREE.SphereGeometry(1.05, 64, 64);
     const atmosphereMat = new THREE.MeshBasicMaterial({
-      color: 0x00e5ff,
+      color: 0x6eaaff,
       transparent: true,
-      opacity: 0.12,
+      opacity: 0.16,
       side: THREE.BackSide,
     });
     const atmosphereMesh = new THREE.Mesh(atmosphereGeom, atmosphereMat);
     earthGroup.add(atmosphereMesh); // FIXED: Added to group[cite: 18]
-
-    // Inner Specular Atmosphere Rim
-    const innerGlowGeom = new THREE.SphereGeometry(1.008, 64, 64);
-    const innerGlowMat = new THREE.MeshBasicMaterial({
-      color: 0x0284c7,
-      transparent: true,
-      opacity: 0.25,
-      side: THREE.BackSide,
-    });
-    const innerGlowMesh = new THREE.Mesh(innerGlowGeom, innerGlowMat);
-    earthGroup.add(innerGlowMesh); // FIXED: Added to group[cite: 18]
 
     // Load texture with CORS & Fallback
     const textureLoader = new THREE.TextureLoader();
@@ -165,8 +154,6 @@ export default function ThreeEarth({ onReady }: ThreeEarthProps) {
       earthMaterial.dispose();
       atmosphereGeom.dispose();
       atmosphereMat.dispose();
-      innerGlowGeom.dispose();
-      innerGlowMat.dispose();
     };
   }, []);
 

@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { PageHeader } from "@/components/ui";
 import * as THREE from "three";
 import ThreeEarth from "@/components/ThreeEarth";
+import {
+  applyDayNightEarth,
+  type DayNightEarth,
+} from "@/components/dayNightEarth";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
 import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
 import {
@@ -106,6 +110,9 @@ const SAMPLE_SATELLITES = [
 
 const SPEED_OPTIONS = [1, 10, 60, 100, 300, 1000];
 
+/** The simulated day: simTime counts seconds from 2026-07-16 00:00 UTC. */
+const SIM_DAY_MS = Date.UTC(2026, 6, 16);
+
 const formatSimTime = (seconds: number) => {
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
@@ -153,6 +160,12 @@ export default function AcquisitionsGlobeEarthPage() {
 
   const speedMultiplierRef = useRef(speedMultiplier);
   speedMultiplierRef.current = speedMultiplier;
+
+  // The SentiBoard.html planet (day imagery, night lights); its terminator follows the sim clock.
+  const dayNightRef = useRef<DayNightEarth | null>(null);
+  const simTimeRef = useRef(0);
+  simTimeRef.current = simTime;
+  useEffect(() => () => dayNightRef.current?.dispose(), []);
 
   const satObjectsRef = useRef<
     {
@@ -488,6 +501,13 @@ export default function AcquisitionsGlobeEarthPage() {
     camera.position.set(0, 0, 3.0);
     camera.lookAt(0, 0, 0);
 
+    // Swap the Earth's material before the overlays are added, so only the sphere itself is matched.
+    dayNightRef.current?.dispose();
+    dayNightRef.current = applyDayNightEarth(
+      scene,
+      SIM_DAY_MS + simTimeRef.current * 1000,
+    );
+
     const overlayGroup = new THREE.Group();
     addDataOverlays(scene, overlayGroup);
 
@@ -606,6 +626,8 @@ export default function AcquisitionsGlobeEarthPage() {
           isAnimatingRef.current = false;
         }
       }
+
+      dayNightRef.current?.setTime(SIM_DAY_MS + simTimeRef.current * 1000);
 
       const orbitRadius = 1.18;
 
