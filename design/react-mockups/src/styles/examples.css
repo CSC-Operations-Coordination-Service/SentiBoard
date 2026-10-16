@@ -2336,3 +2336,190 @@ details.faq[open] .faq-body {
     grid-template-columns: 1fr;
   }
 }
+/* =========================================================================
+   Index1 FAQs — the reference: a centred title, one filled bar per group
+   (#070d11 on black, no border), white icon + bold title, a small chevron on
+   the right, 12px between bars, and a centred contact line underneath.
+   ========================================================================= */
+.faq-sec {
+  position: relative;
+  z-index: 10;
+  padding: 120px 0 130px;
+  background: var(--ground, #000);
+}
+
+.faq-in {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 56px;              /* 808px bars on a wide screen, as in the reference */
+  box-sizing: border-box;
+}
+
+.faq-head {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.faq-head h2 {
+  margin: 0 0 12px;
+  font-family: var(--font-sans);
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  color: #fff;
+}
+
+.faq-head p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.faq-item {
+  background: #070d11;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.faq-item:hover {
+  background: #0a1217;
+}
+
+/* open: a faint cyan edge marks which group you are reading */
+.faq-item.open {
+  border-color: rgba(54, 208, 224, 0.35);
+}
+
+.faq-q {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  color: #fff;
+  cursor: pointer;
+}
+
+.faq-q:focus-visible {
+  outline: 1px solid rgba(54, 208, 224, 0.6);
+  outline-offset: -1px;
+}
+
+.faq-ico {
+  flex: none;
+  width: 17px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.faq-title {
+  flex: 1;
+}
+
+.faq-chev {
+  flex: none;
+  color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.faq-item.open .faq-chev {
+  transform: rotate(180deg);
+}
+
+.faq-body {
+  padding: 2px 22px 18px 53px;  /* answers line up with the title, past the icon */
+  animation: tl-reveal 0.25s ease;
+}
+
+.faq-qa + .faq-qa {
+  margin-top: 14px;
+}
+
+.faq-question {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fff;
+}
+
+.faq-answer {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+
+/* the older section#faq overrides force every <p> white with !important; the answers stay dimmed */
+:root section#faq p.faq-answer {
+  color: rgba(255, 255, 255, 0.72) !important;
+}
+
+.faq-contact {
+  margin: 44px 0 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #fff;
+}
+
+.faq-contact a {
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: none;
+}
+
+.faq-contact a:hover {
+  text-decoration: underline;
+}
+
+/* light theme: a pale bar instead of the near-black one */
+:root[data-theme="light"] .faq-item {
+  background: #f1f4f7;
+}
+
+:root[data-theme="light"] .faq-item:hover {
+  background: #e8edf2;
+}
+
+:root[data-theme="light"] section#faq p.faq-answer {
+  color: #5b6573 !important;
+}
+
+@media (max-width: 640px) {
+  .faq-in {
+    padding: 0 18px;
+  }
+
+  .faq-sec {
+    padding: 80px 0 90px;
+  }
+
+  .faq-body {
+    padding-left: 22px;
+  }
+}
+
+/* links inside an answer: cyan like the contact line below */
+.faq-answer a {
+  color: var(--accent-cyan, #00e5ff);
+  text-decoration: none;
+}
+
+.faq-answer a:hover {
+  text-decoration: underline;
+}
