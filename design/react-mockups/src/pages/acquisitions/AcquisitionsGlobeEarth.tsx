@@ -598,8 +598,17 @@ export default function AcquisitionsGlobeEarthPage() {
   const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
-  const isAnimatingRef = useRef(false);
-  const targetCamPosRef = useRef<THREE.Vector3 | null>(null);
+  /** Camera flight (SentiBoard.html rotateTo): turn around the globe from one direction to another
+   *  while easing the distance, over `dur` ms. */
+  const camAnimRef = useRef<{
+    from: THREE.Vector3;
+    to: THREE.Vector3;
+    d0: number;
+    d1: number;
+    t0: number;
+    dur: number;
+  } | null>(null);
+  const flyTimerRef = useRef<number | undefined>(undefined);
 
   const [selectedDataTake, setSelectedDataTake] = useState<number>(0);
   const [satelliteFilter, setSatelliteFilter] = useState("*");
@@ -667,7 +676,9 @@ export default function AcquisitionsGlobeEarthPage() {
     line: THREE.LineBasicMaterial;
   } | null>(null);
   const selectedSatRef = useRef<string | null>(null);
-  selectedSatRef.current = ACQ_DATATAKES[selectedDataTake]?.sat ?? null;
+  selectedSatRef.current = isModalOpen
+    ? (ACQ_DATATAKES[selectedDataTake]?.sat ?? null)
+    : null;
 
   // List of datatakes available for the dropdown options ( filtered by Satellite, Day, and Search — but NOT Datatake ID )
   const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
@@ -727,15 +738,69 @@ export default function AcquisitionsGlobeEarthPage() {
     return { lon: avgLon, lat: avgLat };
   };
 
-  const focusOnDatatake = (coords: number[][]) => {
-    if (!cameraRef.current) return;
+  /** Start a camera flight to a world direction and distance. */
+  const flyTo = (dir: THREE.Vector3, dist: number, dur = 1300) => {
+    const cam = cameraRef.current;
+    if (!cam) return;
+    camAnimRef.current = {
+      from: cam.position.clone().normalize(),
+      to: dir.clone().normalize(),
+      d0: cam.position.length(),
+      d1: dist,
+      t0: performance.now(),
+      dur,
+    };
+  };
 
+  /** The reference's fitZoom: come close enough that the footprint fills about a third of the
+   *  globe's window, between a gentle and a deep zoom. */
+  const fitDistance = (coords: number[][]) => {
     const { lon, lat } = getSwathCentroid(coords);
-    const targetDir = latLonToVector3(lat, lon, 1.0).normalize();
-    const distance = cameraRef.current.position.length();
+    const c = latLonToVector3(lat, lon, 1).normalize();
+    let far = 0;
+    coords.forEach(([lo, la]) => {
+      far = Math.max(far, c.angleTo(latLonToVector3(la, lo, 1).normalize()));
+    });
+    const canvas = rendererRef.current?.domElement;
+    const W = canvas?.clientWidth || 800;
+    const H = canvas?.clientHeight || 600;
+    const cam = cameraRef.current as THREE.PerspectiveCamera | null;
+    const tanHalf = Math.tan(((cam?.fov ?? 45) * D) / 2);
+    // fraction of the half-height the footprint's radius should take
+    const f = (0.6 * Math.min(W, H)) / H;
+    const d = Math.cos(far) + Math.sin(Math.max(far, 0.02)) / (f * tanHalf);
+    return Math.max(1.3, Math.min(3.0, d));
+  };
 
-    targetCamPosRef.current = targetDir.multiplyScalar(distance);
-    isAnimatingRef.current = true;
+  const focusOnDatatake = (coords: number[][]) => {
+    const cam = cameraRef.current;
+    if (!cam) return;
+    const { lon, lat } = getSwathCentroid(coords);
+    // EarthGroup may have turned since load, so aim at the footprint where it is now
+    const earthGroup = sceneRef.current?.getObjectByName("EarthGroup");
+    const dir = latLonToVector3(lat, lon, 1).normalize();
+    if (earthGroup)
+      dir.applyQuaternion(
+        earthGroup.getWorldQuaternion(new THREE.Quaternion()),
+      );
+    const dist = fitDistance(coords);
+    window.clearTimeout(flyTimerRef.current);
+    // already close in: ease out a little first, then into the new footprint
+    if (cam.position.length() < 2.2) {
+      flyTo(cam.position, Math.min(3.0, cam.position.length() * 1.2), 520);
+      flyTimerRef.current = window.setTimeout(() => flyTo(dir, dist), 520);
+    } else flyTo(dir, dist);
+  };
+
+  /** Back out to the whole globe, keeping the current direction. */
+  const flyHome = () => {
+    window.clearTimeout(flyTimerRef.current);
+    if (cameraRef.current) flyTo(cameraRef.current.position, 3.0, 1100);
+  };
+
+  const closeDatatake = () => {
+    setIsModalOpen(false);
+    flyHome();
   };
 
   const handleSelectDatatake = (dtId: string) => {
@@ -758,16 +823,8 @@ export default function AcquisitionsGlobeEarthPage() {
     setSpeedMultiplier(SPEED_OPTIONS[nextIndex]);
   };
 
-  useEffect(() => {
-    if (filteredDatatakes.length > 0) {
-      const firstDt = filteredDatatakes[0];
-      const index = ACQ_DATATAKES.findIndex((dt) => dt.id === firstDt.id);
-      if (index !== -1) {
-        setSelectedDataTake(index);
-        setDatatakeFilter(firstDt.id); // <-- ADD THIS LINE
-      }
-    }
-  }, []);
+  // The page opens on every datatake, none selected (SentiBoard.html): the user picks one from the
+  // Datatake list or by clicking its footprint.
 
   useEffect(() => {
     const allowedIds = new Set(filteredDatatakes.map((dt) => dt.id));
@@ -780,7 +837,9 @@ export default function AcquisitionsGlobeEarthPage() {
     // Footprints take their datatake's status colour, as the reference does: green published,
     // amber processing, red failed. The selected one is matched by ID (the swath list and the
     // datatake list are not in the same order), pulses in the animation loop and gets a white edge.
-    const selectedId = ACQ_DATATAKES[selectedDataTake]?.id;
+    const selectedId = isModalOpen
+      ? ACQ_DATATAKES[selectedDataTake]?.id
+      : undefined;
     const anySelected = !!selectedId && allowedIds.has(selectedId);
     selectedFootRef.current = null;
 
@@ -806,7 +865,7 @@ export default function AcquisitionsGlobeEarthPage() {
         if (fillMat) fillMat.opacity = anySelected ? 0.14 : 0.24;
       }
     });
-  }, [filteredDatatakes, selectedDataTake]);
+  }, [filteredDatatakes, selectedDataTake, isModalOpen]);
 
   const addDataOverlays = (scene: THREE.Scene, overlayGroup: THREE.Group) => {
     if (!scene) return;
@@ -1095,6 +1154,8 @@ export default function AcquisitionsGlobeEarthPage() {
     const mouseVector = new THREE.Vector2();
 
     const onMouseDown = (e: MouseEvent) => {
+      camAnimRef.current = null;
+      window.clearTimeout(flyTimerRef.current);
       isDragging = true;
       dragDistance = 0;
       previousMousePosition = { x: e.clientX, y: e.clientY };
@@ -1147,11 +1208,12 @@ export default function AcquisitionsGlobeEarthPage() {
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      camAnimRef.current = null;
       if (camera) {
         const direction = camera.position.clone().normalize();
         const currentDistance = camera.position.length();
         const newDistance = Math.max(
-          1.6,
+          1.25,
           Math.min(6, currentDistance + e.deltaY * 0.004),
         );
         camera.position.copy(direction.multiplyScalar(newDistance));
@@ -1191,20 +1253,28 @@ export default function AcquisitionsGlobeEarthPage() {
         });
       }
 
-      if (
-        isAnimatingRef.current &&
-        targetCamPosRef.current &&
-        cameraRef.current
-      ) {
-        cameraRef.current.position.lerp(targetCamPosRef.current, 0.06);
+      // camera flight: rotate around the globe (never through it) and ease the distance,
+      // easeInOutCubic as in the reference
+      const fly = camAnimRef.current;
+      if (fly && cameraRef.current) {
+        const k = Math.min(1, (now - fly.t0) / fly.dur);
+        const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+        const q = new THREE.Quaternion().setFromUnitVectors(fly.from, fly.to);
+        const qe = new THREE.Quaternion().slerp(q, e);
+        const dir = fly.from.clone().applyQuaternion(qe);
+        cameraRef.current.position.copy(
+          dir.multiplyScalar(fly.d0 + (fly.d1 - fly.d0) * e),
+        );
         cameraRef.current.lookAt(0, 0, 0);
+        if (k >= 1) camAnimRef.current = null;
+      }
 
-        if (
-          cameraRef.current.position.distanceTo(targetCamPosRef.current) < 0.005
-        ) {
-          cameraRef.current.position.copy(targetCamPosRef.current);
-          isAnimatingRef.current = false;
-        }
+      // zoomed in, the globe's window fades into the sky through a soft oval
+      if (cameraRef.current && rendererRef.current) {
+        rendererRef.current.domElement.classList.toggle(
+          g.globeZoomed,
+          cameraRef.current.position.length() < 2.3,
+        );
       }
 
       dayNightRef.current?.setTime(SIM_DAY_MS + simTimeRef.current * 1000);
@@ -1502,7 +1572,7 @@ export default function AcquisitionsGlobeEarthPage() {
           >
             <span className={g.fdropLabel}>Datatake</span>
             <span className={g.fdropVal}>
-              {datatakeFilter === "*" ? "None" : datatakeFilter}
+              {datatakeFilter === "*" ? "All" : datatakeFilter}
             </span>
             <Chevron />
           </button>
@@ -1515,6 +1585,7 @@ export default function AcquisitionsGlobeEarthPage() {
                 onClick={() => {
                   setDatatakeFilter("*");
                   setOpenDropdown(null);
+                  closeDatatake();
                 }}
               >
                 All datatakes
@@ -1581,275 +1652,241 @@ export default function AcquisitionsGlobeEarthPage() {
         </label>
       </div>
 
-      {/* GLOBE CANVAS CONTAINER */}
-      <div
-        style={{
-          flex: 1,
-          minHeight: "550px",
-          position: "relative",
-          overflow: "hidden",
-          width: "100%",
-        }}
-      >
-        <div style={{ width: "100%", height: "100%", position: "relative" }}>
-          <ThreeEarth transparent onReady={handleSceneReady} />
-        </div>
-
-        {/* FLOATING BOTTOM OVERLAY CONTROL BAR */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "28px",
-            left: "32px",
-            right: "32px",
-            zIndex: 50,
-            display: "flex",
-            alignItems: "center",
-            gap: "20px",
-            pointerEvents: "auto",
-            fontFamily: "system-ui, -apple-system, sans-serif",
-          }}
-        >
-          {/* Circular Play / Pause Button */}
-          <button
-            onClick={() => setIsPlaying(!isPlaying)}
-            style={{
-              width: "42px",
-              height: "42px",
-              borderRadius: "50%",
-              background: "#00a8b5",
-              border: "none",
-              color: "#090d16",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              flexShrink: 0,
-              boxShadow: "0 0 12px rgba(0, 168, 181, 0.4)",
-            }}
-          >
-            {isPlaying ? (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <rect x="6" y="4" width="4" height="16" rx="1" />
-                <rect x="14" y="4" width="4" height="16" rx="1" />
-              </svg>
-            ) : (
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-              >
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
-          </button>
-
-          {/* Timestamp Display */}
-          <div
-            style={{ display: "flex", flexDirection: "column", flexShrink: 0 }}
-          >
-            <span
-              style={{
-                color: "#ffffff",
-                fontSize: "14px",
-                fontWeight: 700,
-                letterSpacing: "0.5px",
-              }}
-            >
-              2026-07-16 {formatSimTime(simTime)}
-            </span>
-            <span
-              style={{
-                color: "#6b7280",
-                fontSize: "10px",
-                fontWeight: 700,
-                letterSpacing: "1px",
-              }}
-            >
-              SIMULATION TIME
-            </span>
-          </div>
-
-          {/* Timeline Slider Track */}
-          <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
-            <input
-              type="range"
-              min={0}
-              max={86400}
-              step={1}
-              value={Math.floor(simTime)}
-              onChange={(e) => setSimTime(Number(e.target.value))}
-              style={{
-                width: "100%",
-                accentColor: "#00c7d6",
-                cursor: "pointer",
-                height: "4px",
-              }}
+      {/* GLOBE + DATATAKE: one row. Selecting a datatake opens the side column and the globe's
+          column narrows to make room (SentiBoard.html .acq-layout.has-sel). */}
+      <div className={`${g.stageRow} ${isModalOpen ? g.hasSel : ""}`}>
+        <div className={g.globeStage}>
+          <div style={{ width: "100%", height: "100%", position: "relative" }}>
+            <ThreeEarth
+              transparent
+              autoRotate={!isModalOpen}
+              onReady={handleSceneReady}
             />
           </div>
 
-          {/* Single Speed Control Pill Button */}
-          <button
-            onClick={handleCycleSpeed}
+          {/* FLOATING BOTTOM OVERLAY CONTROL BAR */}
+          <div
             style={{
-              background: "rgba(15, 23, 42, 0.85)",
-              color: "#ffffff",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-              borderRadius: "16px",
-              padding: "6px 14px",
-              fontSize: "12px",
-              fontWeight: 600,
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              backdropFilter: "blur(8px)",
-              flexShrink: 0,
+              position: "absolute",
+              bottom: "28px",
+              left: "32px",
+              right: "32px",
+              zIndex: 50,
+              display: "flex",
+              alignItems: "center",
+              gap: "20px",
+              pointerEvents: "auto",
+              fontFamily: "system-ui, -apple-system, sans-serif",
             }}
           >
-            ×{speedMultiplier}
-          </button>
+            {/* Circular Play / Pause Button */}
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              style={{
+                width: "42px",
+                height: "42px",
+                borderRadius: "50%",
+                background: "#00a8b5",
+                border: "none",
+                color: "#090d16",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                flexShrink: 0,
+                boxShadow: "0 0 12px rgba(0, 168, 181, 0.4)",
+              }}
+            >
+              {isPlaying ? (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+              ) : (
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+
+            {/* Timestamp Display */}
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  color: "#ffffff",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  letterSpacing: "0.5px",
+                }}
+              >
+                2026-07-16 {formatSimTime(simTime)}
+              </span>
+              <span
+                style={{
+                  color: "#6b7280",
+                  fontSize: "10px",
+                  fontWeight: 700,
+                  letterSpacing: "1px",
+                }}
+              >
+                SIMULATION TIME
+              </span>
+            </div>
+
+            {/* Timeline Slider Track */}
+            <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+              <input
+                type="range"
+                min={0}
+                max={86400}
+                step={1}
+                value={Math.floor(simTime)}
+                onChange={(e) => setSimTime(Number(e.target.value))}
+                style={{
+                  width: "100%",
+                  accentColor: "#00c7d6",
+                  cursor: "pointer",
+                  height: "4px",
+                }}
+              />
+            </div>
+
+            {/* Single Speed Control Pill Button */}
+            <button
+              onClick={handleCycleSpeed}
+              style={{
+                background: "rgba(15, 23, 42, 0.85)",
+                color: "#ffffff",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                borderRadius: "16px",
+                padding: "6px 14px",
+                fontSize: "12px",
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                backdropFilter: "blur(8px)",
+                flexShrink: 0,
+              }}
+            >
+              ×{speedMultiplier}
+            </button>
+          </div>
+
+          {/* Zoom controls (SentiBoard.html .zoomctl): frosted 32px squares; each step is a short
+            flight, not a jump */}
+          <div className={g.zoomCtl}>
+            <button
+              type="button"
+              aria-label="Zoom in"
+              onClick={() => {
+                const cam = cameraRef.current;
+                if (cam)
+                  flyTo(
+                    cam.position,
+                    Math.max(1.25, cam.position.length() * 0.8),
+                    420,
+                  );
+              }}
+            >
+              +
+            </button>
+            <button
+              type="button"
+              aria-label="Zoom out"
+              onClick={() => {
+                const cam = cameraRef.current;
+                if (cam)
+                  flyTo(
+                    cam.position,
+                    Math.min(6, cam.position.length() * 1.25),
+                    420,
+                  );
+              }}
+            >
+              −
+            </button>
+            <button
+              type="button"
+              aria-label="Reset view"
+              title="Reset view"
+              onClick={() => {
+                window.clearTimeout(flyTimerRef.current);
+                flyTo(new THREE.Vector3(0, 0, 1), 3.0, 1100);
+              }}
+            >
+              ⌖
+            </button>
+          </div>
+
+          {/* 2D Overlay Badges */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              pointerEvents: "none",
+              zIndex: 5,
+            }}
+          >
+            {STATIONS.map((station) => {
+              const pos = stationPositions[station.name];
+              if (!pos || !pos.visible || (pos.x === 0 && pos.y === 0))
+                return null;
+              return (
+                <StationMarker
+                  key={station.name}
+                  name={station.name}
+                  x={pos.x}
+                  y={pos.y}
+                  contact={pos.contact}
+                />
+              );
+            })}
+
+            {SAMPLE_SATELLITES.map((sat) => {
+              const pos = satPositions[sat.name];
+              if (!pos || !pos.visible) return null;
+              return (
+                <SatelliteMarker
+                  key={`sat-${sat.name}`}
+                  name={sat.name}
+                  x={pos.x}
+                  y={pos.y}
+                  color={hex(sat.color)}
+                  selected={ACQ_DATATAKES[selectedDataTake]?.sat === sat.name}
+                />
+              );
+            })}
+          </div>
         </div>
 
-        {/* DATATAKE PANEL (SentiBoard.html#acquisitions) */}
-        {isModalOpen && ACQ_DATATAKES[selectedDataTake] && (
-          <DatatakePanel
-            key={ACQ_DATATAKES[selectedDataTake].id}
-            dt={ACQ_DATATAKES[selectedDataTake]}
-            onClose={() => setIsModalOpen(false)}
-          />
-        )}
-
-        {/* Zoom Controls */}
-        <div
-          style={{
-            position: "absolute",
-            right: "32px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            zIndex: 10,
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-          }}
-        >
-          <button
-            onClick={() => {
-              if (cameraRef.current) {
-                const direction = cameraRef.current.position
-                  .clone()
-                  .normalize();
-                const currentDistance = cameraRef.current.position.length();
-                const newDistance = Math.max(1.6, currentDistance * 0.85);
-                cameraRef.current.position.copy(
-                  direction.multiplyScalar(newDistance),
-                );
-                cameraRef.current.lookAt(0, 0, 0);
-              }
-            }}
-            style={{
-              width: "36px",
-              height: "36px",
-              background: "rgba(15, 23, 42, 0.85)",
-              border: "1px solid rgba(0, 229, 255, 0.4)",
-              color: "#00e5ff",
-              fontSize: "18px",
-              cursor: "pointer",
-            }}
-          >
-            +
-          </button>
-          <button
-            onClick={() => {
-              if (cameraRef.current) {
-                const direction = cameraRef.current.position
-                  .clone()
-                  .normalize();
-                const dist = cameraRef.current.position.length();
-                cameraRef.current.position.copy(
-                  direction.multiplyScalar(Math.min(6, dist * 1.15)),
-                );
-                cameraRef.current.lookAt(0, 0, 0);
-              }
-            }}
-            style={{
-              width: "36px",
-              height: "36px",
-              background: "rgba(15, 23, 42, 0.85)",
-              border: "1px solid rgba(0, 229, 255, 0.4)",
-              color: "#00e5ff",
-              fontSize: "18px",
-              cursor: "pointer",
-            }}
-          >
-            −
-          </button>
-          <button
-            onClick={() => {
-              if (cameraRef.current) {
-                cameraRef.current.position.set(0, 0, 3.0);
-                cameraRef.current.lookAt(0, 0, 0);
-              }
-            }}
-            style={{
-              width: "36px",
-              height: "36px",
-              background: "rgba(15, 23, 42, 0.85)",
-              border: "1px solid rgba(0, 229, 255, 0.4)",
-              color: "#00e5ff",
-              fontSize: "18px",
-              cursor: "pointer",
-            }}
-          >
-            ↻
-          </button>
-        </div>
-
-        {/* 2D Overlay Badges */}
-        <div
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            pointerEvents: "none",
-            zIndex: 5,
-          }}
-        >
-          {STATIONS.map((station) => {
-            const pos = stationPositions[station.name];
-            if (!pos || !pos.visible || (pos.x === 0 && pos.y === 0))
-              return null;
-            return (
-              <StationMarker
-                key={station.name}
-                name={station.name}
-                x={pos.x}
-                y={pos.y}
-                contact={pos.contact}
-              />
-            );
-          })}
-
-          {SAMPLE_SATELLITES.map((sat) => {
-            const pos = satPositions[sat.name];
-            if (!pos || !pos.visible) return null;
-            return (
-              <SatelliteMarker
-                key={`sat-${sat.name}`}
-                name={sat.name}
-                x={pos.x}
-                y={pos.y}
-                color={hex(sat.color)}
-                selected={ACQ_DATATAKES[selectedDataTake]?.sat === sat.name}
-              />
-            );
-          })}
+        {/* the datatake's record, in its own column: it grows to its full height, no inner scroll */}
+        <div className={g.side}>
+          {isModalOpen && ACQ_DATATAKES[selectedDataTake] && (
+            <DatatakePanel
+              key={ACQ_DATATAKES[selectedDataTake].id}
+              dt={ACQ_DATATAKES[selectedDataTake]}
+              onClose={closeDatatake}
+            />
+          )}
         </div>
       </div>
     </div>

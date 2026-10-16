@@ -14,13 +14,19 @@ interface ThreeEarthProps {
    *  shell — the page behind supplies the sky, and the page draws its own atmosphere. Off by
    *  default, so any other page using ThreeEarth keeps its current look. */
   transparent?: boolean;
+  /** Slow spin of the Earth group. Read live, so a page can pause it (e.g. while a datatake is
+   *  selected and the camera is aimed at it). Default true. */
+  autoRotate?: boolean;
 }
 
 export default function ThreeEarth({
   onReady,
   transparent = false,
+  autoRotate = true,
 }: ThreeEarthProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const autoRotateRef = useRef(autoRotate);
+  autoRotateRef.current = autoRotate;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -148,12 +154,19 @@ export default function ThreeEarth({
       renderer.setSize(w, h);
     };
     window.addEventListener("resize", handleResize);
+    // The page can resize the globe without the window changing (a side panel opening), so follow
+    // the container itself too.
+    const ro =
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(handleResize)
+        : null;
+    ro?.observe(containerRef.current);
 
     // 5. Render Loop
     let animationFrameId: number;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      earthGroup.rotation.y += 0.0005; // Rotates earthMesh, atmosphereMesh, and innerGlowMesh[cite: 18]
+      if (autoRotateRef.current) earthGroup.rotation.y += 0.0005; // Rotates earthMesh, atmosphereMesh, and innerGlowMesh[cite: 18]
       renderer.render(scene, camera);
     };
     animate();
@@ -165,6 +178,7 @@ export default function ThreeEarth({
     return () => {
       if (typeof pageCleanup === "function") pageCleanup();
       window.removeEventListener("resize", handleResize);
+      ro?.disconnect();
       cancelAnimationFrame(animationFrameId);
       renderer.dispose();
       geometry.dispose();

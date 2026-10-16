@@ -1,3 +1,5 @@
+/* Acquisitions Globe — drawer + collapse pattern matching EventsManifest */
+
 .drawer {
   position: fixed;
   top: 0;
@@ -580,28 +582,61 @@
   color: #ffffff;
 }
 
+/* ==================== globe + datatake row (SentiBoard.html .acq-layout) ====================
+   The globe takes the whole row; selecting a datatake opens a side column of max(340px, 26vw) and
+   the globe's column narrows to make room, over the reference's 820ms. The stage is tall —
+   max(520px, min(84vh, 880px)) — so the record beside it fits without scrolling; if it is still
+   longer, the row simply grows with it. */
+.stageRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.globeStage {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: max(520px, min(84vh, 880px));
+  overflow: hidden;
+}
+
+.side {
+  flex: 0 0 0px;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+  transition: flex-basis 820ms cubic-bezier(0.65, 0, 0.25, 1);
+}
+
+.hasSel .side {
+  flex-basis: max(340px, 26vw);
+}
+
+/* zoomed in, the picture fades into the sky through a soft oval instead of ending on a cut */
+.globeZoomed {
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 46%, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 46%, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+}
+
 /* ==================== datatake panel (SentiBoard.html#acquisitions) ====================
-   No card: the record stands on the starfield at the right of the globe. A soft dark fade at its
-   left edge keeps it readable where it overlaps the planet. Type is a step brighter than the
-   reference's 42% captions, which disappear on the black. */
+   No card: the record stands on the starfield in its own column. It is laid out at the column's
+   final width from the start, so nothing reflows while the column opens. Type is a step brighter
+   than the reference's 42% captions, which disappear on the black. */
 .dtkPanel {
   --dp-ink: #ffffff;
   --dp-ink-2: rgba(234, 240, 246, 0.62); /* mission, aside keys, note */
   --dp-ink-3: rgba(234, 240, 246, 0.52); /* record keys */
   --dp-line: rgba(255, 255, 255, 0.08);
-  position: absolute;
-  top: 24px;
-  right: 76px; /* clear of the zoom buttons */
-  bottom: 90px; /* clear of the time bar */
-  z-index: 100;
-  width: min(460px, 42%);
-  padding: 4px 18px 8px 40px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  background: linear-gradient(to right, rgba(2, 4, 9, 0) 0, rgba(2, 4, 9, 0.82) 40px, rgba(2, 4, 9, 0.82) 100%);
+  position: relative;
+  z-index: 2;
+  width: max(340px, 26vw);
+  box-sizing: border-box;
+  padding: clamp(24px, 6vh, 56px) clamp(20px, 3vw, 48px) 32px 8px;
   font-family: var(--font-sans);
   color: var(--dp-ink);
-  animation: dtkPanelIn 520ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+  animation: dtkPanelIn 640ms cubic-bezier(0.2, 0.7, 0.2, 1) 380ms backwards;
 }
 
 @keyframes dtkPanelIn {
@@ -802,21 +837,89 @@
   color: #eaf0f6;
 }
 
-@media (max-width: 760px) {
+/* narrow screens: the record drops below the globe, full width */
+@media (max-width: 900px) {
+  .stageRow {
+    flex-direction: column;
+  }
+
+  .globeStage {
+    width: 100%;
+    flex: none;
+    height: max(420px, min(70vh, 640px));
+  }
+
+  .side,
+  .hasSel .side {
+    flex: none;
+    width: 100%;
+    transition: none;
+  }
+
   .dtkPanel {
-    top: auto;
-    left: 12px;
-    right: 12px;
-    bottom: 84px;
-    width: auto;
-    max-height: 58%;
-    padding: 16px;
-    background: rgba(2, 4, 9, 0.88);
+    width: 100%;
+    padding: 20px clamp(16px, 4vw, 32px) 28px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .dtkPanel {
     animation: none;
+  }
+
+  .side {
+    transition: none;
+  }
+}
+
+/* ==================== zoom controls (SentiBoard.html .zoomctl) ==================== */
+.zoomCtl {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zoomCtl button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 11, 18, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #eaf0f8;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.zoomCtl button:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(20, 28, 42, 0.75);
+}
+
+.zoomCtl button:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .zoomCtl {
+    top: 12px;
+    right: 12px;
+  }
+
+  .zoomCtl button {
+    width: 28px;
+    height: 28px;
   }
 }
