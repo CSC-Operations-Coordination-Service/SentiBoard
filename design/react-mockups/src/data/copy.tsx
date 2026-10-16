@@ -33,7 +33,7 @@ export const AVAILABILITY_DESCRIPTION = (
     </p>
 
     <div className="callout-line">
-      <strong>Please note:</strong> the selected “from”–“to” time range applies
+      <strong>Please note:</strong> the selected “from”-“to” time range applies
       to the start date of the datatakes.
     </div>
 
@@ -107,19 +107,16 @@ export const EVENTS_LIST_DESCRIPTION =
 /* Acquisitions — shared by the current globe page and the demand-driven proposal, since both
    answer the same question with the same controls. */
 export const ACQUISITIONS_DESCRIPTION =
-  "This view shows the scheduled Acquisition Plans, on an interactive " +
-  "3D globe. By default, the view shows the real-time position of the Copernicus Sentinels satellite; " +
-  "however, by selecting a datatake from the top-right dropdown menu, the simulation time is shifted to " +
-  "the beginning of the selected acquisition. Datatakes can be filtered by selecting the satellite and " +
-  "the acquisition date. By clicking on the  icon, it is possible to inspect the published products " +
-  "relevant to the selected datatake.entinel acquisitions on a 3D globe.  ";
+  "The Acquisitions Status view displays the past, current and future Copernicus Sentinels' acquisition on an interactive, 3D globe. " +
+  "Through this view, users can either inspect the status of a past acquisition, or learn about the planned acquisitions for the mission of " +
+  "interest. By default, the real-time sensing scenario is displayed. ";
 
 /* Processors — the release timeline. */
 export const PROCESSORS_DESCRIPTION =
-  "This view shows the complete list of the releases of the Copernicus Sentinels processors, " +
-  "on an interactive timeline. The timeline can be zoomed in / out using the mouse wheel, and dragged" +
-  " to the left / right by moving the mouse while keeping left-hand button pressed. By clicking on a " +
-  "colored box, the details relevant to the selected processor release is displayed in the lower part of the screen.";
+  "The Processors tab shows the complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. The " +
+  "timeline can be zoomed in / out using the mouse wheel, and dragged to the left / right by moving the mouse while keeping left-hand " +
+  "button pressed. By clicking on a coloured box, the details relevant to the selected processor release is displayed in the lower part of " +
+  "the screen.";
 
 /* Processors — the version matrix proposal. Describes its own controls rather than the timeline's,
    since the two read the same releases in deliberately different ways. */

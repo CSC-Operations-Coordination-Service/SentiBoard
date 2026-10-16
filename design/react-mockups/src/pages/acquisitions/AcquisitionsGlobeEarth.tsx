@@ -7,7 +7,8 @@ import {
   type DayNightEarth,
 } from "@/components/dayNightEarth";
 import { ACQUISITIONS_DESCRIPTION } from "@/data/copy";
-import { STATIONS, ACQ_DATATAKES } from "@/data/mock";
+import { STATIONS, ACQ_DATATAKES, expectedTypes } from "@/data/mock";
+import { applyStylizedEarth } from "@/components/stylizedEarth";
 import {
   AmbientSky,
   MotionToggle,
@@ -204,8 +205,6 @@ const statusHexOf = (id: string, fallback: number) => {
  * / cls / startIso, so the rest comes from the reference's sample set, keyed by ID. A datatake that
  * is not in this table still opens: its unknown fields read "NA". */
 interface DtkDetail {
-  /** UTC date and time the sensing starts */
-  start: string; // "2026-07-16T06:00:12"
   /** sensing length, seconds */
   dur: number;
   mode: string;
@@ -218,13 +217,12 @@ interface DtkDetail {
   /** completeness shown as the headline figure, % */
   pct: number;
   station: string;
-  /** downlink pass, or null when there was none */
-  pass: { at: string; mb: number; s: number } | null;
+  /** downlink pass — `after`: seconds from sensing start to the downlink — or null when there was none */
+  pass: { after: number; mb: number; s: number } | null;
 }
 
 const DTK_DETAILS: Record<string, DtkDetail> = {
   "S2A-48201-1": {
-    start: "2026-07-16T10:42:01",
     dur: 205,
     mode: "NOBS",
     swath: "NA",
@@ -234,10 +232,9 @@ const DTK_DETAILS: Record<string, DtkDetail> = {
     types: [100, 100, 100, 100, 100],
     pct: 100.0,
     station: "Svalbard",
-    pass: { at: "11:02:14", mb: 18400, s: 41 },
+    pass: { after: 1213, mb: 18400, s: 41 },
   },
   "S1C-57622": {
-    start: "2026-07-16T09:33:10",
     dur: 130,
     mode: "IW",
     swath: "NA",
@@ -247,10 +244,9 @@ const DTK_DETAILS: Record<string, DtkDetail> = {
     types: [100, 86.2, 72.6, 58.4],
     pct: 79.3,
     station: "Matera",
-    pass: { at: "09:48:37", mb: 11250, s: 29 },
+    pass: { after: 927, mb: 11250, s: 29 },
   },
   "S3B-080-345": {
-    start: "2026-07-16T08:11:45",
     dur: 183,
     mode: "EO",
     swath: "NA",
@@ -260,10 +256,9 @@ const DTK_DETAILS: Record<string, DtkDetail> = {
     types: [100, 96.0, 94.0, 88.0, 84.5],
     pct: 92.5,
     station: "Maspalomas",
-    pass: { at: "08:26:05", mb: 9600, s: 36 },
+    pass: { after: 860, mb: 9600, s: 36 },
   },
   "S2B-42050-1": {
-    start: "2026-07-16T07:20:50",
     dur: 252,
     mode: "NOBS",
     swath: "NA",
@@ -273,10 +268,9 @@ const DTK_DETAILS: Record<string, DtkDetail> = {
     types: [100, 100, 100, 99.5, 100],
     pct: 99.9,
     station: "Inuvik",
-    pass: { at: "07:39:12", mb: 22600, s: 50 },
+    pass: { after: 1102, mb: 22600, s: 50 },
   },
   "S5P-60012": {
-    start: "2026-07-16T06:00:12",
     dur: 400,
     mode: "NOM",
     swath: "NA",
@@ -286,10 +280,9 @@ const DTK_DETAILS: Record<string, DtkDetail> = {
     types: [100, 98.0, 96.5, 95.0, 95.5],
     pct: 97.0,
     station: "Neustrelitz",
-    pass: { at: "06:21:40", mb: 14100, s: 33 },
+    pass: { after: 1288, mb: 14100, s: 33 },
   },
   "S3A-055-358": {
-    start: "2026-07-15T22:14:30",
     dur: 108,
     mode: "NOM",
     swath: "NA",
@@ -300,6 +293,66 @@ const DTK_DETAILS: Record<string, DtkDetail> = {
     pct: 0.0,
     station: "Svalbard",
     pass: null,
+  },
+  "S1A-60418": {
+    dur: 240,
+    mode: "EW",
+    swath: "NA",
+    pol: "DH",
+    orbit: 60418,
+    rel: 141,
+    types: [100, 100, 100, 100, 99.6, 99.2],
+    pct: 99.8,
+    station: "Svalbard",
+    pass: { after: 1034, mb: 12800, s: 31 },
+  },
+  "S2C-10187-1": {
+    dur: 232,
+    mode: "NOBS",
+    swath: "NA",
+    pol: "NA",
+    orbit: 10187,
+    rel: 65,
+    types: [100, 100, 97.8, 91.5, 64.0],
+    pct: 90.7,
+    station: "Maspalomas",
+    pass: { after: 1176, mb: 20900, s: 46 },
+  },
+  "S3A-112-207": {
+    dur: 1040,
+    mode: "EO",
+    swath: "NA",
+    pol: "NA",
+    orbit: 21540,
+    rel: 112,
+    types: [100, 100, 99.4, 99.1, 98.7, 97.9, 98.8, 99.0],
+    pct: 99.1,
+    station: "Matera",
+    pass: { after: 1490, mb: 15300, s: 44 },
+  },
+  "S5P-60011": {
+    dur: 2940,
+    mode: "NOM",
+    swath: "NA",
+    pol: "NA",
+    orbit: 60011,
+    rel: 10,
+    types: [100, 100, 99.5, 99.5, 98.2, 99.0, 99.0, 96.4],
+    pct: 98.9,
+    station: "Inuvik",
+    pass: { after: 3320, mb: 14600, s: 34 },
+  },
+  "S1C-57611": {
+    dur: 175,
+    mode: "IW",
+    swath: "NA",
+    pol: "DV",
+    orbit: 57611,
+    rel: 22,
+    types: [100, 100, 88.0, 81.5],
+    pct: 92.4,
+    station: "Neustrelitz",
+    pass: { after: 1310, mb: 10400, s: 27 },
   },
 };
 
@@ -332,29 +385,56 @@ function DatatakePanel({
   dt: (typeof ACQ_DATATAKES)[number];
   onClose: () => void;
 }) {
-  const d = DTK_DETAILS[dt.id];
-  const pct = d?.pct ?? Math.round(dt.comp || 0);
+  // The datatake's own fields come first (mock.ts carries sensing time, orbit, mode, product
+  // levels and station); the reference table fills what the mock does not have — the relative
+  // orbit and the downlink pass.
+  const ref = DTK_DETAILS[dt.id];
+  const unit = dt.unit ?? dt.sat;
+  const pct = dt.comp ?? ref?.pct ?? 0;
   const status = dt.status || "Processing";
   const tone = hex(STATUS_HEX[dt.cls] ?? 0x8a96a8);
-  const nTypes = d?.types.length ?? 0;
-  const missing = d
-    ? d.types.reduce((s, p) => s + (1 - p / 100) * d.dur, 0)
-    : null;
-  const start = d?.start ?? (dt.startIso ? dt.startIso.slice(0, 19) : "NA");
+  const types: number[] = dt.levels
+    ? expectedTypes(dt.levels).map((p) => p.pct as number)
+    : (ref?.types ?? []);
+  const dur: number | null = dt.sensingS ?? ref?.dur ?? null;
+  const nTypes = types.length;
+  const missing =
+    dur !== null && nTypes
+      ? types.reduce((s, p) => s + (1 - p / 100) * dur, 0)
+      : null;
+  const start = dt.startIso ? noZone(dt.startIso) : null;
+  // "MSI · NOBS" → mode NOBS; Sentinel-1 writes "IW · DV": mode IW, polarisation DV
+  const modeParts = (dt.mode ?? "")
+    .split("\u00b7")
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+  const isS1 = unit.startsWith("S1");
+  const mode =
+    (isS1 ? modeParts[0] : (modeParts[1] ?? modeParts[0])) ?? ref?.mode ?? "NA";
+  const pol = isS1 ? (modeParts[1] ?? ref?.pol ?? "NA") : (ref?.pol ?? "NA");
+  const orbit = dt.absOrbit
+    ? String(Number(dt.absOrbit))
+    : ref
+      ? String(ref.orbit)
+      : "NA";
+  const stationName: string | undefined = dt.station ?? ref?.station;
   const failed = status === "Failed";
   const acq = failed ? 0 : 100;
 
   const rows: [string, string][] = [
-    ["Satellite ID", dt.sat],
+    ["Satellite ID", unit],
     ["Datatake ID", dt.id],
-    ["Mode", d?.mode ?? "NA"],
-    ["Swath", d?.swath ?? "NA"],
-    ["Polarisation", d?.pol ?? "NA"],
-    ["Observation time start", start],
-    ["Observation time stop", d ? isoPlus(d.start, d.dur) : "NA"],
-    ["Observation duration", d ? `${Math.round(d.dur)} s` : "NA"],
-    ["Orbit absolute", d ? String(d.orbit) : "NA"],
-    ["Orbit relative", d ? String(d.rel) : "NA"],
+    ["Mode", mode],
+    ["Swath", ref?.swath ?? "NA"],
+    ["Polarisation", pol],
+    ["Observation time start", start ?? "NA"],
+    [
+      "Observation time stop",
+      start && dur !== null ? isoPlus(start, dur) : "NA",
+    ],
+    ["Observation duration", dur !== null ? `${Math.round(dur)} s` : "NA"],
+    ["Orbit absolute", orbit],
+    ["Orbit relative", ref ? String(ref.rel) : "NA"],
     [
       "Acquisition status",
       `${failed ? "Failed" : "Acquired"} (${acq.toFixed(2)}%)`,
@@ -364,17 +444,21 @@ function DatatakePanel({
       `${failed ? "Not published" : status} (${pct.toFixed(2)}%)`,
     ],
   ];
-  if (d) {
-    const code = STATION_CODE[d.station];
-    const station = `${d.station}${code ? ` (${code})` : ""}`;
-    if (d.pass)
+  if (stationName) {
+    const code = STATION_CODE[stationName];
+    const station = `${stationName}${code ? ` (${code})` : ""}`;
+    if (ref?.pass && start)
       rows.push(
         ["Downlink station", station],
-        ["Downlink time", `${d.start.slice(0, 10)}T${d.pass.at}`],
-        ["Downlink volume", `${d.pass.mb.toLocaleString("en-US")} Mb`],
-        ["Downlink duration", `${d.pass.s} s`],
+        ["Downlink time", isoPlus(start, ref.pass.after)],
+        ["Downlink volume", `${ref.pass.mb.toLocaleString("en-US")} Mb`],
+        ["Downlink duration", `${ref.pass.s} s`],
       );
-    else rows.push(["Downlink station", station], ["Downlink", "No pass"]);
+    else
+      rows.push(
+        ["Downlink station", station],
+        ["Downlink", ref?.pass === null || failed ? "No pass" : "NA"],
+      );
   }
 
   return (
@@ -383,7 +467,7 @@ function DatatakePanel({
         <span className={g.dtkSel}>
           <span className={g.dtkEyebrow}>Datatake</span>
           <span className={g.dtkId}>{dt.id}</span>
-          <span className={g.dtkMission}>{dt.sat}</span>
+          <span className={g.dtkMission}>{unit}</span>
         </span>
         <span className={g.dtkHeadR}>
           <span className={g.dtkPill} style={{ color: tone }}>
@@ -420,7 +504,7 @@ function DatatakePanel({
         <dl className={g.dtkAside}>
           <div>
             <dt>Sensing</dt>
-            <dd>{d ? fmtDur(d.dur) : "NA"}</dd>
+            <dd>{dur !== null ? fmtDur(dur) : "NA"}</dd>
           </div>
           <div>
             <dt
@@ -438,7 +522,7 @@ function DatatakePanel({
           </div>
         </dl>
       </div>
-      {d && (
+      {nTypes > 0 && (
         <p className={g.dtkNote}>
           Mean across {nTypes} expected product types · missing time summed
           across types
@@ -580,8 +664,57 @@ function fitAtmosphere(sprite: THREE.Sprite, camera: THREE.Camera) {
   sprite.scale.setScalar(2 * ATMOS_OUTER * rim);
 }
 
-/** The simulated day: simTime counts seconds from 2026-07-16 00:00 UTC. */
-const SIM_DAY_MS = Date.UTC(2026, 6, 16);
+/* ---------- the live window: yesterday – today (UTC) ----------
+ * The heading, the calendar, the clock and the night side follow today's date: "15 – 16 October
+ * 2026" today, "16 – 17 October 2026" tomorrow. mock.ts places every datatake 1–23 h before now,
+ * so they always fall inside this window. */
+const DAY_MS = 86_400_000;
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+/** Today, 00:00 UTC. */
+const utcToday = () => {
+  const n = new Date();
+  return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+};
+
+/** "2026-10-16" for a UTC midnight */
+const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+/** An ISO timestamp without the zone or milliseconds, as the reference prints it: 2026-10-16T10:42:01 */
+const noZone = (iso: string) => new Date(iso).toISOString().slice(0, 19);
+
+/** "15 – 16 October 2026"; across months "31 October – 1 November 2026"; across years
+ *  "31 December 2026 – 1 January 2027". */
+function windowLabel(todayMs: number): string {
+  const a = new Date(todayMs - DAY_MS);
+  const b = new Date(todayMs);
+  const [da, ma, ya] = [
+    a.getUTCDate(),
+    MONTHS[a.getUTCMonth()],
+    a.getUTCFullYear(),
+  ];
+  const [db, mb, yb] = [
+    b.getUTCDate(),
+    MONTHS[b.getUTCMonth()],
+    b.getUTCFullYear(),
+  ];
+  if (ya !== yb) return `${da} ${ma} ${ya} – ${db} ${mb} ${yb}`;
+  if (ma !== mb) return `${da} ${ma} – ${db} ${mb} ${yb}`;
+  return `${da} – ${db} ${mb} ${yb}`;
+}
 
 const formatSimTime = (seconds: number) => {
   const hrs = Math.floor(seconds / 3600);
@@ -590,7 +723,15 @@ const formatSimTime = (seconds: number) => {
   return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}Z`;
 };
 
-export default function AcquisitionsGlobeEarthPage() {
+/** "imagery": satellite imagery by day, city lights by night (SentiBoard.html). "stylized": the
+ *  vector planet of SentiBoard_stylized_globe.html — slate land, cyan coastline, navy sea. */
+export type GlobeLook = "imagery" | "stylized";
+
+export default function AcquisitionsGlobeEarthPage({
+  look = "imagery",
+}: {
+  look?: GlobeLook;
+} = {}) {
   const [descriptionOpen, setDescriptionOpen] = useState(false);
   const motion = useAmbientMotion();
 
@@ -613,6 +754,17 @@ export default function AcquisitionsGlobeEarthPage() {
   const [selectedDataTake, setSelectedDataTake] = useState<number>(0);
   const [satelliteFilter, setSatelliteFilter] = useState("*");
   const [dayFilter, setDayFilter] = useState("*");
+
+  // The live window, fixed for the life of the page: the simulated clock runs over today (UTC).
+  const [todayMs] = useState(utcToday);
+  const simDayMs = todayMs;
+  const yesterdayStr = ymd(todayMs - DAY_MS);
+  const todayStr = ymd(todayMs);
+  /** The month the day picker shows (UTC midnight of its 1st); it opens on the current month. */
+  const [calMonth, setCalMonth] = useState(() => {
+    const t = new Date(todayMs);
+    return Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1);
+  });
   const [datatakeFilter, setDatatakeFilter] = useState<string>("*");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
@@ -677,13 +829,14 @@ export default function AcquisitionsGlobeEarthPage() {
   } | null>(null);
   const selectedSatRef = useRef<string | null>(null);
   selectedSatRef.current = isModalOpen
-    ? (ACQ_DATATAKES[selectedDataTake]?.sat ?? null)
+    ? (ACQ_DATATAKES[selectedDataTake]?.unit ?? null)
     : null;
 
   // List of datatakes available for the dropdown options ( filtered by Satellite, Day, and Search — but NOT Datatake ID )
   const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
     if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
-    if (dayFilter !== "*" && !dt.startIso.startsWith(dayFilter)) return false;
+    if (dayFilter !== "*" && !noZone(dt.startIso).startsWith(dayFilter))
+      return false;
     if (searchQuery.trim() !== "") {
       const q = searchQuery.trim().toLowerCase();
       const matchId = dt.id.toLowerCase().includes(q);
@@ -701,7 +854,7 @@ export default function AcquisitionsGlobeEarthPage() {
 
   const datatakesInView = filteredDatatakes.length;
   const acquired = Math.round(
-    (filteredDatatakes.filter((dt) => dt.comp >= 0.95).length /
+    (filteredDatatakes.filter((dt) => dt.comp >= 95).length /
       Math.max(1, filteredDatatakes.length)) *
       100,
   );
@@ -1139,10 +1292,9 @@ export default function AcquisitionsGlobeEarthPage() {
 
     // Swap the Earth's material before the overlays are added, so only the sphere itself is matched.
     dayNightRef.current?.dispose();
-    dayNightRef.current = applyDayNightEarth(
-      scene,
-      SIM_DAY_MS + simTimeRef.current * 1000,
-    );
+    dayNightRef.current = (
+      look === "stylized" ? applyStylizedEarth : applyDayNightEarth
+    )(scene, simDayMs + simTimeRef.current * 1000);
 
     const overlayGroup = new THREE.Group();
     addDataOverlays(scene, overlayGroup);
@@ -1277,7 +1429,7 @@ export default function AcquisitionsGlobeEarthPage() {
         );
       }
 
-      dayNightRef.current?.setTime(SIM_DAY_MS + simTimeRef.current * 1000);
+      dayNightRef.current?.setTime(simDayMs + simTimeRef.current * 1000);
 
       // keep the atmosphere on the rim as the camera zooms
       if (atmosphereRef.current && cameraRef.current)
@@ -1455,7 +1607,7 @@ export default function AcquisitionsGlobeEarthPage() {
 
       {/* FILTER TOOLBAR: heading, three underlined dropdowns (label left, value right), search */}
       <div className={g.toolbar}>
-        <h2 className={g.tbHeading}>15 – 16 July 2026</h2>
+        <h2 className={g.tbHeading}>{windowLabel(todayMs)}</h2>
 
         {/* SATELLITE */}
         <div className={`${g.fdrop} ${g.fdropSat}`}>
@@ -1522,24 +1674,63 @@ export default function AcquisitionsGlobeEarthPage() {
               >
                 Any day
               </button>
-              <div className={g.calMonth}>
-                <span aria-hidden>‹</span>
-                <span>July 2026</span>
-                <span aria-hidden>›</span>
-              </div>
+              {(() => {
+                const m = new Date(calMonth);
+                const year = m.getUTCFullYear();
+                const month = m.getUTCMonth();
+                const step = (by: number) =>
+                  setCalMonth(Date.UTC(year, month + by, 1));
+                return (
+                  <div className={g.calMonth}>
+                    <button
+                      type="button"
+                      className={g.calNav}
+                      aria-label="Previous month"
+                      onClick={() => step(-1)}
+                    >
+                      ‹
+                    </button>
+                    <span>
+                      {MONTHS[month]} {year}
+                    </span>
+                    <button
+                      type="button"
+                      className={g.calNav}
+                      aria-label="Next month"
+                      onClick={() => step(1)}
+                    >
+                      ›
+                    </button>
+                  </div>
+                );
+              })()}
               <div className={g.calDow}>
                 {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
                   <span key={i}>{d}</span>
                 ))}
               </div>
               <div className={g.calGrid}>
-                {/* July 2026 starts on a Wednesday: two empty cells first */}
-                <span />
-                <span />
-                {[...Array(31)].map((_, i) => {
+                {/* weeks start on Monday: blank cells up to the 1st */}
+                {[...Array((new Date(calMonth).getUTCDay() + 6) % 7)].map(
+                  (_, i) => (
+                    <span key={`b${i}`} />
+                  ),
+                )}
+                {[
+                  ...Array(
+                    new Date(
+                      Date.UTC(
+                        new Date(calMonth).getUTCFullYear(),
+                        new Date(calMonth).getUTCMonth() + 1,
+                        0,
+                      ),
+                    ).getUTCDate(),
+                  ),
+                ].map((_, i) => {
                   const dayNum = i + 1;
-                  const dateStr = `2026-07-${String(dayNum).padStart(2, "0")}`;
-                  const has = dayNum === 15 || dayNum === 16;
+                  const dateStr = ymd(calMonth + i * DAY_MS);
+                  // the window's two days carry data
+                  const has = dateStr === yesterdayStr || dateStr === todayStr;
                   return (
                     <button
                       key={dayNum}
@@ -1735,7 +1926,7 @@ export default function AcquisitionsGlobeEarthPage() {
                   letterSpacing: "0.5px",
                 }}
               >
-                2026-07-16 {formatSimTime(simTime)}
+                {todayStr} {formatSimTime(simTime)}
               </span>
               <span
                 style={{
@@ -1871,7 +2062,10 @@ export default function AcquisitionsGlobeEarthPage() {
                   x={pos.x}
                   y={pos.y}
                   color={hex(sat.color)}
-                  selected={ACQ_DATATAKES[selectedDataTake]?.sat === sat.name}
+                  selected={
+                    isModalOpen &&
+                    ACQ_DATATAKES[selectedDataTake]?.unit === sat.name
+                  }
                 />
               );
             })}

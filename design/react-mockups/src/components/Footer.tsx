@@ -88,14 +88,6 @@ export default function Footer() {
             </div>
           </div>
         </div>
-
-        <div className="footer-bot">
-          <span>
-            © {"2026"} Copernicus / ESA — Operated by the CSC Operations
-            Coordination Service.
-          </span>
-          <span>SentiBoard v2 · UI mockup</span>
-        </div>
       </div>
     </footer>
   );

@@ -383,6 +383,21 @@
   color: rgba(234, 240, 246, 0.5);
 }
 
+/* the month arrows: plain glyphs, brighter on hover */
+.calNav {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: rgba(234, 240, 246, 0.5);
+  cursor: pointer;
+}
+
+.calNav:hover,
+.calNav:focus-visible {
+  color: #ffffff;
+}
+
 .calDow,
 .calGrid {
   display: grid;

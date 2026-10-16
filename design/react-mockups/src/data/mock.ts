@@ -177,37 +177,7 @@ export const STATUS_COLORS: Record<Status, string> = {
 export interface Station { name: string; lat: number; lon: number; }
 export interface AcqProduct { lvl: string; sub: string; st: "Published" | "Processing" | "Planned"; }
 
-/* Per-product-type completeness, mirroring the real backend's `<TYPE>_local_percentage`
-   fields. `pct: null` means the type is not expected for this datatake — distinct from
-   0%, which means expected and missing.
 
-   BACKEND AUDIT (apps/elastic/modules/datatakes.py, apps/utils/events_utils.py).
-   Every mission aggregates to the same three display levels, but each one identifies
-   them differently, and there is a fourth bucket:
-
-     S1  _calc_s1_datatake_completeness — no "L" token at all; the level is a digit
-         inside the product type: _0A_/_0C_/_0N_/_0S_ -> L0, _1A_/_1S_ -> L1,
-         _2A_/_2S_ -> L2.
-     S2  _calc_s2_datatake_completeness — L0_ -> L0; L1A_/L1B_/L1C_ all collapse into
-         one L1; L2A_ -> L2. Keys starting with ("L0_","L1A_","L1B_","L1C_","L2A_")
-         are level aggregates and are skipped.
-     S3  level_ids["S3"] = {L0_: "L0_", L1_: "L1_", L2_: "L2_"} — read off the
-         product document's own `product_level`, not parsed from the type name.
-     S5  level_ids["S5"] = {L0_: "L0_", L1_: "L1B", L2_: "L2_"} — its L1 token is
-         "L1B", not "L1".
-     ALL `product_level` falls back to "UNKNOWN" when nothing matches (set in four
-         places in datatakes.py), so UNKNOWN is a real bucket the UI must render.
-
-   No mission defines a level above L2 in the completeness path. The one exception is
-   get_product_level_python() in events_utils.py, used for sorting only, which maps a
-   trailing "A" to level 3 and returns 98/99 for unrecognised types.
-
-   Product types themselves are NOT enumerated anywhere in the backend — they are
-   whatever the cds-completeness-* indices contain at runtime. The sets below are
-   representative of each mission's instruments (SATELLITES[].instruments in
-   apps/utils/satellite_registry.py): S1 SAR only, S2 MSI only, S5P TROPOMI only, and
-   S3 four science instruments (OLCI, SLSTR, SRAL, MWR) — which is why S3 carries far
-   more product types than the rest and the plates have to cap. */
 export type ProductLevel = "L0" | "L1" | "L2" | "UNKNOWN";
 
 export const LEVEL_LABEL: Record<ProductLevel, string> = {
@@ -330,10 +300,18 @@ export const STATIONS = [
 // level each one falls into follow the real per-mission rules documented above.
 type AcqSpec = Omit<AcqDatatake, "comp" | "cls">;
 
+/* Sensing starts are placed RELATIVE to now, like DATATAKES above, so the globe never goes stale.
+   Every offset sits between 1 h and 23 h ago, which always lands on yesterday or today (UTC) —
+   the two-day window the /acquisitions-globe pages show ("15 – 16 October 2026" today,
+   "16 – 17 October 2026" tomorrow). Keep new entries inside that range. */
+const ACQ_ANCHOR = Math.floor(Date.now() / 1000) * 1000;
+const hoursAgo = (h: number) =>
+  new Date(ACQ_ANCHOR - Math.round(h * 3600) * 1000).toISOString().replace(/\.\d{3}Z$/, "Z");
+
 const ACQ_SPECS: AcqSpec[] = [
   {
     // S2 — MSI only. The backend collapses L1A/L1B/L1C into a single L1.
-    id: "S2A-48201-1", startIso: "2026-07-16T10:42:01Z", sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
+    id: "S2A-48201-1", startIso: hoursAgo(1.4), sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
     footprint: swath(48.2, 11.6, 10, 2.6, -12), status: "Published",
     mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205,
     levels: [
@@ -355,7 +333,7 @@ const ACQ_SPECS: AcqSpec[] = [
   },
   {
     // S1 — SAR only. Level lives in the digit inside the type name, no "L" token.
-    id: "S1C-57622", startIso: "2026-07-16T09:33:10Z", sat: "Sentinel-1C", unit: "S1C", station: "Matera", lat: 12.4, lon: 42.1,
+    id: "S1C-57622", startIso: hoursAgo(2.6), sat: "Sentinel-1C", unit: "S1C", station: "Matera", lat: 12.4, lon: 42.1,
     footprint: swath(12.4, 42.1, 13, 2.3, -11), status: "Processing",
     mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205,
     levels: [
@@ -391,7 +369,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S3 — four science instruments, so by far the widest product-type set. This is
     // the datatake that exercises the per-plate cap.
-    id: "S3B-080-345", startIso: "2026-07-16T08:11:45Z", sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
+    id: "S3B-080-345", startIso: hoursAgo(4.1), sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
     footprint: swath(-22.9, -45.2, 20, 11.4, -13), status: "Processing",
     mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180,
     levels: [
@@ -436,7 +414,7 @@ const ACQ_SPECS: AcqSpec[] = [
     prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }],
   },
   {
-    id: "S2B-42050-1", startIso: "2026-07-16T07:20:50Z", sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 64.1, lon: -110.3,
+    id: "S2B-42050-1", startIso: hoursAgo(4.9), sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 64.1, lon: -110.3,
     footprint: swath(64.1, -110.3, 10, 2.6, -14), status: "Published",
     mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188,
     levels: [
@@ -459,7 +437,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S5P — TROPOMI. Its L1 token is "L1B", not "L1", and it carries one radiance
     // product per spectral band, so it also runs past the cap.
-    id: "S5P-60012", startIso: "2026-07-16T06:00:12Z", sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
+    id: "S5P-60012", startIso: hoursAgo(6.2), sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
     footprint: swath(34.7, 104.2, 24, 23, -12), status: "Published",
     mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940,
     levels: [
@@ -493,7 +471,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S3 SLSTR-only pass that failed, plus an unrecognised type — the backend's
     // "UNKNOWN" product_level bucket, which the plates have to render.
-    id: "S3A-055-358", startIso: "2026-07-15T22:15:33Z", sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
+    id: "S3A-055-358", startIso: hoursAgo(14.1), sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
     footprint: swath(-35.6, 138.9, 20, 11.4, 13), status: "Failed",
     mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620,
     levels: [
@@ -504,6 +482,141 @@ const ACQ_SPECS: AcqSpec[] = [
     ],
     prods: [{ lvl: "L0", sub: "SLSTR raw", st: "Planned" }],
   },
+  {
+    // S1 — a second, fully published SAR pass over the North Atlantic.
+    id: "S1A-60418", startIso: hoursAgo(8.3), sat: "Sentinel-1A", unit: "S1A", station: "Svalbard", lat: 61.8, lon: -24.5,
+    footprint: swath(61.8, -24.5, 13, 2.3, -10), status: "Published",
+    mode: "EW \u00b7 DH", absOrbit: "060418", sensingS: 240,
+    levels: [
+      {
+        level: "L0", products: [
+          { type: "EW_RAW__0A", pct: 100, instrument: "SAR" },
+          { type: "EW_RAW__0C", pct: 100, instrument: "SAR" },
+          { type: "EW_RAW__0N", pct: 100, instrument: "SAR" },
+          { type: "EW_RAW__0S", pct: 100, instrument: "SAR" },
+        ]
+      },
+      {
+        level: "L1", products: [
+          { type: "EW_GRDM_1A", pct: 99.6, instrument: "SAR" },
+          { type: "EW_GRDM_1S", pct: 99.2, instrument: "SAR" },
+        ]
+      },
+      {
+        level: "L2", products: [
+          { type: "EW_OCN__2A", pct: null, instrument: "SAR" },
+          { type: "EW_OCN__2S", pct: null, instrument: "SAR" },
+        ]
+      },
+    ],
+    prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "GRD", st: "Published" }],
+    kmlLink: {
+      url: "https://sentinels.copernicus.eu/documents/d/sentinel/s1a_mp_user_20260902t180959_20260924t202000",
+      filename: "s1a_mp_user_20260903t171528_20260925t194000",
+    },
+  },
+  {
+    // S2 — partial: L2A still publishing over the Sahel.
+    id: "S2C-10187-1", startIso: hoursAgo(10.2), sat: "Sentinel-2C", unit: "S2C", station: "Maspalomas", lat: 14.6, lon: 2.1,
+    footprint: swath(14.6, 2.1, 10, 2.6, -12), status: "Processing",
+    mode: "MSI \u00b7 NOBS", absOrbit: "010187", sensingS: 232,
+    levels: [
+      { level: "L0", products: [{ type: "MSI_L0__GR", pct: 100, instrument: "MSI" }] },
+      {
+        level: "L1", products: [
+          { type: "MSI_L1A_DS", pct: 100, instrument: "MSI" },
+          { type: "MSI_L1B_GR", pct: 97.8, instrument: "MSI" },
+          { type: "MSI_L1C_TC", pct: 91.5, instrument: "MSI" },
+        ]
+      },
+      { level: "L2", products: [{ type: "MSI_L2A_DS", pct: 64.0, instrument: "MSI" }] },
+    ],
+    prods: [{ lvl: "L1C", sub: "TOA reflectance", st: "Published" }, { lvl: "L2A", sub: "BOA reflectance", st: "Processing" }],
+    kmlLink: {
+      url: "https://sentinels.copernicus.eu/documents/d/sentinel/s2c_mp_acq__kml_20260903t150000_20260921t180000",
+      filename: "s2c_user_20260903t150000_20260921t180000.kml",
+    },
+  },
+  {
+    // S3 — an OLCI daytime pass over the Indian Ocean, fully published.
+    id: "S3A-112-207", startIso: hoursAgo(16.5), sat: "Sentinel-3A", unit: "S3A", station: "Matera", lat: -8.4, lon: 72.6,
+    footprint: swath(-8.4, 72.6, 20, 11.4, -13), status: "Published",
+    mode: "OLCI \u00b7 EFR", absOrbit: "021540", sensingS: 1040,
+    levels: [
+      {
+        level: "L0", products: [
+          { type: "OL_0_EFR", pct: 100, instrument: "OLCI" },
+          { type: "SL_0_SLT", pct: 100, instrument: "SLSTR" },
+        ]
+      },
+      {
+        level: "L1", products: [
+          { type: "OL_1_EFR", pct: 99.4, instrument: "OLCI" },
+          { type: "OL_1_ERR", pct: 99.1, instrument: "OLCI" },
+          { type: "SL_1_RBT", pct: 98.7, instrument: "SLSTR" },
+        ]
+      },
+      {
+        level: "L2", products: [
+          { type: "OL_2_WFR", pct: 97.9, instrument: "OLCI" },
+          { type: "OL_2_LFR", pct: 98.8, instrument: "OLCI" },
+          { type: "SL_2_WST", pct: 99.0, instrument: "SLSTR" },
+        ]
+      },
+    ],
+    prods: [{ lvl: "L1", sub: "OLCI EFR", st: "Published" }, { lvl: "L2", sub: "OLCI water", st: "Published" }],
+  },
+  {
+    // S5P — the orbit before S5P-60012, over the Americas.
+    id: "S5P-60011", startIso: hoursAgo(18.2), sat: "Sentinel-5P", unit: "S5P", station: "Inuvik", lat: 18.9, lon: -88.4,
+    footprint: swath(18.9, -88.4, 24, 23, -12), status: "Published",
+    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060011", sensingS: 2940,
+    levels: [
+      {
+        level: "L1", products: [
+          { type: "L1B_RA_BD1", pct: 100, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD2", pct: 100, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD3", pct: 99.5, instrument: "TROPOMI" },
+          { type: "L1B_RA_BD4", pct: 99.5, instrument: "TROPOMI" },
+        ]
+      },
+      {
+        level: "L2", products: [
+          { type: "L2__NO2___", pct: 98.2, instrument: "TROPOMI" },
+          { type: "L2__O3____", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L2__CO____", pct: 99.0, instrument: "TROPOMI" },
+          { type: "L2__CH4___", pct: 96.4, instrument: "TROPOMI" },
+        ]
+      },
+    ],
+    prods: [{ lvl: "L1B", sub: "TROPOMI radiance", st: "Published" }, { lvl: "L2", sub: "NO\u2082 column", st: "Published" }],
+  },
+  {
+    // S1 — IW over Japan; L1 lagging after a late downlink.
+    id: "S1C-57611", startIso: hoursAgo(20.7), sat: "Sentinel-1C", unit: "S1C", station: "Neustrelitz", lat: 36.9, lon: 139.4,
+    footprint: swath(36.9, 139.4, 13, 2.3, 11), status: "Processing",
+    mode: "IW \u00b7 DV", absOrbit: "057611", sensingS: 175,
+    levels: [
+      {
+        level: "L0", products: [
+          { type: "IW_RAW__0A", pct: 100, instrument: "SAR" },
+          { type: "IW_RAW__0S", pct: 100, instrument: "SAR" },
+        ]
+      },
+      {
+        level: "L1", products: [
+          { type: "IW_SLC__1S", pct: 88.0, instrument: "SAR" },
+          { type: "IW_GRDH_1S", pct: 81.5, instrument: "SAR" },
+        ]
+      },
+      { level: "L2", products: [{ type: "IW_OCN__2S", pct: null, instrument: "SAR" }] },
+    ],
+    prods: [{ lvl: "L0", sub: "SAR raw", st: "Published" }, { lvl: "L1", sub: "SLC / GRD", st: "Processing" }],
+    kmlLink: {
+      url: "https://sentinels.copernicus.eu/documents/d/sentinel/s1c_mp_user_20260902t180959_20260924t202000",
+      filename: "s1c_mp_user_20260903t171528_20260925t194000",
+    },
+  },
 ];
 
 // comp and cls are derived, never hand-set: a datatake cannot claim a completeness
@@ -512,4 +625,4 @@ export const ACQ_DATATAKES: AcqDatatake[] = ACQ_SPECS.map((spec) => {
   const comp = Math.round(meanCompleteness(spec.levels) * 10) / 10;
   const cls: AcqDatatake["cls"] = comp >= 95 ? "ok" : comp > 0 ? "warn" : "crit";
   return { ...spec, comp, cls };
-});
+}).sort((a, b) => Date.parse(b.startIso) - Date.parse(a.startIso)); // newest first

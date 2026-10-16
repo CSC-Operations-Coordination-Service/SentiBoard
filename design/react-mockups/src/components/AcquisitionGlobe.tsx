@@ -663,7 +663,13 @@ function Plate({ level }: { level: AcqLevel }) {
  * track width — re-renders the parent many times over the life of the page; none of
  * it changes `dt`, so none of it reaches the plates.
  */
-const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatatake; onClose: () => void }) {
+const DatatakeRail = memo(function DatatakeRail({
+  dt,
+  onClose,
+}: {
+  dt: AcqDatatake;
+  onClose: () => void;
+}) {
   const m = useMemo(() => {
     const startMs = sensingMs(dt);
     const passes = passesFor(dt.id);
@@ -702,7 +708,9 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
               <span className="dot"></span>
               {dt.status}
             </span>
-            <button className="close-btn" onClick={onClose}>✕</button>
+            <button className="close-btn" onClick={onClose}>
+              ✕
+            </button>
           </div>
         </div>
 
@@ -716,7 +724,8 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
         <div className="dtk-kpi">
           <div className="kpi-left">
             <div className="big-percentage">
-              {dt.comp.toFixed(1)}<span className="percent">%</span>
+              {dt.comp.toFixed(1)}
+              <span className="percent">%</span>
             </div>
           </div>
           <div className="kpi-right">
@@ -726,12 +735,15 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
             </div>
             <div className="kpi-item">
               <div className="kpi-label">MISSING</div>
-              <div className="kpi-value">{m.missingS > 0.5 ? dur(m.missingS) : "none"}</div>
+              <div className="kpi-value">
+                {m.missingS > 0.5 ? dur(m.missingS) : "none"}
+              </div>
             </div>
           </div>
         </div>
         <p className="dtk-kpi-note">
-          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"} · missing time summed across types
+          Mean across {m.types} expected product type{m.types === 1 ? "" : "s"}{" "}
+          · missing time summed across types
         </p>
 
         {/* Metadata List - Single Column */}
@@ -758,14 +770,14 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
           </div>
           <div className="meta-row">
             <dt>OBSERVATION TIME START</dt>
-            <dd>
-              {m.startMs === null ? "—" : clockText(m.startMs)}
-            </dd>
+            <dd>{m.startMs === null ? "—" : clockText(m.startMs)}</dd>
           </div>
           <div className="meta-row">
             <dt>OBSERVATION TIME STOP</dt>
             <dd>
-              {m.startMs === null ? "—" : clockText(m.startMs + dt.sensingS * 1000)}
+              {m.startMs === null
+                ? "—"
+                : clockText(m.startMs + dt.sensingS * 1000)}
             </dd>
           </div>
           <div className="meta-row">
@@ -786,7 +798,9 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
           </div>
           <div className="meta-row">
             <dt>PUBLICATION STATUS</dt>
-            <dd>{dt.status} ({(dt.comp * 100).toFixed(2)}%)</dd>
+            <dd>
+              {dt.status} ({(dt.comp * 100).toFixed(2)}%)
+            </dd>
           </div>
           <div className="meta-row">
             <dt>DOWNLINK STATION</dt>
@@ -796,15 +810,13 @@ const DatatakeRail = memo(function DatatakeRail({ dt, onClose }: { dt: AcqDatata
             <dt>DOWNLINK TIME</dt>
             <dd>
               {m.passes && m.passes.length > 0
-                ? clockText(
-                    (m.startMs ?? 0) + 24 * 60 * 60 * 1000
-                  )
+                ? clockText((m.startMs ?? 0) + 24 * 60 * 60 * 1000)
                 : "—"}
             </dd>
           </div>
           <div className="meta-row">
             <dt>DOWNLINK VOLUME</dt>
-            <dd>{(m.totalMb).toFixed(0)} Mb</dd>
+            <dd>{m.totalMb.toFixed(0)} Mb</dd>
           </div>
           <div className="meta-row last">
             <dt>DOWNLINK DURATION</dt>
@@ -3318,17 +3330,6 @@ export default function AcquisitionGlobe({
                   ))}
                 </ul>
               </div>
-
-              <div className="globe-overlay" aria-hidden="true">
-                <span className="eyebrow">Live acquisition plan · 3D</span>
-                <div className="acq-now">
-                  Now acquiring ·{" "}
-                  <b>
-                    {dt.sat} → {dt.station}
-                  </b>
-                </div>
-              </div>
-
               <div className="zoomctl">
                 <button
                   type="button"
@@ -3342,7 +3343,7 @@ export default function AcquisitionGlobe({
                   aria-label="Zoom out"
                   onClick={() => setZoom(st.current.zoom / 1.3)}
                 >
-                  −
+                  -
                 </button>
                 <button
                   type="button"
@@ -3352,12 +3353,6 @@ export default function AcquisitionGlobe({
                 >
                   ⌖
                 </button>
-              </div>
-
-              <div className="globe-hint" aria-hidden="true">
-                <span>scroll to zoom</span>
-                <span>drag or arrows to rotate</span>
-                <span>click a footprint</span>
               </div>
 
               <div className="simbar">

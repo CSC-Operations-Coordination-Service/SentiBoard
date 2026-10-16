@@ -8,14 +8,20 @@ import Availability from "./pages/Availability";
 import Processors from "./pages/processors/processors";
 import About from "./pages/About";
 import { NotFoundPage, StatPage } from "./pages/Simple";
-import { ExamplesHome, IndexFleet, IndexGallery, IndexReveal, IndexFleetGallery, Index1 } from "./pages/IndexExamples";
+import {
+  ExamplesHome,
+  IndexFleet,
+  IndexGallery,
+  IndexReveal,
+  IndexFleetGallery,
+  Index1,
+} from "./pages/IndexExamples";
 import AboutRedesign from "./pages/AboutRedesign";
 import AboutBriefing from "./pages/about-briefing/AboutBriefing";
 import AboutDossier from "./pages/about-dossier/AboutDossier";
 import EventsManifest from "./pages/events/events";
 import EventsSwimlanes from "./pages/events-swimlanes/EventsSwimlanes";
 import EventsSpaceXConcepts from "./components/EventsSpaceXConcepts";
-import AcquisitionsGlobe from "./pages/acquisitions/AcquisitionsGlobe";
 import AcquisitionsGlobeEarth from "./pages/acquisitions/AcquisitionsGlobeEarth";
 import AcquisitionsLadder from "./pages/acquisitions-ladder/AcquisitionsLadder";
 import DataAvailability from "./pages/DataAvailability";
@@ -29,7 +35,9 @@ import TermsConditions from "./pages/TermsConditions";
 
 function ScrollTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 
@@ -52,40 +60,132 @@ export default function App() {
           <Route path="/index" element={<Index1 />} />
           <Route path="/examples/fleet" element={<IndexFleet />} />
           <Route path="/examples/gallery" element={<IndexGallery />} />
-          <Route path="/examples/fleet-gallery" element={<IndexFleetGallery />} />
+          <Route
+            path="/examples/fleet-gallery"
+            element={<IndexFleetGallery />}
+          />
           <Route path="/examples/reveal" element={<IndexReveal />} />
           <Route path="/examples/about" element={<AboutRedesign />} />
           <Route path="/examples/about-briefing" element={<AboutBriefing />} />
           <Route path="/examples/about-dossier" element={<AboutDossier />} />
           <Route path="/events" element={<EventsManifest />} />
-          <Route path="/examples/events-spacex" element={<EventsSpaceXConcepts />} />
-          <Route path="/examples/events-swimlanes" element={<EventsSwimlanes />} />
-          <Route path="/acquisitions-globe" element={<AcquisitionsGlobe />} />
-          <Route path="/acquisitions-globe-earth" element={<AcquisitionsGlobeEarth />} />
-          <Route path="/examples/acquisitions-ladder" element={<AcquisitionsLadder />} />
-          <Route path="/examples/data-availability" element={<DataAvailability />} />
-          <Route path="/examples/data-availability-spacex" element={<DataAvailabilitySpaceX />} />
+          <Route
+            path="/examples/events-spacex"
+            element={<EventsSpaceXConcepts />}
+          />
+          <Route
+            path="/examples/events-swimlanes"
+            element={<EventsSwimlanes />}
+          />
+          <Route
+            path="/acquisitions-globe"
+            element={<AcquisitionsGlobeEarth key="stylized" look="stylized" />}
+          />
+          <Route
+            path="/acquisitions-globe-earth"
+            element={<AcquisitionsGlobeEarth key="imagery" />}
+          />
+          <Route
+            path="/examples/acquisitions-ladder"
+            element={<AcquisitionsLadder />}
+          />
+          <Route
+            path="/examples/data-availability"
+            element={<DataAvailability />}
+          />
+          <Route
+            path="/examples/data-availability-spacex"
+            element={<DataAvailabilitySpaceX />}
+          />
           <Route path="/availability" element={<CoverageTimeline />} />
           <Route path="/examples/version-matrix" element={<VersionMatrix />} />
           <Route path="/examples/release-log" element={<ReleaseLog />} />
-          <Route path="/examples/processors-interactive" element={<ProcessorsInteractive />} />
+          <Route
+            path="/examples/processors-interactive"
+            element={<ProcessorsInteractive />}
+          />
 
           {/* Remaining functional pages — styled placeholders carrying the real feature copy */}
-          <Route path="/product-timeliness" element={<StatPage crumb="Product Timeliness" title="Product Timeliness"
-            sub="Timeliness of Sentinel product publication against service-level targets, per mission and product type, over the last three months."
-            kpis={[["Within target", "96.2", "%"], ["Median latency", "48", "min"], ["Breaches (7d)", "3", ""], ["Products / day", "18.4", "k"]]} />} />
-          <Route path="/publication-statistics" element={<StatPage crumb="Publication Statistics" title="Publication Statistics"
-            sub="Volumes and completeness of products published to the Copernicus Data Space Ecosystem, broken down by mission, level and timeliness class."
-            kpis={[["Published (24h)", "1.28", "M"], ["Completeness", "98.4", "%"], ["Missions", "5", ""], ["Product levels", "12", ""]]} />} />
-          <Route path="/data-archive" element={<StatPage crumb="Data Archive" title="Data Archive"
-            sub="Long-term archive holdings and preservation status for the essential mission data across the Copernicus Sentinel constellation."
-            kpis={[["Total holdings", "184", "PB"], ["Datatakes", "42.9", "M"], ["Missions", "5", ""], ["Availability", "99.99", "%"]]} />} />
-          <Route path="/space-segment" element={<StatPage crumb="Space Segment" title="Space Segment"
-            sub="Real-time status of the in-orbit Copernicus Sentinel satellites, including operational mode, instruments and orbital parameters."
-            kpis={[["Satellites", "8", ""], ["Nominal", "7", ""], ["Degraded", "1", ""], ["Constellations", "5", ""]]} />} />
-          <Route path="/data-access" element={<StatPage crumb="Data Access" title="Data Access"
-            sub="Global and detailed data-access performance for the Copernicus Data Space Ecosystem download and streaming services."
-            kpis={[["Uptime (30d)", "99.95", "%"], ["Avg throughput", "3.2", "GB/s"], ["Active nodes", "6", ""], ["Requests / day", "9.1", "M"]]} />} />
+          <Route
+            path="/product-timeliness"
+            element={
+              <StatPage
+                crumb="Product Timeliness"
+                title="Product Timeliness"
+                sub="Timeliness of Sentinel product publication against service-level targets, per mission and product type, over the last three months."
+                kpis={[
+                  ["Within target", "96.2", "%"],
+                  ["Median latency", "48", "min"],
+                  ["Breaches (7d)", "3", ""],
+                  ["Products / day", "18.4", "k"],
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/publication-statistics"
+            element={
+              <StatPage
+                crumb="Publication Statistics"
+                title="Publication Statistics"
+                sub="Volumes and completeness of products published to the Copernicus Data Space Ecosystem, broken down by mission, level and timeliness class."
+                kpis={[
+                  ["Published (24h)", "1.28", "M"],
+                  ["Completeness", "98.4", "%"],
+                  ["Missions", "5", ""],
+                  ["Product levels", "12", ""],
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/data-archive"
+            element={
+              <StatPage
+                crumb="Data Archive"
+                title="Data Archive"
+                sub="Long-term archive holdings and preservation status for the essential mission data across the Copernicus Sentinel constellation."
+                kpis={[
+                  ["Total holdings", "184", "PB"],
+                  ["Datatakes", "42.9", "M"],
+                  ["Missions", "5", ""],
+                  ["Availability", "99.99", "%"],
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/space-segment"
+            element={
+              <StatPage
+                crumb="Space Segment"
+                title="Space Segment"
+                sub="Real-time status of the in-orbit Copernicus Sentinel satellites, including operational mode, instruments and orbital parameters."
+                kpis={[
+                  ["Satellites", "8", ""],
+                  ["Nominal", "7", ""],
+                  ["Degraded", "1", ""],
+                  ["Constellations", "5", ""],
+                ]}
+              />
+            }
+          />
+          <Route
+            path="/data-access"
+            element={
+              <StatPage
+                crumb="Data Access"
+                title="Data Access"
+                sub="Global and detailed data-access performance for the Copernicus Data Space Ecosystem download and streaming services."
+                kpis={[
+                  ["Uptime (30d)", "99.95", "%"],
+                  ["Avg throughput", "3.2", "GB/s"],
+                  ["Active nodes", "6", ""],
+                  ["Requests / day", "9.1", "M"],
+                ]}
+              />
+            }
+          />
           <Route path="/terms-conditions" element={<TermsConditions />} />
           <Route path="/cookie-notice" element={<CookieNotice />} />
 
