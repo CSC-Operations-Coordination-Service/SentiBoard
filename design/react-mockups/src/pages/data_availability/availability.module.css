@@ -1330,7 +1330,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 1px;
+  font-weight: 400;              /* the wrapper is a <b>; keep it from bolding the caption */
 }
 
 .ringMid em {
@@ -1399,6 +1400,31 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   color: #070b0f;
+}
+
+/* "COMPLETENESS": the reference's 6.5px caption */
+.dtkCard .ringMid em {
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-size: 6.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* the percentage, in the band colour set inline */
+.dtkCard .ringMid span {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 900px) {
