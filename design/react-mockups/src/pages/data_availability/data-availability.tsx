@@ -205,63 +205,186 @@ function ChevronDown() {
   );
 }
 
-function GaugeRing({
-  percent,
-  label,
-  caption,
-  status,
-}: {
-  percent: number;
-  label: string;
-  caption: string;
-  status: Status;
-}) {
-  const SIZE = 100;
-  const THICK = 8;
-  const r = (SIZE - THICK) / 2;
-  const circumference = 2 * Math.PI * r;
-  const dash = (percent / 100) * circumference;
-  const ringColor = STATUS_COLOR[status] || "var(--accent-2, #38bdf8)";
+/* ---------- the datatake card (SentiBoard.html#data-availability, cardHTML) ---------- */
 
+/** A small, stable 0–1 number from a datatake ID, so the derived figures below never change
+ *  between renders. */
+function idUnit(id: string, salt = 0): number {
+  let h = 2166136261 ^ salt;
+  for (let i = 0; i < id.length; i++)
+    h = Math.imul(h ^ id.charCodeAt(i), 16777619);
+  return ((h >>> 0) % 10000) / 10000;
+}
+
+type CardSide = { pct: number | null; label: string; color: string };
+
+/** Acquisition and publication for one datatake, as the reference card derives them. The mock only
+ *  carries one completeness, so publication follows the reference's rules: nothing yet while
+ *  Planned, part-way while Processing, zero when the datatake is lost, a little under acquisition
+ *  when Partial, and equal to it (occasionally just under) once Acquired. */
+function cardSides(d: Datatake): { acq: CardSide; pub: CardSide } {
+  const band = (pct: number) =>
+    barColor({ ...d, status: "Acquired", completeness: pct });
+  const r = idUnit(d.id, 7);
+  const acqPct = d.status === "Planned" ? null : d.completeness;
+  const acqLabel =
+    d.status === "Planned"
+      ? "PLANNED"
+      : d.status === "Processing"
+        ? "ACQUIRED"
+        : d.status.toUpperCase();
+  const acq: CardSide = {
+    pct: acqPct,
+    label: acqLabel,
+    color: d.status === "Planned" ? barColor(d) : band(d.completeness),
+  };
+
+  let pub: CardSide;
+  if (d.status === "Planned") {
+    pub = { pct: null, label: "PLANNED", color: barColor(d) };
+  } else if (d.status === "Processing") {
+    pub = {
+      pct: Math.round(d.completeness * (0.3 + r * 0.45) * 100) / 100,
+      label: "PROCESSING",
+      color: barColor(d),
+    };
+  } else if (d.status === "Unavailable") {
+    pub = { pct: 0, label: "MISSING", color: band(0) };
+  } else if (d.status === "Partial") {
+    const p = Math.round(d.completeness * (0.82 + r * 0.16) * 100) / 100;
+    pub = { pct: p, label: "PARTIAL", color: band(p) };
+  } else {
+    const p =
+      r > 0.12
+        ? d.completeness
+        : Math.round(d.completeness * (0.9 + r * 0.09) * 100) / 100;
+    pub = {
+      pct: p,
+      label: p >= d.completeness ? "PUBLISHED" : "PARTIAL",
+      color: band(p),
+    };
+  }
+  return { acq, pub };
+}
+
+/** One completeness ring: a thick track, the filled arc in the band colour, "COMPLETENESS" and
+ *  the percentage (in the same colour) in the middle, and a two-line legend underneath. */
+function Ring({
+  title,
+  side,
+  onLabel,
+}: {
+  title: string;
+  side: CardSide;
+  onLabel: string;
+}) {
+  const R = 27;
+  const C = 2 * Math.PI * R;
+  const v = side.pct ?? 0;
+  const len = (v / 100) * C;
   return (
-    <div className={s.gaugeBox}>
-      <span className={s.gaugeHeader}>{caption}</span>
-      <div className={s.gaugeRingWrap}>
-        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-          <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
+    <div className={s.ring}>
+      <span className={s.ringTitle}>{title}</span>
+      <div className={s.ringWrap}>
+        <svg
+          viewBox="0 0 70 70"
+          role="img"
+          aria-label={`${title} completeness ${side.pct ?? "—"}%`}
+        >
+          <circle
+            cx="35"
+            cy="35"
+            r={R}
+            fill="none"
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth="9"
+          />
+          {v > 0 && (
             <circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={r}
+              cx="35"
+              cy="35"
+              r={R}
               fill="none"
-              stroke="var(--line)"
-              strokeWidth={THICK}
+              stroke={side.color}
+              strokeWidth="9"
+              strokeDasharray={`${len.toFixed(2)} ${(C - len).toFixed(2)}`}
+              transform="rotate(-90 35 35)"
+              className={s.ringArc}
             />
-            <circle
-              cx={SIZE / 2}
-              cy={SIZE / 2}
-              r={r}
-              fill="none"
-              stroke={ringColor}
-              strokeWidth={THICK}
-              strokeDasharray={`${dash} ${circumference - dash}`}
-            />
-          </g>
+          )}
         </svg>
-        <div className={s.gaugeInner}>
-          <span className={s.gaugeSub}>COMPLETENESS</span>
-          <span className={s.gaugeVal}>{percent.toFixed(2)}%</span>
-        </div>
+        <b className={s.ringMid}>
+          <em>Completeness</em>
+          <span style={{ color: side.color }}>
+            {side.pct === null ? "—" : `${side.pct.toFixed(2)}%`}
+          </span>
+        </b>
       </div>
-      <div className={s.gaugeFooterList}>
-        <div className={s.gaugeFooterItem}>
-          <span className={s.gaugeDot} style={{ background: ringColor }} />
-          <span>{label}</span>
+      <span className={s.ringLegend}>
+        <i style={{ background: side.color }} />
+        {onLabel}
+      </span>
+      <span className={s.ringLegend}>
+        <i style={{ background: "rgba(255,255,255,0.3)" }} />
+        Missing
+      </span>
+    </div>
+  );
+}
+
+/** The card that opens under a strip when one of its bars is picked. */
+function DatatakeCard({ d, onClose }: { d: Datatake; onClose: () => void }) {
+  const { acq, pub } = cardSides(d);
+  // The mock has no sensing length; six minutes stands in for it, as before.
+  const stop = new Date(d.start.getTime() + 6 * 60000);
+  const hhmm = (t: Date) => `${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}`;
+  return (
+    <div className={s.dtkCard}>
+      <div className={s.dtkHead}>
+        <b>{d.id}</b>
+        <button
+          type="button"
+          className={s.dtkClose}
+          onClick={onClose}
+          aria-label="Close details"
+        >
+          <X size={14} aria-hidden />
+        </button>
+      </div>
+      <div className={s.dtkWhen}>{fmtDateTime(d.start)}</div>
+      <div className={s.dtkBody}>
+        <div className={s.dtkRings}>
+          <Ring title="Acquisition" side={acq} onLabel="Acquired" />
+          <Ring
+            title="Publication"
+            side={pub}
+            onLabel={pub.label === "PROCESSING" ? "Processing" : "Published"}
+          />
         </div>
-        <div className={s.gaugeFooterItem}>
-          <span className={s.gaugeDotMissing} />
-          <span>MISSING</span>
-        </div>
+        <dl className={s.dtkMeta}>
+          <dt>Data take ID</dt>
+          <dd>{d.id}</dd>
+          <dt>Platform</dt>
+          <dd>{d.satellite}</dd>
+          <dt>Sensor mode</dt>
+          <dd>{d.sensorMode}</dd>
+          <dt>Start date</dt>
+          <dd>{`${fmtDate(d.start)} ${hhmm(d.start)}`}</dd>
+          <dt>Stop date</dt>
+          <dd>{`${fmtDate(stop)} ${hhmm(stop)}`}</dd>
+          <dt>Acquisition</dt>
+          <dd>
+            <span className={s.dtkBadge} style={{ background: acq.color }}>
+              {acq.label}
+            </span>
+          </dd>
+          <dt>Publication</dt>
+          <dd>
+            <span className={s.dtkBadge} style={{ background: pub.color }}>
+              {pub.label}
+            </span>
+          </dd>
+        </dl>
       </div>
     </div>
   );
@@ -700,79 +823,13 @@ export default function CoverageTimeline() {
                       </div>
                     </div>
 
-                    {/* Inline Expanded Details & Zoomed View Directly Below Tiles */}
+                    {/* the picked datatake's card opens right under its own strip */}
                     {isRowFocused && activeItem && (
-                      <div className={s.referenceDetailWrap}>
-                        <button
-                          className={s.closeBtn}
-                          onClick={() => setFocus(null)}
-                          aria-label="Close details"
-                        >
-                          <X size={16} />
-                        </button>
-
-                        <div className={s.detailColumns}>
-                          {/* Left Side: ID, timestamp & gauges */}
-                          <div className={s.detailLeft}>
-                            <h2 className={s.detailTitle}>{activeItem.id}</h2>
-                            <p className={s.detailSubtime}>
-                              {fmtDateTime(activeItem.start)}
-                            </p>
-
-                            <div className={s.gaugePair}>
-                              <GaugeRing
-                                percent={activeItem.completeness}
-                                label="ACQUIRED"
-                                caption="ACQUISITION"
-                                status={activeItem.status}
-                              />
-                              <GaugeRing
-                                percent={activeItem.completeness}
-                                label="PUBLISHED"
-                                caption="PUBLICATION"
-                                status={activeItem.status}
-                              />
-                            </div>
-                          </div>
-
-                          {/* Right Side: Key/Value Grid */}
-                          <div className={s.detailRight}>
-                            <div className={s.metaGrid}>
-                              <span className={s.metaKey}>DATA TAKE ID</span>
-                              <span className={s.metaValBold}>
-                                {activeItem.id}
-                              </span>
-
-                              <span className={s.metaKey}>PLATFORM</span>
-                              <span className={s.metaValBold}>
-                                {activeItem.satellite}
-                              </span>
-
-                              <span className={s.metaKey}>START DATE</span>
-                              <span className={s.metaVal}>
-                                {fmtDateTime(activeItem.start)}
-                              </span>
-
-                              <span className={s.metaKey}>STOP DATE</span>
-                              <span className={s.metaVal}>
-                                {fmtDateTime(
-                                  new Date(
-                                    activeItem.start.getTime() + 6 * 60000,
-                                  ),
-                                )}
-                              </span>
-
-                              <span className={s.metaKey}>ACQUISITION</span>
-                              <span className={s.metaTag}>
-                                {activeItem.status.toUpperCase()}
-                              </span>
-
-                              <span className={s.metaKey}>PUBLICATION</span>
-                              <span className={s.metaTag}>MISSING</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <DatatakeCard
+                        key={activeItem.id}
+                        d={activeItem}
+                        onClose={() => setFocus(null)}
+                      />
                     )}
                   </div>
                 );
