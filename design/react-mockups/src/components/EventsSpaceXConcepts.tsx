@@ -954,7 +954,7 @@ export default function EventsSpaceXConcepts() {
 
 const CSS = `
 .evx {
-  --evx-mono: "JetBrains Mono", "Geist Mono", var(--font-mono, ui-monospace), "SFMono-Regular", Menlo, Consolas, monospace;
+  --evx-mono: "Geist Mono", var(--font-mono, ui-monospace), "SFMono-Regular", Menlo, Consolas, monospace;
   --evx-sans: var(--font-display, var(--font-sans, "Inter")), system-ui, -apple-system, sans-serif;
 
   --evx-bg: #08090a;

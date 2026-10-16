@@ -9,9 +9,8 @@
 :root {
    /* Type — Noto Sans for body and description text */
    --font-sans: "Noto Sans","Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
-   --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-   --font-mono: "JetBrains Mono", "SF Mono", ui-monospace, "Roboto Mono", monospace;
-   --font-condensed: "Barlow Condensed", sans-serif;
+   --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+   --font-mono: "SF Mono", ui-monospace, "Roboto Mono", monospace;
 
    /* Brand colors from logo */
    --brand-teal: #18585C;

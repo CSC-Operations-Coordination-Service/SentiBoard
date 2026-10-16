@@ -1002,7 +1002,7 @@ export default function DataAvailabilitySpaceX() {
 
 const CSS = `
 .sx {
-  --sx-mono: "JetBrains Mono", "Geist Mono", var(--font-mono, ui-monospace), "SFMono-Regular", Menlo, Consolas, monospace;
+  --sx-mono: "Geist Mono", var(--font-mono, ui-monospace), "SFMono-Regular", Menlo, Consolas, monospace;
   --sx-sans: var(--font-display, var(--font-sans, "Inter")), system-ui, -apple-system, sans-serif;
 
   --sx-bg: #08090a;
