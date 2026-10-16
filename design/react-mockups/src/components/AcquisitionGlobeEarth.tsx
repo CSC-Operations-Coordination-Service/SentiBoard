@@ -24,6 +24,7 @@ import {
 import { passesFor } from "@/data/downlink";
 import { LAND } from "@/data/land";
 import KmlLinkDisplay from "@/components/KmlLinkDisplay";
+import t from "@/components/acq-toolbar.module.css";
 
 // Self-contained interactive 3D globe (Canvas 2D — no external libraries):
 // shaded Earth + graticule, coastlines, acquisition footprints, station coverage
@@ -2331,371 +2332,79 @@ export default function AcquisitionGlobeEarth({
     <>
       {/* Metrics & Filter Toolbar - replacing old toolbar */}
       {rail === "plates" && (
-        <div
-          style={{
-            background:
-              "radial-gradient(circle at center, rgba(15, 18, 24, 0.85) 0%, rgba(5, 7, 11, 0.95) 100%)",
-            borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-            padding: "24px clamp(18px, 4vw, 48px)",
-            width: "100vw",
-            marginLeft: "calc(-50vw + 50%)",
-            boxSizing: "border-box",
-          }}
-        >
-          {/* Metrics Row */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              gap: "64px",
-              marginBottom: "32px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "2.25rem",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                }}
-              >
-                {metrics.datatakesInView}
-              </div>
-              <div
-                style={{
-                  marginTop: "8px",
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#a0a5b5",
-                }}
-              >
-                DATATAKES IN VIEW
-              </div>
+        <div className={t.acqTop}>
+          {/* KPIs: value over label, risen into the header's faded bottom (SentiBoard.html) */}
+          <div className={t.kpis}>
+            <div className={t.kpi}>
+              <b className={t.kpiV}>{metrics.datatakesInView}</b>
+              <span className={t.kpiK}>Datatakes in view</span>
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "2.25rem",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                }}
-              >
-                {metrics.acquired}%
-              </div>
-              <div
-                style={{
-                  marginTop: "8px",
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#a0a5b5",
-                }}
-              >
-                ACQUIRED
-              </div>
+            <div className={t.kpi}>
+              <b className={t.kpiV}>{metrics.acquired}%</b>
+              <span className={t.kpiK}>Acquired</span>
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "2.25rem",
-                  fontWeight: 700,
-                  color: "#ffffff",
-                }}
-              >
-                {metrics.published}%
-              </div>
-              <div
-                style={{
-                  marginTop: "8px",
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#a0a5b5",
-                }}
-              >
-                PUBLISHED
-              </div>
+            <div className={t.kpi}>
+              <b className={t.kpiV}>{metrics.published}%</b>
+              <span className={t.kpiK}>Published</span>
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                textAlign: "center",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: "2.25rem",
-                  fontWeight: 700,
-                  color: metrics.failed > 0 ? "#ff4d4d" : "#ffffff",
-                }}
-              >
-                {metrics.failed}
-              </div>
-              <div
-                style={{
-                  marginTop: "8px",
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#a0a5b5",
-                }}
-              >
-                FAILED ACQUISITIONS
-              </div>
+            <div className={t.kpi}>
+              <b className={`${t.kpiV} ${metrics.failed > 0 ? t.kpiCrit : ""}`}>{metrics.failed}</b>
+              <span className={t.kpiK}>Failed acquisitions</span>
             </div>
           </div>
 
-          {/* Filter Row */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "28px",
-              flexWrap: "wrap",
-            }}
-          >
-            <div
-              style={{
-                fontSize: "1.125rem",
-                fontWeight: 800,
-                letterSpacing: "0.04em",
-                color: "#ffffff",
-              }}
-            >
-              15 – 16 JULY 2026
-            </div>
+          {/* Filter row: heading, three underlined dropdowns (label left, value right), search */}
+          <div className={t.toolbar}>
+            <h2 className={t.tbHeading}>15 – 16 July 2026</h2>
 
             {/* Satellite Filter - Custom Dropdown */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                borderBottom: `1px solid ${openDropdown === "satellite" ? "#00e5ff" : "rgba(255, 255, 255, 0.35)"}`,
-                paddingBottom: "4px",
-                position: "relative",
-              }}
-            >
-              <label
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "satellite" ? null : "satellite",
-                  )
-                }
-                style={{
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: openDropdown === "satellite" ? "#00e5ff" : "#ffffff",
-                  whiteSpace: "nowrap",
-                  cursor: "pointer",
-                  transition: "color 0.2s",
-                }}
+            <div className={`${t.fdrop} ${t.fdropSat}`}>
+              <button
+                type="button"
+                className={t.fdropHead}
+                aria-expanded={openDropdown === "satellite"}
+                onClick={() => setOpenDropdown(openDropdown === "satellite" ? null : "satellite")}
               >
-                SATELLITE
-              </label>
-              <div
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "satellite" ? null : "satellite",
-                  )
-                }
-                style={{
-                  fontSize: "0.7125rem",
-                  fontWeight: 500,
-                  color: "#ffffff",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {satFilter === "*" ? "All" : satFilter}
-                <svg
-                  width="10"
-                  height="6"
-                  viewBox="0 0 10 6"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="1.5"
-                  style={{
-                    transform:
-                      openDropdown === "satellite"
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                    transition: "transform 0.2s",
-                  }}
-                >
-                  <path d="M1 1l4 4 4-4" strokeLinecap="round" />
+                <span className={t.fdropLabel}>Satellite</span>
+                <span className={t.fdropVal}>{satFilter === "*" ? "All" : satFilter}</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
                 </svg>
-              </div>
-
+              </button>
               {openDropdown === "satellite" && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: "0",
-                    background: "rgba(0, 0, 0, 0.9)",
-                    border: "1px solid rgba(255, 255, 255, 0.15)",
-                    borderTop: "1px solid rgba(255, 255, 255, 0.15)",
-                    borderBottom: "1px solid rgba(255, 255, 255, 0.15)",
-                    minWidth: "200px",
-                    marginTop: "8px",
-                    zIndex: 1000,
-                  }}
-                >
+                <div className={t.fdropMenu}>
                   {["*", ...uniqueSatellites].map((sat) => (
-                    <div
+                    <button
                       key={sat}
+                      type="button"
+                      className={t.fitem}
+                      aria-pressed={satFilter === sat}
                       onClick={() => {
                         setSatFilter(sat);
                         setOpenDropdown(null);
                       }}
-                      style={{
-                        padding: "12px 16px",
-                        color: satFilter === sat ? "#00e5ff" : "#ffffff",
-                        fontSize: "0.7125rem",
-                        fontWeight: 500,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.1em",
-                        cursor: "pointer",
-                        transition: "color 0.2s, background 0.2s",
-                        background:
-                          satFilter === sat
-                            ? "rgba(0, 229, 255, 0.1)"
-                            : "transparent",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (satFilter !== sat) {
-                          e.currentTarget.style.color = "#00e5ff";
-                          e.currentTarget.style.background =
-                            "rgba(0, 229, 255, 0.1)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (satFilter !== sat) {
-                          e.currentTarget.style.color = "#ffffff";
-                          e.currentTarget.style.background = "transparent";
-                        }
-                      }}
                     >
-                      {sat === "*" ? "All" : sat}
-                    </div>
+                      {sat === "*" ? "All satellites" : sat}
+                    </button>
                   ))}
                 </div>
               )}
             </div>
 
             {/* Day Filter - Calendar Dropdown */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                borderBottom: `1px solid ${openDropdown === "day" ? "#00e5ff" : "rgba(255, 255, 255, 0.35)"}`,
-                paddingBottom: "4px",
-                position: "relative",
-              }}
-            >
-              <label
-                onClick={() =>
-                  setOpenDropdown(openDropdown === "day" ? null : "day")
-                }
-                style={{
-                  fontSize: "0.6875rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: openDropdown === "day" ? "#00e5ff" : "#ffffff",
-                  whiteSpace: "nowrap",
-                  cursor: "pointer",
-                  transition: "color 0.2s",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
+            <div className={`${t.fdrop} ${t.fdropDay}`}>
+              <button
+                type="button"
+                className={t.fdropHead}
+                aria-expanded={openDropdown === "day"}
+                onClick={() => setOpenDropdown(openDropdown === "day" ? null : "day")}
               >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
+                <span className={t.fdropLabel}>Day of acquisition</span>
+                <span className={t.fdropVal}>{dayFilter === "*" ? "Any" : dayFilter}</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
                 </svg>
-                DAY OF ACQUISITION
-              </label>
-              <div
-                onClick={() =>
-                  setOpenDropdown(openDropdown === "day" ? null : "day")
-                }
-                style={{
-                  fontSize: "0.7125rem",
-                  fontWeight: 500,
-                  color: "#ffffff",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {dayFilter === "*" ? "Any" : dayFilter}
-                <svg
-                  width="10"
-                  height="6"
-                  viewBox="0 0 10 6"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="1.5"
-                  style={{
-                    transform:
-                      openDropdown === "day"
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                    transition: "transform 0.2s",
-                  }}
-                >
-                  <path d="M1 1l4 4 4-4" strokeLinecap="round" />
-                </svg>
-              </div>
+              </button>
 
               {openDropdown === "day" && (
                 <div
@@ -2948,70 +2657,19 @@ export default function AcquisitionGlobeEarth({
             </div>
 
             {/* Datatake Select - Custom Dropdown */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                borderBottom: `1px solid ${openDropdown === "datatake" ? "#00e5ff" : "rgba(255, 255, 255, 0.35)"}`,
-                paddingBottom: "4px",
-                position: "relative",
-              }}
-            >
-              <label
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "datatake" ? null : "datatake",
-                  )
-                }
-                style={{
-                  fontSize: "0.6875rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: openDropdown === "datatake" ? "#00e5ff" : "#ffffff",
-                  whiteSpace: "nowrap",
-                  cursor: "pointer",
-                  transition: "color 0.2s",
-                }}
+            <div className={`${t.fdrop} ${t.fdropDtk}`}>
+              <button
+                type="button"
+                className={t.fdropHead}
+                aria-expanded={openDropdown === "datatake"}
+                onClick={() => setOpenDropdown(openDropdown === "datatake" ? null : "datatake")}
               >
-                DATATAKE
-              </label>
-              <div
-                onClick={() =>
-                  setOpenDropdown(
-                    openDropdown === "datatake" ? null : "datatake",
-                  )
-                }
-                style={{
-                  fontSize: "0.7125rem",
-                  fontWeight: 500,
-                  color: "#ffffff",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                {filteredDatatakes[sel]?.id || "Select"}
-                <svg
-                  width="10"
-                  height="6"
-                  viewBox="0 0 10 6"
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="1.5"
-                  style={{
-                    transform:
-                      openDropdown === "datatake"
-                        ? "rotate(180deg)"
-                        : "rotate(0deg)",
-                    transition: "transform 0.2s",
-                  }}
-                >
-                  <path d="M1 1l4 4 4-4" strokeLinecap="round" />
+                <span className={t.fdropLabel}>Datatake</span>
+                <span className={t.fdropVal}>{filteredDatatakes[sel]?.id || "None"}</span>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
                 </svg>
-              </div>
+              </button>
 
               {openDropdown === "datatake" && (
                 <div
@@ -3182,41 +2840,14 @@ export default function AcquisitionGlobeEarth({
             </div>
 
             {/* Search Input */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.35)",
-                paddingBottom: "4px",
-              }}
-            >
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#a0a5b5"
-                strokeWidth="2"
-              >
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            {/* Search */}
+            <label className={t.fsearch}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden>
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-4-4" />
               </svg>
-              <input
-                type="text"
-                placeholder="Datatake ID"
-                style={{
-                  background: "transparent",
-                  border: "none",
-                  outline: "none",
-                  color: "#ffffff",
-                  fontSize: "0.7125rem",
-                  fontWeight: 500,
-                  letterSpacing: "0.02em",
-                  width: "110px",
-                }}
-              />
-            </div>
+              <input type="search" placeholder="Datatake ID" aria-label="Search datatakes" />
+            </label>
           </div>
         </div>
       )}

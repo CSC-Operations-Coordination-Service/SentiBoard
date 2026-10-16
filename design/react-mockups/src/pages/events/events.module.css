@@ -1912,4 +1912,5 @@ select.control {
   margin-top: calc(16px - var(--hero-after-pad, 72px));
   padding-top: 0;
   background: transparent; /* let the header photo show through behind the counters */
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
 }

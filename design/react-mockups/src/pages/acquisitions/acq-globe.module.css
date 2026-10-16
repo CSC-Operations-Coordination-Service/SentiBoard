@@ -155,3 +155,337 @@
     margin: -6px -6px 0 0;
   }
 }
+
+/* ==================== KPIs + filter toolbar (SentiBoard.html, Acquisitions) ====================
+   Same language as the Data Availability toolbar: figures over labels risen into the header's faded
+   bottom, then one centred row — the date heading, three underlined dropdowns with the label on the
+   left and the value on the right, and the search. Everything in Noto Sans. */
+.kpis {
+  position: relative;
+  z-index: 2; /* above the header photo it rises over */
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding: 22px 0 clamp(26px, 3.4vw, 46px);
+}
+
+.kpi {
+  width: clamp(140px, 16vw, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.kpiV {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #eaf0f6;
+}
+
+.kpiCrit {
+  color: #e8514b;
+}
+
+.kpiK {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.toolbar {
+  position: relative;
+  z-index: 50; /* menus open over the globe */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px 26px;
+  padding: 0 clamp(18px, 4vw, 48px) clamp(22px, 3vw, 38px);
+  font-family: var(--font-sans);
+  color: #eaf0f6;
+}
+
+.tbHeading {
+  margin: 0 8px 0 0;
+  font-family: var(--font-sans);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+/* an underlined field: LABEL ........ value ⌄ */
+.fdrop {
+  position: relative;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  transition: border-color 0.2s ease;
+}
+
+.fdropSat { width: 190px; }
+.fdropDay { width: 230px; }
+.fdropDtk { width: 260px; }
+
+.fdrop:hover,
+.fdrop:has(.fdropHead[aria-expanded="true"]) {
+  border-bottom-color: #2fc6dc;
+}
+
+.fdropHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #eaf0f6;
+  text-align: left;
+}
+
+.fdropLabel {
+  flex: 1;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.fdropVal {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.fdropHead svg {
+  flex-shrink: 0;
+  color: rgba(234, 240, 246, 0.6);
+  transition: transform 0.3s ease;
+}
+
+.fdropHead[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+/* the list drops over the page below, so the toolbar never moves */
+.fdropMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  min-width: 100%;
+  padding: 8px 10px 10px;
+  background: rgba(9, 13, 18, 0.96);
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.55);
+}
+
+.fitem {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.66);
+  transition: color 0.2s ease;
+}
+
+.fitem:hover {
+  color: #ffffff;
+}
+
+.fitem[aria-pressed="true"] {
+  color: #2fc6dc;
+}
+
+/* Datatake list: dot · id · completeness */
+.dtkMenu {
+  width: 320px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dtkItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  font-size: 13px;
+}
+
+.dtkItem small {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(234, 240, 246, 0.5);
+}
+
+.dtkDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Day of acquisition: a small month calendar */
+.calMenu {
+  width: 260px;
+  padding: 12px 14px 14px;
+}
+
+.calMonth {
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.calMonth span:first-child,
+.calMonth span:last-child {
+  color: rgba(234, 240, 246, 0.5);
+}
+
+.calDow,
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+}
+
+.calDow {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(234, 240, 246, 0.5);
+}
+
+.calGrid {
+  row-gap: 4px;
+}
+
+.calDay {
+  position: relative;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: rgba(234, 240, 246, 0.8);
+}
+
+.calDay:hover,
+.calDay[aria-pressed="true"] {
+  color: #2fc6dc;
+}
+
+/* days with acquisitions: bold, with a dot */
+.calHas {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.calHas::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #2fc6dc;
+  transform: translateX(-50%);
+}
+
+/* 🔍 Datatake ID */
+.fsearch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 200px;
+  height: 48px;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+  transition: border-color 0.2s ease;
+}
+
+.fsearch:focus-within {
+  border-bottom-color: #2fc6dc;
+}
+
+.fsearch input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+}
+
+.fsearch input::placeholder {
+  color: #ffffff;
+  opacity: 1;
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    justify-content: flex-start;
+    gap: 6px 18px;
+  }
+
+  .tbHeading {
+    width: 100%;
+    margin: 0 0 6px;
+  }
+
+  .fdropSat,
+  .fdropDay,
+  .fdropDtk,
+  .fsearch {
+    flex: 1 1 160px;
+    width: auto;
+  }
+}

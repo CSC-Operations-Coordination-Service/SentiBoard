@@ -11,6 +11,15 @@ import {
   useAmbientMotion,
 } from "@/components/ambient-motion";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
+import g from "./acq-globe.module.css";
+
+function Chevron() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
 
 const D = Math.PI / 180;
 
@@ -702,6 +711,7 @@ export default function AcquisitionsGlobeEarthPage() {
         display: "flex",
         flexDirection: "column",
         position: "relative",
+        paddingBottom: "calc(var(--sb-earth-h, 190px) + 32px)",
       }}
     >
       <SpaceBackdrop page={1} paused={motion.paused} />
@@ -712,204 +722,59 @@ export default function AcquisitionsGlobeEarthPage() {
         img="/assets/img/modules/acquisitions.jpg"
       />
 
-      {/* KPI Section */}
-      <div
-        style={{
-          background: "transparent",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          padding: "16px 0",
-          display: "flex",
-          justifyContent: "center",
-          gap: "64px",
-        }}
-      >
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontFamily: "monospace",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              marginBottom: "4px",
-            }}
-          >
-            DATATAKES IN VIEW
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: "#fff",
-              fontFamily: "sans-serif",
-            }}
-          >
-            {datatakesInView}
-          </div>
+      {/* KPIs: value over label, risen into the header's faded bottom (SentiBoard.html) */}
+      <div className={g.kpis}>
+        <div className={g.kpi}>
+          <b className={g.kpiV}>{datatakesInView}</b>
+          <span className={g.kpiK}>Datatakes in view</span>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontFamily: "monospace",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              marginBottom: "4px",
-            }}
-          >
-            ACQUIRED
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: "#fff",
-              fontFamily: "sans-serif",
-            }}
-          >
-            {acquired}%
-          </div>
+        <div className={g.kpi}>
+          <b className={g.kpiV}>{acquired}%</b>
+          <span className={g.kpiK}>Acquired</span>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontFamily: "monospace",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginBottom: "4px",
-            }}
-          >
-            PUBLISHED
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: "#fff",
-              fontFamily: "sans-serif",
-            }}
-          >
-            {published}%
-          </div>
+        <div className={g.kpi}>
+          <b className={g.kpiV}>{published}%</b>
+          <span className={g.kpiK}>Published</span>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div
-            style={{
-              fontSize: "13px",
-              fontFamily: "monospace",
-              color: "#6b7280",
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginBottom: "4px",
-            }}
-          >
-            FAILED ACQUISITIONS
-          </div>
-          <div
-            style={{
-              fontSize: "24px",
-              fontWeight: 700,
-              color: failedAcquisitions > 0 ? "#ef4444" : "#fff",
-              fontFamily: "sans-serif",
-            }}
-          >
+        <div className={g.kpi}>
+          <b className={`${g.kpiV} ${failedAcquisitions > 0 ? g.kpiCrit : ""}`}>
             {failedAcquisitions}
-          </div>
+          </b>
+          <span className={g.kpiK}>Failed acquisitions</span>
         </div>
       </div>
 
-      {/* FILTER TOOLBAR */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 50,
-          background: "transparent",
-          borderBottom: "1px solid rgba(255,255,255,0.08)",
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "36px",
-          fontFamily: "monospace",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "20px",
-            fontWeight: "700",
-            color: "#fff",
-            letterSpacing: "0.05em",
-          }}
-        >
-          15 - 16 JULY 2026
-        </div>
+      {/* FILTER TOOLBAR: heading, three underlined dropdowns (label left, value right), search */}
+      <div className={g.toolbar}>
+        <h2 className={g.tbHeading}>15 – 16 July 2026</h2>
 
-        {/* SATELLITE Dropdown */}
-        <div
-          style={{
-            position: "relative",
-            borderBottom: "1px solid rgba(255,255,255,0.25)",
-            paddingBottom: "2px",
-          }}
-        >
+        {/* SATELLITE */}
+        <div className={`${g.fdrop} ${g.fdropSat}`}>
           <button
+            type="button"
+            className={g.fdropHead}
+            aria-expanded={openDropdown === "sat"}
             onClick={() =>
               setOpenDropdown(openDropdown === "sat" ? null : "sat")
             }
-            style={{
-              background: "none",
-              border: "none",
-              color: "#8a96a8",
-              fontSize: "15px",
-              fontFamily: "monospace",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: 0,
-            }}
           >
-            <span style={{ textTransform: "uppercase" }}>SATELLITE</span>
-            <span style={{ color: "#fff", fontWeight: "600" }}>
+            <span className={g.fdropLabel}>Satellite</span>
+            <span className={g.fdropVal}>
               {satelliteFilter === "*" ? "All" : satelliteFilter}
             </span>
-            <span style={{ fontSize: "15px", color: "#8a96a8" }}>▼</span>
+            <Chevron />
           </button>
           {openDropdown === "sat" && (
-            <div
-              style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                left: 0,
-                background: "#090d16",
-                border: "1px solid rgba(255,255,255,0.2)",
-                zIndex: 100,
-                minWidth: "180px",
-                padding: "8px 0",
-              }}
-            >
+            <div className={g.fdropMenu}>
               {["*", ...uniqueSatellites].map((sat) => (
                 <button
                   key={sat}
                   type="button"
+                  className={g.fitem}
+                  aria-pressed={satelliteFilter === sat}
                   onClick={() => {
                     setSatelliteFilter(sat);
                     setOpenDropdown(null);
-                  }}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: satelliteFilter === sat ? "#00c7d6" : "#fff",
-                    padding: "8px 16px",
-                    textAlign: "left",
-                    fontFamily: "monospace",
-                    fontSize: "15px",
-                    textTransform: "uppercase",
-                    cursor: "pointer",
-                    width: "100%",
                   }}
                 >
                   {sat === "*" ? "All satellites" : sat}
@@ -919,168 +784,66 @@ export default function AcquisitionsGlobeEarthPage() {
           )}
         </div>
 
-        {/* DAY OF ACQUISITION Dropdown */}
-        <div
-          style={{
-            position: "relative",
-            borderBottom: "1px solid rgba(255,255,255,0.25)",
-            paddingBottom: "2px",
-          }}
-        >
+        {/* DAY OF ACQUISITION */}
+        <div className={`${g.fdrop} ${g.fdropDay}`}>
           <button
+            type="button"
+            className={g.fdropHead}
+            aria-expanded={openDropdown === "day"}
             onClick={() =>
               setOpenDropdown(openDropdown === "day" ? null : "day")
             }
-            style={{
-              background: "none",
-              border: "none",
-              color: "#8a96a8",
-              fontSize: "13px",
-              fontFamily: "monospace",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: 0,
-            }}
           >
-            <span
-              style={{
-                color: openDropdown === "day" ? "#00c7d6" : "#8a96a8",
-                textTransform: "uppercase",
-              }}
-            >
-              DAY OF ACQUISITION
+            <span className={g.fdropLabel}>Day of acquisition</span>
+            <span className={g.fdropVal}>
+              {dayFilter === "*" ? "Any" : dayFilter.slice(5)}
             </span>
-            <span style={{ color: "#fff", fontWeight: "700" }}>
-              {dayFilter === "*" ? "Any" : dayFilter}
-            </span>
-            <span style={{ fontSize: "10px", color: "#8a96a8" }}>▼</span>
+            <Chevron />
           </button>
-
           {openDropdown === "day" && (
-            <div
-              style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                left: 0,
-                background: "#050811",
-                border: "1px solid rgba(255,255,255,0.15)",
-                borderRadius: "4px",
-                zIndex: 100,
-                width: "260px",
-                padding: "16px",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.8)",
-                fontFamily: "monospace",
-              }}
-            >
-              <div
+            <div className={`${g.fdropMenu} ${g.calMenu}`}>
+              <button
+                type="button"
+                className={g.fitem}
+                aria-pressed={dayFilter === "*"}
                 onClick={() => {
                   setDayFilter("*");
                   setOpenDropdown(null);
                 }}
-                style={{
-                  color: dayFilter === "*" ? "#00c7d6" : "#fff",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  marginBottom: "16px",
-                }}
               >
-                ANY DAY
+                Any day
+              </button>
+              <div className={g.calMonth}>
+                <span aria-hidden>‹</span>
+                <span>July 2026</span>
+                <span aria-hidden>›</span>
               </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "16px",
-                  color: "#fff",
-                  fontSize: "12px",
-                  fontWeight: "700",
-                  letterSpacing: "0.05em",
-                }}
-              >
-                <span style={{ cursor: "pointer", color: "#8a96a8" }}>‹</span>
-                <span>JULY 2026</span>
-                <span style={{ cursor: "pointer", color: "#8a96a8" }}>›</span>
+              <div className={g.calDow}>
+                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                  <span key={i}>{d}</span>
+                ))}
               </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
-                  textAlign: "center",
-                  color: "#8a96a8",
-                  fontSize: "10px",
-                  fontWeight: "700",
-                  marginBottom: "8px",
-                }}
-              >
-                <span>M</span>
-                <span>T</span>
-                <span>W</span>
-                <span>T</span>
-                <span>F</span>
-                <span>S</span>
-                <span>S</span>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(7, 1fr)",
-                  rowGap: "8px",
-                  textAlign: "center",
-                  color: "#fff",
-                  fontSize: "11px",
-                }}
-              >
+              <div className={g.calGrid}>
+                {/* July 2026 starts on a Wednesday: two empty cells first */}
                 <span />
                 <span />
-
                 {[...Array(31)].map((_, i) => {
                   const dayNum = i + 1;
-                  const dateStr = `2026-07-${dayNum.toString().padStart(2, "0")}`;
-                  const isSelected = dayFilter === dateStr;
-                  const hasAcquisition = dayNum === 15 || dayNum === 16;
-
+                  const dateStr = `2026-07-${String(dayNum).padStart(2, "0")}`;
+                  const has = dayNum === 15 || dayNum === 16;
                   return (
-                    <div
+                    <button
                       key={dayNum}
+                      type="button"
+                      className={`${g.calDay} ${has ? g.calHas : ""}`}
+                      aria-pressed={dayFilter === dateStr}
                       onClick={() => {
                         setDayFilter(dateStr);
                         setOpenDropdown(null);
                       }}
-                      style={{
-                        cursor: "pointer",
-                        padding: "4px 0",
-                        borderRadius: "2px",
-                        position: "relative",
-                        fontWeight:
-                          isSelected || hasAcquisition ? "700" : "400",
-                        color: isSelected ? "#00c7d6" : "#fff",
-                      }}
                     >
                       {dayNum}
-                      {hasAcquisition && (
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: "0px",
-                            left: "50%",
-                            transform: "translateX(-50%)",
-                            width: "3px",
-                            height: "3px",
-                            borderRadius: "50%",
-                            backgroundColor: "#00c7d6",
-                          }}
-                        />
-                      )}
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -1088,68 +851,35 @@ export default function AcquisitionsGlobeEarthPage() {
           )}
         </div>
 
-        {/* DATATAKE Dropdown */}
-        <div
-          style={{
-            position: "relative",
-            borderBottom: "1px solid rgba(255,255,255,0.25)",
-            paddingBottom: "2px",
-          }}
-        >
+        {/* DATATAKE */}
+        <div className={`${g.fdrop} ${g.fdropDtk}`}>
           <button
+            type="button"
+            className={g.fdropHead}
+            aria-expanded={openDropdown === "dtk"}
             onClick={() =>
               setOpenDropdown(openDropdown === "dtk" ? null : "dtk")
             }
-            style={{
-              background: "none",
-              border: "none",
-              color: "#8a96a8",
-              fontSize: "15px",
-              fontFamily: "monospace",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: 0,
-            }}
           >
-            <span style={{ textTransform: "uppercase" }}>DATATAKE</span>
-            <span style={{ color: "#fff", fontWeight: "800" }}>
-              {datatakeFilter === "*" ? "All" : datatakeFilter}
+            <span className={g.fdropLabel}>Datatake</span>
+            <span className={g.fdropVal}>
+              {datatakeFilter === "*" ? "None" : datatakeFilter}
             </span>
-            <span style={{ fontSize: "15px", color: "#8a96a8" }}>▼</span>
+            <Chevron />
           </button>
           {openDropdown === "dtk" && (
-            <div
-              style={{
-                position: "absolute",
-                top: "calc(100% + 8px)",
-                left: 0,
-                background: "#090d16",
-                border: "1px solid rgba(255,255,255,0.2)",
-                zIndex: 100,
-                minWidth: "280px",
-                maxHeight: "300px",
-                overflowY: "auto",
-                padding: "8px 0",
-              }}
-            >
-              <div
+            <div className={`${g.fdropMenu} ${g.dtkMenu}`}>
+              <button
+                type="button"
+                className={g.fitem}
+                aria-pressed={datatakeFilter === "*"}
                 onClick={() => {
                   setDatatakeFilter("*");
                   setOpenDropdown(null);
                 }}
-                style={{
-                  padding: "8px 16px",
-                  cursor: "pointer",
-                  color: datatakeFilter === "*" ? "#00c7d6" : "#fff",
-                  borderBottom: "1px solid rgba(255,255,255,0.1)",
-                  fontSize: "13px",
-                  fontWeight: "bold",
-                }}
               >
-                ALL DATATAKES
-              </div>
+                All datatakes
+              </button>
               {dropdownDatatakes.map((dt) => {
                 const statusColor =
                   dt.cls === "ok"
@@ -1158,55 +888,47 @@ export default function AcquisitionsGlobeEarthPage() {
                       ? "#f5b544"
                       : "#ef4444";
                 return (
-                  <div
+                  <button
                     key={dt.id}
+                    type="button"
+                    className={`${g.fitem} ${g.dtkItem}`}
+                    aria-pressed={datatakeFilter === dt.id}
                     onClick={() => {
                       setOpenDropdown(null);
                       handleSelectDatatake(dt.id);
                     }}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      cursor: "pointer",
-                      padding: "8px 16px",
-                      borderBottom: "1px solid rgba(255,255,255,0.1)",
-                      color: datatakeFilter === dt.id ? "#00c7d6" : "#fff",
-                      fontSize: "14px",
-                    }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "8px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: "6px",
-                          height: "6px",
-                          background: statusColor,
-                          borderRadius: "50%",
-                        }}
-                      />
-                      <span>{dt.id}</span>
-                    </div>
-                    <span style={{ fontSize: "12px", color: "#8a96a8" }}>
+                    <i
+                      className={g.dtkDot}
+                      style={{ background: statusColor }}
+                    />
+                    <span>{dt.id}</span>
+                    <small>
                       {Math.round(dt.comp)}% · {dt.status}
-                    </span>
-                  </div>
+                    </small>
+                  </button>
                 );
               })}
             </div>
           )}
         </div>
 
-        {/* SEARCH INPUT & CLEAR BUTTON */}
-        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ color: "#8a96a8", fontSize: "15px" }}>🔍</span>
+        {/* SEARCH */}
+        <label className={g.fsearch}>
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            aria-hidden
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="M20 20l-4-4" />
+          </svg>
           <input
-            type="text"
+            type="search"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -1214,35 +936,10 @@ export default function AcquisitionsGlobeEarthPage() {
                 handleSelectDatatake(filteredDatatakes[0].id);
               }
             }}
-            placeholder="Search ID (e.g. S2A)"
-            style={{
-              background: "none",
-              border: "none",
-              borderBottom: "1px solid rgba(255,255,255,0.3)",
-              color: "#fff",
-              fontSize: "14px",
-              fontFamily: "monospace",
-              outline: "none",
-              width: "140px",
-              paddingBottom: "2px",
-            }}
+            placeholder="Datatake ID"
+            aria-label="Search datatakes"
           />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              style={{
-                background: "none",
-                border: "none",
-                color: "#8a96a8",
-                fontSize: "14px",
-                cursor: "pointer",
-                padding: "0 2px",
-              }}
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        </label>
       </div>
 
       {/* GLOBE CANVAS CONTAINER */}
