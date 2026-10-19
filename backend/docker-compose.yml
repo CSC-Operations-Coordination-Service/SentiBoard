@@ -1,7 +1,10 @@
-# Local OpenSearch for the SentiBoard backend (development only: security is off).
-#   docker compose up -d        start
-#   curl localhost:9200         check it's up
-#   docker compose down -v      stop and wipe all data
+# SentiBoard backend: OpenSearch + API (development only: security is off).
+#   docker compose up -d --build     start (API: http://localhost:8000/docs)
+#   curl localhost:8000/health       check it's up
+#   docker compose down -v           stop and wipe all data
+#
+# Load the legacy data (DB file in ../legacy_data/sentiboard/):
+#   docker compose run --rm api python migrate_legacy.py /legacy_data/sentiboard/<file>.db --apply
 services:
   opensearch:
     image: opensearchproject/opensearch:2.19.1
@@ -14,6 +17,22 @@ services:
       - "9200:9200"
     volumes:
       - opensearch-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9200/_cluster/health"]
+      interval: 5s
+      retries: 30
+
+  api:
+    build: .
+    environment:
+      - OPENSEARCH_URL=http://opensearch:9200
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../legacy_data:/legacy_data:ro
+    depends_on:
+      opensearch:
+        condition: service_healthy
 
 volumes:
   opensearch-data:
