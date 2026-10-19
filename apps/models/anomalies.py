@@ -19,27 +19,47 @@ from datetime import datetime
 from sqlalchemy import func, or_
 
 from apps import db
+from apps.cache.cache import ConfigCache
 from apps.utils.db_utils import generate_uuid
 
 logger = logging.getLogger(__name__)
 
-# Dashboard-correlated anomalies must never be surfaced to end users (events
-# calendar/timeline, REST endpoints). They are already skipped at ingestion, but
-# a stale row ingested before that filter existed can still carry a "Dashboard"
-# category, which the UI shows as "Issue type: Dashboard". Filtering here — the
-# single query every anomaly consumer reads through — guarantees such rows can
-# never be served, regardless of how they entered the DB.
-_EXCLUDED_CATEGORY = "dashboard"
+# Anomalies whose CAMS "origin of issue" is in this list must never be surfaced
+# to end users (events calendar/timeline, REST endpoints, quarterly reports).
+# The ingestor stores such anomalies with category = origin, and every consumer
+# reads through get_anomalies(), which filters those categories out. Tagging
+# rather than skipping at ingestion means an anomaly already in the DB under a
+# guessed category is re-tagged (and hidden) by the next ingestion run.
+# Overridable via the "excluded_anomaly_origins" config key (list of strings).
+_DEFAULT_EXCLUDED_ORIGINS = ["Dashboard", "S3PP"]  # S3PP: DEVOCS-273
 
 
-def _exclude_dashboard(query):
-    """Drop rows whose category is 'Dashboard' (case-insensitive), keeping rows
-    with a NULL/empty category (SQL comparisons against NULL are not TRUE, so the
-    NULL case must be preserved explicitly)."""
+def get_excluded_origins():
+    """Return the excluded origins as a set of lower-cased, stripped strings."""
+    configured = ConfigCache.load_object("excluded_anomaly_origins")
+    if configured is None:
+        configured = _DEFAULT_EXCLUDED_ORIGINS
+    elif isinstance(configured, str):
+        configured = configured.split(",")
+    return {str(o).strip().lower() for o in configured if o and str(o).strip()}
+
+
+def is_excluded_origin(origin):
+    """True if the given CAMS origin is excluded from display (case-insensitive)."""
+    return bool(origin) and str(origin).strip().lower() in get_excluded_origins()
+
+
+def _exclude_hidden_origins(query):
+    """Drop rows whose category is an excluded origin (case-insensitive), keeping
+    rows with a NULL/empty category (SQL comparisons against NULL are not TRUE,
+    so the NULL case must be preserved explicitly)."""
+    excluded = get_excluded_origins()
+    if not excluded:
+        return query
     return query.filter(
         or_(
             Anomalies.category.is_(None),
-            func.lower(Anomalies.category) != _EXCLUDED_CATEGORY,
+            func.lower(Anomalies.category).notin_(excluded),
         )
     )
 
@@ -272,13 +292,13 @@ def get_anomalies(start_date=None, end_date=None):
     try:
         if start_date is None or end_date is None:
             return (
-                _exclude_dashboard(Anomalies.query)
+                _exclude_hidden_origins(Anomalies.query)
                 .order_by(Anomalies.publicationDate.desc())
                 .all()
             )
         else:
             return (
-                _exclude_dashboard(
+                _exclude_hidden_origins(
                     Anomalies.query.filter(Anomalies.publicationDate != None)
                     .filter(Anomalies.publicationDate >= start_date)
                     .filter(Anomalies.publicationDate <= end_date)

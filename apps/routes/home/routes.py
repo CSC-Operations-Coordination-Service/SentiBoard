@@ -763,10 +763,9 @@ def events_data():
 
         def serialize_anomalie(a):
             src = a.get("_source", a)
-            # NOTE: Dashboard-origin anomalies are dropped upstream at ingestion
-            # (apps/ingestion/anomalies_ingestor.py), so they never reach the DB
-            # this cache is built from. The stored Anomalies rows carry no "origin"
-            # field, hence there is no origin filter to apply here.
+            # NOTE: hidden-origin anomalies (Dashboard, S3PP, ... — see
+            # "excluded_anomaly_origins") are filtered out by get_anomalies(), which
+            # this cache is built from, hence there is no origin filter to apply here.
             date_str = (
                 src.get("occurence_date")
                 or src.get("occurrence_date")

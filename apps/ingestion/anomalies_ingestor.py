@@ -48,11 +48,6 @@ class AnomaliesIngestor:
                 logger.warning("Skipping anomaly without _source: %s", extract)
                 continue
 
-            origin = src.get("origin")
-            if origin == "Dashboard":
-                logger.info("Skipping Dashboard-correlate anomaly: %s", src.get("key"))
-                continue
-
             # Create the anomaly record with baseline properties
             public_date = date_utils.format_date_to_str(
                 extract["_source"]["occurence_date"], "%Y-%m-%dT%H:%M:%S.%fZ"
@@ -136,7 +131,13 @@ class AnomaliesIngestor:
 
             origin = extract["_source"].get("origin", None)
 
-            if origin == "Satellite":
+            if anomalies_model.is_excluded_origin(origin):
+                # Hidden origin (e.g. Dashboard, S3PP): store it with the origin as
+                # category, so get_anomalies() filters it out. Upserting (instead
+                # of skipping) also re-tags rows ingested under a guessed category.
+                logger.info("Tagging hidden-origin anomaly %s: %s", origin, src.get("key"))
+                anomaly["category"] = origin
+            elif origin == "Satellite":
                 anomaly["category"] = "Platform"
             elif origin == "Production":
                 anomaly["category"] = "Production"
