@@ -1,0 +1,66 @@
+{
+  "data_id": "artifact_tab001",
+  "title": "Sentinel-1 Completeness Summary",
+  "description": "Daily completeness metrics for Sentinel-1 satellites, June–July 2026.",
+  "columns": ["date", "satellite", "l0_completeness", "l1_completeness", "completeness_percentage"],
+  "rows": [
+    {
+      "date": "2026-06-15",
+      "satellite": "S1A",
+      "l0_completeness": 100,
+      "l1_completeness": 100,
+      "completeness_percentage": 100.0
+    },
+    {
+      "date": "2026-06-15",
+      "satellite": "S1C",
+      "l0_completeness": 98,
+      "l1_completeness": 99,
+      "completeness_percentage": 98.5
+    },
+    {
+      "date": "2026-06-16",
+      "satellite": "S1A",
+      "l0_completeness": 100,
+      "l1_completeness": 100,
+      "completeness_percentage": 100.0
+    },
+    {
+      "date": "2026-06-16",
+      "satellite": "S1C",
+      "l0_completeness": 96,
+      "l1_completeness": 97,
+      "completeness_percentage": 96.5
+    },
+    {
+      "date": "2026-07-01",
+      "satellite": "S1A",
+      "l0_completeness": 99,
+      "l1_completeness": 100,
+      "completeness_percentage": 99.5
+    },
+    {
+      "date": "2026-07-01",
+      "satellite": "S1C",
+      "l0_completeness": 94,
+      "l1_completeness": 96,
+      "completeness_percentage": 95.0
+    },
+    {
+      "date": "2026-07-07",
+      "satellite": "S1A",
+      "l0_completeness": 87,
+      "l1_completeness": 91,
+      "completeness_percentage": 89.0
+    },
+    {
+      "date": "2026-07-07",
+      "satellite": "S1C",
+      "l0_completeness": 100,
+      "l1_completeness": 100,
+      "completeness_percentage": 100.0
+    }
+  ],
+  "temporal_rows": [],
+  "aggregation": {}
+}

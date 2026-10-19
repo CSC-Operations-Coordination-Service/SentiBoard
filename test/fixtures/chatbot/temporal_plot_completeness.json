@@ -1,0 +1,86 @@
+{
+  "data_id": "artifact_temp001",
+  "title": "Completeness Over Time",
+  "description": "Temporal trend of completeness percentage by satellite.",
+  "columns": ["bucket_start", "satellite_unit", "completeness_percentage"],
+  "rows": [
+    {
+      "bucket_start": "2026-06-15",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 100.0
+    },
+    {
+      "bucket_start": "2026-06-15",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 98.5
+    },
+    {
+      "bucket_start": "2026-06-16",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 100.0
+    },
+    {
+      "bucket_start": "2026-06-16",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 96.5
+    },
+    {
+      "bucket_start": "2026-06-17",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 100.0
+    },
+    {
+      "bucket_start": "2026-06-17",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 99.2
+    },
+    {
+      "bucket_start": "2026-06-20",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 100.0
+    },
+    {
+      "bucket_start": "2026-06-20",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 94.8
+    },
+    {
+      "bucket_start": "2026-07-01",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 99.5
+    },
+    {
+      "bucket_start": "2026-07-01",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 95.0
+    },
+    {
+      "bucket_start": "2026-07-07",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 89.0
+    },
+    {
+      "bucket_start": "2026-07-07",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 100.0
+    },
+    {
+      "bucket_start": "2026-07-08",
+      "satellite_unit": "S1A",
+      "completeness_percentage": 98.7
+    },
+    {
+      "bucket_start": "2026-07-08",
+      "satellite_unit": "S1C",
+      "completeness_percentage": 100.0
+    }
+  ],
+  "temporal_rows": [],
+  "aggregation": {
+    "temporal_plot": {
+      "date_column": "bucket_start",
+      "categorical_column": "satellite_unit",
+      "numeric_column": "completeness_percentage"
+    }
+  }
+}

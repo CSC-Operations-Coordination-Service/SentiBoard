@@ -1,0 +1,71 @@
+{
+  "data_id": "artifact_hist001",
+  "title": "Events Per Week",
+  "description": "Count of anomaly events grouped by week and category.",
+  "columns": ["week_start", "category", "event_count"],
+  "rows": [
+    {
+      "week_start": "2026-06-08",
+      "category": "production",
+      "event_count": 2
+    },
+    {
+      "week_start": "2026-06-08",
+      "category": "acquisition",
+      "event_count": 1
+    },
+    {
+      "week_start": "2026-06-15",
+      "category": "production",
+      "event_count": 3
+    },
+    {
+      "week_start": "2026-06-15",
+      "category": "rfi",
+      "event_count": 0
+    },
+    {
+      "week_start": "2026-06-15",
+      "category": "satellite",
+      "event_count": 1
+    },
+    {
+      "week_start": "2026-06-22",
+      "category": "acquisition",
+      "event_count": 2
+    },
+    {
+      "week_start": "2026-06-22",
+      "category": "production",
+      "event_count": 1
+    },
+    {
+      "week_start": "2026-06-29",
+      "category": "rfi",
+      "event_count": 1
+    },
+    {
+      "week_start": "2026-06-29",
+      "category": "satellite",
+      "event_count": 1
+    },
+    {
+      "week_start": "2026-07-06",
+      "category": "rfi",
+      "event_count": 2
+    },
+    {
+      "week_start": "2026-07-06",
+      "category": "production",
+      "event_count": 0
+    }
+  ],
+  "temporal_rows": [],
+  "aggregation": {
+    "count_histogram": {
+      "date_column": "week_start",
+      "category_column": "category",
+      "count_column": "event_count"
+    }
+  }
+}

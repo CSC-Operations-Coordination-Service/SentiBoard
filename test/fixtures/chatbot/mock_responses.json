@@ -1,0 +1,22 @@
+{
+  "anomal": {
+    "response": "During June and July 2026, we detected 7 significant anomalies affecting Sentinel operations. Here's a complete overview:\n\n<event-calendar data_id=\"artifact_fcd5ed14590f47e592dffc2227f6c66e\" title=\"Anomalies — June–July 2026\" />\n\nThe most impactful event was GSANOM-23018 on July 7th—an RFI with CAPELLA-19 that caused blocking-level impact to two S1D datatakes. However, data recovery was swift and the issue has been closed.",
+    "model_name": "claude-3.5-sonnet"
+  },
+  "completeness": {
+    "response": "Based on the available data, Sentinel-1A maintained excellent completeness throughout the period, while S1C experienced some degradation around June 20th and July 1st, but recovered by July 8th.\n\n<kpi label=\"Average Completeness\" value=\"97.9%\" color=\"green\" delta=\"+0.8pp\" />\n\nHere's the detailed breakdown:\n\n<tabular data_id=\"artifact_tab001\" title=\"Daily Completeness Summary\" sort_column=\"completeness_percentage\" sort_order=\"desc\" />\n\nShowing the trend over time:\n\n<temporal-plot data_id=\"artifact_temp001\" date_column=\"bucket_start\" categorical_column=\"satellite_unit\" numeric_column=\"completeness_percentage\" title=\"Completeness Trend by Satellite\" />",
+    "model_name": "claude-3.5-sonnet"
+  },
+  "formula": {
+    "response": "Completeness is calculated using the following formula:\n\n$$\n\\text{completeness} = \\frac{\\text{valid\\_bytes}}{\\text{expected\\_bytes}} \\times 100\\%\n$$\n\nFor multi-sensor products, we use a weighted average. The weighting factor $w_i$ for each band is determined by its importance in the downstream processing pipeline:\n\n$$\n\\text{weighted\\_completeness} = \\sum_{i=1}^{n} w_i \\cdot c_i\n$$\n\nwhere $c_i$ is the completeness of band $i$. Typical weights are $w_i = 1/n$ for uniform importance, but can be adjusted based on mission requirements.",
+    "model_name": "claude-3.5-sonnet"
+  },
+  "broken": {
+    "response": "Here's a test with a malformed marker:\n\n<tabular data_id=\"artifact_INVALID@#$\" broken_attr=\"true\" />\n\nThe above marker is intentionally malformed (bad data_id format) and should be silently dropped, leaving only this prose visible.",
+    "model_name": "claude-3.5-sonnet"
+  },
+  "default": {
+    "response": "I can help you explore Sentinel data availability, completeness metrics, and anomaly events. Try asking me about:\n\n- **Anomalies**: \"Show me the anomalies from June–July 2026\"\n- **Completeness**: \"What was the completeness trend for Sentinel-1?\"\n- **Formulas**: \"How is completeness calculated?\"\n- **Calendar**: \"Which events affected S2C acquisitions?\"\n\nFeel free to ask any specific questions about the Copernicus Sentinel mission operations.",
+    "model_name": "claude-3.5-sonnet"
+  }
+}

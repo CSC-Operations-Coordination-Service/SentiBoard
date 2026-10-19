@@ -140,35 +140,17 @@ const WidgetRenderer = (() => {
   }
 
   function renderEventCalendar(artifact, markerAttrs) {
-    const { events, title, description } = artifact;
-
-    if (!events || events.length === 0) {
+    if (!artifact || !artifact.events) {
       return '<div class="alert alert-info alert-sm">No events</div>';
     }
 
     let html = '<div class="widget-calendar">';
-    if (title) html += `<h6 class="widget-title">${escapeHtml(title)}</h6>`;
-    if (description) html += `<p class="widget-description">${escapeHtml(description)}</p>`;
+    if (artifact.title) html += `<h6 class="widget-title">${escapeHtml(artifact.title)}</h6>`;
+    if (artifact.description) html += `<p class="widget-description">${escapeHtml(artifact.description)}</p>`;
 
-    const byDate = {};
-    events.forEach(event => {
-      const date = event.date || 'unknown';
-      if (!byDate[date]) byDate[date] = [];
-      byDate[date].push(event);
-    });
-
-    html += '<div class="event-list">';
-    Object.entries(byDate).forEach(([date, dateEvents]) => {
-      html += `<div class="event-group"><strong>${escapeHtml(date)}</strong><ul>`;
-      dateEvents.forEach(event => {
-        html += '<li>';
-        if (event.title) html += `<strong>${escapeHtml(event.title)}</strong>: `;
-        if (event.description) html += escapeHtml(event.description);
-        html += '</li>';
-      });
-      html += '</ul></div>';
-    });
-    html += '</div></div>';
+    // Use the EventCalendarRenderer for full schema support
+    html += EventCalendarRenderer.render(artifact);
+    html += '</div>';
     return html;
   }
 

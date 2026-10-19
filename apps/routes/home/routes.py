@@ -33,6 +33,7 @@ import re
 import httpx
 from apps.utils.marker_parser import MarkerExtractor
 from apps.utils.chat_session import ChatSessionState
+from apps.utils.chatbot_client import ChatbotAPIClient
 import apps.cache.modules.acquisitions as acquisitions_cache
 import apps.cache.modules.timeliness as timeliness_cache
 import apps.cache.modules.events as events_cache
@@ -2912,46 +2913,25 @@ def chatbot_send_message():
 
         # Call chatbot API backend
         chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
-        if not chatbot_api_url:
-            return jsonify({
-                "status": "error",
-                "code": "config_error",
-                "message": "Chatbot API not configured"
-            }), 500
+        client = ChatbotAPIClient(chatbot_api_url)
 
         try:
-            with httpx.Client(timeout=30.0) as client:
-                api_payload = {"message": user_message}
-                if session_id:
-                    api_payload["session_id"] = str(session_id)
-
-                api_response = client.post(f"{chatbot_api_url}/chat", json=api_payload)
-                api_response.raise_for_status()
-                api_data = api_response.json()
-
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                # Session expired
+            api_data = client.chat(user_message, session_id)
+        except ValueError as e:
+            if "expired" in str(e).lower():
                 chat_state.clear()
                 return jsonify({
                     "status": "error",
                     "code": "session_expired",
                     "message": "Conversation session expired. Please start a new conversation."
                 }), 200
-            elif e.response.status_code == 422:
-                return jsonify({
-                    "status": "error",
-                    "code": "invalid_request",
-                    "message": "Invalid request to chatbot API"
-                }), 400
-            else:
-                logger.error(f"Chatbot API error: {e}")
-                return jsonify({
-                    "status": "error",
-                    "code": "api_error",
-                    "message": "Chatbot API error"
-                }), 502
-        except httpx.RequestError as e:
+            logger.error(f"Chatbot API error: {e}")
+            return jsonify({
+                "status": "error",
+                "code": "api_error",
+                "message": "Chatbot API error"
+            }), 502
+        except Exception as e:
             logger.error(f"Chatbot API request failed: {e}")
             return jsonify({
                 "status": "error",
@@ -3035,44 +3015,25 @@ def chatbot_fetch_artifact(data_id: str):
             }), 400
 
         chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
-        if not chatbot_api_url:
-            return jsonify({
-                "status": "error",
-                "code": "config_error",
-                "message": "Chatbot API not configured"
-            }), 500
+        client = ChatbotAPIClient(chatbot_api_url)
 
         try:
-            with httpx.Client(timeout=30.0) as client:
-                api_response = client.get(
-                    f"{chatbot_api_url}/chat/data/{data_id}",
-                    params={"session_id": str(session_id)}
-                )
-                api_response.raise_for_status()
-                artifact_data = api_response.json()
+            artifact_data = client.fetch_artifact(data_id, str(session_id))
 
-            return jsonify({
-                "status": "success",
-                "data": artifact_data
-            }), 200
-
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
+            if artifact_data is None:
                 # Expected per contract §4: artifact or session expired
                 return jsonify({
                     "status": "error",
                     "code": "session_expired",
                     "message": "Data no longer available; please ask again."
                 }), 200
-            else:
-                logger.error(f"Chatbot API error fetching {data_id}: {e}")
-                return jsonify({
-                    "status": "error",
-                    "code": "api_error",
-                    "message": "Failed to fetch artifact data"
-                }), 502
 
-        except httpx.RequestError as e:
+            return jsonify({
+                "status": "success",
+                "data": artifact_data
+            }), 200
+
+        except Exception as e:
             logger.error(f"Chatbot API request failed: {e}")
             return jsonify({
                 "status": "error",
