@@ -2,3 +2,5 @@
 # Pinned to a commit: tag 3.0.0 predates the id/_id fix and list pagination.
 maas-model[api] @ git+https://github.com/CSC-Operations-Coordination-Service/maas-model.git@b1df94e37a068835585befcf5027eb0c213ff5ec
 uvicorn==0.53.0
+# bson reader for the Config Tools Mongo dump (migrate_processors.py)
+pymongo==4.15.3
