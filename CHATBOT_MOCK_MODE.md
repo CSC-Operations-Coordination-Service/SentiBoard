@@ -35,7 +35,9 @@ Click it to open the floating chatbot widget.
 
 ## Try These Queries
 
-### Anomalies
+### Event Calendar (Anomalies/Events/Tickets)
+**Keywords:** `anomal`, `calendar`, `event`, `ticket` (case-insensitive)
+
 Type: `"Show me the anomalies from June-July 2026"`
 
 **Expected:** Full event calendar widget with:
@@ -47,7 +49,14 @@ Type: `"Show me the anomalies from June-July 2026"`
 - Affected systems and datatake IDs
 - Collapsible long descriptions
 
-### Completeness
+**Other examples that trigger this:**
+- "List calendar events"
+- "Show me all tickets"
+- "What events occurred?"
+
+### Completeness Metrics (KPI/Table/Chart)
+**Keywords:** `completeness`, `complete` (case-insensitive, but checked after formula keywords)
+
 Type: `"What was the completeness trend for Sentinel-1?"`
 
 **Expected:**
@@ -55,22 +64,69 @@ Type: `"What was the completeness trend for Sentinel-1?"`
 - Tabular data (sortable)
 - Temporal plot with multi-series (S1A vs S1C lines)
 
-### Formulas
+**Other examples that trigger this:**
+- "Is data completeness improving?"
+- "Show me complete data for last week"
+
+### Formulas & Calculations (LaTeX)
+**Keywords:** `formula`, `calculat`, `computed` (case-insensitive, checked first)
+
 Type: `"How is completeness calculated?"`
 
 **Expected:** Prose with LaTeX:
 - Block math ($$...$$ on own lines)
 - Inline math ($...$)
 
+**Note:** Checked BEFORE "completeness" keyword, so questions about HOW completeness is calculated get the formula answer, not the metric values.
+
+**Other examples that trigger this:**
+- "What's the formula for availability?"
+- "How is this computed?"
+- "Show me the calculation"
+
 ### Malformed Markers
+**Keywords:** `broken`, `malformed` (case-insensitive)
+
 Type: `"Show me broken markers"`
 
 **Expected:** Malformed marker is silently dropped, only prose shown.
 
 ### Default Fallback
-Type: anything else
+**Keywords:** anything not matching above
 
 **Expected:** Generic helpful response
+
+## Keyword Routing Reference
+
+Mock mode routes user queries to canned responses based on keyword matching. **All matching is case-insensitive.**
+
+### Routing Priority (checked in order)
+
+1. **Formulas & Calculations** — `formula`, `calculat`, `computed`
+   - Returns LaTeX math formulas and prose
+   - Checked first to catch "How is X calculated?" questions
+
+2. **Event Calendar** — `anomal`, `calendar`, `event`, `ticket`
+   - Returns event calendar with criticality, status, dates
+
+3. **Completeness Metrics** — `completeness`, `complete`
+   - Returns KPI card, table, and temporal plot
+
+4. **Malformed Markers** — `broken`, `malformed`
+   - Returns prose only (bad marker is dropped silently)
+
+5. **Default** — anything else
+   - Returns generic helpful response
+
+### Examples by Response Type
+
+| Query | Keywords Match | Response |
+|-------|---|---|
+| "Show me the anomalies from June-July 2026" | anomal | Event Calendar |
+| "What was the completeness trend for Sentinel-1?" | completeness | Completeness (KPI/table/plot) |
+| "How is completeness calculated?" | calculat (checked before completeness) | Formula (LaTeX) |
+| "Show me broken markers" | broken | Malformed Markers |
+| "What's the status?" | (no match) | Default |
 
 ## Latency Simulation
 

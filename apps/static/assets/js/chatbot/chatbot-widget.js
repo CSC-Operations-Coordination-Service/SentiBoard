@@ -114,54 +114,14 @@ const ChatbotWidget = (() => {
     addUserMessage(message);
     setLoading(true);
 
+    // Remember if user was near the bottom when they sent the message
+    const container = document.getElementById('chatbot-messages');
+    const wasNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 80;
+
     const startTime = Date.now();
     let loadingMessageDiv = null;
     let stillWorkingTimer = null;
 
-    try {
-      const response = await fetch('/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({ message })
-      });
-
-      const data = await response.json();
-
-      // Clear loading message and timer
-      if (loadingMessageDiv) {
-        loadingMessageDiv.remove();
-      }
-      if (stillWorkingTimer) {
-        clearInterval(stillWorkingTimer);
-      }
-
-      if (data.status === 'error') {
-        handleError(data);
-        setLoading(false);
-        return;
-      }
-
-      currentSessionId = data.session_id;
-      await renderAssistantMessage(data);
-
-    } catch (error) {
-      console.error('Chat error:', error);
-      addErrorMessage('Failed to send message. Please try again.');
-      if (loadingMessageDiv) {
-        loadingMessageDiv.remove();
-      }
-      if (stillWorkingTimer) {
-        clearInterval(stillWorkingTimer);
-      }
-    } finally {
-      setLoading(false);
-      input.focus();
-    }
-
-    // Show elapsed time during request
     function updateElapsedTime() {
       const elapsed = Math.floor((Date.now() - startTime) / 1000);
 
@@ -180,19 +140,50 @@ const ChatbotWidget = (() => {
       } else {
         content.innerHTML = `<p>Waiting (${elapsed}s)...</p>`;
       }
-
-      document.getElementById('chatbot-messages').scrollTop =
-        document.getElementById('chatbot-messages').scrollHeight;
     }
 
     // Start showing elapsed time
-    if (!stillWorkingTimer) {
-      updateElapsedTime();
-      stillWorkingTimer = setInterval(updateElapsedTime, 1000);
+    updateElapsedTime();
+    stillWorkingTimer = setInterval(updateElapsedTime, 1000);
+
+    try {
+      const response = await fetch('/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'error') {
+        handleError(data);
+        setLoading(false);
+        return;
+      }
+
+      currentSessionId = data.session_id;
+      await renderAssistantMessage(data, wasNearBottom);
+
+    } catch (error) {
+      console.error('Chat error:', error);
+      addErrorMessage('Failed to send message. Please try again.');
+    } finally {
+      // Clear loading message and timer
+      if (loadingMessageDiv) {
+        loadingMessageDiv.remove();
+      }
+      if (stillWorkingTimer) {
+        clearInterval(stillWorkingTimer);
+      }
+      setLoading(false);
+      input.focus();
     }
   }
 
-  async function renderAssistantMessage(apiResponse) {
+  async function renderAssistantMessage(apiResponse, wasNearBottom = true) {
     const {
       response: fullResponse,
       session_id: sessionId
@@ -336,7 +327,11 @@ const ChatbotWidget = (() => {
     });
 
     document.getElementById('chatbot-messages').appendChild(messageDiv);
-    scrollToBottom();
+
+    // If user was near bottom when they sent the message, scroll to show the response
+    if (wasNearBottom) {
+      messageDiv.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
 
     // Call all mount functions (widgets + KaTeX rendering) after insertion
     setTimeout(() => {
@@ -388,7 +383,7 @@ const ChatbotWidget = (() => {
     div.className = 'chatbot-message user';
     div.innerHTML = `<div class="message-content">${escapeHtml(message)}</div>`;
     document.getElementById('chatbot-messages').appendChild(div);
-    scrollToBottom();
+    scrollToBottom(true);
   }
 
   function addErrorMessage(message) {
@@ -408,10 +403,13 @@ const ChatbotWidget = (() => {
     button.disabled = visible;
   }
 
-  function scrollToBottom() {
+  function scrollToBottom(force = false) {
     const container = document.getElementById('chatbot-messages');
     setTimeout(() => {
-      container.scrollTop = container.scrollHeight;
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= 80;
+      if (force || isNearBottom) {
+        container.scrollTop = container.scrollHeight;
+      }
     }, 0);
   }
 

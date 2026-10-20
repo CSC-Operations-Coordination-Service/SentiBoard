@@ -83,10 +83,21 @@ const EventCalendarRenderer = (() => {
 
     // Render dated events
     dateArray.forEach(date => {
+      // Sort events by time (most recent first)
+      const sortedEvents = byDate[date].sort((a, b) => {
+        const timeA = a.occurred_at || '9999-12-31T23:59:59Z';
+        const timeB = b.occurred_at || '9999-12-31T23:59:59Z';
+        return timeB.localeCompare(timeA);
+      });
+
+      const eventCount = sortedEvents.length;
       html += `<div class="event-day-group">`;
+      html += `<div class="event-day-header">`;
       html += `<h6 class="event-day-title">${formatDate(date)}</h6>`;
+      html += `<span class="event-count">${eventCount} ${eventCount === 1 ? 'event' : 'events'}</span>`;
+      html += `</div>`;
       html += `<div class="event-list">`;
-      byDate[date].forEach(event => {
+      sortedEvents.forEach(event => {
         html += renderEventCard(event);
       });
       html += `</div></div>`;
@@ -94,8 +105,12 @@ const EventCalendarRenderer = (() => {
 
     // Render undated events in separate group
     if (undated.length > 0) {
+      const eventCount = undated.length;
       html += `<div class="event-day-group undated">`;
+      html += `<div class="event-day-header">`;
       html += `<h6 class="event-day-title">No Date</h6>`;
+      html += `<span class="event-count">${eventCount} ${eventCount === 1 ? 'event' : 'events'}</span>`;
+      html += `</div>`;
       html += `<div class="event-list">`;
       undated.forEach(event => {
         html += renderEventCard(event);
@@ -147,27 +162,33 @@ const EventCalendarRenderer = (() => {
     const criticality = event.criticality || 'Routine';
     const criticalityClass = getCriticalityClass(criticality);
     const id = generateEventId();
+    const utcTime = formatTimeUTC(event.occurred_at);
 
     let html = `<div class="event-card ${criticalityClass}">`;
 
-    // Header: ticket key + title + status badge
+    // Header: ticket key + UTC time
     html += `<div class="event-header">`;
     html += `<strong>${escapeHtml(event.key)}</strong>`;
-    if (event.status) {
-      html += ` <span class="badge bg-secondary">${escapeHtml(event.status)}</span>`;
+    if (utcTime) {
+      html += ` <span class="event-time">${utcTime}</span>`;
     }
     html += `</div>`;
 
     // Title
     html += `<div class="event-title">${escapeHtml(event.title)}</div>`;
 
-    // Criticality and affected systems
-    html += `<div class="event-meta">`;
+    // Badges: criticality, status, affected systems (left-aligned row)
+    html += `<div class="event-badges">`;
     if (criticality !== 'Routine') {
-      html += `<span class="badge" style="background-color:${getCriticalityColor(criticality)}">${escapeHtml(criticality)}</span>`;
+      const critBadgeClass = getCriticalityBadgeClass(criticality);
+      html += `<span class="badge ${critBadgeClass}">${escapeHtml(criticality)}</span>`;
+    }
+    if (event.status) {
+      const statusClass = getStatusClass(event.status);
+      html += ` <span class="badge ${statusClass}">${escapeHtml(event.status)}</span>`;
     }
     if (event.affected_systems && event.affected_systems.length > 0) {
-      html += ` <span class="badge bg-info">${event.affected_systems.join(', ')}</span>`;
+      html += ` <span class="badge badge-affected-systems">${event.affected_systems.join(', ')}</span>`;
     }
     html += `</div>`;
 
@@ -210,11 +231,13 @@ const EventCalendarRenderer = (() => {
     html += `<strong>${escapeHtml(event.key)}</strong>: ${escapeHtml(event.title)}`;
 
     if (event.status) {
-      html += ` <span class="badge bg-secondary">${escapeHtml(event.status)}</span>`;
+      const statusClass = getStatusClass(event.status);
+      html += ` <span class="badge ${statusClass}">${escapeHtml(event.status)}</span>`;
     }
 
     if (criticality !== 'Routine') {
-      html += ` <span class="badge" style="background-color:${getCriticalityColor(criticality)}">${escapeHtml(criticality)}</span>`;
+      const critBadgeClass = getCriticalityBadgeClass(criticality);
+      html += ` <span class="badge ${critBadgeClass}">${escapeHtml(criticality)}</span>`;
     }
 
     if (event.affected_systems && event.affected_systems.length > 0) {
@@ -241,14 +264,35 @@ const EventCalendarRenderer = (() => {
   }
 
   /**
-   * Get color for criticality level
+   * Get CSS class for status
    */
-  function getCriticalityColor(criticality) {
-    if (!criticality) return '#6c757d'; // gray
+  function getStatusClass(status) {
+    if (!status) return 'badge-status-unknown';
+    const lower = status.toLowerCase().replace(/\s+/g, '-');
+    // Map status strings to CSS class names
+    const statusMap = {
+      'open': 'badge-status-open',
+      'returned': 'badge-status-returned',
+      'to-be-deployed': 'badge-status-to-be-deployed',
+      'delegated': 'badge-status-delegated',
+      'transferred': 'badge-status-transferred',
+      'closed': 'badge-status-closed',
+      'completed': 'badge-status-completed',
+      'duplicated': 'badge-status-duplicated',
+      'rejected': 'badge-status-rejected'
+    };
+    return statusMap[lower] || 'badge-status-unknown';
+  }
+
+  /**
+   * Get CSS class for criticality level
+   */
+  function getCriticalityBadgeClass(criticality) {
+    if (!criticality) return 'badge-criticality-routine';
     const lower = criticality.toLowerCase();
-    if (lower === 'blocking') return '#dc3545'; // red
-    if (lower === 'critical') return '#fd7e14'; // orange
-    return '#6c757d'; // gray (routine)
+    if (lower === 'blocking') return 'badge-criticality-blocking';
+    if (lower === 'critical') return 'badge-criticality-critical';
+    return 'badge-criticality-routine';
   }
 
   /**
@@ -265,6 +309,21 @@ const EventCalendarRenderer = (() => {
       }).format(date);
     } catch {
       return dateStr;
+    }
+  }
+
+  /**
+   * Format ISO datetime to UTC time string (HH:MM UTC)
+   */
+  function formatTimeUTC(isoString) {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      const hours = String(date.getUTCHours()).padStart(2, '0');
+      const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+      return `${hours}:${minutes} UTC`;
+    } catch {
+      return '';
     }
   }
 

@@ -98,16 +98,23 @@ class ChatbotAPIClient:
         """Generate mock chat response."""
         time.sleep(MOCK_DELAY)  # Simulate latency
 
-        # Route to appropriate response based on keywords
+        # Route to appropriate response based on keywords (case-insensitive)
+        # Priority: check "formula"/"calculat" first for calculated questions,
+        # then event calendar keywords, then completeness metrics
         msg_lower = message.lower()
         response_key = "default"
 
-        if "anomal" in msg_lower:
+        # Formula/calculation questions take priority
+        # (e.g., "How is completeness calculated?" → formula answer, not KPI)
+        if "formula" in msg_lower or "calculat" in msg_lower or "computed" in msg_lower:
+            response_key = "formula"
+        # Event calendar keywords
+        elif any(kw in msg_lower for kw in ["anomal", "calendar", "event", "ticket"]):
             response_key = "anomal"
+        # Completeness metric questions (KPI, table, chart)
         elif "completeness" in msg_lower or "complete" in msg_lower:
             response_key = "completeness"
-        elif "formula" in msg_lower or "math" in msg_lower:
-            response_key = "formula"
+        # Malformed marker test
         elif "broken" in msg_lower or "malformed" in msg_lower:
             response_key = "broken"
 
