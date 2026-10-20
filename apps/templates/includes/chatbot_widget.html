@@ -18,11 +18,19 @@
   <div id="chatbot-window" class="chatbot-window" style="display: none">
     <div class="chatbot-header">
       <h5 class="mb-0">Chatbot Assistant</h5>
-      <button
-        id="chatbot-close"
-        class="btn-close"
-        aria-label="Close chatbot"
-      ></button>
+      <div class="header-buttons">
+        <button
+          id="chatbot-new-conv"
+          class="btn btn-sm btn-outline-secondary"
+          title="Start a new conversation"
+          style="font-size: 0.75rem; padding: 0.25rem 0.5rem;"
+        >New</button>
+        <button
+          id="chatbot-close"
+          class="btn-close"
+          aria-label="Close chatbot"
+        ></button>
+      </div>
     </div>
 
     <div id="chatbot-messages" class="chatbot-messages">

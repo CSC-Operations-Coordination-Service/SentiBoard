@@ -3085,3 +3085,20 @@ def chatbot_fetch_artifact(data_id: str):
             "code": "internal_error",
             "message": "Internal server error"
         }), 500
+
+
+@blueprint.route("/chat/new", methods=["POST"])
+@login_required
+def chatbot_new_conversation():
+    """POST /chat/new - Clear conversation state and start a new one."""
+    try:
+        chat_state = ChatSessionState(session)
+        chat_state.clear()
+        return jsonify({"status": "success", "message": "Conversation cleared"}), 200
+    except Exception as e:
+        logger.exception("Error clearing conversation")
+        return jsonify({
+            "status": "error",
+            "code": "internal_error",
+            "message": "Failed to start new conversation"
+        }), 500

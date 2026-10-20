@@ -20,6 +20,7 @@ const ChatbotWidget = (() => {
     document.getElementById('chatbot-toggle').addEventListener('click', toggleWindow);
     document.getElementById('chatbot-close').addEventListener('click', closeWindow);
     document.getElementById('chatbot-form').addEventListener('submit', handleSendMessage);
+    document.getElementById('chatbot-new-conv').addEventListener('click', handleNewConversation);
 
     console.log('[ChatbotWidget] Initialized');
   }
@@ -36,6 +37,32 @@ const ChatbotWidget = (() => {
 
   function closeWindow() {
     document.getElementById('chatbot-window').style.display = 'none';
+  }
+
+  async function handleNewConversation() {
+    try {
+      const response = await fetch('/chat/new', { method: 'POST' });
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        currentSessionId = null;
+        // Clear messages and show initial message
+        const messagesDiv = document.getElementById('chatbot-messages');
+        messagesDiv.innerHTML = `
+          <div class="chatbot-message system">
+            <div class="message-content">
+              <p>Hi! I can help answer questions about the Copernicus dashboard. What would you like to know?</p>
+            </div>
+          </div>
+        `;
+        document.getElementById('chatbot-input').focus();
+      } else {
+        addErrorMessage('Failed to start new conversation');
+      }
+    } catch (error) {
+      console.error('Error starting new conversation:', error);
+      addErrorMessage('Failed to start new conversation');
+    }
   }
 
   async function handleSendMessage(event) {
