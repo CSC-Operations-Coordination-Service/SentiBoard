@@ -30,13 +30,29 @@ docker compose run --rm api python migrate_legacy.py /legacy_data/sentiboard/<fi
 - Add `--include-dashboard` to also load the 4 hidden "Dashboard" anomalies.
 - Git Bash on Windows: put `MSYS_NO_PATHCONV=1` before `docker compose run`, or the path gets mangled.
 
+### Processor releases
+
+Put the Config Tools Mongo dump in `legacy_data/config_tools/` (also gitignored, never commit).
+
+```
+# dry run
+docker compose run --rm api python migrate_processors.py /legacy_data/config_tools/<dump>/configuration_tool_db/Graph.bson
+
+# write it
+docker compose run --rm api python migrate_processors.py /legacy_data/config_tools/<dump>/configuration_tool_db/Graph.bson --apply
+```
+
+- Safe to re-run, same as above.
+- 3 of 231 releases are skipped (no `release_date`, which the monthly processor indices need); their ids are printed.
+
 Check it worked:
 
 ```
 curl "localhost:8000/anomaly/?limit=5"
+curl "localhost:8000/processor/?limit=5"
 ```
 
-Endpoints: `/anomaly/`, `/news/`, `/instantmessage/`, `/processor/` (empty until processor data is loaded).
+Endpoints: `/anomaly/`, `/news/`, `/instantmessage/`, `/processor/`.
 Lists take `?offset=0&limit=100` (max 1000).
 
 ## 3. Stop
