@@ -148,7 +148,7 @@ class ChatbotAPIClient:
             raise ValueError("CHATBOT_API_URL not configured")
 
         try:
-            with httpx.Client(timeout=180.0) as client:
+            with httpx.Client(timeout=15.0) as client:
                 response = client.get(
                     f"{self.api_url}/chat/data/{data_id}",
                     params={"session_id": session_id},
