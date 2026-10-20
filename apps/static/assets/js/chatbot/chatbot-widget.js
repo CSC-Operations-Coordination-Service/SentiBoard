@@ -21,6 +21,10 @@ const ChatbotWidget = (() => {
     document.getElementById('chatbot-close').addEventListener('click', closeWindow);
     document.getElementById('chatbot-form').addEventListener('submit', handleSendMessage);
     document.getElementById('chatbot-new-conv').addEventListener('click', handleNewConversation);
+    document.getElementById('chatbot-new-hint').addEventListener('click', (e) => {
+      e.preventDefault();
+      handleNewConversation();
+    });
 
     console.log('[ChatbotWidget] Initialized');
   }
