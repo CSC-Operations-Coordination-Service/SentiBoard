@@ -86,9 +86,7 @@ class ChatbotAPIClient:
                 response = client.post(f"{self.api_url}/chat", json=payload)
                 response.raise_for_status()
                 return response.json()
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 404:
-                raise ValueError("Session expired (404)") from e
+        except httpx.HTTPStatusError:
             raise
         except httpx.RequestError as e:
             logger.error(f"Chatbot API request failed: {e}")

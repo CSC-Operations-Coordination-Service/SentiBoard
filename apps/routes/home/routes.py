@@ -2910,6 +2910,7 @@ def chatbot_send_message():
 
         # Call chatbot API backend (or mock if enabled)
         import os
+        import httpx
         if os.getenv("CHATBOT_MOCK", "0") == "1":
             # Mock mode enabled, URL not required
             client = ChatbotAPIClient(None)
@@ -2925,14 +2926,35 @@ def chatbot_send_message():
 
         try:
             api_data = client.chat(user_message, session_id)
-        except ValueError as e:
-            if "expired" in str(e).lower():
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                # Session expired on backend: clear and retry without session_id
                 chat_state.clear()
+                if session_id:
+                    # Retry once without session_id
+                    try:
+                        api_data = client.chat(user_message, None)
+                    except Exception as retry_error:
+                        logger.error(f"Retry after 404 failed: {retry_error}")
+                        return jsonify({
+                            "status": "error",
+                            "code": "conversation_expired",
+                            "message": "This conversation is no longer available. Starting a new one."
+                        }), 200
+                else:
+                    return jsonify({
+                        "status": "error",
+                        "code": "conversation_expired",
+                        "message": "This conversation is no longer available. Starting a new one."
+                    }), 200
+            else:
+                logger.error(f"Chatbot API HTTP error: {e}")
                 return jsonify({
                     "status": "error",
-                    "code": "session_expired",
-                    "message": "Conversation session expired. Please start a new conversation."
-                }), 200
+                    "code": "api_error",
+                    "message": "Chatbot API error"
+                }), 502
+        except ValueError as e:
             logger.error(f"Chatbot API error: {e}")
             return jsonify({
                 "status": "error",
@@ -3039,8 +3061,8 @@ def chatbot_fetch_artifact(data_id: str):
                 # Expected per contract §4: artifact or session expired
                 return jsonify({
                     "status": "error",
-                    "code": "session_expired",
-                    "message": "Data no longer available; please ask again."
+                    "code": "artifact_not_found",
+                    "message": "This data is no longer available, please ask again."
                 }), 200
 
             return jsonify({

@@ -244,11 +244,11 @@ const ChatbotWidget = (() => {
 
   function renderArtifactError(artifact) {
     if (!artifact) {
-      return '<div class="alert alert-warning alert-sm">Artifact not found</div>';
+      return '<div class="alert alert-warning alert-sm">This data is no longer available, please ask again.</div>';
     }
     if (artifact.status === 'error') {
-      if (artifact.code === 'session_expired') {
-        return '<div class="alert alert-warning alert-sm">Data no longer available. Please ask again.</div>';
+      if (artifact.code === 'artifact_not_found' || artifact.code === 'session_expired') {
+        return '<div class="alert alert-warning alert-sm">This data is no longer available, please ask again.</div>';
       }
       return `<div class="alert alert-danger alert-sm">${escapeHtml(artifact.message)}</div>`;
     }
@@ -258,13 +258,13 @@ const ChatbotWidget = (() => {
   function handleError(data) {
     const { code, message } = data;
 
-    if (code === 'session_expired') {
+    if (code === 'conversation_expired') {
       currentSessionId = null;
-      addErrorMessage('Conversation session expired. Starting new conversation.');
+      addErrorMessage(message || 'This conversation is no longer available. Starting a new one.');
     } else if (code === 'invalid_request') {
       addErrorMessage(`Invalid request: ${message}`);
     } else {
-      addErrorMessage(`Error: ${message}`);
+      addErrorMessage(message || `Error: ${message}`);
     }
   }
 
