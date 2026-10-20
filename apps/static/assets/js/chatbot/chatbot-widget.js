@@ -71,7 +71,6 @@ const ChatbotWidget = (() => {
       }
 
       currentSessionId = data.session_id;
-      updateSessionInfo(data);
       await renderAssistantMessage(data);
 
     } catch (error) {
@@ -113,19 +112,20 @@ const ChatbotWidget = (() => {
     if (markers.length > 0) {
       const widgetsDiv = document.createElement('div');
       widgetsDiv.className = 'message-widgets';
+      const mountFunctions = [];
 
       markers.forEach(marker => {
         try {
-          let widgetHtml = '';
+          let result = null;
 
           switch (marker.type) {
             case MarkerParser.MarkerType.TABULAR:
               {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
-                  widgetHtml = WidgetRenderer.renderTable(artifact.data, marker.attributes);
+                  result = WidgetRenderer.renderTable(artifact.data, marker.attributes);
                 } else {
-                  widgetHtml = renderArtifactError(artifact);
+                  result = { html: renderArtifactError(artifact), mount: null };
                 }
               }
               break;
@@ -134,9 +134,9 @@ const ChatbotWidget = (() => {
               {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
-                  widgetHtml = WidgetRenderer.renderTemporalPlot(artifact.data, marker.attributes);
+                  result = WidgetRenderer.renderTemporalPlot(artifact.data, marker.attributes);
                 } else {
-                  widgetHtml = renderArtifactError(artifact);
+                  result = { html: renderArtifactError(artifact), mount: null };
                 }
               }
               break;
@@ -145,9 +145,9 @@ const ChatbotWidget = (() => {
               {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
-                  widgetHtml = WidgetRenderer.renderCountHistogram(artifact.data, marker.attributes);
+                  result = WidgetRenderer.renderCountHistogram(artifact.data, marker.attributes);
                 } else {
-                  widgetHtml = renderArtifactError(artifact);
+                  result = { html: renderArtifactError(artifact), mount: null };
                 }
               }
               break;
@@ -156,9 +156,9 @@ const ChatbotWidget = (() => {
               {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
-                  widgetHtml = WidgetRenderer.renderEventCalendar(artifact.data, marker.attributes);
+                  result = WidgetRenderer.renderEventCalendar(artifact.data, marker.attributes);
                 } else {
-                  widgetHtml = renderArtifactError(artifact);
+                  result = { html: renderArtifactError(artifact), mount: null };
                 }
               }
               break;
@@ -167,22 +167,26 @@ const ChatbotWidget = (() => {
               if (marker.attributes.data_id) {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
-                  // TODO: Render artifact-backed KPI
-                  widgetHtml = '<div class="alert alert-info alert-sm">KPI: ' + escapeHtml(marker.attributes.title || 'Metrics') + '</div>';
+                  result = { html: '<div class="alert alert-info alert-sm">KPI: ' + escapeHtml(marker.attributes.title || 'Metrics') + '</div>', mount: null };
                 } else {
-                  widgetHtml = renderArtifactError(artifact);
+                  result = { html: renderArtifactError(artifact), mount: null };
                 }
               } else if (marker.attributes.label && marker.attributes.value) {
-                widgetHtml = WidgetRenderer.renderDirectKPI(marker.attributes);
+                result = WidgetRenderer.renderDirectKPI(marker.attributes);
               }
               break;
           }
 
-          if (widgetHtml) {
+          if (result && result.html) {
             const widgetContainer = document.createElement('div');
             widgetContainer.className = `widget widget-${marker.type}`;
-            widgetContainer.innerHTML = widgetHtml;
+            widgetContainer.innerHTML = result.html;
             widgetsDiv.appendChild(widgetContainer);
+
+            // Store mount function for later
+            if (result.mount) {
+              mountFunctions.push(() => result.mount(widgetContainer));
+            }
           }
 
         } catch (error) {
@@ -195,6 +199,17 @@ const ChatbotWidget = (() => {
       });
 
       messageDiv.appendChild(widgetsDiv);
+
+      // Call mount functions after widgets are in DOM
+      setTimeout(() => {
+        mountFunctions.forEach(mount => {
+          try {
+            mount();
+          } catch (e) {
+            console.error('Mount function error:', e);
+          }
+        });
+      }, 0);
     }
 
     // Render LaTeX
@@ -269,12 +284,7 @@ const ChatbotWidget = (() => {
     scrollToBottom();
   }
 
-  function updateSessionInfo(data) {
-    if (data.model_name) {
-      document.getElementById('chatbot-model').textContent = `Model: ${data.model_name}`;
-    }
-  }
-
+  
   function setLoading(visible) {
     isLoading = visible;
     const input = document.getElementById('chatbot-input');

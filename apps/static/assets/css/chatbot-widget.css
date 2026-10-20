@@ -94,6 +94,7 @@
 .chatbot-messages {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1rem;
   background-color: #f8f9fa;
   display: flex;
@@ -133,6 +134,7 @@
 
 .chatbot-message.assistant {
   justify-content: flex-start;
+  flex-direction: column;
 }
 
 .chatbot-message.assistant .message-content {
@@ -140,7 +142,8 @@
   border: 1px solid #dee2e6;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  max-width: 90%;
+  width: 100%;
+  min-width: 0;
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -170,6 +173,8 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .widget {
@@ -178,7 +183,14 @@
   border-radius: 0.5rem;
   padding: 0.75rem;
   font-size: 0.85rem;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.widget-table {
+  width: 100%;
+  min-width: 0;
   overflow-x: auto;
 }
 

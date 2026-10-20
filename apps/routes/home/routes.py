@@ -2908,12 +2908,20 @@ def chatbot_send_message():
         else:
             session_id = chat_state.get_session_id()
 
-        # Record user message in history
-        chat_state.add_user_message(user_message)
-
-        # Call chatbot API backend
-        chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
-        client = ChatbotAPIClient(chatbot_api_url)
+        # Call chatbot API backend (or mock if enabled)
+        import os
+        if os.getenv("CHATBOT_MOCK", "0") == "1":
+            # Mock mode enabled, URL not required
+            client = ChatbotAPIClient(None)
+        else:
+            chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
+            if not chatbot_api_url:
+                return jsonify({
+                    "status": "error",
+                    "code": "config_error",
+                    "message": "Chatbot API not configured (set CHATBOT_MOCK=1 for testing)"
+                }), 500
+            client = ChatbotAPIClient(chatbot_api_url)
 
         try:
             api_data = client.chat(user_message, session_id)
@@ -2951,9 +2959,6 @@ def chatbot_send_message():
         response_text = api_data.get("response", "")
         extractor = MarkerExtractor(response_text)
 
-        # Record assistant response (with full markers) in history
-        chat_state.add_assistant_message(response_text)
-
         return jsonify({
             "status": "success",
             "response": response_text,
@@ -2975,8 +2980,7 @@ def chatbot_send_message():
                 for latex in extractor.latex_blocks
             ],
             "session_id": chat_state.get_session_id(),
-            "model_name": chat_state.get_model_name(),
-            "messages_count": len(chat_state.get_messages())
+            "model_name": chat_state.get_model_name()
         }), 200
 
     except Exception as e:
@@ -3014,8 +3018,19 @@ def chatbot_fetch_artifact(data_id: str):
                 "message": "Invalid artifact ID format"
             }), 400
 
-        chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
-        client = ChatbotAPIClient(chatbot_api_url)
+        import os
+        if os.getenv("CHATBOT_MOCK", "0") == "1":
+            # Mock mode enabled, URL not required
+            client = ChatbotAPIClient(None)
+        else:
+            chatbot_api_url = current_app.config.get("CHATBOT_API_URL")
+            if not chatbot_api_url:
+                return jsonify({
+                    "status": "error",
+                    "code": "config_error",
+                    "message": "Chatbot API not configured (set CHATBOT_MOCK=1 for testing)"
+                }), 500
+            client = ChatbotAPIClient(chatbot_api_url)
 
         try:
             artifact_data = client.fetch_artifact(data_id, str(session_id))

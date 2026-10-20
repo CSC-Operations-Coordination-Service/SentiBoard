@@ -1,6 +1,6 @@
 /**
  * Widget renderer for chatbot artifacts.
- * Renders HTML for: tables, temporal plots, histograms, calendars, KPIs, LaTeX.
+ * Returns {html, mount} objects to avoid inline scripts.
  */
 
 const WidgetRenderer = (() => {
@@ -18,7 +18,8 @@ const WidgetRenderer = (() => {
     columns.forEach(col => {
       const isSorted = col === sortCol;
       const indicator = isSorted ? (sortOrder === 'asc' ? ' ▲' : ' ▼') : '';
-      html += `<th>${escapeHtml(col)}${indicator}</th>`;
+      const displayCol = col.replace(/_/g, ' ');
+      html += `<th>${escapeHtml(displayCol)}${indicator}</th>`;
     });
     html += '</tr></thead><tbody>';
 
@@ -32,7 +33,7 @@ const WidgetRenderer = (() => {
     });
 
     html += '</tbody></table></div>';
-    return html;
+    return { html, mount: null };
   }
 
   function renderTemporalPlot(artifact, markerAttrs) {
@@ -43,7 +44,10 @@ const WidgetRenderer = (() => {
     const catCol = aggMeta.categorical_column;
 
     if (!rows || !dateCol || !numCol) {
-      return '<div class="alert alert-warning alert-sm">Invalid temporal plot data</div>';
+      return {
+        html: '<div class="alert alert-warning alert-sm">Invalid temporal plot data</div>',
+        mount: null
+      };
     }
 
     const containerId = `plot-${Math.random().toString(36).substr(2, 9)}`;
@@ -85,63 +89,89 @@ const WidgetRenderer = (() => {
       height: 300
     };
 
-    let html = `<div class="widget-plot" id="${containerId}"></div>`;
-    html += `<script>
-      (function() {
-        if (window.Plotly) {
-          const data = ${JSON.stringify(traces)};
-          const layout = ${JSON.stringify(layout)};
-          Plotly.newPlot('${containerId}', data, layout, { responsive: true });
+    const html = `<div class="widget-plot" id="${containerId}"></div>`;
+    const mount = (el) => {
+      if (window.Plotly) {
+        const plotEl = el.querySelector(`#${containerId}`);
+        if (plotEl) {
+          Plotly.newPlot(plotEl, traces, layout, { responsive: true });
+          window.addEventListener('resize', () => {
+            Plotly.Plots.resize(plotEl);
+          });
         }
-      })();
-    </script>`;
-    return html;
+      }
+    };
+
+    return { html, mount };
   }
 
   function renderCountHistogram(artifact, markerAttrs) {
     const { temporal_rows: rows, aggregation, title } = artifact;
     const aggMeta = aggregation?.count_histogram || {};
+    const dateCol = aggMeta.date_column;
     const catCol = aggMeta.category_column;
     const countCol = aggMeta.count_column;
 
     if (!rows || !catCol || !countCol) {
-      return '<div class="alert alert-warning alert-sm">Invalid histogram data</div>';
+      return {
+        html: '<div class="alert alert-warning alert-sm">Invalid histogram data</div>',
+        mount: null
+      };
     }
 
-    const containerId = `histogram-${Math.random().toString(36).substr(2, 9)}`;
-    const trace = {
-      x: rows.map(r => r[catCol]),
-      y: rows.map(r => r[countCol]),
-      type: 'bar'
-    };
+    const containerId = `hist-${Math.random().toString(36).substr(2, 9)}`;
+    let traces = [];
+
+    const grouped = {};
+    rows.forEach(row => {
+      const category = row[catCol];
+      if (!grouped[category]) grouped[category] = [];
+      grouped[category].push(row);
+    });
+
+    Object.entries(grouped).forEach(([category, categoryRows]) => {
+      traces.push({
+        x: dateCol ? categoryRows.map(r => r[dateCol]) : categoryRows.map((_, i) => i),
+        y: categoryRows.map(r => r[countCol]),
+        name: category,
+        type: 'bar'
+      });
+    });
 
     const layout = {
       title: title || 'Count Histogram',
-      xaxis: { title: catCol },
+      xaxis: { title: dateCol || 'Category' },
       yaxis: { title: countCol },
+      barmode: 'group',
       responsive: true,
-      margin: { l: 60, r: 40, t: 40, b: 60 },
+      margin: { l: 60, r: 40, t: 40, b: 40 },
       paper_bgcolor: '#f8f9fa',
       plot_bgcolor: '#ffffff',
       height: 300
     };
 
-    let html = `<div class="widget-histogram" id="${containerId}"></div>`;
-    html += `<script>
-      (function() {
-        if (window.Plotly) {
-          const data = [${JSON.stringify(trace)}];
-          const layout = ${JSON.stringify(layout)};
-          Plotly.newPlot('${containerId}', data, layout, { responsive: true });
+    const html = `<div class="widget-histogram" id="${containerId}"></div>`;
+    const mount = (el) => {
+      if (window.Plotly) {
+        const histEl = el.querySelector(`#${containerId}`);
+        if (histEl) {
+          Plotly.newPlot(histEl, traces, layout, { responsive: true });
+          window.addEventListener('resize', () => {
+            Plotly.Plots.resize(histEl);
+          });
         }
-      })();
-    </script>`;
-    return html;
+      }
+    };
+
+    return { html, mount };
   }
 
   function renderEventCalendar(artifact, markerAttrs) {
     if (!artifact || !artifact.events) {
-      return '<div class="alert alert-info alert-sm">No events</div>';
+      return {
+        html: '<div class="alert alert-info alert-sm">No events</div>',
+        mount: null
+      };
     }
 
     let html = '<div class="widget-calendar">';
@@ -151,59 +181,54 @@ const WidgetRenderer = (() => {
     // Use the EventCalendarRenderer for full schema support
     html += EventCalendarRenderer.render(artifact);
     html += '</div>';
-    return html;
+
+    return { html, mount: null };
   }
 
-  function renderDirectKPI(markerAttrs) {
-    const { label, value, color = 'blue', delta } = markerAttrs;
-    const colorClass = { 'green': 'success', 'orange': 'warning', 'red': 'danger', 'blue': 'info', 'gray': 'secondary' }[color] || 'secondary';
+  function renderDirectKPI(attrs) {
+    const { label, value, color, delta } = attrs;
+    const bgColor = color === 'green' ? '#d4edda' :
+                    color === 'orange' ? '#fff3cd' :
+                    color === 'red' ? '#f8d7da' :
+                    color === 'blue' ? '#d1ecf1' :
+                    '#e2e3e5';
+    const textColor = color === 'green' ? '#155724' :
+                      color === 'orange' ? '#856404' :
+                      color === 'red' ? '#721c24' :
+                      color === 'blue' ? '#0c5460' :
+                      '#383d41';
 
-    let html = `<div class="widget-kpi"><div class="card border-${colorClass} bg-light"><div class="card-body">`;
-    html += `<h6 class="card-title text-${colorClass}">${escapeHtml(label)}</h6>`;
-    html += `<div class="display-6 text-${colorClass}">${escapeHtml(value)}</div>`;
+    let html = `<div class="kpi-card" style="background-color:${bgColor};color:${textColor};">`;
+    html += `<div class="kpi-label">${escapeHtml(label)}</div>`;
+    html += `<div class="kpi-value">${escapeHtml(value)}</div>`;
     if (delta) {
-      const deltaClass = delta.startsWith('-') ? 'text-danger' : 'text-success';
-      html += `<small class="${deltaClass}">Change: ${escapeHtml(delta)}</small>`;
+      html += `<div class="kpi-delta">${escapeHtml(delta)}</div>`;
     }
-    html += `</div></div></div>`;
-    return html;
+    html += '</div>';
+
+    return { html, mount: null };
   }
 
   function renderLaTeX(content, kind) {
-    const id = `latex-${Math.random().toString(36).substr(2, 9)}`;
-    const className = kind === 'block' ? 'latex-block' : 'latex-inline';
-
-    let html = kind === 'block'
-      ? `<div class="${className}" id="${id}"></div>`
-      : `<span class="${className}" id="${id}"></span>`;
-
-    html += `<script>
-      try {
-        if (window.katex) {
-          katex.render(${JSON.stringify(content)}, document.getElementById('${id}'), {
-            throwOnError: false,
-            displayMode: ${kind === 'block' ? 'true' : 'false'}
-          });
-        }
-      } catch (e) {
-        console.error('KaTeX render error:', e);
-      }
-    </script>`;
-
-    return html;
+    const isBlock = kind === 'block';
+    if (isBlock) {
+      return `<div class="latex-block" data-latex="${escapeHtml(content)}"></div>`;
+    } else {
+      return `<span class="latex-inline" data-latex="${escapeHtml(content)}"></span>`;
+    }
   }
 
   function formatCellValue(value) {
-    if (value === null || value === undefined) {
-      return '<em class="text-muted">—</em>';
-    }
-    if (typeof value === 'object') {
-      return escapeHtml(JSON.stringify(value));
+    if (value === null || value === undefined) return '—';
+    if (typeof value === 'number') {
+      if (Number.isInteger(value)) return value.toString();
+      return value.toFixed(2);
     }
     return escapeHtml(String(value));
   }
 
   function escapeHtml(str) {
+    if (!str) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(str).replace(/[&<>"']/g, m => map[m]);
   }

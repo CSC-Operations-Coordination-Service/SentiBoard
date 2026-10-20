@@ -14,6 +14,9 @@ enable_stdio_inheritance = True
 """
 bind = '0.0.0.0:5005'
 workers = 1
+worker_class = "gthread"
+threads = 8
+timeout = 640
 accesslog = '-'
 loglevel = 'debug'
 capture_output = True
