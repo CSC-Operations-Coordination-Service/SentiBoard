@@ -2993,14 +2993,6 @@ def chatbot_send_message():
                 }
                 for marker in extractor.markers
             ],
-            "latex_blocks": [
-                {
-                    "kind": latex.kind,
-                    "content": latex.content,
-                    "raw": latex.raw
-                }
-                for latex in extractor.latex_blocks
-            ],
             "session_id": chat_state.get_session_id(),
             "model_name": chat_state.get_model_name()
         }), 200

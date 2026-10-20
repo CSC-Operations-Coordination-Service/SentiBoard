@@ -79,11 +79,13 @@ CHATBOT_MOCK=1 DEBUG=True flask run --port 5005
 ### Infrastructure
 11. **gthread worker staging test** — Added gthread to gunicorn-cfg.py but not tested under load
 12. **Thread-safety audit** — Found mutable globals in datatakes.py (_completeness_cache) and routes.py (_cache) that need locking or Redis backend
+13. **nginx WAF proxy timeout** — 10-common-proxy.conf.template has proxy_read_timeout 300s (below partner's 360s requirement for /chat). Need /chat-specific override to ~400s in 20-{staging,production}-sentiboard.conf.template. Also check if HAProxy (timeout server 300s) is in the request path.
+14. **gthread in docker-compose** — gunicorn-cfg.py has gthread worker_class + threads=8, but need to verify stacks/apps/sentiboard/docker-compose.yml starts gunicorn with those settings (may need CMD override or env vars)
 
 ### Documentation & Partner Sync
-13. **$ref typo in event_calendar schema** — Partner spec has typo in JSON Schema $ref that should be documented in partner communication
-14. **Environment URLs** — Dev/staging/prod URLs for real backend not configured
-15. **User scoping & retention** — How conversations associate with users/sessions not finalized with partner
+15. **$ref typo in event_calendar schema** — Partner spec has typo in JSON Schema $ref that should be documented in partner communication
+16. **Environment URLs** — Dev/staging/prod URLs for real backend not configured
+17. **User scoping & retention** — How conversations associate with users/sessions not finalized with partner
 
 ---
 

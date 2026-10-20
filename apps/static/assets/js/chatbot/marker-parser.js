@@ -10,9 +10,9 @@ const MarkerParser = (() => {
   const ATTR_REGEX = /(\w+)="([^"]*)"/g;
 
   function extractMarkers(text) {
-    const markers = [];
+    const segments = [];
     const lines = text.split('\n');
-    const outputLines = [];
+    let currentProseLines = [];
 
     lines.forEach((line, lineNum) => {
       const match = MARKER_REGEX.exec(line);
@@ -24,22 +24,51 @@ const MarkerParser = (() => {
         const rawMarker = match[0];
 
         try {
+          // Flush accumulated prose lines as a segment
+          if (currentProseLines.length > 0) {
+            segments.push({
+              type: 'prose',
+              text: currentProseLines.join('\n')
+            });
+            currentProseLines = [];
+          }
+
+          // Add marker segment
           const marker = parseMarker(tagName, attrsStr, rawMarker, lineNum + 1);
           if (marker) {
-            markers.push(marker);
-            return;
+            segments.push({
+              type: 'marker',
+              marker: marker
+            });
           }
         } catch (e) {
           console.warn(`Malformed marker at line ${lineNum + 1}:`, e.message);
-          return;
+          // On parse error, treat marker line as prose
+          currentProseLines.push(line);
         }
+      } else {
+        currentProseLines.push(line);
       }
-
-      outputLines.push(line);
     });
 
-    const cleanText = outputLines.join('\n');
-    return { markers, cleanText };
+    // Flush remaining prose
+    if (currentProseLines.length > 0) {
+      segments.push({
+        type: 'prose',
+        text: currentProseLines.join('\n')
+      });
+    }
+
+    // For backwards compatibility, also return markers and cleanText
+    const markers = segments
+      .filter(seg => seg.type === 'marker')
+      .map(seg => seg.marker);
+    const cleanText = segments
+      .filter(seg => seg.type === 'prose')
+      .map(seg => seg.text)
+      .join('\n\n');
+
+    return { segments, markers, cleanText };
   }
 
   function parseMarker(tagName, attrsStr, rawMarker, lineNum) {

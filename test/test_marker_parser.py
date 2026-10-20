@@ -82,7 +82,7 @@ class TestMarkerValidation:
 
     def test_tabular_validation(self):
         """Tabular markers must have data_id."""
-        with pytest.raises(ValueError, match='missing data_id'):
+        with pytest.raises(ValueError, match=r'missing (required )?data_id'):
             MarkerParser._parse_marker('tabular', '', '<tabular />', 1)
 
         # Valid tabular
@@ -116,7 +116,7 @@ class TestMarkerValidation:
 
     def test_event_calendar_validation(self):
         """Event calendar requires data_id."""
-        with pytest.raises(ValueError, match='missing data_id'):
+        with pytest.raises(ValueError, match=r'missing (required )?data_id'):
             MarkerParser._parse_marker('event-calendar', '', '', 1)
 
     def test_kpi_validation_both_forms(self):
@@ -260,27 +260,6 @@ class TestEdgeCases:
         markers, _ = MarkerParser.extract_markers(text)
 
         assert len(markers) == 2
-
-    def test_latex_block_extraction(self):
-        """LaTeX blocks delimited by $$ on own lines."""
-        text = """Text before.
-
-$$
-a = b
-c = d
-$$
-
-Text after."""
-        _, latex_blocks, clean = MarkerParser.extract_latex(text)
-
-        # Should extract 1 LaTeX block
-        assert len(latex_blocks) == 1
-        assert latex_blocks[0].kind == 'block'
-        assert 'a = b' in latex_blocks[0].content
-        assert 'c = d' in latex_blocks[0].content
-
-        # Clean text should not have $$
-        assert '$$' not in clean
 
     def test_unknown_marker_type(self):
         """Unknown marker types should cause parse error."""

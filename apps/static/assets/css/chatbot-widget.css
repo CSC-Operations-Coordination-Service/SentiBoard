@@ -46,6 +46,19 @@
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
   overflow: hidden;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.chatbot-window.expanded {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 70vw;
+  height: 80vh;
+  max-width: 90vw;
+  max-height: 90vh;
+  left: auto;
+  z-index: 9999;
 }
 
 @keyframes slideUp {
@@ -600,4 +613,20 @@
 .event-item.criticality-routine {
   border-left-color: #6c757d;
   background: #f8f9fa;
+}
+
+.widget-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem 1rem;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  border-width: 0.15em;
 }

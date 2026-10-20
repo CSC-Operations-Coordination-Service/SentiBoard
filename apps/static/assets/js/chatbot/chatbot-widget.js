@@ -19,6 +19,7 @@ const ChatbotWidget = (() => {
     // Event listeners
     document.getElementById('chatbot-toggle').addEventListener('click', toggleWindow);
     document.getElementById('chatbot-close').addEventListener('click', closeWindow);
+    document.getElementById('chatbot-expand').addEventListener('click', toggleExpand);
     document.getElementById('chatbot-form').addEventListener('submit', handleSendMessage);
     document.getElementById('chatbot-new-conv').addEventListener('click', handleNewConversation);
     document.getElementById('chatbot-new-hint').addEventListener('click', (e) => {
@@ -41,6 +42,36 @@ const ChatbotWidget = (() => {
 
   function closeWindow() {
     document.getElementById('chatbot-window').style.display = 'none';
+  }
+
+  function toggleExpand() {
+    const window = document.getElementById('chatbot-window');
+    const isExpanded = window.classList.contains('expanded');
+
+    if (isExpanded) {
+      window.classList.remove('expanded');
+    } else {
+      window.classList.add('expanded');
+    }
+
+    // Resize Plotly charts after layout changes
+    setTimeout(() => {
+      resizeCharts();
+    }, 300); // Wait for CSS transition to complete
+  }
+
+  function resizeCharts() {
+    // Resize all Plotly charts in the message area
+    const plotlyDivs = document.querySelectorAll('[data-plotly-plot-id]');
+    plotlyDivs.forEach(div => {
+      if (window.Plotly) {
+        try {
+          window.Plotly.Plots.resize(div);
+        } catch (e) {
+          console.debug('Plotly resize skipped:', e.message);
+        }
+      }
+    });
   }
 
   async function handleNewConversation() {
@@ -83,6 +114,10 @@ const ChatbotWidget = (() => {
     addUserMessage(message);
     setLoading(true);
 
+    const startTime = Date.now();
+    let loadingMessageDiv = null;
+    let stillWorkingTimer = null;
+
     try {
       const response = await fetch('/chat', {
         method: 'POST',
@@ -94,6 +129,14 @@ const ChatbotWidget = (() => {
       });
 
       const data = await response.json();
+
+      // Clear loading message and timer
+      if (loadingMessageDiv) {
+        loadingMessageDiv.remove();
+      }
+      if (stillWorkingTimer) {
+        clearInterval(stillWorkingTimer);
+      }
 
       if (data.status === 'error') {
         handleError(data);
@@ -107,30 +150,62 @@ const ChatbotWidget = (() => {
     } catch (error) {
       console.error('Chat error:', error);
       addErrorMessage('Failed to send message. Please try again.');
+      if (loadingMessageDiv) {
+        loadingMessageDiv.remove();
+      }
+      if (stillWorkingTimer) {
+        clearInterval(stillWorkingTimer);
+      }
     } finally {
       setLoading(false);
       input.focus();
+    }
+
+    // Show elapsed time during request
+    function updateElapsedTime() {
+      const elapsed = Math.floor((Date.now() - startTime) / 1000);
+
+      if (!loadingMessageDiv) {
+        loadingMessageDiv = document.createElement('div');
+        loadingMessageDiv.className = 'chatbot-message system';
+        const content = document.createElement('div');
+        content.className = 'message-content';
+        loadingMessageDiv.appendChild(content);
+        document.getElementById('chatbot-messages').appendChild(loadingMessageDiv);
+      }
+
+      const content = loadingMessageDiv.querySelector('.message-content');
+      if (elapsed >= 20) {
+        content.innerHTML = `<p>Working for ${elapsed}s... Still working, this can take a few minutes.</p>`;
+      } else {
+        content.innerHTML = `<p>Waiting (${elapsed}s)...</p>`;
+      }
+
+      document.getElementById('chatbot-messages').scrollTop =
+        document.getElementById('chatbot-messages').scrollHeight;
+    }
+
+    // Start showing elapsed time
+    if (!stillWorkingTimer) {
+      updateElapsedTime();
+      stillWorkingTimer = setInterval(updateElapsedTime, 1000);
     }
   }
 
   async function renderAssistantMessage(apiResponse) {
     const {
       response: fullResponse,
-      clean_prose: cleanProse,
-      markers,
-      latex_blocks: latexBlocks,
       session_id: sessionId
     } = apiResponse;
 
     const messageDiv = document.createElement('div');
     messageDiv.className = 'chatbot-message assistant';
+    const mountFunctions = [];
 
-    const proseDiv = document.createElement('div');
-    proseDiv.className = 'message-content';
-    proseDiv.innerHTML = markdownRenderer.render(cleanProse);
-    messageDiv.appendChild(proseDiv);
+    // Parse response into ordered segments (prose and markers)
+    const { segments, markers } = MarkerParser.extractMarkers(fullResponse);
 
-    // Fetch artifacts
+    // Fetch artifacts for all markers
     const artifactIds = MarkerParser.getArtifactsToFetch(markers);
     let artifacts = new Map();
 
@@ -139,13 +214,33 @@ const ChatbotWidget = (() => {
       artifacts = await ArtifactFetcher.fetchArtifacts(artifactIds, sessionId);
     }
 
-    // Render widgets
-    if (markers.length > 0) {
-      const widgetsDiv = document.createElement('div');
-      widgetsDiv.className = 'message-widgets';
-      const mountFunctions = [];
+    // Render segments in order
+    segments.forEach((segment) => {
+      if (segment.type === 'prose') {
+        // Render prose with markdown
+        const proseDiv = document.createElement('div');
+        proseDiv.className = 'message-content';
+        proseDiv.innerHTML = markdownRenderer.render(segment.text);
+        messageDiv.appendChild(proseDiv);
 
-      markers.forEach(marker => {
+        // Schedule KaTeX auto-render on this prose element
+        if (window.katex && window.renderMathInElement) {
+          mountFunctions.push(() => {
+            try {
+              renderMathInElement(proseDiv, {
+                delimiters: [
+                  { left: '$$', right: '$$', display: true },
+                  { left: '$', right: '$', display: false }
+                ],
+                throwOnError: false
+              });
+            } catch (e) {
+              console.error('KaTeX auto-render error:', e);
+            }
+          });
+        }
+      } else if (segment.type === 'marker') {
+        const marker = segment.marker;
         try {
           let result = null;
 
@@ -155,6 +250,8 @@ const ChatbotWidget = (() => {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
                   result = WidgetRenderer.renderTable(artifact.data, marker.attributes);
+                } else if (!artifact) {
+                  result = { html: renderLoadingSpinner(), mount: null };
                 } else {
                   result = { html: renderArtifactError(artifact), mount: null };
                 }
@@ -166,6 +263,8 @@ const ChatbotWidget = (() => {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
                   result = WidgetRenderer.renderTemporalPlot(artifact.data, marker.attributes);
+                } else if (!artifact) {
+                  result = { html: renderLoadingSpinner(), mount: null };
                 } else {
                   result = { html: renderArtifactError(artifact), mount: null };
                 }
@@ -177,6 +276,8 @@ const ChatbotWidget = (() => {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
                   result = WidgetRenderer.renderCountHistogram(artifact.data, marker.attributes);
+                } else if (!artifact) {
+                  result = { html: renderLoadingSpinner(), mount: null };
                 } else {
                   result = { html: renderArtifactError(artifact), mount: null };
                 }
@@ -188,6 +289,8 @@ const ChatbotWidget = (() => {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
                   result = WidgetRenderer.renderEventCalendar(artifact.data, marker.attributes);
+                } else if (!artifact) {
+                  result = { html: renderLoadingSpinner(), mount: null };
                 } else {
                   result = { html: renderArtifactError(artifact), mount: null };
                 }
@@ -199,6 +302,8 @@ const ChatbotWidget = (() => {
                 const artifact = artifacts.get(marker.attributes.data_id);
                 if (artifact?.status === 'success') {
                   result = { html: '<div class="alert alert-info alert-sm">KPI: ' + escapeHtml(marker.attributes.title || 'Metrics') + '</div>', mount: null };
+                } else if (!artifact) {
+                  result = { html: renderLoadingSpinner(), mount: null };
                 } else {
                   result = { html: renderArtifactError(artifact), mount: null };
                 }
@@ -212,7 +317,7 @@ const ChatbotWidget = (() => {
             const widgetContainer = document.createElement('div');
             widgetContainer.className = `widget widget-${marker.type}`;
             widgetContainer.innerHTML = result.html;
-            widgetsDiv.appendChild(widgetContainer);
+            messageDiv.appendChild(widgetContainer);
 
             // Store mount function for later
             if (result.mount) {
@@ -225,57 +330,36 @@ const ChatbotWidget = (() => {
           const errorDiv = document.createElement('div');
           errorDiv.className = 'alert alert-danger alert-sm';
           errorDiv.textContent = `Error rendering widget: ${error.message}`;
-          widgetsDiv.appendChild(errorDiv);
+          messageDiv.appendChild(errorDiv);
         }
-      });
-
-      messageDiv.appendChild(widgetsDiv);
-
-      // Call mount functions after widgets are in DOM
-      setTimeout(() => {
-        mountFunctions.forEach(mount => {
-          try {
-            mount();
-          } catch (e) {
-            console.error('Mount function error:', e);
-          }
-        });
-      }, 0);
-    }
-
-    // Render LaTeX
-    if (latexBlocks && latexBlocks.length > 0) {
-      const latexDiv = document.createElement('div');
-      latexDiv.className = 'message-latex';
-
-      latexBlocks.forEach(block => {
-        const html = WidgetRenderer.renderLaTeX(block.content, block.kind);
-        latexDiv.innerHTML += html;
-      });
-
-      messageDiv.appendChild(latexDiv);
-    }
+      }
+    });
 
     document.getElementById('chatbot-messages').appendChild(messageDiv);
     scrollToBottom();
 
-    // Trigger KaTeX rendering
-    if (window.katex) {
-      try {
-        Array.from(messageDiv.querySelectorAll('.latex-block, .latex-inline')).forEach(el => {
-          if (el.textContent) {
-            katex.render(el.textContent, el, { throwOnError: false });
-          }
-        });
-      } catch (e) {
-        console.error('KaTeX rendering error:', e);
-      }
-    }
+    // Call all mount functions (widgets + KaTeX rendering) after insertion
+    setTimeout(() => {
+      mountFunctions.forEach(mount => {
+        try {
+          mount();
+        } catch (e) {
+          console.error('Mount/render error:', e);
+        }
+      });
+    }, 0);
+  }
+
+  function renderLoadingSpinner() {
+    return '<div class="widget-loading"><div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div> Loading...</div>';
   }
 
   function renderArtifactError(artifact) {
     if (!artifact) {
       return '<div class="alert alert-warning alert-sm">This data is no longer available, please ask again.</div>';
+    }
+    if (artifact.status === 'loading') {
+      return renderLoadingSpinner();
     }
     if (artifact.status === 'error') {
       if (artifact.code === 'artifact_not_found' || artifact.code === 'session_expired') {

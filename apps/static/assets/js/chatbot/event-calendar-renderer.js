@@ -4,6 +4,15 @@
  */
 
 const EventCalendarRenderer = (() => {
+  let idCounter = 0; // Module-level counter for unique IDs per instance
+
+  /**
+   * Generate unique ID for event element
+   */
+  function generateEventId() {
+    return `event_${++idCounter}`;
+  }
+
   /**
    * Render event calendar from artifact data
    * @param {Object} data - EventCalendarDataResponse from API
@@ -137,7 +146,7 @@ const EventCalendarRenderer = (() => {
   function renderEventCard(event) {
     const criticality = event.criticality || 'Routine';
     const criticalityClass = getCriticalityClass(criticality);
-    const id = `event_${event.key.replace(/[^a-z0-9]/gi, '_')}`;
+    const id = generateEventId();
 
     let html = `<div class="event-card ${criticalityClass}">`;
 
