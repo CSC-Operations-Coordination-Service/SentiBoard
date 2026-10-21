@@ -1,0 +1,76 @@
+/* Additions for the Next.js port, kept apart from the prototype's styles (processors.module.css is
+   copied verbatim). Controls that navigate are links, so they work without JavaScript; these rules
+   make a link look exactly like the prototype's <button>. */
+
+/* A <button> has line-height: normal; a link inherits the body's. */
+.asButton {
+  line-height: normal;
+}
+
+/* The dropdown is a <details>: no disclosure marker on its <summary> (WebKit draws one). */
+.summary {
+  list-style: none;
+}
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+/* "Try again" is a link: centre its label as the button's was. */
+.retryLink {
+  display: inline-flex;
+  align-items: center;
+  line-height: normal;
+}
+
+/* The release list: the timeline's content as plain HTML, for visitors without JavaScript (hidden
+   once JavaScript runs, by the global .sb-nojs-only rule). Each release links to its detail. */
+.list {
+  display: grid;
+  gap: 22px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.listProc {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.listProc span {
+  margin-left: 10px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-mute);
+}
+
+.listReleases {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.listReleases a {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  color: var(--text-dim);
+}
+
+.listReleases a:hover,
+.listReleases a[aria-current] {
+  color: var(--text);
+}
+
+.listNow {
+  color: var(--ok);
+}

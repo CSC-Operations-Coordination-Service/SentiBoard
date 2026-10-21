@@ -1,0 +1,394 @@
+/* ============================================================
+   Page header — React port of the hero in SentiBoard.html
+   (its base rules plus the "one visual language" overrides it loads last).
+   ============================================================ */
+
+:root {
+  --hero-pad: clamp(18px, 4.4vw, 64px);          /* HTML --pad: left/right gutter */
+  --hero-overlap: clamp(140px, 17vh, 230px);     /* how far the content below rises over the hero */
+  --hero-after-pad: clamp(66px, 8vh, 112px);     /* space between that edge and the first content */
+  --hero-ink: #eaf0f6;
+  --hero-ink-70: rgba(234, 240, 246, 0.7);
+  --hero-ink-55: rgba(234, 240, 246, 0.55);
+  --hero-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ---------- frame ---------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 2.54 / 1;
+  min-height: 330px;
+  background: #000;
+  color: var(--hero-ink);
+}
+
+/* the photo, twice: a sharp copy that fades out at the bottom and a blurred one that fades in */
+.hero-ph {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.hero-ph > i {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background-size: cover;
+  background-position: 50% 45%;
+  transform-origin: 50% 42%;
+  filter: brightness(0.7);
+}
+
+.hero-ph.sharp {
+  -webkit-mask-image: linear-gradient(to bottom, #000 64%, rgba(0, 0, 0, 0.8) 76%, rgba(0, 0, 0, 0.25) 86%, transparent 94%);
+  mask-image: linear-gradient(to bottom, #000 64%, rgba(0, 0, 0, 0.8) 76%, rgba(0, 0, 0, 0.25) 86%, transparent 94%);
+}
+
+.hero-ph.soft {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 62%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0.7) 86%, rgba(0, 0, 0, 0.3) 94%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 62%, rgba(0, 0, 0, 0.5) 76%, rgba(0, 0, 0, 0.7) 86%, rgba(0, 0, 0, 0.3) 94%, transparent 100%);
+}
+
+.hero-ph.soft > i {
+  filter: blur(clamp(16px, 2.6vw, 36px)) saturate(0.62) brightness(0.88);
+  transform: scale(1.07);
+}
+
+/* scrims: black on the left behind the text, lighter in the middle */
+.hero .scrim-x {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, #000 0%, rgba(0, 0, 0, 0.9) 30%, rgba(0, 0, 0, 0.4) 62%, rgba(0, 0, 0, 0.55) 86%, #000 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 74%, rgba(0, 0, 0, 0.5) 88%, transparent 98%);
+  mask-image: linear-gradient(to bottom, #000 74%, rgba(0, 0, 0, 0.5) 88%, transparent 98%);
+}
+
+.hero .scrim-y {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5) 0%, transparent 16%, rgba(0, 0, 0, 0.22) 58%, rgba(0, 0, 0, 0.88) 86%, transparent 99%);
+}
+
+.hero-blend {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(14px) saturate(0.72);
+  backdrop-filter: blur(14px) saturate(0.72);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.55) 26%, #000 54%, rgba(0, 0, 0, 0.4) 80%, transparent 96%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.55) 26%, #000 54%, rgba(0, 0, 0, 0.4) 80%, transparent 96%);
+}
+
+/* ---------- text block ----------
+   Centred in the part of the hero the content below does not cover — what the HTML's script computed. */
+.hero-in {
+  position: relative;
+  z-index: 2;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;              /* was: center */
+  gap: clamp(12px, 1.6vh, 22px);
+  padding: 12px var(--hero-pad) clamp(100px, 18vh, 290px); /* was: var(--hero-overlap) */
+}
+
+.breadcrumb {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hero-ink-55);
+}
+
+.hero-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  color: var(--hero-ink);
+}
+
+.hero .lede {
+  margin: 0;
+  max-width: 600px;
+  font-family: var(--font-sans);
+  font-size: clamp(14px, 1.6vw, 16px);
+  font-weight: 400;
+  line-height: 1.6;
+  color: #93a0b0;
+}
+
+.descbar {
+  margin-top: clamp(6px, 1.2vh, 16px);
+}
+
+.desc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hero-ink-55);
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+
+.desc-btn:hover,
+.desc-btn.open {
+  color: #fff;
+}
+
+.desc-btn:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.desc-btn svg {
+  transition: transform 504ms var(--hero-ease);
+}
+
+.desc-btn.open svg {
+  transform: rotate(180deg);
+}
+
+/* the title, sentence and button rise in one after the other */
+@keyframes heroUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: none; }
+}
+
+.hero-in > .hero-title,
+.hero-in > .lede,
+.hero-in > .descbar {
+  animation: heroUp 760ms var(--hero-ease) backwards;
+}
+
+.hero-in > .hero-title { animation-delay: 140ms; }
+.hero-in > .lede { animation-delay: 260ms; }
+.hero-in > .descbar { animation-delay: 380ms; }
+
+/* ---------- below the hero: the Description panel ---------- */
+.hero-after {
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--hero-overlap));
+  padding: var(--hero-after-pad) var(--hero-pad) 0;
+  pointer-events: none;            /* the band over the hero must not swallow clicks */
+}
+
+.hero-after > * {
+  pointer-events: auto;
+}
+
+/* --desc-pull (margin) puts the first line of text the same distance under the button on every
+   page; --desc-extra (padding) gives back what a short panel cannot fill, so the content below never
+   rises. All three run on one curve — see measure() in PageHeader.tsx. */
+.desc-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-top: 0;
+  padding-bottom: 0;
+  transition:
+    grid-template-rows 768ms var(--hero-ease),
+    margin-top 768ms var(--hero-ease),
+    padding-bottom 768ms var(--hero-ease);
+}
+
+.desc-wrap.open {
+  grid-template-rows: 1fr;
+  margin-top: var(--desc-pull, 0px);
+  padding-bottom: var(--desc-extra, 0px);
+}
+
+/* The grid item has NO padding of its own. Padding on the item would set a floor under the 0fr row
+   (it cannot shrink below its own padding), and the 52px bottom padding, switched on and off
+   without a transition, made the content below jump on the first frame and then bounce back as
+   the pull caught up. On the inner block it is simply part of the height that the row reveals. */
+.desc {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.desc-wrap:not(.open) .desc {
+  visibility: hidden;
+  transition: visibility 0s linear 768ms;
+}
+
+.desc-in {
+  max-width: 940px;
+  padding: 14px 0 52px;
+  font-family: var(--font-sans);
+  opacity: 0;
+  transform: translateY(-12px);
+  transition: opacity 552ms ease 144ms, transform 552ms var(--hero-ease) 144ms;
+}
+
+.desc-wrap.open .desc-in {
+  opacity: 1;
+  transform: none;
+}
+
+.desc-in p {
+  margin: 0 0 20px;
+  max-width: none;
+  padding: 0;
+  border: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--hero-ink-70);
+}
+
+.desc-in p:last-child {
+  margin-bottom: 0;
+}
+
+.desc-in ul {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.desc-in li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 13px;
+  align-items: start;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--hero-ink-70);
+}
+
+.desc-in li svg {
+  margin-top: 3px;
+}
+
+.desc-in li b,
+.desc-in li strong {
+  font-weight: 600;
+}
+
+/* the "Please note" line: a thin cyan rule on the left, the text a step brighter and smaller */
+.desc-in .callout-line {
+  margin: 0 0 20px;
+  padding-left: 16px;
+  border-left: 2px solid #2fc6dc;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--hero-ink);
+}
+
+/* the whole line reads as one note: "Please note:" is not set apart */
+.desc-in .callout-line strong,
+.desc-in .callout-line b {
+  font-weight: inherit;
+  color: inherit;
+}
+
+/* "COMPLETENESS": a small spaced label above the legend */
+.desc-in .completeness-section {
+  margin: 0;
+}
+
+.desc-in .completeness-title {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.75;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--hero-ink-55);
+}
+
+/* legends inside a description */
+.desc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-top: 12px;
+}
+
+/* directly under its label, the label's margin already spaces it */
+.desc-in .completeness-title + .desc-legend {
+  margin-top: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--hero-ink-55);
+}
+
+.legend-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-planned { background-color: #7a8696; }
+.dot-processing { background-color: #5b9be8; }
+.dot-acquired { background-color: #3fcf7f; }
+.dot-partial { background-color: #f0a63a; }
+.dot-unavailable { background-color: #e8514b; }
+
+/* ---------- phones ---------- */
+@media (max-width: 640px) {
+  .hero {
+    aspect-ratio: auto;
+  }
+
+  .hero-in {
+    justify-content: flex-end;
+  }
+
+  .hero-title {
+    font-size: clamp(34px, 8.5vw, 56px);
+  }
+}
+
+/* wider than a phone: the block is centred by PageHeader, which sets --hero-top */
+@media (min-width: 641px) {
+  .hero-in {
+    justify-content: flex-start;
+    padding-top: var(--hero-top, 120px);
+    padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-in > * { animation: none !important; }
+  .desc-wrap,
+  .desc-in,
+  .desc-btn svg { transition: none; }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "sentiboard-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "type-check": "next typegen && tsc --noEmit",
+    "gen:api": "openapi-typescript api/openapi.json -o src/lib/api/schema.d.ts",
+    "gen:api:refresh": "curl -fsS \"${BACKEND_URL:-http://localhost:8000}/openapi.json\" -o api/openapi.json.tmp && mv api/openapi.json.tmp api/openapi.json && pnpm gen:api",
+    "postinstall": "pnpm gen:api"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.17",
+    "jsdom": "^30.1.3",
+    "lucide-react": "^1.60.0",
+    "next": "16.4.2",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^30.0.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.2",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "^5"
+  },
+  "packageManager": "pnpm@12.14.0"
+}

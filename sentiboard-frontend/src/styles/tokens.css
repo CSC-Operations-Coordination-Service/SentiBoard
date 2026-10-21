@@ -1,0 +1,181 @@
+/* ============================================================
+   SentiBoard v2 — Design tokens
+   SpaceX-inspired: near-black canvas, cinematic imagery, thin
+   uppercase type, restrained accents. Two themes share one set
+   of semantic variable names so components never hard-code color.
+   Dark is the default; light is a first-class toggle.
+   ============================================================ */
+
+:root {
+   /* Type — Noto Sans for body and description text */
+   --font-sans: var(--font-noto-sans), "Noto Sans","Helvetica Neue", Arial, system-ui, -apple-system, sans-serif;
+   --font-display: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+   --font-mono: "SF Mono", ui-monospace, "Roboto Mono", monospace;
+
+   /* Brand colors from logo */
+   --brand-teal: #18585C;
+   --brand-gray: #6B6D6E;
+
+   /* Neon brand accent — high-contrast cyan from logo (dark mode default) */
+   --accent: #00e5ff;
+   --accent-2: #00e5ff;
+   --accent-teal: #00e5ff;
+   --accent-teal-bright: #00e5ff;
+   --accent-grad: #007c93;
+
+   /* Neon palette for Pure Black & Neon Outline design */
+   --accent-cyan: #00e5ff;
+   --accent-magenta: #ff007f;
+   --accent-cyan-alt: #06b6d4;
+   --text-primary: #ffffff;
+   --text-secondary: #f8fafc;
+   --text-muted-cool: #94a3b8;
+   --text-muted-alt: #64748b;
+   --text-bold-accent: #e2e8f0;
+
+   /* Neon semantic status palette */
+   --ok: #00e676;
+   --warn: #ffb700;
+   --crit: #ff3366;
+   --info: #00e5ff;
+   --planned: #8a99ad;
+   --partial: #ffb700;
+
+   /* Motion + shape */
+   --r-sm: 6px;
+   --r-md: 10px;
+   --r-lg: 16px;
+   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+   --dur: 0.45s;
+   --wrap: 1320px;
+   --nav-h: 68px;
+
+   /* Uppercase "mission" label treatment (SpaceX-like) */
+   --track: 0.18em;
+}
+
+/* -------------------- DARK (default) — Pure Black & Neon Outline -------------------- */
+:root,
+:root[data-theme="dark"] {
+   color-scheme: dark;
+
+   --bg: #000000;
+   /* pure black ground */
+   --bg-1: #0a0d14;
+   /* raised surface with dark gradient */
+   --bg-2: #0f121a;
+   /* card with subtle gradient */
+   --bg-3: #141820;
+   /* hover / input state */
+   --line: rgba(0, 229, 255, 0.15);
+   --line-strong: rgba(0, 229, 255, 0.25);
+
+   /* Timeline and gantt backgrounds (dark) */
+   --timeline-bg: #151b27;
+   --timeline-section-bg: #1a1f2e;
+   --timeline-card-bg: #0f1219;
+   --gantt-container-bg: #151b27;
+   --gantt-label-bg: #1a1f2e;
+   --gantt-row-bg: #0f1219;
+   --gantt-border: #2a3142;
+
+   --text: #ffffff;
+   --text-dim: #cccccc;
+   --text-mute: #737373;
+
+   --veil: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0.65) 60%, rgba(0, 0, 0, 0.96) 100%);
+   --glass: rgba(15, 18, 26, 0.72);
+   --shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.1);
+   --grid-line: rgba(0, 229, 255, 0.05);
+
+   --pill-bg: rgba(0, 229, 255, 0.08);
+   --on-accent: #000000;
+   --hpanel-divider: rgba(0, 229, 255, 0.08);
+
+   /* Datatake completeness — neon palette for pure black background */
+   --cmp-planned: #8a99ad;
+   --cmp-processing: #9d4edd;
+   --cmp-acquired: #00e676;
+   --cmp-partial: #ffb700;
+   --cmp-unavailable: #ff3366;
+
+   /* Event types — neon colors with high contrast */
+   --evt-acquisition: #00e5ff;
+   --evt-calibration: #00e5ff;
+   --evt-manoeuvre: #ffb700;
+   --evt-production: #9d4edd;
+   --evt-satellite: #ff3366;
+
+   /* Processor baseline state, for the Version Matrix proposal. TWO values, not a status palette:
+     the releases feed carries a baseline version, a release date and release notes — no status —
+     so the only distinction available is the one the dates imply, "most recently released" versus
+     "replaced by a later one". Current borrows the nominal green; past would be --text-mute, but
+     that reaches only 3.7:1 against the matrix's tinted cell, so it is lifted one step. */
+   --bl-current: var(--ok);
+   --bl-past: #8b95a6;
+}
+
+/* -------------------- LIGHT -------------------- */
+:root[data-theme="light"] {
+   color-scheme: light;
+
+   /* Brand colors override for light mode */
+   --accent: var(--brand-teal);
+   --accent-2: var(--brand-teal);
+   --accent-cyan: var(--brand-teal);
+
+   --bg: #f4f6fa;
+   --bg-1: #ffffff;
+   --bg-2: #ffffff;
+   --bg-3: #eef1f6;
+   --line: rgba(24, 88, 92, 0.12);
+   --line-strong: rgba(24, 88, 92, 0.2);
+
+   /* Timeline and gantt backgrounds (light) */
+   --timeline-bg: #eff1f6;
+   --timeline-section-bg: #f8fafb;
+   --timeline-card-bg: #f8fafb;
+   --gantt-container-bg: #eff1f6;
+   --gantt-label-bg: #f8fafb;
+   --gantt-row-bg: #f8fafb;
+   --gantt-border: rgba(9, 20, 40, 0.1);
+
+   --text: #0c1524;
+   --text-dim: #45536b;
+   --text-mute: #8a94a6;
+
+   --veil: linear-gradient(180deg, rgba(244, 246, 250, 0) 0%, rgba(244, 246, 250, 0.55) 55%, rgba(244, 246, 250, 0.92) 100%);
+   --glass: rgba(255, 255, 255, 0.78);
+   --shadow: 0 18px 50px -24px rgba(20, 40, 80, 0.35);
+   --grid-line: rgba(9, 20, 40, 0.05);
+
+   --pill-bg: rgba(9, 20, 40, 0.05);
+   --on-accent: #ffffff;
+   --hpanel-divider: rgba(9, 20, 40, 0.07);
+
+   /* Completeness on white. Production's palette was drawn for a dark panel, and these values also
+     colour label text, not just dots — so each hue is darkened until it is legible on white while
+     staying recognisably the same colour. */
+   --cmp-planned: #6b7075;
+   --cmp-processing: #949ba3;
+   --cmp-acquired: #0a8a17;
+   --cmp-partial: #8f6522;
+   --cmp-unavailable: #d30000;
+
+   /* Event types on white. Acquisition and Production are production's own values, which were drawn
+     for a light page and need no change. Calibration's pale cyan and the two warm hues do — they
+     colour tag text as well as glyphs, so each is darkened to hold contrast on white. */
+   --evt-acquisition: #495057;
+   --evt-calibration: #3f8c99;
+   --evt-manoeuvre: #b06f00;
+   --evt-production: #7b1fa2;
+   --evt-satellite: #c2660d;
+
+   /* Baseline state on white. Same story as the two sets above: the dark values are drawn for a
+     near-black panel, and these colour 9.5px label text sitting on a cell tinted with their own hue
+     (color-mix at 8%), which is the worst case — the shared --ok reaches only 1.8:1 there. Each is
+     darkened until it clears 4.5:1 against that tinted cell while staying recognisably the same
+     colour: current 5.1:1, past 4.7:1. */
+   --bl-current: #0b754e;
+   --bl-past: #636d79;
+}
