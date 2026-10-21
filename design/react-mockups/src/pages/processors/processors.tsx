@@ -1,16 +1,13 @@
 import {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
 import { PageHeader } from "@/components/ui";
 import { PROCESSORS_DESCRIPTION } from "@/data/copy";
 import {
-  PROCESSOR_GROUPS,
   MISSION_ORDER,
   MISSION_NAMES,
   MONTHS,
@@ -26,6 +23,9 @@ import {
   useAmbientMotion,
 } from "@/components/ambient-motion";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
+import { useProcessors } from "@/api/processors";
+import { ApiError } from "@/api/client";
+import { htmlToText, notesSection, sanitizeHtml } from "@/lib/sanitize-html";
 
 // Map mission IDs to satellite image paths
 const SATELLITE_IMAGES: Record<MissionId, string> = {
@@ -60,6 +60,9 @@ const DESCRIPTION = (
   </>
 );
 
+/** Stable empty list while the processors load, so memos keyed on it don't re-run. */
+const NO_GROUPS: ProcessorGroup[] = [];
+
 /** Mission shown on first render. Changing it is only ever done from the Mission dropdown. */
 const DEFAULT_MISSION: MissionId = "1";
 
@@ -81,10 +84,11 @@ const BASELINE_SHORT: Record<BaselineFilter, string> = {
   current: "Current",
 };
 
-/** The release whose detail is open on the right. */
+/** The release whose detail is open on the right. Releases are picked by id: the same baseline
+ *  tag can recur on one processor. */
 interface Selection {
   ipf: string;
-  baseline: string;
+  id: string;
 }
 
 interface Mark {
@@ -105,7 +109,7 @@ interface Axis {
   end: number;
   /** Percent position of TODAY along the track. */
   today: number;
-  /** Long windows widen the chart (~6px a month) and scroll sideways. */
+  /** The chart fits the pane; below this width (narrow screens) it scrolls sideways instead. */
   minWidth: number;
   grid: GridLine[];
   months: Mark[];
@@ -231,6 +235,10 @@ function buildAxis([start, end]: Win, now: number): Axis {
   let y = cursor.getUTCFullYear();
   let m = cursor.getUTCMonth();
   let firstYear = true;
+  // The window rarely starts on 1 January, so its first year gets a label at the left edge —
+  // but only with room for it: 8% of the track (~40px at the narrowest) before the next
+  // January's label, which it would otherwise overprint ("2013" on top of "2014").
+  const leadRoom = (Date.UTC(y + 1, 0, 1) - start) / span >= 0.08;
   while (Date.UTC(y, m, 1) <= end) {
     const pct = at(Date.UTC(y, m, 1));
     const isYear = m === 0;
@@ -240,10 +248,10 @@ function buildAxis([start, end]: Win, now: number): Axis {
         monthMarks.push({ pct, label: MONTHS[m].slice(0, 3).toUpperCase() });
       }
     }
-    if (pct >= -1 && pct < 95 && (isYear || firstYear)) {
+    if (pct >= -1 && pct < 95 && (isYear || (firstYear && leadRoom))) {
       yearMarks.push({ pct: Math.max(0, pct), label: String(y) });
-      firstYear = false;
     }
+    if (pct >= -1) firstYear = false;
     m += 1;
     if (m === 12) {
       m = 0;
@@ -255,7 +263,7 @@ function buildAxis([start, end]: Win, now: number): Axis {
     start,
     end,
     today: at(now),
-    minWidth: Math.max(600, Math.round(100 + months * 6)),
+    minWidth: 600,
     grid,
     months: monthMarks,
     years: yearMarks,
@@ -277,41 +285,36 @@ function longDate(ms: number): string {
   });
 }
 
-/** "February 2026 Release" */
-function baselineId(ms: number): string {
-  const month = new Date(ms).toLocaleDateString("en-GB", {
-    month: "long",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-  return `${month} Release`;
-}
-
 /** "2026-02-05" */
 function isoDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
 
-/** The tooltip's "Changes" line: the first two release-note headings, then "+ N more". */
-function changesOf(notes?: string): string {
-  if (!notes) return "—";
-  const heads = notes
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.startsWith("•"))
-    .map((l) => {
-      const item = l.replace(/^•\s*/, "");
-      const colon = item.indexOf(": ");
-      return colon > 0 && colon < 60 ? item.slice(0, colon) : item;
-    });
-  if (!heads.length) {
-    const first = notes.trim().split("\n")[0];
-    return first.length > 90 ? `${first.slice(0, 88)}…` : first;
+const CHANGES_TITLE = /^changes introduced\s*:?$/i;
+const CHANGES_MAX = 120;
+
+function clip(text: string, max = CHANGES_MAX): string {
+  return text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+}
+
+/** The tooltip's "Changes" line: the notes' "Changes introduced" section when they have one —
+ *  its first two items and "+ N more" — otherwise the start of the notes. */
+function changesOf(html?: string): string {
+  const section = notesSection(html, CHANGES_TITLE);
+  if (section) {
+    const items = section
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith("•"))
+      .map((l) => l.replace(/^•\s*/, ""));
+    if (items.length) {
+      const more = items.length > 2 ? ` + ${items.length - 2} more` : "";
+      return clip(items.slice(0, 2).join("; ")) + more;
+    }
+    return clip(section.replace(/\s*\n+\s*/g, " "));
   }
-  return (
-    heads.slice(0, 2).join(", ") +
-    (heads.length > 2 ? ` + ${heads.length - 2} more` : "")
-  );
+  const text = htmlToText(html);
+  return text ? clip(text.replace(/\s*\n+\s*/g, " ").replace(/•\s*/g, "")) : "—";
 }
 
 interface Tip {
@@ -332,7 +335,7 @@ interface ReleaseTimelineProps {
   query: string;
   selected: Selection | null;
   moving: boolean;
-  onPick: (ipf: string, baseline: string) => void;
+  onPick: (ipf: string, id: string) => void;
 }
 
 /* Row geometry, as drawTimeline() lays it out in SentiBoard.html. */
@@ -352,20 +355,7 @@ function ReleaseTimeline({
   const toPct = (ms: number) =>
     ((ms - axis.start) / (axis.end - axis.start)) * 100;
   const scrollRef = useRef<HTMLDivElement>(null); // sideways scroll (long windows)
-  const viewRef = useRef<HTMLDivElement>(null); // up/down scroll (many processors)
   const [tip, setTip] = useState<Tip | null>(null);
-  // Which edges of the list have more rows beyond them: those edges fade out, as the reference's
-  // list fades just above the horizon. No overflow, no fade.
-  const [fade, setFade] = useState({ top: false, bottom: false });
-  const updateFade = useCallback(() => {
-    const v = viewRef.current;
-    if (!v) return;
-    const top = v.scrollTop > 2;
-    const bottom = v.scrollTop + v.clientHeight < v.scrollHeight - 2;
-    setFade((f) =>
-      f.top === top && f.bottom === bottom ? f : { top, bottom },
-    );
-  }, []);
 
   // Many rows (Sentinel-3) are drawn tighter, so the whole table stays in view.
   const n = groups.length;
@@ -392,13 +382,6 @@ function ReleaseTimeline({
     });
   }, [moving, zoomed, axis.minWidth]);
 
-  // Re-check the fades when the table changes size (mission, rows) or the window resizes.
-  useEffect(() => {
-    updateFade();
-    window.addEventListener("resize", updateFade);
-    return () => window.removeEventListener("resize", updateFade);
-  }, [updateFade, H]);
-
   const showTip = (el: HTMLElement, t: Omit<Tip, "x" | "y" | "below">) => {
     const box = scrollRef.current?.getBoundingClientRect();
     const r = el.getBoundingClientRect();
@@ -407,23 +390,16 @@ function ReleaseTimeline({
       Math.max(r.left + r.width / 2, (box?.left ?? 0) + half),
       (box?.right ?? window.innerWidth) - half,
     );
-    const below = r.top < 230; // no room above: open underneath
+    // No room above (the card is ~260px tall, under a 68px fixed nav): open underneath.
+    const below = r.top < 330;
     setTip({ ...t, x, y: below ? r.bottom + 12 : r.top - 12, below });
   };
 
   return (
     <div className={s.tl}>
-      {/* Outer box: a capped height that scrolls up and down, with its edges fading out. Inner box:
-          the sideways scroll, so the names stay pinned and the fade never covers its scrollbar
-          until the bottom is reached. */}
-      <div
-        ref={viewRef}
-        className={`${s.tlView} ${fade.top ? s.fadeTop : ""} ${fade.bottom ? s.fadeBottom : ""}`}
-        onScroll={() => {
-          updateFade();
-          setTip(null);
-        }}
-      >
+      {/* Every lane is shown at full height (no cap, no fade). The inner box is the sideways
+          scroll for narrow screens, with the names pinned on the left. */}
+      <div className={s.tlView}>
         <div
           className={s.tlScroll}
           ref={scrollRef}
@@ -495,18 +471,17 @@ function ReleaseTimeline({
               )}
 
               {groups.map((g, i) => {
-                const last = g.releases.length - 1;
                 const cy = AXIS_TOP + i * rh + rh / 2;
                 const rowDim = zoomed && i !== selRow;
                 const groupHit =
                   !query || `${g.label} ${g.sub}`.toLowerCase().includes(query);
 
-                return g.releases.map((r, j) => {
+                return g.releases.map((r) => {
                   const x = toPct(r.ms);
                   if (x < -2 || x > 102) return null;
-                  const isCurrent = j === last;
+                  const isCurrent = r.isCurrent;
                   const isSelected =
-                    selected?.ipf === g.ipf && selected.baseline === r.baseline;
+                    selected?.ipf === g.ipf && selected.id === r.id;
                   // Filters fade releases back instead of removing them, so the rows never jump.
                   const off = baselineFilter === "current" && !isCurrent;
                   const faint =
@@ -518,7 +493,7 @@ function ReleaseTimeline({
                   ].join(" ");
 
                   return (
-                    <span key={`${g.ipf}-${r.baseline}`} className={s.mkWrap}>
+                    <span key={r.id} className={s.mkWrap}>
                       {/* the stem: from under the axis down to the release, so every release can be
                         read against the month labels */}
                       <i
@@ -535,7 +510,7 @@ function ReleaseTimeline({
                         ].join(" ")}
                         style={{ left: `${x}%`, top: cy }}
                         disabled={moving || off}
-                        aria-label={`${laneName(g.label)} ${r.baseline}, released ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
+                        aria-label={`${laneName(g.label)} ${r.baseline}, operational since ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
                         aria-pressed={isSelected}
                         onMouseEnter={(e) =>
                           showTip(e.currentTarget, {
@@ -557,7 +532,7 @@ function ReleaseTimeline({
                         onBlur={() => setTip(null)}
                         onClick={() => {
                           setTip(null);
-                          onPick(g.ipf, r.baseline);
+                          onPick(g.ipf, r.id);
                         }}
                       />
                       {/* zoomed in, each release carries its version beside it */}
@@ -606,11 +581,17 @@ function ReleaseTimeline({
             <hr />
             <dl className={s.ttRows}>
               <dt>Released</dt>
+              <dd>
+                {tip.release.releasedMs !== undefined
+                  ? isoDay(tip.release.releasedMs)
+                  : "—"}
+              </dd>
+              <dt>Operational since</dt>
               <dd>{isoDay(tip.release.ms)}</dd>
               <dt>Satellites</dt>
-              <dd>{tip.release.sats.join(", ")}</dd>
-              <dt>Changes</dt>
-              <dd>{changesOf(tip.release.notes)}</dd>
+              <dd>{tip.release.sats.length ? tip.release.sats.join(", ") : "—"}</dd>
+              <dt className={s.ttWide}>Changes</dt>
+              <dd className={s.ttWide}>{changesOf(tip.release.notesHtml)}</dd>
             </dl>
             <div className={s.ttHint}>
               {tip.isSelected
@@ -724,68 +705,15 @@ function FilterDropdown<T extends string>({
 }
 
 /**
- * Release notes as the feed carries them: flattened text where "•" lines are list items. Dataset
- * keys such as MSI_L0__GR are picked out as tags, and a bullet's "Lead: rest" gets a bold lead.
+ * Release notes as the feed carries them: HTML authored in Word, Confluence or Jira. Sanitized
+ * (allowlisted tags, no inline styles or classes) so it takes the theme's own typography.
  */
-function ReleaseNotes({ notes }: { notes?: string }) {
-  if (!notes) {
+function ReleaseNotes({ html }: { html?: string }) {
+  const clean = useMemo(() => sanitizeHtml(html), [html]);
+  if (!clean) {
     return <p className={s.none}>No release notes in the feed.</p>;
   }
-
-  const tagged = (text: string): ReactNode[] =>
-    text.split(/(\b[A-Z][A-Z0-9]*(?:_+[A-Za-z0-9]+)+\b)/).map((part, i) =>
-      i % 2 ? (
-        <code key={i} className={s.tag}>
-          {part}
-        </code>
-      ) : (
-        part
-      ),
-    );
-
-  const blocks: ReactNode[] = [];
-  let items: string[] = [];
-  const flush = () => {
-    if (!items.length) return;
-    blocks.push(
-      <ul key={`ul${blocks.length}`} className={s.rnList}>
-        {items.map((item, i) => {
-          const colon = item.indexOf(": ");
-          const lead = colon > 0 && colon < 60 ? item.slice(0, colon) : "";
-          return (
-            <li key={i}>
-              {lead ? (
-                <>
-                  <b>{lead}</b>: {tagged(item.slice(colon + 2))}
-                </>
-              ) : (
-                tagged(item)
-              )}
-            </li>
-          );
-        })}
-      </ul>,
-    );
-    items = [];
-  };
-
-  for (const raw of notes.split("\n")) {
-    const line = raw.trim();
-    if (!line) continue;
-    if (line.startsWith("•")) {
-      items.push(line.replace(/^•\s*/, ""));
-    } else {
-      flush();
-      blocks.push(
-        <p key={`p${blocks.length}`} className={s.rnP}>
-          {tagged(line)}
-        </p>,
-      );
-    }
-  }
-  flush();
-
-  return <>{blocks}</>;
+  return <div className={s.rnHtml} dangerouslySetInnerHTML={{ __html: clean }} />;
 }
 
 interface ReleaseDetailProps {
@@ -798,10 +726,10 @@ interface ReleaseDetailProps {
 /** The selected baseline's details. Keyed by release so each step replays the entrance. */
 function ReleaseDetail({ group, index, onClose, onStep }: ReleaseDetailProps) {
   const release: ReleaseRecord = group.releases[index];
-  const isCurrent = index === group.releases.length - 1;
+  const isCurrent = release.isCurrent;
 
   return (
-    <div key={`${group.ipf}-${release.baseline}`} className={s.dtIn}>
+    <div key={release.id} className={s.dtIn}>
       <div className={s.dtTop}>
         <button type="button" className={s.dtBack} onClick={onClose}>
           <svg
@@ -862,7 +790,7 @@ function ReleaseDetail({ group, index, onClose, onStep }: ReleaseDetailProps) {
       <div className={s.dtHead}>
         <div>
           <span className={s.dtProc}>
-            {group.label} · {group.sub}
+            {group.sub ? `${group.label} · ${group.sub}` : group.label}
           </span>
           <b className={s.dtVer}>{release.baseline}</b>
         </div>
@@ -872,9 +800,19 @@ function ReleaseDetail({ group, index, onClose, onStep }: ReleaseDetailProps) {
       </div>
 
       <dl className={s.meta}>
+        {release.processingBaseline && (
+          <div>
+            <dt>Processing baseline:</dt>
+            <dd>{release.processingBaseline}</dd>
+          </div>
+        )}
         <div>
-          <dt>Processor Baseline ID:</dt>
-          <dd>{baselineId(release.ms)}</dd>
+          <dt>Released:</dt>
+          <dd>
+            {release.releasedMs !== undefined
+              ? longDate(release.releasedMs)
+              : "—"}
+          </dd>
         </div>
         <div>
           <dt>Operational since:</dt>
@@ -882,13 +820,13 @@ function ReleaseDetail({ group, index, onClose, onStep }: ReleaseDetailProps) {
         </div>
         <div>
           <dt>Impacted satellite(s):</dt>
-          <dd>{release.sats.join(", ")}</dd>
+          <dd>{release.sats.length ? release.sats.join(", ") : "—"}</dd>
         </div>
       </dl>
 
       <div className={s.rn}>
         <h4>Release notes</h4>
-        <ReleaseNotes notes={release.notes} />
+        <ReleaseNotes html={release.notesHtml} />
       </div>
     </div>
   );
@@ -911,13 +849,17 @@ export default function Processors() {
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true,
   );
 
+  const processors = useProcessors();
+  const allGroups = processors.data ?? NO_GROUPS;
+  const ready = processors.status === "ready";
+
   const satelliteImageUrl = SATELLITE_IMAGES[activeMission];
   const normalisedQuery = query.trim().toLowerCase();
   const isDetail = selected !== null;
 
   const missionGroups = useMemo(
-    () => PROCESSOR_GROUPS.filter((g) => g.mission === activeMission),
-    [activeMission],
+    () => allGroups.filter((g) => g.mission === activeMission),
+    [allGroups, activeMission],
   );
 
   // The window the timeline should show: the range (1Y/2Y/ALL), or — with a release picked — ten
@@ -933,7 +875,7 @@ export default function Processors() {
     if (!selected) return null;
     const g = missionGroups.find((x) => x.ipf === selected.ipf);
     return (
-      g?.releases.find((r) => r.baseline === selected.baseline)?.ms ?? null
+      g?.releases.find((r) => r.id === selected.id)?.ms ?? null
     );
   }, [selected, missionGroups]);
   const target = useMemo<Win>(
@@ -951,13 +893,13 @@ export default function Processors() {
   if (selected) lastSelected.current = selected;
   const view = selected ?? lastSelected.current;
 
-  // Detail pane content, looked up from the full roster so it never depends on the filters.
+  // Detail pane content, looked up from every processor so it never depends on the filters.
   const detailGroup = view
-    ? PROCESSOR_GROUPS.find((g) => g.ipf === view.ipf)
+    ? allGroups.find((g) => g.ipf === view.ipf)
     : undefined;
   const detailIndex =
     detailGroup && view
-      ? detailGroup.releases.findIndex((r) => r.baseline === view.baseline)
+      ? detailGroup.releases.findIndex((r) => r.id === view.id)
       : -1;
 
   // Escape closes the detail view, as the Overview button does.
@@ -974,11 +916,14 @@ export default function Processors() {
   const yearAgo = new Date(now);
   yearAgo.setUTCFullYear(yearAgo.getUTCFullYear() - 1);
   const latestMs = missionReleases.reduce((m, r) => Math.max(m, r.ms), 0);
+  // Until the data is in, the counts read "—" rather than a misleading 0.
   const stats = [
-    { value: missionGroups.length, label: "Processors" },
-    { value: missionReleases.length, label: "Releases" },
+    { value: ready ? missionGroups.length : "—", label: "Processors" },
+    { value: ready ? missionReleases.length : "—", label: "Releases" },
     {
-      value: missionReleases.filter((r) => r.ms >= yearAgo.getTime()).length,
+      value: ready
+        ? missionReleases.filter((r) => r.ms >= yearAgo.getTime()).length
+        : "—",
       label: "Released in the last year",
     },
     {
@@ -988,17 +933,15 @@ export default function Processors() {
   ];
 
   // A marker opens its release; a second click on the same marker returns to the overview.
-  const toggleRelease = (ipf: string, baseline: string) =>
+  const toggleRelease = (ipf: string, id: string) =>
     setSelected((prev) =>
-      prev && prev.ipf === ipf && prev.baseline === baseline
-        ? null
-        : { ipf, baseline },
+      prev && prev.ipf === ipf && prev.id === id ? null : { ipf, id },
     );
 
   const stepRelease = (delta: -1 | 1) => {
     if (!detailGroup) return;
     const next = detailGroup.releases[detailIndex + delta];
-    if (next) setSelected({ ipf: detailGroup.ipf, baseline: next.baseline });
+    if (next) setSelected({ ipf: detailGroup.ipf, id: next.id });
   };
 
   const changeMission = (m: MissionId) => {
@@ -1132,7 +1075,36 @@ export default function Processors() {
             </h2>
 
             <p className={s.caption}>Release timeline</p>
-            {missionGroups.length > 0 ? (
+            {processors.status === "loading" ? (
+              <p className={s.status} role="status">
+                <span className={s.statusPulse} aria-hidden="true" />
+                Loading processor releases…
+              </p>
+            ) : processors.status === "error" ? (
+              <div className={s.statusError} role="alert">
+                <p className={s.statusTitle}>
+                  {processors.error instanceof ApiError &&
+                  processors.error.kind === "unreachable"
+                    ? "Backend unreachable"
+                    : "Could not load processor releases"}
+                </p>
+                <p className={s.statusText}>
+                  {processors.error instanceof ApiError &&
+                  processors.error.kind === "unreachable"
+                    ? "The processor feed did not answer. Check that the backend is running, then try again."
+                    : processors.error instanceof Error
+                      ? processors.error.message
+                      : "Unexpected error."}
+                </p>
+                <button
+                  type="button"
+                  className={s.retry}
+                  onClick={processors.retry}
+                >
+                  Try again
+                </button>
+              </div>
+            ) : missionGroups.length > 0 ? (
               <ReleaseTimeline
                 groups={missionGroups}
                 axis={axis}

@@ -34,8 +34,10 @@ export const MISSION_NAMES: Record<MissionId, string> = {
 };
 export const MISSION_ORDER: MissionId[] = ["1", "2", "3", "5P"];
 
-/** One release as the feed carries it, joined to the processor it targets. No derived fields. */
+/** One release as the feed carries it, joined to the processor it targets. */
 export interface ReleaseRecord {
+  /** Unique per (feed record × target IPF): the same baseline tag can recur within one IPF. */
+  id: string;
   mission: MissionId;
   /** The feed's IPF key — what the release is keyed on. */
   ipf: string;
@@ -59,6 +61,16 @@ export interface ReleaseRecord {
   sats: string[];
   /** Release notes, flattened from the feed's HTML. Absent when the feed carries none. */
   notes?: string;
+  /** Release notes as the feed's raw, UNSANITIZED HTML — run through sanitizeHtml() to render. */
+  notesHtml?: string;
+  /** The feed's processing_baseline, e.g. "3.37" or "2.23 (OL2 v06.11)". Absent when null. */
+  processingBaseline?: string;
+  /** Publication date (the feed's release_date) in ms, when the feed carries one. */
+  releasedMs?: number;
+  /** Whether this is the processor's baseline in force. The API adapter derives it with
+   *  isCurrentBaseline() (src/api/adapters/processor.ts); the fixture has no validity end dates,
+   *  so here it is simply each processor's latest release. */
+  isCurrent: boolean;
 }
 
 /** A processor and its releases, oldest first. */
@@ -147,7 +159,7 @@ const RELEASES: RawRelease[] = [
    order the operations viewer uses (Level-0 first, then the sensor products) rather than the
    alphabet. One entry per IPF key — `sub` names the products, so an entry covering several sensor
    modes says so. An entry here with no releases in the feed still exists as a processor. */
-const ROSTER: { mission: MissionId; ipf: string; label: string; sub: string }[] = [
+export const ROSTER: { mission: MissionId; ipf: string; label: string; sub: string }[] = [
   { mission: "1", ipf: "S1_L0", label: "S1 L0", sub: "Level-0 · RAW" },
   { mission: "1", ipf: "S1_L1L2", label: "L1L2", sub: "SLC · GRD · OCN · all modes" },
   { mission: "1", ipf: "S1_SETAP", label: "SETAP", sub: "Set-up auxiliary" },
@@ -193,7 +205,7 @@ function ddmmyyyyToISO(v: string): string {
 }
 
 /** Telemetry-style readout: 2026-07-24T00:00Z */
-function isoUtc(v: string): string {
+export function isoUtc(v: string): string {
   const d = new Date(v);
   return isNaN(d.getTime()) ? v : `${d.toISOString().slice(0, 16)}Z`;
 }
@@ -261,8 +273,11 @@ export function ageLabel(months: number): string {
 
 /** Walk the roster and attach each processor's releases, oldest first. */
 function build(): ProcessorGroup[] {
-  const byIpf = new Map<string, { baseline: string; start: string; notes: string; sats: string[] }[]>();
-  for (const r of RELEASES) {
+  const byIpf = new Map<
+    string,
+    { id: string; baseline: string; start: string; notes: string; html: string; sats: string[] }[]
+  >();
+  RELEASES.forEach((r, n) => {
     const sats = normSats(r.satellite_units);
     const notes = stripHtml(r.release_notes);
     for (const target of r.target_ipfs) {
@@ -271,10 +286,17 @@ function build(): ProcessorGroup[] {
       if (!ipf) continue;
       byIpf.set(ipf, [
         ...(byIpf.get(ipf) ?? []),
-        { baseline: (ver ?? "").trim() || "—", start: ddmmyyyyToISO(r.validity_start_date), notes, sats },
+        {
+          id: `mock-${n}-${ipf}`,
+          baseline: (ver ?? "").trim() || "—",
+          start: ddmmyyyyToISO(r.validity_start_date),
+          notes,
+          html: r.release_notes,
+          sats,
+        },
       ]);
     }
-  }
+  });
 
   const at = (v: string) => new Date(v).getTime();
 
@@ -283,7 +305,8 @@ function build(): ProcessorGroup[] {
     releases: (byIpf.get(slot.ipf) ?? [])
       .filter((r) => !isNaN(at(r.start)))
       .sort((a, b) => at(a.start) - at(b.start))
-      .map<ReleaseRecord>((rel) => ({
+      .map<ReleaseRecord>((rel, i, all) => ({
+        id: rel.id,
         mission: slot.mission,
         ipf: slot.ipf,
         label: slot.label,
@@ -296,6 +319,8 @@ function build(): ProcessorGroup[] {
         day: fmtDay(rel.start),
         sats: rel.sats,
         notes: rel.notes || undefined,
+        notesHtml: rel.html || undefined,
+        isCurrent: i === all.length - 1,
       })),
   }));
 }

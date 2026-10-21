@@ -440,6 +440,95 @@
   font-style: italic;
   color: var(--text-mute);
 }
+
+/* Loading and error states of the timeline pane, in the pane's own mono / uppercase register. */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 24px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.statusPulse {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: statusPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusPulse {
+    animation: none;
+  }
+}
+
+.statusError {
+  max-width: 520px;
+  padding: 20px 0 20px 18px;
+  border-left: 2px solid var(--crit);
+}
+
+.statusTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--crit);
+}
+
+.statusText {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.62;
+  color: var(--text-dim);
+}
+
+.retry {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.retry:hover {
+  border-color: var(--accent);
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
 .captionRow {
   display: flex;
   align-items: center;
@@ -482,18 +571,21 @@
    One chart, drawn with absolute positions like drawTimeline(): a 100px name column pinned to the
    left, and a track where every release is a dot on its own row with a hairline STEM rising to the
    month labels. Rows are 44px, 28px over 8 processors and 22px over 12, so a long roster still fits.
-   Everything is Noto Sans; colours are the reference's own. */
+   Everything is Noto Sans. Every colour comes from the theme tokens (styles/tokens.css), so the
+   chart reads in dark and light alike: no fixed colours and no text-shadow. Hairlines are the
+   text colour mixed down to a few percent, so they track the theme too. */
 .tl {
-  --tl-ink: #eaf0f6;
-  --tl-dim: #93a0b0;
-  --tl-faint: #6b7686;
-  --tl-accent: #2fc6dc;
-  --tl-inforce: #3fcf7f;
+  --tl-ink: var(--text);
+  --tl-dim: var(--text-dim);
+  --tl-accent: var(--accent);
+  --tl-inforce: var(--bl-current);
+  --tl-past: var(--bl-past);
+  --tl-hair: color-mix(in srgb, var(--text) 8%, transparent);
+  --tl-hair-strong: color-mix(in srgb, var(--text) 16%, transparent);
   position: relative;
   padding: 0 0 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid var(--line);
   font-family: var(--font-sans);
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.85);
 }
 
 .caption {
@@ -501,69 +593,22 @@
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  color: rgba(234, 240, 246, 0.55);
+  color: var(--text-dim);
 }
 
-/* Many processors: the list stops at a fixed height and fades out instead of ending on a hard edge,
-   as the reference fades its list 56px before the horizon. The rest scrolls up and down, and the
-   top edge fades too once rows have scrolled past it. Change --tl-max-h to show more or fewer rows.
-   The fade lengths are registered properties so they ease in and out instead of snapping. */
-@property --tl-fade-top {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
-@property --tl-fade-bottom {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
+/* Every lane at full height: the densest mission (Sentinel-3, 18 processors at 22px rows) is
+   under 500px, so nothing is capped, faded or hidden behind a scroll. */
 .tlView {
-  --tl-max-h: clamp(260px, 42vh, 560px);
-  max-height: var(--tl-max-h);
   margin-top: 8px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior-y: contain;
-  scrollbar-width: none; /* wheel and touch scroll it; the fade is the cue that there is more */
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 var(--tl-fade-top),
-    #000 calc(100% - var(--tl-fade-bottom)),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0,
-    #000 var(--tl-fade-top),
-    #000 calc(100% - var(--tl-fade-bottom)),
-    transparent 100%
-  );
-  transition: --tl-fade-top 0.3s ease, --tl-fade-bottom 0.3s ease;
 }
 
-.tlView::-webkit-scrollbar {
-  display: none;
-}
-
-.fadeTop {
-  --tl-fade-top: 40px;
-}
-
-.fadeBottom {
-  --tl-fade-bottom: 56px;
-}
-
-/* Long windows are wider than the pane: the chart scrolls sideways under the pinned names. */
+/* Narrow screens: the chart keeps a 600px minimum and scrolls sideways under the pinned names. */
 .tlScroll {
   overflow-x: auto;
   overflow-y: hidden;
   overscroll-behavior-x: contain;
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-color: var(--tl-hair-strong) transparent;
 }
 
 .tlScroll::-webkit-scrollbar {
@@ -571,7 +616,7 @@
 }
 
 .tlScroll::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--tl-hair-strong);
   border-radius: 3px;
 }
 
@@ -587,11 +632,14 @@
 }
 
 /* ---- names ---- */
+/* The names' backdrop starts under the axis header (42px = AXIS_TOP), so year and month labels
+   scrolled beneath the pinned column stay readable instead of being cut to a stray digit. */
 .tlLabels {
   position: sticky;
   left: 0;
   z-index: 2;
-  background: linear-gradient(to right, var(--bg, #000) 82%, transparent);
+  background: linear-gradient(to right, var(--bg) 82%, transparent) 0 42px / 100%
+    calc(100% - 42px) no-repeat;
 }
 
 .tlLabels span {
@@ -612,7 +660,7 @@
 }
 
 .tlLabels span.on {
-  color: #fff;
+  color: var(--tl-ink);
 }
 
 /* ---- the track and its grid ---- */
@@ -630,13 +678,13 @@
   top: 22px;
   bottom: 0;
   width: 1px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--tl-hair);
   pointer-events: none;
 }
 
 .gYear {
   top: 0;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--tl-hair-strong);
 }
 
 .yl {
@@ -658,7 +706,7 @@
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--tl-faint);
+  color: var(--tl-dim); /* --text-mute is under 3:1 on the light background at 9px */
   white-space: nowrap;
   pointer-events: none;
 }
@@ -668,7 +716,7 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tl-hair);
   pointer-events: none;
 }
 
@@ -709,12 +757,12 @@
   position: absolute;
   top: 40px;
   width: 1px;
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--tl-hair-strong);
   pointer-events: none;
   transition: opacity 0.24s ease;
 }
 
-/* flat dots: filled green = the baseline in force, grey ring = superseded */
+/* flat dots: filled = the baseline in force, ring = superseded; hollow on the page background */
 .mk {
   position: absolute;
   z-index: 1;
@@ -723,15 +771,15 @@
   margin: -6.5px 0 0 -6.5px;
   padding: 0;
   box-sizing: border-box;
-  border: 1.5px solid #7d8792;
+  border: 1.5px solid var(--tl-past);
   border-radius: 50%;
-  background: #000;
+  background: var(--bg);
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s, border-color 0.2s;
 }
 
 .mk:hover {
-  border-color: #c3cad1;
+  border-color: var(--tl-ink);
   transform: scale(1.3);
 }
 
@@ -747,21 +795,27 @@
 .mkNow {
   background: var(--tl-inforce);
   border-color: var(--tl-inforce);
-  box-shadow: 0 0 10px rgba(63, 207, 127, 0.45);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--tl-inforce) 45%, transparent);
 }
 
 .mkNow:hover {
   border-color: var(--tl-inforce);
 }
 
-/* the picked release: a black gap, a ring, and a soft halo */
+/* the picked release: a gap in the page colour, a ring, and a soft halo */
 .mkSel {
   transform: scale(1.25);
-  box-shadow: 0 0 0 4px #000, 0 0 0 5px #fff, 0 0 18px 6px rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 0 0 5px var(--tl-ink),
+    0 0 18px 6px color-mix(in srgb, var(--tl-ink) 30%, transparent);
 }
 
 .mkNow.mkSel {
-  box-shadow: 0 0 0 4px #000, 0 0 0 5px var(--tl-inforce), 0 0 18px 6px rgba(63, 207, 127, 0.55);
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 0 0 5px var(--tl-inforce),
+    0 0 18px 6px color-mix(in srgb, var(--tl-inforce) 45%, transparent);
 }
 
 /* zoomed in: the version beside each dot */
@@ -808,14 +862,14 @@
   width: 236px;
   padding: 14px 16px 13px;
   box-sizing: border-box;
-  background: rgba(9, 12, 16, 0.96);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--bg-1) 96%, transparent);
+  border: 1px solid var(--line-strong);
   border-radius: 12px;
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--shadow);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   font-family: var(--font-sans);
-  color: #eaf0f6;
+  color: var(--text);
   pointer-events: none;
   /* anchored on the dot's centre: above it by default */
   transform: translate(-50%, -100%);
@@ -833,7 +887,7 @@
 .tip hr {
   margin: 11px 0 9px;
   border: 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid var(--line);
 }
 
 .ttTitle {
@@ -841,7 +895,7 @@
   font-size: 14.5px;
   font-weight: 700;
   letter-spacing: 0.01em;
-  color: #fff;
+  color: var(--text);
 }
 
 .ttStats {
@@ -856,7 +910,7 @@
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(234, 240, 246, 0.45);
+  color: var(--text-mute);
 }
 
 .ttV {
@@ -865,18 +919,18 @@
   font-size: 15px;
   font-weight: 700;
   line-height: 1.15;
-  color: #eaf0f6;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .ttGo {
-  color: #19e27a;
+  color: var(--bl-current);
 }
 
 .ttOld {
-  color: #93a0b0;
+  color: var(--bl-past);
 }
 
 .ttRows {
@@ -892,14 +946,23 @@
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(234, 240, 246, 0.45);
+  color: var(--text-mute);
 }
 
 .ttRows dd {
   margin: 0;
   font-size: 11.5px;
   line-height: 1.4;
-  color: rgba(234, 240, 246, 0.88);
+  color: var(--text-dim);
+}
+
+/* "Changes" is prose: its own full-width line under the label, not squeezed beside it. */
+.ttRows .ttWide {
+  grid-column: 1 / -1;
+}
+
+.ttRows dt.ttWide {
+  margin-top: 3px;
 }
 
 .ttHint {
@@ -908,7 +971,7 @@
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #2fc6dc;
+  color: var(--accent);
 }
 
 /* Detail pane: collapsed to zero width until a release is open. */
@@ -1081,46 +1144,123 @@
   color: var(--text);
 }
 
+/* Not the global display-heading style: its -0.02em tracking at 13px/700 smudges the glyphs. */
 .rn h4 {
   margin: 0 0 14px;
+  font-family: var(--font-sans);
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: normal;
   color: var(--text);
+  text-shadow: none;
 }
 
-.rnP {
-  margin: 0 0 12px;
+/* Release notes: sanitized feed HTML (no inline styles or classes survive), styled here so it
+   follows the theme in dark and light alike. */
+.rnHtml {
   font-size: 13px;
   line-height: 1.62;
   color: var(--text-dim);
+  overflow-wrap: anywhere;
 }
 
-.rnList {
+.rnHtml > :first-child {
+  margin-top: 0;
+}
+
+.rnHtml p,
+.rnHtml div:not(:has(> p, > div, > ul, > ol)) {
+  margin: 0 0 12px;
+}
+
+.rnHtml ul,
+.rnHtml ol {
   margin: 0 0 18px;
   padding-left: 20px;
 }
 
-.rnList li {
+.rnHtml li {
   margin-bottom: 8px;
-  font-size: 13px;
-  line-height: 1.62;
-  color: var(--text-dim);
 }
 
-.rnList li b {
+.rnHtml li > p,
+.rnHtml li > div {
+  margin: 0;
+}
+
+.rnHtml h1,
+.rnHtml h2,
+.rnHtml h3,
+.rnHtml h4,
+.rnHtml h5,
+.rnHtml h6 {
+  margin: 20px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.rnHtml b,
+.rnHtml strong {
   color: var(--text);
   font-weight: 600;
 }
 
-/* Dataset key, as in "MSI_L0__GR": a green mono tag. */
-.tag {
-  padding: 1px 6px;
-  border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
-  background: color-mix(in srgb, var(--ok) 10%, transparent);
+.rnHtml a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rnHtml a:hover {
+  color: var(--text);
+}
+
+.rnHtml a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rnHtml code,
+.rnHtml pre {
   font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--ok);
-  white-space: nowrap;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.rnHtml pre {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+
+.rnHtml blockquote {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+}
+
+.rnHtml table {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.rnHtml th,
+.rnHtml td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rnHtml hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
 }
 
 /* Responsive: stacked panes below 1080px. The satellite leaves the flow once a release opens,
