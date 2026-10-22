@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Self-contained server bundle for the production Docker image (Dockerfile).
+  output: "standalone",
   cacheComponents: true,
   partialPrefetching: true,
   // Legacy URLs → clean URLs, permanently (308). Rule: every legacy page URL gets one

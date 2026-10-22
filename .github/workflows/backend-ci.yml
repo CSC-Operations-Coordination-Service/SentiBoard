@@ -1,0 +1,41 @@
+name: sentiboard-backend CI
+
+# Thin caller for the FastAPI backend. There is no test suite yet, so the pipeline is the
+# image build only (docker-build.yml from workflow-catalog):
+#   push to develop  -> dev image (Nexus)
+#   push tag x.y.z   -> release image (Nexus + GHCR + Docker Hub)
+#   pull_request     -> not built (no registry push from PRs)
+
+on:
+  push:
+    branches: ["develop"]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+    paths: ["sentiboard-backend/**", ".github/workflows/backend-ci.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    permissions:
+      contents: read
+      packages: write
+    uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/docker-build.yml@develop
+    with:
+      image-name: sentiboard-backend
+      context: sentiboard-backend
+      dockerfile: sentiboard-backend/Dockerfile.prod
+      release: ${{ startsWith(github.ref, 'refs/tags/') }}
+      push-to-ghcr: ${{ startsWith(github.ref, 'refs/tags/') }}
+      push-to-dockerhub: ${{ startsWith(github.ref, 'refs/tags/') }}
+      environment: ${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'dev' }}
+      scan-dockerfile: true
+      scan-dockerfile-soft-fail: true
+      # The dev Docker connector is plain HTTP (see workflow-catalog python-demo.yml).
+      insecure-registry: ${{ !startsWith(github.ref, 'refs/tags/') }}
+    secrets: inherit
