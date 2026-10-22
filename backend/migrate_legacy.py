@@ -102,11 +102,14 @@ def run(db, client, apply=False, include_dashboard=False):
         if rows is None:
             print(f"{table}: MISSING TABLE, skipped")
             continue
-        source = len(rows)
+        source, notes = len(rows), ""
         if table == "anomalies":
+            rows = list(merge_anomalies(rows))
+            merged = len(rows)
             # Dashboard anomalies are hidden in legacy; pass --include-dashboard to migrate them
-            rows = [r for r in merge_anomalies(rows)
+            rows = [r for r in rows
                     if include_dashboard or (r["category"] or "").lower() != "dashboard"]
+            notes = f" ({source - merged} duplicate keys merged, {merged - len(rows)} Dashboard excluded)"
         errors, examples = Counter(), {}
         for row in rows:
             try:
@@ -120,7 +123,7 @@ def run(db, client, apply=False, include_dashboard=False):
             # legacy UUID as _id: a re-run skips rows already migrated (409)
             document = schema_to_document(item, document_cls, document_id=row["id"])
             actions.append(document.to_bulk_action(op_type="create"))
-        print(f"{table}: {source} rows -> {len(rows)} docs, {sum(errors.values())} errors")
+        print(f"{table}: {source} rows -> {len(rows)} docs{notes}, {sum(errors.values())} errors")
         for (field, kind), n in errors.most_common():
             print(f"  {n:5}  {field}  [{kind}]  e.g. {examples[(field, kind)]!r:.120}")
         failed = failed or bool(errors)
