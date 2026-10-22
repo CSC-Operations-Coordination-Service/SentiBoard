@@ -27,7 +27,10 @@ docker compose run --rm api python migrate_legacy.py /legacy_data/sentiboard/<fi
 ```
 
 - Safe to re-run: records already loaded are skipped.
-- Add `--include-dashboard` to also load the 4 hidden "Dashboard" anomalies.
+- Anomalies: 3895 rows become 3720 docs. 171 are duplicate pairs from the old
+  `PDGSANOM-` → `GSANOM-` key rename, merged into one record each (no data lost),
+  and 4 are hidden "Dashboard" anomalies, excluded by default.
+- Add `--include-dashboard` to also load the 4 Dashboard anomalies.
 - Git Bash on Windows: put `MSYS_NO_PATHCONV=1` before `docker compose run`, or the path gets mangled.
 
 ### Processor releases
@@ -44,6 +47,7 @@ docker compose run --rm api python migrate_processors.py /legacy_data/config_too
 
 - Safe to re-run, same as above.
 - 3 of 231 releases are skipped (no `release_date`, which the monthly processor indices need); their ids are printed.
+- A version saved as `undefined` by the Config Tool (3 releases) is stored as no version, e.g. `S1_L1L2:`.
 
 Check it worked:
 
