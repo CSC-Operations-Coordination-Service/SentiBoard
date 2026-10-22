@@ -1,0 +1,10 @@
+*.pyc
+**/__pycache__/
+venv
+.venv
+apps/logs
+apps/config
+legacy_data
+
+# Build artifacts
+*.tsbuildinfo

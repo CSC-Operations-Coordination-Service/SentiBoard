@@ -1,0 +1,39 @@
+{
+    "aliases": {
+        "instantmessage": {}
+    },
+    "index_patterns": [
+        "instantmessage-*"
+    ],
+    "settings": {
+        "index": {
+            "number_of_shards": 3,
+            "number_of_replicas": 1
+        }
+    },
+    "mappings": {
+        "properties": {
+            "id": {
+                "type": "keyword"
+            },
+            "title": {
+                "type": "text", "fields": { "keyword": { "type": "keyword"}}
+            },
+            "text": {
+                "type": "text"
+            },
+            "link": {
+                "type": "keyword"
+            },
+            "publication_date": {
+                "type": "date"
+            },
+            "message_type": {
+                "type": "keyword"
+            },
+            "modify_date": {
+                "type": "date"
+            }
+        }
+    }
+}

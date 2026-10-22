@@ -1,0 +1,69 @@
+{
+    "aliases" : {
+        "anomaly": {}
+    },
+    "index_patterns": [
+        "anomaly-*"
+    ],
+    "settings": {
+        "index": {
+            "number_of_shards": 3,
+            "number_of_replicas": 1
+        }
+    },
+    "mappings": {
+        "properties": {
+            "id": {
+                "type": "keyword"
+            },
+            "key": {
+                "type": "keyword"
+            },
+            "title": {
+                "type": "text"
+            },
+            "text": {
+                "type": "text"
+            },
+            "category": {
+                "type": "keyword"
+            },
+            "impacted_satellite": {
+                "type": "keyword"
+            },
+            "impacted_item": {
+                "type": "keyword"
+            },
+            "start": {
+                "type": "date"
+            },
+            "end": {
+                "type": "date"
+            },
+            "environment": {
+                "type": "keyword"
+            },
+            "datatakes_completeness": {
+                "type": "nested",
+                "properties": {
+                    "datatakeID": { "type": "keyword" },
+                    "L0_": { "type": "float" },
+                    "L1_": { "type": "float" },
+                    "L2_": { "type": "float" }
+                }
+            },
+            "news_link": {
+                "type": "keyword"
+            },
+            "news_title": {
+                "type": "text", "fields": { "keyword": { "type": "keyword"}}
+            },
+            "publication_date": {
+                "type": "date"
+            },
+            "modify_date": {
+                "type": "date"
+            }
+        }
+    }
+}
