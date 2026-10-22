@@ -47,11 +47,11 @@ From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier fi
 `GET /processor/`:
 
 - **500 on null arrays.** `GET /processor/` returns HTTP 500 when `target_ipfs` (5 records) or
-  `satellite_units` (3 records) is null: the response model declares them as non-null lists. A local
-  validator patch exists; the backend developer has been informed.
+  `satellite_units` (3 records) is null. The backend developer approved the local validator patch
+  and is committing it on the backend branch (2026-10-22).
 - **Literal `"undefined"` versions.** 3 `target_ipfs` values carry the literal `undefined` as the
   version (e.g. `S1_L1L2:undefined`). The adapter treats it as "no version" and falls back to
-  `processing_baseline`.
+  `processing_baseline`. The backend developer is fixing it in the migration (`map_release`) on the backend branch (2026-10-22).
 - **Version lists in `target_ipfs`.** Record `9b73c7d6_84f9_11f0_8061_0242ac110002` carries a whole
   comma-separated list as the version of each of its 8 targets
   (`S3_OL1:SL1_06.23, OL1_06.19, OL1_RAC_06.17, …`), so those lanes show that list as the baseline
@@ -66,5 +66,6 @@ From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier fi
   `Sentinel-n` when notes are written.
 - **List endpoints** have no filters, no sorting and no total count; the frontend reads whole lists
   in pages of 1000.
-- **Anomaly migration** reported 3895 rows → 3720 documents with 0 errors; the 175-row difference is
-  unexplained.
+- **Anomaly migration** (resolved 2026-10-22): 3895 rows → 3720 documents = 171 merged duplicate
+  pairs (old PDGSANOM-/GSANOM- key rename; completeness and news links kept, nothing lost) + 4
+  hidden Dashboard anomalies excluded. The Postgres dump from the Config Tool is not needed for now.
