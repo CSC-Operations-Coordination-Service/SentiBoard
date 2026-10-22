@@ -39,7 +39,9 @@ def map_release(release):
     # 30 releases hold a string ("S1A" or "S1A, S1C") instead of a list
     if isinstance(data["satellite_units"], str):
         data["satellite_units"] = [s.strip() for s in data["satellite_units"].split(",") if s.strip()]
-    data["target_ipfs"] = data["target_ipfs"] or []
+    # 3 releases hold the Config Tool's "undefined" for a missing version:
+    # store them like the other versionless entries ("S1_L1L2:")
+    data["target_ipfs"] = [t.replace(":undefined", ":") for t in data["target_ipfs"] or []]
     # one representation for "missing" (dates: ApiDate already maps "" to None)
     for f in ("mission", "processing_baseline", "release_notes"):
         if data.get(f) == "":
