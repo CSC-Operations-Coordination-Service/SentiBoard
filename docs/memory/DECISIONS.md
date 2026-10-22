@@ -114,3 +114,15 @@ both properties are removed. No React state, no re-render on scroll.
   ends. Not on first render, never on zoom or range changes.
 - **Reduced motion:** nothing is applied and nothing animates. No mask, fade or height cap may be
   reintroduced to produce the effect.
+
+## 2026-10-22 — Frontend tests: Vitest in plain Node, real fixtures, no network
+
+**Decision.** `sentiboard-frontend` tests run with Vitest (`pnpm test`, config `vitest.config.mts`),
+test files next to the modules (`*.test.ts`), in the plain Node environment: the sanitizer builds
+its own jsdom window, and tests that inspect HTML parse it with jsdom. `server-only` is aliased to
+its own `empty.js` (what Next resolves on the server), so modules keep their guard. `next/cache` is
+mocked and `fetch` stubbed per test; tests never reach a backend or the network. Real release notes
+come from a committed fixture of six records captured from the backend (provenance in the file),
+not from live calls.
+**Consequences.** Tests cover pure modules and data loading; rendering and browser behaviour are
+not under automated test (see HANDOFF.md).

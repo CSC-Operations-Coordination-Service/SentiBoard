@@ -16,7 +16,8 @@ Last updated: 2026-10-21 (branch `feature/DEVOCS-219-frontend`, uncommitted at t
   "coming soon" placeholder (noindex, not in the sitemap).
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
-- No automated tests yet.
+- Automated tests: `pnpm test` (Vitest, 151 tests for the Processors slice: adapter, URL state,
+  sanitizer, data loading), runnable with no backend and no network.
 
 ## Backend (`sentiboard-backend/`)
 

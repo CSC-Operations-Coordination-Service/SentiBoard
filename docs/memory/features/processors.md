@@ -9,8 +9,7 @@ mission, with each release's notes. Route `/processors` (legacy `/processors-vie
 Code: `sentiboard-frontend/src/app/processors/`, `sentiboard-frontend/src/features/processors/`.
 Ported from the prototype's `src/pages/processors/processors.tsx` and `src/api/` (2026-10-21).
 
-`IMPLEMENTED`, not `VERIFIED`: every criterion below is checked except the two open ones (mobile
-parity, automated tests).
+`IMPLEMENTED`, not `VERIFIED`: every criterion below is checked except one (mobile parity).
 
 ## How it works
 
@@ -62,7 +61,34 @@ Verified on 2026-10-21 against the local backend (228 records) unless noted.
       switch); range 1Y/ALL and zoom in/out start no animation. Reduced motion: nothing applied,
       all lanes visible. No mask, no max-height; year labels static. Details in DECISIONS.md.
 - [ ] Mobile layouts compared with the prototype — not done in this slice.
-- [ ] Automated tests (adapter, URL state, sanitizer) — none yet.
+- [x] Automated tests (2026-10-22): `pnpm test` (Vitest), 151 tests, no backend and no network
+      (verified by running the suite in a network namespace with no interface up).
+      - `adapter.test.ts` (42): `target_ipfs` splitting (`"S1_L1L2:002.84"`, empty version,
+        `undefined`/`null`/`none`, no colon, colons in the version); records left out and reported
+        (null/empty/blank targets, no date, unknown mission); null/duplicate `satellite_units`;
+        fallback to `processing_baseline` and `"—"`; current-baseline rule (one per lane, null end
+        date open, none when all ended, future not current, same-day tie → later record, lanes
+        independent); unique ids (recurring (ipf, version), id-less records, a target repeated
+        within one record, all real fixtures); roster order, the `S3_SM2_HY` alias, unknown IPF
+        keys after the roster with generated labels; notes stored once per record; `changesOf`.
+      - `url-state.test.ts` (31): every param parsed and serialised, defaults left out, invalid values
+        → defaults, Next's `searchParams` record, round trip, encoding, `resolveView` (release from
+        another mission switches it; unknown release dropped).
+      - `sanitize-html.test.ts` (63): script/style/svg/template dropped with content; form, button,
+        `<o:p>`, `<font>` unwrapped with text kept; style/class/id/lang/data-/aria-/on* removed;
+        links `target="_blank" rel="noopener noreferrer"`, `javascript:` dropped; lists, paragraphs,
+        `<br>`, tables, Jira pre-line, plain-text bullets and `h2.` headings; tidying; `htmlToText` /
+        `notesSection`. Six real records captured 2026-10-22 (`__fixtures__/processor-records.ts`:
+        Word, Jira pre-line with UI fragments, Jira with links, plain text with `h2.`, `<font>` HTML,
+        HTML with UI fragments): allowlisted tags/attributes only, safe links, no text lost (in-order
+        character check, only list markers may go), every bullet line becomes a list item.
+      - `data.test.ts` (15): success (groups, notes, fetch time; URL, Accept header, timeout signal),
+        pagination (offset 0 then 1000), warning for unplaced records; network error, timeout,
+        502/503/504 → `unreachable`, 500/404 → `http`, non-JSON 200 → `parse`, a failing later page,
+        missing `BACKEND_URL` → `unknown` — each returns the degraded result, never throws.
+      - Found and fixed with a failing test first: a target repeated within one record produced
+        duplicate release ids (`adapter.ts` now places it once). The feed on 2026-10-22 has no such
+        record — the fix is preventive.
 
 ## Known issues
 

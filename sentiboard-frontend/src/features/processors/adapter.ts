@@ -131,10 +131,15 @@ export function adaptProcessors(records: ApiProcessor[], now = Date.now()): Adap
   records.forEach((record, index) => {
     const startMs = toMs(record.validity_start_date) ?? toMs(record.release_date);
     let placed = false;
+    // A target repeated within one record ("S1_L0:1.0" twice) is the same release: place it once,
+    // or its lane would get two releases with the same id.
+    const seen = new Set<string>();
     for (const target of record.target_ipfs ?? []) {
       const { ipf, version } = parseTargetIpf(target);
       const mission = ipf ? missionOf(record, ipf) : null;
       if (!ipf || !mission || startMs === null) continue;
+      if (seen.has(`${ipf}:${version}`)) continue;
+      seen.add(`${ipf}:${version}`);
       const lane = lanes.get(ipf) ?? { mission, releases: [] };
       lane.releases.push({ startMs, endMs: toMs(record.validity_end_date), record, index, version });
       lanes.set(ipf, lane);
