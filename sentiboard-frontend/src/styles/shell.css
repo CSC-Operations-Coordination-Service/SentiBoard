@@ -1,0 +1,43 @@
+/* Additions for the Next.js port. The prototype's own stylesheets (tokens, global, page-header,
+   footer) are copied verbatim; everything the port needs on top of them lives here.
+
+   1. Theme-dependent markup. The server HTML is the same for both themes (the theme is only known
+      in the browser, from localStorage), so anything that differs per theme is rendered twice and
+      one copy is hidden by [data-theme], which the pre-paint script in layout.tsx sets before the
+      first paint. No flash, no hydration mismatch. */
+:root[data-theme="light"] .sb-dark-only,
+:root:not([data-theme="light"]) .sb-light-only {
+  display: none !important;
+}
+
+/* Wrappers that must not change the parent's flex layout (the theme toggle's icon + label). */
+.sb-contents {
+  display: contents;
+}
+
+/* Copernicus has no light-background logo: its white artwork is darkened in light mode, as the
+   prototype's .needs-dark (global.css) does when its JavaScript adds the class. */
+:root[data-theme="light"] .partner-logo-link img.sb-darken-on-light {
+  filter: brightness(0.32) saturate(1.6);
+}
+
+/* 2. With and without JavaScript. The pre-paint script adds .js to <html>. */
+html.js .sb-nojs-only,
+html:not(.js) .sb-js-only {
+  display: none !important;
+}
+
+/* Without JavaScript the page header's Description panel cannot be toggled: show it open. */
+html:not(.js) .desc-btn {
+  display: none;
+}
+html:not(.js) .desc-wrap {
+  grid-template-rows: 1fr;
+}
+html:not(.js) .desc-wrap .desc {
+  visibility: visible;
+}
+html:not(.js) .desc-in {
+  opacity: 1;
+  transform: none;
+}

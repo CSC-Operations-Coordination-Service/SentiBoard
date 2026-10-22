@@ -1,0 +1,1387 @@
+/* Page shell. Colours come from the theme tokens in styles/tokens.css, so dark and light mode
+   follow the same rules. Glows are the accent mixed into the page background, not fixed rgba. */
+.container {
+  position: relative;
+  width: 100%;
+  padding-bottom: 48px;
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+/* Content sits above the sky strip, which is the only layer with z-index. Without this the
+   absolutely positioned strip would paint over static content. Stacking stays at auto so the
+   dropdown menus (z-index 30) still overlay the page. */
+.container > * {
+  position: relative;
+}
+
+/* Sky strip: a starfield tile repeated twice and translated by one tile, so the loop is seamless.
+   The tile is 1800px, a multiple of the 600px star cell, which keeps the pattern continuous at the
+   seam. It is decorative only and never receives pointer events. */
+.skyStrip {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.skyTrack {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 3600px;
+  height: 100%;
+  animation: skyDrift 150s linear infinite;
+}
+
+.skyTile {
+  flex: none;
+  width: 1800px;
+  height: 100%;
+  background-image:
+    radial-gradient(1px 1px at 40px 60px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 180px 310px, #cfe6ff 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 330px 120px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 470px 240px, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 540px 380px, #9fd8ea 50%, transparent 100%),
+    radial-gradient(1px 1px at 260px 20px, #fff 50%, transparent 100%);
+  background-size: 600px 420px;
+}
+
+@keyframes skyDrift {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-1800px);
+  }
+}
+
+/* Paused: every ambient motion stops where it is. The scan band is hidden rather than frozen so it
+   does not sit half-way across the timeline. */
+.paused .skyTrack,
+.paused .satelliteImage {
+  animation-play-state: paused;
+}
+
+
+/* Headline counts. A definition list so each label stays paired with its value. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 56px 16px 44px;
+  text-align: center;
+}
+
+.stat {
+  padding: 0 12px;
+}
+
+.stat dd {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(36px, 4.2vw, 52px);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text);
+}
+
+.stat dt {
+  margin-top: 12px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* Filter bar. Mission and Baseline are dropdowns, the range is text buttons, and search is an
+   underlined field. Everything shares one baseline so the underlines line up. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 26px;
+  padding: 0 clamp(16px, 4vw, 56px);
+}
+
+/* Dropdown: the underline sits under the trigger when closed and moves under the menu when open. */
+.dd {
+  position: relative;
+  width: 220px;
+  border-bottom: 1px solid var(--line-strong);
+  transition: border-color 0.2s ease;
+}
+
+.ddOpen {
+  border-bottom-color: transparent;
+}
+
+.ddTrigger {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 6px 0 9px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ddTrigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.ddLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ddOpen .ddLabel {
+  color: var(--accent);
+}
+
+.ddValue {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.ddChev {
+  margin-left: auto;
+  flex: none;
+  color: var(--text);
+  transition: transform 0.2s ease;
+}
+
+.ddChevUp {
+  transform: rotate(180deg);
+}
+
+.ddMenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  width: max-content;
+  min-width: 100%;
+  margin: 0;
+  padding: 10px 0 12px;
+  list-style: none;
+  background: var(--bg-1);
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.ddItem {
+  display: block;
+  width: 100%;
+  padding: 7px 0;
+  border: 0;
+  background: none;
+  color: var(--text-mute);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ddItem:hover {
+  color: var(--text);
+}
+
+.ddItem:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.ddItemOn {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+
+.tabs {
+  display: flex;
+  gap: 18px;
+  padding-bottom: 3px;
+}
+
+.segBtn {
+  padding: 4px 0 3px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--text-mute);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.segBtn:hover {
+  color: var(--text);
+}
+
+.segBtn.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.segBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* Search: the underline spans the field and turns accent while focused. */
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 220px;
+  padding: 6px 0 9px;
+  border-bottom: 1px solid var(--line-strong);
+  color: var(--text);
+  transition: border-color 0.2s ease;
+}
+
+.search:focus-within {
+  border-bottom-color: var(--accent);
+}
+
+.search svg {
+  flex: none;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.searchInput::placeholder {
+  color: var(--text);
+  opacity: 0.85;
+}
+
+.searchInput::-webkit-search-cancel-button {
+  filter: invert(0.6);
+}
+
+/* Three panes on one grid: satellite | timeline | detail. Opening a release collapses the
+   satellite and opens the detail, so the timeline compresses to the left half. Animating the
+   track sizes gives the slide; the visibility delay keeps collapsed panes out of the way. */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr);
+  margin-top: 56px;
+  min-height: 640px;
+  transition: grid-template-columns 0.7s var(--ease);
+}
+
+.split.isDetail {
+  grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.satpane {
+ position: sticky; /* Keeps the satellite pane pinned while scrolling long tables */
+  top: 24px;        /* Distance from top of the viewport when fixed */
+  align-self: start;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  min-width: 0;
+  padding: 32px 24px 0;
+  overflow: hidden;
+  transition: padding 0.7s var(--ease), visibility 0s linear 0s;
+}
+
+.isDetail .satpane {
+  padding: 0;
+  visibility: hidden;
+  transition: padding 0.7s var(--ease), visibility 0s linear 0.7s;
+}
+
+.artGlow,
+.art {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.artGlow {
+  z-index: 1;
+  opacity: 0.15;
+  filter: blur(26px);
+  background: radial-gradient(circle at center, var(--accent) 0%, transparent 100%);
+}
+
+.art {
+  z-index: 2;
+  opacity: 0.3;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--accent) 20%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.satelliteImage {
+  position: relative;
+  z-index: 3;
+  max-width: 100%;
+  max-height: 640px;
+  object-fit: contain;
+  opacity: 0.92;
+  mix-blend-mode: screen;
+  transition: opacity 0.4s ease;
+  animation: satFloat 9s ease-in-out infinite;
+}
+
+/* A slow vertical drift, so the satellite never sits perfectly still. */
+@keyframes satFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+:root[data-theme="light"] .satelliteImage {
+  mix-blend-mode: normal;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-mute);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.satpane:has(.satelliteImage) .placeholder {
+  opacity: 0;
+}
+
+.placeholderText {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.5;
+}
+
+/* Timeline pane */
+.procpane {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 clamp(16px, 3vw, 48px) 96px;
+  overflow-x: hidden;
+}
+
+.phead {
+  margin: 0 0 30px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.caption {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.none {
+  margin: 0;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--text-mute);
+}
+
+/* Loading and error states of the timeline pane, in the pane's own mono / uppercase register. */
+.status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 24px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.statusPulse {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: statusPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusPulse {
+    animation: none;
+  }
+}
+
+.statusError {
+  max-width: 520px;
+  padding: 20px 0 20px 18px;
+  border-left: 2px solid var(--crit);
+}
+
+.statusTitle {
+  margin: 0 0 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--crit);
+}
+
+.statusText {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.62;
+  color: var(--text-dim);
+}
+
+.retry {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.retry:hover {
+  border-color: var(--accent);
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.captionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.captionRow .caption {
+  margin: 0;
+}
+
+/* Pause/resume for the ambient motion. Sized and set in the same mono as the other controls. */
+.motionBtn {
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.motionBtn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.motionBtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ==================== release timeline (SentiBoard.html#processors) ====================
+   One chart, drawn with absolute positions like drawTimeline(): a 100px name column pinned to the
+   left, and a track where every release is a dot on its own row with a hairline STEM rising to the
+   month labels. Rows are 44px, 28px over 8 processors and 22px over 12, so a long roster still fits.
+   Everything is Noto Sans. Every colour comes from the theme tokens (styles/tokens.css), so the
+   chart reads in dark and light alike: no fixed colours and no text-shadow. Hairlines are the
+   text colour mixed down to a few percent, so they track the theme too. */
+.tl {
+  --tl-ink: var(--text);
+  --tl-dim: var(--text-dim);
+  --tl-accent: var(--accent);
+  --tl-inforce: var(--bl-current);
+  --tl-past: var(--bl-past);
+  --tl-hair: color-mix(in srgb, var(--text) 8%, transparent);
+  --tl-hair-strong: color-mix(in srgb, var(--text) 16%, transparent);
+  position: relative;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-sans);
+}
+
+.caption {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--text-dim);
+}
+
+/* Every lane at full height: the densest mission (Sentinel-3, 18 processors at 22px rows) is
+   under 500px, so nothing is capped, faded or hidden behind a scroll. */
+.tlView {
+  margin-top: 8px;
+}
+
+/* Narrow screens: the chart keeps a 600px minimum and scrolls sideways under the pinned names. */
+.tlScroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--tl-hair-strong) transparent;
+}
+
+.tlScroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tlScroll::-webkit-scrollbar-thumb {
+  background: var(--tl-hair-strong);
+  border-radius: 3px;
+}
+
+.tlScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tlChart {
+  position: relative;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  min-width: 600px;
+}
+
+/* ---- names ---- */
+/* The names' backdrop starts under the axis header (42px = AXIS_TOP), so year and month labels
+   scrolled beneath the pinned column stay readable instead of being cut to a stray digit. */
+.tlLabels {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: linear-gradient(to right, var(--bg) 82%, transparent) 0 42px / 100%
+    calc(100% - 42px) no-repeat;
+}
+
+.tlLabels span {
+  position: absolute;
+  left: 0;
+  width: 96px;
+  display: flex;
+  align-items: center;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tl-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color 0.3s, opacity 0.3s;
+}
+
+.tlLabels span.on {
+  color: var(--tl-ink);
+}
+
+/* ---- the track and its grid ---- */
+.tlTrack {
+  position: relative;
+  overflow: hidden;
+}
+
+.tlTrack i {
+  font-style: normal;
+}
+
+.g {
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: 1px;
+  background: var(--tl-hair);
+  pointer-events: none;
+}
+
+.gYear {
+  top: 0;
+  background: var(--tl-hair-strong);
+}
+
+.yl {
+  position: absolute;
+  top: 3px;
+  padding-left: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--tl-dim);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.ml {
+  position: absolute;
+  top: 24px;
+  padding-left: 4px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--tl-dim); /* --text-mute is under 3:1 on the light background at 9px */
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.rl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--tl-hair);
+  pointer-events: none;
+}
+
+/* TODAY: starts under the month labels; its label sits below the last row, so it covers nothing */
+.today {
+  position: absolute;
+  top: 40px;
+  bottom: 22px;
+  width: 1px;
+  background: var(--tl-accent);
+  pointer-events: none;
+}
+
+.today b {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--tl-accent);
+  white-space: nowrap;
+}
+
+.todayEnd b {
+  transform: translateX(-100%);
+}
+
+/* ---- releases ---- */
+.mkWrap {
+  display: contents;
+}
+
+/* the stem: a hairline from under the month labels down to its release */
+.stem {
+  position: absolute;
+  top: 40px;
+  width: 1px;
+  background: var(--tl-hair-strong);
+  pointer-events: none;
+  transition: opacity 0.24s ease;
+}
+
+/* flat dots: filled = the baseline in force, ring = superseded; hollow on the page background */
+.mk {
+  position: absolute;
+  z-index: 1;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  padding: 0;
+  box-sizing: border-box;
+  border: 1.5px solid var(--tl-past);
+  border-radius: 50%;
+  background: var(--bg);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s, border-color 0.2s;
+}
+
+.mk:hover {
+  border-color: var(--tl-ink);
+  transform: scale(1.3);
+}
+
+.mk:focus-visible {
+  outline: 2px solid var(--tl-accent);
+  outline-offset: 3px;
+}
+
+.mk:disabled {
+  cursor: default;
+}
+
+.mkNow {
+  background: var(--tl-inforce);
+  border-color: var(--tl-inforce);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--tl-inforce) 45%, transparent);
+}
+
+.mkNow:hover {
+  border-color: var(--tl-inforce);
+}
+
+/* the picked release: a gap in the page colour, a ring, and a soft halo */
+.mkSel {
+  transform: scale(1.25);
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 0 0 5px var(--tl-ink),
+    0 0 18px 6px color-mix(in srgb, var(--tl-ink) 30%, transparent);
+}
+
+.mkNow.mkSel {
+  box-shadow:
+    0 0 0 4px var(--bg),
+    0 0 0 5px var(--tl-inforce),
+    0 0 18px 6px color-mix(in srgb, var(--tl-inforce) 45%, transparent);
+}
+
+/* zoomed in: the version beside each dot */
+.vl {
+  position: absolute;
+  margin: -8px 0 0 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--tl-dim);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: vlIn 0.4s ease both;
+}
+
+.vlNow {
+  color: var(--tl-inforce);
+}
+
+@keyframes vlIn {
+  from { opacity: 0; }
+}
+
+/* zoomed in, the other processors step back */
+.dim {
+  opacity: 0.3;
+}
+
+/* Baseline = Current: superseded releases all but disappear and cannot be clicked */
+.off {
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+/* search: releases that do not match fade back */
+.faint {
+  opacity: 0.12;
+}
+
+/* ---- hover card (portalled to <body>, fixed to the window) ---- */
+.tip {
+  position: fixed;
+  z-index: 55;
+  width: 236px;
+  padding: 14px 16px 13px;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--bg-1) 96%, transparent);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-sans);
+  color: var(--text);
+  pointer-events: none;
+  /* anchored on the dot's centre: above it by default */
+  transform: translate(-50%, -100%);
+  animation: tipIn 0.18s ease both;
+}
+
+.tipBelow {
+  transform: translate(-50%, 0);
+}
+
+@keyframes tipIn {
+  from { opacity: 0; margin-top: 4px; }
+}
+
+.tip hr {
+  margin: 11px 0 9px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.ttTitle {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.ttStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ttK {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.ttV {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ttGo {
+  color: var(--bl-current);
+}
+
+.ttOld {
+  color: var(--bl-past);
+}
+
+.ttRows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.ttRows dt {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.ttRows dd {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+/* "Changes" is prose: its own full-width line under the label, not squeezed beside it. */
+.ttRows .ttWide {
+  grid-column: 1 / -1;
+}
+
+.ttRows dt.ttWide {
+  margin-top: 3px;
+}
+
+.ttHint {
+  margin-top: 9px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Detail pane: collapsed to zero width until a release is open. */
+.detailpane {
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  visibility: hidden;
+  transition: padding 0.7s var(--ease), visibility 0s linear 0.7s;
+}
+
+.detailOpen {
+  padding: 0 clamp(16px, 3vw, 48px) 96px 0;
+  visibility: visible;
+  transition: padding 0.7s var(--ease), visibility 0s linear 0s;
+}
+
+/* Fixed inner width so the content does not reflow while the pane is still sliding open. */
+.dtIn {
+  min-width: 440px;
+  animation: dtIn 0.45s var(--ease);
+}
+
+@keyframes dtIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.dtTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 36px;
+}
+
+.dtBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.dtBack:hover {
+  color: var(--text);
+}
+
+.dtBack:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dtSteps {
+  display: flex;
+  gap: 8px;
+}
+
+.step {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.step:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.step:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.step:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.dtHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.dtProc {
+  display: block;
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.dtVer {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* Status tag: outlined box, green for the baseline in force, grey for a superseded one. */
+.tagNow,
+.tagOld {
+  flex: none;
+  padding: 9px 14px;
+  border: 1px solid;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tagNow {
+  color: var(--ok);
+  border-color: var(--ok);
+}
+
+.tagOld {
+  color: var(--text-mute);
+  border-color: var(--text-mute);
+}
+
+.meta {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 32px;
+}
+
+.meta div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.meta dt {
+  color: var(--text-mute);
+}
+
+.meta dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Not the global display-heading style: its -0.02em tracking at 13px/700 smudges the glyphs. */
+.rn h4 {
+  margin: 0 0 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: normal;
+  color: var(--text);
+  text-shadow: none;
+}
+
+/* Release notes: sanitized feed HTML (no inline styles or classes survive), styled here so it
+   follows the theme in dark and light alike. */
+.rnHtml {
+  font-size: 13px;
+  line-height: 1.62;
+  color: var(--text-dim);
+  overflow-wrap: anywhere;
+}
+
+.rnHtml > :first-child {
+  margin-top: 0;
+}
+
+.rnHtml p,
+.rnHtml div:not(:has(> p, > div, > ul, > ol)) {
+  margin: 0 0 12px;
+}
+
+.rnHtml ul,
+.rnHtml ol {
+  margin: 0 0 18px;
+  padding-left: 20px;
+}
+
+.rnHtml li {
+  margin-bottom: 8px;
+}
+
+.rnHtml li > p,
+.rnHtml li > div {
+  margin: 0;
+}
+
+.rnHtml h1,
+.rnHtml h2,
+.rnHtml h3,
+.rnHtml h4,
+.rnHtml h5,
+.rnHtml h6 {
+  margin: 20px 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.rnHtml b,
+.rnHtml strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.rnHtml a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rnHtml a:hover {
+  color: var(--text);
+}
+
+.rnHtml a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.rnHtml code,
+.rnHtml pre {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+.rnHtml pre {
+  margin: 0 0 12px;
+  white-space: pre-wrap;
+}
+
+.rnHtml blockquote {
+  margin: 0 0 12px;
+  padding-left: 12px;
+  border-left: 2px solid var(--line-strong);
+}
+
+.rnHtml table {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.rnHtml th,
+.rnHtml td {
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.rnHtml hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+/* Responsive: stacked panes below 1080px. The satellite leaves the flow once a release opens,
+   and the detail takes no space until it is open. */
+@media (max-width: 1080px) {
+  .split,
+  .split.isDetail {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .satpane {
+    min-height: 52vh;
+    padding-top: 16px;
+  }
+
+  .satelliteImage {
+    max-height: 440px;
+  }
+
+  .isDetail .satpane {
+    display: none;
+  }
+
+  .procpane {
+    padding-bottom: 48px;
+  }
+
+  .detailpane {
+    display: none;
+  }
+
+  .detailOpen {
+    display: block;
+    padding: 0 clamp(16px, 3vw, 48px) 72px;
+  }
+
+  .dtIn {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    row-gap: 32px;
+    padding-top: 40px;
+  }
+
+  .stat dd {
+    font-size: 34px;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .dd,
+  .search {
+    width: 100%;
+  }
+
+  .tabs {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .phead {
+    font-size: 16px;
+  }
+
+  .dtVer {
+    font-size: 32px;
+  }
+
+  .dtHead {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .split,
+  .satpane,
+  .detailpane,
+  .detailOpen,
+  .dtIn,
+  .mk,
+  .stem,
+  .step {
+    animation: none;
+    transition: none;
+  }
+
+  /* Ambient motion is removed outright, not just slowed. */
+  .skyTrack,
+  .satelliteImage {
+    animation: none;
+  }
+
+}
+
+
+.headArt + .container {
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  background: transparent;
+}
+
+.headArt + .container .stats {
+  padding-top: 22px;
+}
+
+/* the drifting stars fade in over the photo instead of starting on a hard edge */
+.headArt + .container .skyStrip {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
+}
+
+/* room under the content for the planet, as on Data Availability */
+.container {
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
+}

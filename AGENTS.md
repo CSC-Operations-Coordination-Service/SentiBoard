@@ -59,7 +59,7 @@ These rules hold across both repos. Breaking one needs a `DECISIONS.md` entry fi
 - **Pages must work without JavaScript** for their primary content. Interactive widgets enhance an SSR baseline.
 - **Filter, pagination and selection state lives in the URL** (search params), so that views can be shared and deep-linked.
 - **SEO is a hard requirement.** Each public page defines its metadata (title, description, canonical, Open Graph, Twitter) through the Next.js Metadata API. Keep `sitemap`, `robots` and structured data in sync when you add or rename a route. Permanently moved legacy URLs get a 301/308 redirect, never a 404.
-- **Backend types:** build request/response types from the backend's OpenAPI schema. Do not hand-write duplicates that drift. Generation tooling: `UNKNOWN`.
+- **Backend types:** build request/response types from the backend's OpenAPI schema. Do not hand-write duplicates that drift. Generation tooling: `openapi-typescript`, from the committed contract copy `sentiboard-frontend/api/openapi.json` into `src/lib/api/schema.d.ts` (generated, not committed): `pnpm gen:api`, or `pnpm gen:api:refresh` to download the contract from `BACKEND_URL` first.
 
 ## 6. API contract and cross-repo changes
 
@@ -83,15 +83,16 @@ Port **one vertical slice at a time** (backend endpoint, frontend page, tests, m
 
 ## 8. Commands
 
-`UNKNOWN`. Neither application has code yet. When you add tooling, fill in this table with commands you have run successfully, and nothing else.
+Frontend commands run from `sentiboard-frontend/` (pnpm via `corepack enable pnpm`; copy `.env.sample` to `.env.local` first). The backend has no code in this repo yet. When you add tooling, fill in this table with commands you have run successfully, and nothing else.
 
 | Task | Backend | Frontend |
 | --- | --- | --- |
-| Install | `UNKNOWN` | `UNKNOWN` |
-| Dev server | `UNKNOWN` | `UNKNOWN` |
-| Lint / format | `UNKNOWN` | `UNKNOWN` |
-| Type-check | `UNKNOWN` | `UNKNOWN` |
-| Tests | `UNKNOWN` | `UNKNOWN` |
+| Install | `UNKNOWN` | `pnpm install` |
+| Dev server | `UNKNOWN` | `pnpm dev` |
+| Build / production server | `UNKNOWN` | `pnpm build`, then `pnpm start` |
+| Lint / format | `UNKNOWN` | `pnpm lint` (no formatter configured) |
+| Type-check | `UNKNOWN` | `pnpm type-check` |
+| Tests | `UNKNOWN` | `pnpm test` (Vitest; `pnpm test:watch` while developing) |
 | Local data stores | `UNKNOWN` | — |
 
 Before you report a task as done, run lint, type-check and tests for every repo you touched. Report failures as failures.
