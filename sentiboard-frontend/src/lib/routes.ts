@@ -13,7 +13,7 @@ export const ROUTES = {
   home: { path: "/", title: "SentiBoard", ported: false },
   acquisitionsGlobe: { path: "/acquisitions-globe", title: "Acquisitions - Globe", ported: false },
   acquisitionsEarth: { path: "/acquisitions-globe-earth", title: "Acquisitions - Earth", ported: false },
-  events: { path: "/events", title: "Events", ported: false },
+  events: { path: "/events", title: "Events", ported: true },
   availability: { path: "/availability", title: "Data Availability", ported: false },
   processors: { path: "/processors", title: "Processors", ported: true },
   terms: { path: "/terms-conditions", title: "Terms & Conditions", ported: false },

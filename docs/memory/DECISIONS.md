@@ -115,6 +115,30 @@ both properties are removed. No React state, no re-render on scroll.
 - **Reduced motion:** nothing is applied and nothing animates. No mask, fade or height cap may be
   reintroduced to produce the effect.
 
+## 2026-10-22 — Events page: compact EventCard[] to client, EventDetail on demand
+
+**Context.** The anomaly feed has 3720 records; passing every full EventDetail (with text and
+datatakes) to the client would be ~2–4 MB raw. The calendar needs all events for instant
+client-side filtering; the drawer needs the selected event's full text and datatakes.
+**Decision.** Server converts every record to a compact `EventCard` (no text, no datatakes) and
+passes the full array to the client. The full `EventDetail` for the URL-selected event (`?event=`)
+is passed as a separate `selectedEvent` prop. Selecting a new event calls `router.push` (RSC
+re-render), so the drawer always shows server-rendered detail. Filter / month changes use
+`history.pushState` (instant client-side, no round-trip).
+**Consequences.** Clicking a new event incurs an RSC round-trip (~45 ms warm). The drawer works
+without JavaScript (SSR-rendered via `selectedEvent`). This mirrors the Processors pattern for
+the no-JS fallback list.
+
+## 2026-10-22 — Events text: parse to TextSegment[], never dangerouslySetInnerHTML
+
+**Context.** The `text` field contains raw Confluence markup (`{code:java}`, `{noformat}`), XML
+snippets, Java stack traces, and Windows line endings — not sanitised HTML.
+**Decision.** `parseTextSegments(text)` in `adapter.ts` extracts code blocks via regex and splits
+the rest on `\r?\n`, producing `TextSegment[]` (`text | br | code`). The client renders these as
+React elements (`<span>`, `<br/>`, `<pre><code>`) — no dangerouslySetInnerHTML at any point.
+**Consequences.** Markup artefacts like `{code:xml}` are displayed verbatim if the closing tag
+is absent. The parsed shape is stable for the test suite.
+
 ## 2026-10-22 — Frontend tests: Vitest in plain Node, real fixtures, no network
 
 **Decision.** `sentiboard-frontend` tests run with Vitest (`pnpm test`, config `vitest.config.mts`),

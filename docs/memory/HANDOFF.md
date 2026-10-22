@@ -2,14 +2,14 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
-## Frontend — still to port (2026-10-21)
+## Frontend — still to port (2026-10-22)
 
-- Only the shell and `/processors` are ported. Placeholders ("coming soon", noindex, not in the
-  sitemap) remain for `/` (home), `/acquisitions-globe`, `/acquisitions-globe-earth`, `/events`,
+- Shell, `/processors` and `/events` are ported. Placeholders ("coming soon", noindex, not in the
+  sitemap) remain for `/` (home), `/acquisitions-globe`, `/acquisitions-globe-earth`,
   `/availability`, `/terms-conditions`, `/cookie-notice`. Port each as its own vertical slice
   (AGENTS.md §7), from the prototype at `~/work/SentiBoard/design/react-mockups`. Their final URLs
   and legacy redirects are not decided yet: the placeholders use the prototype's paths; apply the
-  308 rule in DECISIONS.md when each is ported (legacy URLs on `origin/main`, e.g. `/events`,
+  308 rule in DECISIONS.md when each is ported (legacy URLs on `origin/main`, e.g.
   `/data-availability`, `/acquisitions-status.html`, `/newsList.html`).
 - The Acquisitions pages need Three.js (`ThreeEarth`, `AcquisitionGlobe*`): load with
   `next/dynamic({ ssr: false })` from a client component, as the Processors timeline does.
@@ -41,6 +41,18 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   owner needs to decide the root layout first (AGENTS.md §2: separate repos, submodules or one
   repo). Do not create a root `package.json` until then.
 
+## Events — known issues (2026-10-22)
+
+- **Visual check pending.** `pnpm lint`, `type-check`, `build` and `test` all pass. Still needs a
+  visual comparison with the prototype in a browser (dark + light themes, mobile at 760 px
+  breakpoint). Fixed since last check: "Blocking Route" prerender error (nowYM + Suspense), hydration
+  mismatch (drawer portal gated on panelDay), calendar count badges removed, Platform merged into
+  Satellite.
+- **Drawer event selection.** Clicking a calendar dot opens the drawer; selecting a different event
+  within the same day's panel requires a `router.push` round-trip (~45 ms warm). If instant
+  same-month event switching is needed, pre-load the current month's EventDetails on the server
+  and pass them as `monthDetails: Record<string, EventDetail>`.
+
 ## Backend — pending fixes (reported, not fixed in the backend)
 
 From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier findings on
@@ -69,3 +81,14 @@ From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier fi
 - **Anomaly migration** (resolved 2026-10-22): 3895 rows → 3720 documents = 171 merged duplicate
   pairs (old PDGSANOM-/GSANOM- key rename; completeness and news links kept, nothing lost) + 4
   hidden Dashboard anomalies excluded. The Postgres dump from the Config Tool is not needed for now.
+- **Fake datatake IDs in anomaly feed.** ~630 records have ~2085 IDs that are tokenised free text
+  ("No", "impact", "on", "acquired", …). Filtered client-side with `isRealDatatakeId = /^S\d/.test`.
+  The backend should prevent non-ID tokens from entering `datatakes_completeness`.
+- **Null `impacted_satellite` (296 records).** When null, the frontend derives the satellite from
+  the datatake IDs (regex `^(S\d[A-Z0-9])`); if they disagree or are all fake, it falls back to
+  "Unknown". Ideally the backend populates `impacted_satellite` from the anomaly key.
+- **`impacted_satellite` name casing.** Map uses "Copernicus Sentinel-5p" (lowercase 'p') matching
+  the live feed. Verify if the backend normalises to title case in future.
+- **`publication_date` field absent.** The anomaly schema does not expose a publication date; the
+  calendar uses `start` as the primary date. Confirm whether events should be ordered by
+  `publication_date` or `start`.

@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/processors-viewer.html", destination: "/processors", permanent: true },
       { source: "/processors-viewer", destination: "/processors", permanent: true },
+      { source: "/events.html", destination: "/events", permanent: true },
     ];
   },
 };

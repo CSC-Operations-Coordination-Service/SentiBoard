@@ -1,0 +1,2426 @@
+
+.page {
+  /* canvas */
+  --mf-bg: #05070a;
+  --mf-panel: #343a40;
+  --mf-panel-2: #252b33;
+  /* the calendar sits straight on the starfield: no panel, transparent cells, crisp outlines */
+  --mf-cal: transparent;
+  --mf-cell: rgba(0, 0, 0, 0.4);
+  --mf-cell-line: rgba(255, 255, 255, 0.45);
+  --mf-cell-line-dim: rgba(255, 255, 255, 0.14); /* the empty boxes of neighbouring months */
+  --mf-line: rgba(255, 255, 255, 0.1);
+  /* faint stars sprinkled over the canvas, tiled every 360×300px */
+  --mf-stars:
+    radial-gradient(1px 1px at 20px 30px, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1px 1px at 140px 90px, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1.5px 1.5px at 260px 40px, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1px 1px at 330px 150px, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(1px 1px at 90px 200px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 210px 250px, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 300px 270px, rgba(255, 255, 255, 0.3), transparent),
+    radial-gradient(1px 1px at 60px 120px, rgba(255, 255, 255, 0.4), transparent);
+  --mf-line: rgba(255, 255, 255, 0.1);
+  --mf-line-strong: rgba(255, 255, 255, 0.2);
+
+  /* ink */
+  --mf-text: #eef1f6;
+  --mf-muted: #9aa4b4;
+  --mf-faint: #67707f;
+
+  /* the one accent */
+  --mf-signal: #00c7d6;
+  --mf-signal-soft: rgba(0, 199, 214, 0.13);
+
+  /* completeness status — the five states and the exact colours production's own legend uses, so
+     this page and the shipping dashboard cannot disagree about what "Partial" means.
+     Planned and Processing share the neutral grey: not finished is not the same as degraded. */
+  --mf-grey: #a6abb0;
+  --mf-green: #3fe096;
+  --mf-orange: #ffc24d;
+  --mf-red: #ff6b6b;
+
+  /* overlay chrome — variables rather than literals so the light theme can soften them */
+  --mf-scrim: rgba(3, 5, 10, 0.62);
+  --mf-drawer-shadow: -24px 0 60px -20px rgba(0, 0, 0, 0.75);
+
+  position: relative;
+  min-height: calc(100vh - var(--nav-h, 0px));
+  width: 100%;
+  background-color: var(--mf-bg);
+  background-image: var(--mf-stars, none);
+  background-size: 360px 300px;
+  color: var(--mf-text);
+  font-family: var(--font-sans, var(--sans));
+}
+
+/* LIGHT THEME.
+   Every colour on this page already flows from the --mf-* set above, so the light theme is that
+   set redefined once — no rule below this block needs to know which theme is running. The page
+   keeps its own identity rather than falling back to the shared tokens: same structure, same
+   meanings, inverted canvas.
+
+   The hues are not swapped, they are re-weighted for a white ground. #00c7d6 signal, #3fe096
+   green, #ffc24d amber and #ff6b6b coral all read as pastel washes on white — recognisable but
+   too faint to carry a status — so each is darkened until it holds against the background while
+   staying the same colour. The scrim goes the other way: a 62%-black veil is far heavier than a
+   light page needs to push the drawer forward. */
+:global(:root[data-theme="light"]) .page {
+  /* canvas */
+  --mf-bg: #f4f6fa;
+  --mf-panel: #ffffff;
+  --mf-panel-2: #ffffff;
+  --mf-cal: var(--mf-panel);
+  --mf-cell: rgba(255, 255, 255, 0.35);
+  --mf-cell-line: var(--mf-line);
+  --mf-cell-line-dim: rgba(9, 20, 40, 0.06);
+  --mf-stars: none;
+  --mf-line: rgba(9, 20, 40, 0.12);
+  --mf-line-strong: rgba(9, 20, 40, 0.22);
+
+  /* ink */
+  --mf-text: #0d1220;
+  --mf-muted: #4b5768;
+  --mf-faint: #7c8798;
+
+  /* the one accent */
+  --mf-signal: #0a8b97;
+  --mf-signal-soft: rgba(10, 139, 151, 0.12);
+
+  /* completeness status */
+  --mf-grey: #6b7075;
+  --mf-green: #0f9257;
+  --mf-orange: #a86a06;
+  --mf-red: #d24343;
+
+  /* overlay chrome */
+  --mf-scrim: rgba(15, 23, 38, 0.42);
+  --mf-drawer-shadow: -24px 0 60px -24px rgba(20, 40, 80, 0.35);
+}
+
+.inner {
+  width: 100%;
+  padding: 0;
+}
+
+/* Description card accordion */
+.descriptionCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 16px;
+}
+
+.descriptionHead {
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 1px solid var(--mf-line);
+  border-radius: 0 !important;
+  background: var(--mf-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mf-muted);
+  transition: color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.descriptionHead:hover {
+  color: var(--mf-text);
+  background: var(--mf-signal-soft);
+}
+
+.descriptionChev {
+  flex: 0 0 auto;
+  color: var(--mf-signal);
+  transition: transform 0.2s ease;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+}
+
+.descriptionCard :global(.collapsible.open) .descriptionChev {
+  transform: rotate(180deg);
+}
+
+.descriptionBody {
+  padding: 12px 16px 16px;
+  color: var(--mf-muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.descriptionBody p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.descriptionBody ul {
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+  line-height: 1.6;
+}
+
+.descriptionBody li {
+  margin: 0.35rem 0;
+}
+
+.descriptionBody p,
+.desc-in p {
+  border-left: none !important;
+  padding-left: 0 !important;
+}
+/* ---------------- header ---------------- */
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 22px;
+  width: 100%;
+  padding: 24px clamp(18px, 4vw, 48px) 34px !important;
+  border: none !important;
+  border-bottom: none !important;
+  background: transparent;
+}
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-cyan, #00e5ff);
+  line-height: 1.2;
+}
+
+.eyebrow a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.eyebrow a:hover {
+  text-decoration: underline;
+}
+
+.title {
+  margin: 0 !important;
+  margin-left: 0 !important;
+  padding: 0 !important;
+  padding-left: 0 !important;
+  font-family: var(--font-display, var(--display, var(--font-sans)));
+  font-size: clamp(30px, 5vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--mf-text);
+}
+
+.tabBar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--mf-line);
+  padding-bottom: 8px;
+}
+
+.tab {
+  padding: 6px 12px;
+  border: 1px solid var(--mf-line);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--mf-faint);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.tab:hover {
+  border-color: var(--mf-line-strong);
+  color: var(--mf-muted);
+}
+
+.tabActive {
+  border-color: #1dd0dd;
+  background: rgba(29, 208, 221, 0.13);
+  color: #1dd0dd;
+}
+
+.sub {
+  margin: 8px 0 0;
+  max-width: 74ch;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--mf-muted);
+}
+
+/* ---------------- month bar + legend ---------------- */
+/* One centred row, as SentiBoard.html's .ev-toolbar: the month, then the filters beside it. */
+.monthBar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px 26px;
+  /* the reference's .ev-toolbar spacing: a little air above, a little more below */
+  padding: 0 clamp(18px, 4vw, 48px) clamp(14px, 2vh, 24px);
+  width: 100%;
+  max-width: var(--wrap);
+  margin: clamp(16px, 2.6vh, 28px) auto 0;
+  box-sizing: border-box;
+}
+
+/* Month stepper, as in SentiBoard.html (.fmonth / .fstep): bare chevrons with no box, faint until
+   hovered, either side of the month set in the sans display weight. */
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 49px;
+}
+
+.monthNav button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--mf-text) 45%, transparent);
+  cursor: pointer;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.monthNav button:hover:not(:disabled) {
+  color: var(--mf-text);
+  transform: translateY(-2px);
+}
+
+.monthNav button:focus-visible {
+  outline: 1px solid color-mix(in srgb, var(--mf-text) 40%, transparent);
+  outline-offset: 2px;
+}
+
+.monthNav button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.monthLabel {
+  min-width: 8.2em;
+  text-align: center;
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--mf-text);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.legendLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--mf-muted);
+}
+
+.legendDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+/* ---------------- filters ---------------- */
+.filters {
+  width: 100%;
+  max-width: var(--wrap);
+  margin: 20px auto 18px;
+  padding: 16px clamp(18px, 4vw, 48px);
+  border: 1px solid var(--mf-line);
+  border-radius: 0;
+  background: var(--mf-panel);
+  box-sizing: border-box;
+}
+
+.filtersHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: var(--mf-faint);
+}
+
+.filtersLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.count {
+  margin-left: 4px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  color: var(--mf-muted);
+}
+
+.reset {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mf-signal);
+}
+
+.reset:hover {
+  text-decoration: underline;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field label {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.control {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--mf-line);
+  border-radius: 0;
+  background: var(--mf-panel-2);
+  color: var(--mf-text);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 12.5px;
+  line-height: 1.3;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.control:hover:not(:disabled) {
+  border-color: var(--mf-line-strong);
+}
+
+.control:focus {
+  border-color: var(--mf-signal);
+  box-shadow: 0 0 0 3px var(--mf-signal-soft);
+}
+
+.control:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* native select arrow drawn from two gradients, so no image asset is needed */
+select.control {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 32px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--mf-muted) 50%),
+    linear-gradient(135deg, var(--mf-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.withIcon {
+  position: relative;
+  display: flex;
+}
+
+.withIcon .control {
+  padding-left: 31px;
+}
+
+.lead {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+  color: var(--mf-faint);
+}
+
+.clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--mf-faint);
+}
+
+.clear:hover {
+  color: var(--mf-text);
+}
+
+.chipRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.chipRowLabel {
+  margin-right: 4px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--mf-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--mf-faint);
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.chip:hover {
+  border-color: var(--mf-line-strong);
+  color: var(--mf-muted);
+}
+
+/* selected chips carry the accent, so "which types am I looking at" is answerable at a glance */
+.chipOn {
+  border-color: var(--mf-signal);
+  background: var(--mf-signal-soft);
+  color: var(--mf-signal);
+}
+
+/* ---------------- key metrics ---------------- */
+/* As SentiBoard.html's .kpis: four fixed-width columns, centred as a group, each figure centred
+   over its caption. No dividers. */
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+  box-sizing: border-box;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: clamp(140px, 16vw, 220px);
+  text-align: center;
+}
+
+.metricValue {
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-text);
+}
+
+.metricLabel {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--mf-text) 72%, transparent);
+}
+
+.metricLost .metricValue {
+  color: var(--mf-red);
+}
+
+/* ---------------- month + filter row ----------------
+   As SentiBoard.html's .ev-toolbar: every filter is a 200px field standing on one hairline, the
+   caption on the left and its value with a chevron on the right; the search is the same field.
+   All fields share the stepper's 49px height so the row lines up on one baseline. */
+.barFilters {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2px 26px;
+}
+
+.inline {
+  --field-line: color-mix(in srgb, var(--mf-text) 30%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 200px;
+  height: 49px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--field-line);
+  color: var(--mf-text);
+  transition: border-color 200ms ease;
+}
+
+/* caption: small, bold, widely tracked; the accent while the field is hovered or in use */
+.inlineLabel {
+  flex: 1 1 auto;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--mf-text);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.inline:hover .inlineLabel,
+.inline:focus-within .inlineLabel {
+  color: var(--mf-signal);
+}
+
+.inline:focus-within {
+  border-bottom-color: var(--mf-signal);
+}
+
+/* value: no box of its own, right-aligned against the chevron */
+.inlineSelect {
+  appearance: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 60%;
+  padding: 6px 20px 6px 4px;
+  border: 0;
+  border-radius: 0;
+  background-color: transparent;
+  /* a thin outlined chevron, as the reference draws it */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='rgba(255,255,255,0.85)' stroke-width='1.3'/%3E%3C/svg%3E");
+  background-position: right 2px center;
+  background-size: 12px 12px;
+  background-repeat: no-repeat;
+  color: var(--mf-text);
+  font-family: var(--font-sans, var(--sans));
+  font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+  text-align-last: right;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+:global(:root[data-theme="light"]) .inlineSelect {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5l3 3 3-3' stroke='rgba(13,18,32,0.8)' stroke-width='1.3'/%3E%3C/svg%3E");
+}
+
+.inlineSelect option {
+  background: var(--mf-panel);
+  color: var(--mf-text);
+  text-align: left;
+}
+
+.inlineSelect:focus,
+.inlineSelect:focus-visible {
+  outline: none;
+}
+
+.inlineSelect:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inline:has(.inlineSelect:disabled) .inlineLabel {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inline:has(.inlineSelect:disabled):hover .inlineLabel {
+  color: var(--mf-text);
+}
+
+/* search: the same field, icon first, the input filling the rest */
+.inlineSearch {
+  gap: 9px;
+}
+
+.inlineSearch svg {
+  flex: 0 0 auto;
+}
+
+.inlineInput {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--mf-text);
+  font-family: var(--font-sans, var(--sans));
+  font-size: 14px;
+  outline: none;
+}
+
+.inlineInput::placeholder {
+  color: var(--mf-text);
+  opacity: 1;
+}
+
+/* the reset sits on the same 49px line as the fields */
+.barFilters .reset {
+  height: 49px;
+  margin-left: 0;
+}
+
+/* ---------------- month grid: sized like SentiBoard.html's star chart ----------------
+   The reference draws the month in an SVG 1580 units wide: seven 200 × 168 cells (1400 units) with
+   90 units either side, 80 above and 60 below. That chart is as wide as the screen height allows —
+   min(column, (100vh − 203px) × 1580 / 1148) — and centred under the toolbar.
+
+   .calRow is that chart box; .calWrap's padding is the 90/80/60 margin, as percentages of the
+   box's width (percentage padding always resolves against the parent's width), so the grid is
+   1400/1580 of the box at every size. On a 1080p screen this gives a ~870px grid of ~124 × 104 cells. */
+.calRow {
+  position: relative;
+  width: min(100%, max(560px, calc((100vh - 203px) * 1580 / 1148)));
+  margin: 0 auto;
+  padding-bottom: clamp(20px, 2.6vw, 38px);
+}
+
+.calWrap {
+  position: relative;
+  width: 100%;
+  margin: 0;
+  /* 80 / 90 / 60 units of 1580 */
+  padding: 5.063% 5.696% 3.797%;
+  border: 0;
+  background: var(--mf-cal);
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+/* The constellation lives in the free space to the left of the chart, so it never pushes the
+   grid off the page's centre line. Below 1400px there is no room for it there; it then sits above
+   the grid, centred (the base rules below), as it already did on phones. */
+.zodiac {
+  width: min(260px, 100%);
+  margin: 0 auto 8px;
+}
+
+@media (min-width: 1400px) {
+  .zodiac {
+    position: absolute;
+    top: 50%;
+    right: calc(100% + clamp(8px, 2vw, 32px));
+    width: clamp(220px, 18vw, 300px);
+    margin: 0;
+    transform: translateY(-50%);
+  }
+}
+
+.zodiacSvg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.zodiacLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  fill: var(--mf-muted);
+}
+
+/* Star nodes glow a little so they read as lights rather than flat dots. */
+/* Each star starts dark and lights in turn. The delay comes inline (i × 150ms), so the stars light
+   one after another from the first point of the figure. `both` holds the dark start during the
+   delay and the lit end afterwards. */
+.zodiacStars circle {
+  fill: #ffffff;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
+  opacity: 0.1;
+  transform: scale(0.5);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: illuminateStar 0.4s ease-out both;
+}
+
+@keyframes illuminateStar {
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1));
+  }
+}
+
+/* The line draws from nothing to the whole figure. Duration is set inline to match the stars. */
+.zodiacPath {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: drawZodiacPath;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@keyframes drawZodiacPath {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zodiacStars circle,
+  .zodiacPath {
+    animation: none;
+    opacity: 1;
+    transform: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+.dow,
+.grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  /* no gutters: neighbouring days share one line, as the reference's adjoining rects do */
+  gap: 0;
+}
+
+/* the zoom: the grid moves and scales as one, from the selected day's inline transform */
+.grid {
+  width: 100%;
+  height: 100%;
+  container-type: inline-size; /* lets the day numbers scale with the grid (cqw) */
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The reference's star chart has no weekday row, so it is hidden here; delete this rule to show
+   it again. */
+.dow {
+  display: none;
+  margin-bottom: 6px;
+}
+
+.dow span {
+  text-align: center;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--mf-faint);
+}
+
+.cell {
+  position: relative;
+  /* the reference's 200 × 168 cell, a little wider than tall */
+  aspect-ratio: 200 / 168;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: stretch;
+  /* every cell overlaps its right and lower neighbour by the border's width, so two days share
+     one 1px line instead of drawing two side by side */
+  margin: 0 -1px -1px 0;
+  padding: clamp(5px, 1cqw, 10px) clamp(6px, 1cqw, 12px);
+  border: 1px solid var(--mf-cell-line);
+  border-radius: 0;
+  background: var(--mf-cell);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.cell:not(.cellDim):hover {
+  z-index: 2; /* lift it so all four of its edges show the hover colour */
+  border-color: color-mix(in srgb, var(--mf-text) 70%, transparent);
+}
+
+.cell:focus-visible {
+  outline: 2px solid var(--mf-signal);
+  outline-offset: 1px;
+}
+
+/* neighbouring-month padding: drawn as faint empty boxes, as the reference does, so the month
+   keeps its full rectangle */
+.cellDim,
+.cellDim:hover {
+  background: transparent;
+  border-color: var(--mf-cell-line-dim);
+  cursor: default;
+}
+
+.cellSel {
+  z-index: 10 !important;
+  border-color: var(--mf-cell-line) !important;
+  box-shadow: none !important;
+  transform: scale(1.1) !important;
+}
+
+.cellBlur {
+  opacity: 0.35;
+  transition: opacity 300ms ease;
+}
+
+.cellPick {
+  cursor: pointer;
+  opacity: 0.35;
+}
+
+.cellPick:hover {
+  opacity: 0.7;
+}
+
+.fdropDisabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* day number: the reference's 20-unit Noto Sans 600 at 88% white — 1.43% of the grid width */
+.cellNum {
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(10px, 1.43cqw, 15px);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  color: color-mix(in srgb, var(--mf-text) 88%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.cellSel .cellNum {
+  color: var(--mf-text);
+}
+
+/* One mark per event. Closed, each day shows a coloured dot per event (the category colour); zoomed
+   in, the same events show their type icons instead. The zoom state picks which set renders. */
+.marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px 4px;
+  padding-top: 4px;
+}
+
+/* dots: 6px rounded, filled with the event category's colour (set inline) */
+.dotMark {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.dotMark:hover {
+  transform: scale(1.4);
+}
+
+/* icons: 18px wrappers around the category glyph, shown only while a day is zoomed */
+.zoomedIn {
+  gap: 4px;
+}
+
+.iconMark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.iconMark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.iconMark:hover {
+  transform: scale(1.2);
+}
+
+/* "+2" when a day has more events than the cell can draw. Sized to sit on the glyphs' baseline
+   rather than beside them, so a summarised day is still one row of marks. */
+.markMore {
+  flex: 0 0 auto;
+  font-family: var(--font-mono, var(--mono));
+  font-style: normal;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--mf-faint);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s;
+}
+
+.markMoreBtn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.cell:hover .markMore,
+.cellSel .markMore {
+  color: var(--mf-signal);
+}
+
+
+.hint {
+  margin: 12px 2px 0;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--mf-faint);
+}
+
+/* ---------------- detail: shared type ---------------- */
+.detailEyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--mf-signal);
+}
+
+.detailDay {
+  margin: 6px 0 4px;
+  font-family: var(--font-display, var(--display, var(--font-sans)));
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.detailSub {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--mf-faint);
+}
+
+.emptyDetail {
+  margin: 0;
+  padding: 32px 0;
+  text-align: center;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  color: var(--mf-faint);
+}
+
+
+/* ---------------- Option A: drawer ---------------- */
+/* The drawer and scrim are portalled to <body>, outside .page, so they cannot inherit the page's
+   --mf-* tokens. Everything they draw is defined here, on the elements themselves. */
+.scrim {
+  --mf-scrim: rgba(3, 5, 10, 0.62);
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  border: 0;
+  padding: 0;
+  background: var(--mf-scrim);
+  touch-action: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.28s ease;
+}
+
+.scrimOn {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* The day manifest, as SentiBoard.html's .zoom-info: no panel at all. A transparent column on the
+   right of the screen, its text standing straight on the stage's dark gradient (.stage::after),
+   fading in once the camera is on its way and out first when it leaves. */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  width: min(46vw, 540px);
+  /* dark-stage tokens whatever the page theme; the light block below swaps them */
+  --mf-text: #ffffff;
+  --mf-muted: rgba(234, 240, 246, 0.55);
+  --mf-faint: rgba(234, 240, 246, 0.38);
+  --mf-line: rgba(255, 255, 255, 0.07);
+  --mf-signal: #2fc6dc;
+  --mf-grey: #c9d0da;
+  --mf-green: #3fcf7f;
+  --mf-orange: #f0a63a;
+  --mf-red: #e8514b;
+  color: var(--mf-text);
+  font-family: var(--font-sans, var(--sans));
+  background: none;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.drawerOn {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity 460ms ease 420ms;
+}
+
+:global(:root[data-theme="light"]) .drawer {
+  --mf-text: #0d1220;
+  --mf-muted: #4b5768;
+  --mf-faint: #7c8798;
+  --mf-line: rgba(9, 20, 40, 0.1);
+  --mf-signal: #0a8b97;
+  --mf-grey: #6b7075;
+  --mf-green: #0f9257;
+  --mf-orange: #a86a06;
+  --mf-red: #d24343;
+}
+
+/* the one scrolling column: generous top padding, flush to nothing on the left (the gradient is
+   the edge), the reference's gutter on the right */
+.drawerBody {
+  height: 100%;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: clamp(56px, 10vh, 108px) clamp(22px, 4vw, 60px) 56px 0;
+}
+
+.ziHead .detailEyebrow {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+}
+
+.ziDate {
+  display: block;
+  margin: 8px 0 0;
+  font-family: var(--font-sans, var(--sans));
+  font-size: clamp(25px, 2.9vw, 38px);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: var(--mf-text);
+}
+
+.ziSum {
+  display: block;
+  margin-top: 12px;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--mf-muted);
+}
+
+/* one occurrence; each rises in a beat after the one before (delay inline) */
+@keyframes ziRise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ziOcc {
+  padding: 30px 0 4px;
+  animation: ziRise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+.ziTop {
+  display: grid;
+  grid-template-columns: 74px 1fr 12px;
+  gap: 14px;
+  align-items: start;
+}
+
+.ziTime {
+  padding-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--mf-text) 50%, transparent);
+}
+
+.ziTitle {
+  display: block;
+  font-size: clamp(18px, 2vw, 22px);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--mf-text);
+}
+
+.ziSub {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mf-muted);
+}
+
+.ziDot {
+  width: 10px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 50%;
+}
+
+.ziDtkHead {
+  margin-top: 20px;
+  padding-bottom: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--mf-text) 34%, transparent);
+}
+
+/* one datatake: ID / product / window on the left, status and completeness on the right */
+.dtkRow {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 13px 0;
+  border-top: 1px solid var(--mf-line);
+}
+
+.dtkLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dtkId {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-text);
+}
+
+.dtkId i {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.dtkLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--mf-text) 22%, transparent);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.dtkLink:hover {
+  color: var(--mf-signal);
+  border-bottom-color: var(--mf-signal);
+}
+
+.dtkLink svg {
+  opacity: 0.6;
+}
+
+.dtkProd {
+  padding-left: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--mf-signal);
+}
+
+.dtkWhen {
+  padding-left: 20px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-faint);
+}
+
+.dtkRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dtkRight b {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dtkRight span {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* Below 900px the manifest takes the lower two thirds of the screen, full width, and the day sits
+   above it (measureZoom); the stage's gradient rises from the bottom to match. */
+@media (max-width: 900px) {
+  .drawer {
+    top: auto;
+    width: 100%;
+    height: 64%;
+  }
+
+  .drawerBody {
+    padding: 26px clamp(18px, 5vw, 28px) 40px;
+  }
+
+  .ziTop {
+    grid-template-columns: 62px 1fr 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawer,
+  .drawerOn {
+    transition: none;
+  }
+
+  .ziOcc {
+    animation: none;
+  }
+}
+
+.iconBtn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--mf-line);
+  border-radius: 0;
+  background: var(--mf-panel-2);
+  color: var(--mf-muted);
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.iconBtn:hover {
+  border-color: var(--mf-signal);
+  color: var(--mf-signal);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.35);
+}
+
+.expandAllBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid var(--mf-line);
+  border-radius: 0;
+  background: var(--mf-panel-2);
+  color: var(--mf-muted);
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.expandAllBtn:hover {
+  border-color: var(--mf-signal);
+  color: var(--mf-signal);
+  background: var(--mf-signal-soft);
+}
+
+.expandAllBtn:active {
+  background: var(--mf-signal-soft);
+}
+
+/* ---------------- occurrences + datatakes ---------------- */
+.occList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.occ {
+  border-bottom: 1px solid var(--mf-line);
+}
+
+.occ:last-child {
+  border-bottom: 0;
+}
+
+.occRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 13px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.occRow:hover .occTitle {
+  color: var(--mf-signal);
+}
+
+.occTime {
+  flex: 0 0 auto;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  color: var(--mf-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.chev {
+  flex: 0 0 auto;
+  color: var(--mf-faint);
+  transition: transform 0.15s;
+}
+
+.chevOpen {
+  transform: rotate(90deg);
+}
+
+.occBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.occTitle {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  transition: color 0.15s;
+}
+
+.occMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--mf-faint);
+}
+
+.circle {
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+/* status name on each occurrence row, in the completeness colour set inline */
+.occBadge {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.occDetail {
+  padding: 0 0 14px 20px;
+}
+
+.occSummary {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--mf-muted);
+}
+
+.dtHead {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--mf-line);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+/* key-value grid: the occurrence's metadata */
+.kv {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 0 0 14px;
+}
+
+.kv dt {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+}
+
+.kv dd {
+  margin: 3px 0 0;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 12px;
+  color: var(--mf-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* datatake table: ID, product, start, status */
+.dtTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+}
+
+.dtTable th {
+  padding: 8px 6px 6px 0;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+  border-bottom: 1px solid var(--mf-line-strong);
+}
+
+.dtTable td {
+  padding: 9px 6px 9px 0;
+  border-bottom: 1px solid var(--mf-line);
+  vertical-align: middle;
+}
+
+.dtTable tbody tr:hover td {
+  background: rgba(0, 229, 255, 0.05);
+}
+
+.dtNum {
+  font-variant-numeric: tabular-nums;
+  color: var(--mf-text);
+}
+
+.dtProductCell {
+  color: var(--mf-signal);
+  letter-spacing: 0.04em;
+}
+
+.dtStatusCell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dtStatusCell .dtNum {
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+
+/* status pills in the header: one per state present on the day */
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.pill {
+  padding: 3px 7px;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* footer: separated from the body by a cyan rule, always in view at the foot of the panel */
+.drawerFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--mf-line-strong);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.footBtn {
+  padding: 9px 14px;
+  border: 1px solid var(--mf-line-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--mf-muted);
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: border-color 0.2s, color 0.2s, box-shadow 0.2s;
+}
+
+.footBtn:hover:not(:disabled) {
+  border-color: var(--mf-signal);
+  color: var(--mf-signal);
+}
+
+.footBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.footPrimary {
+  margin-left: auto;
+  border-color: var(--mf-signal);
+  background: rgba(0, 229, 255, 0.12);
+  color: var(--mf-signal);
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.25);
+}
+
+.footPrimary:hover:not(:disabled) {
+  box-shadow: 0 0 22px rgba(0, 229, 255, 0.5);
+}
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 860px) {
+  .fieldRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fieldWide {
+    grid-column: 1 / -1;
+  }
+
+  .head {
+    flex-direction: column;
+  }
+}
+
+/* The toggle that folds the filter controls away on a narrow viewport. Hidden by default because
+   it is only rendered there, but the rule is unconditional so the two stay in one place. */
+.filtersToggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin: -10px -8px -10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-muted);
+  cursor: pointer;
+}
+
+.filtersToggle svg {
+  transition: transform 0.2s ease;
+}
+
+.filtersToggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.badgeTail {
+  display: inline;
+}
+
+/* ---------------- zoom stage ----------------
+   Fixed over the whole viewport, so page scroll can never push the day or the back button
+   off-screen. The starfield fades in on ::before while the grid copy flies to the day. */
+.stage {
+  position: fixed;
+  inset: 0;
+  z-index: 9990; /* above the sticky nav, below the drawer (9999) */
+  min-height: 0;
+  overflow: hidden;
+  background: transparent;
+  background-image: none;
+}
+
+.stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--mf-bg);
+  background-image: var(--mf-stars, none);
+  background-size: 360px 300px;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.stageOn::before {
+  opacity: 1;
+}
+
+.stageGrid {
+  position: absolute;
+  z-index: 1;
+  height: auto;
+  transform-origin: 0 0;
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.stageGrid .cellSel {
+  transform: none !important;
+}
+
+.stageBack {
+  position: absolute;
+  z-index: 2;
+  top: 32px;
+  left: clamp(18px, 4vw, 48px);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-muted);
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s 0.2s, color 0.2s;
+}
+
+.stageOn .stageBack {
+  opacity: 1;
+}
+
+.stageBack:hover {
+  color: var(--mf-text);
+}
+
+/* ---------- focus on the selected day (as in SentiBoard.html #events) ----------
+   Everything inside .stageGrid is scaled by --k (set inline from the zoom), so any length that
+   should look the same on screen is divided by it: a blur(6px / k) reads as 6px once scaled. */
+
+/* Same duration and curve as the grid's own transform, so blur and borders settle with the zoom. */
+.stageGrid .cell {
+  transition:
+    filter 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    border-width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.2s;
+}
+
+/* Hairline borders: the reference draws its grid with non-scaling strokes, so the lines stay 1px
+   however far the camera zooms in. Without this a 1px border shows up 3–4px thick. */
+.stageOn .stageGrid .cell {
+  border-width: calc(1px / var(--k, 1));
+}
+
+/* every day but the selected one goes out of focus and recedes */
+.stageOn .stageGrid .cellBlur {
+  filter: blur(calc(6px / var(--k, 1)));
+  opacity: 0.5;
+}
+
+/* the marks inside a blurred day are not targets of their own — the whole day is */
+.stageGrid .cellBlur .marks {
+  pointer-events: none;
+}
+
+/* a blurred day with events sharpens a little under the pointer, to say it can be picked */
+.stageOn .stageGrid .cellPick {
+  cursor: pointer;
+}
+
+.stageOn .stageGrid .cellPick:hover {
+  filter: blur(calc(2px / var(--k, 1)));
+  opacity: 0.7;
+}
+
+/* The scrim: the starfield darkens toward the drawer, so the days under it fade into the
+   background, as with the reference's .zoom-scrim. Above the grid (z 1), below the back button
+   (z 2); it fades in a beat after the zoom starts. */
+.stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    to left,
+    var(--mf-bg) 0%,
+    color-mix(in srgb, var(--mf-bg) 93%, transparent) 30%,
+    color-mix(in srgb, var(--mf-bg) 60%, transparent) 50%,
+    color-mix(in srgb, var(--mf-bg) 12%, transparent) 68%,
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+
+.stageOn::after {
+  opacity: 1;
+  transition: opacity 0.62s ease 0.22s;
+}
+
+/* below 900px the manifest covers the screen from below, so the scrim rises from the bottom instead */
+@media (max-width: 900px) {
+  .stage::after {
+    background: linear-gradient(
+      to top,
+      var(--mf-bg) 0%,
+      color-mix(in srgb, var(--mf-bg) 93%, transparent) 40%,
+      color-mix(in srgb, var(--mf-bg) 55%, transparent) 62%,
+      transparent 84%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage::before,
+  .stage::after,
+  .stageOn::after,
+  .stageGrid,
+  .stageGrid .cell,
+  .stageBack {
+    transition: none;
+  }
+}
+/* ============================================================
+   MOBILE (≤760px) — one column, thumb-sized targets.
+
+   Breakpoint matched to the app nav's, so the burger and this layout arrive together.
+   ============================================================ */
+@media (max-width: 760px) {
+  .inner {
+    padding: 20px 14px 44px;
+  }
+
+  /* The intro says what the Description panel's opening sentence says — "events that could impede
+     data production — calibration activities, manoeuvres, platform anomalies and ground-segment
+     issues", down to "select a day to open its manifest". On a wide screen the repetition is free;
+     on a phone it was four lines on top of a fourteen-line panel, and the month began off-screen.
+     Here the accordion carries it, and arrives collapsed. */
+  .sub {
+    display: none;
+  }
+
+  .title {
+    font-size: clamp(26px, 8vw, 34px);
+  }
+
+  .eyebrow {
+    font-size: 12px;
+  }
+
+  /* the breadcrumb is a link, so it needs a target rather than its 17px line box */
+  .eyebrow a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  .page :global(.page-description) {
+    max-width: none;
+  }
+
+  /* ---------- month bar ---------- */
+  .monthBar {
+    gap: 12px;
+    padding: 12px 0;
+  }
+
+  .monthNav {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .monthNav button {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+  }
+
+
+.monthLabel {
+    flex: 1;
+    min-width: 0;
+    font-size: 12px;
+}
+
+  .legend {
+    gap: 8px 12px;
+  }
+
+  .legendLabel {
+    flex: 0 0 100%;
+  }
+
+  .legendItem {
+    font-size: 11.5px;
+  }
+
+  /* ---------- filters ---------- */
+  .filters {
+    margin: 14px 0;
+    padding: 4px 12px 12px;
+  }
+
+  /* The head's bottom margin separated it from the fields; with the fields folded away it was 14px
+     of empty box under a collapsed bar. Moving the gap onto the first field puts it inside the
+     collapsible, so it folds away with the thing it was spacing. */
+  .filtersHead {
+    min-height: 48px;
+    margin-bottom: 0;
+  }
+
+  .fieldRow {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .field label {
+    font-size: 10.5px;
+  }
+
+  .control {
+    min-height: 44px;
+    padding: 11px 12px;
+    font-size: 13px;
+  }
+
+  .chipRow {
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .chipRowLabel {
+    flex: 0 0 100%;
+    margin-right: 0;
+    font-size: 10.5px;
+  }
+
+  .chip {
+    min-height: 44px;
+    padding: 8px 13px;
+    font-size: 11.5px;
+  }
+
+  .reset,
+  .clear {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ---------- month grid ---------- */
+  .calWrap {
+    padding: 8px;
+    border-radius: 0;
+  }
+
+  .dow,
+  .grid {
+    gap: 0;
+  }
+
+  /* A day cell is the tap target for its day, so it has to clear 44px on both axes — and because
+     the cells are square, WIDTH is the binding constraint: seven of them plus the gutters have to
+     fit the screen. The gutters above are what buys the width; at 375px this lands at ~45px. */
+  .cell {
+    padding: 5px 4px;
+    border-radius: 0;
+  }
+
+  .cellNum {
+    font-size: 11.5px;
+  }
+
+  /* The cell is ~45px wide here, so the glyphs come down a step and the gutter tightens: four
+     11px marks plus their gaps fit two rows without touching the day number above them. */
+  .marks {
+    gap: 1px 2px;
+  }
+
+  .mark svg {
+    width: clamp(8px, 2.8vw, 12px) !important;
+    height: clamp(8px, 2.8vw, 12px) !important;
+  }
+
+  .markMore {
+    font-size: 9px;
+  }
+
+  .hint {
+    margin-top: 10px;
+    font-size: 11.5px;
+    line-height: 1.5;
+  }
+
+  /* ---------- day drawer ---------- */
+  .drawerHead {
+    padding: 28px 16px 16px;
+  }
+
+  .drawerFoot {
+    padding: 14px 16px;
+  }
+
+  .iconBtn {
+    width: 44px;
+    height: 44px;
+    margin: -6px -6px 0 0;
+  }
+
+  .detailDay {
+    font-size: 21px;
+  }
+
+  .occTitle {
+    font-size: 14px;
+  }
+
+  .occMeta {
+    font-size: 11px;
+  }
+
+  .occSummary {
+    font-size: 13.5px;
+  }
+
+  .occDetail {
+    padding-left: 14px;
+  }
+
+  /* The datatake id, its product code and its sensing window shared a column with the status block
+     beside them, which left the id ellipsised. Stacked, each gets the full width. */
+  .dtRow {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 3px 8px;
+    padding: 10px 0;
+    font-size: 12px;
+  }
+
+  .dtId {
+    overflow-wrap: anywhere;
+  }
+
+  .dtProduct,
+  .dtTime {
+    font-size: 11px;
+  }
+
+  .dtStatus {
+    grid-column: 2;
+    grid-row: auto;
+    align-self: start;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 7px;
+    text-align: left;
+  }
+
+  .dtStatusLabel {
+    font-size: 10px;
+  }
+
+  .dtPct {
+    font-size: 12px;
+  }
+
+  /* ---------- the proposal badge ---------- */
+  .badge {
+    right: 10px;
+    bottom: 10px;
+    max-width: calc(100vw - 20px);
+    font-size: 9.5px;
+    padding: 7px 10px;
+  }
+
+  .badgeTail {
+    display: none;
+  }
+}
+
+/* Narrow screens: the constellation stacks above the grid at a reduced size, so it never sits on a
+   day. The grid keeps the full width it had before the sky column existed. */
+@media (max-width: 760px) {
+  .calRow {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .calRow > .calWrap {
+    width: 100%;
+    max-width: none;
+    margin-bottom: 24px;
+  }
+
+  .zodiac {
+    flex: none;
+    width: 100%;
+    max-width: 260px;
+    margin: 8px auto 0;
+  }
+
+  .zodiacLabel {
+    font-size: 34px;
+  }
+
+  /* Metrics: two centred columns, as the reference does below 900px. */
+  .metrics {
+    gap: 10px 0;
+    padding-bottom: 26px;
+  }
+
+  .metric {
+    width: clamp(130px, 44vw, 200px);
+  }
+
+  /* Filters stack into a column, each field full width with its value on the right. */
+  .barFilters {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0;
+  }
+
+  .inline {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .inlineSelect {
+    min-width: 0;
+    flex: 0 1 60%;
+  }
+
+  .inlineSearch {
+    width: 100%;
+  }
+
+  .inlineInput {
+    flex: 1;
+    width: auto;
+  }
+
+  .monthLabel {
+    font-size: 15px;
+  }
+}
+
+/* Large phones and below (≤430px) — the seven day columns are at their tightest here. */
+@media (max-width: 430px) {
+  .inner {
+    padding: 18px 10px 40px;
+  }
+
+  .calWrap {
+    padding: 7px;
+  }
+
+  .dow span {
+    font-size: 9px;
+  }
+
+  .cell {
+    padding: 4px 3px;
+    border-radius: 0;
+  }
+
+  .cellNum {
+    font-size: 11px;
+  }
+}
+
+/* ---- Custom accordion dropdown for filters (fdrop pattern from events-reference.html) ----
+   Each filter is a 200px tall field (49px head) with a label + current value + chevron.
+   Clicking the head toggles a body that opens below via max-height animation. */
+.fdrop {
+  position: relative;
+  width: 200px;
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(in srgb, var(--mf-text) 30%, transparent);
+  transition: border-color 200ms ease;
+}
+
+.fdropOpen {
+  border-bottom-color: var(--mf-signal);
+}
+
+.fdropHead {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 49px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--mf-text);
+  cursor: pointer;
+  gap: 8px;
+  text-align: left;
+}
+
+.fdropLabel {
+  flex: 1 1 auto;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--mf-text);
+  transition: color 200ms ease;
+}
+
+.fdropHead:hover .fdropLabel,
+.fdropOpen .fdropHead .fdropLabel {
+  color: var(--mf-signal);
+}
+
+.fdropVal {
+  flex: 0 0 auto;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mf-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 55%;
+}
+
+.fdropChev {
+  flex: 0 0 auto;
+  display: flex;
+  color: color-mix(in srgb, var(--mf-text) 50%, transparent);
+  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.fdropOpen .fdropChev {
+  transform: rotate(180deg);
+}
+
+.fdropBody {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.fdropOpen .fdropBody {
+  max-height: 320px;
+}
+
+.fdropInner {
+  padding: 6px 0 14px;
+}
+
+/* Event-type chips: icon + name, full-width column */
+.typeChipGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.typeChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--mf-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--mf-faint);
+  cursor: pointer;
+  font-family: var(--font-mono, var(--mono));
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-align: left;
+  box-sizing: border-box;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.typeChip:hover {
+  border-color: var(--mf-line-strong);
+  color: var(--mf-muted);
+}
+
+.typeChipOn {
+  border-color: var(--mf-signal);
+  background: var(--mf-signal-soft);
+  color: var(--mf-signal);
+}
+
+/* Satellite chip grid: compact chips in a wrap row */
+.satChipGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+/* Mark group: one button per category type present in a day cell, icon/dot + count */
+.markGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+@media (max-width: 760px) {
+  .fdrop {
+    width: 100%;
+  }
+}
+
+/* the starfield fades in over the bottom of the hero, as in SentiBoard.html */
+.headArt + .page { background: none; }
+.headArt + .page::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: var(--mf-bg);
+  background-image: var(--mf-stars, none);
+  background-size: 360px 300px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.6) 50px, rgba(0,0,0,.95) 110px, #000 160px);
+  mask-image: linear-gradient(to bottom, transparent 0, rgba(0,0,0,.6) 50px, rgba(0,0,0,.95) 110px, #000 160px);
+}
+.headArt + .page > .inner { position: relative; z-index: 1; }
+
+/* Pull the content up into the header's faded bottom, as in SentiBoard.html:
+   cancel the spacer PageHeader leaves for the Description panel and drop the page's own top
+   padding. The Description panel still pushes everything down when it opens. */
+.headArt + .page {
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding-top: 0;
+  background: transparent; /* let the header photo show through behind the counters */
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
+}

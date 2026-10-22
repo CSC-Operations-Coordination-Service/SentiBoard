@@ -12,7 +12,10 @@ Last updated: 2026-10-21 (branch `feature/DEVOCS-219-frontend`, uncommitted at t
   - Processors page at `/processors` with real backend data — see [features/processors.md](features/processors.md).
   - Legacy `/processors-viewer.html` and `/processors-viewer` redirect there with 308.
   - `sitemap.xml` (ported pages only), `robots.txt` (disallow-all unless `ALLOW_INDEXING=true`).
-- Every other page (home, acquisitions ×2, events, data availability, terms, cookie notice) is a
+- **Second vertical slice ported** (2026-10-22, branch `feature/DEVOCS-219-events`):
+  - Events & Anomalies page at `/events` with real backend data — see [features/events.md](features/events.md).
+  - Legacy `/events.html` redirects there with 308.
+- Every other page (home, acquisitions ×2, data availability, terms, cookie notice) is a
   "coming soon" placeholder (noindex, not in the sitemap).
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
