@@ -1,0 +1,51 @@
+name: sentiboard-frontend CI
+
+# Thin caller for the Next.js frontend. Triggers live here; the steps live in the
+# workflow-catalog reusable workflow (install -> lint -> build -> test).
+
+on:
+  push:
+    branches: ["develop"]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
+    paths: ["sentiboard-frontend/**", ".github/workflows/frontend-ci.yml"]
+  pull_request:
+    paths: ["sentiboard-frontend/**", ".github/workflows/frontend-ci.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  frontend:
+    # packages: write is for the image push (GHCR on release tags).
+    permissions:
+      contents: read
+      packages: write
+    uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/node-workflow.yml@develop
+    with:
+      working-directory: sentiboard-frontend
+      node-version: "22"
+      # The runner has no direct internet access: npm (and so pnpm) goes through the Nexus npm proxy.
+      use-nexus-registry: true
+      # The project uses pnpm (packageManager in package.json). It is installed with npm rather
+      # than corepack, which downloads from registry.npmjs.org and ignores the Nexus .npmrc.
+      # `postinstall` runs `pnpm gen:api`, so the generated API types exist before lint/build.
+      install-command: npm install -g pnpm@12.14.0 && pnpm install --frozen-lockfile
+      lint-command: pnpm lint && pnpm type-check
+      build-command: pnpm build
+      run-tests: true
+      test-command: pnpm test
+      # Image (Dockerfile): develop -> dev image, tag x.y.z -> release image. Not built on PRs.
+      build-image: ${{ github.event_name != 'pull_request' }}
+      image-name: sentiboard-frontend
+      dockerfile: sentiboard-frontend/Dockerfile
+      docker-context: sentiboard-frontend
+      docker-release: ${{ startsWith(github.ref, 'refs/tags/') }}
+      push-to-ghcr: ${{ startsWith(github.ref, 'refs/tags/') }}
+      push-to-dockerhub: ${{ startsWith(github.ref, 'refs/tags/') }}
+      docker-environment: ${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'dev' }}
+    secrets: inherit
