@@ -126,3 +126,25 @@ come from a committed fixture of six records captured from the backend (provenan
 not from live calls.
 **Consequences.** Tests cover pure modules and data loading; rendering and browser behaviour are
 not under automated test (see HANDOFF.md).
+
+## 2026-10-23 — Backend stores Sentiboard's own data in OpenSearch, not a relational store
+
+**Context.** AGENTS.md §3.4 says Sentiboard's own data (users, roles, anomaly mirror, news,
+messages) lives in the backend's relational store. The backend in `sentiboard-backend/` was instead
+generated with `maas-model` (pygen documents + fastapigen schemas/routers) from the index templates
+in `sentiboard-backend/index_templates/`, and keeps its data in OpenSearch (2.19.1 in
+`docker-compose.yml`). `maas-model` has no relational backend; adding one would mean a second set
+of models kept in sync by hand. Approved by the project manager (2026-10-23).
+**Decision.** OpenSearch is the backend's only data store. Sentiboard's own resources live in its
+own indices behind aliases: `anomaly`, `news`, `instantmessage`, `processor` (the last partitioned
+by `release_date` month). Legacy data is loaded by `migrate_legacy.py` (SQLite backup) and
+`migrate_processors.py` (Config Tool Mongo dump). No relational store for now.
+**Consequences.**
+- Supersedes AGENTS.md §3.4 ("relational store"). §3.3 still holds: the `cds-*` indices stay
+  read-only and are separate from Sentiboard's own indices.
+- No transactions, joins or unique constraints; a new write is searchable after the index refresh
+  (~1 s). Duplicates are prevented by document ids (`create` → 409), not by constraints.
+- Users and roles were not migrated. Revisit this decision if auth needs a local user store rather
+  than roles from the OIDC token (AGENTS.md §4).
+- Still to align (not done in this entry): AGENTS.md §3.4 wording, and the backend sections of
+  STATE.md and ARCHITECTURE.md, which still say the backend is not in this repo.

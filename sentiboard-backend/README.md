@@ -5,7 +5,7 @@ FastAPI + OpenSearch, run with Docker. Only Docker is needed, not Python.
 ## 1. Start
 
 ```
-cd backend
+cd sentiboard-backend
 docker compose up -d --build
 curl localhost:8000/health          # {"status":"ok"} once ready (~30s on first start)
 ```
