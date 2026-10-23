@@ -59,7 +59,7 @@ Legacy param: `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…
 - [ ] Both dark and light themes work (CSS custom properties on `:root[data-theme]`)
 - [ ] Clicking a day dot opens the drawer with full event detail
 - [x] `?event=<id>` renders the day's events in the HTML; selected event is highlighted
-- [x] Event selection: resolveView switches to the event's start month; cross-month events appear in start month only
+- [x] Event selection: resolveView switches to the event's start month; events appear only in their start month
 - [ ] `?showDayEvents=YYYY-MM-DD` opens the correct month
 - [ ] `/events.html` → `/events` 308 redirect passes query string
 - [ ] `/events` is in the sitemap (not noindex)
@@ -72,7 +72,8 @@ Legacy param: `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…
 - **Drawer rendering**: the drawer `<aside>` is in-place (no portal), always in the DOM. Open/close is the `drawerOn` CSS class; `aria-hidden` + `inert` when closed. On SSR with `?event=<id>`, `openDay` is initialised from `data.dayEvents[0].startDate`. `overflow: hidden` on `.drawer` clips content; `drawerBody` scrolls via `overflow-y: auto`.
 - **DayManifest**: the drawer shows all events of the selected day, each in a `<details><summary>` collapsible section (native, no JS for open/close). The URL-selected event starts `open` and scrolls into view. `ziOccSelected` CSS class adds a signal-colour left accent. `ziOcc summary` removes the browser disclosure triangle via `list-style: none` and `display: grid` on `.ziTop`.
 - **Deep-link zoom**: `zoom` starts null (needs DOM). A mount `useEffect` calls `measureZoom` when `openDay !== null && zoom === null` — covers any month. Server renders without the stage; client sets it after hydration (no mismatch). The existing "fly-in" effect then animates `zoomOn`.
-- **Platform→Satellite**: all backend `Platform` anomalies are mapped to `Satellite` in `adapter.ts:mapCategory`. No separate Platform type in `EventCategory`, `CATEGORIES`, filter chips, icons or description text.
+- **Category whitelist (2026-10-23)**: only five types shown — Acquisition, Calibration, Manoeuvre, Production, Satellite. `adapter.ts:mapCategory` trims the raw value and returns null for everything else (Data access, Archive, DD, MP, unknown, empty). Excluded records are logged once per load via `console.info`, grouped by category. Old URLs with `?category=Other` (or any excluded type) fall back to all categories silently. Metrics count only shown events.
+- **Platform→Satellite**: backend `Platform` maps to `Satellite`; feed value `Satellite` is also accepted directly. No separate Platform or Other type anywhere in the UI model.
 - **Calendar marks**: each day cell shows one dot/icon per event *type* (no count badge). The `+N` overflow badge remains for days with more than `MARKS_SHOWN` (4) distinct types. An event appears only in its **start month** — cross-month events are not repeated in later months; `filterEvents` checks `startDate` year/month, not `months[]`.
 - **URL stability**: `viewParams` always emits `month` when `year` differs from `now`, so a link made this month means the same thing next month. `resolveView` switches to the event's `startDate` year/month when `?event=` is present and the URL month doesn't match.
 

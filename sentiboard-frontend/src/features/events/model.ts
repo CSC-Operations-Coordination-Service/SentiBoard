@@ -5,8 +5,7 @@ export type EventCategory =
   | "Production"
   | "Manoeuvre"
   | "Calibration"
-  | "Satellite"
-  | "Other";
+  | "Satellite";
 
 export const CATEGORIES: EventCategory[] = [
   "Acquisition",
@@ -14,7 +13,6 @@ export const CATEGORIES: EventCategory[] = [
   "Manoeuvre",
   "Calibration",
   "Satellite",
-  "Other",
 ];
 
 export type MissionId = "s1" | "s2" | "s3" | "s5p";

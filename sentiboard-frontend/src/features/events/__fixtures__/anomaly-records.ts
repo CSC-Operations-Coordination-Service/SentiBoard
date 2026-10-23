@@ -108,7 +108,7 @@ export const UNDATED: ApiAnomaly = {
   key: "SEN-9999",
   title: "Undated event",
   text: "",
-  category: "Other",
+  category: "Acquisition",
   impacted_satellite: null,
   impacted_item: null,
   start: null,

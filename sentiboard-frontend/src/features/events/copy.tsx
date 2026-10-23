@@ -4,7 +4,6 @@
 import {
   Cog,
   Compass,
-  HelpCircle,
   Joystick,
   Satellite,
   SatelliteDish,
@@ -42,12 +41,6 @@ export function EventsDescription() {
       Icon: Satellite,
       color: "#ee8216",
       text: "issue due to instrument or platform unavailability",
-    },
-    {
-      key: "Other",
-      Icon: HelpCircle,
-      color: "#a0a0a0",
-      text: "other events not classified in the above categories",
     },
   ] as const;
 

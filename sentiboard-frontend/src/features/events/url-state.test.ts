@@ -90,6 +90,18 @@ describe("parseView", () => {
     const v = parseView(params("event=EVT-001"), { year: 2023, month: 1 });
     expect(v.event).toBe("EVT-001");
   });
+
+  it("ignores excluded or unknown category values in the URL, falling back to all categories", () => {
+    // ?category=Other was valid in the legacy app; now Other is excluded from the whitelist.
+    // All specified values are rejected by CATEGORY_SET → fallback to all categories, no error.
+    const v = parseView(params("category=Other"), { year: 2023, month: 1 });
+    expect(v.categories).toEqual(CATEGORIES);
+  });
+
+  it("keeps valid categories when mixed with excluded ones", () => {
+    const v = parseView(params("category=Acquisition,Other,Data+access"), { year: 2023, month: 1 });
+    expect(v.categories).toEqual(["Acquisition"]);
+  });
 });
 
 /* ---- viewParams round-trip ---- */

@@ -78,6 +78,34 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 - Calendar date field: legacy uses occurrence date, then publication date. Confirm what the
   backend exposes; the drawer's day must use the same field.
 
+## Events — backend observations (2026-10-23, live feed, read-only)
+
+**Excluded category counts** (records excluded from the events page — not shown to users):
+
+| Raw category | Count |
+|---|---|
+| Data access | 10 |
+| DD | 4 |
+| Archive | 3 |
+| MP | 2 |
+| **Total excluded** | **19** |
+
+Shown types: Acquisition 2797, Production 603, Platform (→ Satellite) 147, Manoeuvre 102,
+Calibration 37, Satellite 15. Total shown: 3701 of 3720.
+
+**Records whose satellite resolves to a unit that did not exist on the event's start date:**
+
+| id | start | impacted_satellite | first datatake IDs |
+|---|---|---|---|
+| `42a36f6a_3a6d_11f1_b2c4_0242ac110002` | 2025-01-01 | Copernicus Sentinel-1D | S1D-4964, S1D-3274 |
+
+S1D launched Nov 2025; this record's start date (2025-01-01) predates the launch. A second
+record (`6b1a7282_f5de_11f0_8414_0242ac110002`, start 2025-01-01, impacted_satellite S1A) also
+carries an S1D datatake ID (S1D-10489), suggesting a data-entry error. No records with S1C
+before Dec 2024 or S2C before Sep 2024 were found in the live feed. The S1D event on 5 Oct 2022
+that was expected (noted in the task) does not appear in the current backend; the oldest S1D
+record in the feed starts 2025-01-01.
+
 ## Backend — pending fixes (reported, not fixed in the backend)
 
 From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier findings on

@@ -25,7 +25,6 @@ import {
   ChevronRight,
   Cog,
   Compass,
-  HelpCircle,
   Joystick,
   RotateCcw,
   Satellite,
@@ -65,7 +64,6 @@ const CATEGORY_ICONS: Record<EventCategory, React.ComponentType<{ size?: number;
   Manoeuvre: Joystick,
   Production: Cog,
   Satellite: Satellite,
-  Other: HelpCircle,
 };
 
 const CATEGORY_STROKE = 1.9;
@@ -76,7 +74,6 @@ const CATEGORY_COLOR: Record<EventCategory, string> = {
   Manoeuvre: "#ffad00",
   Production: "#c77dff",
   Satellite: "#ee8216",
-  Other: "#a0a0a0",
 };
 
 /* ---- zodiac ---- */

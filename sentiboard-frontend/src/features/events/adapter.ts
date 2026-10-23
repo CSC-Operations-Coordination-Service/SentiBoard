@@ -53,8 +53,12 @@ const CATEGORY_MAP: Record<string, EventCategory> = {
   Satellite: "Satellite",
 };
 
-function mapCategory(raw: string): EventCategory {
-  return CATEGORY_MAP[raw] ?? "Other";
+/** Returns the UI EventCategory for a raw feed value, or null when the record is excluded.
+ *  Only Acquisition, Calibration, Manoeuvre, Production and Satellite are shown; all other
+ *  categories (Data access, Archive, DD, MP, unknown values, empty or null) are excluded.
+ *  The raw value is trimmed before matching so leading/trailing whitespace is never an issue. */
+function mapCategory(raw: string | null | undefined): EventCategory | null {
+  return CATEGORY_MAP[(raw ?? "").trim()] ?? null;
 }
 
 /* ---- date / time helpers ---- */
@@ -183,6 +187,7 @@ export interface AdaptedEvents {
 export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
   const events: EventDetail[] = [];
   const unresolved: string[] = [];
+  const excludedByCategory = new Map<string, number>();
 
   for (const r of records) {
     if (!r.start || !r.end) {
@@ -193,6 +198,13 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
     const endMs = new Date(r.end).getTime();
     if (isNaN(startMs) || isNaN(endMs)) {
       unresolved.push(r.id ?? r.key);
+      continue;
+    }
+
+    const category = mapCategory(r.category);
+    if (category === null) {
+      const raw = (r.category ?? "").trim() || "(empty)";
+      excludedByCategory.set(raw, (excludedByCategory.get(raw) ?? 0) + 1);
       continue;
     }
 
@@ -208,7 +220,7 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       id: r.id ?? r.key,
       key: r.key,
       title: r.title,
-      category: mapCategory(r.category),
+      category,
       satellite,
       mission,
       startDate: utcDateStr(r.start),
@@ -225,6 +237,15 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       get datatakeCount() { return this.datatakes.length; },
       get lostDatatakeCount() { return this.datatakes.filter(isDatatakeLost).length; },
     });
+  }
+
+  if (excludedByCategory.size > 0) {
+    const total = [...excludedByCategory.values()].reduce((a, b) => a + b, 0);
+    const detail = [...excludedByCategory.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([cat, n]) => `${cat}: ${n}`)
+      .join(", ");
+    console.info(`[events] excluded ${total} records with non-shown categories — ${detail}`);
   }
 
   return { events, unresolved };

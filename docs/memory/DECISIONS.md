@@ -157,6 +157,23 @@ JS see an explanation rather than a blank page.
 **Consequences.** `/events` requires JavaScript. The no-JS fallback claim in the 2026-10-22
 EventCard decision is removed.
 
+## 2026-10-23 — Events: only five event types shown
+
+**Context.** The legacy app showed Data access and Archive anomalies under the "All" filter but
+hid them from the category legend. Unknown categories (e.g., DD, MP) appeared in "All" with no
+label or icon.
+**Decision.** The events page shows exactly five types: Acquisition, Calibration, Manoeuvre,
+Production, Satellite. The backend feed's "Platform" category maps to Satellite (already done).
+A feed value of "Satellite" is also valid. Every other category — Data access, Archive, DD, MP,
+any unknown value, empty or null — is excluded before records become EventCards. The whitelist
+lives once, in `adapter.ts:mapCategory`. On the live backend (2026-10-23): 2797 Acquisition,
+603 Production, 147 Platform (→ Satellite), 102 Manoeuvre, 37 Calibration, 15 Satellite shown;
+10 Data access, 4 DD, 3 Archive, 2 MP (total 19) excluded. Excluded records are logged once per
+load, grouped by category, via `console.info`. Old URLs with `?category=Other` (or any excluded
+type) silently fall back to all categories.
+**Consequences.** Category chips, icons, colours and description text have no "Other" entry.
+Metrics (Events / Datatakes / Lost / Satellites) count only the shown events.
+
 ## 2026-10-22 — Frontend tests: Vitest in plain Node, real fixtures, no network
 
 **Decision.** `sentiboard-frontend` tests run with Vitest (`pnpm test`, config `vitest.config.mts`),

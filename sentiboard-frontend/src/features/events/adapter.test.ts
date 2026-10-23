@@ -101,6 +101,63 @@ describe("parseTextSegments", () => {
   });
 });
 
+/* ---- adaptEvents — category whitelist ---- */
+
+describe("adaptEvents — category whitelist", () => {
+  it("excludes records with categories outside the five shown types", () => {
+    const excluded = [
+      { ...RECORDS[0]!, id: "EX-1", category: "Data access" },
+      { ...RECORDS[0]!, id: "EX-2", category: "Archive" },
+      { ...RECORDS[0]!, id: "EX-3", category: "DD" },
+      { ...RECORDS[0]!, id: "EX-4", category: "" },
+      { ...RECORDS[0]!, id: "EX-5", category: "Other" },
+    ];
+    const { events } = adaptEvents(excluded);
+    expect(events).toHaveLength(0);
+  });
+
+  it("includes all five allowed category types", () => {
+    // RECORDS already covers Acquisition, Production, Manoeuvre, Calibration, Platform (→ Satellite)
+    const { events } = adaptEvents(RECORDS);
+    expect(events).toHaveLength(RECORDS.length);
+  });
+
+  it("maps feed value 'Satellite' directly to Satellite", () => {
+    const satRecord = { ...RECORDS[0]!, id: "EX-SAT", category: "Satellite" };
+    const { events } = adaptEvents([satRecord]);
+    expect(events[0]?.category).toBe("Satellite");
+  });
+
+  it("trims leading and trailing whitespace from category before matching", () => {
+    const padded = { ...RECORDS[0]!, id: "EX-PAD", category: "  Acquisition  " };
+    const { events } = adaptEvents([padded]);
+    expect(events[0]?.category).toBe("Acquisition");
+    expect(events[0]?.id).toBe("EX-PAD");
+  });
+
+  it("trims before excluding: '  Data access  ' is excluded", () => {
+    const padded = { ...RECORDS[0]!, id: "EX-TRIM-EX", category: "  Data access  " };
+    const { events } = adaptEvents([padded]);
+    expect(events).toHaveLength(0);
+  });
+
+  it("excluded records are absent from the events list (metrics count only shown events)", () => {
+    const excludedRecord = {
+      ...RECORDS[0]!,
+      id: "EX-EXCL",
+      category: "Data access",
+      datatakes_completeness: [
+        { datatakeID: "S1A-999999", L0_: 50.0, L1_: null, L2_: null },
+      ],
+    };
+    const { events } = adaptEvents([RECORDS[0]!, excludedRecord]);
+    const ids = events.map((e) => e.id);
+    expect(ids).toContain("EVT-001");
+    expect(ids).not.toContain("EX-EXCL");
+    expect(events).toHaveLength(1);
+  });
+});
+
 /* ---- adaptEvents ---- */
 
 describe("adaptEvents", () => {
