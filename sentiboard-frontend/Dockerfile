@@ -5,15 +5,19 @@
 # BACKEND_URL, SITE_URL and ALLOW_INDEXING are read on the server at runtime (see .env.sample),
 # so they are passed to `docker run`, not baked into the image.
 
+# The npmrc secret is the Nexus registry config, mounted by docker-build.yml (mount-npm-registry);
+# absent in a plain local build, where npm uses registry.npmjs.org.
 FROM node:22-alpine AS base
-RUN corepack enable
+ARG PNPM_VERSION=12.14.0
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc npm install -g pnpm@${PNPM_VERSION}
 WORKDIR /app
 
 # --- deps: `postinstall` runs `pnpm gen:api`, so api/openapi.json must be present ---
 FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY api ./api
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
+    --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 # --- build ---

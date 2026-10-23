@@ -29,9 +29,12 @@ jobs:
     with:
       working-directory: sentiboard-frontend
       node-version: "22"
-      # The project uses pnpm (packageManager in package.json); corepack ships with Node 22.
+      # The runner has no direct internet access: npm (and so pnpm) goes through the Nexus npm proxy.
+      use-nexus-registry: true
+      # The project uses pnpm (packageManager in package.json). It is installed with npm rather
+      # than corepack, which downloads from registry.npmjs.org and ignores the Nexus .npmrc.
       # `postinstall` runs `pnpm gen:api`, so the generated API types exist before lint/build.
-      install-command: corepack enable && pnpm install --frozen-lockfile
+      install-command: npm install -g pnpm@12.14.0 && pnpm install --frozen-lockfile
       lint-command: pnpm lint && pnpm type-check
       build-command: pnpm build
       run-tests: true
