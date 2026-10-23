@@ -43,10 +43,11 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 
 ## Events — known issues (2026-10-23)
 
-- **Visual check pending.** `pnpm lint`, `type-check`, `build` and 212/212 tests all pass. Still needs a
+- **Visual check pending.** `pnpm lint`, `type-check`, `build` and 221/221 tests all pass. Still needs a
   visual comparison with the prototype in a browser (dark + light themes, mobile at 760 px
-  breakpoint). Check: DayManifest shows all events of the day, collapsible, selected one open;
-  no cross-month event bleeds onto a later month's calendar; open/close animation runs both ways.
+  breakpoint). Check: star dots render at correct scale and spacing; tooltip appears on hover;
+  zoom shows type icons (.zicon fade-in); DayManifest shows all events expanded with impact dot
+  colours; Description collapsible closed by default; datatake rows show right-column status.
 - **Cross-month calendar placement fixed (2026-10-23).** `filterEvents` now uses `startDate`
   year/month instead of `months[]`. Events appear on their start month only. `resolveView`
   switches to `startDate` year/month (not `months[0]`). `viewParams` always includes `month`

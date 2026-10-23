@@ -906,14 +906,9 @@ select.control {
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, background 0.2s, box-shadow 0.2s;
-}
-
-.cell:not(.cellDim):hover {
-  z-index: 2; /* lift it so all four of its edges show the hover colour */
-  border-color: color-mix(in srgb, var(--mf-text) 70%, transparent);
 }
 
 .cell:focus-visible {
@@ -971,66 +966,56 @@ select.control {
   color: var(--mf-text);
 }
 
-/* One mark per event. Closed, each day shows a coloured dot per event (the category colour); zoomed
-   in, the same events show their type icons instead. The zoom state picks which set renders. */
-.marks {
+/* Star dot buttons: one per event, absolutely placed at 60% cell height.
+   Each wraps a 34×34 SVG with three concentric circles (prototype "star" pattern). */
+.starBtn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 34px;
+  min-height: 34px;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 3px 4px;
-  padding-top: 4px;
-}
-
-/* dots: 6px rounded, filled with the event category's colour (set inline) */
-.dotMark {
-  display: inline-block;
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.dotMark:hover {
-  transform: scale(1.4);
-}
-
-/* icons: 18px wrappers around the category glyph, shown only while a day is zoomed */
-.zoomedIn {
-  gap: 4px;
-}
-
-.iconMark {
-  display: inline-flex;
-  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  cursor: pointer;
+  background: none;
   border: none;
   padding: 0;
-  background: transparent;
-  cursor: pointer;
-  transition: transform 0.2s ease;
+  /* animate in with the zodiac stars */
+  animation: starIn 300ms ease backwards;
 }
 
-.iconMark svg {
-  width: 14px;
-  height: 14px;
+.starBtn svg {
+  width: max(8px, 2.2cqw);
+  height: max(8px, 2.2cqw);
+  overflow: visible;
 }
 
-.iconMark:hover {
-  transform: scale(1.2);
+/* The core circle dims on hover to signal it is interactive */
+.starCore {
+  transition: opacity 160ms ease;
 }
 
-/* "+2" when a day has more events than the cell can draw. Sized to sit on the glyphs' baseline
-   rather than beside them, so a summarised day is still one row of marks. */
+.starBtn:hover .starCore {
+  opacity: 0.7;
+}
+
+@keyframes starIn {
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.6); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Type icon fades in after the zoom fly-in settles (prototype: 460ms ease 1140ms backwards) */
+.zicon {
+  animation: ziconIn 460ms ease 1140ms backwards;
+}
+
+@keyframes ziconIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* "+2" when a day has more events than the cell can show. */
 .markMore {
-  flex: 0 0 auto;
   font-family: var(--font-mono, var(--mono));
   font-style: normal;
   font-size: 9.5px;
@@ -1044,15 +1029,71 @@ select.control {
 .markMoreBtn {
   background: transparent;
   border: none;
-  padding: 0;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
 }
 
-.cell:hover .markMore,
 .cellSel .markMore {
   color: var(--mf-signal);
+}
+
+/* ---- hover tooltip (.startip equivalent) ---- */
+/* Only rendered when a star is hovered/focused (React-controlled), so no display:none needed. */
+.tipEl {
+  position: fixed;
+  z-index: 45;
+  pointer-events: none;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 17px;
+  border-radius: 14px;
+  min-width: 226px;
+  box-sizing: border-box;
+  background: rgba(9, 13, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  animation: tipFade 160ms ease backwards;
+}
+
+@keyframes tipFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.tipTxt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.tipType {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.tipName {
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+}
+
+/* Only show the tooltip on pointer-capable devices */
+@media (hover: none) {
+  .tipEl {
+    display: none;
+  }
 }
 
 
@@ -1226,14 +1267,14 @@ select.control {
   animation: ziRise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
-/* Remove the browser's built-in disclosure triangle */
-.ziOcc summary {
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
+/* Non-selected occurrence: dimmed (0.42), brightens on hover */
+.ziOccDim {
+  opacity: 0.42;
+  transition: opacity 240ms ease;
 }
-.ziOcc summary::-webkit-details-marker {
-  display: none;
+
+.ziOccDim:hover {
+  opacity: 0.8;
 }
 
 /* Selected occurrence: signal-colour left accent */
@@ -1244,11 +1285,61 @@ select.control {
   border-left: 2px solid var(--mf-signal);
 }
 
+/* Header row: time | title+sub | impact dot — works as a button for event selection */
 .ziTop {
+  width: 100%;
   display: grid;
   grid-template-columns: 74px 1fr 12px;
   gap: 14px;
   align-items: start;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+/* Description collapsible inside an occurrence (closed by default, no triangle) */
+.ziDesc {
+  margin-top: 10px;
+}
+
+.ziDesc summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.ziDesc summary::-webkit-details-marker {
+  display: none;
+}
+
+.ziDescToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--mf-faint);
+  transition: color 0.15s;
+}
+
+.ziDesc[open] .ziDescToggle,
+.ziDescToggle:hover {
+  color: var(--mf-signal);
+}
+
+.ziDescChev {
+  flex: 0 0 auto;
+  transition: transform 0.2s ease;
+  transform: rotate(-90deg);
+}
+
+.ziDesc[open] .ziDescChev {
+  transform: rotate(0deg);
 }
 
 .ziTime {
@@ -1861,8 +1952,8 @@ select.control {
   opacity: 0.5;
 }
 
-/* the marks inside a blurred day are not targets of their own — the whole day is */
-.stageGrid .cellBlur .marks {
+/* dots inside a blurred day are not individual targets — the whole day cell handles the click */
+.stageGrid .cellBlur .starBtn {
   pointer-events: none;
 }
 

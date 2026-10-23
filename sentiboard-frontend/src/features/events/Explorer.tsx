@@ -23,12 +23,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Cog,
-  Compass,
-  Joystick,
   RotateCcw,
-  Satellite,
-  SatelliteDish,
   Search,
 } from "lucide-react";
 import {
@@ -39,6 +34,7 @@ import {
   type EventCard,
   type EventCategory,
   type EventDetail,
+  type EventDatatake,
   type MissionId,
   type TextSegment,
 } from "./model";
@@ -52,29 +48,19 @@ import {
   viewParams,
   type EventsView,
 } from "./url-state";
+import {
+  CATEGORY_COLOR,
+  CATEGORY_SVG_INNER,
+  STATUS_COLOR,
+  STATUS_LABEL,
+  CategoryIcon,
+  classifyDatatake,
+  classifyImpact,
+  meanCompleteness,
+} from "./event-types";
 import s from "./events.module.css";
 
 const SpaceBackdrop = dynamic(() => import("@/components/SpaceBackdrop"), { ssr: false });
-
-/* ---- category icons / colours (prototype's exact set + Platform + Other) ---- */
-
-const CATEGORY_ICONS: Record<EventCategory, React.ComponentType<{ size?: number; strokeWidth?: number; color?: string; "aria-hidden"?: boolean | "true" }>> = {
-  Acquisition: SatelliteDish,
-  Calibration: Compass,
-  Manoeuvre: Joystick,
-  Production: Cog,
-  Satellite: Satellite,
-};
-
-const CATEGORY_STROKE = 1.9;
-
-const CATEGORY_COLOR: Record<EventCategory, string> = {
-  Acquisition: "#aeb8c4",
-  Calibration: "#b0dfe5",
-  Manoeuvre: "#ffad00",
-  Production: "#c77dff",
-  Satellite: "#ee8216",
-};
 
 /* ---- zodiac ---- */
 
@@ -125,7 +111,7 @@ const CELL_W = 200;
 const CELL_H = 168;
 const START_X = 90;
 const START_Y = 80;
-/* How many category groups a day cell shows before collapsing the rest to "+N". */
+/* How many event dots a day cell shows before collapsing the rest to "+N". */
 const MARKS_SHOWN = 4;
 const WEEKDAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
 
@@ -179,7 +165,11 @@ function dayHeading(dateStr: string): string {
   return `${pad(d.getUTCDate())} ${MONTH_NAMES[d.getUTCMonth()].toUpperCase()} ${d.getUTCFullYear()}`;
 }
 
-function DatatakeRow({ dt }: { dt: EventDetail["datatakes"][number] }) {
+function DatatakeRow({ dt }: { dt: EventDatatake }) {
+  const status = classifyDatatake(dt);
+  const statusColor = STATUS_COLOR[status];
+  const label = STATUS_LABEL[status];
+  const pct = meanCompleteness(dt);
   const levels = [
     dt.L0 !== null ? `L0: ${dt.L0.toFixed(1)}%` : null,
     dt.L1 !== null ? `L1: ${dt.L1.toFixed(1)}%` : null,
@@ -189,31 +179,36 @@ function DatatakeRow({ dt }: { dt: EventDetail["datatakes"][number] }) {
     <div className={s.dtkRow}>
       <span className={s.dtkLeft}>
         <span className={s.dtkId}>
-          <i style={{ background: "var(--mf-signal)", display: "inline-block", width: 9, height: 9, borderRadius: "50%" }} aria-hidden />
+          <i style={{ background: statusColor, display: "inline-block", width: 9, height: 9, borderRadius: "50%" }} aria-hidden />
           <span className={s.dtkLink}>{dt.datatakeId}</span>
         </span>
-        {!dt.noData ? (
+        {status !== "noData" ? (
           <span className={s.dtkProd}>{levels.join("  ")}</span>
         ) : (
           <span className={s.dtkProd} style={{ color: "var(--mf-faint)" }}>no data</span>
         )}
       </span>
+      <span className={s.dtkRight}>
+        <b style={{ color: statusColor }}>{label}</b>
+        {pct !== null && <span>{pct.toFixed(0)}%</span>}
+      </span>
     </div>
   );
 }
 
-/** All events of the selected day, each in a collapsible section.
- *  The event matching selectedId starts open and scrolls into view. */
+/** All events of the selected day, all expanded.
+ *  Selected event at full opacity; others dimmed (0.42, 0.8 on hover).
+ *  Clicking a dimmed occurrence selects it. */
 function DayManifest({
   dayEvents,
   selectedId,
-  sign,
+  onSelect,
 }: {
   dayEvents: EventDetail[];
   selectedId: string | null;
-  sign: string;
+  onSelect: (id: string) => void;
 }) {
-  const selectedRef = useRef<HTMLDetailsElement>(null);
+  const selectedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     selectedRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -230,7 +225,7 @@ function DayManifest({
   return (
     <div className={s.drawerBody}>
       <header className={s.ziHead}>
-        <span className={s.detailEyebrow}>{sign}</span>
+        <span className={s.detailEyebrow}>Selected day</span>
         <h2 className={s.ziDate}>{dayHeading(dayEvents[0].startDate)}</h2>
         <span className={s.ziSum}>
           {dayEvents.length} occurrence{dayEvents.length === 1 ? "" : "s"}{" "}
@@ -241,28 +236,32 @@ function DayManifest({
 
       {dayEvents.map((event, i) => {
         const isSelected = event.id === selectedId;
-        const Icon = CATEGORY_ICONS[event.category];
         const color = CATEGORY_COLOR[event.category];
+        const impactStatus = classifyImpact(event.datatakes);
+        const impactColor = STATUS_COLOR[impactStatus];
         const unavailableCount = event.datatakes.filter((dt) => dt.noData).length;
         return (
-          <details
+          <div
             key={event.id}
-            className={`${s.ziOcc} ${isSelected ? s.ziOccSelected : ""}`}
+            className={`${s.ziOcc} ${isSelected ? s.ziOccSelected : s.ziOccDim}`}
             style={{ animationDelay: `${280 + i * 130}ms` }}
-            open={isSelected}
             ref={isSelected ? selectedRef : undefined}
           >
-            <summary className={s.ziTop}>
+            <button
+              type="button"
+              className={s.ziTop}
+              onClick={() => onSelect(event.id)}
+            >
               <span className={s.ziTime}>{event.startTime}</span>
               <span>
                 <span className={s.ziTitle}>{event.title}</span>
                 <span className={s.ziSub}>
-                  <Icon size={13} strokeWidth={CATEGORY_STROKE} color={color} aria-hidden />
+                  <CategoryIcon category={event.category} color={color} size={13} />
                   {event.category} · {event.satellite}
                 </span>
               </span>
-              <span className={s.ziDot} style={{ background: color }} />
-            </summary>
+              <span className={s.ziDot} style={{ background: impactColor }} />
+            </button>
 
             {event.impactedItem && (
               <div style={{ marginTop: 14, paddingBottom: 12, borderBottom: "1px solid var(--mf-line)" }}>
@@ -280,9 +279,15 @@ function DayManifest({
             )}
 
             {event.textSegments.length > 0 && (
-              <p style={{ fontSize: 13, lineHeight: 1.65, color: "var(--mf-muted)", marginTop: 10 }}>
-                {renderSegments(event.textSegments)}
-              </p>
+              <details className={s.ziDesc}>
+                <summary className={s.ziDescToggle}>
+                  Description
+                  <ChevronDown size={11} className={s.ziDescChev} aria-hidden />
+                </summary>
+                <p style={{ fontSize: 13, lineHeight: 1.65, color: "var(--mf-muted)", marginTop: 10 }}>
+                  {renderSegments(event.textSegments)}
+                </p>
+              </details>
             )}
 
             {event.datatakes.length > 0 && (
@@ -294,10 +299,43 @@ function DayManifest({
                 {event.datatakes.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
               </section>
             )}
-          </details>
+          </div>
         );
       })}
     </div>
+  );
+}
+
+/* ---- star dot (three concentric circles + optional type icon) ---- */
+
+function StarDot({
+  color,
+  category,
+  withIcon,
+}: {
+  color: string;
+  category: EventCategory;
+  withIcon: boolean;
+}) {
+  const r = 3.5;
+  const cx = 17, cy = 17;
+  return (
+    <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
+      <circle cx={cx} cy={cy} r={r * 3.8} fill={color} opacity={0.1} />
+      <circle cx={cx} cy={cy} r={r * 2} fill={color} opacity={0.2} />
+      <circle className={s.starCore} cx={cx} cy={cy} r={r} fill={color} />
+      {withIcon && (
+        <g
+          className={s.zicon}
+          transform={`translate(${(cx + r * 2.4).toFixed(1)} ${(cy - 7.5).toFixed(1)})`}
+          stroke={color}
+          strokeWidth="1.3"
+          strokeLinecap="round"
+          vectorEffect="non-scaling-stroke"
+          dangerouslySetInnerHTML={{ __html: CATEGORY_SVG_INNER[category] }}
+        />
+      )}
+    </svg>
   );
 }
 
@@ -311,6 +349,10 @@ function Metric({ value, label, lost = false }: { value: number; label: string; 
     </div>
   );
 }
+
+/* ---- tip state ---- */
+
+type TipState = { category: EventCategory; events: EventCard[]; x: number; y: number } | null;
 
 /* ---- Explorer data type ---- */
 
@@ -347,6 +389,9 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const [zoom, setZoom] = useState<ZoomGeom | null>(null);
   const [zoomOn, setZoomOn] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Tooltip state (null = hidden)
+  const [tip, setTip] = useState<TipState>(null);
 
   // Filter accordion open state
   const [openFilter, setOpenFilter] = useState<"type" | "mission" | "satellite" | null>(null);
@@ -394,7 +439,40 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     return map;
   }, [monthEvents]);
 
+  // One group per event TYPE per day, ordered by the canonical CATEGORIES list.
+  const byDayByType = useMemo(() => {
+    const map = new Map<number, { category: EventCategory; events: EventCard[] }[]>();
+    byDay.forEach((events, day) => {
+      const grouped = new Map<EventCategory, EventCard[]>();
+      for (const event of events) {
+        const list = grouped.get(event.category) ?? [];
+        list.push(event);
+        grouped.set(event.category, list);
+      }
+      map.set(
+        day,
+        CATEGORIES.filter((c) => grouped.has(c)).map((c) => ({ category: c, events: grouped.get(c)! })),
+      );
+    });
+    return map;
+  }, [byDay]);
+
   const cells = useMemo(() => calendarCells(view.year, view.month), [view.year, view.month]);
+
+  // Open a specific event by day + eventId (sets up zoom, then selects the event)
+  const selectDayEvent = useCallback(
+    (day: number, eventId: string) => {
+      const events = byDay.get(day) ?? [];
+      if (events.length === 0) return;
+      const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
+      if (!geom) return;
+      if (openDay === null) setZoomOn(false);
+      setZoom(geom);
+      setOpenDay(day);
+      selectEventId(eventId);
+    },
+    [byDay, openDay, selectEventId],
+  );
 
   // Close drawer
   const close = useCallback(() => {
@@ -429,9 +507,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     [byDay, openDay, selectEventId],
   );
 
-  // Sync view and drawer when the URL changes through external navigation (Link clicks,
-  // browser back/forward). history.pushState from navigate() does not update useSearchParams()
-  // in the Next.js App Router, so this effect does not fire for our own filter/month changes.
+  // Sync view and drawer when the URL changes through external navigation
   const hasMounted = useRef(false);
   useEffect(() => {
     if (!hasMounted.current) { hasMounted.current = true; return; }
@@ -439,8 +515,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       parseView(searchParams, data.now),
       data.ok ? data.cards : [],
     );
-    // Syncing state from an external system (Next.js router URL) is the intended use for
-    // effects with setState; disable the set-state-in-effect rule for this block.
     /* eslint-disable react-hooks/set-state-in-effect */
     setView(newView);
     if (!newView.event) {
@@ -457,14 +531,13 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // For deep-linked events, openDay is set from SSR but zoom needs DOM measurements.
-  // This one-time effect initialises zoom on mount when openDay is already set.
+  // For deep-linked events, initialise zoom on mount when openDay is already set.
   useEffect(() => {
     if (openDay === null || zoom !== null) return;
     const geom = gridRef.current ? measureZoom(gridRef.current, openDay) : null;
     if (geom) setZoom(geom);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty: runs once on mount only
+  }, []);
 
   // Fly in after mount
   useEffect(() => {
@@ -522,7 +595,14 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     return () => window.removeEventListener("click", close);
   }, [openFilter]);
 
-  // Metrics computed from the filtered events in the current month (must be before early-return)
+  // Hide tooltip when zoom opens
+  useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (openDay !== null) setTip(null);
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [openDay]);
+
+  // Metrics computed from the filtered events in the current month
   const datatakesInScope = useMemo(
     () => monthEvents.reduce((n, e) => n + e.datatakeCount, 0),
     [monthEvents],
@@ -532,7 +612,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     [monthEvents],
   );
 
-  // All hooks are above this line. Early-return for the degraded state is safe here.
+  // All hooks above this line. Early-return for the degraded state.
   if (!data.ok) {
     return (
       <div className={s.page} style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh" }}>
@@ -565,13 +645,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
   /* ---- calendar cell rendering ---- */
 
-  /** Group events by category so the cell shows one dot/icon per type + count badge. */
-  function groupByCategory(events: EventCard[]): { category: EventCategory; count: number }[] {
-    const map = new Map<EventCategory, number>();
-    for (const e of events) map.set(e.category, (map.get(e.category) ?? 0) + 1);
-    return [...map.entries()].map(([category, count]) => ({ category, count }));
-  }
-
   const renderCells = (zoomed: boolean) =>
     cells.map((c, i) => {
       const pos = skyCell(i);
@@ -580,13 +653,15 @@ export default function Explorer({ data }: { data: ExplorerData }) {
           <div key={`dim-${i}`} className={`${s.cell} ${s.cellDim}`} data-col={pos.col} data-row={pos.row} aria-hidden />
         );
       const events = byDay.get(c.day) ?? [];
-      const groups = groupByCategory(events);
+      const groups = byDayByType.get(c.day) ?? [];
       const shownGroups = groups.slice(0, MARKS_SHOWN);
       const hiddenCount = groups.length - shownGroups.length;
+      const totalItems = shownGroups.length + (hiddenCount > 0 ? 1 : 0);
 
       const selected = zoomed && openDay === c.day;
       const blurred = zoomed && openDay !== c.day;
       const pickable = blurred && events.length > 0;
+
       return (
         <div
           key={c.day}
@@ -597,50 +672,56 @@ export default function Explorer({ data }: { data: ExplorerData }) {
           onClick={
             pickable
               ? (evt) => { evt.stopPropagation(); selectDay(c.day); }
-              : events.length > 0
-                ? () => selectDay(c.day)
-                : undefined
+              : undefined
           }
         >
           <span className={s.cellNum}>{pad(c.day)}</span>
-          {groups.length > 0 && (
-            <span className={`${s.marks} ${zoomed ? s.zoomedIn : ""}`}>
-              {shownGroups.map(({ category, count }) => {
-                const color = CATEGORY_COLOR[category];
-                const Icon = CATEGORY_ICONS[category];
-                const title = zoomed
-                  ? `${category} · Back to the month`
-                  : `${count} ${category} event${count > 1 ? "s" : ""}`;
+          {shownGroups.length > 0 && (
+            <>
+              {shownGroups.map((group, idx) => {
+                const color = CATEGORY_COLOR[group.category];
+                const leftPct = (idx - (totalItems - 1) / 2) * 27;
+                const n = group.events.length;
+                const ariaLabel = `${group.category}, ${n} event${n === 1 ? "" : "s"}: ${group.events.map((e) => e.title).join(", ")}`;
                 return (
                   <button
-                    key={category}
+                    key={group.category}
                     type="button"
-                    className={s.markGroup}
-                    onClick={(evt) => { evt.stopPropagation(); if (zoomed) close(); else selectDay(c.day); }}
-                    title={title}
-                    aria-label={title}
+                    className={s.starBtn}
+                    style={{ left: `calc(50% + ${leftPct}%)`, top: "60%" }}
+                    aria-label={ariaLabel}
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      if (zoomed && selected) {
+                        close();
+                      } else if (!zoomed) {
+                        selectDayEvent(c.day, group.events[0]!.id);
+                      }
+                    }}
+                    onMouseMove={!zoomed ? (e) => setTip({ category: group.category, events: group.events, x: e.clientX, y: e.clientY }) : undefined}
+                    onMouseLeave={!zoomed ? () => setTip(null) : undefined}
+                    onFocus={!zoomed ? (e) => {
+                      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                      setTip({ category: group.category, events: group.events, x: r.left + r.width / 2, y: r.top });
+                    } : undefined}
+                    onBlur={!zoomed ? () => setTip(null) : undefined}
                   >
-                    {zoomed ? (
-                      <span className={s.iconMark} style={{ color }}>
-                        <Icon size={14} strokeWidth={CATEGORY_STROKE} aria-hidden />
-                      </span>
-                    ) : (
-                      <span className={s.dotMark} style={{ backgroundColor: color }} />
-                    )}
+                    <StarDot color={color} category={group.category} withIcon={zoomed} />
                   </button>
                 );
               })}
               {hiddenCount > 0 && (
                 <button
                   type="button"
-                  className={s.markMoreBtn}
+                  className={`${s.starBtn} ${s.markMoreBtn}`}
+                  style={{ left: `calc(50% + ${(shownGroups.length - (totalItems - 1) / 2) * 27}%)`, top: "60%" }}
                   onClick={(evt) => { evt.stopPropagation(); if (zoomed) close(); else selectDay(c.day); }}
                   aria-label={`+${hiddenCount} more type${hiddenCount > 1 ? "s" : ""}`}
                 >
                   <em className={s.markMore}>+{hiddenCount}</em>
                 </button>
               )}
-            </span>
+            </>
           )}
         </div>
       );
@@ -651,6 +732,12 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const missionDisplayVal = view.mission ? MISSION_DISPLAY[view.mission as MissionId] : "All";
   const satDisplayVal = view.satellite || "All";
   const typeDisplayVal = typeFilter || "All";
+
+  /* ---- tooltip ---- */
+
+  const tipFlip = tip !== null && tip.x > window.innerWidth - 230;
+  const tipLeft = tip !== null ? tip.x + (tipFlip ? -18 : 18) : 0;
+  const tipTop = tip !== null ? tip.y - 16 : 0;
 
   return (
     <div className={s.page} style={{ opacity: isPending ? 0.7 : 1, transition: "opacity 200ms" }}>
@@ -705,7 +792,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                       All
                     </button>
                     {CATEGORIES.map((c) => {
-                      const Icon = CATEGORY_ICONS[c];
                       const color = CATEGORY_COLOR[c];
                       const active = typeFilter === c;
                       return (
@@ -716,7 +802,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                           style={active ? {} : { "--type-color": color } as CSSProperties}
                           onClick={() => { navigate({ ...view, categories: [c] }); setOpenFilter(null); }}
                         >
-                          <Icon size={14} strokeWidth={CATEGORY_STROKE} color={active ? "currentColor" : color} aria-hidden />
+                          <CategoryIcon category={c} color={active ? "currentColor" : color} size={14} />
                           {c}
                         </button>
                       );
@@ -867,7 +953,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         </div>
       </div>
 
-      {/* Zoom stage: position:fixed overlay, only while a day is zoomed. */}
+      {/* Zoom stage */}
       {zoom && (
         <div
           className={`${s.page} ${s.stage} ${zoomOn ? s.stageOn : ""}`}
@@ -897,8 +983,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         </div>
       )}
 
-      {/* Drawer: always in the DOM so both open and close CSS transitions run.
-          aria-hidden + inert prevent focus/read when closed. */}
+      {/* Drawer */}
       <aside
         className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
         aria-label="Event detail"
@@ -911,7 +996,13 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             data.dayEvents.length > 0 &&
             new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate() === openDay;
           if (drawerMatchesDay)
-            return <DayManifest dayEvents={data.dayEvents} selectedId={data.selectedEventId} sign={sign} />;
+            return (
+              <DayManifest
+                dayEvents={data.dayEvents}
+                selectedId={data.selectedEventId}
+                onSelect={selectEventId}
+              />
+            );
           if (openDay !== null)
             return (
               <div className={s.drawerBody}>
@@ -923,6 +1014,32 @@ export default function Explorer({ data }: { data: ExplorerData }) {
           return null;
         })()}
       </aside>
+
+      {/* Hover tooltip — only shown on hover-capable devices (no mousemove on touch) */}
+      {tip && (
+        <div
+          className={s.tipEl}
+          style={{
+            left: tipLeft,
+            top: tipTop,
+            transform: tipFlip ? "translateX(calc(-100% - 28px))" : undefined,
+          }}
+          aria-hidden
+        >
+          <CategoryIcon category={tip.category} color={CATEGORY_COLOR[tip.category]} size={14} />
+          <span className={s.tipTxt}>
+            <span className={s.tipType} style={{ color: CATEGORY_COLOR[tip.category] }}>
+              {tip.category}{" · "}{tip.events.length === 1 ? tip.events[0]!.satellite : `${tip.events.length} events`}
+            </span>
+            {tip.events.slice(0, 3).map((e, i) => (
+              <span key={i} className={s.tipName}>{e.title} · {e.satellite}</span>
+            ))}
+            {tip.events.length > 3 && (
+              <span className={s.tipName} style={{ color: "var(--mf-faint)" }}>+{tip.events.length - 3} more</span>
+            )}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

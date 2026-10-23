@@ -19,6 +19,7 @@ import {
   type MissionId,
   type TextSegment,
 } from "./model";
+import { classifyDatatake } from "./event-types";
 
 export type ApiAnomaly = components["schemas"]["Anomaly"];
 
@@ -177,6 +178,16 @@ export function parseTextSegments(text: string): TextSegment[] {
   return out.filter((s) => s.type !== "text" || (s as { type: "text"; text: string }).text !== "");
 }
 
+/* ---- fully-recovered filter ---- */
+
+/** True when at least one datatake has data, and every datatake with data is ACQUIRED
+ *  (mean completeness ≥ 90 %). Uses the same classifyDatatake function as the drawer rows. */
+export function isFullyRecovered(datatakes: EventDatatake[]): boolean {
+  const withData = datatakes.filter((dt) => classifyDatatake(dt) !== "noData");
+  if (withData.length === 0) return false;
+  return withData.every((dt) => classifyDatatake(dt) === "acquired");
+}
+
 /* ---- main adapter ---- */
 
 export interface AdaptedEvents {
@@ -188,6 +199,7 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
   const events: EventDetail[] = [];
   const unresolved: string[] = [];
   const excludedByCategory = new Map<string, number>();
+  let fullRecoveredCount = 0;
 
   for (const r of records) {
     if (!r.start || !r.end) {
@@ -216,6 +228,13 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
     }
     const mission = MISSION_OF[satellite] ?? null;
 
+    const datatakes = adaptDatatakes(r.datatakes_completeness ?? []);
+
+    if (isFullyRecovered(datatakes)) {
+      fullRecoveredCount++;
+      continue;
+    }
+
     events.push({
       id: r.id ?? r.key,
       key: r.key,
@@ -229,11 +248,10 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       startTime: utcTimeStr(r.start),
       months: monthsOverlapped(startMs, endMs),
       textSegments: parseTextSegments(r.text ?? ""),
-      datatakes: adaptDatatakes(r.datatakes_completeness ?? []),
+      datatakes,
       newsLink: r.news_link ?? null,
       newsTitle: r.news_title ?? null,
       impactedItem: r.impacted_item ?? null,
-      // computed after datatakes are built, so we inline them here
       get datatakeCount() { return this.datatakes.length; },
       get lostDatatakeCount() { return this.datatakes.filter(isDatatakeLost).length; },
     });
@@ -247,14 +265,16 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       .join(", ");
     console.info(`[events] excluded ${total} records with non-shown categories — ${detail}`);
   }
+  if (fullRecoveredCount > 0) {
+    console.info(`[events] excluded ${fullRecoveredCount} fully-recovered events (all datatakes ≥ 90 %)`);
+  }
 
   return { events, unresolved };
 }
 
-/** True when any non-null completeness level is below 100 % (partial or unavailable). */
+/** True when the datatake's mean completeness is below 10 % (LOST status). */
 function isDatatakeLost(dt: EventDatatake): boolean {
-  const levels = [dt.L0, dt.L1, dt.L2].filter((v): v is number => v !== null);
-  return levels.some((v) => v < 100);
+  return classifyDatatake(dt) === "lost";
 }
 
 /** Strip EventDetail to EventCard (removes text, datatakes, newsLink, etc.). */

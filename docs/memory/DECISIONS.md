@@ -174,6 +174,47 @@ type) silently fall back to all categories.
 **Consequences.** Category chips, icons, colours and description text have no "Other" entry.
 Metrics (Events / Datatakes / Lost / Satellites) count only the shown events.
 
+## 2026-10-23 — Events: datatake completeness is the mean of non-null levels
+
+**Context.** Two completeness representations were in flight: the drawer rows computed a "best"
+(minimum) completeness level, while `isFullyRecovered` checked each level individually. This gave
+inconsistent status classifications and a "Lost datatakes" metric that counted any level < 100 %
+(matching no legacy metric).
+**Decision.** One rule, applied everywhere from a single location (`event-types.tsx`):
+- `meanCompleteness(dt)` returns the arithmetic mean of the non-null levels (L0, L1, L2), or
+  `null` when all are null.
+- `classifyDatatake(dt)` classifies one datatake: ACQUIRED (mean ≥ 90), PARTIAL (10 ≤ mean < 90),
+  LOST (mean < 10), NO DATA (null mean). Status and colour come from `STATUS_COLOR`/`STATUS_LABEL`.
+- `classifyImpact(datatakes)` classifies an event: lost if any LOST, partial if any PARTIAL,
+  acquired if all acquired, noData if all noData or empty. Used for the occurrence dot.
+- `isFullyRecovered(datatakes)` in `adapter.ts` uses `classifyDatatake`: at least one datatake
+  with data, and every datatake with data is ACQUIRED.
+- "Lost datatakes" metric counts datatakes with LOST status (mean < 10 %).
+All four call sites (drawer row, impact dot, fully-recovered filter, metrics) import from
+`event-types.tsx`; nothing computes completeness or status locally.
+**Consequences.** A datatake with e.g. L0 = 100, L1 = 80, L2 = null has mean 90 → ACQUIRED and
+counts as fully recovered. This differs from a per-level threshold. The mean better reflects
+overall throughput rather than the worst single processing level.
+
+## 2026-10-23 — Events: fully-recovered events hidden before EventCards
+
+**Context.** The legacy app excluded events where every datatake had a `fullRecover` flag set by
+the server. The new frontend receives raw completeness levels (L0, L1, L2) with no server-side
+flag. Some events shown to users (e.g. "[S1C PRIP] several out of timeliness…") had 98 datatakes
+all ACQUIRED at 100 %, with 0 unavailable — visually indistinguishable from resolved, and
+inconsistent with the legacy hide behaviour.
+**Decision.** `isFullyRecovered(datatakes)` in `adapter.ts` returns `true` when at least one real
+(non-`noData`) datatake exists and every real datatake has all non-null levels ≥ 90 %. Events that
+pass this check are excluded from `adaptEvents()` before `EventCard[]` or `dayEvents` are built —
+the calendar, drawer and all metrics never see them. Events with zero datatakes or with only noData
+datatakes are *not* considered fully recovered and are kept. The excluded count is logged once per
+load via `console.info("[events] excluded N fully-recovered events (all datatakes ≥ 90 %)")`.
+**Threshold rationale.** 90 % matches the threshold used by `classifyImpact` / `classifyDatatake`
+to classify a datatake as "spared" (ACQUIRED). An event is fully recovered when all its datatakes
+are in the spared band.
+**Consequences.** Fully-recovered events disappear from every surface (calendar dots, drawer list,
+metrics). The filter runs server-side in the adapter; the client is unaware of excluded records.
+
 ## 2026-10-22 — Frontend tests: Vitest in plain Node, real fixtures, no network
 
 **Decision.** `sentiboard-frontend` tests run with Vitest (`pnpm test`, config `vitest.config.mts`),

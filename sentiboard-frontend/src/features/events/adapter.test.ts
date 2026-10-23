@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   adaptEvents,
+  isFullyRecovered,
   isRealDatatakeId,
   monthsOverlapped,
   parseTextSegments,
@@ -101,6 +102,113 @@ describe("parseTextSegments", () => {
   });
 });
 
+/* ---- isFullyRecovered ---- */
+
+describe("isFullyRecovered", () => {
+  it("returns true when every real datatake has mean ≥ 90 % (ACQUIRED)", () => {
+    const dts = [
+      { datatakeId: "S1A-1", L0: 100, L1: 95, L2: null, noData: false }, // mean 97.5
+      { datatakeId: "S1A-2", L0: 90,  L1: 100, L2: 92,  noData: false }, // mean 94
+    ];
+    expect(isFullyRecovered(dts)).toBe(true);
+  });
+
+  it("returns false when no datatakes", () => {
+    expect(isFullyRecovered([])).toBe(false);
+  });
+
+  it("returns false when all datatakes are noData", () => {
+    const dts = [
+      { datatakeId: "S2B-1", L0: null, L1: null, L2: null, noData: true },
+    ];
+    expect(isFullyRecovered(dts)).toBe(false);
+  });
+
+  it("returns false when a real datatake has mean < 90 %", () => {
+    // mean(100, 75) = 87.5 → PARTIAL
+    const dts = [
+      { datatakeId: "S1A-1", L0: 100, L1: 75, L2: null, noData: false },
+    ];
+    expect(isFullyRecovered(dts)).toBe(false);
+  });
+
+  it("returns false when real and noData datatakes are mixed and the real one is PARTIAL", () => {
+    const dts = [
+      { datatakeId: "S1A-1", L0: 100, L1: 50, L2: null, noData: false }, // mean 75 → PARTIAL
+      { datatakeId: "S1A-2", L0: null, L1: null, L2: null, noData: true },
+    ];
+    expect(isFullyRecovered(dts)).toBe(false);
+  });
+
+  it("single non-null level ≥ 90 % is ACQUIRED — qualifies as fully recovered", () => {
+    const dts = [
+      { datatakeId: "S1A-1", L0: 100, L1: null, L2: null, noData: false },
+    ];
+    expect(isFullyRecovered(dts)).toBe(true);
+  });
+});
+
+/* ---- adaptEvents — fully-recovered filter ---- */
+
+describe("adaptEvents — fully-recovered filter", () => {
+  it("excludes an event when every real datatake has all non-null levels ≥ 90 %", () => {
+    const fullyOk = {
+      ...RECORDS[0]!,
+      id: "FR-EXCL",
+      datatakes_completeness: [
+        { datatakeID: "S1A-111111", L0_: 100.0, L1_: 92.5, L2_: null },
+        { datatakeID: "S1A-111112", L0_: 100.0, L1_: 90.0, L2_: 95.0 },
+      ],
+    };
+    const { events } = adaptEvents([fullyOk]);
+    expect(events).toHaveLength(0);
+  });
+
+  it("keeps an event with no datatakes (cannot be fully recovered)", () => {
+    const noDt = { ...RECORDS[3]!, id: "FR-KEEP-EMPTY" }; // EVT-004 has 0 datatakes
+    const { events } = adaptEvents([noDt]);
+    expect(events).toHaveLength(1);
+  });
+
+  it("keeps an event whose datatakes are all noData", () => {
+    const allNoData = {
+      ...RECORDS[0]!,
+      id: "FR-KEEP-NODATA",
+      datatakes_completeness: [
+        { datatakeID: "S1A-222222", L0_: null, L1_: null, L2_: null },
+      ],
+    };
+    const { events } = adaptEvents([allNoData]);
+    expect(events).toHaveLength(1);
+  });
+
+  it("keeps an event where one real datatake has mean < 90 %", () => {
+    const partial = {
+      ...RECORDS[0]!,
+      id: "FR-KEEP-PARTIAL",
+      datatakes_completeness: [
+        { datatakeID: "S1A-333333", L0_: 100.0, L1_: 95.0, L2_: null }, // mean 97.5 — acquired
+        { datatakeID: "S1A-333334", L0_: 100.0, L1_: 50.0, L2_: null }, // mean 75 — partial
+      ],
+    };
+    const { events } = adaptEvents([partial]);
+    expect(events).toHaveLength(1);
+  });
+
+  it("keeps an event mixing noData and a partial real datatake", () => {
+    const mixed = {
+      ...RECORDS[0]!,
+      id: "FR-KEEP-MIXED",
+      datatakes_completeness: [
+        { datatakeID: "S1A-444444", L0_: null, L1_: null, L2_: null }, // noData
+        { datatakeID: "S1A-444445", L0_: 100.0, L1_: 50.0, L2_: null }, // partial
+      ],
+    };
+    const { events } = adaptEvents([mixed]);
+    expect(events).toHaveLength(1);
+  });
+});
+
 /* ---- adaptEvents — category whitelist ---- */
 
 describe("adaptEvents — category whitelist", () => {
@@ -117,9 +225,18 @@ describe("adaptEvents — category whitelist", () => {
   });
 
   it("includes all five allowed category types", () => {
-    // RECORDS already covers Acquisition, Production, Manoeuvre, Calibration, Platform (→ Satellite)
-    const { events } = adaptEvents(RECORDS);
-    expect(events).toHaveLength(RECORDS.length);
+    // RECORDS covers Acquisition, Production, Manoeuvre, Calibration, Platform (→ Satellite).
+    // EVT-005 (Platform) is fully recovered, so we supply a partial variant to prove the whitelist.
+    const partialPlatform = {
+      ...RECORDS[4]!, // EVT-005
+      id: "EVT-005-PARTIAL",
+      datatakes_completeness: [
+        { datatakeID: "S1A-358100", L0_: 100.0, L1_: 50.0, L2_: null },
+      ],
+    };
+    const input = [...RECORDS.slice(0, 4), partialPlatform];
+    const { events } = adaptEvents(input);
+    expect(events).toHaveLength(input.length);
   });
 
   it("maps feed value 'Satellite' directly to Satellite", () => {
@@ -172,10 +289,14 @@ describe("adaptEvents", () => {
   });
 
   it("maps Platform category to Satellite (no separate Platform type in the UI model)", () => {
-    // EVT-005 has category "Platform" in the backend feed.
-    const { events } = adaptEvents(RECORDS);
-    const e = events.find((e) => e.id === "EVT-005");
-    expect(e?.category).toBe("Satellite");
+    // EVT-005 is fully recovered in the fixture; use a partial variant so it passes the filter.
+    const partial = {
+      ...RECORDS[4]!,
+      id: "EVT-005-P",
+      datatakes_completeness: [{ datatakeID: "S1A-358100", L0_: 50.0, L1_: null, L2_: null }],
+    };
+    const { events } = adaptEvents([partial]);
+    expect(events[0]?.category).toBe("Satellite");
   });
 
   it("maps long satellite names to short codes", () => {
@@ -194,18 +315,36 @@ describe("adaptEvents", () => {
   });
 
   it("derives satellite from datatake IDs when impacted_satellite is null", () => {
-    const { events } = adaptEvents(RECORDS);
-    const e = events.find((e) => e.id === "EVT-005");
+    // EVT-005 is fully recovered in the fixture; use a partial variant so it passes the filter.
+    const partial = {
+      ...RECORDS[4]!,
+      id: "EVT-005-P",
+      datatakes_completeness: [
+        { datatakeID: "S1A-358100", L0_: 50.0, L1_: null, L2_: null }, // partial — kept
+        { datatakeID: "No", L0_: null, L1_: null, L2_: null },
+        { datatakeID: "impact", L0_: null, L1_: null, L2_: null },
+      ],
+    };
+    const { events } = adaptEvents([partial]);
     // S1A-358100 → S1A, fake tokens filtered out → single satellite → S1A
-    expect(e?.satellite).toBe("S1A");
-    expect(e?.mission).toBe("s1");
+    expect(events[0]?.satellite).toBe("S1A");
+    expect(events[0]?.mission).toBe("s1");
   });
 
   it("filters out fake datatake IDs", () => {
-    const { events } = adaptEvents(RECORDS);
-    const e = events.find((e) => e.id === "EVT-005");
-    expect(e?.datatakes).toHaveLength(1);
-    expect(e?.datatakes[0]?.datatakeId).toBe("S1A-358100");
+    // EVT-005 is fully recovered in the fixture; use a partial variant so it passes the filter.
+    const partial = {
+      ...RECORDS[4]!,
+      id: "EVT-005-P",
+      datatakes_completeness: [
+        { datatakeID: "S1A-358100", L0_: 50.0, L1_: null, L2_: null },
+        { datatakeID: "No", L0_: null, L1_: null, L2_: null },
+        { datatakeID: "impact", L0_: null, L1_: null, L2_: null },
+      ],
+    };
+    const { events } = adaptEvents([partial]);
+    expect(events[0]?.datatakes).toHaveLength(1);
+    expect(events[0]?.datatakes[0]?.datatakeId).toBe("S1A-358100");
   });
 
   it("marks datatake noData=true when all levels are null", () => {
@@ -240,8 +379,8 @@ describe("adaptEvents", () => {
       ...RECORDS[0]!,
       id: "EVT-DUP",
       datatakes_completeness: [
-        { datatakeID: "S1A-111111", L0_: 100.0, L1_: null, L2_: null },
-        { datatakeID: "S1A-111111", L0_: 50.0, L1_: null, L2_: null },
+        { datatakeID: "S1A-111111", L0_: 50.0, L1_: null, L2_: null }, // mean 50 → partial (kept)
+        { datatakeID: "S1A-111111", L0_: 80.0, L1_: null, L2_: null }, // duplicate — dropped
       ],
     };
     const { events } = adaptEvents([dup]);
@@ -262,8 +401,9 @@ describe("toEventCard", () => {
     expect(card.id).toBe(detail.id);
     expect(card.title).toBe(detail.title);
     expect(card.months).toEqual(detail.months);
-    // EVT-001 has 2 datatakes; both have L1 < 100, so both are "lost"
+    // EVT-001: S1A-357888 mean(100,98.3)=99.15 → acquired; S1A-357890 mean(100,0)=50 → partial.
+    // Neither is LOST (mean < 10), so lostDatatakeCount = 0.
     expect(card.datatakeCount).toBe(2);
-    expect(card.lostDatatakeCount).toBe(2);
+    expect(card.lostDatatakeCount).toBe(0);
   });
 });
