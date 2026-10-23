@@ -12,7 +12,6 @@ import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, RotateCcw, Search, X } from "lucide-react";
 import { PageHeader } from "@/components/ui";
 import {
-  ALL_SATELLITES,
   CATEGORIES,
   CATEGORY_COLOR,
   CATEGORY_SVG_PATHS,
@@ -27,13 +26,11 @@ import {
   calendarCells,
   completenessLabel,
   sensingWindow,
-  dayStatus,
   eventStatus,
   eventsInMonth,
   filterEvents,
   groupByDay,
   marksLoss,
-  missionOf,
   type Datatake,
   type EventCategory,
   type Filters,
@@ -474,6 +471,56 @@ function DaySummary({ events }: { events: ManifestEvent[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Filter dropdowns (reference: .fdrop / .ftype / .fmis / .fsat)
+// ---------------------------------------------------------------------------
+
+/** "Sentinel-1A" → "S1A", "Sentinel-5P" → "S5P". */
+function shortSat(name: string): string {
+  const m = name.match(/^Sentinel-(\d+)([A-Z]?)$/);
+  return m ? `S${m[1]}${m[2]}` : name;
+}
+
+/** A single collapsible filter row: caption + value in the head, animated body below it.
+ *  The body is absolutely positioned so it overlays the calendar without changing the row height.
+ *  Clicks inside are stopped at this element so they cannot fall through to a day cell below. */
+function FilterDrop({
+  label,
+  val,
+  open,
+  onToggle,
+  children,
+}: {
+  label: string;
+  val: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className={`${s.fdrop} ${open ? s.fdropOpen : ""}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        type="button"
+        className={s.fdropHead}
+        onClick={onToggle}
+        aria-expanded={open}
+      >
+        <span>{label}</span>
+        <span className={s.fdropVal}>{val}</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+          <path d="M3 4.5l3 3 3-3" />
+        </svg>
+      </button>
+      <div className={s.fdropBody}>
+        <div className={s.fdropInner}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -496,37 +543,35 @@ export default function EventsManifest() {
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const motion = useAmbientMotion();
+  const [openDrop, setOpenDrop] = useState<"types" | "missions" | "sats" | null>(null);
 
-  // A satellite from the old mission would contradict the new one, leaving zero results with no
-  // visible cause, so changing mission clears it. Conversely a satellite implies its mission —
-  // filling it in beats showing "All missions" next to "Sentinel-1A".
-  const setMission = useCallback((mission: string) => {
-    setFilters((f) => ({ ...f, mission, satellite: "" }));
+  const toggleType = useCallback((c: EventCategory) => {
+    setFilters((f) => {
+      const s = new Set(f.offTypes);
+      s.has(c) ? s.delete(c) : s.add(c);
+      return { ...f, offTypes: s };
+    });
   }, []);
-  const setSatellite = useCallback((satellite: string) => {
-    setFilters((f) => ({
-      ...f,
-      satellite,
-      mission: satellite ? missionOf(satellite) : f.mission,
-    }));
+  const toggleMission = useCallback((m: string) => {
+    setFilters((f) => {
+      const s = new Set(f.offMissions);
+      s.has(m) ? s.delete(m) : s.add(m);
+      return { ...f, offMissions: s };
+    });
   }, []);
-  const toggleCategory = useCallback((c: EventCategory) => {
-    setFilters((f) => ({
-      ...f,
-      categories: f.categories.includes(c)
-        ? f.categories.filter((x) => x !== c)
-        : [...f.categories, c],
-    }));
+  const toggleSat = useCallback((sat: string) => {
+    setFilters((f) => {
+      const s = new Set(f.offSats);
+      s.has(sat) ? s.delete(sat) : s.add(sat);
+      return { ...f, offSats: s };
+    });
   }, []);
   const setQuery = useCallback(
     (query: string) => setFilters((f) => ({ ...f, query })),
     [],
   );
-  const setType = useCallback((value: string) => {
-    setFilters((f) => ({
-      ...f,
-      categories: value ? [value as EventCategory] : CATEGORIES,
-    }));
+  const toggleDrop = useCallback((which: "types" | "missions" | "sats") => {
+    setOpenDrop((d) => (d === which ? null : which));
   }, []);
   const reset = useCallback(() => setFilters(EMPTY_FILTERS), []);
 
@@ -550,9 +595,24 @@ export default function EventsManifest() {
     0,
   );
   const satellitesMonitored = new Set(monthEvents.map((e) => e.satellite)).size;
-  // The event-type dropdown is single-choice: one category shows, and "All" stands for every one.
-  const typeFilter =
-    filters.categories.length === 1 ? filters.categories[0] : "";
+
+  // Dropdown header values: "All" when everything is on, else "<on>/<total>".
+  const visibleSats = MISSION_NAMES
+    .filter((m) => !filters.offMissions.has(m))
+    .flatMap((m) => MISSIONS[m]);
+  const typeVal =
+    filters.offTypes.size === 0
+      ? "All"
+      : `${CATEGORIES.length - filters.offTypes.size}/${CATEGORIES.length}`;
+  const misVal =
+    filters.offMissions.size === 0
+      ? "All"
+      : `${MISSION_NAMES.length - filters.offMissions.size}/${MISSION_NAMES.length}`;
+  const offVisibleSats = visibleSats.filter((sat) => filters.offSats.has(sat));
+  const satVal =
+    offVisibleSats.length === 0
+      ? "All"
+      : `${visibleSats.length - offVisibleSats.length}/${visibleSats.length}`;
 
   const cells = useMemo(
     () => calendarCells(YEAR, currentMonth),
@@ -565,17 +625,11 @@ export default function EventsManifest() {
   const canGoForward = currentMonth < 12;
 
   const dirty =
-    filters.mission !== "" ||
-    filters.satellite !== "" ||
-    filters.query !== "" ||
-    filters.categories.length !== CATEGORIES.length;
+    filters.offTypes.size > 0 ||
+    filters.offMissions.size > 0 ||
+    filters.offSats.size > 0 ||
+    filters.query !== "";
 
-  const satellites = filters.mission
-    ? MISSIONS[filters.mission]
-    : ALL_SATELLITES;
-  // Sentinel-5P flies alone, so there is nothing to choose — the production page disables the
-  // selector in exactly this case rather than offering a list of one.
-  const satelliteDisabled = satellites.length < 2;
   const gridRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState<ZoomGeom | null>(null); // mounted while the stage exists
   const [zoomOn, setZoomOn] = useState(false); // true = flown in
@@ -884,68 +938,80 @@ export default function EventsManifest() {
             </div>
 
             <div className={s.barFilters}>
-              <div className={s.inline}>
-                <label className={s.inlineLabel} htmlFor="mf-type">
-                  Event type
-                </label>
-                <select
-                  id="mf-type"
-                  className={s.inlineSelect}
-                  value={typeFilter}
-                  onChange={(e) => setType(e.target.value)}
-                >
-                  <option value="">All</option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
+              {openDrop && <div className={s.fdropOverlay} onClick={() => setOpenDrop(null)} />}
+              {/* Event type — icon + uppercase label in the type colour */}
+              <FilterDrop
+                label="Event type"
+                val={typeVal}
+                open={openDrop === "types"}
+                onToggle={() => toggleDrop("types")}
+              >
+                {CATEGORIES.map((c) => {
+                  const on = !filters.offTypes.has(c);
+                  const color = on ? CATEGORY_COLOR[c] : "#8A96A6";
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      className={`${s.ftypeBtn} ${on ? "" : s.ftypeOff}`}
+                      style={{ color }}
+                      aria-pressed={on}
+                      onClick={() => toggleType(c)}
+                    >
+                      <CategoryIcon type={c} size={14} color={color} />
                       {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    </button>
+                  );
+                })}
+              </FilterDrop>
 
-              <div className={s.inline}>
-                <label className={s.inlineLabel} htmlFor="mf-mission">
-                  Mission
-                </label>
-                <select
-                  id="mf-mission"
-                  className={s.inlineSelect}
-                  value={filters.mission}
-                  onChange={(e) => setMission(e.target.value)}
-                >
-                  <option value="">All</option>
-                  {MISSION_NAMES.map((m) => (
-                    <option key={m} value={m}>
+              {/* Mission — uppercase names */}
+              <FilterDrop
+                label="Mission"
+                val={misVal}
+                open={openDrop === "missions"}
+                onToggle={() => toggleDrop("missions")}
+              >
+                {MISSION_NAMES.map((m) => {
+                  const on = !filters.offMissions.has(m);
+                  return (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`${s.fmisBtn} ${on ? "" : s.fmisOff}`}
+                      aria-pressed={on}
+                      onClick={() => toggleMission(m)}
+                    >
                       {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                    </button>
+                  );
+                })}
+              </FilterDrop>
 
-              <div className={s.inline}>
-                <label className={s.inlineLabel} htmlFor="mf-satellite">
-                  Satellite
-                </label>
-                <select
-                  id="mf-satellite"
-                  className={s.inlineSelect}
-                  value={filters.satellite}
-                  onChange={(e) => setSatellite(e.target.value)}
-                  disabled={satelliteDisabled}
-                  title={
-                    satelliteDisabled
-                      ? "Sentinel-5P has a single satellite"
-                      : undefined
-                  }
-                >
-                  <option value="">All</option>
-                  {satellites.map((sat) => (
-                    <option key={sat} value={sat}>
-                      {sat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* Satellite — short codes (S1A, S2B…) in a wrapping row; only missions that are on */}
+              <FilterDrop
+                label="Satellite"
+                val={satVal}
+                open={openDrop === "sats"}
+                onToggle={() => toggleDrop("sats")}
+              >
+                <div className={s.fsatRow}>
+                  {visibleSats.map((sat) => {
+                    const on = !filters.offSats.has(sat);
+                    return (
+                      <button
+                        key={sat}
+                        type="button"
+                        className={`${s.fsatBtn} ${on ? "" : s.fsatOff}`}
+                        aria-pressed={on}
+                        onClick={() => toggleSat(sat)}
+                      >
+                        {shortSat(sat)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FilterDrop>
 
               <div className={`${s.inline} ${s.inlineSearch}`}>
                 <Search size={13} aria-hidden />
@@ -960,12 +1026,18 @@ export default function EventsManifest() {
                 />
               </div>
 
-              {dirty && (
-                <button type="button" className={s.reset} onClick={reset}>
-                  <RotateCcw size={12} aria-hidden /> Reset
-                </button>
-              )}
             </div>
+
+            {/* Absolutely positioned so it is never in the flex flow of barFilters or monthBar —
+                it cannot change the row width or trigger wrapping. */}
+            <button
+              type="button"
+              className={s.reset}
+              onClick={reset}
+              style={{ visibility: dirty ? "visible" : "hidden" }}
+            >
+              <RotateCcw size={12} aria-hidden /> Reset
+            </button>
           </div>
 
           {/* ---------- month grid ---------- */}

@@ -272,6 +272,8 @@
 /* ---------------- month bar + legend ---------------- */
 /* One centred row, as SentiBoard.html's .ev-toolbar: the month, then the filters beside it. */
 .monthBar {
+  position: relative;
+  z-index: 99; /* above fdropOverlay (z:98) within inner's stacking context (z:1) */
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -739,10 +741,233 @@ select.control {
   opacity: 1;
 }
 
-/* the reset sits on the same 49px line as the fields */
-.barFilters .reset {
+/* Reset: absolutely positioned so it is never in the flex flow and cannot affect row width */
+.monthBar > .reset {
+  position: absolute;
+  right: clamp(18px, 4vw, 48px);
+  top: 0;
   height: 49px;
+  display: flex;
+  align-items: center;
   margin-left: 0;
+}
+
+/* ---------- reference filter dropdowns (.fdrop / .ftype / .fmis / .fsat) ----------
+   The trigger head lives in the 49px row. The body is position:absolute so it overlays
+   the calendar without pushing other fields or changing the row height. */
+.fdrop {
+  position: relative;
+  z-index: 99;
+  width: 200px;
+  height: 49px;
+  box-sizing: border-box;
+  border-bottom: 1px solid color-mix(in srgb, var(--mf-text) 30%, transparent);
+  transition: border-color 200ms ease;
+}
+
+.fdropOpen {
+  border-bottom-color: var(--mf-signal);
+}
+
+.fdropHead {
+  width: 100%;
+  height: 49px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: var(--mf-text);
+}
+
+.fdropHead > span:first-child {
+  flex: 1 1 auto;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--mf-text);
+  transition: color 200ms ease;
+}
+
+.fdropHead:hover > span:first-child,
+.fdropOpen .fdropHead > span:first-child {
+  color: var(--mf-signal);
+}
+
+.fdropVal {
+  flex: 0 0 auto;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 13px;
+  font-weight: 600;
+  color: color-mix(in srgb, var(--mf-text) 92%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+.fdropHead svg {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--mf-text) 85%, transparent);
+  transition: transform 460ms cubic-bezier(.2,.7,.2,1);
+}
+
+.fdropOpen .fdropHead svg {
+  transform: rotate(180deg);
+}
+
+/* body: absolutely positioned so it never shifts the 49px toolbar row;
+   z-index is inherited from .fdrop's stacking context (z:99 within inner) */
+.fdropBody {
+  position: absolute;
+  left: 0;
+  top: 49px;
+  min-width: 100%;
+  max-height: 0;
+  overflow: hidden;
+  background: var(--mf-bg);
+  border: 1px solid color-mix(in srgb, var(--mf-text) 20%, transparent);
+  border-top: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  transition: max-height 480ms cubic-bezier(.2,.7,.2,1);
+  box-sizing: border-box;
+}
+
+.fdropOpen .fdropBody {
+  max-height: 400px;
+}
+
+.fdropInner {
+  padding-bottom: 14px;
+}
+
+/* Event type: icon + label in the type colour. Off state: grey + reduced opacity. */
+.ftypeBtn {
+  width: 100%;
+  min-height: 38px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: none;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 220ms ease;
+}
+
+.ftypeOff {
+  opacity: 0.3;
+}
+
+.ftypeBtn:hover {
+  opacity: 1 !important;
+}
+
+/* Mission: uppercase names. */
+.fmisBtn {
+  width: 100%;
+  text-align: left;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--mf-text) 66%, transparent);
+  cursor: pointer;
+  transition: opacity 200ms ease, color 200ms ease;
+}
+
+.fmisBtn:hover {
+  color: var(--mf-text);
+}
+
+.fmisOff {
+  opacity: 0.28;
+}
+
+/* Satellite: short codes in a wrapping row. */
+.fsatRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.fsatBtn {
+  min-height: 36px;
+  padding: 0 8px 0 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--mf-text) 60%, transparent);
+  cursor: pointer;
+  transition: opacity 200ms ease, color 200ms ease;
+}
+
+.fsatBtn:hover {
+  color: var(--mf-text);
+}
+
+.fsatOff {
+  opacity: 0.28;
+}
+
+/* Mobile: dropdowns go full-width like the other filter fields. */
+@media (max-width: 760px) {
+  .fdrop {
+    width: 100%;
+  }
+
+  .fdropBody {
+    width: 100%;
+  }
+}
+
+/* Overlay rendered when any dropdown is open: intercepts outside clicks to close the dropdown
+   without the click reaching the calendar. z:98 within inner's stacking context (z:1 in root),
+   so it sits above the calendar (z:1 within inner) but below monthBar (z:99 within inner). */
+.fdropOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 98;
+  cursor: default;
+}
+
+/* ≥1140px: both monthNav and barFilters fit on one line — enforce it so flex-wrap cannot
+   silently break the row when filter state changes. Below this, the month goes to its own row. */
+@media (min-width: 1140px) {
+  .monthBar {
+    flex-wrap: nowrap;
+  }
+}
+
+/* 1140–1259px: at these widths the 200px fields make the row too wide (monthNav + 4×200 + 3×26
+   ≈ 1162px vs 1164px usable), so shrink to 170px. Row still fits: 4×170 + 3×26 + ~240 ≈ 1018px. */
+@media (max-width: 1259px) {
+  .fdrop {
+    width: 170px;
+  }
+
+  .fdropBody {
+    min-width: 170px;
+  }
+
+  .inline {
+    width: 170px;
+  }
 }
 
 /* ---------------- month grid: sized like SentiBoard.html's star chart ----------------
@@ -2031,6 +2256,13 @@ select.control {
   .monthBar {
     gap: 12px;
     padding: 12px 0;
+  }
+
+  .monthBar > .reset {
+    position: static;
+    align-self: flex-end;
+    height: auto;
+    min-height: 44px;
   }
 
   .monthNav {

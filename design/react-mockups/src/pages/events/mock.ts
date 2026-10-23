@@ -381,23 +381,27 @@ export function dayStatus(events: ManifestEvent[]): Status {
 }
 
 export type Filters = {
-  mission: string; // "" = all
-  satellite: string; // "" = all
-  categories: EventCategory[]; // empty = none pass
+  offTypes: Set<EventCategory>;   // types in this set are hidden
+  offMissions: Set<string>;       // missions in this set are hidden
+  offSats: Set<string>;           // satellites in this set are hidden
   query: string;
 };
 
-export const EMPTY_FILTERS: Filters = { mission: "", satellite: "", categories: CATEGORIES, query: "" };
+export const EMPTY_FILTERS: Filters = {
+  offTypes: new Set(),
+  offMissions: new Set(),
+  offSats: new Set(),
+  query: "",
+};
 
-/** Mission, satellite, category and free-text search. The query matches the fields an operator
- *  would actually type: the event title and summary, the satellite, and any impacted datatake ID.
+/** Multi-select toggle filters: a set of what is OFF for each dimension, plus free-text search.
  *  Filters only; it does not narrow by month — pass the result to eventsInMonth for that. */
 export function filterEvents(events: ManifestEvent[], f: Filters): ManifestEvent[] {
   const q = f.query.trim().toLowerCase();
   return events.filter((e) => {
-    if (f.mission && missionOf(e.satellite) !== f.mission) return false;
-    if (f.satellite && e.satellite !== f.satellite) return false;
-    if (!f.categories.includes(e.category)) return false;
+    if (f.offTypes.has(e.category)) return false;
+    if (f.offMissions.has(missionOf(e.satellite))) return false;
+    if (f.offSats.has(e.satellite)) return false;
     if (!q) return true;
     return (
       e.title.toLowerCase().includes(q) ||
