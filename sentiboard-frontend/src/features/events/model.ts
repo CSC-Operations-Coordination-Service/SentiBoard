@@ -34,6 +34,7 @@ export const MISSION_DISPLAY: Record<MissionId, string> = {
 export const MISSION_ORDER: MissionId[] = ["s1", "s2", "s3", "s5p"];
 
 export const ALL_SATELLITES: string[] = MISSION_ORDER.flatMap((m) => MISSIONS[m]);
+export const ALL_SATELLITES_SET: ReadonlySet<string> = new Set(ALL_SATELLITES);
 
 export type DatatakeLevel = number | null;
 

@@ -43,6 +43,11 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 
 ## Events — known issues (2026-10-23)
 
+- **Filter redesign (2026-10-23 rev 2)**: Filters are now multi-select toggles (prototype style).
+  URL model changed from `?category=&mission=&satellite=` to `?typesOff=&missionsOff=&satellitesOff=`;
+  legacy URLs are converted on parse. Visual check needed: toggle items, "All"/"N/total" counter,
+  month-on-own-line when dirty, dropdown z-index (no calendar click-through). 263 tests pass.
+
 - **Visual check pending.** `pnpm lint`, `type-check`, `build` and 221/221 tests all pass. Still needs a
   visual comparison with the prototype in a browser (dark + light themes, mobile at 760 px
   breakpoint). Check: star dots render at correct scale and spacing; tooltip appears on hover;
@@ -69,9 +74,9 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   as `now` on both ok and error variants; Explorer never calls `nowYM()` itself.
 
 ## Events — legacy parity, to do at the end
-- Datatake list per event: show at most 5, then "+N more — View all N datatakes →" linking to
-  Data Availability filtered by the event (legacy: /data-availability?event_id=<key>). Needs the
-  Availability page's final URL.
+- Datatake list per event: in-place expand ("+N more" / "Show less", max 5 shown) is **done**
+  (2026-10-23). Still missing: "View all N datatakes →" link to Data Availability filtered by
+  the event (legacy: /data-availability?event_id=<key>). Needs the Availability page's final URL.
 - Datatake IDs link to Data Availability (legacy: ?search=<id>&period=prev-quarter); events older
   than 3 months show plain IDs, no links, no "+N more" (Availability only holds the last quarter).
 - S1 datatake IDs show the hex suffix: `S1D-38248 (9568)` = parseInt(id.substring(4)).toString(16).

@@ -36,17 +36,23 @@ Supporting modules:
 
 ## URL params
 
+Multi-select toggles: every item starts ON; the URL stores what is OFF, so the default URL stays clean.
+
 | param | values | default |
 |---|---|---|
 | `year` | integer ≥ 2014 | current UTC year |
 | `month` | 1–12 | current UTC month |
-| `mission` | s1\|s2\|s3\|s5p | "" (all) |
-| `satellite` | code e.g. S1A | "" (all) |
-| `category` | comma-separated EventCategory codes | "" (all) |
+| `typesOff` | comma-separated EventCategory codes that are OFF | "" (all on) |
+| `missionsOff` | comma-separated MissionId codes that are OFF | "" (all on) |
+| `satellitesOff` | comma-separated satellite codes that are OFF | "" (all on) |
 | `q` | free text | "" |
 | `event` | anomaly id | null |
 
-Legacy param: `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…`.
+Legacy params (read-only, never written, converted on parse):
+- `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…`
+- `?mission=s1` → `missionsOff=s2,s3,s5p`
+- `?mission=s1&satellite=S1A` → `missionsOff=s2,s3,s5p&satellitesOff=S1B,S1C,S1D`
+- `?category=Acquisition,Production` → `typesOff=Manoeuvre,Calibration,Satellite`
 
 ## Navigation model
 
@@ -65,19 +71,23 @@ Legacy param: `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…
 - [ ] `/events` is in the sitemap (not noindex)
 - [ ] `pnpm lint`, `pnpm type-check`, `pnpm build`, `pnpm test` all pass ✓ (2026-10-22)
 
-## Architecture notes (2026-10-22)
+## Architecture notes (2026-10-23 rev 2)
 
 - **Prerender split**: `EventsPage` is the static shell (PageHeader + EventsDescription). `EventsContent` is wrapped in `<Suspense>` and opts into dynamic rendering via `await connection()`. This prevents the "Blocking Route" error from `new Date()` in `parseView`. `/events` builds as `◐ (Partial Prerender)`.
 - **`now` threading**: `nowYM()` is called once in `EventsContent` and passed as `now` on both the `ok` and `error` variants of `ExplorerData`. Explorer never calls `nowYM()` itself.
 - **Drawer rendering**: the drawer `<aside>` is in-place (no portal), always in the DOM. Open/close is the `drawerOn` CSS class; `aria-hidden` + `inert` when closed. On SSR with `?event=<id>`, `openDay` is initialised from `data.dayEvents[0].startDate`. `overflow: hidden` on `.drawer` clips content; `drawerBody` scrolls via `overflow-y: auto`.
 - **DayManifest**: the drawer shows all events of the selected day, each in a `<details><summary>` collapsible section (native, no JS for open/close). The URL-selected event starts `open` and scrolls into view. `ziOccSelected` CSS class adds a signal-colour left accent. `ziOcc summary` removes the browser disclosure triangle via `list-style: none` and `display: grid` on `.ziTop`.
 - **Deep-link zoom**: `zoom` starts null (needs DOM). A mount `useEffect` calls `measureZoom` when `openDay !== null && zoom === null` — covers any month. Server renders without the stage; client sets it after hydration (no mismatch). The existing "fly-in" effect then animates `zoomOn`.
-- **Category whitelist (2026-10-23)**: only five types shown — Acquisition, Calibration, Manoeuvre, Production, Satellite. `adapter.ts:mapCategory` trims the raw value and returns null for everything else (Data access, Archive, DD, MP, unknown, empty). Excluded records are logged once per load via `console.info`, grouped by category. Old URLs with `?category=Other` (or any excluded type) fall back to all categories silently. Metrics count only shown events.
+- **Category whitelist (2026-10-23)**: only five types shown — Acquisition, Calibration, Manoeuvre, Production, Satellite. `adapter.ts:mapCategory` trims the raw value and returns null for everything else (Data access, Archive, DD, MP, unknown, empty). Excluded records are logged once per load via `console.info`, grouped by category. Old URLs with `?category=Other` (or any excluded type) are silently converted to all-on. Metrics count only shown events.
 - **Platform→Satellite**: backend `Platform` maps to `Satellite`; feed value `Satellite` is also accepted directly. No separate Platform or Other type anywhere in the UI model.
 - **Calendar marks (2026-10-23)**: one SVG "star" dot per event TYPE per day (not per event). Three Acquisition events on the same day produce one Acquisition dot. Three concentric circles in the type colour (prototype pattern). Positioned at 60% of cell height, spaced 27% of cell width apart. Max 4 type dots shown, then `+N` (N = hidden type count). Types ordered by the canonical CATEGORIES array for consistent positions. Dots are the only click targets — the rest of the cell has no pointer cursor or hover border. Each dot is a `<button>` with ≥34px hit area; aria-label: `"Acquisition, 3 events: title 1, title 2, title 3"`. Clicking a grouped dot opens the day with the first event of that type pre-selected. Hover/focus shows a tooltip: icon + type header ("TYPE · N events" or "TYPE · SAT" for n=1), up to 3 event titles each with satellite, "+N more" if there are more. Type icon appears to the right of the dot in zoomed view (`.zicon` fade-in after fly-in). Clicking the selected day's dot in zoom calls `close()`. `byDayByType: Map<number, {category, events[]}[]>` computed from `byDay` — one group per type per day.
 - **Type colours and icons (2026-10-23)**: shared in `event-types.tsx` — exact prototype values. Colours: Acquisition #A7B1BE, Calibration #4FC9CB, Manoeuvre #EFA73C, Production #B45CF2, Satellite #F2772B. Icons: 16×16 viewBox SVG paths, stroke 1.3 round caps, rendered via `CategoryIcon` component (dangerouslySetInnerHTML on hardcoded static strings — no user input).
 - **Drawer / zoom view (2026-10-23)**: `<details>/<summary>` replaced by plain `<div>` — all occurrences always expanded. Selected at full opacity, others at 0.42 (0.8 on hover). Clicking a dimmed occurrence calls `selectEventId`. "Description" is a native `<details>` inside each occurrence (closed by default). `.ziDot` uses impact colour (ACQUIRED #3FCF7F / PARTIAL #F0A63A / LOST #E8514B). Datatake rows have a right column with ACQUIRED/PARTIAL/LOST label + completeness %. Eyebrow changed to "Selected day".
 - **URL stability**: `viewParams` always emits `month` when `year` differs from `now`, so a link made this month means the same thing next month. `resolveView` switches to the event's `startDate` year/month when `?event=` is present and the URL month doesn't match.
+- **Filter model (2026-10-23 rev 2)**: Multi-select toggles — every item starts ON; URL stores what is OFF (`typesOff`, `missionsOff`, `satellitesOff`). No "All" item in lists; header shows "All" or "N/total". Satellite list shows only satellites of ON missions; its count is over those. Legacy `?category=`, `?mission=`, `?satellite=` params are converted on parse, never emitted. `EventsView` no longer has `mission`/`satellite`/`categories` fields.
+- **Filter z-index (2026-10-23 rev 2)**: `.fdropBody` is `position:absolute` (doesn't push siblings). While any dropdown is open, a fixed `.fdropOverlay` (z:98) sits above the calendar (z:0) and below the `.fdrop` elements (z:99 via `position:relative; z-index:99` on `.fdrop`). Clicking outside closes the dropdown without the click reaching calendar dots.
+- **Month on own line (2026-10-23 rev 2)**: When any filter is active (dirty), `.monthBarDirty .monthNav { flex-basis: 100% }` wraps the month nav to its own row above the three filter dropdowns + search.
+- **Datatake expand (2026-10-23 rev 2)**: Drawer shows at most 5 datatakes per event, then "+N more" / "Show less" button that expands/collapses the rest in place. State is per-event in `DayManifest` via `expandedDtk: Set<string>`. The "→ Data Availability" link is a later legacy-parity item (see HANDOFF.md).
 
 ## Known backend issues (anomaly feed)
 

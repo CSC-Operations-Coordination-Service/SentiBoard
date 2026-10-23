@@ -35,7 +35,6 @@ import {
   type EventCategory,
   type EventDetail,
   type EventDatatake,
-  type MissionId,
   type TextSegment,
 } from "./model";
 import {
@@ -114,6 +113,8 @@ const START_Y = 80;
 /* How many event dots a day cell shows before collapsing the rest to "+N". */
 const MARKS_SHOWN = 4;
 const WEEKDAYS = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
+/* Show at most this many datatakes per event before the "+N more" button */
+const DTK_SHOWN = 5;
 
 /* ---- geometry ---- */
 
@@ -198,7 +199,8 @@ function DatatakeRow({ dt }: { dt: EventDatatake }) {
 
 /** All events of the selected day, all expanded.
  *  Selected event at full opacity; others dimmed (0.42, 0.8 on hover).
- *  Clicking a dimmed occurrence selects it. */
+ *  Clicking a dimmed occurrence selects it.
+ *  Datatakes: show at most DTK_SHOWN per event, then "+N more" / "Show less". */
 function DayManifest({
   dayEvents,
   selectedId,
@@ -209,6 +211,7 @@ function DayManifest({
   onSelect: (id: string) => void;
 }) {
   const selectedRef = useRef<HTMLDivElement>(null);
+  const [expandedDtk, setExpandedDtk] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     selectedRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -240,6 +243,11 @@ function DayManifest({
         const impactStatus = classifyImpact(event.datatakes);
         const impactColor = STATUS_COLOR[impactStatus];
         const unavailableCount = event.datatakes.filter((dt) => dt.noData).length;
+
+        const isExpanded = expandedDtk.has(event.id);
+        const shownDtk = isExpanded ? event.datatakes : event.datatakes.slice(0, DTK_SHOWN);
+        const hiddenDtkCount = event.datatakes.length - DTK_SHOWN;
+
         return (
           <div
             key={event.id}
@@ -295,8 +303,33 @@ function DayManifest({
                 <div className={s.ziDtkHead}>
                   Impacted datatakes · {event.datatakes.length}
                   {unavailableCount > 0 ? ` · ${unavailableCount} unavailable` : ""}
+                  {/* Note: "+N more → Data Availability" link comes in legacy-parity pass */}
                 </div>
-                {event.datatakes.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
+                {shownDtk.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
+                {!isExpanded && hiddenDtkCount > 0 && (
+                  <button
+                    type="button"
+                    className={s.dtkMoreBtn}
+                    onClick={() => setExpandedDtk((prev) => new Set([...prev, event.id]))}
+                  >
+                    +{hiddenDtkCount} more
+                  </button>
+                )}
+                {isExpanded && hiddenDtkCount > 0 && (
+                  <button
+                    type="button"
+                    className={s.dtkMoreBtn}
+                    onClick={() =>
+                      setExpandedDtk((prev) => {
+                        const next = new Set(prev);
+                        next.delete(event.id);
+                        return next;
+                      })
+                    }
+                  >
+                    Show less
+                  </button>
+                )}
               </section>
             )}
           </div>
@@ -459,7 +492,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
   const cells = useMemo(() => calendarCells(view.year, view.month), [view.year, view.month]);
 
-  // Open a specific event by day + eventId (sets up zoom, then selects the event)
+  // Open a specific event by day + eventId
   const selectDayEvent = useCallback(
     (day: number, eventId: string) => {
       const events = byDay.get(day) ?? [];
@@ -474,11 +507,18 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     [byDay, openDay, selectEventId],
   );
 
-  // Close drawer
+  // Close drawer: also clears event from view and URL so filter changes don't re-open the zoom.
   const close = useCallback(() => {
     setOpenDay(null);
     setZoomOn(false);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setZoom(null);
+    setView((prev) => (prev.event ? { ...prev, event: null } : prev));
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.has("event")) {
+      sp.delete("event");
+      const qs = sp.toString();
+      history.replaceState(null, "", qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH);
+    }
   }, []);
 
   const stepMonth = useCallback(
@@ -587,14 +627,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     };
   }, [openDay]);
 
-  // Close filter accordions on outside click
-  useEffect(() => {
-    if (!openFilter) return;
-    const close = () => setOpenFilter(null);
-    window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
-  }, [openFilter]);
-
   // Hide tooltip when zoom opens
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect */
@@ -628,18 +660,32 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const monthName = MONTH_NAMES[view.month - 1];
   const monthLabel = `${monthName} ${view.year}`;
 
-  const missionSatellites = view.mission ? MISSIONS[view.mission as MissionId] : [];
-  const allMissionSatellites = MISSION_ORDER.flatMap((m) => MISSIONS[m]);
-  const satellites = view.mission ? missionSatellites : allMissionSatellites;
-  const satelliteDisabled = satellites.length < 2;
+  /* ---- filter derived state ---- */
+
+  // Satellites visible = those belonging to missions that are ON
+  const visibleSats = MISSION_ORDER
+    .filter((m) => !view.missionsOff.has(m))
+    .flatMap((m) => MISSIONS[m]);
+  const visibleSatsOnCount = visibleSats.filter((sat) => !view.satellitesOff.has(sat)).length;
+
+  const typeOnCount = CATEGORIES.length - view.typesOff.size;
+  const typeDisplayVal = view.typesOff.size === 0 ? "All" : `${typeOnCount}/${CATEGORIES.length}`;
+
+  const missionOnCount = MISSION_ORDER.length - view.missionsOff.size;
+  const missionDisplayVal = view.missionsOff.size === 0 ? "All" : `${missionOnCount}/${MISSION_ORDER.length}`;
+
+  const satDisplayVal =
+    visibleSatsOnCount === visibleSats.length
+      ? "All"
+      : `${visibleSatsOnCount}/${visibleSats.length}`;
+
+  const satelliteDisabled = visibleSats.length < 2;
 
   const dirty =
-    !!view.mission ||
-    !!view.satellite ||
-    !!view.q ||
-    view.categories.length < CATEGORIES.length;
-
-  const typeFilter = view.categories.length === 1 ? view.categories[0] : "";
+    view.typesOff.size > 0 ||
+    view.missionsOff.size > 0 ||
+    view.satellitesOff.size > 0 ||
+    !!view.q;
 
   const satellitesMonitored = new Set(monthEvents.map((e) => e.satellite)).size;
 
@@ -727,12 +773,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       );
     });
 
-  /* ---- filter accordion helpers ---- */
-
-  const missionDisplayVal = view.mission ? MISSION_DISPLAY[view.mission as MissionId] : "All";
-  const satDisplayVal = view.satellite || "All";
-  const typeDisplayVal = typeFilter || "All";
-
   /* ---- tooltip ---- */
 
   const tipFlip = tip !== null && tip.x > window.innerWidth - 230;
@@ -752,7 +792,8 @@ export default function Explorer({ data }: { data: ExplorerData }) {
           <Metric value={satellitesMonitored} label="Satellites monitored" />
         </div>
 
-        {/* Month navigation + filter accordions */}
+        {/* Month navigation + filter accordions.
+            When any filter is active (dirty), the month nav wraps to its own row above the filters. */}
         <div className={s.monthBar}>
           <div className={s.monthNav}>
             <button type="button" onClick={() => stepMonth(-1)} aria-label="Previous month">
@@ -766,7 +807,18 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
           <div className={s.barFilters}>
 
-            {/* Event type fdrop */}
+            {/* Invisible overlay: intercepts outside-clicks when a dropdown is open, preventing
+                them from reaching calendar dots. Sits above the calendar (z 98) but below the
+                monthBar (z 99), which contains the fdrop elements. */}
+            {openFilter && (
+              <div
+                className={s.fdropOverlay}
+                onClick={() => setOpenFilter(null)}
+                aria-hidden
+              />
+            )}
+
+            {/* Event type fdrop — multi-select toggle, no "All" item */}
             <div
               className={`${s.fdrop} ${openFilter === "type" ? s.fdropOpen : ""}`}
               onClick={(e) => e.stopPropagation()}
@@ -783,36 +835,32 @@ export default function Explorer({ data }: { data: ExplorerData }) {
               </button>
               <div className={s.fdropBody}>
                 <div className={s.fdropInner}>
-                  <div className={s.typeChipGrid}>
-                    <button
-                      type="button"
-                      className={`${s.typeChip} ${typeFilter === "" ? s.typeChipOn : ""}`}
-                      onClick={() => { navigate({ ...view, categories: [...CATEGORIES] }); setOpenFilter(null); }}
-                    >
-                      All
-                    </button>
-                    {CATEGORIES.map((c) => {
-                      const color = CATEGORY_COLOR[c];
-                      const active = typeFilter === c;
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          className={`${s.typeChip} ${active ? s.typeChipOn : ""}`}
-                          style={active ? {} : { "--type-color": color } as CSSProperties}
-                          onClick={() => { navigate({ ...view, categories: [c] }); setOpenFilter(null); }}
-                        >
-                          <CategoryIcon category={c} color={active ? "currentColor" : color} size={14} />
-                          {c}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {CATEGORIES.map((c) => {
+                    const isOff = view.typesOff.has(c);
+                    const color = isOff ? "#8A96A6" : CATEGORY_COLOR[c];
+                    return (
+                      <button
+                        key={c}
+                        type="button"
+                        className={`${s.ftypeItem} ${isOff ? s.filterItemOff : ""}`}
+                        style={{ color }}
+                        aria-pressed={!isOff}
+                        onClick={() => {
+                          const next = new Set(view.typesOff);
+                          if (isOff) next.delete(c); else next.add(c);
+                          navigate({ ...view, typesOff: next, event: null });
+                        }}
+                      >
+                        <CategoryIcon category={c} color={color} size={14} />
+                        {c}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            {/* Mission fdrop */}
+            {/* Mission fdrop — multi-select toggle */}
             <div
               className={`${s.fdrop} ${openFilter === "mission" ? s.fdropOpen : ""}`}
               onClick={(e) => e.stopPropagation()}
@@ -829,30 +877,29 @@ export default function Explorer({ data }: { data: ExplorerData }) {
               </button>
               <div className={s.fdropBody}>
                 <div className={s.fdropInner}>
-                  <div className={s.typeChipGrid}>
-                    <button
-                      type="button"
-                      className={`${s.chip} ${view.mission === "" ? s.chipOn : ""}`}
-                      onClick={() => { navigate({ ...view, mission: "", satellite: "" }); setOpenFilter(null); }}
-                    >
-                      All missions
-                    </button>
-                    {MISSION_ORDER.map((m) => (
+                  {MISSION_ORDER.map((m) => {
+                    const isOff = view.missionsOff.has(m);
+                    return (
                       <button
                         key={m}
                         type="button"
-                        className={`${s.chip} ${view.mission === m ? s.chipOn : ""}`}
-                        onClick={() => { navigate({ ...view, mission: m, satellite: "" }); setOpenFilter(null); }}
+                        className={`${s.fmisItem} ${isOff ? s.filterItemOff : ""}`}
+                        aria-pressed={!isOff}
+                        onClick={() => {
+                          const next = new Set(view.missionsOff);
+                          if (isOff) next.delete(m); else next.add(m);
+                          navigate({ ...view, missionsOff: next, event: null });
+                        }}
                       >
                         {MISSION_DISPLAY[m]}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            {/* Satellite fdrop */}
+            {/* Satellite fdrop — multi-select toggle, codes in wrapping row */}
             <div
               className={`${s.fdrop} ${openFilter === "satellite" ? s.fdropOpen : ""} ${satelliteDisabled ? s.fdropDisabled : ""}`}
               onClick={(e) => e.stopPropagation()}
@@ -862,7 +909,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                 className={s.fdropHead}
                 aria-expanded={openFilter === "satellite"}
                 disabled={satelliteDisabled}
-                title={satelliteDisabled ? "Sentinel-5P has a single satellite" : undefined}
+                title={satelliteDisabled ? "No satellite choice available" : undefined}
                 onClick={() => !satelliteDisabled && setOpenFilter((o) => (o === "satellite" ? null : "satellite"))}
               >
                 <span className={s.fdropLabel}>Satellite</span>
@@ -871,28 +918,25 @@ export default function Explorer({ data }: { data: ExplorerData }) {
               </button>
               <div className={s.fdropBody}>
                 <div className={s.fdropInner}>
-                  <div className={s.satChipGrid}>
-                    <button
-                      type="button"
-                      className={`${s.chip} ${view.satellite === "" ? s.chipOn : ""}`}
-                      onClick={() => { navigate({ ...view, satellite: "" }); setOpenFilter(null); }}
-                    >
-                      All
-                    </button>
-                    {satellites.map((sat) => (
-                      <button
-                        key={sat}
-                        type="button"
-                        className={`${s.chip} ${view.satellite === sat ? s.chipOn : ""}`}
-                        onClick={() => {
-                          const m = MISSION_ORDER.find((mid) => MISSIONS[mid].includes(sat)) ?? view.mission;
-                          navigate({ ...view, satellite: sat, mission: m || "" });
-                          setOpenFilter(null);
-                        }}
-                      >
-                        {sat}
-                      </button>
-                    ))}
+                  <div className={s.fsatRow}>
+                    {visibleSats.map((sat) => {
+                      const isOff = view.satellitesOff.has(sat);
+                      return (
+                        <button
+                          key={sat}
+                          type="button"
+                          className={`${s.fsatItem} ${isOff ? s.filterItemOff : ""}`}
+                          aria-pressed={!isOff}
+                          onClick={() => {
+                            const next = new Set(view.satellitesOff);
+                            if (isOff) next.delete(sat); else next.add(sat);
+                            navigate({ ...view, satellitesOff: next, event: null });
+                          }}
+                        >
+                          {sat}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -908,20 +952,30 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                 placeholder="Search"
                 aria-label="Search events"
                 value={view.q}
-                onChange={(e) => navigate({ ...view, q: e.target.value }, "replace")}
+                onChange={(e) => navigate({ ...view, q: e.target.value, event: null }, "replace")}
               />
             </div>
 
-            {dirty && (
-              <button
-                type="button"
-                className={s.reset}
-                onClick={() => { navigate({ ...view, mission: "", satellite: "", categories: [...CATEGORIES], q: "" }); setOpenFilter(null); }}
-              >
-                <RotateCcw size={12} aria-hidden /> Reset
-              </button>
-            )}
           </div>
+          {dirty && (
+            <button
+              type="button"
+              className={s.reset}
+              onClick={() => {
+                navigate({
+                  ...view,
+                  typesOff: new Set(),
+                  missionsOff: new Set(),
+                  satellitesOff: new Set(),
+                  q: "",
+                  event: null,
+                });
+                setOpenFilter(null);
+              }}
+            >
+              <RotateCcw size={12} aria-hidden /> Reset
+            </button>
+          )}
         </div>
 
         {/* Calendar */}
@@ -1015,7 +1069,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         })()}
       </aside>
 
-      {/* Hover tooltip — only shown on hover-capable devices (no mousemove on touch) */}
+      {/* Hover tooltip — only shown on hover-capable devices */}
       {tip && (
         <div
           className={s.tipEl}
