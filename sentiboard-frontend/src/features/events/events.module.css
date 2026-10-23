@@ -791,18 +791,37 @@ select.control {
    grid off the page's centre line. Below 1400px there is no room for it there; it then sits above
    the grid, centred (the base rules below), as it already did on phones. */
 .zodiac {
+  /* dark-theme constellation colours */
+  --con-halo: #BFE6F2;
+  --con-core: #F2F8FF;
+  --con-line-color: #8FD4E4;
   width: min(260px, 100%);
   margin: 0 auto 8px;
 }
 
+/* Light theme: colours that read on the white/light-grey background */
+:global(:root[data-theme="light"]) .zodiac {
+  --con-halo: #155B80;
+  --con-core: #0C3A5E;
+  --con-line-color: #1B6B90;
+}
+
+/* Centred halfway between the left edge of the viewport and the calendar's left edge.
+   Derived formula: width = clamp(120, 0.72 × space_left_of_grid, 380)
+   where space_left ≈ (100vw − calRowWidth)/2 + calRowWidth × 5.696%.
+   In CSS (100% = calRowWidth): width = clamp(120px, calc(36vw − 31.9%), 380px).
+   Horizontal centre of the space = (space_left)/2 from viewport left
+   = (100vw − calRowWidth)/4 + calRowWidth × 2.848% from viewport left
+   = −(100vw − calRowWidth)/4 + 2.848% from calRow left.
+   With translate(−50%, −50%) to place the element's centre at that point. */
 @media (min-width: 1400px) {
   .zodiac {
     position: absolute;
     top: 50%;
-    right: calc(100% + clamp(8px, 2vw, 32px));
-    width: clamp(220px, 18vw, 300px);
+    left: calc(2.848% - (100vw - 100%) / 4);
+    width: clamp(120px, calc(36vw - 31.9%), 380px);
     margin: 0;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
   }
 }
 
@@ -813,58 +832,68 @@ select.control {
   overflow: visible;
 }
 
-.zodiacLabel {
-  font-family: var(--font-mono, var(--mono));
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
-  fill: var(--mf-muted);
-}
-
-/* Star nodes glow a little so they read as lights rather than flat dots. */
-/* Each star starts dark and lights in turn. The delay comes inline (i × 150ms), so the stars light
-   one after another from the first point of the figure. `both` holds the dark start during the
-   delay and the lit end afterwards. */
-.zodiacStars circle {
-  fill: #ffffff;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
-  opacity: 0.1;
-  transform: scale(0.5);
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: illuminateStar 0.4s ease-out both;
-}
-
-@keyframes illuminateStar {
-  to {
-    opacity: 1;
-    transform: scale(1);
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1));
-  }
-}
-
-/* The line draws from nothing to the whole figure. Duration is set inline to match the stars. */
-.zodiacPath {
+/* ---- constellation lines ---- */
+.conLine {
+  fill: none;
+  stroke: var(--con-line-color);
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation-name: drawZodiacPath;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
+  animation: conCycle 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-@keyframes drawZodiacPath {
-  to {
-    stroke-dashoffset: 0;
-  }
+/* ---- constellation star nodes ---- */
+.conStar {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: conPop 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* ---- constellation name label ---- */
+.conLabel {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  fill: color-mix(in srgb, var(--mf-text) 42%, transparent);
+  opacity: 0;
+  animation: conName 5s ease 5s infinite;
+}
+
+@keyframes conCycle {
+  0%   { stroke-dashoffset: 1; opacity: 0; }
+  74%  { stroke-dashoffset: 0; opacity: 1; }
+  88%  { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+
+@keyframes conPop {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes conName {
+  0%,  44% { opacity: 0; }
+  52%, 78% { opacity: 1; }
+  88%, 100% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zodiacStars circle,
-  .zodiacPath {
+  .conStar {
     animation: none;
     opacity: 1;
     transform: none;
+  }
+  .conLine {
+    animation: none;
     stroke-dashoffset: 0;
+    opacity: 1;
+  }
+  .conLabel {
+    animation: none;
+    opacity: 1;
   }
 }
 

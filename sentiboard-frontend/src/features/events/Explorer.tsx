@@ -61,51 +61,75 @@ import s from "./events.module.css";
 
 const SpaceBackdrop = dynamic(() => import("@/components/SpaceBackdrop"), { ssr: false });
 
-/* ---- zodiac ---- */
+/* ---- constellation of the month (index 0 = January; points as fractions of a 380×300 box) ---- */
 
-const SIGN_BY_MONTH = [
-  "Capricornus","Aquarius","Pisces","Aries","Taurus","Gemini",
-  "Cancer","Leo","Virgo","Libra","Scorpius","Sagittarius",
+const CONSTELLATIONS: Array<{ n: string; p: [number, number][]; e: [number, number][] }> = [
+  {
+    n: "Capricornus",
+    p: [[0.1,0.22],[0.31,0.09],[0.56,0.16],[0.78,0.34],[0.88,0.62],[0.6,0.82],[0.34,0.74],[0.17,0.5]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,0]],
+  },
+  {
+    n: "Aquarius",
+    p: [[0.12,0.26],[0.33,0.14],[0.54,0.29],[0.76,0.17],[0.88,0.44],[0.66,0.56],[0.49,0.74],[0.28,0.88]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]],
+  },
+  {
+    n: "Pisces",
+    p: [[0.08,0.16],[0.26,0.34],[0.44,0.52],[0.63,0.63],[0.82,0.7],[0.9,0.48],[0.8,0.28],[0.3,0.78]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[2,7]],
+  },
+  {
+    n: "Aries",
+    p: [[0.16,0.62],[0.4,0.46],[0.64,0.37],[0.86,0.42],[0.52,0.22]],
+    e: [[0,1],[1,2],[2,3],[2,4]],
+  },
+  {
+    n: "Taurus",
+    p: [[0.12,0.3],[0.34,0.46],[0.52,0.56],[0.72,0.42],[0.9,0.26],[0.5,0.78],[0.3,0.7]],
+    e: [[0,1],[1,2],[2,3],[3,4],[2,5],[5,6]],
+  },
+  {
+    n: "Gemini",
+    p: [[0.24,0.12],[0.29,0.36],[0.34,0.6],[0.3,0.84],[0.62,0.14],[0.67,0.38],[0.72,0.62],[0.68,0.86]],
+    e: [[0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[1,5]],
+  },
+  {
+    n: "Cancer",
+    p: [[0.18,0.2],[0.46,0.42],[0.46,0.66],[0.74,0.22],[0.56,0.88]],
+    e: [[0,1],[1,3],[1,2],[2,4]],
+  },
+  {
+    n: "Leo",
+    p: [[0.16,0.32],[0.29,0.15],[0.47,0.19],[0.54,0.38],[0.41,0.51],[0.64,0.63],[0.88,0.55],[0.8,0.82]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,5]],
+  },
+  {
+    n: "Virgo",
+    p: [[0.12,0.24],[0.34,0.36],[0.56,0.29],[0.74,0.46],[0.59,0.62],[0.4,0.74],[0.86,0.74]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[3,6]],
+  },
+  {
+    n: "Libra",
+    p: [[0.24,0.3],[0.51,0.16],[0.76,0.32],[0.64,0.58],[0.34,0.62]],
+    e: [[0,1],[1,2],[2,3],[0,4]],
+  },
+  {
+    n: "Scorpius",
+    p: [[0.1,0.22],[0.28,0.3],[0.45,0.3],[0.56,0.46],[0.64,0.64],[0.75,0.78],[0.88,0.8],[0.92,0.62]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]],
+  },
+  {
+    n: "Sagittarius",
+    p: [[0.18,0.46],[0.34,0.3],[0.53,0.35],[0.64,0.53],[0.48,0.64],[0.28,0.61],[0.8,0.42],[0.74,0.72]],
+    e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[2,6],[3,7]],
+  },
 ];
 
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December",
 ];
-
-const ZODIAC: Record<string, string> = {
-  Capricornus: "M-200 -40 L-120 -80 L-40 -30 L40 -60 L120 -20 L200 -90 M120 -20 L90 60 L0 100 L-80 40 L-40 -30",
-  Aquarius: "M-220 -40 L-160 -90 L-100 -40 L-40 -90 L20 -40 L80 -90 L140 -40 L200 -90 M-220 60 L-160 10 L-100 60 L-40 10 L20 60 L80 10 L140 60 L200 10",
-  Pisces: "M-240 -110 Q-160 -40 -90 0 Q-160 40 -240 110 M90 -110 Q160 -40 240 0 Q160 40 90 110 M-90 0 L90 0",
-  Aries: "M-200 40 Q-150 -130 -30 -70 L60 -20 L200 20",
-  Taurus: "M-200 -120 L-40 0 L-200 120 M-40 0 L140 -40 M140 -40 L60 -140 M140 -40 L200 -130 M120 60 L130 40 L140 60 L120 62 Z",
-  Gemini: "M-130 -150 L-120 110 M130 -150 L120 110 M-130 -150 Q-60 -170 -20 -120 M130 -150 Q60 -170 20 -120 M-120 -10 L120 -10",
-  Cancer: "M-160 0 Q0 -180 160 0 Q0 180 -160 0 Z M-60 -120 L-120 -190 M60 -120 L120 -190 M-60 120 L-120 190 M60 120 L120 190",
-  Leo: "M-220 -40 L-160 -90 L-100 -60 L-40 -20 L30 -60 L100 0 L200 10 L180 110 L80 90 L-20 60 L-80 110 L-160 120 Z",
-  Virgo: "M-120 -180 L-60 -20 L-30 150 M-60 -20 L40 -60 L120 -150 M-60 -20 L60 40 L200 80 M-30 150 L80 190",
-  Libra: "M-200 -40 L200 -40 M0 -40 L0 -130 M-200 -40 Q-150 60 -100 -40 M200 -40 Q150 60 100 -40 M-60 -130 L60 -130",
-  Scorpius: "M-200 -120 L-120 -60 L-60 -120 L0 -40 L60 -20 L120 20 L170 90 L200 60 M120 20 L110 -40 L150 -80",
-  Sagittarius: "M-180 120 L160 -120 M160 -120 L80 -110 M160 -120 L150 -40 M-120 40 L40 -20 M-60 80 L80 0",
-};
-
-const ZODIAC_STARS: Record<string, [number, number][]> = {
-  Capricornus: [[-200,-40],[-120,-80],[-40,-30],[40,-60],[120,-20],[200,-90],[90,60],[0,100],[-80,40]],
-  Aquarius: [[-220,-40],[-160,-90],[-100,-40],[-40,-90],[20,-40],[80,-90],[140,-40],[200,-90],[-220,60],[-160,10],[-100,60],[-40,10],[20,60],[80,10],[140,60],[200,10]],
-  Pisces: [[-240,-110],[-90,0],[-240,110],[90,-110],[240,0],[90,110]],
-  Aries: [[-200,40],[-30,-70],[60,-20],[200,20]],
-  Taurus: [[-200,-120],[-40,0],[-200,120],[140,-40],[60,-140],[200,-130],[120,60],[130,40],[140,60],[120,62]],
-  Gemini: [[-130,-150],[-120,110],[130,-150],[120,110],[-20,-120],[20,-120],[-120,-10],[120,-10]],
-  Cancer: [[-160,0],[160,0],[-60,-120],[-120,-190],[60,-120],[120,-190],[-60,120],[-120,190],[60,120],[120,190]],
-  Leo: [[-220,-40],[-160,-90],[-100,-60],[-40,-20],[30,-60],[100,0],[200,10],[180,110],[80,90],[-20,60],[-80,110],[-160,120]],
-  Virgo: [[-120,-180],[-60,-20],[-30,150],[40,-60],[120,-150],[60,40],[200,80],[80,190]],
-  Libra: [[-200,-40],[200,-40],[0,-40],[0,-130],[-100,-40],[100,-40],[-60,-130],[60,-130]],
-  Scorpius: [[-200,-120],[-120,-60],[-60,-120],[0,-40],[60,-20],[120,20],[170,90],[200,60],[110,-40],[150,-80]],
-  Sagittarius: [[-180,120],[160,-120],[80,-110],[150,-40],[-120,40],[40,-20],[-60,80],[80,0]],
-};
-
-const STAR_STEP_MS = 150;
-const STAR_FADE_MS = 400;
-const ZODIAC_VIEW = "-270 -230 540 460";
 const CELL_W = 200;
 const CELL_H = 168;
 const START_X = 90;
@@ -656,7 +680,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     );
   }
 
-  const sign = SIGN_BY_MONTH[view.month - 1];
+  const con = CONSTELLATIONS[view.month - 1];
   const monthName = MONTH_NAMES[view.month - 1];
   const monthLabel = `${monthName} ${view.year}`;
 
@@ -981,22 +1005,31 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         {/* Calendar */}
         <div className={s.calRow}>
           <aside className={s.zodiac} aria-hidden>
-            <svg key={sign} className={s.zodiacSvg} viewBox={ZODIAC_VIEW} focusable="false">
-              <text className={s.zodiacLabel} x={0} y={-196} textAnchor="middle">{sign.toUpperCase()}</text>
-              <g stroke="rgba(255,255,255,0.15)" fill="none" strokeWidth="1.5">
+            <svg
+              key={view.month}
+              className={s.zodiacSvg}
+              viewBox="0 -44 380 344"
+              focusable="false"
+            >
+              {con.e.map(([a, b], i) => (
                 <path
-                  className={s.zodiacPath}
-                  d={ZODIAC[sign]}
+                  key={i}
+                  className={s.conLine}
+                  d={`M${(con.p[a][0] * 380).toFixed(1)} ${(con.p[a][1] * 300).toFixed(1)} L${(con.p[b][0] * 380).toFixed(1)} ${(con.p[b][1] * 300).toFixed(1)}`}
                   pathLength={1}
                   vectorEffect="non-scaling-stroke"
-                  style={{ animationDuration: `${ZODIAC_STARS[sign].length * STAR_STEP_MS + STAR_FADE_MS}ms` }}
+                  style={{ animationDelay: `${1400 + i * 110}ms` }}
                 />
-              </g>
-              <g className={s.zodiacStars}>
-                {ZODIAC_STARS[sign].map(([x, y], i) => (
-                  <circle key={i} cx={x} cy={y} r={4} style={{ animationDelay: `${i * STAR_STEP_MS}ms` }} />
-                ))}
-              </g>
+              ))}
+              {con.p.map(([px, py], i) => (
+                <g key={i} className={s.conStar} style={{ animationDelay: `${i * 120}ms` }}>
+                  <circle cx={(px * 380).toFixed(1)} cy={(py * 300).toFixed(1)} r={9} fill="var(--con-halo)" opacity={0.16} />
+                  <circle cx={(px * 380).toFixed(1)} cy={(py * 300).toFixed(1)} r={3.2} fill="var(--con-core)" />
+                </g>
+              ))}
+              <text className={s.conLabel} x={190} y={-20} textAnchor="middle">
+                {con.n.toUpperCase()}
+              </text>
             </svg>
           </aside>
 
@@ -1005,6 +1038,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             <div className={s.grid} ref={gridRef}>{renderCells(false)}</div>
           </div>
         </div>
+        <div style={{ height: "clamp(150px, 20vh, 300px)" }} aria-hidden />
       </div>
 
       {/* Zoom stage */}

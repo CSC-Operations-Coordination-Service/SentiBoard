@@ -4,31 +4,39 @@ Extracted 2026-10-23 from the bundled prototype `SentiBoard.html` (the events pa
 inside it). These are the exact values to reproduce. Do not decode the bundle again; use this file.
 
 ## Types, colours, icons (16×16 viewBox, stroke-width 1.3, round caps, no fill)
+
 ```js
-  var TYPES = {
-    acq: { label: 'Acquisition', color: '#A7B1BE' },
-    cal: { label: 'Calibration', color: '#4FC9CB' },
-    man: { label: 'Manoeuvre', color: '#EFA73C' },
-    pro: { label: 'Production', color: '#B45CF2' },
-    sat: { label: 'Satellite', color: '#F2772B' }
-  };
-  var ICONS = {
-    acq: '<ellipse cx="6.6" cy="6.8" rx="4.5" ry="2.5" transform="rotate(-40 6.6 6.8)"/><path d="M6.6 6.8 10.1 3.3"/><circle cx="10.6" cy="2.8" r="0.9"/><path d="M8.4 8.8 10.7 13.1"/><path d="M8.5 13.3h4.4"/>',
-    cal: '<circle cx="8" cy="8" r="5.3"/><path d="M6.1 9.9 9.9 6.1"/>',
-    man: '<circle cx="8" cy="5.3" r="2.3"/><path d="M8 7.6v4.3M5.2 13.3h5.6"/>',
-    pro: '<circle cx="8" cy="8" r="2.4"/><path d="M8 1.6v2.2M8 12.2v2.2M1.6 8h2.2M12.2 8h2.2M3.5 3.5l1.5 1.5M11 11l1.5 1.5M12.5 3.5 11 5M5 11l-1.5 1.5"/>',
-    sat: '<path d="M8 4.1 11.9 8 8 11.9 4.1 8z"/><path d="M11.6 4.4 13.7 2.3M2.3 13.7l2.1-2.1"/><path d="M13.4 2.9 3 13.3"/>'
-  };
-  function icon(type, color) {
-    return '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="' + color +
-      '" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">' + ICONS[type] + '</svg>';
-  }
+var TYPES = {
+  acq: { label: "Acquisition", color: "#A7B1BE" },
+  cal: { label: "Calibration", color: "#4FC9CB" },
+  man: { label: "Manoeuvre", color: "#EFA73C" },
+  pro: { label: "Production", color: "#B45CF2" },
+  sat: { label: "Satellite", color: "#F2772B" },
+};
+var ICONS = {
+  acq: '<ellipse cx="6.6" cy="6.8" rx="4.5" ry="2.5" transform="rotate(-40 6.6 6.8)"/><path d="M6.6 6.8 10.1 3.3"/><circle cx="10.6" cy="2.8" r="0.9"/><path d="M8.4 8.8 10.7 13.1"/><path d="M8.5 13.3h4.4"/>',
+  cal: '<circle cx="8" cy="8" r="5.3"/><path d="M6.1 9.9 9.9 6.1"/>',
+  man: '<circle cx="8" cy="5.3" r="2.3"/><path d="M8 7.6v4.3M5.2 13.3h5.6"/>',
+  pro: '<circle cx="8" cy="8" r="2.4"/><path d="M8 1.6v2.2M8 12.2v2.2M1.6 8h2.2M12.2 8h2.2M3.5 3.5l1.5 1.5M11 11l1.5 1.5M12.5 3.5 11 5M5 11l-1.5 1.5"/>',
+  sat: '<path d="M8 4.1 11.9 8 8 11.9 4.1 8z"/><path d="M11.6 4.4 13.7 2.3M2.3 13.7l2.1-2.1"/><path d="M13.4 2.9 3 13.3"/>',
+};
+function icon(type, color) {
+  return (
+    '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="' +
+    color +
+    '" stroke-width="1.3" stroke-linecap="round" aria-hidden="true">' +
+    ICONS[type] +
+    "</svg>"
+  );
+}
 ```
 
 ## Calendar dot ("star") — one per event, three concentric circles in the type colour
+
 Closed calendar: no icon. Zoomed view: same dot + the type icon drawn to its right (`withIcon`).
 Dots sit at 60% of the cell height, centred horizontally; several events on one day are spread
 side by side, 27% of the cell width apart. The transparent r=17 circle is the hit area.
+
 ```js
   function starPos(e, g) {
     var c = cellBox(e.day, g);
@@ -55,16 +63,39 @@ side by side, 27% of the cell width apart. The transparent r=17 circle is the hi
       '<circle cx="' + cx + '" cy="' + cy + '" r="17" fill="#000" fill-opacity="0"></circle></g>';
   }
 ```
+
 ```css
-.msat-b { animation: msatB 67s linear infinite 12s; }
-.star { cursor: pointer; transform-box: fill-box; transform-origin: center; transition: transform 300ms cubic-bezier(.2,.7,.2,1); animation: starIn 300ms ease backwards; }
-.star .core { transition: opacity 160ms ease; }
-.star:hover .core { opacity: 0.7; }
-.zicon { animation: iconIn 460ms ease 1140ms backwards; }
-@keyframes iconIn { from { opacity: 0; } to { opacity: 1; } }
+.msat-b {
+  animation: msatB 67s linear infinite 12s;
+}
+.star {
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  animation: starIn 300ms ease backwards;
+}
+.star .core {
+  transition: opacity 160ms ease;
+}
+.star:hover .core {
+  opacity: 0.7;
+}
+.zicon {
+  animation: iconIn 460ms ease 1140ms backwards;
+}
+@keyframes iconIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 ```
 
 ## Hover tooltip (final style; the orbiting-satellite SVG is hidden by the last override, skip it)
+
 ```css
 .startip {
   position: fixed; z-index: 45; display: none; align-items: center; gap: 13px;
@@ -89,6 +120,7 @@ side by side, 27% of the cell width apart. The transparent r=17 circle is the hi
 .st-name { font-size: 13.5px; font-weight: 700; letter-spacing: 0.04em; color: #FFFFFF; }
 </style>
 ```
+
 ```js
 // content: icon(type) + "<TYPE LABEL> · <SAT>" in the type colour, then the event title
       '</g></svg>';
@@ -115,9 +147,11 @@ side by side, 27% of the cell width apart. The transparent r=17 circle is the hi
 ```
 
 ## Filters (event toolbar): month + three dropdowns + search on one 49px line
+
 Filters are multi-select toggles: every item starts on; clicking turns it off (dimmed). The
 header value is "All" or "<on>/<total>" (e.g. Event type 4/5). The satellite list shows only
 satellites of missions that are on.
+
 ```css
 .fdrop { width: 100%; border-bottom: 1px solid rgba(255,255,255,0.08); }
 .fdrop:first-of-type { border-top: 1px solid rgba(255,255,255,0.08); margin-top: 14px; }
@@ -194,6 +228,7 @@ html body .fsearch input, html body .pr-toolbar .fsearch input { font-size: 14px
 .stage { position: relative; }
 #sbCon { position: absolute; pointer-events: none; overflow: visible; }
 ```
+
 ```js
   function renderFilters() {
     if (!$('#fTypes')) return;
@@ -231,42 +266,91 @@ html body .fsearch input, html body .pr-toolbar .fsearch input { font-size: 14px
 ```
 
 ## Zoom: day panel ("zoom-info")
+
 All events of the day fully expanded; the selected one at full opacity, the others dimmed (0.42).
 The dot on the right of each occurrence is the IMPACT colour (spared/partial/lost), not the type colour.
+
 ```js
-  var IMPACT = {
-    spared: { label: 'Spared', color: '#3FCF7F' },
-    medium: { label: 'Partial', color: '#F0A63A' },
-    lost: { label: 'Lost', color: '#E8514B' }
-  };
-  function renderZoomInfo(day) {
-    var evs = dayEvents(day);
-    var total = evs.reduce(function (a, e) { return a + e.dtk.length; }, 0);
-    var unav = evs.reduce(function (a, e) {
-      return a + e.dtk.filter(function (d) { return d.st === 'lost'; }).length;
-    }, 0);
+var IMPACT = {
+  spared: { label: "Spared", color: "#3FCF7F" },
+  medium: { label: "Partial", color: "#F0A63A" },
+  lost: { label: "Lost", color: "#E8514B" },
+};
+function renderZoomInfo(day) {
+  var evs = dayEvents(day);
+  var total = evs.reduce(function (a, e) {
+    return a + e.dtk.length;
+  }, 0);
+  var unav = evs.reduce(function (a, e) {
+    return (
+      a +
+      e.dtk.filter(function (d) {
+        return d.st === "lost";
+      }).length
+    );
+  }, 0);
 
-    var head = '<span class="micro" style="color: var(--accent);">Selected day</span>' +
-      '<span class="zi-date">' + pad(day) + ' ' + MONTHS[state.m] + ' ' + state.y + '</span>' +
-      '<span class="zi-sum">' + evs.length + (evs.length === 1 ? ' occurrence · ' : ' occurrences · ') +
-      total + ' datatakes · ' + unav + ' unavailable</span>';
+  var head =
+    '<span class="micro" style="color: var(--accent);">Selected day</span>' +
+    '<span class="zi-date">' +
+    pad(day) +
+    " " +
+    MONTHS[state.m] +
+    " " +
+    state.y +
+    "</span>" +
+    '<span class="zi-sum">' +
+    evs.length +
+    (evs.length === 1 ? " occurrence · " : " occurrences · ") +
+    total +
+    " datatakes · " +
+    unav +
+    " unavailable</span>";
 
-    var body = evs.map(function (e, i) {
+  var body = evs
+    .map(function (e, i) {
       var on = e.id === state.eventId;
-      var nUn = e.dtk.filter(function (d) { return d.st === 'lost'; }).length;
-      return '<div class="zi-occ' + (on ? '' : ' dim') + '" data-occ="' + e.id + '" style="animation-delay: ' + (280 + i * 130) + 'ms;">' +
+      var nUn = e.dtk.filter(function (d) {
+        return d.st === "lost";
+      }).length;
+      return (
+        '<div class="zi-occ' +
+        (on ? "" : " dim") +
+        '" data-occ="' +
+        e.id +
+        '" style="animation-delay: ' +
+        (280 + i * 130) +
+        'ms;">' +
         '<button class="zi-top">' +
-        '<span class="zi-time">' + e.start + '</span>' +
-        '<span><span class="zi-title">' + esc(e.name) + '</span>' +
-        '<span class="zi-sub">' + icon(e.type, TYPES[e.type].color) + TYPES[e.type].label + ' · ' + satFull(e.sat) + '</span></span>' +
-        '<span class="zi-dot" style="background: ' + IMPACT[e.impact].color + ';"></span></button>' +
-        '<div class="zi-dtkhead">Impacted datatakes · ' + e.dtk.length + (nUn ? ' · ' + nUn + ' unavailable' : '') + '</div>' +
-        dtkRows(e) + '</div>';
-    }).join('');
+        '<span class="zi-time">' +
+        e.start +
+        "</span>" +
+        '<span><span class="zi-title">' +
+        esc(e.name) +
+        "</span>" +
+        '<span class="zi-sub">' +
+        icon(e.type, TYPES[e.type].color) +
+        TYPES[e.type].label +
+        " · " +
+        satFull(e.sat) +
+        "</span></span>" +
+        '<span class="zi-dot" style="background: ' +
+        IMPACT[e.impact].color +
+        ';"></span></button>' +
+        '<div class="zi-dtkhead">Impacted datatakes · ' +
+        e.dtk.length +
+        (nUn ? " · " + nUn + " unavailable" : "") +
+        "</div>" +
+        dtkRows(e) +
+        "</div>"
+      );
+    })
+    .join("");
 
-    $('#zoomInfo').innerHTML = head + body;
-  }
+  $("#zoomInfo").innerHTML = head + body;
+}
 ```
+
 ```css
 .zoom-info {
   position: absolute; z-index: 2; right: 0; top: 0; bottom: 0;
@@ -295,4 +379,329 @@ The dot on the right of each occurrence is the IMPACT colour (spared/partial/los
 .dtk-row .r span { font-size: 16px; font-weight: 700; }
 @media (max-width: 900px) {
   .zoom-info { width: 100%; top: auto; height: 64%; padding: 26px clamp(18px, 5vw, 28px) 40px; }
+```
+
+## Constellation of the month (replaces the current ZODIAC / ZODIAC_STARS shapes)
+
+One entry per month, index 0 = January. Points p are fractions of a 380×300 box; e lists the
+edges between point indexes. Straight lines only (no curves).
+
+```js
+var CONSTELLATIONS = [
+  {
+    n: "Capricornus",
+    p: [
+      [0.1, 0.22],
+      [0.31, 0.09],
+      [0.56, 0.16],
+      [0.78, 0.34],
+      [0.88, 0.62],
+      [0.6, 0.82],
+      [0.34, 0.74],
+      [0.17, 0.5],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 0],
+    ],
+  },
+  {
+    n: "Aquarius",
+    p: [
+      [0.12, 0.26],
+      [0.33, 0.14],
+      [0.54, 0.29],
+      [0.76, 0.17],
+      [0.88, 0.44],
+      [0.66, 0.56],
+      [0.49, 0.74],
+      [0.28, 0.88],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+    ],
+  },
+  {
+    n: "Pisces",
+    p: [
+      [0.08, 0.16],
+      [0.26, 0.34],
+      [0.44, 0.52],
+      [0.63, 0.63],
+      [0.82, 0.7],
+      [0.9, 0.48],
+      [0.8, 0.28],
+      [0.3, 0.78],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [2, 7],
+    ],
+  },
+  {
+    n: "Aries",
+    p: [
+      [0.16, 0.62],
+      [0.4, 0.46],
+      [0.64, 0.37],
+      [0.86, 0.42],
+      [0.52, 0.22],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [2, 4],
+    ],
+  },
+  {
+    n: "Taurus",
+    p: [
+      [0.12, 0.3],
+      [0.34, 0.46],
+      [0.52, 0.56],
+      [0.72, 0.42],
+      [0.9, 0.26],
+      [0.5, 0.78],
+      [0.3, 0.7],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [2, 5],
+      [5, 6],
+    ],
+  },
+  {
+    n: "Gemini",
+    p: [
+      [0.24, 0.12],
+      [0.29, 0.36],
+      [0.34, 0.6],
+      [0.3, 0.84],
+      [0.62, 0.14],
+      [0.67, 0.38],
+      [0.72, 0.62],
+      [0.68, 0.86],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [1, 5],
+    ],
+  },
+  {
+    n: "Cancer",
+    p: [
+      [0.18, 0.2],
+      [0.46, 0.42],
+      [0.46, 0.66],
+      [0.74, 0.22],
+      [0.56, 0.88],
+    ],
+    e: [
+      [0, 1],
+      [1, 3],
+      [1, 2],
+      [2, 4],
+    ],
+  },
+  {
+    n: "Leo",
+    p: [
+      [0.16, 0.32],
+      [0.29, 0.15],
+      [0.47, 0.19],
+      [0.54, 0.38],
+      [0.41, 0.51],
+      [0.64, 0.63],
+      [0.88, 0.55],
+      [0.8, 0.82],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 5],
+    ],
+  },
+  {
+    n: "Virgo",
+    p: [
+      [0.12, 0.24],
+      [0.34, 0.36],
+      [0.56, 0.29],
+      [0.74, 0.46],
+      [0.59, 0.62],
+      [0.4, 0.74],
+      [0.86, 0.74],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [3, 6],
+    ],
+  },
+  {
+    n: "Libra",
+    p: [
+      [0.24, 0.3],
+      [0.51, 0.16],
+      [0.76, 0.32],
+      [0.64, 0.58],
+      [0.34, 0.62],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [0, 4],
+    ],
+  },
+  {
+    n: "Scorpius",
+    p: [
+      [0.1, 0.22],
+      [0.28, 0.3],
+      [0.45, 0.3],
+      [0.56, 0.46],
+      [0.64, 0.64],
+      [0.75, 0.78],
+      [0.88, 0.8],
+      [0.92, 0.62],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+    ],
+  },
+  {
+    n: "Sagittarius",
+    p: [
+      [0.18, 0.46],
+      [0.34, 0.3],
+      [0.53, 0.35],
+      [0.64, 0.53],
+      [0.48, 0.64],
+      [0.28, 0.61],
+      [0.8, 0.42],
+      [0.74, 0.72],
+    ],
+    e: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 0],
+      [2, 6],
+      [3, 7],
+    ],
+  },
+];
+```
+
+Placement and markup (the final version, `sbPlaceCon`): drawn beside the calendar, centred
+halfway between the left edge of the window and the calendar, level with the middle of the
+month grid. Width = clamp(120px, 0.72 × space left of the grid, 380px); viewBox "0 -44 380 344".
+Stars: halo r=9 #BFE6F2 at 0.16 + core r=3.2 #F2F8FF. Name above at (190, -20), centred.
+
+```js
+    var d = window.__sbCon, stage = document.querySelector('.stage'), svg = document.querySelector('#skyView .sky');
+    if (!d || !stage || !svg) return;
+    var el = document.getElementById('sbCon');
+    if (!el) { el = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); el.id = 'sbCon'; el.setAttribute('aria-hidden', 'true'); stage.appendChild(el); }
+    var r = svg.getBoundingClientRect(), sr = stage.getBoundingClientRect(), s = r.width / d.SKYW;
+    var gridL = r.left + d.OX * s;                       /* the calendar's left edge, on screen */
+    var w = Math.max(120, Math.min(380, gridL * 0.72)), h = w * 300 / 380;
+    var cx = gridL / 2, cy = r.top + (d.OY + d.rows * d.CH / 2) * s;
+    el.setAttribute('viewBox', '0 -44 380 344');
+    el.style.width = w + 'px'; el.style.height = (h * 344 / 300) + 'px';
+    el.style.left = (cx - sr.left - w / 2) + 'px'; el.style.top = (cy - sr.top - h / 2 - h * 44 / 300) + 'px';
+    if (!fresh && el.getAttribute('data-name') === d.C.n) return;
+    el.setAttribute('data-name', d.C.n);
+    var pt = d.C.p.map(function (q) { return [q[0] * 380, q[1] * 300]; });
+    el.innerHTML = '<g class="con">' + d.C.e.map(function (e, i) {
+      var a = pt[e[0]], b = pt[e[1]];
+      return '<path class="con-line" d="M' + a[0].toFixed(1) + ' ' + a[1].toFixed(1) + ' L' + b[0].toFixed(1) + ' ' + b[1].toFixed(1) +
+        '" pathLength="1" vector-effect="non-scaling-stroke" style="animation-delay: ' + (1400 + i * 110) + 'ms;"></path>';
+    }).join('') + pt.map(function (q, i) {
+      return '<g class="con-star" style="animation-delay: ' + (i * 120) + 'ms;"><circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="9" fill="#BFE6F2" opacity="0.16"></circle>' +
+        '<circle cx="' + q[0].toFixed(1) + '" cy="' + q[1].toFixed(1) + '" r="3.2" fill="#F2F8FF"></circle></g>';
+    }).join('') + '<text class="con-label" x="190" y="-20" text-anchor="middle">' + d.C.n.toUpperCase() + '</text></g>';
+  }
+```
+
+Animation: stars pop in one after another (120 ms apart). Lines start at 1400 ms (+110 ms each)
+and then loop every 5 s: draw, hold, fade, redraw. The name fades in and out on its own 5 s loop.
+
+```css
+.con-line {
+  fill: none; stroke: #8FD4E4; stroke-opacity: 0.45; stroke-width: 1; vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1; stroke-dashoffset: 1; animation: conCycle 5s cubic-bezier(.4,0,.2,1) infinite;
+}
+.con-star { transform-box: fill-box; transform-origin: center; animation: conPop 620ms cubic-bezier(.2,.7,.2,1) backwards; }
+.con-label {
+  font-family: 'Noto Sans', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.28em;
+  fill: rgba(234,240,246,0.42); opacity: 0; animation: conName 5s ease 5s infinite;
+}
+@keyframes iconIn { from { opacity: 0; } to { opacity: 1; } }
+  74%  { stroke-dashoffset: 0; opacity: 1; }
+  88%  { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+@keyframes conPop { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: none; } }
+@keyframes conName {
+  0%, 44%   { opacity: 0; }
+  52%, 78%  { opacity: 1; }
+  88%, 100% { opacity: 0; }
+}
+```
+
+## Space between the calendar and the Earth / footer
+
+The Earth is drawn absolutely at the bottom of the board section (height ≈ clamp(100px, 15vh,
+190px) at the centre of the window, plus its glow). The calendar keeps clear of it with its own
+bottom padding plus a fixed spacer after it, before the section ends and the footer starts:
+
+```html
+<div class="stage"> … calendar … </div>          <!-- .stage { padding-bottom: clamp(20px, 2.6vw, 38px); } -->
+<div style="height: clamp(150px, 20vh, 300px);"></div>
+</section>
+<footer class="sb-footer"> … </footer>
 ```
