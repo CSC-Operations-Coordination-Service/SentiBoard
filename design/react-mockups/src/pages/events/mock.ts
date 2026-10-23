@@ -7,7 +7,6 @@
 // comparison, so the October rows were written out by hand like the rest. The only clock read is
 // the calendar's starting month, which lives in events.tsx. No day is marked "today".
 
-import { Cog, Compass, Joystick, Satellite, SatelliteDish, type LucideIcon } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Domain
@@ -70,30 +69,30 @@ export function missionOf(satellite: string): string {
   return MISSION_OF[satellite] ?? satellite;
 }
 
-/** The same five glyphs the real Events page renders (components/EventIcon in the mock-ups app,
- *  the broadcast / compass / joystick / cog / satellite set on /v1/events), so a Manoeuvre reads
- *  identically wherever it appears. Drawn at CATEGORY_STROKE, matching EventIcon. */
-export const CATEGORY_ICONS: Record<EventCategory, LucideIcon> = {
-  Acquisition: SatelliteDish,
-  Calibration: Compass,
-  Manoeuvre: Joystick,
-  Production: Cog,
-  Satellite: Satellite,
+/** SVG inner paths for each event category icon (16×16 viewBox, stroke 1.3, round caps, no fill).
+ *  Matches the reference's ICONS exactly. Use with CategoryIcon. */
+export const CATEGORY_SVG_PATHS: Record<EventCategory, string> = {
+  Acquisition:
+    '<ellipse cx="6.6" cy="6.8" rx="4.5" ry="2.5" transform="rotate(-40 6.6 6.8)"/><path d="M6.6 6.8 10.1 3.3"/><circle cx="10.6" cy="2.8" r="0.9"/><path d="M8.4 8.8 10.7 13.1"/><path d="M8.5 13.3h4.4"/>',
+  Calibration: '<circle cx="8" cy="8" r="5.3"/><path d="M6.1 9.9 9.9 6.1"/>',
+  Manoeuvre:
+    '<circle cx="8" cy="5.3" r="2.3"/><path d="M8 7.6v4.3M5.2 13.3h5.6"/>',
+  Production:
+    '<circle cx="8" cy="8" r="2.4"/><path d="M8 1.6v2.2M8 12.2v2.2M1.6 8h2.2M12.2 8h2.2M3.5 3.5l1.5 1.5M11 11l1.5 1.5M12.5 3.5 11 5M5 11l-1.5 1.5"/>',
+  Satellite:
+    '<path d="M8 4.1 11.9 8 8 11.9 4.1 8z"/><path d="M11.6 4.4 13.7 2.3M2.3 13.7l2.1-2.1"/><path d="M13.4 2.9 3 13.3"/>',
 };
 
-/** EventIcon's stroke weight — thin enough to stay legible at 12px without going bold. */
-export const CATEGORY_STROKE = 1.9;
-
-/** Event type colors — each category has a distinct hue. */
+/** Event type colors from the reference prototype. */
 export const CATEGORY_COLOR: Record<EventCategory, string> = {
-  Acquisition: "#aeb8c4",
-  Calibration: "#b0dfe5",
-  Manoeuvre: "#ffad00",
-  Production: "#c77dff",
-  Satellite: "#ee8216",
+  Acquisition: "#A7B1BE",
+  Calibration: "#4FC9CB",
+  Manoeuvre: "#EFA73C",
+  Production: "#B45CF2",
+  Satellite: "#F2772B",
 };
 
-export const CATEGORIES = Object.keys(CATEGORY_ICONS) as EventCategory[];
+export const CATEGORIES = Object.keys(CATEGORY_COLOR) as EventCategory[];
 
 /** Labels and colours taken from production's own datatake legend, so this page cannot disagree
  *  with the shipping dashboard about what "Partial" looks like. Planned and Processing share the

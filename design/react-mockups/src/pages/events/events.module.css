@@ -806,51 +806,58 @@ select.control {
   fill: var(--mf-muted);
 }
 
-/* Star nodes glow a little so they read as lights rather than flat dots. */
-/* Each star starts dark and lights in turn. The delay comes inline (i × 150ms), so the stars light
-   one after another from the first point of the figure. `both` holds the dark start during the
-   delay and the lit end afterwards. */
-.zodiacStars circle {
-  fill: #ffffff;
-  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.85));
-  opacity: 0.1;
-  transform: scale(0.5);
+/* Constellation stars: pop in one after another (delay inline, 120 ms apart). */
+.conStar {
   transform-box: fill-box;
   transform-origin: center;
-  animation: illuminateStar 0.4s ease-out both;
+  animation: conPop 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
-@keyframes illuminateStar {
-  to {
-    opacity: 1;
-    transform: scale(1);
-    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 1));
-  }
+@keyframes conPop {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: none; }
 }
 
-/* The line draws from nothing to the whole figure. Duration is set inline to match the stars. */
-.zodiacPath {
+/* Constellation lines: draw in at 1400ms, then loop every 5s (draw → hold → fade → reset). */
+.conLine {
+  fill: none;
+  stroke: #8FD4E4;
+  stroke-opacity: 0.45;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation-name: drawZodiacPath;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
+  animation: conCycle 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 
-@keyframes drawZodiacPath {
-  to {
-    stroke-dashoffset: 0;
-  }
+@keyframes conCycle {
+  0%   { stroke-dashoffset: 1; opacity: 0; }
+  74%  { stroke-dashoffset: 0; opacity: 1; }
+  88%  { stroke-dashoffset: 0; opacity: 0; }
+  100% { stroke-dashoffset: 1; opacity: 0; }
+}
+
+/* Constellation name: fades in and out on its own 5s loop (starts 5s in). */
+.conLabel {
+  font-family: var(--font-mono, var(--mono));
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  fill: rgba(234, 240, 246, 0.42);
+  opacity: 0;
+  animation: conName 5s ease 5s infinite;
+}
+
+@keyframes conName {
+  0%, 44%   { opacity: 0; }
+  52%, 78%  { opacity: 1; }
+  88%, 100% { opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .zodiacStars circle,
-  .zodiacPath {
-    animation: none;
-    opacity: 1;
-    transform: none;
-    stroke-dashoffset: 0;
-  }
+  .conStar { animation: none; opacity: 1; transform: none; }
+  .conLine { animation: none; stroke-dashoffset: 0; opacity: 0.45; }
+  .conLabel { animation: none; opacity: 0.42; }
 }
 
 .dow,
@@ -906,13 +913,14 @@ select.control {
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: default;
   overflow: hidden;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.cell:not(.cellDim):hover {
-  z-index: 2; /* lift it so all four of its edges show the hover colour */
+/* Only blurred-but-pickable days get a hover border (in zoomed grid). */
+.cellPick:hover {
+  z-index: 2;
   border-color: color-mix(in srgb, var(--mf-text) 70%, transparent);
 }
 
@@ -962,50 +970,66 @@ select.control {
   padding-top: 4px;
 }
 
-/* dots: 6px rounded, filled with the event category's colour (set inline) */
-.dotMark {
-  display: inline-block;
-  flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  border: none;
-  padding: 0;
-  background: transparent;
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
+/* ---------- star dot layer ----------
+   Absolutely positioned at 60 % of the cell height; each button is centred on its x position.
+   Only the buttons (pointer-events: all) are interactive — the layer itself is pass-through. */
+.dotLayer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 60%;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
-.dotMark:hover {
-  transform: scale(1.4);
-}
-
-/* icons: 18px wrappers around the category glyph, shown only while a day is zoomed */
-.zoomedIn {
-  gap: 4px;
-}
-
-.iconMark {
-  display: inline-flex;
-  flex: 0 0 auto;
+/* Each type-dot button — hit area ≥ 34 px as required. */
+.starDotBtn {
+  position: absolute;
+  transform: translateX(-50%);
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 34px;
+  height: 34px;
   border: none;
+  background: none;
   padding: 0;
-  background: transparent;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  pointer-events: all;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.iconMark svg {
-  width: 14px;
-  height: 14px;
+.starDotSvg {
+  display: block;
+  overflow: visible;
 }
 
-.iconMark:hover {
-  transform: scale(1.2);
+/* Core circle dims on hover so the dot reads as interactive. */
+.starCore {
+  transition: opacity 160ms ease;
+}
+
+.starDotBtn:hover .starCore {
+  opacity: 0.7;
+}
+
+/* Zoomed variant: wider to give the type icon room. */
+.starDotZoomed {
+  width: 54px;
+}
+
+/* Type icon that fades in after the fly-in animation. */
+.zicon {
+  animation: iconIn 460ms ease 1140ms backwards;
+}
+
+@keyframes iconIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zicon { animation: none; }
 }
 
 /* "+2" when a day has more events than the cell can draw. Sized to sit on the glyphs' baseline
@@ -1036,6 +1060,74 @@ select.control {
   color: var(--mf-signal);
 }
 
+
+/* ---------- hover tooltip (.startip) ----------
+   Fixed, pointer-events-none; follows the pointer via inline left/top.
+   Hidden on touch devices. */
+.startip {
+  position: fixed;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 17px;
+  border-radius: 14px;
+  min-width: 226px;
+  box-sizing: border-box;
+  pointer-events: none;
+  white-space: nowrap;
+  background: rgba(9, 13, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.startipOn {
+  display: flex;
+  animation: sbTipFade 160ms ease backwards;
+}
+
+/* Flip when near the right viewport edge. */
+.startipFlip {
+  transform: translateX(calc(-100% - 28px));
+}
+
+@keyframes sbTipFade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.stTxt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.stType {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.stName {
+  font-family: var(--font-sans, var(--sans));
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hide on touch-only devices (no hover capability). */
+@media (hover: none) {
+  .startip { display: none !important; }
+}
 
 .hint {
   margin: 12px 2px 0;
@@ -1203,6 +1295,17 @@ select.control {
 .ziOcc {
   padding: 30px 0 4px;
   animation: ziRise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* Non-selected occurrences dim to 0.42; clicking selects them. */
+.ziOccDim {
+  opacity: 0.42;
+  transition: opacity 240ms ease;
+  cursor: pointer;
+}
+
+.ziOccDim:hover {
+  opacity: 0.8;
 }
 
 .ziTop {

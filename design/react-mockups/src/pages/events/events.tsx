@@ -15,8 +15,7 @@ import {
   ALL_SATELLITES,
   CATEGORIES,
   CATEGORY_COLOR,
-  CATEGORY_ICONS,
-  CATEGORY_STROKE,
+  CATEGORY_SVG_PATHS,
   COMPLETENESS,
   EMPTY_FILTERS,
   EVENTS,
@@ -51,200 +50,29 @@ import {
 } from "@/components/ambient-motion";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 
-/* ---------- sky ----------
- * The sign's constellation sits in a column to the left of the calendar, not behind it. The grid
- * mapping below (200 × 168 units, offset 90 / 80) is the layout the cells were planned against;
- * the DOM cells are fluid, so it is a mapping, not a pixel-exact overlay. */
-const ZODIAC_VIEW = "-270 -230 540 460";
-const CELL_W = 200;
-const CELL_H = 168;
-const START_X = 90;
-const START_Y = 80;
-
-/* Stylised constellation line-work, centred on (0,0) in its own units. These are decorative
- * shapes, not astronomical positions. */
-const ZODIAC: Record<string, string> = {
-  Capricornus:
-    "M-200 -40 L-120 -80 L-40 -30 L40 -60 L120 -20 L200 -90 M120 -20 L90 60 L0 100 L-80 40 L-40 -30",
-  Aquarius:
-    "M-220 -40 L-160 -90 L-100 -40 L-40 -90 L20 -40 L80 -90 L140 -40 L200 -90 M-220 60 L-160 10 L-100 60 L-40 10 L20 60 L80 10 L140 60 L200 10",
-  Pisces:
-    "M-240 -110 Q-160 -40 -90 0 Q-160 40 -240 110 M90 -110 Q160 -40 240 0 Q160 40 90 110 M-90 0 L90 0",
-  Aries: "M-200 40 Q-150 -130 -30 -70 L60 -20 L200 20",
-  Taurus:
-    "M-200 -120 L-40 0 L-200 120 M-40 0 L140 -40 M140 -40 L60 -140 M140 -40 L200 -130 M120 60 L130 40 L140 60 L120 62 Z",
-  Gemini:
-    "M-130 -150 L-120 110 M130 -150 L120 110 M-130 -150 Q-60 -170 -20 -120 M130 -150 Q60 -170 20 -120 M-120 -10 L120 -10",
-  Cancer:
-    "M-160 0 Q0 -180 160 0 Q0 180 -160 0 Z M-60 -120 L-120 -190 M60 -120 L120 -190 M-60 120 L-120 190 M60 120 L120 190",
-  Leo: "M-220 -40 L-160 -90 L-100 -60 L-40 -20 L30 -60 L100 0 L200 10 L180 110 L80 90 L-20 60 L-80 110 L-160 120 Z",
-  Virgo:
-    "M-120 -180 L-60 -20 L-30 150 M-60 -20 L40 -60 L120 -150 M-60 -20 L60 40 L200 80 M-30 150 L80 190",
-  Libra:
-    "M-200 -40 L200 -40 M0 -40 L0 -130 M-200 -40 Q-150 60 -100 -40 M200 -40 Q150 60 100 -40 M-60 -130 L60 -130",
-  Scorpius:
-    "M-200 -120 L-120 -60 L-60 -120 L0 -40 L60 -20 L120 20 L170 90 L200 60 M120 20 L110 -40 L150 -80",
-  Sagittarius:
-    "M-180 120 L160 -120 M160 -120 L80 -110 M160 -120 L150 -40 M-120 40 L40 -20 M-60 80 L80 0",
+/* ---------- sky: constellation of the month ----------
+ * Straight-edge constellations from the reference (events-prototype-ref.md).
+ * Points p are fractions of a 380×300 box; e lists edges between point indexes.
+ * Index 0 = January, matching SIGN_BY_MONTH order. */
+type Constellation = {
+  n: string;
+  p: [number, number][];
+  e: [number, number][];
 };
 
-/* Star nodes for each sign: the line vertices of ZODIAC, in the same units. */
-const ZODIAC_STARS: Record<string, [number, number][]> = {
-  Capricornus: [
-    [-200, -40],
-    [-120, -80],
-    [-40, -30],
-    [40, -60],
-    [120, -20],
-    [200, -90],
-    [90, 60],
-    [0, 100],
-    [-80, 40],
-  ],
-  Aquarius: [
-    [-220, -40],
-    [-160, -90],
-    [-100, -40],
-    [-40, -90],
-    [20, -40],
-    [80, -90],
-    [140, -40],
-    [200, -90],
-    [-220, 60],
-    [-160, 10],
-    [-100, 60],
-    [-40, 10],
-    [20, 60],
-    [80, 10],
-    [140, 60],
-    [200, 10],
-  ],
-  Pisces: [
-    [-240, -110],
-    [-90, 0],
-    [-240, 110],
-    [90, -110],
-    [240, 0],
-    [90, 110],
-  ],
-  Aries: [
-    [-200, 40],
-    [-30, -70],
-    [60, -20],
-    [200, 20],
-  ],
-  Taurus: [
-    [-200, -120],
-    [-40, 0],
-    [-200, 120],
-    [140, -40],
-    [60, -140],
-    [200, -130],
-    [120, 60],
-    [130, 40],
-    [140, 60],
-    [120, 62],
-  ],
-  Gemini: [
-    [-130, -150],
-    [-120, 110],
-    [130, -150],
-    [120, 110],
-    [-20, -120],
-    [20, -120],
-    [-120, -10],
-    [120, -10],
-  ],
-  Cancer: [
-    [-160, 0],
-    [160, 0],
-    [-60, -120],
-    [-120, -190],
-    [60, -120],
-    [120, -190],
-    [-60, 120],
-    [-120, 190],
-    [60, 120],
-    [120, 190],
-  ],
-  Leo: [
-    [-220, -40],
-    [-160, -90],
-    [-100, -60],
-    [-40, -20],
-    [30, -60],
-    [100, 0],
-    [200, 10],
-    [180, 110],
-    [80, 90],
-    [-20, 60],
-    [-80, 110],
-    [-160, 120],
-  ],
-  Virgo: [
-    [-120, -180],
-    [-60, -20],
-    [-30, 150],
-    [40, -60],
-    [120, -150],
-    [60, 40],
-    [200, 80],
-    [80, 190],
-  ],
-  Libra: [
-    [-200, -40],
-    [200, -40],
-    [0, -40],
-    [0, -130],
-    [-100, -40],
-    [100, -40],
-    [-60, -130],
-    [60, -130],
-  ],
-  Scorpius: [
-    [-200, -120],
-    [-120, -60],
-    [-60, -120],
-    [0, -40],
-    [60, -20],
-    [120, 20],
-    [170, 90],
-    [200, 60],
-    [110, -40],
-    [150, -80],
-  ],
-  Sagittarius: [
-    [-180, 120],
-    [160, -120],
-    [80, -110],
-    [150, -40],
-    [-120, 40],
-    [40, -20],
-    [-60, 80],
-    [80, 0],
-  ],
-};
-
-/* Timing of the lighting sequence: each star lights STAR_STEP_MS after the one before it, and each
- * star's own fade takes STAR_FADE_MS. Kept here, not only in CSS, because the path's draw length
- * is derived from the star count. */
-const STAR_STEP_MS = 150;
-const STAR_FADE_MS = 400;
-
-/* Month number (1 = January, as in mock.ts) → the sign that dominates that month. */
-const SIGN_BY_MONTH = [
-  "Capricornus",
-  "Aquarius",
-  "Pisces",
-  "Aries",
-  "Taurus",
-  "Gemini",
-  "Cancer",
-  "Leo",
-  "Virgo",
-  "Libra",
-  "Scorpius",
-  "Sagittarius",
+const CONSTELLATIONS: Constellation[] = [
+  { n: "Capricornus", p: [[0.1,0.22],[0.31,0.09],[0.56,0.16],[0.78,0.34],[0.88,0.62],[0.6,0.82],[0.34,0.74],[0.17,0.5]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,0]] },
+  { n: "Aquarius",    p: [[0.12,0.26],[0.33,0.14],[0.54,0.29],[0.76,0.17],[0.88,0.44],[0.66,0.56],[0.49,0.74],[0.28,0.88]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]] },
+  { n: "Pisces",      p: [[0.08,0.16],[0.26,0.34],[0.44,0.52],[0.63,0.63],[0.82,0.7],[0.9,0.48],[0.8,0.28],[0.3,0.78]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[2,7]] },
+  { n: "Aries",       p: [[0.16,0.62],[0.4,0.46],[0.64,0.37],[0.86,0.42],[0.52,0.22]], e: [[0,1],[1,2],[2,3],[2,4]] },
+  { n: "Taurus",      p: [[0.12,0.3],[0.34,0.46],[0.52,0.56],[0.72,0.42],[0.9,0.26],[0.5,0.78],[0.3,0.7]], e: [[0,1],[1,2],[2,3],[3,4],[2,5],[5,6]] },
+  { n: "Gemini",      p: [[0.24,0.12],[0.29,0.36],[0.34,0.6],[0.3,0.84],[0.62,0.14],[0.67,0.38],[0.72,0.62],[0.68,0.86]], e: [[0,1],[1,2],[2,3],[4,5],[5,6],[6,7],[1,5]] },
+  { n: "Cancer",      p: [[0.18,0.2],[0.46,0.42],[0.46,0.66],[0.74,0.22],[0.56,0.88]], e: [[0,1],[1,3],[1,2],[2,4]] },
+  { n: "Leo",         p: [[0.16,0.32],[0.29,0.15],[0.47,0.19],[0.54,0.38],[0.41,0.51],[0.64,0.63],[0.88,0.55],[0.8,0.82]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,5]] },
+  { n: "Virgo",       p: [[0.12,0.24],[0.34,0.36],[0.56,0.29],[0.74,0.46],[0.59,0.62],[0.4,0.74],[0.86,0.74]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[3,6]] },
+  { n: "Libra",       p: [[0.24,0.3],[0.51,0.16],[0.76,0.32],[0.64,0.58],[0.34,0.62]], e: [[0,1],[1,2],[2,3],[0,4]] },
+  { n: "Scorpius",    p: [[0.1,0.22],[0.28,0.3],[0.45,0.3],[0.56,0.46],[0.64,0.64],[0.75,0.78],[0.88,0.8],[0.92,0.62]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]] },
+  { n: "Sagittarius", p: [[0.18,0.46],[0.34,0.3],[0.53,0.35],[0.64,0.53],[0.48,0.64],[0.28,0.61],[0.8,0.42],[0.74,0.72]], e: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,0],[2,6],[3,7]] },
 ];
 
 const MONTH_NAMES = [
@@ -309,78 +137,143 @@ function measureZoom(grid: HTMLElement, day: number): ZoomGeom | null {
     ty: targetY - g.top - scale * cy,
   };
 }
-/** Where a cell sits in the sky grid: column 0–6, row, and its top-left in SVG units. */
+/** Where a cell sits in the calendar grid: column 0–6 and row. */
 function skyCell(index: number) {
   const col = index % 7;
   const row = Math.floor(index / 7);
-  return { col, row, x: START_X + col * CELL_W, y: START_Y + row * CELL_H };
+  return { col, row };
 }
 
-/** How many marks a day cell can show before it starts summarising. Four fits two rows of glyphs in
- *  the wide cell and in the ~45px phone cell; beyond that the marks would crowd out the day number. */
+/** At most this many type-dots before a "+N" overflow badge appears. */
 const MARKS_SHOWN = 4;
 
-/** The marks inside a day cell. Closed, one coloured dot per event; while a day is zoomed in
- *  (`isZoomed`), the same events as their type icons. Past MARKS_SHOWN the rest collapse to "+N". */
-/** The marks inside a day cell rendered as clickable buttons. */
+/** Inline SVG icon for an event category (16×16 viewBox, stroke 1.3, round caps). */
+function CategoryIcon({
+  type,
+  size = 14,
+  color,
+}: {
+  type: EventCategory;
+  size?: number;
+  color: string;
+}) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke={color}
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      aria-hidden
+      dangerouslySetInnerHTML={{ __html: CATEGORY_SVG_PATHS[type] }}
+    />
+  );
+}
+
+type TooltipData = {
+  x: number;
+  y: number;
+  type: EventCategory;
+  events: ManifestEvent[];
+};
+
+/** One dot per event TYPE, positioned at 60% cell height, 27% cell-width apart.
+ *  Each dot is a button (≥34px hit area). In zoomed mode the type icon fades in to the right. */
 function renderDayIndicators(
   events: ManifestEvent[],
   isZoomed: boolean,
-  onSelectDay: (day: number) => void,
-  onZoomOut: () => void,
-  day: number,
+  onDotClick: (type: EventCategory) => void,
+  tooltipHandlers: {
+    onEnter: (e: React.PointerEvent, type: EventCategory, evs: ManifestEvent[]) => void;
+    onMove: (e: React.PointerEvent) => void;
+    onLeave: () => void;
+    onFocus: (type: EventCategory, evs: ManifestEvent[]) => void;
+    onBlur: () => void;
+  },
 ) {
   if (events.length === 0) return null;
+
+  // One slot per unique category, in order of first appearance.
+  const typeMap = new Map<EventCategory, ManifestEvent[]>();
+  for (const e of events) {
+    if (!typeMap.has(e.category)) typeMap.set(e.category, []);
+    typeMap.get(e.category)!.push(e);
+  }
+  const types = [...typeMap.keys()];
+  const overflow = Math.max(0, types.length - MARKS_SHOWN);
+  // If there is overflow, sacrifice one dot slot for the "+N" badge.
+  const dotsToShow = overflow > 0 ? types.slice(0, MARKS_SHOWN - 1) : types;
+  const totalSlots = dotsToShow.length + (overflow > 0 ? 1 : 0);
+  const rr = 4;
+
+  const dotAt = (i: number) =>
+    `${50 + (i - (totalSlots - 1) / 2) * 27}%`;
+
   return (
-    <span className={`${s.marks} ${isZoomed ? s.zoomedIn : ""}`}>
-      {events.slice(0, MARKS_SHOWN).map((e) => {
-        const color = CATEGORY_COLOR[e.category];
-        const title = `${e.time} · ${e.category} · ${e.satellite}`;
-        if (!isZoomed) {
-          return (
-            <button
-              key={e.id}
-              type="button"
-              className={s.dotMark}
-              style={{ backgroundColor: color }}
-              onClick={(evt) => {
-                evt.stopPropagation();
-                onSelectDay(day);
-              }}
-              title={title}
-              aria-label={title}
-            />
-          );
-        }
-        const Icon = CATEGORY_ICONS[e.category];
+    <span className={s.dotLayer}>
+      {dotsToShow.map((type, i) => {
+        const color = CATEGORY_COLOR[type];
+        const evs = typeMap.get(type)!;
+        const ariaLabel =
+          evs.length === 1
+            ? `${type} · ${evs[0].satellite}: ${evs[0].title}`
+            : `${type} · ${evs.length} events`;
         return (
           <button
-            key={e.id}
+            key={type}
             type="button"
-            className={s.iconMark}
-            style={{ color }}
-            onClick={(evt) => {
-              evt.stopPropagation();
-              onZoomOut();
+            className={`${s.starDotBtn} ${isZoomed ? s.starDotZoomed : ""}`}
+            style={{ left: dotAt(i) }}
+            aria-label={ariaLabel}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDotClick(type);
             }}
-            title={`${title} · Back to the month`}
-            aria-label={`${title}. Back to the month`}
+            onPointerEnter={(e) => tooltipHandlers.onEnter(e, type, evs)}
+            onPointerMove={(e) => tooltipHandlers.onMove(e)}
+            onPointerLeave={() => tooltipHandlers.onLeave()}
+            onFocus={() => tooltipHandlers.onFocus(type, evs)}
+            onBlur={() => tooltipHandlers.onBlur()}
           >
-            <Icon size={14} strokeWidth={CATEGORY_STROKE} aria-hidden />
+            <svg
+              className={s.starDotSvg}
+              viewBox={isZoomed ? "-17 -17 50 34" : "-17 -17 34 34"}
+              width={isZoomed ? 50 : 34}
+              height={34}
+              overflow="visible"
+            >
+              <circle r={rr * 3.8} fill={color} opacity="0.1" />
+              <circle r={rr * 2} fill={color} opacity="0.2" />
+              <circle className={s.starCore} r={rr} fill={color} />
+              {isZoomed && (
+                <g
+                  className={s.zicon}
+                  transform={`translate(${rr * 2.4}, -7.5)`}
+                  fill="none"
+                  stroke={color}
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  dangerouslySetInnerHTML={{ __html: CATEGORY_SVG_PATHS[type] }}
+                />
+              )}
+            </svg>
           </button>
         );
       })}
-      {events.length > MARKS_SHOWN && (
+      {overflow > 0 && (
         <button
           type="button"
-          className={s.markMoreBtn}
-          onClick={(evt) => {
-            evt.stopPropagation();
-            onSelectDay(day);
+          className={s.starDotBtn}
+          style={{ left: dotAt(dotsToShow.length) }}
+          aria-label={`+${overflow + 1} more event types`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDotClick(types[dotsToShow.length]);
           }}
-          aria-label={`+${events.length - MARKS_SHOWN} more events`}
         >
-          <em className={s.markMore}>+{events.length - MARKS_SHOWN}</em>
+          <em className={s.markMore}>+{overflow + 1}</em>
         </button>
       )}
     </span>
@@ -500,8 +393,17 @@ function DatatakeRow({ dt }: { dt: Datatake }) {
 
 /** The whole day, every occurrence open: time | title with type · satellite | status dot, then
  *  "Impacted datatakes · n · m unavailable" and one row per datatake. Occurrences rise in one after
- *  another (the delay is inline), as in the reference. */
-function DayManifest({ events }: { events: ManifestEvent[] }) {
+ *  another (the delay is inline), as in the reference. Selected occurrence is at full opacity;
+ *  others dim to 0.42 (0.8 on hover) and can be clicked to become the selection. */
+function DayManifest({
+  events,
+  selectedEventId,
+  onSelectEvent,
+}: {
+  events: ManifestEvent[];
+  selectedEventId: string | null;
+  onSelectEvent: (id: string) => void;
+}) {
   if (events.length === 0) {
     return (
       <p className={s.emptyDetail}>
@@ -512,26 +414,26 @@ function DayManifest({ events }: { events: ManifestEvent[] }) {
   return (
     <>
       {events.map((e, i) => {
-        const Icon = CATEGORY_ICONS[e.category];
+        const isSelected = selectedEventId === null || e.id === selectedEventId;
         const unavailable = e.datatakes.filter(
           (d) => d.status === "unavailable",
         ).length;
         return (
           <section
             key={e.id}
-            className={s.ziOcc}
+            className={`${s.ziOcc} ${isSelected ? "" : s.ziOccDim}`}
             style={{ animationDelay: `${280 + i * 130}ms` }}
+            onClick={isSelected ? undefined : () => onSelectEvent(e.id)}
           >
             <div className={s.ziTop}>
               <span className={s.ziTime}>{e.time}</span>
               <span>
                 <span className={s.ziTitle}>{e.title}</span>
                 <span className={s.ziSub}>
-                  <Icon
+                  <CategoryIcon
+                    type={e.category}
                     size={13}
-                    strokeWidth={CATEGORY_STROKE}
                     color={CATEGORY_COLOR[e.category]}
-                    aria-hidden
                   />
                   {e.category} · {e.satellite}
                 </span>
@@ -591,6 +493,8 @@ export default function EventsManifest() {
     () => new Date().getMonth() + 1,
   );
   const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const motion = useAmbientMotion();
 
   // A satellite from the old mission would contradict the new one, leaving zero results with no
@@ -655,7 +559,7 @@ export default function EventsManifest() {
     [currentMonth],
   );
 
-  const sign = SIGN_BY_MONTH[currentMonth - 1];
+  const constellation = CONSTELLATIONS[currentMonth - 1];
   const monthName = MONTH_NAMES[currentMonth - 1];
   const canGoBack = currentMonth > 1;
   const canGoForward = currentMonth < 12;
@@ -694,7 +598,7 @@ export default function EventsManifest() {
   );
 
   const selectDay = useCallback(
-    (day: number) => {
+    (day: number, eventId?: string) => {
       const events = byDay.get(day) ?? [];
       if (events.length === 0) return;
       // Always measured on the real in-page grid, which never moves now.
@@ -703,10 +607,25 @@ export default function EventsManifest() {
       if (openDay === null) setZoomOn(false); // fresh open: mount flat first, then fly in
       setZoom(geom); // already open: glide straight to the new day
       setOpenDay(day);
+      setSelectedEventId(eventId ?? events[0].id);
       setPanelDay({ day, month: currentMonth, events });
     },
     [byDay, currentMonth, openDay],
   );
+
+  const tooltipHandlers = {
+    onEnter: (e: React.PointerEvent, type: EventCategory, evs: ManifestEvent[]) => {
+      setTooltip({ x: e.clientX, y: e.clientY, type, events: evs });
+    },
+    onMove: (e: React.PointerEvent) => {
+      setTooltip((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null);
+    },
+    onLeave: () => setTooltip(null),
+    onFocus: (type: EventCategory, evs: ManifestEvent[]) => {
+      setTooltip({ x: 0, y: 0, type, events: evs });
+    },
+    onBlur: () => setTooltip(null),
+  };
 
   const renderCells = (zoomed: boolean) =>
     cells.map((c, i) => {
@@ -727,6 +646,17 @@ export default function EventsManifest() {
       // still be clicked: the camera glides straight to it, as the reference does.
       const blurred = zoomed && openDay !== c.day;
       const pickable = blurred && events.length > 0;
+
+      const onDotClick = (type: EventCategory) => {
+        if (zoomed && c.day === openDay) {
+          close();
+        } else {
+          // First event of that type
+          const eventsOfType = events.filter((e) => e.category === type);
+          selectDay(c.day, eventsOfType[0]?.id);
+        }
+      };
+
       return (
         <div
           key={c.day}
@@ -744,7 +674,7 @@ export default function EventsManifest() {
           }
         >
           <span className={s.cellNum}>{String(c.day).padStart(2, "0")}</span>
-          {renderDayIndicators(events, zoomed, selectDay, () => close(), c.day)}
+          {renderDayIndicators(events, zoomed, onDotClick, tooltipHandlers)}
         </div>
       );
     });
@@ -827,6 +757,15 @@ export default function EventsManifest() {
 
   const dayEvents = panelDay?.events ?? [];
 
+  // Colour of the last description paragraph — mirrors the month's worst completeness status.
+  const descStatusColor = (() => {
+    const statuses = monthEvents.flatMap((e) => e.datatakes.map((d) => d.status));
+    if (statuses.includes("unavailable")) return COMPLETENESS.unavailable.color;
+    if (statuses.includes("partial")) return COMPLETENESS.partial.color;
+    if (statuses.includes("acquired")) return COMPLETENESS.acquired.color;
+    return COMPLETENESS.planned.color;
+  })();
+
   const DESCRIPTION = (
     <>
       <p>
@@ -859,7 +798,6 @@ export default function EventsManifest() {
             },
           ] as { key: EventCategory; text: string }[]
         ).map(({ key, text }) => {
-          const Icon = CATEGORY_ICONS[key];
           const color = CATEGORY_COLOR[key];
           return (
             <li
@@ -873,14 +811,13 @@ export default function EventsManifest() {
               {/* A box one line tall, so the icon centres on the first line of text. */}
               <span
                 style={{
-                  color,
                   display: "flex",
                   alignItems: "center",
                   height: "1.6em",
                   flexShrink: 0,
                 }}
               >
-                <Icon aria-hidden size={14} strokeWidth={CATEGORY_STROKE} />
+                <CategoryIcon type={key} size={14} color={color} />
               </span>
               <span>
                 <strong style={{ color }}>{key}:</strong> {text}
@@ -889,7 +826,7 @@ export default function EventsManifest() {
           );
         })}
       </ul>
-      <p>
+      <p style={{ color: descStatusColor }}>
         Clicking a star flies into that day and lists the datatakes it
         potentially impacted, determined by their sensing times, along with
         further details about the event. The impact on datatake completeness is
@@ -1035,44 +972,46 @@ export default function EventsManifest() {
           <div className={s.calRow}>
             <aside className={s.zodiac} aria-hidden>
               <svg
-                key={sign}
+                key={constellation.n}
                 className={s.zodiacSvg}
-                viewBox={ZODIAC_VIEW}
+                viewBox="0 -44 380 344"
                 focusable="false"
               >
-                <text
-                  className={s.zodiacLabel}
-                  x={0}
-                  y={-196}
-                  textAnchor="middle"
-                >
-                  {sign.toUpperCase()}
-                </text>
-                <g
-                  stroke="rgba(255, 255, 255, 0.15)"
-                  fill="none"
-                  strokeWidth="1.5"
-                >
-                  <path
-                    className={s.zodiacPath}
-                    d={ZODIAC[sign]}
-                    pathLength={1}
-                    vectorEffect="non-scaling-stroke"
-                    style={{
-                      animationDuration: `${ZODIAC_STARS[sign].length * STAR_STEP_MS + STAR_FADE_MS}ms`,
-                    }}
-                  />
-                </g>
-                <g className={s.zodiacStars}>
-                  {ZODIAC_STARS[sign].map(([x, y], i) => (
-                    <circle
+                <g className={s.conGroup}>
+                  {constellation.e.map(([a, b], i) => {
+                    const ax = (constellation.p[a][0] * 380).toFixed(1);
+                    const ay = (constellation.p[a][1] * 300).toFixed(1);
+                    const bx = (constellation.p[b][0] * 380).toFixed(1);
+                    const by = (constellation.p[b][1] * 300).toFixed(1);
+                    return (
+                      <line
+                        key={i}
+                        className={s.conLine}
+                        x1={ax} y1={ay} x2={bx} y2={by}
+                        pathLength="1"
+                        vectorEffect="non-scaling-stroke"
+                        style={{ animationDelay: `${1400 + i * 110}ms` }}
+                      />
+                    );
+                  })}
+                  {constellation.p.map(([px, py], i) => (
+                    <g
                       key={i}
-                      cx={x}
-                      cy={y}
-                      r={4}
-                      style={{ animationDelay: `${i * STAR_STEP_MS}ms` }}
-                    />
+                      className={s.conStar}
+                      style={{ animationDelay: `${i * 120}ms` }}
+                    >
+                      <circle cx={px * 380} cy={py * 300} r={9} fill="#BFE6F2" opacity="0.16" />
+                      <circle cx={px * 380} cy={py * 300} r={3.2} fill="#F2F8FF" />
+                    </g>
                   ))}
+                  <text
+                    className={s.conLabel}
+                    x="190"
+                    y="-20"
+                    textAnchor="middle"
+                  >
+                    {constellation.n.toUpperCase()}
+                  </text>
                 </g>
               </svg>
             </aside>
@@ -1089,11 +1028,39 @@ export default function EventsManifest() {
               </div>
             </div>
           </div>
+          {/* Spacer so the 6-week calendar never touches the Earth image at the bottom. */}
+          <div style={{ height: "clamp(150px, 20vh, 300px)" }} aria-hidden />
         </div>
 
-        {/* Stage and drawer are portalled to <body>, above the sticky nav. */}
+        {/* Stage, drawer, and tooltip are portalled to <body>, above the sticky nav. */}
         {createPortal(
           <>
+            {tooltip && (
+              <div
+                className={`${s.startip} ${s.startipOn} ${tooltip.x > window.innerWidth - 260 ? s.startipFlip : ""}`}
+                style={{
+                  left: tooltip.x + (tooltip.x > window.innerWidth - 260 ? -18 : 18),
+                  top: tooltip.y - 16,
+                }}
+              >
+                <CategoryIcon type={tooltip.type} size={14} color={CATEGORY_COLOR[tooltip.type]} />
+                <span className={s.stTxt}>
+                  <span className={s.stType} style={{ color: CATEGORY_COLOR[tooltip.type] }}>
+                    {tooltip.type}
+                    {" · "}
+                    {tooltip.events.length === 1
+                      ? tooltip.events[0].satellite
+                      : `${tooltip.events.length} events`}
+                  </span>
+                  {tooltip.events.slice(0, 3).map((e) => (
+                    <span key={e.id} className={s.stName}>{e.title}</span>
+                  ))}
+                  {tooltip.events.length > 3 && (
+                    <span className={s.stName}>+{tooltip.events.length - 3} more</span>
+                  )}
+                </span>
+              </div>
+            )}
             {zoom && (
               <div
                 className={`${s.page} ${s.stage} ${zoomOn ? s.stageOn : ""}`}
@@ -1152,7 +1119,11 @@ export default function EventsManifest() {
                     </h2>
                     <DaySummary events={dayEvents} />
                   </header>
-                  <DayManifest events={dayEvents} />
+                  <DayManifest
+                    events={dayEvents}
+                    selectedEventId={selectedEventId}
+                    onSelectEvent={setSelectedEventId}
+                  />
                 </div>
               )}
             </aside>
