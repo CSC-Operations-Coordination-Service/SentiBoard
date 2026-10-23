@@ -41,17 +41,42 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   owner needs to decide the root layout first (AGENTS.md §2: separate repos, submodules or one
   repo). Do not create a root `package.json` until then.
 
-## Events — known issues (2026-10-22)
+## Events — known issues (2026-10-23)
 
-- **Visual check pending.** `pnpm lint`, `type-check`, `build` and `test` all pass. Still needs a
+- **Visual check pending.** `pnpm lint`, `type-check`, `build` and 212/212 tests all pass. Still needs a
   visual comparison with the prototype in a browser (dark + light themes, mobile at 760 px
-  breakpoint). Fixed since last check: "Blocking Route" prerender error (nowYM + Suspense), hydration
-  mismatch (drawer portal gated on panelDay), calendar count badges removed, Platform merged into
-  Satellite.
-- **Drawer event selection.** Clicking a calendar dot opens the drawer; selecting a different event
-  within the same day's panel requires a `router.push` round-trip (~45 ms warm). If instant
-  same-month event switching is needed, pre-load the current month's EventDetails on the server
-  and pass them as `monthDetails: Record<string, EventDetail>`.
+  breakpoint). Check: DayManifest shows all events of the day, collapsible, selected one open;
+  no cross-month event bleeds onto a later month's calendar; open/close animation runs both ways.
+- **Cross-month calendar placement fixed (2026-10-23).** `filterEvents` now uses `startDate`
+  year/month instead of `months[]`. Events appear on their start month only. `resolveView`
+  switches to `startDate` year/month (not `months[0]`). `viewParams` always includes `month`
+  when `year` differs from `now` for stable deep links.
+- **No-JS.** /events requires JavaScript (DECISIONS.md 2026-10-23). A `<noscript>` message is in
+  the static shell. The calendar and drawer stream after `await connection()` via React flight
+  scripts; they are not visible without JS.
+- **Portal removed; drawer always in DOM.** The `createPortal(…, document.body)` block is gone.
+  Open/close is toggled by the `drawerOn` CSS class; `aria-hidden` + `inert` prevent focus/read
+  when closed.
+- **SSR drawer.** `openDay` is initialised from `data.dayEvents[0].startDate` when events are
+  pre-selected via `?event=<id>`. The server renders the drawer open.
+- **Deep-link zoom.** A mount `useEffect` in Explorer calls `measureZoom` when
+  `openDay !== null && zoom === null`, covering any month. Server renders without the stage (no
+  hydration mismatch).
+- **Drawer overflow fixed.** `overflow: hidden` on `.drawer`; `drawerBody` scrolls via
+  `overflow-y: auto`.
+- **`now` in both ExplorerData variants.** `nowYM()` is called once in `EventsContent` and passed
+  as `now` on both ok and error variants; Explorer never calls `nowYM()` itself.
+
+## Events — legacy parity, to do at the end
+- Datatake list per event: show at most 5, then "+N more — View all N datatakes →" linking to
+  Data Availability filtered by the event (legacy: /data-availability?event_id=<key>). Needs the
+  Availability page's final URL.
+- Datatake IDs link to Data Availability (legacy: ?search=<id>&period=prev-quarter); events older
+  than 3 months show plain IDs, no links, no "+N more" (Availability only holds the last quarter).
+- S1 datatake IDs show the hex suffix: `S1D-38248 (9568)` = parseInt(id.substring(4)).toString(16).
+- Legacy deep link /events.html?showDayEvents=DD/MM/YYYY (used by the home page) must open that day.
+- Calendar date field: legacy uses occurrence date, then publication date. Confirm what the
+  backend exposes; the drawer's day must use the same field.
 
 ## Backend — pending fixes (reported, not fixed in the backend)
 

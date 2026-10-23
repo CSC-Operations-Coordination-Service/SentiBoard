@@ -29,8 +29,10 @@ Supporting modules:
 
 - `cards: EventCard[]` — compact shape (no text, no datatakes) for all ~3720 events; used for
   instant client-side filtering and month navigation.
-- `selectedEvent: EventDetail | null` — full record for the URL-selected event (`?event=<id>`),
-  rendered server-side so the drawer works without JavaScript.
+- `dayEvents: EventDetail[]` — full records for every event that shares a `startDate` with the
+  URL-selected event, sorted by `startTime`. Empty when no event is in the URL.
+- `selectedEventId: string | null` — id of the URL-selected event; the drawer scrolls it into
+  view and opens its section.
 
 ## URL params
 
@@ -56,8 +58,8 @@ Legacy param: `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…
 - [ ] Calendar renders for any month with event dots from real backend data
 - [ ] Both dark and light themes work (CSS custom properties on `:root[data-theme]`)
 - [ ] Clicking a day dot opens the drawer with full event detail
-- [ ] `?event=<id>` renders a pre-selected event in the HTML (works without JS)
-- [ ] Cross-month event: resolveView switches to the event's first month
+- [x] `?event=<id>` renders the day's events in the HTML; selected event is highlighted
+- [x] Event selection: resolveView switches to the event's start month; cross-month events appear in start month only
 - [ ] `?showDayEvents=YYYY-MM-DD` opens the correct month
 - [ ] `/events.html` → `/events` 308 redirect passes query string
 - [ ] `/events` is in the sitemap (not noindex)
@@ -66,10 +68,13 @@ Legacy param: `?showDayEvents=YYYY-MM-DD` → normalised to `?year=…&month=…
 ## Architecture notes (2026-10-22)
 
 - **Prerender split**: `EventsPage` is the static shell (PageHeader + EventsDescription). `EventsContent` is wrapped in `<Suspense>` and opts into dynamic rendering via `await connection()`. This prevents the "Blocking Route" error from `new Date()` in `parseView`. `/events` builds as `◐ (Partial Prerender)`.
-- **`nowYM` flow**: computed once in `EventsContent` (dynamic context), passed as `now` prop to `Explorer` via `ExplorerData`. `Explorer` uses it for the initial `parseView` call so server and client agree on the default month.
-- **Hydration fix**: portal for the zoom stage and drawer is gated on `panelDay !== null`. Both server and first client render agree (panelDay starts null); the portal only mounts after the user opens a day (post-hydration).
+- **`now` threading**: `nowYM()` is called once in `EventsContent` and passed as `now` on both the `ok` and `error` variants of `ExplorerData`. Explorer never calls `nowYM()` itself.
+- **Drawer rendering**: the drawer `<aside>` is in-place (no portal), always in the DOM. Open/close is the `drawerOn` CSS class; `aria-hidden` + `inert` when closed. On SSR with `?event=<id>`, `openDay` is initialised from `data.dayEvents[0].startDate`. `overflow: hidden` on `.drawer` clips content; `drawerBody` scrolls via `overflow-y: auto`.
+- **DayManifest**: the drawer shows all events of the selected day, each in a `<details><summary>` collapsible section (native, no JS for open/close). The URL-selected event starts `open` and scrolls into view. `ziOccSelected` CSS class adds a signal-colour left accent. `ziOcc summary` removes the browser disclosure triangle via `list-style: none` and `display: grid` on `.ziTop`.
+- **Deep-link zoom**: `zoom` starts null (needs DOM). A mount `useEffect` calls `measureZoom` when `openDay !== null && zoom === null` — covers any month. Server renders without the stage; client sets it after hydration (no mismatch). The existing "fly-in" effect then animates `zoomOn`.
 - **Platform→Satellite**: all backend `Platform` anomalies are mapped to `Satellite` in `adapter.ts:mapCategory`. No separate Platform type in `EventCategory`, `CATEGORIES`, filter chips, icons or description text.
-- **Calendar marks**: each day cell shows one dot/icon per event *type* (no count badge). The `+N` overflow badge remains for days with more than `MARKS_SHOWN` (4) distinct types.
+- **Calendar marks**: each day cell shows one dot/icon per event *type* (no count badge). The `+N` overflow badge remains for days with more than `MARKS_SHOWN` (4) distinct types. An event appears only in its **start month** — cross-month events are not repeated in later months; `filterEvents` checks `startDate` year/month, not `months[]`.
+- **URL stability**: `viewParams` always emits `month` when `year` differs from `now`, so a link made this month means the same thing next month. `resolveView` switches to the event's `startDate` year/month when `?event=` is present and the URL month doesn't match.
 
 ## Known backend issues (anomaly feed)
 

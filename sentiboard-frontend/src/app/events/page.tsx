@@ -7,7 +7,7 @@ import s from "@/features/events/events.module.css";
 import Explorer, { type ExplorerData } from "@/features/events/Explorer";
 import { getEvents } from "@/features/events/data";
 import { toEventCard } from "@/features/events/adapter";
-import { nowYM, parseView, resolveView } from "@/features/events/url-state";
+import { nowYM, parseView, resolveView, filterEvents } from "@/features/events/url-state";
 import {
   EVENTS_HERO_IMG,
   EVENTS_SUBTITLE,
@@ -58,6 +58,7 @@ async function EventsContent({
       ok: false,
       unreachable: result.kind === "unreachable",
       message: result.message,
+      now,
     };
     return <Explorer data={data} />;
   }
@@ -66,13 +67,23 @@ async function EventsContent({
   const view = resolveView(parseView(params, now), cards);
   const selectedEvent =
     view.event != null ? (result.events.find((e) => e.id === view.event) ?? null) : null;
+  // Build dayEvents from the same filterEvents(cards, view) the cell uses — not from result.events
+  // directly — so active mission/satellite/category/q filters are respected in the drawer too.
+  const monthCards = selectedEvent ? filterEvents(cards, view) : [];
+  const dayEventIds = new Set(
+    monthCards.filter((c) => c.startDate === selectedEvent?.startDate).map((c) => c.id),
+  );
+  const dayEvents = result.events
+    .filter((e) => dayEventIds.has(e.id))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
     <Explorer
       data={{
         ok: true,
         cards,
-        selectedEvent,
+        dayEvents,
+        selectedEventId: selectedEvent?.id ?? null,
         now,
       }}
     />
@@ -90,6 +101,11 @@ export default function EventsPage(props: PageProps<"/events">) {
           desc={<EventsDescription />}
         />
       </div>
+      <noscript>
+        <p style={{ textAlign: "center", padding: "40px 20px", color: "var(--mf-muted, #888)", fontFamily: "var(--font-sans)" }}>
+          The Events calendar requires JavaScript to display.
+        </p>
+      </noscript>
       <Suspense>
         <EventsContent searchParams={props.searchParams} />
       </Suspense>

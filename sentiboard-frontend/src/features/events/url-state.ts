@@ -9,8 +9,9 @@
      event     <anomaly id>             default: null (no selection)
 
    Defaults are left out of the URL. Unknown values fall back to defaults. Changing mission clears
-   satellite. An event whose months[] does not include the current year/month switches to that
-   event's first month. Legacy ?showDayEvents=<date> opens that date's month and highlights the day.
+   satellite. When year differs from now, month is always included in the URL so links are stable
+   across months. An event whose startDate is not in the current year/month switches to that
+   event's start month. Legacy ?showDayEvents=<date> opens that date's month and highlights the day.
 */
 
 import type { EventCard } from "./model";
@@ -53,9 +54,9 @@ export function nowYM(): { year: number; month: number } {
   return { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 };
 }
 
-export function parseView(src: ParamSource, now?: { year: number; month: number }): EventsView {
+export function parseView(src: ParamSource, now: { year: number; month: number }): EventsView {
   const get = reader(src);
-  const { year: nowYear, month: nowMonth } = now ?? nowYM();
+  const { year: nowYear, month: nowMonth } = now;
 
   const yearRaw = parseInt(get("year") ?? "", 10);
   const monthRaw = parseInt(get("month") ?? "", 10);
@@ -108,12 +109,17 @@ export function parseView(src: ParamSource, now?: { year: number; month: number 
   };
 }
 
-/** Serialise a view to search params; defaults are left out. */
-export function viewParams(view: EventsView, now?: { year: number; month: number }): URLSearchParams {
-  const { year: nowYear, month: nowMonth } = now ?? nowYM();
+/** Serialise a view to search params; defaults are left out.
+ *  When year differs from now, month is always included so the link means the same thing next month. */
+export function viewParams(view: EventsView, now: { year: number; month: number }): URLSearchParams {
+  const { year: nowYear, month: nowMonth } = now;
   const p = new URLSearchParams();
-  if (view.year !== nowYear) p.set("year", String(view.year));
-  if (view.month !== nowMonth) p.set("month", String(view.month));
+  if (view.year !== nowYear) {
+    p.set("year", String(view.year));
+    p.set("month", String(view.month));
+  } else if (view.month !== nowMonth) {
+    p.set("month", String(view.month));
+  }
   if (view.mission) p.set("mission", view.mission);
   if (view.satellite) p.set("satellite", view.satellite);
   if (view.categories.length < CATEGORIES.length) {
@@ -124,30 +130,32 @@ export function viewParams(view: EventsView, now?: { year: number; month: number
   return p;
 }
 
-export function viewHref(view: EventsView): string {
-  const qs = viewParams(view).toString();
+export function viewHref(view: EventsView, now: { year: number; month: number }): string {
+  const qs = viewParams(view, now).toString();
   return qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH;
 }
 
-/** If `view.event` belongs to a different month, switch to that event's first month.
+/** If `view.event` is not in the event's start month, switch to that start month.
  *  An unknown event id is dropped. */
 export function resolveView(view: EventsView, events: EventCard[]): EventsView {
   if (!view.event) return view;
   const ev = events.find((e) => e.id === view.event);
   if (!ev) return { ...view, event: null };
-  const inCurrent = ev.months.some((m) => m.year === view.year && m.month === view.month);
-  if (inCurrent) return view;
-  const first = ev.months[0];
-  return first ? { ...view, year: first.year, month: first.month } : view;
+  const [syStr, smStr] = ev.startDate.split("-");
+  const sy = parseInt(syStr, 10);
+  const sm = parseInt(smStr, 10);
+  if (view.year === sy && view.month === sm) return view;
+  return { ...view, year: sy, month: sm };
 }
 
-/** Filter EventCard[] to those that overlap (year, month) and match the mission/satellite/category/q
- *  filters. */
+/** Filter EventCard[] to those that START in (year, month) and match the mission/satellite/category/q
+ *  filters. Cross-month events are placed in their start month only. */
 export function filterEvents(events: EventCard[], view: EventsView): EventCard[] {
   const q = view.q.trim().toLowerCase();
   const catSet = new Set(view.categories);
   return events.filter((e) => {
-    if (!e.months.some((m) => m.year === view.year && m.month === view.month)) return false;
+    const [syStr, smStr] = e.startDate.split("-");
+    if (parseInt(syStr, 10) !== view.year || parseInt(smStr, 10) !== view.month) return false;
     if (view.mission && e.mission !== view.mission) return false;
     if (view.satellite && e.satellite !== view.satellite) return false;
     if (!catSet.has(e.category)) return false;

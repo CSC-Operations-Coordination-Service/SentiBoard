@@ -115,19 +115,22 @@ both properties are removed. No React state, no re-render on scroll.
 - **Reduced motion:** nothing is applied and nothing animates. No mask, fade or height cap may be
   reintroduced to produce the effect.
 
-## 2026-10-22 — Events page: compact EventCard[] to client, EventDetail on demand
+## 2026-10-22 — Events page: compact EventCard[] to client, EventDetail[] per day on demand
 
 **Context.** The anomaly feed has 3720 records; passing every full EventDetail (with text and
 datatakes) to the client would be ~2–4 MB raw. The calendar needs all events for instant
-client-side filtering; the drawer needs the selected event's full text and datatakes.
+client-side filtering; the drawer shows all events of the selected day, each fully expanded
+(DayManifest layout), so every EventDetail for that day is needed.
 **Decision.** Server converts every record to a compact `EventCard` (no text, no datatakes) and
-passes the full array to the client. The full `EventDetail` for the URL-selected event (`?event=`)
-is passed as a separate `selectedEvent` prop. Selecting a new event calls `router.push` (RSC
-re-render), so the drawer always shows server-rendered detail. Filter / month changes use
-`history.pushState` (instant client-side, no round-trip).
-**Consequences.** Clicking a new event incurs an RSC round-trip (~45 ms warm). The drawer works
-without JavaScript (SSR-rendered via `selectedEvent`). This mirrors the Processors pattern for
-the no-JS fallback list.
+passes the full array to the client as `cards`. The server also returns `dayEvents: EventDetail[]`
+— all events that share a `startDate` with the URL-selected event — sorted by `startTime`, plus
+`selectedEventId: string | null` to identify which one to highlight and scroll into view. Selecting
+a day calls `router.push` with the day's first event id (RSC re-render); the server returns that
+day's full event list. Filter / month changes use `history.pushState` (instant client-side, no
+round-trip).
+**Consequences.** Opening a day incurs an RSC round-trip (~45 ms warm). Days with many events
+(rare) are all returned; the payload is bounded by the number of events per day, which in practice
+is 2–6 records.
 
 ## 2026-10-22 — Events text: parse to TextSegment[], never dangerouslySetInnerHTML
 
@@ -138,6 +141,21 @@ the rest on `\r?\n`, producing `TextSegment[]` (`text | br | code`). The client 
 React elements (`<span>`, `<br/>`, `<pre><code>`) — no dangerouslySetInnerHTML at any point.
 **Consequences.** Markup artefacts like `{code:xml}` are displayed verbatim if the closing tag
 is absent. The parsed shape is stable for the test suite.
+
+## 2026-10-23 — /events drops the no-JS requirement
+
+**Context.** The 2026-10-21 "Server/client split" decision states pages should work without
+JavaScript. For `/processors` this is satisfied by awaiting data at the top level (no Suspense).
+For `/events`, the Explorer streams after `await connection()` inside a `<Suspense>` boundary to
+achieve Partial Prerender (PPR). The streamed content is delivered via `self.__next_f.push(…)`
+scripts; browsers without JS receive only the static shell (PageHeader + EventsDescription) and
+see nothing in the `<template id="B:0">` Suspense placeholder.
+**Decision.** The no-JS requirement is dropped for `/events`. Awaiting data at the top level would
+give up PPR and significantly slow TTFB (~45 ms warm → blocked by network for all visitors, not
+just those with JS disabled). A `<noscript>` message is added to the static shell so users without
+JS see an explanation rather than a blank page.
+**Consequences.** `/events` requires JavaScript. The no-JS fallback claim in the 2026-10-22
+EventCard decision is removed.
 
 ## 2026-10-22 — Frontend tests: Vitest in plain Node, real fixtures, no network
 

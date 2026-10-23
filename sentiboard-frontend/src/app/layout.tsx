@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     // The pre-paint script changes data-theme and class before React hydrates.
-    <html lang="en" data-theme="dark" className={notoSans.variable} suppressHydrationWarning>
+    <html lang="en" data-theme="dark" data-scroll-behavior="smooth" className={notoSans.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT }} />
       </head>

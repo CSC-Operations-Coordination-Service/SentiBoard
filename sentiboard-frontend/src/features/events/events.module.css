@@ -1130,6 +1130,7 @@ select.control {
   top: 0;
   right: 0;
   bottom: 0;
+  overflow: hidden;
   z-index: 9999;
   width: min(46vw, 540px);
   /* dark-stage tokens whatever the page theme; the light block below swaps them */
@@ -1221,7 +1222,26 @@ select.control {
 
 .ziOcc {
   padding: 30px 0 4px;
+  border-top: 1px solid var(--mf-line);
   animation: ziRise 620ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* Remove the browser's built-in disclosure triangle */
+.ziOcc summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+.ziOcc summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Selected occurrence: signal-colour left accent */
+.ziOccSelected {
+  border-top-color: var(--mf-signal);
+  padding-left: 14px;
+  margin-left: -14px;
+  border-left: 2px solid var(--mf-signal);
 }
 
 .ziTop {

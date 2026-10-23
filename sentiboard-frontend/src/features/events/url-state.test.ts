@@ -25,9 +25,10 @@ const allCards = adaptEvents(RECORDS).events.map(toEventCard);
 describe("parseView", () => {
   it("falls back to current UTC year/month for missing params", () => {
     const now = new Date();
-    const v = parseView(params(""));
-    expect(v.year).toBe(now.getUTCFullYear());
-    expect(v.month).toBe(now.getUTCMonth() + 1);
+    const ym = { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
+    const v = parseView(params(""), ym);
+    expect(v.year).toBe(ym.year);
+    expect(v.month).toBe(ym.month);
     expect(v.mission).toBe("");
     expect(v.satellite).toBe("");
     expect(v.categories).toEqual(CATEGORIES);
@@ -36,7 +37,7 @@ describe("parseView", () => {
   });
 
   it("parses explicit year, month, mission, satellite", () => {
-    const v = parseView(params("year=2023&month=4&mission=s1&satellite=S1A"));
+    const v = parseView(params("year=2023&month=4&mission=s1&satellite=S1A"), { year: 2023, month: 1 });
     expect(v.year).toBe(2023);
     expect(v.month).toBe(4);
     expect(v.mission).toBe("s1");
@@ -45,46 +46,48 @@ describe("parseView", () => {
 
   it("ignores invalid year (< 2014)", () => {
     const now = new Date();
-    const v = parseView(params("year=2010&month=6"));
-    expect(v.year).toBe(now.getUTCFullYear());
+    const ym = { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
+    const v = parseView(params("year=2010&month=6"), ym);
+    expect(v.year).toBe(ym.year);
   });
 
   it("ignores invalid month (> 12)", () => {
     const now = new Date();
-    const v = parseView(params("month=13"));
-    expect(v.month).toBe(now.getUTCMonth() + 1);
+    const ym = { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
+    const v = parseView(params("month=13"), ym);
+    expect(v.month).toBe(ym.month);
   });
 
   it("ignores unknown mission value", () => {
-    const v = parseView(params("mission=s9"));
+    const v = parseView(params("mission=s9"), { year: 2023, month: 1 });
     expect(v.mission).toBe("");
   });
 
   it("parses comma-separated category filter", () => {
-    const v = parseView(params("category=Acquisition,Production"));
+    const v = parseView(params("category=Acquisition,Production"), { year: 2023, month: 1 });
     expect(v.categories).toEqual(["Acquisition", "Production"]);
   });
 
   it("falls back to all categories on empty category param", () => {
-    const v = parseView(params("category="));
+    const v = parseView(params("category="), { year: 2023, month: 1 });
     expect(v.categories).toEqual(CATEGORIES);
   });
 
   it("normalises ?showDayEvents=YYYY-MM-DD to year/month", () => {
-    const v = parseView(params("showDayEvents=2022-11-15"));
+    const v = parseView(params("showDayEvents=2022-11-15"), { year: 2023, month: 1 });
     expect(v.year).toBe(2022);
     expect(v.month).toBe(11);
     expect(v.mission).toBe("");
   });
 
   it("ignores ?showDayEvents when year/month are already explicit", () => {
-    const v = parseView(params("year=2023&month=4&showDayEvents=2022-11-15"));
+    const v = parseView(params("year=2023&month=4&showDayEvents=2022-11-15"), { year: 2023, month: 1 });
     expect(v.year).toBe(2023);
     expect(v.month).toBe(4);
   });
 
   it("parses event param", () => {
-    const v = parseView(params("event=EVT-001"));
+    const v = parseView(params("event=EVT-001"), { year: 2023, month: 1 });
     expect(v.event).toBe("EVT-001");
   });
 });
@@ -94,18 +97,19 @@ describe("parseView", () => {
 describe("viewParams / viewHref round-trip", () => {
   it("omits defaults from the serialised params", () => {
     const now = new Date();
+    const ym = { year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 };
     const view: EventsView = {
-      year: now.getUTCFullYear(),
-      month: now.getUTCMonth() + 1,
+      year: ym.year,
+      month: ym.month,
       mission: "",
       satellite: "",
       categories: [...CATEGORIES],
       q: "",
       event: null,
     };
-    const p = viewParams(view);
+    const p = viewParams(view, ym);
     expect(p.toString()).toBe("");
-    expect(viewHref(view)).toBe("/events");
+    expect(viewHref(view, ym)).toBe("/events");
   });
 
   it("includes non-default values", () => {
@@ -118,7 +122,7 @@ describe("viewParams / viewHref round-trip", () => {
       q: "platform",
       event: "EVT-001",
     };
-    const p = viewParams(view);
+    const p = viewParams(view, { year: 2026, month: 10 });
     expect(p.get("year")).toBe("2023");
     expect(p.get("month")).toBe("4");
     expect(p.get("mission")).toBe("s2");
@@ -126,6 +130,22 @@ describe("viewParams / viewHref round-trip", () => {
     expect(p.get("category")).toBe("Acquisition");
     expect(p.get("q")).toBe("platform");
     expect(p.get("event")).toBe("EVT-001");
+  });
+
+  it("always includes month when year differs from now, even if month matches now", () => {
+    // month=10 matches now.month=10, but year=2025 != now.year=2026 → month must be explicit
+    const view: EventsView = {
+      year: 2025,
+      month: 10,
+      mission: "",
+      satellite: "",
+      categories: [...CATEGORIES],
+      q: "",
+      event: null,
+    };
+    const p = viewParams(view, { year: 2026, month: 10 });
+    expect(p.get("year")).toBe("2025");
+    expect(p.get("month")).toBe("10");
   });
 
   it("round-trips a full non-default view", () => {
@@ -138,7 +158,8 @@ describe("viewParams / viewHref round-trip", () => {
       q: "reset",
       event: "EVT-002",
     };
-    const back = parseView(viewParams(view));
+    const now = { year: 2026, month: 10 };
+    const back = parseView(viewParams(view, now), now);
     expect(back.year).toBe(2023);
     expect(back.month).toBe(4);
     expect(back.mission).toBe("s1");
@@ -171,19 +192,20 @@ describe("resolveView", () => {
     expect(resolved.event).toBe("EVT-001");
   });
 
-  it("switches to the event's first month when current month does not contain it", () => {
-    // EVT-001 is in April 2023; viewing December 2023 → should switch to April 2023
+  it("switches to the event's start month when the current month is not the start month", () => {
+    // EVT-001 starts 2023-04-10; viewing December 2023 → should switch to April 2023
     const v: EventsView = { year: 2023, month: 12, mission: "", satellite: "", categories: [...CATEGORIES], q: "", event: "EVT-001" };
     const resolved = resolveView(v, allCards);
     expect(resolved.year).toBe(2023);
     expect(resolved.month).toBe(4);
   });
 
-  it("handles a cross-month event (EVT-003 spans Apr–May)", () => {
-    // Viewing May 2023 while EVT-003 starts in April → event is still valid in May
+  it("switches to the event's start month for a cross-month event viewed in a later month", () => {
+    // EVT-003 starts 2023-04-27, ends 2023-05-03; viewing May 2023 → should switch to April 2023
     const v: EventsView = { year: 2023, month: 5, mission: "", satellite: "", categories: [...CATEGORIES], q: "", event: "EVT-003" };
     const resolved = resolveView(v, allCards);
-    expect(resolved.month).toBe(5);
+    expect(resolved.year).toBe(2023);
+    expect(resolved.month).toBe(4);
     expect(resolved.event).toBe("EVT-003");
   });
 });
@@ -193,21 +215,19 @@ describe("resolveView", () => {
 describe("filterEvents", () => {
   const baseView: EventsView = { year: 2023, month: 4, mission: "", satellite: "", categories: [...CATEGORIES], q: "", event: null };
 
-  it("returns only events overlapping the selected month", () => {
+  it("returns only events whose startDate is in the selected month", () => {
     const filtered = filterEvents(allCards, baseView);
-    expect(filtered.every((e) => e.months.some((m) => m.year === 2023 && m.month === 4))).toBe(true);
+    expect(filtered.every((e) => e.startDate.startsWith("2023-04"))).toBe(true);
   });
 
-  it("returns events from two months when a cross-month event is in both", () => {
-    // EVT-003 spans Apr–May; it should appear in both months
+  it("places a cross-month event only in its start month, not in later months it spans", () => {
+    // EVT-003 starts 2023-04-27, ends 2023-05-03 — appears in April only
     const aprilView = { ...baseView, year: 2023, month: 4 };
     const mayView = { ...baseView, year: 2023, month: 5 };
     const inApril = filterEvents(allCards, aprilView);
     const inMay = filterEvents(allCards, mayView);
-    const e3InApril = inApril.find((e) => e.id === "EVT-003");
-    const e3InMay = inMay.find((e) => e.id === "EVT-003");
-    expect(e3InApril).toBeTruthy();
-    expect(e3InMay).toBeTruthy();
+    expect(inApril.find((e) => e.id === "EVT-003")).toBeTruthy();
+    expect(inMay.find((e) => e.id === "EVT-003")).toBeUndefined();
   });
 
   it("filters by mission", () => {
@@ -237,6 +257,31 @@ describe("filterEvents", () => {
   it("returns empty when q matches nothing", () => {
     const v = { ...baseView, q: "zzz_no_match_zzz" };
     expect(filterEvents(allCards, v)).toHaveLength(0);
+  });
+});
+
+/* ---- dayEvents pipeline ---- */
+
+describe("dayEvents pipeline: filterEvents + startDate join", () => {
+  it("excludes same-day events that do not pass the active category filter", () => {
+    // EVT-001 (Acquisition, 2023-04-10, S1A) and EVT-002 (Production, 2023-04-10, S2B)
+    // share startDate. With categories=["Acquisition"], EVT-002 must be absent.
+    const allDetails = adaptEvents(RECORDS).events;
+    const allCards = allDetails.map(toEventCard);
+    const view: EventsView = {
+      year: 2023, month: 4,
+      mission: "", satellite: "",
+      categories: ["Acquisition" as const],
+      q: "", event: "EVT-001",
+    };
+    const monthCards = filterEvents(allCards, view);
+    const selectedCard = monthCards.find((c) => c.id === "EVT-001");
+    expect(selectedCard).toBeTruthy();
+    const dayIds = new Set(
+      monthCards.filter((c) => c.startDate === selectedCard!.startDate).map((c) => c.id),
+    );
+    expect(dayIds.has("EVT-001")).toBe(true);   // Acquisition → passes
+    expect(dayIds.has("EVT-002")).toBe(false);  // Production → filtered out
   });
 });
 

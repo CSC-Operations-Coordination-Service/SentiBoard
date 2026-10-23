@@ -18,9 +18,7 @@ import {
   useState,
   useTransition,
   type CSSProperties,
-  type TransitionEvent,
 } from "react";
-import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronLeft,
@@ -207,54 +205,101 @@ function DatatakeRow({ dt }: { dt: EventDetail["datatakes"][number] }) {
   );
 }
 
-function EventDrawerContent({ event }: { event: EventDetail }) {
-  const Icon = CATEGORY_ICONS[event.category];
-  const color = CATEGORY_COLOR[event.category];
+/** All events of the selected day, each in a collapsible section.
+ *  The event matching selectedId starts open and scrolls into view. */
+function DayManifest({
+  dayEvents,
+  selectedId,
+  sign,
+}: {
+  dayEvents: EventDetail[];
+  selectedId: string | null;
+  sign: string;
+}) {
+  const selectedRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    selectedRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedId]);
+
+  if (dayEvents.length === 0) return null;
+
+  const totalDatatakes = dayEvents.reduce((n, e) => n + e.datatakes.length, 0);
+  const unavailable = dayEvents.reduce(
+    (n, e) => n + e.datatakes.filter((dt) => dt.noData).length,
+    0,
+  );
+
   return (
-    <div className={s.drawerBody} key={event.id}>
+    <div className={s.drawerBody}>
       <header className={s.ziHead}>
-        <span className={s.detailEyebrow}>Selected event</span>
-        <h2 className={s.ziDate}>{dayHeading(event.startDate)}</h2>
+        <span className={s.detailEyebrow}>{sign}</span>
+        <h2 className={s.ziDate}>{dayHeading(dayEvents[0].startDate)}</h2>
         <span className={s.ziSum}>
-          <Icon size={13} strokeWidth={CATEGORY_STROKE} color={color} aria-hidden />
-          {" "}{event.category} · {event.satellite}
+          {dayEvents.length} occurrence{dayEvents.length === 1 ? "" : "s"}{" "}
+          · {totalDatatakes} datatake{totalDatatakes === 1 ? "" : "s"}{" "}
+          · {unavailable} unavailable
         </span>
       </header>
 
-      <section style={{ marginTop: 24, paddingBottom: 4 }}>
-        <div className={s.ziDtkHead} style={{ marginTop: 0 }}>{event.title}</div>
-      </section>
+      {dayEvents.map((event, i) => {
+        const isSelected = event.id === selectedId;
+        const Icon = CATEGORY_ICONS[event.category];
+        const color = CATEGORY_COLOR[event.category];
+        const unavailableCount = event.datatakes.filter((dt) => dt.noData).length;
+        return (
+          <details
+            key={event.id}
+            className={`${s.ziOcc} ${isSelected ? s.ziOccSelected : ""}`}
+            style={{ animationDelay: `${280 + i * 130}ms` }}
+            open={isSelected}
+            ref={isSelected ? selectedRef : undefined}
+          >
+            <summary className={s.ziTop}>
+              <span className={s.ziTime}>{event.startTime}</span>
+              <span>
+                <span className={s.ziTitle}>{event.title}</span>
+                <span className={s.ziSub}>
+                  <Icon size={13} strokeWidth={CATEGORY_STROKE} color={color} aria-hidden />
+                  {event.category} · {event.satellite}
+                </span>
+              </span>
+              <span className={s.ziDot} style={{ background: color }} />
+            </summary>
 
-      {event.impactedItem && (
-        <div style={{ marginTop: 16, paddingBottom: 14, borderBottom: "1px solid var(--mf-line)" }}>
-          <span style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mf-faint)" }}>Impacted item</span>
-          <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500 }}>{event.impactedItem}</div>
-        </div>
-      )}
+            {event.impactedItem && (
+              <div style={{ marginTop: 14, paddingBottom: 12, borderBottom: "1px solid var(--mf-line)" }}>
+                <span style={{ fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--mf-faint)" }}>Impacted item</span>
+                <div style={{ marginTop: 4, fontSize: 13, fontWeight: 500 }}>{event.impactedItem}</div>
+              </div>
+            )}
 
-      {event.newsLink && (
-        <div style={{ marginTop: 16, paddingBottom: 14, borderBottom: "1px solid var(--mf-line)" }}>
-          <a href={event.newsLink} target="_blank" rel="noopener noreferrer" className={s.dtkLink}>
-            {event.newsTitle ?? "News article"} ↗
-          </a>
-        </div>
-      )}
+            {event.newsLink && (
+              <div style={{ marginTop: 12, paddingBottom: 12, borderBottom: "1px solid var(--mf-line)" }}>
+                <a href={event.newsLink} target="_blank" rel="noopener noreferrer" className={s.dtkLink}>
+                  {event.newsTitle ?? "News article"} ↗
+                </a>
+              </div>
+            )}
 
-      {event.textSegments.length > 0 && (
-        <section style={{ marginTop: 20 }}>
-          <div className={s.ziDtkHead}>Description</div>
-          <p style={{ fontSize: 13, lineHeight: 1.65, color: "var(--mf-muted)", marginTop: 8 }}>
-            {renderSegments(event.textSegments)}
-          </p>
-        </section>
-      )}
+            {event.textSegments.length > 0 && (
+              <p style={{ fontSize: 13, lineHeight: 1.65, color: "var(--mf-muted)", marginTop: 10 }}>
+                {renderSegments(event.textSegments)}
+              </p>
+            )}
 
-      {event.datatakes.length > 0 && (
-        <section style={{ marginTop: 20 }}>
-          <div className={s.ziDtkHead}>Datatakes completeness · {event.datatakes.length}</div>
-          {event.datatakes.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
-        </section>
-      )}
+            {event.datatakes.length > 0 && (
+              <section style={{ marginTop: 4 }}>
+                <div className={s.ziDtkHead}>
+                  Impacted datatakes · {event.datatakes.length}
+                  {unavailableCount > 0 ? ` · ${unavailableCount} unavailable` : ""}
+                </div>
+                {event.datatakes.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
+              </section>
+            )}
+          </details>
+        );
+      })}
     </div>
   );
 }
@@ -277,12 +322,14 @@ export type ExplorerData =
       ok: true;
       /** ALL events (compact) for client-side filtering and month navigation. */
       cards: EventCard[];
-      /** Full detail for the URL-selected event, rendered server-side. */
-      selectedEvent: EventDetail | null;
+      /** Full details for every event on the selected day (empty when no event is in the URL). */
+      dayEvents: EventDetail[];
+      /** The URL-selected event id, highlighted and scrolled into view in the drawer. */
+      selectedEventId: string | null;
       /** Current UTC year/month computed dynamically on the server (not from cache). */
       now: { year: number; month: number };
     }
-  | { ok: false; unreachable: boolean; message: string };
+  | { ok: false; unreachable: boolean; message: string; now: { year: number; month: number } };
 
 /* ---- main component ---- */
 
@@ -292,12 +339,14 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const [isPending, startTransition] = useTransition();
 
   const [view, setView] = useState<EventsView>(() =>
-    resolveView(parseView(searchParams, data.ok ? data.now : undefined), data.ok ? data.cards : []),
+    resolveView(parseView(searchParams, data.now), data.ok ? data.cards : []),
   );
 
   // Drawer state
-  const [openDay, setOpenDay] = useState<number | null>(null);
-  const [panelDay, setPanelDay] = useState<{ day: number; cards: EventCard[] } | null>(null);
+  const [openDay, setOpenDay] = useState<number | null>(() => {
+    if (!data.ok || data.dayEvents.length === 0) return null;
+    return new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate();
+  });
   const [zoom, setZoom] = useState<ZoomGeom | null>(null);
   const [zoomOn, setZoomOn] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -309,12 +358,12 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const navigate = useCallback(
     (next: EventsView, mode: "push" | "replace" = "push") => {
       setView(next);
-      const qs = viewParams(next).toString();
+      const qs = viewParams(next, data.now).toString();
       const href = qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH;
       if (mode === "push") history.pushState(null, "", href);
       else history.replaceState(null, "", href);
     },
-    [],
+    [data],
   );
 
   // Event selection → router.push so the server renders the EventDetail
@@ -323,10 +372,10 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       const next = { ...view, event: id };
       setView(next);
       startTransition(() => {
-        router.push(viewHref(next), { scroll: false });
+        router.push(viewHref(next, data.now), { scroll: false });
       });
     },
-    [view, router],
+    [view, router, data],
   );
 
   const cards = useMemo(() => (data.ok ? data.cards : []), [data]);
@@ -378,11 +427,47 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       if (openDay === null) setZoomOn(false);
       setZoom(geom);
       setOpenDay(day);
-      setPanelDay({ day, cards: events });
       if (events[0]) selectEventId(events[0].id);
     },
     [byDay, openDay, selectEventId],
   );
+
+  // Sync view and drawer when the URL changes through external navigation (Link clicks,
+  // browser back/forward). history.pushState from navigate() does not update useSearchParams()
+  // in the Next.js App Router, so this effect does not fire for our own filter/month changes.
+  const hasMounted = useRef(false);
+  useEffect(() => {
+    if (!hasMounted.current) { hasMounted.current = true; return; }
+    const newView = resolveView(
+      parseView(searchParams, data.now),
+      data.ok ? data.cards : [],
+    );
+    // Syncing state from an external system (Next.js router URL) is the intended use for
+    // effects with setState; disable the set-state-in-effect rule for this block.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setView(newView);
+    if (!newView.event) {
+      setOpenDay(null);
+      setZoomOn(false);
+    } else if (data.ok && data.dayEvents.length > 0) {
+      const day = new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate();
+      setOpenDay(day);
+      const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
+      setZoom(null);
+      if (geom) setZoom(geom);
+    }
+    /* eslint-enable react-hooks/set-state-in-effect */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // For deep-linked events, openDay is set from SSR but zoom needs DOM measurements.
+  // This one-time effect initialises zoom on mount when openDay is already set.
+  useEffect(() => {
+    if (openDay === null || zoom !== null) return;
+    const geom = gridRef.current ? measureZoom(gridRef.current, openDay) : null;
+    if (geom) setZoom(geom);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // intentionally empty: runs once on mount only
 
   // Fly in after mount
   useEffect(() => {
@@ -399,13 +484,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [openDay]);
-
-  const onPanelTransitionEnd = useCallback(
-    (e: TransitionEvent<HTMLElement>) => {
-      if (e.target === e.currentTarget && openDay === null) setPanelDay(null);
-    },
-    [openDay],
-  );
 
   // Escape closes drawer
   useEffect(() => {
@@ -792,61 +870,62 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         </div>
       </div>
 
-      {/* Portal: zoom stage + drawer.
-          Gated on panelDay (null on both server and client until the user opens a day), so the
-          server and the first client render agree — no hydration mismatch. The close CSS
-          transition completes before panelDay is cleared (via onPanelTransitionEnd). */}
-      {panelDay !== null &&
-        createPortal(
-          <>
-            {zoom && (
-              <div
-                className={`${s.page} ${s.stage} ${zoomOn ? s.stageOn : ""}`}
-                onClick={close}
-              >
-                <button type="button" className={s.stageBack} onClick={close}>
-                  <ChevronLeft size={15} aria-hidden /> Back to the month
-                </button>
-                <div
-                  className={`${s.grid} ${s.stageGrid}`}
-                  style={{
-                    left: zoom.left,
-                    top: zoom.top,
-                    width: zoom.width,
-                    transform: zoomOn
-                      ? `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`
-                      : "none",
-                    "--k": zoom.scale,
-                  } as CSSProperties}
-                  onClick={(e) => e.stopPropagation()}
-                  onTransitionEnd={(e) => {
-                    if (e.target === e.currentTarget && e.propertyName === "transform" && !zoomOn) setZoom(null);
-                  }}
-                >
-                  {renderCells(true)}
-                </div>
-              </div>
-            )}
+      {/* Zoom stage: position:fixed overlay, only while a day is zoomed. */}
+      {zoom && (
+        <div
+          className={`${s.page} ${s.stage} ${zoomOn ? s.stageOn : ""}`}
+          onClick={close}
+        >
+          <button type="button" className={s.stageBack} onClick={close}>
+            <ChevronLeft size={15} aria-hidden /> Back to the month
+          </button>
+          <div
+            className={`${s.grid} ${s.stageGrid}`}
+            style={{
+              left: zoom.left,
+              top: zoom.top,
+              width: zoom.width,
+              transform: zoomOn
+                ? `translate(${zoom.tx}px, ${zoom.ty}px) scale(${zoom.scale})`
+                : "none",
+              "--k": zoom.scale,
+            } as CSSProperties}
+            onClick={(e) => e.stopPropagation()}
+            onTransitionEnd={(e) => {
+              if (e.target === e.currentTarget && e.propertyName === "transform" && !zoomOn) setZoom(null);
+            }}
+          >
+            {renderCells(true)}
+          </div>
+        </div>
+      )}
 
-            <aside
-              className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
-              aria-label="Event detail"
-              aria-hidden={openDay === null}
-              onTransitionEnd={onPanelTransitionEnd}
-            >
-              {data.selectedEvent ? (
-                <EventDrawerContent event={data.selectedEvent} />
-              ) : (
-                <div className={s.drawerBody}>
-                  <header className={s.ziHead}>
-                    <span className={s.detailEyebrow}>Loading…</span>
-                  </header>
-                </div>
-              )}
-            </aside>
-          </>,
-          document.body,
-        )}
+      {/* Drawer: always in the DOM so both open and close CSS transitions run.
+          aria-hidden + inert prevent focus/read when closed. */}
+      <aside
+        className={`${s.drawer} ${openDay !== null ? s.drawerOn : ""}`}
+        aria-label="Event detail"
+        aria-hidden={openDay === null}
+        inert={openDay === null}
+      >
+        {(() => {
+          if (!data.ok) return null;
+          const drawerMatchesDay =
+            data.dayEvents.length > 0 &&
+            new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate() === openDay;
+          if (drawerMatchesDay)
+            return <DayManifest dayEvents={data.dayEvents} selectedId={data.selectedEventId} sign={sign} />;
+          if (openDay !== null)
+            return (
+              <div className={s.drawerBody}>
+                <header className={s.ziHead}>
+                  <span className={s.detailEyebrow}>Loading…</span>
+                </header>
+              </div>
+            );
+          return null;
+        })()}
+      </aside>
     </div>
   );
 }
