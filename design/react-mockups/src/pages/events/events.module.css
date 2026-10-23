@@ -981,6 +981,8 @@ select.control {
 .calRow {
   position: relative;
   width: min(100%, max(560px, calc((100vh - 203px) * 1580 / 1148)));
+  /* Mirror the width formula so the zodiac can compute the left space without JS. */
+  --cal-w: min(100vw, max(560px, calc((100vh - 203px) * 1580 / 1148)));
   margin: 0 auto;
   padding-bottom: clamp(20px, 2.6vw, 38px);
 }
@@ -1005,12 +1007,18 @@ select.control {
   margin: 0 auto 8px;
 }
 
-@media (min-width: 1400px) {
+/* ≥1280px: side zodiac — centred in the free space between the window left and the calendar.
+   --ls = left space, --zw = zodiac width (72% of that space, 120–380px).
+   right positions the zodiac so its centre lands at ls/2 from the viewport left.
+   Derivation: zodiac_left(viewport) = (ls − zw)/2; right = cal-w + (ls − zw)/2. */
+@media (min-width: 1280px) {
   .zodiac {
+    --ls: calc((100vw - var(--cal-w)) / 2);
+    --zw: clamp(120px, calc(0.72 * var(--ls)), 380px);
     position: absolute;
     top: 50%;
-    right: calc(100% + clamp(8px, 2vw, 32px));
-    width: clamp(220px, 18vw, 300px);
+    width: var(--zw);
+    right: calc(var(--cal-w) + (var(--ls) - var(--zw)) / 2);
     margin: 0;
     transform: translateY(-50%);
   }
