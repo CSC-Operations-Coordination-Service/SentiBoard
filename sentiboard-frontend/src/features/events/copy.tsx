@@ -1,48 +1,33 @@
 /* Page copy, SEO metadata and the collapsible description panel for the Events & Anomalies page.
    SEO metadata ported from the legacy app (apps/routes/home/routes.py PAGE_METADATA on main). */
 
-import {
-  Cog,
-  Compass,
-  Joystick,
-  Satellite,
-  SatelliteDish,
-} from "lucide-react";
+import type { EventCategory } from "./model";
+import { CategoryIcon, CATEGORY_COLOR } from "./event-types";
 
 /** Collapsible description panel content, ported from the prototype's EventsManifest. */
 export function EventsDescription() {
-  const items = [
+  const items: { key: EventCategory; text: string }[] = [
     {
       key: "Acquisition",
-      Icon: SatelliteDish,
-      color: "#aeb8c4",
       text: "issue occurring during the reception of the data at the ground station",
     },
     {
       key: "Calibration",
-      Icon: Compass,
-      color: "#b0dfe5",
       text: "issue occurred during sensor calibration",
     },
     {
       key: "Manoeuvre",
-      Icon: Joystick,
-      color: "#ffad00",
       text: "issue occurred during the execution of a manoeuvre",
     },
     {
       key: "Production",
-      Icon: Cog,
-      color: "#c77dff",
       text: "issue occurred during data processing",
     },
     {
       key: "Satellite",
-      Icon: Satellite,
-      color: "#ee8216",
       text: "issue due to instrument or platform unavailability",
     },
-  ] as const;
+  ];
 
   return (
     <>
@@ -52,40 +37,42 @@ export function EventsDescription() {
         to the following issue types:
       </p>
       <ul style={{ listStyle: "none", padding: 0, margin: "0.5rem 0" }}>
-        {items.map(({ key, Icon, color, text }) => (
-          <li
-            key={key}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "10px",
-              margin: "0.35rem 0",
-            }}
-          >
-            <span
+        {items.map(({ key, text }) => {
+          const color = CATEGORY_COLOR[key];
+          return (
+            <li
+              key={key}
               style={{
-                color,
                 display: "flex",
-                alignItems: "center",
-                height: "1.6em",
-                flexShrink: 0,
+                alignItems: "flex-start",
+                gap: "10px",
+                margin: "0.35rem 0",
               }}
             >
-              <Icon aria-hidden size={14} strokeWidth={1.9} />
-            </span>
-            <span>
-              <strong style={{ color }}>{key}:</strong> {text}
-            </span>
-          </li>
-        ))}
+              <span
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  height: "1.6em",
+                  flexShrink: 0,
+                }}
+              >
+                <CategoryIcon category={key} color={color} size={14} />
+              </span>
+              <span>
+                <strong style={{ color }}>{key}:</strong> {text}
+              </span>
+            </li>
+          );
+        })}
       </ul>
       <p>
         Clicking a star flies into that day and lists the datatakes it
         potentially impacted, determined by their sensing times, along with
         further details about the event. The impact on datatake completeness is
-        given by the coloured dot beside each datatake: green when the total
-        completeness is spared, orange in case of medium impact, red when the
-        datatake is lost.
+        given by the coloured dot beside each datatake: green when acquired
+        (≥&nbsp;90% complete), orange when partial (10–90%), red when lost
+        (&lt;&nbsp;10%), or grey when no completeness data is available.
       </p>
     </>
   );
