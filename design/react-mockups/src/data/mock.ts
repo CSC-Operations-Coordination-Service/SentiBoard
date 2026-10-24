@@ -206,6 +206,8 @@ export interface AcqDatatake {
   absOrbit: string;                    // absolute orbit
   startIso: string;                    // sensing start — explicit, since the id no longer carries it
   sensingS: number;                    // sensing duration, seconds
+  swathKm: number;                     // swath width in km
+  periodMin: number;                   // orbital period in minutes
   levels: AcqLevel[];
   prods: AcqProduct[];                 // legacy summary list, still used by the /acquisitions rail
   kmlLink?: { url: string; filename: string };  // ESA KML link for S1/S2; undefined for S3/S5
@@ -313,7 +315,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S2 — MSI only. The backend collapses L1A/L1B/L1C into a single L1.
     id: "S2A-48201-1", startIso: hoursAgo(1.4), sat: "Sentinel-2A", unit: "S2A", station: "Svalbard", lat: 48.2, lon: 11.6,
     footprint: swath(48.2, 11.6, 10, 2.6, -12), status: "Published",
-    mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205,
+    mode: "MSI \u00b7 NOBS", absOrbit: "048201", sensingS: 205, swathKm: 290, periodMin: 100.6,
     levels: [
       { level: "L0", products: [{ type: "MSI_L0__GR", pct: 100, instrument: "MSI" }] },
       {
@@ -333,9 +335,9 @@ const ACQ_SPECS: AcqSpec[] = [
   },
   {
     // S1 — SAR only. Level lives in the digit inside the type name, no "L" token.
-    id: "S1C-57622", startIso: hoursAgo(2.6), sat: "Sentinel-1C", unit: "S1C", station: "Matera", lat: 12.4, lon: 42.1,
-    footprint: swath(12.4, 42.1, 13, 2.3, -11), status: "Processing",
-    mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205,
+    id: "S1C-57622", startIso: hoursAgo(2.6), sat: "Sentinel-1C", unit: "S1C", station: "Matera", lat: 44.1, lon: 8.9,
+    footprint: swath(44.1, 8.9, 13, 2.3, -11), status: "Processing",
+    mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205, swathKm: 250, periodMin: 98.6,
     levels: [
       {
         level: "L0", products: [
@@ -369,9 +371,9 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S3 — four science instruments, so by far the widest product-type set. This is
     // the datatake that exercises the per-plate cap.
-    id: "S3B-080-345", startIso: hoursAgo(4.1), sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: -22.9, lon: -45.2,
-    footprint: swath(-22.9, -45.2, 20, 11.4, -13), status: "Processing",
-    mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180,
+    id: "S3B-080-345", startIso: hoursAgo(4.1), sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: 30.4, lon: -13.2,
+    footprint: swath(30.4, -13.2, 20, 11.4, -13), status: "Processing",
+    mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180, swathKm: 1270, periodMin: 100.99,
     levels: [
       {
         level: "L0", products: [
@@ -414,9 +416,9 @@ const ACQ_SPECS: AcqSpec[] = [
     prods: [{ lvl: "L0", sub: "OLCI raw", st: "Published" }, { lvl: "L1", sub: "OLCI EFR", st: "Processing" }],
   },
   {
-    id: "S2B-42050-1", startIso: hoursAgo(4.9), sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 64.1, lon: -110.3,
-    footprint: swath(64.1, -110.3, 10, 2.6, -14), status: "Published",
-    mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188,
+    id: "S2B-42050-1", startIso: hoursAgo(4.9), sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 63.1, lon: -126.4,
+    footprint: swath(63.1, -126.4, 10, 2.6, -14), status: "Published",
+    mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188, swathKm: 290, periodMin: 100.6,
     levels: [
       { level: "L0", products: [{ type: "MSI_L0__GR", pct: 99.4, instrument: "MSI" }] },
       {
@@ -437,9 +439,9 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S5P — TROPOMI. Its L1 token is "L1B", not "L1", and it carries one radiance
     // product per spectral band, so it also runs past the cap.
-    id: "S5P-60012", startIso: hoursAgo(6.2), sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 34.7, lon: 104.2,
-    footprint: swath(34.7, 104.2, 24, 23, -12), status: "Published",
-    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940,
+    id: "S5P-60012", startIso: hoursAgo(6.2), sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 51.4, lon: 19.8,
+    footprint: swath(51.4, 19.8, 24, 23, -12), status: "Published",
+    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940, swathKm: 2600, periodMin: 101.3,
     levels: [
       {
         level: "L1", products: [
@@ -471,9 +473,9 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     // S3 SLSTR-only pass that failed, plus an unrecognised type — the backend's
     // "UNKNOWN" product_level bucket, which the plates have to render.
-    id: "S3A-055-358", startIso: hoursAgo(14.1), sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: -35.6, lon: 138.9,
-    footprint: swath(-35.6, 138.9, 20, 11.4, 13), status: "Failed",
-    mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620,
+    id: "S3A-055-358", startIso: hoursAgo(14.1), sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: 71.6, lon: 24.3,
+    footprint: swath(71.6, 24.3, 20, 11.4, 13), status: "Failed",
+    mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620, swathKm: 1400, periodMin: 100.99,
     levels: [
       { level: "L0", products: [{ type: "SL_0_SLT", pct: 0, instrument: "SLSTR" }] },
       { level: "L1", products: [{ type: "SL_1_RBT", pct: 0, instrument: "SLSTR" }] },
@@ -486,7 +488,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S1 — a second, fully published SAR pass over the North Atlantic.
     id: "S1A-60418", startIso: hoursAgo(8.3), sat: "Sentinel-1A", unit: "S1A", station: "Svalbard", lat: 61.8, lon: -24.5,
     footprint: swath(61.8, -24.5, 13, 2.3, -10), status: "Published",
-    mode: "EW \u00b7 DH", absOrbit: "060418", sensingS: 240,
+    mode: "EW \u00b7 DH", absOrbit: "060418", sensingS: 240, swathKm: 400, periodMin: 98.6,
     levels: [
       {
         level: "L0", products: [
@@ -519,7 +521,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S2 — partial: L2A still publishing over the Sahel.
     id: "S2C-10187-1", startIso: hoursAgo(10.2), sat: "Sentinel-2C", unit: "S2C", station: "Maspalomas", lat: 14.6, lon: 2.1,
     footprint: swath(14.6, 2.1, 10, 2.6, -12), status: "Processing",
-    mode: "MSI \u00b7 NOBS", absOrbit: "010187", sensingS: 232,
+    mode: "MSI \u00b7 NOBS", absOrbit: "010187", sensingS: 232, swathKm: 290, periodMin: 100.6,
     levels: [
       { level: "L0", products: [{ type: "MSI_L0__GR", pct: 100, instrument: "MSI" }] },
       {
@@ -541,7 +543,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S3 — an OLCI daytime pass over the Indian Ocean, fully published.
     id: "S3A-112-207", startIso: hoursAgo(16.5), sat: "Sentinel-3A", unit: "S3A", station: "Matera", lat: -8.4, lon: 72.6,
     footprint: swath(-8.4, 72.6, 20, 11.4, -13), status: "Published",
-    mode: "OLCI \u00b7 EFR", absOrbit: "021540", sensingS: 1040,
+    mode: "OLCI \u00b7 EFR", absOrbit: "021540", sensingS: 1040, swathKm: 1270, periodMin: 100.99,
     levels: [
       {
         level: "L0", products: [
@@ -570,7 +572,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S5P — the orbit before S5P-60012, over the Americas.
     id: "S5P-60011", startIso: hoursAgo(18.2), sat: "Sentinel-5P", unit: "S5P", station: "Inuvik", lat: 18.9, lon: -88.4,
     footprint: swath(18.9, -88.4, 24, 23, -12), status: "Published",
-    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060011", sensingS: 2940,
+    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060011", sensingS: 2940, swathKm: 2600, periodMin: 101.3,
     levels: [
       {
         level: "L1", products: [
@@ -595,7 +597,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S1 — IW over Japan; L1 lagging after a late downlink.
     id: "S1C-57611", startIso: hoursAgo(20.7), sat: "Sentinel-1C", unit: "S1C", station: "Neustrelitz", lat: 36.9, lon: 139.4,
     footprint: swath(36.9, 139.4, 13, 2.3, 11), status: "Processing",
-    mode: "IW \u00b7 DV", absOrbit: "057611", sensingS: 175,
+    mode: "IW \u00b7 DV", absOrbit: "057611", sensingS: 175, swathKm: 250, periodMin: 98.6,
     levels: [
       {
         level: "L0", products: [

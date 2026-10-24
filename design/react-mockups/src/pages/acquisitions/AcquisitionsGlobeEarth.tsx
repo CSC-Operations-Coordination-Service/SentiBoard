@@ -17,6 +17,13 @@ import {
 } from "@/components/ambient-motion";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 import g from "./acq-globe.module.css";
+import {
+  prepDatatake,
+  subPoint,
+  buildFootprint,
+  type GeoPoint,
+  type PreparedDatatake,
+} from "./acqGeometry";
 
 function Chevron() {
   return (
@@ -33,81 +40,6 @@ const DESCRIPTION = (
     <p>{ACQUISITIONS_DESCRIPTION}</p>
   </>
 );
-
-const SAMPLE_SWATHS = [
-  {
-    id: "S2A-48201-1",
-    color: 0x10b981,
-    opacity: 0.35,
-    coords: [
-      [2, 60],
-      [35, 56],
-      [28, 38],
-      [-2, 42],
-    ],
-  },
-  {
-    id: "S1C-57622",
-    color: 0xef4444,
-    opacity: 0.35,
-    coords: [
-      [14, 80],
-      [28, 76],
-      [22, 69],
-      [8, 72],
-    ],
-  },
-  {
-    id: "S3B-080-345",
-    color: 0x06b6d4,
-    opacity: 0.35,
-    coords: [
-      [-135, 72],
-      [-110, 68],
-      [-120, 60],
-      [-142, 64],
-    ],
-  },
-  {
-    id: "S2B-42050-1",
-    color: 0x38bdf8,
-    opacity: 0.35,
-    coords: [
-      [-105, 50],
-      [-80, 48],
-      [-85, 30],
-      [-110, 32],
-    ],
-  },
-  {
-    id: "S5P-60012",
-    color: 0xd97706,
-    opacity: 0.35,
-    coords: [
-      [-20, 32],
-      [-7, 30],
-      [-12, 16],
-      [-24, 18],
-    ],
-  },
-  {
-    id: "S3A-055-358",
-    color: 0xf59e0b,
-    opacity: 0.35,
-    coords: [
-      [8, 46],
-      [18, 44],
-      [13, 38],
-      [5, 40],
-    ],
-  },
-];
-
-const SAMPLE_SATELLITES = [
-  { name: "S1C", inc: 98.18, omega: 15, speed: 0.0018, color: 0x3dd68c },
-  { name: "S2A", inc: 98.62, omega: 65, speed: 0.0015, color: 0x38bdf8 },
-  { name: "S3B", inc: 98.65, omega: 140, speed: 0.002, color: 0xf59e0b },
-];
 
 const SPEED_OPTIONS = [1, 10, 60, 100, 300, 1000];
 
@@ -191,9 +123,9 @@ const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
 /* ---------- datatake status colours (the Datatake list's dots) ---------- */
 const STATUS_HEX: Record<string, number> = {
-  ok: 0x3dd68c,
+  ok: 0x34d399,
   warn: 0xf5b544,
-  crit: 0xef4444,
+  crit: 0xff5c5c,
 };
 const statusHexOf = (id: string, fallback: number) => {
   const cls = ACQ_DATATAKES.find((d) => d.id === id)?.cls;
@@ -205,155 +137,23 @@ const statusHexOf = (id: string, fallback: number) => {
  * / cls / startIso, so the rest comes from the reference's sample set, keyed by ID. A datatake that
  * is not in this table still opens: its unknown fields read "NA". */
 interface DtkDetail {
-  /** sensing length, seconds */
-  dur: number;
-  mode: string;
-  swath: string;
-  pol: string;
-  orbit: number;
   rel: number;
-  /** completeness of every expected product type, % — the "missing" time is summed over these */
-  types: number[];
-  /** completeness shown as the headline figure, % */
-  pct: number;
-  station: string;
   /** downlink pass — `after`: seconds from sensing start to the downlink — or null when there was none */
   pass: { after: number; mb: number; s: number } | null;
 }
 
 const DTK_DETAILS: Record<string, DtkDetail> = {
-  "S2A-48201-1": {
-    dur: 205,
-    mode: "NOBS",
-    swath: "NA",
-    pol: "NA",
-    orbit: 48201,
-    rel: 22,
-    types: [100, 100, 100, 100, 100],
-    pct: 100.0,
-    station: "Svalbard",
-    pass: { after: 1213, mb: 18400, s: 41 },
-  },
-  "S1C-57622": {
-    dur: 130,
-    mode: "IW",
-    swath: "NA",
-    pol: "DV",
-    orbit: 57622,
-    rel: 33,
-    types: [100, 86.2, 72.6, 58.4],
-    pct: 79.3,
-    station: "Matera",
-    pass: { after: 927, mb: 11250, s: 29 },
-  },
-  "S3B-080-345": {
-    dur: 183,
-    mode: "EO",
-    swath: "NA",
-    pol: "NA",
-    orbit: 40812,
-    rel: 80,
-    types: [100, 96.0, 94.0, 88.0, 84.5],
-    pct: 92.5,
-    station: "Maspalomas",
-    pass: { after: 860, mb: 9600, s: 36 },
-  },
-  "S2B-42050-1": {
-    dur: 252,
-    mode: "NOBS",
-    swath: "NA",
-    pol: "NA",
-    orbit: 42050,
-    rel: 109,
-    types: [100, 100, 100, 99.5, 100],
-    pct: 99.9,
-    station: "Inuvik",
-    pass: { after: 1102, mb: 22600, s: 50 },
-  },
-  "S5P-60012": {
-    dur: 400,
-    mode: "NOM",
-    swath: "NA",
-    pol: "NA",
-    orbit: 60012,
-    rel: 11,
-    types: [100, 98.0, 96.5, 95.0, 95.5],
-    pct: 97.0,
-    station: "Neustrelitz",
-    pass: { after: 1288, mb: 14100, s: 33 },
-  },
-  "S3A-055-358": {
-    dur: 108,
-    mode: "NOM",
-    swath: "NA",
-    pol: "NA",
-    orbit: 33358,
-    rel: 55,
-    types: [0, 0, 0],
-    pct: 0.0,
-    station: "Svalbard",
-    pass: null,
-  },
-  "S1A-60418": {
-    dur: 240,
-    mode: "EW",
-    swath: "NA",
-    pol: "DH",
-    orbit: 60418,
-    rel: 141,
-    types: [100, 100, 100, 100, 99.6, 99.2],
-    pct: 99.8,
-    station: "Svalbard",
-    pass: { after: 1034, mb: 12800, s: 31 },
-  },
-  "S2C-10187-1": {
-    dur: 232,
-    mode: "NOBS",
-    swath: "NA",
-    pol: "NA",
-    orbit: 10187,
-    rel: 65,
-    types: [100, 100, 97.8, 91.5, 64.0],
-    pct: 90.7,
-    station: "Maspalomas",
-    pass: { after: 1176, mb: 20900, s: 46 },
-  },
-  "S3A-112-207": {
-    dur: 1040,
-    mode: "EO",
-    swath: "NA",
-    pol: "NA",
-    orbit: 21540,
-    rel: 112,
-    types: [100, 100, 99.4, 99.1, 98.7, 97.9, 98.8, 99.0],
-    pct: 99.1,
-    station: "Matera",
-    pass: { after: 1490, mb: 15300, s: 44 },
-  },
-  "S5P-60011": {
-    dur: 2940,
-    mode: "NOM",
-    swath: "NA",
-    pol: "NA",
-    orbit: 60011,
-    rel: 10,
-    types: [100, 100, 99.5, 99.5, 98.2, 99.0, 99.0, 96.4],
-    pct: 98.9,
-    station: "Inuvik",
-    pass: { after: 3320, mb: 14600, s: 34 },
-  },
-  "S1C-57611": {
-    dur: 175,
-    mode: "IW",
-    swath: "NA",
-    pol: "DV",
-    orbit: 57611,
-    rel: 22,
-    types: [100, 100, 88.0, 81.5],
-    pct: 92.4,
-    station: "Neustrelitz",
-    pass: { after: 1310, mb: 10400, s: 27 },
-  },
+  "S2A-48201-1": { rel: 22, pass: { after: 1213, mb: 18400, s: 41 } },
+  "S1C-57622":   { rel: 33, pass: { after: 927,  mb: 11250, s: 29 } },
+  "S3B-080-345": { rel: 80, pass: { after: 860,  mb: 9600,  s: 36 } },
+  "S2B-42050-1": { rel: 109, pass: { after: 1102, mb: 22600, s: 50 } },
+  "S5P-60012":   { rel: 11, pass: { after: 1288, mb: 14100, s: 33 } },
+  "S3A-055-358": { rel: 55, pass: null },
+  "S1A-60418":   { rel: 141, pass: { after: 1034, mb: 12800, s: 31 } },
+  "S2C-10187-1": { rel: 65, pass: { after: 1176, mb: 20900, s: 46 } },
+  "S3A-112-207": { rel: 112, pass: { after: 1490, mb: 15300, s: 44 } },
+  "S5P-60011":   { rel: 10, pass: { after: 3320, mb: 14600, s: 34 } },
+  "S1C-57611":   { rel: 22, pass: { after: 1310, mb: 10400, s: 27 } },
 };
 
 const STATION_CODE: Record<string, string> = {
@@ -390,18 +190,15 @@ function DatatakePanel({
   // orbit and the downlink pass.
   const ref = DTK_DETAILS[dt.id];
   const unit = dt.unit ?? dt.sat;
-  const pct = dt.comp ?? ref?.pct ?? 0;
+  const pct = dt.comp;
   const status = dt.status || "Processing";
   const tone = hex(STATUS_HEX[dt.cls] ?? 0x8a96a8);
-  const types: number[] = dt.levels
-    ? expectedTypes(dt.levels).map((p) => p.pct as number)
-    : (ref?.types ?? []);
-  const dur: number | null = dt.sensingS ?? ref?.dur ?? null;
+  const types: number[] = expectedTypes(dt.levels).map((p) => p.pct as number);
+  const dur = dt.sensingS;
   const nTypes = types.length;
-  const missing =
-    dur !== null && nTypes
-      ? types.reduce((s, p) => s + (1 - p / 100) * dur, 0)
-      : null;
+  const missing = nTypes
+    ? types.reduce((s, p) => s + (1 - p / 100) * dur, 0)
+    : null;
   const start = dt.startIso ? noZone(dt.startIso) : null;
   // "MSI · NOBS" → mode NOBS; Sentinel-1 writes "IW · DV": mode IW, polarisation DV
   const modeParts = (dt.mode ?? "")
@@ -409,15 +206,10 @@ function DatatakePanel({
     .map((s: string) => s.trim())
     .filter(Boolean);
   const isS1 = unit.startsWith("S1");
-  const mode =
-    (isS1 ? modeParts[0] : (modeParts[1] ?? modeParts[0])) ?? ref?.mode ?? "NA";
-  const pol = isS1 ? (modeParts[1] ?? ref?.pol ?? "NA") : (ref?.pol ?? "NA");
-  const orbit = dt.absOrbit
-    ? String(Number(dt.absOrbit))
-    : ref
-      ? String(ref.orbit)
-      : "NA";
-  const stationName: string | undefined = dt.station ?? ref?.station;
+  const mode = (isS1 ? modeParts[0] : (modeParts[1] ?? modeParts[0])) ?? "NA";
+  const pol = isS1 ? (modeParts[1] ?? "NA") : "NA";
+  const orbit = dt.absOrbit ? String(Number(dt.absOrbit)) : "NA";
+  const stationName = dt.station;
   const failed = status === "Failed";
   const acq = failed ? 0 : 100;
 
@@ -425,14 +217,14 @@ function DatatakePanel({
     ["Satellite ID", unit],
     ["Datatake ID", dt.id],
     ["Mode", mode],
-    ["Swath", ref?.swath ?? "NA"],
+    ["Swath", "NA"],
     ["Polarisation", pol],
     ["Observation time start", start ?? "NA"],
     [
       "Observation time stop",
-      start && dur !== null ? isoPlus(start, dur) : "NA",
+      start ? isoPlus(start, dur) : "NA",
     ],
-    ["Observation duration", dur !== null ? `${Math.round(dur)} s` : "NA"],
+    ["Observation duration", `${Math.round(dur)} s`],
     ["Orbit absolute", orbit],
     ["Orbit relative", ref ? String(ref.rel) : "NA"],
     [
@@ -504,7 +296,7 @@ function DatatakePanel({
         <dl className={g.dtkAside}>
           <div>
             <dt>Sensing</dt>
-            <dd>{dur !== null ? fmtDur(dur) : "NA"}</dd>
+            <dd>{fmtDur(dur)}</dd>
           </div>
           <div>
             <dt
@@ -548,25 +340,6 @@ function DatatakePanel({
  * orbit. Stations within CONTACT_DEG of a satellite get a faint cyan coverage circle and a dashed
  * link to it. */
 const GROUND_R = 1.006; // just above the footprints (1.004–1.005)
-const TRAIL_STEPS = 30;
-const TRAIL_STEP = 0.05;
-
-/** A point of a satellite's ground track, in the EarthGroup frame (the page's lat/lon convention). */
-function trackPoint(
-  incRad: number,
-  omRad: number,
-  angle: number,
-  r = GROUND_R,
-) {
-  const lat = Math.asin(Math.sin(incRad) * Math.sin(angle));
-  const lon =
-    omRad + Math.atan2(Math.cos(incRad) * Math.sin(angle), Math.cos(angle));
-  return new THREE.Vector3(
-    Math.cos(lat) * Math.sin(lon) * r,
-    Math.sin(lat) * r,
-    Math.cos(lat) * Math.cos(lon) * r,
-  );
-}
 
 /** Ring of points at an angular radius around a unit direction, on a sphere of radius r. */
 function capRing(center: THREE.Vector3, angRad: number, r: number, steps = 72) {
@@ -778,7 +551,7 @@ export default function AcquisitionsGlobeEarthPage({
     Record<string, { x: number; y: number; visible: boolean; contact: boolean }>
   >({});
   const [satPositions, setSatPositions] = useState<
-    Record<string, { x: number; y: number; visible: boolean }>
+    Record<string, { x: number; y: number; visible: boolean; color: string }>
   >({});
 
   // Simulation Time States
@@ -799,26 +572,34 @@ export default function AcquisitionsGlobeEarthPage({
   simTimeRef.current = simTime;
   useEffect(() => () => dayNightRef.current?.dispose(), []);
 
+  useEffect(() => {
+    const map = new Map<string, PreparedDatatake>();
+    ACQ_DATATAKES.forEach((dt) => {
+      map.set(dt.id, prepDatatake(dt, todayMs));
+    });
+    prepMapRef.current = map;
+  }, [todayMs]);
+
   const satObjectsRef = useRef<
     {
-      name: string;
-      inc: number;
-      omega: number;
-      speed: number;
-      progress: number;
+      unit: string;
+      prep: PreparedDatatake;
+      activeCls: "ok" | "warn" | "crit";
       satGroup: THREE.Group;
       trail: THREE.Line;
       future: THREE.Line;
     }[]
   >([]);
-  /** Per station: its direction and the coverage circle + dashed link shown while in contact. */
+  /** Map from datatake ID → PreparedDatatake, computed once per todayMs. */
+  const prepMapRef = useRef<Map<string, PreparedDatatake>>(new Map());
+  /** Per station: its direction and the coverage circle + dashed links shown while in contact. */
   const stationFxRef = useRef<
     {
       name: string;
       dir: THREE.Vector3;
       cap: THREE.Mesh;
       ring: THREE.LineLoop;
-      link: THREE.Line;
+      links: THREE.Line[]; // one per satellite unit
     }[]
   >([]);
   const contactRef = useRef<Record<string, boolean>>({});
@@ -831,6 +612,11 @@ export default function AcquisitionsGlobeEarthPage({
   selectedSatRef.current = isModalOpen
     ? (ACQ_DATATAKES[selectedDataTake]?.unit ?? null)
     : null;
+
+  const isModalOpenRef = useRef(isModalOpen);
+  isModalOpenRef.current = isModalOpen;
+  const selectedDataTakeRef = useRef(selectedDataTake);
+  selectedDataTakeRef.current = selectedDataTake;
 
   // List of datatakes available for the dropdown options ( filtered by Satellite, Day, and Search — but NOT Datatake ID )
   const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
@@ -851,6 +637,8 @@ export default function AcquisitionsGlobeEarthPage({
     if (datatakeFilter !== "*" && dt.id !== datatakeFilter) return false;
     return true;
   });
+  const filteredDatatakesRef = useRef(filteredDatatakes);
+  filteredDatatakesRef.current = filteredDatatakes;
 
   const datatakesInView = filteredDatatakes.length;
   const acquired = Math.round(
@@ -964,9 +752,22 @@ export default function AcquisitionsGlobeEarthPage({
     setDatatakeFilter(dtId);
     setIsModalOpen(true);
 
-    const matchedSwath = SAMPLE_SWATHS.find((s) => s.id === dtId);
-    if (matchedSwath) {
-      focusOnDatatake(matchedSwath.coords);
+    const dt = ACQ_DATATAKES.find((d) => d.id === dtId);
+    if (dt) {
+      const prepEntry = prepMapRef.current.get(dtId);
+      const ring: number[][] = prepEntry
+        ? buildFootprint(prepEntry).ring.map(([lo, la]) => [lo, la])
+        : [];
+      focusOnDatatake(
+        ring.length >= 4
+          ? ring
+          : [
+              [dt.lon - 2, dt.lat - 2],
+              [dt.lon + 2, dt.lat - 2],
+              [dt.lon + 2, dt.lat + 2],
+              [dt.lon - 2, dt.lat + 2],
+            ],
+      );
     }
   };
 
@@ -1031,116 +832,92 @@ export default function AcquisitionsGlobeEarthPage({
     clickableMeshesRef.current = [];
     satObjectsRef.current = [];
 
-    SAMPLE_SWATHS.forEach((swath, idx) => {
-      const radius = 1.004;
-      const corners = swath.coords;
+    // Build footprints from orbital mechanics
+    ACQ_DATATAKES.forEach((dt, idx) => {
+      const prep = prepMapRef.current.get(dt.id);
+      if (!prep) return;
+      const { left, right, ring } = buildFootprint(prep);
+      const colHex = STATUS_HEX[dt.cls] ?? 0x00e5ff;
+      const fillR = 1.004;
+      const outlineR = 1.005;
+      const wideSwath = dt.swathKm > 500;
+      const slerpSteps = wideSwath ? 6 : 0;
 
-      const gridSteps = 24;
       const positions: number[] = [];
+      for (let k = 0; k < 24; k++) {
+        const L0 = left[k];
+        const L1 = left[k + 1];
+        const R0 = right[k];
+        const R1 = right[k + 1];
 
-      for (let u = 0; u < gridSteps; u++) {
-        for (let v = 0; v < gridSteps; v++) {
-          const u1 = u / gridSteps;
-          const u2 = (u + 1) / gridSteps;
-          const v1 = v / gridSteps;
-          const v2 = (v + 1) / gridSteps;
-
-          const getPt = (uVal: number, vVal: number) => {
-            const lon =
-              (1 - uVal) * (1 - vVal) * corners[0][0] +
-              uVal * (1 - vVal) * corners[1][0] +
-              uVal * vVal * corners[2][0] +
-              (1 - uVal) * vVal * corners[3][0];
-            const lat =
-              (1 - uVal) * (1 - vVal) * corners[0][1] +
-              uVal * (1 - vVal) * corners[1][1] +
-              uVal * vVal * corners[2][1] +
-              (1 - uVal) * vVal * corners[3][1];
-            return latLonToVector3(lat, lon, radius);
+        if (slerpSteps > 0) {
+          const getV = (lo: GeoPoint, ro: GeoPoint, f: number): THREE.Vector3 => {
+            const vl = latLonToVector3(lo[1], lo[0], fillR);
+            const vr = latLonToVector3(ro[1], ro[0], fillR);
+            return vl.clone().lerp(vr, f).normalize().multiplyScalar(fillR);
           };
-
-          const p00 = getPt(u1, v1);
-          const p10 = getPt(u2, v1);
-          const p11 = getPt(u2, v2);
-          const p01 = getPt(u1, v2);
-
-          positions.push(p00.x, p00.y, p00.z);
-          positions.push(p10.x, p10.y, p10.z);
-          positions.push(p11.x, p11.y, p11.z);
-
-          positions.push(p00.x, p00.y, p00.z);
-          positions.push(p11.x, p11.y, p11.z);
-          positions.push(p01.x, p01.y, p01.z);
+          for (let s = 0; s < slerpSteps; s++) {
+            const f0 = s / slerpSteps;
+            const f1 = (s + 1) / slerpSteps;
+            const p00 = getV(L0, R0, f0);
+            const p10 = getV(L1, R1, f0);
+            const p11 = getV(L1, R1, f1);
+            const p01 = getV(L0, R0, f1);
+            positions.push(p00.x, p00.y, p00.z, p10.x, p10.y, p10.z, p11.x, p11.y, p11.z);
+            positions.push(p00.x, p00.y, p00.z, p11.x, p11.y, p11.z, p01.x, p01.y, p01.z);
+          }
+        } else {
+          const p00 = latLonToVector3(L0[1], L0[0], fillR);
+          const p10 = latLonToVector3(L1[1], L1[0], fillR);
+          const p11 = latLonToVector3(R1[1], R1[0], fillR);
+          const p01 = latLonToVector3(R0[1], R0[0], fillR);
+          positions.push(p00.x, p00.y, p00.z, p10.x, p10.y, p10.z, p11.x, p11.y, p11.z);
+          positions.push(p00.x, p00.y, p00.z, p11.x, p11.y, p11.z, p01.x, p01.y, p01.z);
         }
       }
 
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(positions, 3),
-      );
-
-      const mat = new THREE.MeshBasicMaterial({
-        color: swath.color,
-        opacity: swath.opacity,
+      const fillGeo = new THREE.BufferGeometry();
+      fillGeo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      const fillMat = new THREE.MeshBasicMaterial({
+        color: colHex,
+        opacity: 0.24,
         transparent: true,
         side: THREE.DoubleSide,
         depthWrite: false,
         depthTest: true,
       });
+      const fillMesh = new THREE.Mesh(fillGeo, fillMat);
+      fillMesh.renderOrder = 14 + idx;
+      fillMesh.userData = { datatakeId: dt.id };
+      overlayGroup.add(fillMesh);
+      clickableMeshesRef.current.push(fillMesh);
 
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.renderOrder = 14 + idx;
-      mesh.userData = { datatakeId: swath.id, swathIndex: idx };
-      overlayGroup.add(mesh);
-      clickableMeshesRef.current.push(mesh);
-
-      const borderPoints: THREE.Vector3[] = [];
-      const borderSteps = 16;
-
-      for (let c = 0; c < corners.length; c++) {
-        const start = corners[c];
-        const end = corners[(c + 1) % corners.length];
-        for (let s = 0; s < borderSteps; s++) {
-          const t = s / borderSteps;
-          const lon = start[0] + (end[0] - start[0]) * t;
-          const lat = start[1] + (end[1] - start[1]) * t;
-          borderPoints.push(latLonToVector3(lat, lon, radius + 0.001));
-        }
-      }
-      borderPoints.push(borderPoints[0]);
-
-      const lineGeo = new THREE.BufferGeometry().setFromPoints(borderPoints);
+      const ringPts = ring.map(([lo, la]) => latLonToVector3(la, lo, outlineR));
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
       const lineMat = new THREE.LineBasicMaterial({
-        color: swath.color,
-        opacity: 0.9,
+        color: colHex,
+        opacity: 1.0,
         transparent: true,
+        depthWrite: false,
+        depthTest: true,
       });
-
       const lineMesh = new THREE.Line(lineGeo, lineMat);
       lineMesh.renderOrder = 18 + idx;
-      lineMesh.userData = {
-        datatakeId: swath.id,
-        fillMesh: mesh,
-        baseColor: swath.color,
-      };
+      lineMesh.userData = { datatakeId: dt.id, fillMesh, baseColor: colHex };
       overlayGroup.add(lineMesh);
       footprintMeshesRef.current.push(lineMesh);
     });
 
-    // Satellites: a position holder on the ground point (the dot and name are HTML markers), a
-    // white trail behind it and a dashed track ahead, shown for the selected satellite only.
-    SAMPLE_SATELLITES.forEach((satData, idx) => {
+    // One Three.js group per unique satellite unit
+    const satUnits = Array.from(new Set(ACQ_DATATAKES.map((dt) => dt.unit)));
+    satUnits.forEach((unit) => {
       const satGroup = new THREE.Group();
       overlayGroup.add(satGroup);
 
       const trailGeo = new THREE.BufferGeometry();
       trailGeo.setAttribute(
         "position",
-        new THREE.Float32BufferAttribute(
-          new Array((TRAIL_STEPS + 1) * 3).fill(0),
-          3,
-        ),
+        new THREE.Float32BufferAttribute(new Array(31 * 3).fill(0), 3),
       );
       const trail = new THREE.Line(
         trailGeo,
@@ -1149,6 +926,7 @@ export default function AcquisitionsGlobeEarthPage({
           transparent: true,
           opacity: 0.28,
           depthWrite: false,
+          depthTest: true,
         }),
       );
       trail.renderOrder = 30;
@@ -1157,10 +935,7 @@ export default function AcquisitionsGlobeEarthPage({
       const futureGeo = new THREE.BufferGeometry();
       futureGeo.setAttribute(
         "position",
-        new THREE.Float32BufferAttribute(
-          new Array((TRAIL_STEPS + 1) * 3).fill(0),
-          3,
-        ),
+        new THREE.Float32BufferAttribute(new Array(31 * 3).fill(0), 3),
       );
       const future = new THREE.Line(
         futureGeo,
@@ -1171,26 +946,28 @@ export default function AcquisitionsGlobeEarthPage({
           dashSize: 0.008,
           gapSize: 0.016,
           depthWrite: false,
+          depthTest: true,
         }),
       );
       future.renderOrder = 30;
       future.visible = false;
       overlayGroup.add(future);
 
+      const firstDt = ACQ_DATATAKES.find((dt) => dt.unit === unit);
+      const initialPrep = firstDt ? prepMapRef.current.get(firstDt.id) : undefined;
+      if (!initialPrep) return;
+
       satObjectsRef.current.push({
-        name: satData.name,
-        inc: satData.inc,
-        omega: satData.omega,
-        speed: satData.speed,
-        progress: (idx * Math.PI) / 1.5,
+        unit,
+        prep: initialPrep,
+        activeCls: firstDt?.cls ?? "ok",
         satGroup,
         trail,
         future,
       });
     });
 
-    // Stations: a 22° coverage circle (faint cyan cap + ring) and a dashed cyan link to the
-    // satellite in contact; all hidden until a satellite comes within range.
+    // Stations: a 22° coverage cap + ring and one dashed link per satellite unit
     stationFxRef.current = STATIONS.map((st) => {
       const dir = latLonToVector3(st.lat, st.lon, 1).normalize();
       const ringPts = capRing(dir, CONTACT_DEG * D, 1.003);
@@ -1231,27 +1008,31 @@ export default function AcquisitionsGlobeEarthPage({
       ring.renderOrder = 11;
       ring.visible = false;
 
-      const linkGeo = new THREE.BufferGeometry();
-      linkGeo.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(new Array(25 * 3).fill(0), 3),
-      );
-      const link = new THREE.Line(
-        linkGeo,
-        new THREE.LineDashedMaterial({
-          color: 0x00e5ff,
-          transparent: true,
-          opacity: 0.75,
-          dashSize: 0.006,
-          gapSize: 0.006,
-          depthWrite: false,
-        }),
-      );
-      link.renderOrder = 31;
-      link.visible = false;
+      const links = satUnits.map(() => {
+        const linkGeo = new THREE.BufferGeometry();
+        linkGeo.setAttribute(
+          "position",
+          new THREE.Float32BufferAttribute(new Array(25 * 3).fill(0), 3),
+        );
+        const link = new THREE.Line(
+          linkGeo,
+          new THREE.LineDashedMaterial({
+            color: 0x00e5ff,
+            transparent: true,
+            opacity: 0.75,
+            dashSize: 0.006,
+            gapSize: 0.006,
+            depthWrite: false,
+          }),
+        );
+        link.renderOrder = 31;
+        link.visible = false;
+        overlayGroup.add(link);
+        return link;
+      });
 
-      overlayGroup.add(cap, ring, link);
-      return { name: st.name, dir, cap, ring, link };
+      overlayGroup.add(cap, ring);
+      return { name: st.name, dir, cap, ring, links };
     });
   };
 
@@ -1386,6 +1167,21 @@ export default function AcquisitionsGlobeEarthPage({
       renderer.domElement.removeEventListener("mousemove", onMouseMove);
       renderer.domElement.removeEventListener("mouseup", onMouseUp);
       renderer.domElement.removeEventListener("wheel", onWheel);
+
+      // Dispose footprint fill + outline geometry/material
+      clickableMeshesRef.current.forEach((m) => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
+      footprintMeshesRef.current.forEach((m) => { (m as THREE.Line).geometry.dispose(); ((m as THREE.Line).material as THREE.Material).dispose(); });
+      // Dispose satellite trail/future geometry/material
+      satObjectsRef.current.forEach((sat) => {
+        sat.trail.geometry.dispose(); (sat.trail.material as THREE.Material).dispose();
+        sat.future.geometry.dispose(); (sat.future.material as THREE.Material).dispose();
+      });
+      // Dispose station cap/ring/links
+      stationFxRef.current.forEach((fx) => {
+        fx.cap.geometry.dispose(); (fx.cap.material as THREE.Material).dispose();
+        fx.ring.geometry.dispose(); (fx.ring.material as THREE.Material).dispose();
+        fx.links.forEach((lnk) => { lnk.geometry.dispose(); (lnk.material as THREE.Material).dispose(); });
+      });
     };
   };
 
@@ -1436,30 +1232,43 @@ export default function AcquisitionsGlobeEarthPage({
         fitAtmosphere(atmosphereRef.current, cameraRef.current);
 
       // Satellites on their ground points, with their trails (and the selected one's track ahead)
-      satObjectsRef.current.forEach((sat) => {
-        if (isPlayingRef.current) {
-          sat.progress += sat.speed * (speedMultiplierRef.current / 30);
-          if (sat.progress > Math.PI * 2) sat.progress -= Math.PI * 2;
-        }
-        const inc = sat.inc * D;
-        const om = (sat.omega + 90) * D;
-        sat.satGroup.position.copy(trackPoint(inc, om, sat.progress));
+      const simTimeMin = simTimeRef.current / 60;
+      const filtered = filteredDatatakesRef.current;
+      const selectedDtId = isModalOpenRef.current
+        ? (ACQ_DATATAKES[selectedDataTakeRef.current]?.id ?? null)
+        : null;
 
-        const selected = selectedSatRef.current === sat.name;
-        const tp = sat.trail.geometry.attributes
-          .position as THREE.BufferAttribute;
-        const fp = sat.future.geometry.attributes
-          .position as THREE.BufferAttribute;
-        for (let k = 0; k <= TRAIL_STEPS; k++) {
-          const back = trackPoint(
-            inc,
-            om,
-            sat.progress - (TRAIL_STEPS - k) * TRAIL_STEP,
-          );
-          tp.setXYZ(k, back.x, back.y, back.z);
+      satObjectsRef.current.forEach((sat) => {
+        // Pick active datatake: selected one wins, otherwise first in filtered set
+        const unitFiltered = filtered.filter((dt) => dt.unit === sat.unit);
+        const hasFiltered = unitFiltered.length > 0;
+        sat.satGroup.visible = hasFiltered;
+        sat.trail.visible = hasFiltered;
+        if (!hasFiltered) { sat.future.visible = false; return; }
+
+        const selectedDt = selectedDtId
+          ? ACQ_DATATAKES.find((dt) => dt.id === selectedDtId && dt.unit === sat.unit)
+          : undefined;
+        const activeDt = selectedDt ?? unitFiltered[0];
+        const prep = prepMapRef.current.get(activeDt.id);
+        if (!prep) return;
+        sat.prep = prep;
+        sat.activeCls = activeDt.cls;
+
+        const [lon, lat] = subPoint(prep, simTimeMin);
+        sat.satGroup.position.copy(latLonToVector3(lat, lon, GROUND_R));
+
+        const selected = selectedSatRef.current === sat.unit;
+        const tp = sat.trail.geometry.attributes.position as THREE.BufferAttribute;
+        const fp = sat.future.geometry.attributes.position as THREE.BufferAttribute;
+        for (let k = 0; k < 31; k++) {
+          const [blo, bla] = subPoint(prep, simTimeMin - (30 - k) * 0.8);
+          const bv = latLonToVector3(bla, blo, GROUND_R);
+          tp.setXYZ(k, bv.x, bv.y, bv.z);
           if (selected) {
-            const ahead = trackPoint(inc, om, sat.progress + k * TRAIL_STEP);
-            fp.setXYZ(k, ahead.x, ahead.y, ahead.z);
+            const [flo, fla] = subPoint(prep, simTimeMin + k * 0.8);
+            const fv = latLonToVector3(fla, flo, GROUND_R);
+            fp.setXYZ(k, fv.x, fv.y, fv.z);
           }
         }
         tp.needsUpdate = true;
@@ -1472,26 +1281,27 @@ export default function AcquisitionsGlobeEarthPage({
         }
       });
 
-      // Stations in contact: coverage circle and a dashed link to the nearest satellite in range
+      // Stations: coverage circle and one dashed link per satellite in range
       const contactCos = Math.cos(CONTACT_DEG * D);
       const contacts: Record<string, boolean> = {};
       stationFxRef.current.forEach((fx) => {
-        let best: THREE.Vector3 | null = null;
-        let bestDot = contactCos;
-        for (const sat of satObjectsRef.current) {
+        let anyContact = false;
+        satObjectsRef.current.forEach((sat, si) => {
+          const lnk = fx.links[si];
+          if (!lnk) return;
+          if (!sat.satGroup.visible) { lnk.visible = false; return; }
           const d = sat.satGroup.position.clone().normalize();
-          const dot = d.dot(fx.dir);
-          if (dot > bestDot) {
-            bestDot = dot;
-            best = d;
+          const inRange = d.dot(fx.dir) > contactCos;
+          lnk.visible = inRange;
+          if (inRange) {
+            setArc(lnk, d, fx.dir, 1.007);
+            lnk.computeLineDistances();
+            anyContact = true;
           }
-        }
-        const on = best !== null;
-        contacts[fx.name] = on;
-        fx.cap.visible = on;
-        fx.ring.visible = on;
-        fx.link.visible = on;
-        if (best) setArc(fx.link, best, fx.dir, 1.007);
+        });
+        contacts[fx.name] = anyContact;
+        fx.cap.visible = anyContact;
+        fx.ring.visible = anyContact;
       });
       contactRef.current = contacts;
 
@@ -1512,10 +1322,13 @@ export default function AcquisitionsGlobeEarthPage({
         > = {};
         const satPosMap: Record<
           string,
-          { x: number; y: number; visible: boolean }
+          { x: number; y: number; visible: boolean; color: string }
         > = {};
 
         const earthGroup = sceneRef.current.getObjectByName("EarthGroup");
+        const camPos = camera.position.clone();
+        const camDir = camPos.clone().normalize();
+        const camDist = camPos.length();
 
         STATIONS.forEach((station) => {
           const localPos = latLonToVector3(station.lat, station.lon, 1.0);
@@ -1524,9 +1337,8 @@ export default function AcquisitionsGlobeEarthPage({
             ? localPos.clone().applyMatrix4(earthGroup.matrixWorld)
             : localPos;
 
-          const camPos = camera.position.clone();
           const isVisible =
-            worldPos.clone().normalize().dot(camPos.normalize()) > 0.15;
+            worldPos.clone().normalize().dot(camDir) > 1 / camDist;
 
           const vector = worldPos.clone().project(camera);
 
@@ -1539,16 +1351,16 @@ export default function AcquisitionsGlobeEarthPage({
         });
 
         satObjectsRef.current.forEach((sat) => {
-          // world position: ThreeEarth keeps turning EarthGroup, and the satellites live inside it
+          if (!sat.satGroup.visible) return;
           const worldPos = sat.satGroup.getWorldPosition(new THREE.Vector3());
-          const camPos = camera.position.clone();
           const isVisible =
-            worldPos.clone().normalize().dot(camPos.normalize()) > 0.05;
+            worldPos.clone().normalize().dot(camDir) > 1 / camDist;
           const vector = worldPos.clone().project(camera);
-          satPosMap[sat.name] = {
+          satPosMap[sat.unit] = {
             x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
             y: (-vector.y * 0.5 + 0.5) * canvas.clientHeight,
             visible: isVisible,
+            color: hex(STATUS_HEX[sat.activeCls] ?? 0x8a96a8),
           };
         });
 
@@ -1784,10 +1596,10 @@ export default function AcquisitionsGlobeEarthPage({
               {dropdownDatatakes.map((dt) => {
                 const statusColor =
                   dt.cls === "ok"
-                    ? "#3dd68c"
+                    ? "#34d399"
                     : dt.cls === "warn"
                       ? "#f5b544"
-                      : "#ef4444";
+                      : "#ff5c5c";
                 return (
                   <button
                     key={dt.id}
@@ -2052,19 +1864,18 @@ export default function AcquisitionsGlobeEarthPage({
               );
             })}
 
-            {SAMPLE_SATELLITES.map((sat) => {
-              const pos = satPositions[sat.name];
-              if (!pos || !pos.visible) return null;
+            {Object.entries(satPositions).map(([unit, pos]) => {
+              if (!pos.visible) return null;
               return (
                 <SatelliteMarker
-                  key={`sat-${sat.name}`}
-                  name={sat.name}
+                  key={`sat-${unit}`}
+                  name={unit}
                   x={pos.x}
                   y={pos.y}
-                  color={hex(sat.color)}
+                  color={pos.color}
                   selected={
                     isModalOpen &&
-                    ACQ_DATATAKES[selectedDataTake]?.unit === sat.name
+                    ACQ_DATATAKES[selectedDataTake]?.unit === unit
                   }
                 />
               );
