@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
 import { PageHeader, Reveal } from "@/components/ui";
@@ -694,110 +695,115 @@ interface ReleaseDetailProps {
   onStep: (delta: -1 | 1) => void;
 }
 
-/** The selected baseline's details. Keyed by release so each step replays the entrance. */
+/** The selected baseline's details. Steps replay the vswap animation; first open does not. */
 function ReleaseDetail({ group, index, onClose, onStep }: ReleaseDetailProps) {
   const release: ReleaseRecord = group.releases[index];
   const isCurrent = release.isCurrent;
 
+  // Inner wrapper is keyed by release.id so stepping remounts it and replays vswap.
+  // firstOpen ref suppresses the animation on the first pick (the pane's own entrance covers it).
+  const firstOpen = useRef(true);
+  const [swapId, setSwapId] = useState(release.id);
+
+  useEffect(() => {
+    if (firstOpen.current) {
+      firstOpen.current = false;
+      return;
+    }
+    setSwapId(release.id);
+  }, [release.id]);
+
   return (
-    <div key={release.id} className={s.dtIn}>
-      <div className={s.dtTop}>
-        <button type="button" className={s.dtBack} onClick={onClose}>
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            aria-hidden="true"
-          >
-            <path d="M7 3L2 8l5 5M2 8h12"></path>
-          </svg>
-          Overview
-        </button>
-        <div className={s.dtSteps}>
-          <button
-            type="button"
-            className={s.step}
-            disabled={index <= 0}
-            onClick={() => onStep(-1)}
-            aria-label="Previous release"
-          >
+    <div className={s.dtIn}>
+      <div key={swapId} className={firstOpen.current ? undefined : s.swap}>
+        <div className={s.dtTop}>
+          <button type="button" className={s.dtBack} onClick={onClose}>
             <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.4"
+              strokeWidth="1.5"
               aria-hidden="true"
             >
-              <path d="M15 5l-7 7 7 7"></path>
+              <path d="M7 3L2 8l5 5M2 8h12"></path>
             </svg>
+            Overview
           </button>
-          <button
-            type="button"
-            className={s.step}
-            disabled={index >= group.releases.length - 1}
-            onClick={() => onStep(1)}
-            aria-label="Next release"
-          >
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              aria-hidden="true"
+          <div className={s.dtSteps}>
+            <button
+              type="button"
+              className={s.step}
+              disabled={index <= 0}
+              onClick={() => onStep(-1)}
+              aria-label="Previous release"
             >
-              <path d="M9 5l7 7-7 7"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div className={s.dtHead}>
-        <div>
-          <span className={s.dtProc}>
-            {group.sub ? `${group.label} · ${group.sub}` : group.label}
-          </span>
-          <b className={s.dtVer}>{release.baseline}</b>
-        </div>
-        <span className={isCurrent ? s.tagNow : s.tagOld}>
-          {isCurrent ? "Current baseline" : "Superseded"}
-        </span>
-      </div>
-
-      <dl className={s.meta}>
-        {release.processingBaseline && (
-          <div>
-            <dt>Processing baseline:</dt>
-            <dd>{release.processingBaseline}</dd>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                aria-hidden="true"
+              >
+                <path d="M15 5l-7 7 7 7"></path>
+              </svg>
+            </button>
+            <button
+              type="button"
+              className={s.step}
+              disabled={index >= group.releases.length - 1}
+              onClick={() => onStep(1)}
+              aria-label="Next release"
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                aria-hidden="true"
+              >
+                <path d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
           </div>
-        )}
-        <div>
-          <dt>Released:</dt>
-          <dd>
-            {release.releasedMs !== undefined
-              ? longDate(release.releasedMs)
-              : "—"}
-          </dd>
         </div>
-        <div>
-          <dt>Operational since:</dt>
-          <dd>{longDate(release.ms)}</dd>
-        </div>
-        <div>
-          <dt>Impacted satellite(s):</dt>
-          <dd>{release.sats.length ? release.sats.join(", ") : "—"}</dd>
-        </div>
-      </dl>
 
-      <div className={s.rn}>
-        <h4>Release notes</h4>
-        <ReleaseNotes html={release.notesHtml} />
+        <div className={s.dtHead}>
+          <div>
+            <span className={s.dtProc}>
+              {group.sub ? `${group.label} · ${group.sub}` : group.label}
+            </span>
+            <b className={s.dtVer}>{release.baseline}</b>
+          </div>
+          <span className={isCurrent ? s.tagNow : s.tagOld}>
+            {isCurrent ? "Current baseline" : "Superseded"}
+          </span>
+        </div>
+
+        <dl className={s.meta}>
+          <div>
+            <dt>Processor Baseline ID:</dt>
+            <dd>{release.processingBaseline ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Operational since:</dt>
+            <dd>{longDate(release.ms)}</dd>
+          </div>
+          <div>
+            <dt>Impacted satellite(s):</dt>
+            <dd>{release.sats.length ? release.sats.join(", ") : "—"}</dd>
+          </div>
+        </dl>
+
+        <div className={s.rn}>
+          <h4>Release notes</h4>
+          <ReleaseNotes html={release.notesHtml} />
+        </div>
       </div>
     </div>
   );
@@ -1268,6 +1274,9 @@ export default function Processors() {
             className={`${s.detailpane} ${detailOn ? s.on : ""}`}
             aria-live="polite"
             aria-hidden={focusClass ? undefined : true}
+            style={detailGroup
+              ? ({ '--pr-mis': `var(--pr-mis-${detailGroup.mission})` } as CSSProperties)
+              : undefined}
           >
             {detailGroup && detailIndex >= 0 && (
               <ReleaseDetail

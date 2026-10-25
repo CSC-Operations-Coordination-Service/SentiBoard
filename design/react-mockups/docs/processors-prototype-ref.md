@@ -1334,6 +1334,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     entering from −24 px (560 ms). Replaces the animated `grid-template-columns`.
 
     **Applied in Session 3 (2026-10-25):** `focusClass` state drives `.split.focus` (grid switch). `detailOn` state drives `.detailpane.on` (opacity 1 / transform none), added 180 ms after open. `lcolEnter` state drives `.lcolEnter .orbit` animation (560 ms), applied on re-entry. FLIP: `useLayoutEffect` on `[focusClass]` — captures rect before `setFocusClass` (inside the orchestration `useEffect` on `[isDetail]`), measures after, applies `translate(dx,dy)` + 720 ms transition. Double `requestAnimationFrame` ensures the start-transform paints before the transition begins. Close sequence: `setDetailOn(false)` → 280 ms → capture rect → `setFocusClass(false)` + `setLcolEnter(true)` → 560 ms → `setLcolEnter(false)`. All timers cleared on cleanup. `prefers-reduced-motion`: JS delays set to 0; CSS adds `transition: none !important` on `.procpane`, `.detailpane`; `animation: none` on `.lcolEnter .orbit`. `lastSelected` ref keeps detail content while pane fades — unchanged from Session 2.
+
+    **Applied in Session 6 (2026-10-25) — vswap:** `@keyframes vswap { from { opacity: 0.25; } to { opacity: 1; } }` + `.dtIn.swap { animation: vswap 320ms ease }` + `@media(prefers-reduced-motion:reduce){ .dtIn.swap { animation: none } }`. In `ReleaseDetail`: `firstOpen` ref (suppresses swap on first pick); `swapId` state updated by a `useEffect` on `release.id` (skips first run). An inner `<div key={swapId} className={firstOpen.current ? undefined : s.swap}>` wraps all detail content — keyed remount ensures animation restarts on rapid successive steps. The outer `.dtIn` div has no key. `dtIn.swap` fires on every step/re-pick while the panel is open; the pane's own entrance (opacity 420 ms + slide 640 ms, Session 3) covers the first open.
 13. **Chart width.** → _Recommended:_ the prototype's `max(600, 100 + 6 px × months)` (All ≈ 1054 px,
     scrolled to the end on load), unless the fixed 600 px was a stakeholder request — say so if it was.
 
@@ -1375,10 +1377,15 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
       Check while doing it: the feed's dates are local midnight (`… 00:00:00 GMT+0200`), and the page
       formats in UTC (`toISOString`, `timeZone: "UTC"`) — make sure a release on 24 June still shows
       24 June (not 23) in the detail, the tooltip and on the axis.
+
+    **Applied in Session 6 (2026-10-25):** Three rows always rendered: `Processor Baseline ID:` = `release.processingBaseline ?? "—"` (outer conditional removed); `Operational since:` = `longDate(release.ms)`; `Impacted satellite(s):` = `release.sats.join(", ")` or `"—"`. The `Released:` row removed. Typography: `.meta { gap: 8px; margin: 0 0 20px }` (was 10px / 32px); `.meta div { font-size: 12.5px }` (was 13px); `.meta dt { font-weight: 400 }` (was implicit). `longDate` uses `timeZone: "UTC"` — already correct.
+
 19. **Mission colour.** In the prototype it appears only on release-note `code` and on focus outlines.
     → _Recommended:_ `code` in the mission colour (S1 `#FF8F5E`, S2 `#4ADE80`, S3 `#6FA8FF`, S5P
     `#A78BFA`) — reuse mission colour tokens if the codebase has them, else skip; focus outlines stay the
     shared accent.
+
+    **Applied in Session 6 (2026-10-25):** No CSS mission-colour tokens existed. Added `--pr-mis-1/2/3/5P` to the dark block of `src/styles/tokens.css` (dark values only, per session instructions). `--pr-mis` is set via inline style on `<section className={s.detailpane}>` using `detailGroup.mission` (not `activeMission`, so the colour stays correct while the pane fades after a mission change): `{ '--pr-mis': \`var(--pr-mis-${detailGroup.mission})\` } as CSSProperties`. `.rnHtml code` split from `pre` and given `font-family: "JetBrains Mono","SF Mono",ui-monospace,Consolas,monospace; font-size: 11.5px; color: var(--pr-mis, var(--text))` (fallback to `--text` when `--pr-mis` unset). Focus outlines unchanged.
 20. **Text shadow** on the timeline and detail text. → _Recommended:_ do what DA did for its row-label
     shadow (check `availability.module.css`): if DA kept it in dark only, same here; light theme: none.
 
@@ -1479,3 +1486,5 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     `color-mix(in srgb, var(--pr-current) 45%, transparent)` (55% on the picked marker). Light values
     were chosen for contrast on the light background: markers and rings ≥ 3:1, tooltip text ≥ 4.5:1.
     Every other colour follows the recommendation above.
+
+    **Applied in Session 6 (2026-10-25):** Detail panel elements now use tokens per Decision 28: `.tagNow { color/border-color: var(--pr-current) }` (was `--ok`); back button `color: color-mix(in srgb, var(--text) 55%, transparent)` (§9 `.55`); step buttons `border: color-mix(in srgb, var(--text) 28%, transparent)` (≈`#454C53`), bg `rgba(8,12,16,.35)`, color `color-mix(in srgb, var(--text) 73%, transparent)` (≈`#B9C2C8`), hover border `42%` / color `var(--text)`, disabled border `16%` / color `23%`. No glow on step hover (prototype has none). Mission colour tokens added to the dark block of `tokens.css`: `--pr-mis-1: #FF8F5E`, `--pr-mis-2: #4ADE80`, `--pr-mis-3: #6FA8FF`, `--pr-mis-5P: #A78BFA` (dark values only; light omitted per session instruction).
