@@ -33,7 +33,7 @@ export const AVAILABILITY_DESCRIPTION = (
     </p>
 
     <div className="callout-line">
-      <strong>Please note:</strong> the selected “from”-“to” time range applies
+      <strong>Please note:</strong> the selected “from”–“to” time range applies
       to the start date of the datatakes.
     </div>
 

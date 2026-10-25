@@ -541,6 +541,8 @@ Recommended choice first. Strike the ones you reject and write what you want ins
     with the satellite, e.g. `S2A-…`, covers it for now), and the "Completeness" legend with the five
     **state** colours. The legend lists statuses, not the bar colours; that mismatch is accepted.
     Open point for the stakeholders: the copy mentions a satellite selector the page does not have.
+    Done in Session 5b: the existing `AVAILABILITY_DESCRIPTION` (copy.tsx) already held this copy and is
+    styled by `page-header.css`; legend dots stay **8×8** (shared style) instead of 9×9.
 11. **Card contrast.** Same question as Acquisitions decision 2. → *Recommended:* keep the current
     brighter ink ramp (`--card-ink-2 .78`, `--card-ink-3 .62`, values white) instead of `#6B7686`
     / `#4E5866`; take every size, weight, spacing and border from §7.

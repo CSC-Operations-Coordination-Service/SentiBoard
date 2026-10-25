@@ -609,7 +609,7 @@ export default function CoverageTimeline() {
         <PageHeader
           title="Data Availability"
           subtitle="Real-time list of available collections delivered by the missions, with key metrics."
-          desc={<p>{AVAILABILITY_DESCRIPTION}</p>}
+          desc={AVAILABILITY_DESCRIPTION}
           img="/assets/img/modules/availability.jpg"
         />
       </div>
