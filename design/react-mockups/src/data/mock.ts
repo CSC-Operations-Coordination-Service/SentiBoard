@@ -337,7 +337,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S1 — SAR only. Level lives in the digit inside the type name, no "L" token.
     id: "S1C-57622", startIso: hoursAgo(2.6), sat: "Sentinel-1C", unit: "S1C", station: "Matera", lat: 44.1, lon: 8.9,
     footprint: swath(44.1, 8.9, 13, 2.3, -11), status: "Processing",
-    mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 205, swathKm: 250, periodMin: 98.6,
+    mode: "IW \u00b7 DV", absOrbit: "057622", sensingS: 130, swathKm: 250, periodMin: 98.6,
     levels: [
       {
         level: "L0", products: [
@@ -373,43 +373,19 @@ const ACQ_SPECS: AcqSpec[] = [
     // the datatake that exercises the per-plate cap.
     id: "S3B-080-345", startIso: hoursAgo(4.1), sat: "Sentinel-3B", unit: "S3B", station: "Maspalomas", lat: 30.4, lon: -13.2,
     footprint: swath(30.4, -13.2, 20, 11.4, -13), status: "Processing",
-    mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 1180, swathKm: 1270, periodMin: 100.99,
+    mode: "OLCI \u00b7 EFR", absOrbit: "031145", sensingS: 183, swathKm: 1270, periodMin: 100.99,
     levels: [
       {
-        level: "L0", products: [
-          { type: "OL_0_EFR", pct: 99.0, instrument: "OLCI" },
-          { type: "SL_0_SLT", pct: 99.0, instrument: "SLSTR" },
-          { type: "SR_0_SRA", pct: 98.4, instrument: "SRAL" },
-          { type: "MW_0_MWR", pct: 99.0, instrument: "MWR" },
-        ]
-      },
-      {
         level: "L1", products: [
-          { type: "OL_1_EFR", pct: 78.0, instrument: "OLCI" },
-          { type: "OL_1_ERR", pct: 82.5, instrument: "OLCI" },
-          { type: "SL_1_RBT", pct: 96.1, instrument: "SLSTR" },
-          { type: "SR_1_SRA", pct: 99.0, instrument: "SRAL" },
-          { type: "SR_1_SRA_A", pct: 99.0, instrument: "SRAL" },
-          { type: "SR_1_SRA_BS", pct: 97.2, instrument: "SRAL" },
-          { type: "MW_1_MWR", pct: 99.0, instrument: "MWR" },
+          { type: "OL_1_EFR", pct: 93.5, instrument: "OLCI" },
+          { type: "SL_1_RBT", pct: 96.5, instrument: "SLSTR" },
         ]
       },
       {
         level: "L2", products: [
-          { type: "OL_2_WFR", pct: 71.4, instrument: "OLCI" },
-          { type: "OL_2_WRR", pct: 88.0, instrument: "OLCI" },
-          { type: "OL_2_LFR", pct: 92.3, instrument: "OLCI" },
-          { type: "OL_2_LRR", pct: 94.6, instrument: "OLCI" },
-          { type: "SL_2_LST", pct: 96.8, instrument: "SLSTR" },
-          { type: "SL_2_WST", pct: 99.0, instrument: "SLSTR" },
-          { type: "SL_2_FRP", pct: 61.5, instrument: "SLSTR" },
-          { type: "SL_2_AOD", pct: 99.0, instrument: "SLSTR" },
-          { type: "SR_2_LAN", pct: 99.0, instrument: "SRAL" },
-          { type: "SR_2_WAT", pct: 98.1, instrument: "SRAL" },
-          { type: "SY_2_SYN", pct: 84.2, instrument: "SYN" },
-          { type: "SY_2_VGP", pct: 99.0, instrument: "SYN" },
-          { type: "SY_2_VG1", pct: null, instrument: "SYN" },
-          { type: "SY_2_AOD", pct: 90.7, instrument: "SYN" },
+          { type: "OL_2_WFR", pct: 88.0, instrument: "OLCI" },
+          { type: "SL_2_LST", pct: 96.0, instrument: "SLSTR" },
+          { type: "SR_2_LAN", pct: 88.5, instrument: "SRAL" },
         ]
       },
     ],
@@ -418,7 +394,7 @@ const ACQ_SPECS: AcqSpec[] = [
   {
     id: "S2B-42050-1", startIso: hoursAgo(4.9), sat: "Sentinel-2B", unit: "S2B", station: "Inuvik", lat: 63.1, lon: -126.4,
     footprint: swath(63.1, -126.4, 10, 2.6, -14), status: "Published",
-    mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 188, swathKm: 290, periodMin: 100.6,
+    mode: "MSI \u00b7 NOBS", absOrbit: "042050", sensingS: 252, swathKm: 290, periodMin: 100.6,
     levels: [
       { level: "L0", products: [{ type: "MSI_L0__GR", pct: 99.4, instrument: "MSI" }] },
       {
@@ -441,30 +417,17 @@ const ACQ_SPECS: AcqSpec[] = [
     // product per spectral band, so it also runs past the cap.
     id: "S5P-60012", startIso: hoursAgo(6.2), sat: "Sentinel-5P", unit: "S5P", station: "Neustrelitz", lat: 51.4, lon: 19.8,
     footprint: swath(51.4, 19.8, 24, 23, -12), status: "Published",
-    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 2940, swathKm: 2600, periodMin: 101.3,
+    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060012", sensingS: 400, swathKm: 2600, periodMin: 101.3,
     levels: [
-      {
-        level: "L1", products: [
-          { type: "L1B_RA_BD1", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD2", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD3", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD4", pct: 98.6, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD5", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD6", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD7", pct: 97.4, instrument: "TROPOMI" },
-          { type: "L1B_RA_BD8", pct: 99.0, instrument: "TROPOMI" },
-        ]
-      },
       {
         level: "L2", products: [
           { type: "L2__NO2___", pct: 92.4, instrument: "TROPOMI" },
           { type: "L2__O3____", pct: 94.1, instrument: "TROPOMI" },
           { type: "L2__CO____", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L2__CH4___", pct: 88.9, instrument: "TROPOMI" },
-          { type: "L2__HCHO__", pct: 96.2, instrument: "TROPOMI" },
+          { type: "L2__CH4___", pct: 97.0, instrument: "TROPOMI" },
+          { type: "L2__HCHO__", pct: 99.0, instrument: "TROPOMI" },
           { type: "L2__SO2___", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L2__AER_AI", pct: 99.0, instrument: "TROPOMI" },
-          { type: "L2__CLOUD_", pct: 93.5, instrument: "TROPOMI" },
+          { type: "L2__AER_AI", pct: 98.5, instrument: "TROPOMI" },
         ]
       },
     ],
@@ -475,7 +438,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // "UNKNOWN" product_level bucket, which the plates have to render.
     id: "S3A-055-358", startIso: hoursAgo(14.1), sat: "Sentinel-3A", unit: "S3A", station: "Svalbard", lat: 71.6, lon: 24.3,
     footprint: swath(71.6, 24.3, 20, 11.4, 13), status: "Failed",
-    mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 620, swathKm: 1400, periodMin: 100.99,
+    mode: "SLSTR \u00b7 SL", absOrbit: "021533", sensingS: 108, swathKm: 1400, periodMin: 100.99,
     levels: [
       { level: "L0", products: [{ type: "SL_0_SLT", pct: 0, instrument: "SLSTR" }] },
       { level: "L1", products: [{ type: "SL_1_RBT", pct: 0, instrument: "SLSTR" }] },
@@ -543,7 +506,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S3 — an OLCI daytime pass over the Indian Ocean, fully published.
     id: "S3A-112-207", startIso: hoursAgo(16.5), sat: "Sentinel-3A", unit: "S3A", station: "Matera", lat: -8.4, lon: 72.6,
     footprint: swath(-8.4, 72.6, 20, 11.4, -13), status: "Published",
-    mode: "OLCI \u00b7 EFR", absOrbit: "021540", sensingS: 1040, swathKm: 1270, periodMin: 100.99,
+    mode: "OLCI \u00b7 EFR", absOrbit: "021540", sensingS: 300, swathKm: 1270, periodMin: 100.99,
     levels: [
       {
         level: "L0", products: [
@@ -572,7 +535,7 @@ const ACQ_SPECS: AcqSpec[] = [
     // S5P — the orbit before S5P-60012, over the Americas.
     id: "S5P-60011", startIso: hoursAgo(18.2), sat: "Sentinel-5P", unit: "S5P", station: "Inuvik", lat: 18.9, lon: -88.4,
     footprint: swath(18.9, -88.4, 24, 23, -12), status: "Published",
-    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060011", sensingS: 2940, swathKm: 2600, periodMin: 101.3,
+    mode: "TROPOMI \u00b7 NOMINAL", absOrbit: "060011", sensingS: 420, swathKm: 2600, periodMin: 101.3,
     levels: [
       {
         level: "L1", products: [

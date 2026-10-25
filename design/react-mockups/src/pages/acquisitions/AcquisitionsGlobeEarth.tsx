@@ -44,7 +44,7 @@ const DESCRIPTION = (
   </>
 );
 
-const SPEED_OPTIONS = [1, 10, 60, 100, 300, 1000];
+const SPEED_OPTIONS = [1, 10, 60, 600];
 
 /* ---------- map markers (SentiBoard.html#acquisitions) ---------- */
 
@@ -123,6 +123,9 @@ function SatelliteMarker({
 }
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
+
+/** Mission group: strips the variant letter suffix (A/B/C) so "Sentinel-2A" → "Sentinel-2". */
+const satGroup = (sat: string) => sat.replace(/-[A-C]$/, "");
 
 /* ---------- datatake status colours (the Datatake list's dots) ---------- */
 const STATUS_HEX: Record<string, number> = {
@@ -638,46 +641,42 @@ export default function AcquisitionsGlobeEarthPage({
   const openDropdownRef = useRef<string | null>(null);
   openDropdownRef.current = openDropdown;
 
-  // List of datatakes visible for globe + navigation (sat + day + search, NO datatake filter)
-  const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
+  // sat+day — base set for keyboard navigation and calendar
+  const satDayDatatakes = ACQ_DATATAKES.filter((dt) => {
     if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
-    if (dayFilter !== "*" && !noZone(dt.startIso).startsWith(dayFilter))
-      return false;
+    if (dayFilter !== "*" && !noZone(dt.startIso).startsWith(dayFilter)) return false;
+    return true;
+  });
+
+  // sat+day+search — populates the Datatake dropdown list (search does not touch globe or KPIs)
+  const dropdownDatatakes = satDayDatatakes.filter((dt) => {
     if (searchQuery.trim() !== "") {
       const q = searchQuery.trim().toLowerCase();
-      const matchId = dt.id.toLowerCase().includes(q);
-      const matchSat = dt.sat.toLowerCase().includes(q);
-      if (!matchId && !matchSat) return false;
+      if (!dt.id.toLowerCase().includes(q) && !dt.sat.toLowerCase().includes(q)) return false;
     }
     return true;
   });
 
-  // Final filtered datatakes applied to globe 3D view and KPI calculation
-  const filteredDatatakes = dropdownDatatakes.filter((dt) => {
-    if (datatakeFilter !== "*" && dt.id !== datatakeFilter) return false;
-    return true;
-  });
+  // sat+day+datatake — globe visibility and KPIs (search excluded per decision 5)
+  const filteredDatatakes = satDayDatatakes.filter((dt) =>
+    datatakeFilter === "*" || dt.id === datatakeFilter,
+  );
   const filteredDatatakesRef = useRef(filteredDatatakes);
   filteredDatatakesRef.current = filteredDatatakes;
 
-  /** Sat+day-filtered set — used for keyboard `[` `]` navigation. */
-  const navDatatakesRef = useRef(dropdownDatatakes);
-  navDatatakesRef.current = dropdownDatatakes;
+  /** Sat+day set — used for keyboard `[` `]` navigation across all visible datatakes. */
+  const navDatatakesRef = useRef(satDayDatatakes);
+  navDatatakesRef.current = satDayDatatakes;
 
   const datatakesInView = filteredDatatakes.length;
-  const acquired = Math.round(
-    (filteredDatatakes.filter((dt) => dt.comp >= 95).length /
-      Math.max(1, filteredDatatakes.length)) *
-      100,
-  );
-  const published = Math.round(
-    (filteredDatatakes.filter((dt) => dt.status === "Published").length /
-      Math.max(1, filteredDatatakes.length)) *
-      100,
-  );
-  const failedAcquisitions = filteredDatatakes.filter(
-    (dt) => dt.cls === "crit",
-  ).length;
+  // §2 formulas — acquired = share not Failed; published = mean pct; failed = pct 0
+  const acquired = datatakesInView
+    ? Math.round(100 * filteredDatatakes.filter((dt) => dt.status !== "Failed").length / datatakesInView) + "%"
+    : "—";
+  const published = datatakesInView
+    ? Math.round(filteredDatatakes.reduce((s, dt) => s + dt.comp, 0) / datatakesInView) + "%"
+    : "—";
+  const failedAcquisitions = filteredDatatakes.filter((dt) => dt.comp === 0).length;
   const uniqueSatellites = Array.from(
     new Set(ACQ_DATATAKES.map((dt) => dt.sat)),
   ).sort();
@@ -747,7 +746,9 @@ export default function AcquisitionsGlobeEarthPage({
     };
   };
 
-  /** §8 fitZoom: come close enough that the footprint fills ~a third of the globe's window. */
+  /** §8 fitZoom: perspective-correct — projects the footprint's far edge to 30% of min(W,H).
+   *  dist = cos(far) + f·sin(far)/want  (pinhole formula for angular radius on a unit sphere)
+   *  then inverted through applyView's zoom↔dist mapping so +/− buttons keep working. */
   const fitZoom = (prep: PreparedDatatake): number => {
     const { ring } = buildFootprint(prep);
     const c = latLonToVector3(prep.lat, prep.lon, 1).normalize();
@@ -755,8 +756,15 @@ export default function AcquisitionsGlobeEarthPage({
     ring.forEach(([lo, la]: GeoPoint) => {
       far = Math.max(far, c.angleTo(latLonToVector3(la, lo, 1).normalize()));
     });
-    const z = 0.3 / (0.39 * Math.max(0.02, Math.sin(far)));
-    return Math.max(1.4, Math.min(5, z));
+    const cam = cameraRef.current as THREE.PerspectiveCamera | null;
+    const { W, H } = canvasSizeRef.current;
+    const tanHalf = Math.tan(((cam?.fov ?? 50) * D) / 2);
+    const f = (H / 2) / tanHalf;                           // focal length in pixels
+    const want = 0.3 * Math.min(W, H);                     // desired footprint radius, px
+    const dist = Math.cos(far) + (f * Math.sin(far)) / want;
+    // invert applyView: dist = sqrt(1 + (H/(2·radiusPx·tanHalf))²)
+    const zoom = H / (2 * tanHalf * Math.sqrt(Math.max(1e-6, dist * dist - 1)) * 0.39 * Math.min(W, H));
+    return Math.max(1.4, Math.min(5, zoom));
   };
 
   /* ---------- §8 select / deselect (also updates aria-label) ---------- */
@@ -820,17 +828,34 @@ export default function AcquisitionsGlobeEarthPage({
     }
   };
 
-  /** Closing from the panel resets the filter and deselects. */
+  /** Closing from the panel resets the filter and deselects (with flight home). */
   const closeDatatake = () => {
     setDatatakeFilter("*");
     doDeselect(true);
   };
+
+  const handleSelectDatatakeRef = useRef(handleSelectDatatake);
+  handleSelectDatatakeRef.current = handleSelectDatatake;
+  const closeDatatakeRef = useRef(closeDatatake);
+  closeDatatakeRef.current = closeDatatake;
 
   const handleCycleSpeed = () => {
     const currentIndex = SPEED_OPTIONS.indexOf(speedMultiplier);
     const nextIndex = (currentIndex + 1) % SPEED_OPTIONS.length;
     setSpeedMultiplier(SPEED_OPTIONS[nextIndex]);
   };
+
+  // Deselect (with flight home) if the current satellite or day filter now hides the chosen datatake.
+  useEffect(() => {
+    if (datatakeFilter === "*") return;
+    const stillVisible = ACQ_DATATAKES.some((dt) => {
+      if (dt.id !== datatakeFilter) return false;
+      if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
+      if (dayFilter !== "*" && !noZone(dt.startIso).startsWith(dayFilter)) return false;
+      return true;
+    });
+    if (!stillVisible) closeDatatakeRef.current();
+  }, [satelliteFilter, dayFilter, datatakeFilter]);
 
   // The page opens on every datatake, none selected (SentiBoard.html): the user picks one from the
   // Datatake list or by clicking its footprint.
@@ -1235,18 +1260,14 @@ export default function AcquisitionsGlobeEarthPage({
         const fpHit = intersects.find((i) => i.distance <= globeDist + 1e-3);
 
         if (fpHit) {
-          const dtId = (fpHit.object as THREE.Mesh).userData
-            .datatakeId as string;
-          const hitIdx = ACQ_DATATAKES.findIndex((d) => d.id === dtId);
-          if (hitIdx >= 0) {
-            if (hitIdx === selIdxRef.current) {
-              doDeselectRef.current(true); // click selected footprint → deselect
-            } else {
-              doSelectRef.current(hitIdx, true);
-            }
+          const dtId = (fpHit.object as THREE.Mesh).userData.datatakeId as string;
+          if (dtId === ACQ_DATATAKES[selIdxRef.current]?.id) {
+            closeDatatakeRef.current(); // click selected footprint → deselect + clear filter
+          } else {
+            handleSelectDatatakeRef.current(dtId);
           }
         } else if (globeHit && selIdxRef.current >= 0) {
-          doDeselectRef.current(true); // click empty globe while selected → deselect
+          closeDatatakeRef.current(); // click empty globe → deselect + clear filter
         }
       }
     };
@@ -1307,7 +1328,7 @@ export default function AcquisitionsGlobeEarthPage({
           e.preventDefault();
           window.clearTimeout(flyTimerRef.current);
           if (selIdxRef.current >= 0) {
-            doDeselectRef.current(true);
+            closeDatatakeRef.current();
           } else {
             rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
           }
@@ -1323,8 +1344,7 @@ export default function AcquisitionsGlobeEarthPage({
               : null;
           const navPos = selId ? nav.findIndex((d) => d.id === selId) : -1;
           const prev = navPos <= 0 ? nav.length - 1 : navPos - 1;
-          const gIdx = ACQ_DATATAKES.findIndex((d) => d.id === nav[prev].id);
-          if (gIdx >= 0) doSelectRef.current(gIdx, true);
+          handleSelectDatatakeRef.current(nav[prev].id);
           break;
         }
         case "]": {
@@ -1338,8 +1358,7 @@ export default function AcquisitionsGlobeEarthPage({
           const navPos = selId ? nav.findIndex((d) => d.id === selId) : -1;
           const next =
             navPos < 0 || navPos >= nav.length - 1 ? 0 : navPos + 1;
-          const gIdx = ACQ_DATATAKES.findIndex((d) => d.id === nav[next].id);
-          if (gIdx >= 0) doSelectRef.current(gIdx, true);
+          handleSelectDatatakeRef.current(nav[next].id);
           break;
         }
         case "Enter":
@@ -1356,7 +1375,7 @@ export default function AcquisitionsGlobeEarthPage({
       if (openDropdownRef.current !== null) {
         setOpenDropdown(null);
       } else if (selIdxRef.current >= 0) {
-        doDeselectRef.current(true);
+        closeDatatakeRef.current();
       }
     };
 
@@ -1630,11 +1649,11 @@ export default function AcquisitionsGlobeEarthPage({
           <span className={g.kpiK}>Datatakes in view</span>
         </div>
         <div className={g.kpi}>
-          <b className={g.kpiV}>{acquired}%</b>
+          <b className={g.kpiV}>{acquired}</b>
           <span className={g.kpiK}>Acquired</span>
         </div>
         <div className={g.kpi}>
-          <b className={g.kpiV}>{published}%</b>
+          <b className={g.kpiV}>{published}</b>
           <span className={g.kpiK}>Published</span>
         </div>
         <div className={g.kpi}>
@@ -1645,9 +1664,13 @@ export default function AcquisitionsGlobeEarthPage({
         </div>
       </div>
 
-      {/* FILTER TOOLBAR: heading, three underlined dropdowns (label left, value right), search */}
+      {/* FILTER TOOLBAR: heading + three in-flow dropdowns + search */}
       <div className={g.toolbar}>
-        <h2 className={g.tbHeading}>{windowLabel(todayMs)}</h2>
+        <h2 className={g.tbHeading}>
+          {dayFilter === "*"
+            ? windowLabel(todayMs)
+            : `${+dayFilter.slice(8)} ${MONTHS[+dayFilter.slice(5, 7) - 1]} ${dayFilter.slice(0, 4)}`}
+        </h2>
 
         {/* SATELLITE */}
         <div className={`${g.fdrop} ${g.fdropSat}`}>
@@ -1655,34 +1678,35 @@ export default function AcquisitionsGlobeEarthPage({
             type="button"
             className={g.fdropHead}
             aria-expanded={openDropdown === "sat"}
-            onClick={() =>
-              setOpenDropdown(openDropdown === "sat" ? null : "sat")
-            }
+            onClick={() => setOpenDropdown(openDropdown === "sat" ? null : "sat")}
           >
             <span className={g.fdropLabel}>Satellite</span>
             <span className={g.fdropVal}>
-              {satelliteFilter === "*" ? "All" : satelliteFilter}
+              {satelliteFilter === "*" ? "All" : satelliteFilter.replace("Sentinel-", "S")}
             </span>
             <Chevron />
           </button>
-          {openDropdown === "sat" && (
-            <div className={g.fdropMenu}>
-              {["*", ...uniqueSatellites].map((sat) => (
-                <button
-                  key={sat}
-                  type="button"
-                  className={g.fitem}
-                  aria-pressed={satelliteFilter === sat}
-                  onClick={() => {
-                    setSatelliteFilter(sat);
-                    setOpenDropdown(null);
-                  }}
-                >
-                  {sat === "*" ? "All satellites" : sat}
-                </button>
-              ))}
+          <div
+            className={g.fdropBody}
+            style={{ gridTemplateRows: openDropdown === "sat" ? "1fr" : "0fr" }}
+            aria-hidden={openDropdown !== "sat" ? true : undefined}
+            ref={(el) => { if (el) el.inert = openDropdown !== "sat"; }}
+          >
+            <div className={g.fdropInner}>
+              <div className={g.fdropPad}>
+                {["*", ...uniqueSatellites].map((sat) => (
+                  <button
+                    key={sat}
+                    type="button"
+                    className={`${g.fitem} ${satelliteFilter !== "*" && sat !== satelliteFilter ? g.off : ""}`}
+                    onClick={() => { setSatelliteFilter(sat); setOpenDropdown(null); }}
+                  >
+                    <u>{sat === "*" ? "All satellites" : sat}</u>
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* DAY OF ACQUISITION */}
@@ -1691,104 +1715,88 @@ export default function AcquisitionsGlobeEarthPage({
             type="button"
             className={g.fdropHead}
             aria-expanded={openDropdown === "day"}
-            onClick={() =>
-              setOpenDropdown(openDropdown === "day" ? null : "day")
-            }
+            onClick={() => setOpenDropdown(openDropdown === "day" ? null : "day")}
           >
             <span className={g.fdropLabel}>Day of acquisition</span>
             <span className={g.fdropVal}>
-              {dayFilter === "*" ? "Any" : dayFilter.slice(5)}
+              {dayFilter === "*"
+                ? "Any"
+                : dayFilter.slice(8) + " " + MONTHS[+dayFilter.slice(5, 7) - 1].slice(0, 3)}
             </span>
             <Chevron />
           </button>
-          {openDropdown === "day" && (
-            <div className={`${g.fdropMenu} ${g.calMenu}`}>
+          <div
+            className={g.fdropBody}
+            style={{ gridTemplateRows: openDropdown === "day" ? "1fr" : "0fr" }}
+            aria-hidden={openDropdown !== "day" ? true : undefined}
+            ref={(el) => { if (el) el.inert = openDropdown !== "day"; }}
+          >
+            <div className={g.fdropInner}>
+              <div className={g.fdropPad}>
               <button
                 type="button"
-                className={g.fitem}
-                aria-pressed={dayFilter === "*"}
-                onClick={() => {
-                  setDayFilter("*");
-                  setOpenDropdown(null);
-                }}
+                className={`${g.fitem} ${g.acqAnyday} ${dayFilter !== "*" ? g.off : ""}`}
+                onClick={() => { setDayFilter("*"); setOpenDropdown(null); }}
               >
-                Any day
+                <u>Any day</u>
               </button>
               {(() => {
+                const datesWithData = new Set(
+                  ACQ_DATATAKES
+                    .filter((dt) => satelliteFilter === "*" || dt.sat === satelliteFilter)
+                    .map((dt) => noZone(dt.startIso).slice(0, 10)),
+                );
                 const m = new Date(calMonth);
                 const year = m.getUTCFullYear();
                 const month = m.getUTCMonth();
-                const step = (by: number) =>
-                  setCalMonth(Date.UTC(year, month + by, 1));
+                const step = (by: number) => setCalMonth(Date.UTC(year, month + by, 1));
+                const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+                const leadBlanks = (new Date(calMonth).getUTCDay() + 6) % 7;
                 return (
                   <div className={g.calMonth}>
-                    <button
-                      type="button"
-                      className={g.calNav}
-                      aria-label="Previous month"
-                      onClick={() => step(-1)}
-                    >
-                      ‹
-                    </button>
-                    <span>
-                      {MONTHS[month]} {year}
-                    </span>
-                    <button
-                      type="button"
-                      className={g.calNav}
-                      aria-label="Next month"
-                      onClick={() => step(1)}
-                    >
-                      ›
-                    </button>
+                    <div className={g.calMonthHead}>
+                      <button type="button" className={g.calNav} aria-label="Previous month" onClick={() => step(-1)}>
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                          <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" />
+                        </svg>
+                      </button>
+                      <b className={g.calMonthLabel}>{MONTHS[month]} {year}</b>
+                      <button type="button" className={g.calNav} aria-label="Next month" onClick={() => step(1)}>
+                        <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                          <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.6" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className={g.calGrid}>
+                      {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                        <span key={i} className={g.calDow}>{d}</span>
+                      ))}
+                      {Array.from({ length: leadBlanks }, (_, i) => <span key={`b${i}`} />)}
+                      {Array.from({ length: daysInMonth }, (_, i) => {
+                        const dayNum = i + 1;
+                        const dateStr = ymd(calMonth + i * DAY_MS);
+                        const has = datesWithData.has(dateStr);
+                        const isOn = dayFilter === dateStr;
+                        return has ? (
+                          <button
+                            key={dayNum}
+                            type="button"
+                            className={`${g.calDay} ${g.calHas}${isOn ? ` ${g.calOn}` : ""}`}
+                            onClick={() => { setDayFilter(dateStr); setOpenDropdown(null); }}
+                          >
+                            {dayNum}<i />
+                          </button>
+                        ) : (
+                          <span key={dayNum} className={g.calDay}>{dayNum}</span>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })()}
-              <div className={g.calDow}>
-                {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
-                  <span key={i}>{d}</span>
-                ))}
-              </div>
-              <div className={g.calGrid}>
-                {/* weeks start on Monday: blank cells up to the 1st */}
-                {[...Array((new Date(calMonth).getUTCDay() + 6) % 7)].map(
-                  (_, i) => (
-                    <span key={`b${i}`} />
-                  ),
-                )}
-                {[
-                  ...Array(
-                    new Date(
-                      Date.UTC(
-                        new Date(calMonth).getUTCFullYear(),
-                        new Date(calMonth).getUTCMonth() + 1,
-                        0,
-                      ),
-                    ).getUTCDate(),
-                  ),
-                ].map((_, i) => {
-                  const dayNum = i + 1;
-                  const dateStr = ymd(calMonth + i * DAY_MS);
-                  // the window's two days carry data
-                  const has = dateStr === yesterdayStr || dateStr === todayStr;
-                  return (
-                    <button
-                      key={dayNum}
-                      type="button"
-                      className={`${g.calDay} ${has ? g.calHas : ""}`}
-                      aria-pressed={dayFilter === dateStr}
-                      onClick={() => {
-                        setDayFilter(dateStr);
-                        setOpenDropdown(null);
-                      }}
-                    >
-                      {dayNum}
-                    </button>
-                  );
-                })}
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* DATATAKE */}
@@ -1797,9 +1805,7 @@ export default function AcquisitionsGlobeEarthPage({
             type="button"
             className={g.fdropHead}
             aria-expanded={openDropdown === "dtk"}
-            onClick={() =>
-              setOpenDropdown(openDropdown === "dtk" ? null : "dtk")
-            }
+            onClick={() => setOpenDropdown(openDropdown === "dtk" ? null : "dtk")}
           >
             <span className={g.fdropLabel}>Datatake</span>
             <span className={g.fdropVal}>
@@ -1807,74 +1813,68 @@ export default function AcquisitionsGlobeEarthPage({
             </span>
             <Chevron />
           </button>
-          {openDropdown === "dtk" && (
-            <div className={`${g.fdropMenu} ${g.dtkMenu}`}>
+          <div
+            className={g.fdropBody}
+            style={{ gridTemplateRows: openDropdown === "dtk" ? "1fr" : "0fr" }}
+            aria-hidden={openDropdown !== "dtk" ? true : undefined}
+            ref={(el) => { if (el) el.inert = openDropdown !== "dtk"; }}
+          >
+            <div className={g.fdropInner}>
+              <div className={g.fdropPad}>
               <button
                 type="button"
-                className={g.fitem}
-                aria-pressed={datatakeFilter === "*"}
-                onClick={() => {
-                  setDatatakeFilter("*");
-                  setOpenDropdown(null);
-                  closeDatatake();
-                }}
+                className={`${g.fitem} ${datatakeFilter !== "*" ? g.off : ""}`}
+                onClick={() => { setDatatakeFilter("*"); setOpenDropdown(null); doDeselect(true); }}
               >
-                All datatakes
+                <u>All datatakes</u>
               </button>
-              {dropdownDatatakes.map((dt) => {
-                const statusColor =
-                  dt.cls === "ok"
-                    ? "#34d399"
-                    : dt.cls === "warn"
-                      ? "#f5b544"
-                      : "#ff5c5c";
-                return (
-                  <button
-                    key={dt.id}
-                    type="button"
-                    className={`${g.fitem} ${g.dtkItem}`}
-                    aria-pressed={datatakeFilter === dt.id}
-                    onClick={() => {
-                      setOpenDropdown(null);
-                      handleSelectDatatake(dt.id);
-                    }}
-                  >
-                    <i
-                      className={g.dtkDot}
-                      style={{ background: statusColor }}
-                    />
-                    <span>{dt.id}</span>
-                    <small>
-                      {Math.round(dt.comp)}% · {dt.status}
-                    </small>
-                  </button>
-                );
-              })}
+              {[...dropdownDatatakes]
+                .sort((a, b) => {
+                  const ga = satGroup(a.sat), gb = satGroup(b.sat);
+                  if (ga < gb) return -1; if (ga > gb) return 1;
+                  if (a.id < b.id) return -1; if (a.id > b.id) return 1;
+                  return 0;
+                })
+                .map((dt) => {
+                  const dotColor = dt.cls === "ok" ? "#34d399" : dt.cls === "warn" ? "#f5b544" : "#ff5c5c";
+                  return (
+                    <button
+                      key={dt.id}
+                      type="button"
+                      className={`${g.fitem} ${datatakeFilter !== "*" && dt.id !== datatakeFilter ? g.off : ""}`}
+                      onClick={() => { setOpenDropdown(null); handleSelectDatatake(dt.id); }}
+                    >
+                      <i className={g.dtkDot} style={{ background: dotColor }} />
+                      <u>{dt.id}</u>
+                      <s>{dt.comp.toFixed(1)}% · {dt.status}</s>
+                    </button>
+                  );
+                })}
+              {dropdownDatatakes.length === 0 && (
+                <p className={g.acqEmpty}>No datatake matches</p>
+              )}
+              </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* SEARCH */}
         <label className={g.fsearch}>
-          <svg
-            width="13"
-            height="13"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.4"
-            aria-hidden
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="M20 20l-4-4" />
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M10.4 10.4L14 14" stroke="currentColor" strokeWidth="1.3" />
           </svg>
           <input
             type="search"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value.trim()) setOpenDropdown("dtk");
+            }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && filteredDatatakes.length > 0) {
-                handleSelectDatatake(filteredDatatakes[0].id);
+              if (e.key === "Enter" && dropdownDatatakes.length > 0) {
+                handleSelectDatatake(dropdownDatatakes[0].id);
+                setOpenDropdown(null);
               }
             }}
             placeholder="Datatake ID"
@@ -2057,7 +2057,7 @@ export default function AcquisitionsGlobeEarthPage({
               onClick={() => {
                 window.clearTimeout(flyTimerRef.current);
                 if (selIdx >= 0) {
-                  doDeselect(true);
+                  closeDatatake();
                 } else {
                   rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
                 }

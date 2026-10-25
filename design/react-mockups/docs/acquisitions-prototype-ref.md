@@ -600,3 +600,10 @@ Decisions (confirmed 2026-10-24 — these override the prototype where they diff
    instead of the prototype's 0.34/0.42/0.45/0.55. Every other panel value follows §10.
 3. Sim clock start: **open at the current UTC time of day** (not the prototype's fixed 01:23:38).
 4. Satellites with several datatakes: **one marker per satellite** (§7), not one per datatake.
+5. Datatake filter (stakeholder requirement, overrides §3 "Selection semantics"): **the Datatake
+   dropdown stays a real filter**. Picking a datatake — from the list, the search (Enter) or by
+   clicking its footprint — selects it AND hides every other footprint and satellite; the panel opens
+   and the globe flies to it. The list keeps an **"All datatakes"** first item; the value reads "All"
+   when none is chosen. Clearing (All datatakes, ×, ⌖, Escape, a click on the empty globe or on the
+   footprint itself) shows everything again and flies home. KPIs follow all three filters
+   ("Datatakes in view: 1" while one is chosen). The search still only narrows the list.
