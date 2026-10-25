@@ -635,8 +635,14 @@ export default function AcquisitionsGlobeEarthPage({
       future: THREE.Line;
     }[]
   >([]);
-  /** Map from datatake ID → PreparedDatatake, computed once per todayMs. */
-  const prepMapRef = useRef<Map<string, PreparedDatatake>>(new Map());
+  /** Map from datatake ID → PreparedDatatake, computed once (lazy useState initialiser
+   *  runs only on the first render). handleSceneReady (called from ThreeEarth's mount
+   *  effect, before any useEffect runs) sees a populated map, and the build cost is not
+   *  paid on subsequent renders. The useEffect below replaces it if todayMs ever changes. */
+  const [_prepMapState] = useState<Map<string, PreparedDatatake>>(
+    () => new Map(ACQ_DATATAKES.map((dt) => [dt.id, prepDatatake(dt, todayMs)]))
+  );
+  const prepMapRef = useRef(_prepMapState);
   /** Per station: its direction and the coverage circle + dashed links shown while in contact. */
   const stationFxRef = useRef<
     {
