@@ -53,9 +53,6 @@ export function isGap(d: Datatake): boolean {
   return d.status === "Partial" || d.status === "Unavailable";
 }
 
-export function isLost(d: Datatake): boolean {
-  return d.status === "Unavailable";
-}
 
 export const pad = (n: number) => String(n).padStart(2, "0");
 export const fmtDate = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
@@ -140,7 +137,7 @@ function generate(count = 900): Datatake[] {
       const roll = rng();
       if (outage?.severity === "loss" && roll < 0.62) {
         status = "Unavailable";
-        completeness = Math.round(rng() * 8);
+        rng(); completeness = 0; // consume the draw to keep all other mock data identical
       } else if (outage && roll < 0.85) {
         status = "Partial";
         completeness = Math.round(25 + rng() * 50);
@@ -196,12 +193,11 @@ const BANDS: { min: number; color: string }[] = [
   { min: 30, color: "#F0736B" }, //  49–30  light red
   { min: 1, color: "#E8200F" }, //   30–1   fire red
 ];
-const MISSING = "#E8514B"; //          0     nothing published (lost)
+const MISSING = "#8B98A6"; //          0     nothing published (lost/unavailable)
 
 export function barColor(d: Datatake): string {
   if (d.status === "Planned") return "#7A8696";
   if (d.status === "Processing") return "#5B9BE8";
-  if (isLost(d)) return "#E8514B";
   return BANDS.find((b) => d.completeness >= b.min)?.color ?? MISSING;
 }
 

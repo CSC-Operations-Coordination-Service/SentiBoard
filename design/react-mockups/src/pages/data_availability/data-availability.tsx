@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { createPortal } from "react-dom";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 
-import { Search, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { PageHeader, Reveal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import {
@@ -21,7 +21,6 @@ import {
   fmtDate,
   fmtDateTime,
   isGap,
-  isLost,
   pad,
 } from "./mock";
 import s from "./availability.module.css";
@@ -88,7 +87,8 @@ function cardSides(d: Datatake): { acq: CardSide; pub: CardSide } {
   const band = (pct: number) =>
     barColor({ ...d, status: "Acquired", completeness: pct });
   const r = idUnit(d.id, 7);
-  const acqPct = d.status === "Planned" ? null : d.completeness;
+  const acqPct =
+    d.status === "Planned" || d.status === "Processing" ? null : d.completeness;
   const acqLabel =
     d.status === "Planned"
       ? "PLANNED"
@@ -98,7 +98,7 @@ function cardSides(d: Datatake): { acq: CardSide; pub: CardSide } {
   const acq: CardSide = {
     pct: acqPct,
     label: acqLabel,
-    color: d.status === "Planned" ? barColor(d) : band(d.completeness),
+    color: acqPct === null ? "#7A8696" : band(d.completeness),
   };
 
   let pub: CardSide;
@@ -158,7 +158,7 @@ function Ring({
             cy="35"
             r={R}
             fill="none"
-            stroke="rgba(255,255,255,0.16)"
+            stroke="rgba(255,255,255,0.14)"
             strokeWidth="9"
           />
           {v > 0 && (
@@ -171,7 +171,6 @@ function Ring({
               strokeWidth="9"
               strokeDasharray={`${len.toFixed(2)} ${(C - len).toFixed(2)}`}
               transform="rotate(-90 35 35)"
-              className={s.ringArc}
             />
           )}
         </svg>
@@ -187,21 +186,97 @@ function Ring({
         {onLabel}
       </span>
       <span className={s.ringLegend}>
-        <i style={{ background: "rgba(255,255,255,0.3)" }} />
+        <i style={{ background: "rgba(255,255,255,0.24)" }} />
         Missing
       </span>
     </div>
   );
 }
 
-/** The card that opens under a strip when one of its bars is picked. */
-function DatatakeCard({ d, onClose }: { d: Datatake; onClose: () => void }) {
+type CardPhase = "open" | "swap" | "close";
+
+/** The card that opens under a strip when one of its bars is picked.
+ *  Height animation is driven imperatively so bands below slide smoothly. */
+function DatatakeCard({
+  d,
+  phase,
+  onClose,
+  onClosed,
+}: {
+  d: Datatake;
+  phase: CardPhase;
+  onClose: () => void;
+  onClosed: () => void;
+}) {
   const { acq, pub } = cardSides(d);
-  // The mock has no sensing length; six minutes stands in for it, as before.
   const stop = new Date(d.start.getTime() + 6 * 60000);
   const hhmm = (t: Date) => `${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}`;
+
+  const ref = useRef<HTMLDivElement>(null);
+  // rAF ids and timer for cleanup so a stale close never fires after a new open.
+  const raf1 = useRef(0);
+  const raf2 = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Cancel any in-flight animation from a previous phase.
+    cancelAnimationFrame(raf1.current);
+    cancelAnimationFrame(raf2.current);
+    clearTimeout(timer.current);
+
+    if (phase === "open") {
+      if (reduced) {
+        el.style.cssText = "height:auto;opacity:1;overflow:hidden;transition:none";
+        return;
+      }
+      el.style.cssText = "height:0px;opacity:0;overflow:hidden;transition:none";
+      raf1.current = requestAnimationFrame(() => {
+        raf2.current = requestAnimationFrame(() => {
+          const h = el.scrollHeight;
+          el.style.transition =
+            "height 560ms cubic-bezier(.2,.7,.2,1), opacity 400ms ease 120ms";
+          el.style.height = `${h}px`;
+          el.style.opacity = "1";
+          timer.current = setTimeout(() => {
+            el.style.height = "auto";
+            el.style.transition = "";
+          }, 600);
+        });
+      });
+    } else if (phase === "close") {
+      if (reduced) {
+        onClosed();
+        return;
+      }
+      const h = el.scrollHeight;
+      el.style.cssText = `height:${h}px;opacity:1;overflow:hidden;transition:none`;
+      raf1.current = requestAnimationFrame(() => {
+        raf2.current = requestAnimationFrame(() => {
+          el.style.transition =
+            "height 560ms cubic-bezier(.8,0,.8,.3), opacity 300ms ease";
+          el.style.height = "0px";
+          el.style.opacity = "0";
+          timer.current = setTimeout(onClosed, 620);
+        });
+      });
+    } else {
+      // swap: no animation, ensure visible
+      el.style.cssText = "height:auto;opacity:1;overflow:hidden;transition:none";
+    }
+
+    return () => {
+      cancelAnimationFrame(raf1.current);
+      cancelAnimationFrame(raf2.current);
+      clearTimeout(timer.current);
+    };
+  }, [phase, onClosed]);
+
   return (
-    <div className={s.dtkCard}>
+    <div ref={ref} className={s.dtkCard}>
       <div className={s.dtkHead}>
         <b>{d.id}</b>
         <button
@@ -210,7 +285,9 @@ function DatatakeCard({ d, onClose }: { d: Datatake; onClose: () => void }) {
           onClick={onClose}
           aria-label="Close details"
         >
-          <X size={14} aria-hidden />
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.6" />
+          </svg>
         </button>
       </div>
       <div className={s.dtkWhen}>{fmtDateTime(d.start)}</div>
@@ -305,9 +382,30 @@ export default function CoverageTimeline() {
     date: Date;
     item: Datatake;
   } | null>(null);
+  // Card shown (and its animation phase) — separate from focus so the card stays mounted during
+  // the close animation after focus is cleared (zoom starts back immediately).
+  const [cardShown, setCardShown] = useState<{
+    mission: string;
+    item: Datatake;
+  } | null>(null);
+  const [cardPhase, setCardPhase] = useState<CardPhase>("open");
   // Where each row's strip pivots when it zooms (px from the strip's left edge). Kept per row and
   // never cleared, so a strip that is zooming back out keeps its pivot until it is flat again.
   const [origins, setOrigins] = useState<Record<string, number>>({});
+
+  // Kick off the close animation. Ignored if card is already closing or not shown.
+  const startClose = useCallback(() => {
+    setCardPhase((prev) => {
+      if (prev === "close") return prev;
+      return "close";
+    });
+    // setCardShown is cleared by handleCardClosed (called by DatatakeCard after 620ms).
+  }, []);
+
+  // Called by DatatakeCard when its close animation finishes — unmounts the card.
+  const handleCardClosed = useCallback(() => {
+    setCardShown(null);
+  }, []);
 
   // True on mount and for ~900 ms after each animated window change; tiles play the stagger entrance.
   // All other renders (filter toggles, search, pager, pick) have animation: none on the tiles.
@@ -357,8 +455,9 @@ export default function CoverageTimeline() {
       if (ch.customTo !== undefined) setCustomTo(ch.customTo);
       if (ch.animate) setAnimKey((k) => k + 1);
       setFocus(null);
+      startClose();
     },
-    [],
+    [startClose],
   );
 
   const reset = useCallback(() => {
@@ -451,7 +550,11 @@ export default function CoverageTimeline() {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (openDrop !== null) { setOpenDrop(null); return; }
-        if (focus !== null) { setFocus(null); return; }
+        if (focus !== null || cardShown !== null) {
+          setFocus(null);
+          startClose();
+          return;
+        }
         return;
       }
       if (focus !== null) return;
@@ -461,7 +564,7 @@ export default function CoverageTimeline() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focus, openDrop, shiftOffset]);
+  }, [focus, cardShown, openDrop, shiftOffset, startClose]);
 
   // Click outside either open dropdown closes it.
   useEffect(() => {
@@ -477,9 +580,11 @@ export default function CoverageTimeline() {
   }, [openDrop]);
 
   // If a filter change removes the focused datatake from matching, close the card and zoom out.
+  // The row itself disappears so there is nothing to animate — reset card state immediately.
   useEffect(() => {
     if (focus !== null && !matching.some((r) => r.id === focus.item.id)) {
       setFocus(null);
+      setCardShown(null);
     }
   }, [matching, focus]);
 
@@ -799,7 +904,6 @@ export default function CoverageTimeline() {
               {lanes.map(({ mission: m, frames, tw }, rowIndex) => {
                 const isRowFocused = focus?.mission === m;
                 const zoomed = isRowFocused && focus?.item != null;
-                const activeItem = isRowFocused ? focus?.item : null;
                 return (
                   <div className={s.mapRowContainer} key={m}>
                     <div className={s.mapRow}>
@@ -828,12 +932,10 @@ export default function CoverageTimeline() {
                               focus?.mission === m &&
                               focus?.item?.id === item.id;
                             const faded = focus !== null && !on;
-                            const hatched = isLost(item);
                             const cls = [
                               s.tile,
                               on ? s.tileSelected : "",
                               faded ? s.tileFaded : "",
-                              hatched ? s.tileHatched : "",
                             ]
                               .filter(Boolean)
                               .join(" ");
@@ -861,7 +963,9 @@ export default function CoverageTimeline() {
                                 onMouseLeave={() => setTipItem(null)}
                                 onClick={(e) => {
                                   if (on) {
+                                    // Same bar: zoom out and close with animation.
                                     setFocus(null);
+                                    startClose();
                                     return;
                                   }
                                   const centre = e.currentTarget.offsetLeft;
@@ -872,6 +976,10 @@ export default function CoverageTimeline() {
                                     date: item.start,
                                     item,
                                   });
+                                  // If a card is already shown (open or closing), swap content;
+                                  // otherwise this is the first pick and we animate open.
+                                  setCardShown({ mission: m, item });
+                                  setCardPhase(cardShown !== null ? "swap" : "open");
                                 }}
                               />
                             );
@@ -896,11 +1004,12 @@ export default function CoverageTimeline() {
                     </div>
 
                     {/* the picked datatake's card opens right under its own strip */}
-                    {isRowFocused && activeItem && (
+                    {cardShown?.mission === m && (
                       <DatatakeCard
-                        key={activeItem.id}
-                        d={activeItem}
-                        onClose={() => setFocus(null)}
+                        d={cardShown.item}
+                        phase={cardPhase}
+                        onClose={() => { setFocus(null); startClose(); }}
+                        onClosed={handleCardClosed}
                       />
                     )}
                   </div>

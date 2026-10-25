@@ -536,10 +536,11 @@ Recommended choice first. Strike the ones you reject and write what you want ins
    (no sideways overflow or scrollbar); the vertical growth stays unclipped.
 9. **Sensor mode row.** The prototype card has none; the real data has it and the Description mentions
    it. → *Recommended:* keep `Sensor mode` (after Platform) — say if the stakeholders want it out.
-10. **Description.** → *Recommended:* replace the page's `AVAILABILITY_DESCRIPTION` with the §9 copy
-    as-is (it is the stakeholders' text), but make the legend show what the bars use: the five
-    completeness bands + `0 %` + Planned + Processing. Or keep the state-colour legend exactly as the
-    prototype.
+10. **Description** (confirmed 2026-10-25): **exactly as the prototype** — the §9 copy verbatim
+    (including the satellite sentence: it is the stakeholders' text; the ID search, whose IDs start
+    with the satellite, e.g. `S2A-…`, covers it for now), and the "Completeness" legend with the five
+    **state** colours. The legend lists statuses, not the bar colours; that mismatch is accepted.
+    Open point for the stakeholders: the copy mentions a satellite selector the page does not have.
 11. **Card contrast.** Same question as Acquisitions decision 2. → *Recommended:* keep the current
     brighter ink ramp (`--card-ink-2 .78`, `--card-ink-3 .62`, values white) instead of `#6B7686`
     / `#4E5866`; take every size, weight, spacing and border from §7.
@@ -553,7 +554,11 @@ Recommended choice first. Strike the ones you reject and write what you want ins
 14. **Mock statuses** (Session 2): `mock.ts` decides Planned / Processing from the real current time:
     start > now → Planned; started less than 24 h ago → Processing; older → outage / acquired /
     partial logic. Every window change goes through one `changeWindow` helper that clears the pick.
-15. **Lost datatakes must not look like Planned** (confirmed 2026-10-25, option b). In the prototype a
+15. **REVERTED 2026-10-25 — follow the prototype:** a lost datatake is a plain bar in `MISSING #8B98A6`
+    (no hatching, no red); its card ring/badge and tooltip use the same grey. To make that true for the
+    mock, an Unavailable datatake has completeness exactly 0 (as in the prototype), so the bands give
+    `#8B98A6` without a special case. The text below is kept only as history.
+    ~~Lost datatakes must not look like Planned (option b).~~ In the prototype a
     0 % bar is `#8B98A6`, almost the Planned grey `#7A8696`, and the Status list shows Unavailable as
     red — two contradicting colour systems. Bars keep the completeness bands, except 0 %:
     - lost colour = `#E8514B` (the Status dot and the "Datatakes lost" KPI colour) — replaces
@@ -562,4 +567,4 @@ Recommended choice first. Strike the ones you reject and write what you want ins
       `background: repeating-linear-gradient(135deg, #E8514B 0 2px, #12161B 2px 5px); border-color: #E8514B;`
       (other bars keep the `#EAF0F6` border);
     - Planned `#7A8696` and Processing `#5B9BE8` unchanged.
-    The Description legend (Decision 10) shows: the five bands, Lost (hatched), Planned, Processing.
+    (The Description legend stays the prototype's state-colour legend — Decision 10.)
