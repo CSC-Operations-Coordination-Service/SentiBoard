@@ -7,13 +7,12 @@
     <meta name="description" content="Real-time Copernicus Sentinel ground-segment operations dashboard." />
 
     <script>
-      // Apply the saved theme before first paint to avoid a flash.
+      // Dark-only mode: always set dark before first paint. Clear any stored choice so
+      // an old "light" value cannot flash on reload. Re-enable the ThemeToggle in Nav.tsx
+      // and restore the original body of this script to bring the toggle back.
       (function () {
-        try {
-          var t = localStorage.getItem("sb-theme");
-          if (!t) t = "dark"; // dark is the default
-          document.documentElement.setAttribute("data-theme", t);
-        } catch (e) {}
+        try { localStorage.removeItem("sb-theme"); } catch (e) {}
+        document.documentElement.setAttribute("data-theme", "dark");
       })();
     </script>
   </head>

@@ -5,14 +5,15 @@ interface Ctx { theme: Theme; toggle: () => void; }
 const ThemeContext = createContext<Ctx>({ theme: "dark", toggle: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    const saved = typeof localStorage !== "undefined" && localStorage.getItem("sb-theme");
-    return saved === "light" || saved === "dark" ? saved : "dark"; // dark default
-  });
+  // Dark-only mode: ignore stored preference and always start dark.
+  // To restore the toggle, reinstate the localStorage read in useState and the setItem in useEffect.
+  const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
+    // Clear any stored choice so an old "light" value cannot outlive this session.
+    // Not writing back to localStorage while the toggle is hidden — nothing needs storing.
+    try { localStorage.removeItem("sb-theme"); } catch {}
     document.documentElement.setAttribute("data-theme", theme);
-    try { localStorage.setItem("sb-theme", theme); } catch {}
   }, [theme]);
 
   const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));

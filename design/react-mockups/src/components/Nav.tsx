@@ -125,7 +125,7 @@ export default function Nav() {
           <div className="nav-partners">
             <Partners compact />
           </div>
-          <ThemeToggle />
+          {/* ThemeToggle hidden — dark-only mode; re-enable to restore the toggle */}
           <button
             className="nav-burger"
             aria-label={open ? "Close menu" : "Menu"}
