@@ -938,3 +938,29 @@
     height: 28px;
   }
 }
+
+/* wheel zoom hint (§8) */
+.acqWheelHint {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 4;
+  padding: 12px 18px;
+  pointer-events: none;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #eaf0f6;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.acqWheelHintOn {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}

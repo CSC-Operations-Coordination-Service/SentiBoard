@@ -35,6 +35,9 @@ function Chevron() {
 
 const D = Math.PI / 180;
 
+/** HOME_VIEW: §6 — centre lon 4°E, lat 34°N, zoom 1. */
+const HOME_VIEW = { lon: 4 as number, lat: 34 as number, zoom: 1 as number };
+
 const DESCRIPTION = (
   <>
     <p>{ACQUISITIONS_DESCRIPTION}</p>
@@ -202,7 +205,7 @@ function DatatakePanel({
   const start = dt.startIso ? noZone(dt.startIso) : null;
   // "MSI · NOBS" → mode NOBS; Sentinel-1 writes "IW · DV": mode IW, polarisation DV
   const modeParts = (dt.mode ?? "")
-    .split("\u00b7")
+    .split("·")
     .map((s: string) => s.trim())
     .filter(Boolean);
   const isS1 = unit.startsWith("S1");
@@ -400,7 +403,7 @@ function makeAtmosphere(): THREE.Sprite {
   const ctx = c.getContext("2d")!;
   const mid = size / 2;
   const unit = mid / ATMOS_OUTER; // canvas px per planet radius (at the rim)
-  const g = ctx.createRadialGradient(
+  const gr = ctx.createRadialGradient(
     mid,
     mid,
     unit * ATMOS_INNER,
@@ -408,9 +411,9 @@ function makeAtmosphere(): THREE.Sprite {
     mid,
     mid,
   );
-  g.addColorStop(0, "rgba(110,170,255,0.34)");
-  g.addColorStop(1, "rgba(110,170,255,0)");
-  ctx.fillStyle = g;
+  gr.addColorStop(0, "rgba(110,170,255,0.34)");
+  gr.addColorStop(1, "rgba(110,170,255,0)");
+  ctx.fillStyle = gr;
   ctx.beginPath();
   ctx.arc(mid, mid, mid, 0, Math.PI * 2);
   ctx.arc(mid, mid, unit * 0.995, 0, Math.PI * 2, true);
@@ -512,19 +515,36 @@ export default function AcquisitionsGlobeEarthPage({
   const cameraRef = useRef<THREE.Camera | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
 
-  /** Camera flight (SentiBoard.html rotateTo): turn around the globe from one direction to another
-   *  while easing the distance, over `dur` ms. */
-  const camAnimRef = useRef<{
-    from: THREE.Vector3;
-    to: THREE.Vector3;
-    d0: number;
-    d1: number;
-    t0: number;
-    dur: number;
+  /* ---------- §6 view state: single source of truth for globe orientation ---------- */
+
+  /** Current view — lon/lat = centre of view in degrees, zoom = scale factor (0.7–8). */
+  const viewRef = useRef({ lon: HOME_VIEW.lon, lat: HOME_VIEW.lat, zoom: HOME_VIEW.zoom });
+
+  /** Running rotateTo animation. */
+  const animRef = useRef<{
+    fromLon: number; fromLat: number; fromZoom: number;
+    dl: number;      // shortest longitude delta
+    toLat: number; toZoom: number;
+    t0: number; dur: number;
   } | null>(null);
+
+  /** Canvas size; updated by ResizeObserver in handleSceneReady. */
+  const canvasSizeRef = useRef({ W: 800, H: 600 });
+
+  /** The canvas element; set in handleSceneReady so aria-label can be refreshed. */
+  const canvasElRef = useRef<HTMLCanvasElement | null>(null);
+
+  /** Ref for the wheel-hint div; populated in JSX. */
+  const wheelHintRef = useRef<HTMLDivElement | null>(null);
+
+  /** Deferred inter-flight timer (the "out first, then in" two-step). */
   const flyTimerRef = useRef<number | undefined>(undefined);
 
-  const [selectedDataTake, setSelectedDataTake] = useState<number>(0);
+  /* ---------- datatake selection ---------- */
+
+  /** Index into ACQ_DATATAKES of the selected datatake, or -1. */
+  const [selIdx, setSelIdx] = useState(-1);
+
   const [satelliteFilter, setSatelliteFilter] = useState("*");
   const [dayFilter, setDayFilter] = useState("*");
 
@@ -541,7 +561,6 @@ export default function AcquisitionsGlobeEarthPage({
   const [datatakeFilter, setDatatakeFilter] = useState<string>("*");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const footprintMeshesRef = useRef<THREE.Object3D[]>([]);
@@ -609,16 +628,17 @@ export default function AcquisitionsGlobeEarthPage({
     line: THREE.LineBasicMaterial;
   } | null>(null);
   const selectedSatRef = useRef<string | null>(null);
-  selectedSatRef.current = isModalOpen
-    ? (ACQ_DATATAKES[selectedDataTake]?.unit ?? null)
+  selectedSatRef.current = selIdx >= 0
+    ? (ACQ_DATATAKES[selIdx]?.unit ?? null)
     : null;
 
-  const isModalOpenRef = useRef(isModalOpen);
-  isModalOpenRef.current = isModalOpen;
-  const selectedDataTakeRef = useRef(selectedDataTake);
-  selectedDataTakeRef.current = selectedDataTake;
+  /* ---------- stale-closure mirrors (kept current every render) ---------- */
+  const selIdxRef = useRef(-1);
+  selIdxRef.current = selIdx;
+  const openDropdownRef = useRef<string | null>(null);
+  openDropdownRef.current = openDropdown;
 
-  // List of datatakes available for the dropdown options ( filtered by Satellite, Day, and Search — but NOT Datatake ID )
+  // List of datatakes visible for globe + navigation (sat + day + search, NO datatake filter)
   const dropdownDatatakes = ACQ_DATATAKES.filter((dt) => {
     if (satelliteFilter !== "*" && dt.sat !== satelliteFilter) return false;
     if (dayFilter !== "*" && !noZone(dt.startIso).startsWith(dayFilter))
@@ -639,6 +659,10 @@ export default function AcquisitionsGlobeEarthPage({
   });
   const filteredDatatakesRef = useRef(filteredDatatakes);
   filteredDatatakesRef.current = filteredDatatakes;
+
+  /** Sat+day-filtered set — used for keyboard `[` `]` navigation. */
+  const navDatatakesRef = useRef(dropdownDatatakes);
+  navDatatakesRef.current = dropdownDatatakes;
 
   const datatakesInView = filteredDatatakes.length;
   const acquired = Math.round(
@@ -673,102 +697,133 @@ export default function AcquisitionsGlobeEarthPage({
     );
   };
 
-  const getSwathCentroid = (coords: number[][]) => {
-    const avgLon = coords.reduce((sum, c) => sum + c[0], 0) / coords.length;
-    const avgLat = coords.reduce((sum, c) => sum + c[1], 0) / coords.length;
-    return { lon: avgLon, lat: avgLat };
+  /* ---------- §6 camera helpers ---------- */
+
+  /** Apply the current view state to the camera every frame.
+   *  Transforms the view direction and up vector through EarthGroup's world quaternion
+   *  so HOME_VIEW really is 4°E 34°N with north up regardless of ThreeEarth's initial rotation. */
+  const applyView = (cam: THREE.PerspectiveCamera, W: number, H: number) => {
+    const view = viewRef.current;
+    const radiusPx = 0.39 * Math.min(W, H) * view.zoom;
+    const tanHalf = Math.tan((cam.fov * D) / 2);
+    const dist = Math.sqrt(1 + Math.pow(H / (2 * radiusPx * tanHalf), 2));
+
+    // Clamp lat to ±89.9 so lookAt never degenerates at the poles
+    const clampedLat = Math.max(-89.9, Math.min(89.9, view.lat));
+    const latR = clampedLat * D;
+    const lonR = (view.lon + 90) * D; // same +90° convention as latLonToVector3
+
+    const localDir = new THREE.Vector3(
+      Math.cos(latR) * Math.sin(lonR),
+      Math.sin(latR),
+      Math.cos(latR) * Math.cos(lonR),
+    );
+    const localUp = new THREE.Vector3(0, 1, 0);
+
+    // Apply EarthGroup rotation so the home view is geographically correct
+    const earthGroup = sceneRef.current?.getObjectByName("EarthGroup");
+    if (earthGroup) {
+      const q = earthGroup.getWorldQuaternion(new THREE.Quaternion());
+      localDir.applyQuaternion(q);
+      localUp.applyQuaternion(q);
+    }
+
+    cam.position.copy(localDir.multiplyScalar(dist));
+    cam.up.copy(localUp);
+    cam.lookAt(0, 0, 0);
+    if (cam.near !== 0.01) cam.near = 0.01;
+    // setViewOffset calls updateProjectionMatrix internally; passing near changes take effect here
+    cam.setViewOffset(W, H, 0, 0.04 * H, W, H);
   };
 
-  /** Start a camera flight to a world direction and distance. */
-  const flyTo = (dir: THREE.Vector3, dist: number, dur = 1300) => {
-    const cam = cameraRef.current;
-    if (!cam) return;
-    camAnimRef.current = {
-      from: cam.position.clone().normalize(),
-      to: dir.clone().normalize(),
-      d0: cam.position.length(),
-      d1: dist,
-      t0: performance.now(),
-      dur,
+  /** §8 rotateTo: animate lon/lat/zoom from current view, shortest longitude path, 1300 ms. */
+  const rotateTo = (toLon: number, toLat: number, toZoom: number) => {
+    const v = viewRef.current;
+    const dl = ((toLon - v.lon + 540) % 360) - 180;
+    animRef.current = {
+      fromLon: v.lon, fromLat: v.lat, fromZoom: v.zoom,
+      dl, toLat, toZoom,
+      t0: performance.now(), dur: 1300,
     };
   };
 
-  /** The reference's fitZoom: come close enough that the footprint fills about a third of the
-   *  globe's window, between a gentle and a deep zoom. */
-  const fitDistance = (coords: number[][]) => {
-    const { lon, lat } = getSwathCentroid(coords);
-    const c = latLonToVector3(lat, lon, 1).normalize();
+  /** §8 fitZoom: come close enough that the footprint fills ~a third of the globe's window. */
+  const fitZoom = (prep: PreparedDatatake): number => {
+    const { ring } = buildFootprint(prep);
+    const c = latLonToVector3(prep.lat, prep.lon, 1).normalize();
     let far = 0;
-    coords.forEach(([lo, la]) => {
+    ring.forEach(([lo, la]: GeoPoint) => {
       far = Math.max(far, c.angleTo(latLonToVector3(la, lo, 1).normalize()));
     });
-    const canvas = rendererRef.current?.domElement;
-    const W = canvas?.clientWidth || 800;
-    const H = canvas?.clientHeight || 600;
-    const cam = cameraRef.current as THREE.PerspectiveCamera | null;
-    const tanHalf = Math.tan(((cam?.fov ?? 45) * D) / 2);
-    // fraction of the half-height the footprint's radius should take
-    const f = (0.6 * Math.min(W, H)) / H;
-    const d = Math.cos(far) + Math.sin(Math.max(far, 0.02)) / (f * tanHalf);
-    return Math.max(1.3, Math.min(3.0, d));
+    const z = 0.3 / (0.39 * Math.max(0.02, Math.sin(far)));
+    return Math.max(1.4, Math.min(5, z));
   };
 
-  const focusOnDatatake = (coords: number[][]) => {
-    const cam = cameraRef.current;
-    if (!cam) return;
-    const { lon, lat } = getSwathCentroid(coords);
-    // EarthGroup may have turned since load, so aim at the footprint where it is now
-    const earthGroup = sceneRef.current?.getObjectByName("EarthGroup");
-    const dir = latLonToVector3(lat, lon, 1).normalize();
-    if (earthGroup)
-      dir.applyQuaternion(
-        earthGroup.getWorldQuaternion(new THREE.Quaternion()),
-      );
-    const dist = fitDistance(coords);
+  /* ---------- §8 select / deselect (also updates aria-label) ---------- */
+
+  const updateAriaLabel = () => {
+    if (!canvasElRef.current) return;
+    const v = viewRef.current;
+    const selDt = selIdxRef.current >= 0 ? ACQ_DATATAKES[selIdxRef.current] : null;
+    const sel = selDt ? ` · ${selDt.id} selected` : "";
+    canvasElRef.current.setAttribute(
+      "aria-label",
+      `Globe — lon ${Math.round(v.lon)}°, lat ${Math.round(v.lat)}°, zoom ${v.zoom.toFixed(1)}×${sel}`,
+    );
+  };
+
+  /** Select datatake by ACQ_DATATAKES index; fly=true triggers the rotateTo animation. */
+  const doSelect = (idx: number, fly: boolean) => {
     window.clearTimeout(flyTimerRef.current);
-    // already close in: ease out a little first, then into the new footprint
-    if (cam.position.length() < 2.2) {
-      flyTo(cam.position, Math.min(3.0, cam.position.length() * 1.2), 520);
-      flyTimerRef.current = window.setTimeout(() => flyTo(dir, dist), 520);
-    } else flyTo(dir, dist);
+    const wasIdx = selIdxRef.current;
+    setSelIdx(idx);
+    updateAriaLabel();
+
+    if (!fly || idx < 0) return;
+    const dt = ACQ_DATATAKES[idx];
+    if (!dt) return;
+    const prep = prepMapRef.current.get(dt.id);
+    const z = prep ? fitZoom(prep) : 2;
+    if (wasIdx >= 0 && wasIdx !== idx && viewRef.current.zoom > 1.6) {
+      // out a little first, then in after 520 ms (§8)
+      rotateTo(viewRef.current.lon, viewRef.current.lat, 1.2);
+      flyTimerRef.current = window.setTimeout(() => {
+        if (selIdxRef.current === idx) rotateTo(dt.lon, dt.lat, z);
+      }, 520);
+    } else {
+      rotateTo(dt.lon, dt.lat, z);
+    }
   };
 
-  /** Back out to the whole globe, keeping the current direction. */
-  const flyHome = () => {
+  /** Deselect; fly=true flies back to HOME_VIEW zoom 1 (§8). */
+  const doDeselect = (fly: boolean) => {
     window.clearTimeout(flyTimerRef.current);
-    if (cameraRef.current) flyTo(cameraRef.current.position, 3.0, 1100);
+    setSelIdx(-1);
+    updateAriaLabel();
+    if (fly) rotateTo(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
   };
 
-  const closeDatatake = () => {
-    setIsModalOpen(false);
-    flyHome();
-  };
+  // Stable refs so the handlers created once in handleSceneReady always call the latest versions
+  const doSelectRef = useRef(doSelect);
+  doSelectRef.current = doSelect;
+  const doDeselectRef = useRef(doDeselect);
+  doDeselectRef.current = doDeselect;
+  const rotateToRef = useRef(rotateTo);
+  rotateToRef.current = rotateTo;
 
+  /** Selecting from the dropdown still sets the datatake filter (existing filter behaviour). */
   const handleSelectDatatake = (dtId: string) => {
     const index = ACQ_DATATAKES.findIndex((dt) => dt.id === dtId);
-    if (index !== -1) {
-      setSelectedDataTake(index);
+    if (index >= 0) {
+      setDatatakeFilter(dtId);
+      doSelect(index, true);
     }
-    setDatatakeFilter(dtId);
-    setIsModalOpen(true);
+  };
 
-    const dt = ACQ_DATATAKES.find((d) => d.id === dtId);
-    if (dt) {
-      const prepEntry = prepMapRef.current.get(dtId);
-      const ring: number[][] = prepEntry
-        ? buildFootprint(prepEntry).ring.map(([lo, la]) => [lo, la])
-        : [];
-      focusOnDatatake(
-        ring.length >= 4
-          ? ring
-          : [
-              [dt.lon - 2, dt.lat - 2],
-              [dt.lon + 2, dt.lat - 2],
-              [dt.lon + 2, dt.lat + 2],
-              [dt.lon - 2, dt.lat + 2],
-            ],
-      );
-    }
+  /** Closing from the panel resets the filter and deselects. */
+  const closeDatatake = () => {
+    setDatatakeFilter("*");
+    doDeselect(true);
   };
 
   const handleCycleSpeed = () => {
@@ -791,9 +846,7 @@ export default function AcquisitionsGlobeEarthPage({
     // Footprints take their datatake's status colour, as the reference does: green published,
     // amber processing, red failed. The selected one is matched by ID (the swath list and the
     // datatake list are not in the same order), pulses in the animation loop and gets a white edge.
-    const selectedId = isModalOpen
-      ? ACQ_DATATAKES[selectedDataTake]?.id
-      : undefined;
+    const selectedId = selIdx >= 0 ? ACQ_DATATAKES[selIdx]?.id : undefined;
     const anySelected = !!selectedId && allowedIds.has(selectedId);
     selectedFootRef.current = null;
 
@@ -819,7 +872,7 @@ export default function AcquisitionsGlobeEarthPage({
         if (fillMat) fillMat.opacity = anySelected ? 0.14 : 0.24;
       }
     });
-  }, [filteredDatatakes, selectedDataTake, isModalOpen]);
+  }, [filteredDatatakes, selIdx]);
 
   const addDataOverlays = (scene: THREE.Scene, overlayGroup: THREE.Group) => {
     if (!scene) return;
@@ -892,7 +945,7 @@ export default function AcquisitionsGlobeEarthPage({
       overlayGroup.add(fillMesh);
       clickableMeshesRef.current.push(fillMesh);
 
-      const ringPts = ring.map(([lo, la]) => latLonToVector3(la, lo, outlineR));
+      const ringPts = ring.map(([lo, la]: GeoPoint) => latLonToVector3(la, lo, outlineR));
       const lineGeo = new THREE.BufferGeometry().setFromPoints(ringPts);
       const lineMat = new THREE.LineBasicMaterial({
         color: colHex,
@@ -1045,8 +1098,9 @@ export default function AcquisitionsGlobeEarthPage({
     cameraRef.current = camera as THREE.PerspectiveCamera;
     rendererRef.current = renderer;
 
-    camera.position.set(0, 0, 3.0);
-    camera.lookAt(0, 0, 0);
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.near = 0.01;
+    cam.updateProjectionMatrix();
 
     // See-through background: no scene colour, a fully transparent clear, and no CSS fill on the
     // canvas or its wrapper — the page's starfield (SpaceBackdrop) shows around the planet.
@@ -1080,107 +1134,280 @@ export default function AcquisitionsGlobeEarthPage({
     const overlayGroup = new THREE.Group();
     addDataOverlays(scene, overlayGroup);
 
-    let isDragging = false;
-    let dragDistance = 0;
-    let previousMousePosition = { x: 0, y: 0 };
+    /* ---------- canvas setup ---------- */
+    const canvas = renderer.domElement;
+    canvasElRef.current = canvas;
+    canvas.tabIndex = 0;
+    canvas.style.cursor = "grab";
+    canvas.style.touchAction = "none";
+
+    // Track canvas size for applyView; apply HOME_VIEW immediately
+    const updateSize = () => {
+      canvasSizeRef.current = {
+        W: canvas.clientWidth || 800,
+        H: canvas.clientHeight || 600,
+      };
+    };
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(canvas);
+
+    const { W, H } = canvasSizeRef.current;
+    applyView(cam, W, H);
+    updateAriaLabel();
+
+    /* ---------- interaction ---------- */
     const raycaster = new THREE.Raycaster();
-    const mouseVector = new THREE.Vector2();
+    const mouseVec = new THREE.Vector2();
+    const globeSphere = new THREE.Sphere(new THREE.Vector3(0, 0, 0), 1.0);
 
-    const onMouseDown = (e: MouseEvent) => {
-      camAnimRef.current = null;
+    type DragState = {
+      startX: number; startY: number;
+      startLon: number; startLat: number;
+      moved: boolean; pid: number;
+    };
+    let dragState: DragState | null = null;
+    let hintTimer: number | undefined;
+
+    const showHint = () => {
+      const el = wheelHintRef.current;
+      if (!el) return;
+      window.clearTimeout(hintTimer);
+      el.classList.add(g.acqWheelHintOn);
+      hintTimer = window.setTimeout(() => {
+        el.classList.remove(g.acqWheelHintOn);
+      }, 1300);
+    };
+
+    const onPointerDown = (e: PointerEvent) => {
+      animRef.current = null;
       window.clearTimeout(flyTimerRef.current);
-      isDragging = true;
-      dragDistance = 0;
-      previousMousePosition = { x: e.clientX, y: e.clientY };
+      dragState = {
+        startX: e.clientX, startY: e.clientY,
+        startLon: viewRef.current.lon, startLat: viewRef.current.lat,
+        moved: false, pid: e.pointerId,
+      };
+      canvas.setPointerCapture(e.pointerId);
+      canvas.style.cursor = "grabbing";
+      e.preventDefault();
     };
 
-    const onMouseMove = (e: MouseEvent) => {
-      if (isDragging && camera) {
-        const deltaX = e.clientX - previousMousePosition.x;
-        const deltaY = e.clientY - previousMousePosition.y;
-        dragDistance += Math.abs(deltaX) + Math.abs(deltaY);
-
-        camera.position.applyAxisAngle(
-          new THREE.Vector3(0, 1, 0),
-          deltaX * 0.008,
-        );
-        camera.position.applyAxisAngle(
-          new THREE.Vector3(1, 0, 0),
-          deltaY * 0.008,
-        );
-        camera.lookAt(0, 0, 0);
-
-        previousMousePosition = { x: e.clientX, y: e.clientY };
-      }
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragState || e.pointerId !== dragState.pid) return;
+      const dx = e.clientX - dragState.startX;
+      const dy = e.clientY - dragState.startY;
+      if (!dragState.moved && Math.abs(dx) + Math.abs(dy) > 3)
+        dragState.moved = true;
+      if (!dragState.moved) return;
+      const k = 0.25 / viewRef.current.zoom;
+      viewRef.current = {
+        lon: dragState.startLon - dx * k,
+        lat: Math.max(-90, Math.min(90, dragState.startLat + dy * k)),
+        zoom: viewRef.current.zoom,
+      };
+      e.preventDefault();
     };
 
-    const onMouseUp = (e: MouseEvent) => {
-      isDragging = false;
+    const onPointerUp = (e: PointerEvent) => {
+      if (!dragState || e.pointerId !== dragState.pid) return;
+      const moved = dragState.moved;
+      dragState = null;
+      canvas.style.cursor = "grab";
 
-      if (dragDistance < 5 && camera && renderer) {
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-        mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      if (!moved) {
+        const rect = canvas.getBoundingClientRect();
+        mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+        mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+        raycaster.setFromCamera(mouseVec, cam);
 
-        raycaster.setFromCamera(mouseVector, camera);
+        // Globe hit — near side only
+        const hitTarget = new THREE.Vector3();
+        const globeHit = raycaster.ray.intersectSphere(globeSphere, hitTarget);
+        const globeDist = globeHit
+          ? hitTarget.distanceTo(raycaster.ray.origin)
+          : Infinity;
 
+        // Footprint hit (ignore anything behind the globe surface)
         const activeClickables = clickableMeshesRef.current.filter(
           (m) => m.visible,
         );
         const intersects = raycaster.intersectObjects(activeClickables, false);
+        const fpHit = intersects.find((i) => i.distance <= globeDist + 1e-3);
 
-        if (intersects.length > 0) {
-          const hitMesh = intersects[0].object as THREE.Mesh;
-          const dtId = hitMesh.userData.datatakeId;
-          if (dtId) {
-            handleSelectDatatake(dtId);
+        if (fpHit) {
+          const dtId = (fpHit.object as THREE.Mesh).userData
+            .datatakeId as string;
+          const hitIdx = ACQ_DATATAKES.findIndex((d) => d.id === dtId);
+          if (hitIdx >= 0) {
+            if (hitIdx === selIdxRef.current) {
+              doDeselectRef.current(true); // click selected footprint → deselect
+            } else {
+              doSelectRef.current(hitIdx, true);
+            }
           }
+        } else if (globeHit && selIdxRef.current >= 0) {
+          doDeselectRef.current(true); // click empty globe while selected → deselect
         }
       }
     };
 
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      camAnimRef.current = null;
-      if (camera) {
-        const direction = camera.position.clone().normalize();
-        const currentDistance = camera.position.length();
-        const newDistance = Math.max(
-          1.25,
-          Math.min(6, currentDistance + e.deltaY * 0.004),
-        );
-        camera.position.copy(direction.multiplyScalar(newDistance));
-        camera.lookAt(0, 0, 0);
+    const onPointerCancel = (e: PointerEvent) => {
+      if (dragState && e.pointerId === dragState.pid) {
+        dragState = null;
+        canvas.style.cursor = "grab";
       }
     };
 
-    renderer.domElement.addEventListener("mousedown", onMouseDown);
-    renderer.domElement.addEventListener("mousemove", onMouseMove);
-    renderer.domElement.addEventListener("mouseup", onMouseUp);
-    renderer.domElement.addEventListener("wheel", onWheel, { passive: false });
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) {
+        // plain scroll — page scrolls; show zoom hint
+        showHint();
+        return; // no preventDefault so the page scrolls
+      }
+      e.preventDefault();
+      animRef.current = null;
+      window.clearTimeout(flyTimerRef.current);
+      const v = viewRef.current;
+      viewRef.current = {
+        ...v,
+        zoom: Math.max(0.7, Math.min(8, v.zoom * Math.exp(-e.deltaY * 0.004))),
+      };
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const v = viewRef.current;
+      const step = e.shiftKey ? 12 : 4;
+      switch (e.key) {
+        case "ArrowLeft":
+          e.preventDefault();
+          viewRef.current = { ...v, lon: v.lon - step };
+          break;
+        case "ArrowRight":
+          e.preventDefault();
+          viewRef.current = { ...v, lon: v.lon + step };
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          viewRef.current = { ...v, lat: Math.min(90, v.lat + step) };
+          break;
+        case "ArrowDown":
+          e.preventDefault();
+          viewRef.current = { ...v, lat: Math.max(-90, v.lat - step) };
+          break;
+        case "+":
+        case "=":
+          e.preventDefault();
+          viewRef.current = { ...v, zoom: Math.min(8, v.zoom * 1.2) };
+          break;
+        case "-":
+          e.preventDefault();
+          viewRef.current = { ...v, zoom: Math.max(0.7, v.zoom / 1.2) };
+          break;
+        case "0": {
+          e.preventDefault();
+          window.clearTimeout(flyTimerRef.current);
+          if (selIdxRef.current >= 0) {
+            doDeselectRef.current(true);
+          } else {
+            rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+          }
+          break;
+        }
+        case "[": {
+          e.preventDefault();
+          const nav = navDatatakesRef.current;
+          if (!nav.length) break;
+          const selId =
+            selIdxRef.current >= 0
+              ? ACQ_DATATAKES[selIdxRef.current]?.id
+              : null;
+          const navPos = selId ? nav.findIndex((d) => d.id === selId) : -1;
+          const prev = navPos <= 0 ? nav.length - 1 : navPos - 1;
+          const gIdx = ACQ_DATATAKES.findIndex((d) => d.id === nav[prev].id);
+          if (gIdx >= 0) doSelectRef.current(gIdx, true);
+          break;
+        }
+        case "]": {
+          e.preventDefault();
+          const nav = navDatatakesRef.current;
+          if (!nav.length) break;
+          const selId =
+            selIdxRef.current >= 0
+              ? ACQ_DATATAKES[selIdxRef.current]?.id
+              : null;
+          const navPos = selId ? nav.findIndex((d) => d.id === selId) : -1;
+          const next =
+            navPos < 0 || navPos >= nav.length - 1 ? 0 : navPos + 1;
+          const gIdx = ACQ_DATATAKES.findIndex((d) => d.id === nav[next].id);
+          if (gIdx >= 0) doSelectRef.current(gIdx, true);
+          break;
+        }
+        case "Enter":
+          e.preventDefault();
+          setIsPlaying((p) => !p);
+          break;
+        default:
+          break;
+      }
+    };
+
+    const onDocKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (openDropdownRef.current !== null) {
+        setOpenDropdown(null);
+      } else if (selIdxRef.current >= 0) {
+        doDeselectRef.current(true);
+      }
+    };
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerCancel);
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    canvas.addEventListener("keydown", onKeyDown);
+    document.addEventListener("keydown", onDocKeyDown);
 
     return () => {
+      ro.disconnect();
+      window.clearTimeout(hintTimer);
       atmosphere.removeFromParent();
       atmosphere.material.map?.dispose();
       atmosphere.material.dispose();
-      renderer.domElement.removeEventListener("mousedown", onMouseDown);
-      renderer.domElement.removeEventListener("mousemove", onMouseMove);
-      renderer.domElement.removeEventListener("mouseup", onMouseUp);
-      renderer.domElement.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerCancel);
+      canvas.removeEventListener("wheel", onWheel);
+      canvas.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("keydown", onDocKeyDown);
 
       // Dispose footprint fill + outline geometry/material
-      clickableMeshesRef.current.forEach((m) => { m.geometry.dispose(); (m.material as THREE.Material).dispose(); });
-      footprintMeshesRef.current.forEach((m) => { (m as THREE.Line).geometry.dispose(); ((m as THREE.Line).material as THREE.Material).dispose(); });
+      clickableMeshesRef.current.forEach((m) => {
+        m.geometry.dispose();
+        (m.material as THREE.Material).dispose();
+      });
+      footprintMeshesRef.current.forEach((m) => {
+        (m as THREE.Line).geometry.dispose();
+        ((m as THREE.Line).material as THREE.Material).dispose();
+      });
       // Dispose satellite trail/future geometry/material
       satObjectsRef.current.forEach((sat) => {
-        sat.trail.geometry.dispose(); (sat.trail.material as THREE.Material).dispose();
-        sat.future.geometry.dispose(); (sat.future.material as THREE.Material).dispose();
+        sat.trail.geometry.dispose();
+        (sat.trail.material as THREE.Material).dispose();
+        sat.future.geometry.dispose();
+        (sat.future.material as THREE.Material).dispose();
       });
       // Dispose station cap/ring/links
       stationFxRef.current.forEach((fx) => {
-        fx.cap.geometry.dispose(); (fx.cap.material as THREE.Material).dispose();
-        fx.ring.geometry.dispose(); (fx.ring.material as THREE.Material).dispose();
-        fx.links.forEach((lnk) => { lnk.geometry.dispose(); (lnk.material as THREE.Material).dispose(); });
+        fx.cap.geometry.dispose();
+        (fx.cap.material as THREE.Material).dispose();
+        fx.ring.geometry.dispose();
+        (fx.ring.material as THREE.Material).dispose();
+        fx.links.forEach((lnk) => {
+          lnk.geometry.dispose();
+          (lnk.material as THREE.Material).dispose();
+        });
       });
     };
   };
@@ -1201,27 +1428,27 @@ export default function AcquisitionsGlobeEarthPage({
         });
       }
 
-      // camera flight: rotate around the globe (never through it) and ease the distance,
-      // easeInOutCubic as in the reference
-      const fly = camAnimRef.current;
-      if (fly && cameraRef.current) {
-        const k = Math.min(1, (now - fly.t0) / fly.dur);
+      /* ---------- §6/§8 camera: apply rotateTo animation then applyView ---------- */
+      const anim = animRef.current;
+      if (anim) {
+        const k = Math.min(1, (now - anim.t0) / anim.dur);
         const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
-        const q = new THREE.Quaternion().setFromUnitVectors(fly.from, fly.to);
-        const qe = new THREE.Quaternion().slerp(q, e);
-        const dir = fly.from.clone().applyQuaternion(qe);
-        cameraRef.current.position.copy(
-          dir.multiplyScalar(fly.d0 + (fly.d1 - fly.d0) * e),
-        );
-        cameraRef.current.lookAt(0, 0, 0);
-        if (k >= 1) camAnimRef.current = null;
+        viewRef.current = {
+          lon: anim.fromLon + anim.dl * e,
+          lat: anim.fromLat + (anim.toLat - anim.fromLat) * e,
+          zoom: anim.fromZoom + (anim.toZoom - anim.fromZoom) * e,
+        };
+        if (k >= 1) animRef.current = null;
       }
 
-      // zoomed in, the globe's window fades into the sky through a soft oval
       if (cameraRef.current && rendererRef.current) {
+        const { W, H } = canvasSizeRef.current;
+        applyView(cameraRef.current as THREE.PerspectiveCamera, W, H);
+
+        // §6: zoomed mask toggles on zoom > 1.3 (not camera distance)
         rendererRef.current.domElement.classList.toggle(
           g.globeZoomed,
-          cameraRef.current.position.length() < 2.3,
+          viewRef.current.zoom > 1.3,
         );
       }
 
@@ -1234,9 +1461,10 @@ export default function AcquisitionsGlobeEarthPage({
       // Satellites on their ground points, with their trails (and the selected one's track ahead)
       const simTimeMin = simTimeRef.current / 60;
       const filtered = filteredDatatakesRef.current;
-      const selectedDtId = isModalOpenRef.current
-        ? (ACQ_DATATAKES[selectedDataTakeRef.current]?.id ?? null)
-        : null;
+      const selectedDtId =
+        selIdxRef.current >= 0
+          ? (ACQ_DATATAKES[selIdxRef.current]?.id ?? null)
+          : null;
 
       satObjectsRef.current.forEach((sat) => {
         // Pick active datatake: selected one wins, otherwise first in filtered set
@@ -1314,7 +1542,7 @@ export default function AcquisitionsGlobeEarthPage({
       if (cameraRef.current && rendererRef.current && sceneRef.current) {
         const camera = cameraRef.current as THREE.PerspectiveCamera;
         const renderer = rendererRef.current;
-        const canvas = renderer.domElement;
+        const cvs = renderer.domElement;
 
         const stationPosMap: Record<
           string,
@@ -1343,8 +1571,8 @@ export default function AcquisitionsGlobeEarthPage({
           const vector = worldPos.clone().project(camera);
 
           stationPosMap[station.name] = {
-            x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
-            y: (-vector.y * 0.5 + 0.5) * canvas.clientHeight,
+            x: (vector.x * 0.5 + 0.5) * cvs.clientWidth,
+            y: (-vector.y * 0.5 + 0.5) * cvs.clientHeight,
             visible: isVisible,
             contact: !!contactRef.current[station.name],
           };
@@ -1357,8 +1585,8 @@ export default function AcquisitionsGlobeEarthPage({
             worldPos.clone().normalize().dot(camDir) > 1 / camDist;
           const vector = worldPos.clone().project(camera);
           satPosMap[sat.unit] = {
-            x: (vector.x * 0.5 + 0.5) * canvas.clientWidth,
-            y: (-vector.y * 0.5 + 0.5) * canvas.clientHeight,
+            x: (vector.x * 0.5 + 0.5) * cvs.clientWidth,
+            y: (-vector.y * 0.5 + 0.5) * cvs.clientHeight,
             visible: isVisible,
             color: hex(STATUS_HEX[sat.activeCls] ?? 0x8a96a8),
           };
@@ -1657,14 +1885,22 @@ export default function AcquisitionsGlobeEarthPage({
 
       {/* GLOBE + DATATAKE: one row. Selecting a datatake opens the side column and the globe's
           column narrows to make room (SentiBoard.html .acq-layout.has-sel). */}
-      <div className={`${g.stageRow} ${isModalOpen ? g.hasSel : ""}`}>
+      <div className={`${g.stageRow} ${selIdx >= 0 ? g.hasSel : ""}`}>
         <div className={g.globeStage}>
           <div style={{ width: "100%", height: "100%", position: "relative" }}>
             <ThreeEarth
               transparent
-              autoRotate={!isModalOpen}
+              autoRotate={false}
               onReady={handleSceneReady}
             />
+          </div>
+
+          {/* Wheel zoom hint (§8) */}
+          <div
+            ref={wheelHintRef}
+            className={g.acqWheelHint}
+          >
+            {/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"} + scroll to zoom the globe
           </div>
 
           {/* FLOATING BOTTOM OVERLAY CONTROL BAR */}
@@ -1798,13 +2034,8 @@ export default function AcquisitionsGlobeEarthPage({
               type="button"
               aria-label="Zoom in"
               onClick={() => {
-                const cam = cameraRef.current;
-                if (cam)
-                  flyTo(
-                    cam.position,
-                    Math.max(1.25, cam.position.length() * 0.8),
-                    420,
-                  );
+                const v = viewRef.current;
+                rotateToRef.current(v.lon, v.lat, Math.min(8, v.zoom * 1.35));
               }}
             >
               +
@@ -1813,13 +2044,8 @@ export default function AcquisitionsGlobeEarthPage({
               type="button"
               aria-label="Zoom out"
               onClick={() => {
-                const cam = cameraRef.current;
-                if (cam)
-                  flyTo(
-                    cam.position,
-                    Math.min(6, cam.position.length() * 1.25),
-                    420,
-                  );
+                const v = viewRef.current;
+                rotateToRef.current(v.lon, v.lat, Math.max(0.7, v.zoom / 1.35));
               }}
             >
               −
@@ -1830,7 +2056,11 @@ export default function AcquisitionsGlobeEarthPage({
               title="Reset view"
               onClick={() => {
                 window.clearTimeout(flyTimerRef.current);
-                flyTo(new THREE.Vector3(0, 0, 1), 3.0, 1100);
+                if (selIdx >= 0) {
+                  doDeselect(true);
+                } else {
+                  rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+                }
               }}
             >
               ⌖
@@ -1873,10 +2103,7 @@ export default function AcquisitionsGlobeEarthPage({
                   x={pos.x}
                   y={pos.y}
                   color={pos.color}
-                  selected={
-                    isModalOpen &&
-                    ACQ_DATATAKES[selectedDataTake]?.unit === unit
-                  }
+                  selected={selIdx >= 0 && ACQ_DATATAKES[selIdx]?.unit === unit}
                 />
               );
             })}
@@ -1885,10 +2112,10 @@ export default function AcquisitionsGlobeEarthPage({
 
         {/* the datatake's record, in its own column: it grows to its full height, no inner scroll */}
         <div className={g.side}>
-          {isModalOpen && ACQ_DATATAKES[selectedDataTake] && (
+          {selIdx >= 0 && ACQ_DATATAKES[selIdx] && (
             <DatatakePanel
-              key={ACQ_DATATAKES[selectedDataTake].id}
-              dt={ACQ_DATATAKES[selectedDataTake]}
+              key={ACQ_DATATAKES[selIdx].id}
+              dt={ACQ_DATATAKES[selIdx]}
               onClose={closeDatatake}
             />
           )}
