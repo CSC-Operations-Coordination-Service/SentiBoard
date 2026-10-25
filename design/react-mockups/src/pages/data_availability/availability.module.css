@@ -82,33 +82,32 @@
   width: 100%;
   min-width: 0;
   padding: 0;
+  --bandh: clamp(74px, 16.5vh, 190px);
 }
 
 /* ---------- one row per mission (SentiBoard.html#data-availability) ----------
-   The name on the left, the strip from 60px to the right edge, the date axis under it. */
+   Fixed-height band: label and strip centred at 66%, axis at 90%, 10px between bands. */
 .mapRow {
-  display: grid;
-  grid-template-columns: 60px 1fr;
-  align-items: center;
+  position: relative;
+  height: var(--bandh);
+  margin-bottom: 10px;
   overflow: visible;
-  transition: padding 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.mapRowContainer + .mapRowContainer .mapRow {
-  margin-top: clamp(40px, 7vh, 72px);
-}
-
-/* the zoomed row gets the room its strip needs above and below */
-.mapRowZoom {
-  padding-block: clamp(18px, 4vh, 40px);
+.mapRowContainer:last-child .mapRow {
+  margin-bottom: 0;
 }
 
 .mapLabel {
+  position: absolute;
+  left: 0;
+  top: 66%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 56px;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  /* level with the middle of the strip, not with the strip + axis */
-  margin-bottom: 26px;
+  align-items: center;
+  pointer-events: none;
 }
 
 .mapLabel b {
@@ -122,22 +121,24 @@
 }
 
 .lane {
-  min-width: 0;
-  width: 100%;
-  /* the magnified strip is cut at the lane's edges (no sideways scrollbar) but may grow up and down */
+  position: absolute;
+  left: 60px;
+  right: 4px;
+  top: 66%;
+  height: 46%;
+  transform: translateY(-50%);
+  z-index: 2;
+  /* clip horizontal overflow of bars at the strip edges (Decision 8); vertical zoom overflows freely */
   overflow-x: clip;
   overflow-y: visible;
 }
 
 /* ---------- the strip ----------
-   Every bar sits at its own position (left %, centred on it) and is 76%/bars wide, between 3px and
-   30px, so a row of 96 and a row of 12 have the same rhythm. Clicking one magnifies the whole strip
-   1.9x around it; the way back runs the mirrored curve. */
+   Fills the lane (inset: 0). Zoom is applied here (scale), with ZOOM_OUT as the default
+   (going-back) curve and ZOOM_IN via .trackZoom when picking a bar. */
 .track {
-  position: relative;
-  width: 100%;
-  height: clamp(34px, 7.6vh, 87px);
-  transform-origin: 0 50%;
+  position: absolute;
+  inset: 0;
   transition: transform 700ms cubic-bezier(0.8, 0, 0.8, 0.3);
 }
 
@@ -194,7 +195,13 @@
 
 /* while a bar is picked, every other bar steps back */
 .tileFaded {
-  opacity: 0.5;
+  opacity: 0.45;
+}
+
+/* lost datatake (Unavailable): hatched pattern + red border so it reads differently from fire-red Partial */
+.tileHatched {
+  background: repeating-linear-gradient(135deg, #e8514b 0 2px, #12161b 2px 5px);
+  border-color: #e8514b;
 }
 
 .tile:focus-visible {
@@ -202,12 +209,13 @@
   outline-offset: 1px;
 }
 
-/* ---------- the date axis under each strip ---------- */
+/* ---------- the date axis: absolutely positioned at 90% of the band, flush with the strip ---------- */
 .axis {
-  position: relative;
+  position: absolute;
+  left: 60px;
+  right: 4px;
+  top: 90%;
   height: 18px;
-  margin-top: 12px;
-  width: 100%;
   border-top: 1px solid rgba(255, 255, 255, 0.22);
   transition: opacity 320ms ease;
 }
@@ -223,7 +231,7 @@
   color: rgba(234, 240, 246, 0.6);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  text-shadow: 0 1px 4px rgba(6, 9, 13, 0.95);
+  text-shadow: 0 1px 4px rgba(6, 9, 13, 0.95), 0 0 10px rgba(6, 9, 13, 0.7);
 }
 
 /* a small tick above each label */
@@ -247,10 +255,96 @@
   opacity: 0;
 }
 
+/* -------------------- bar hover tooltip (§6.5) -------------------- */
+.tip {
+  position: fixed;
+  z-index: 55;
+  display: none;
+  pointer-events: none;
+  width: max-content;
+  min-width: 226px;
+  max-width: 300px;
+  padding: 15px 17px;
+  border-radius: 14px;
+  background: rgba(9, 13, 18, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  font-family: var(--font-sans);
+}
+
+.tipOn {
+  display: block;
+  animation: tipFade 160ms ease backwards;
+}
+
+@keyframes tipFade {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+.tipH {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.tipTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 13px;
+}
+
+.tipTwo em {
+  display: block;
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.tipTwo b {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tipWhen {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.tipWhen span {
+  align-self: center;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.tipWhen b {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .track,
   .trackZoom,
-  .mapRow,
   .tile {
     transition: none;
     animation: none;

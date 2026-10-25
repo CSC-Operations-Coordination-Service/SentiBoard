@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
+import { createPortal } from "react-dom";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 
 import { Search, X } from "lucide-react";
@@ -19,6 +21,7 @@ import {
   fmtDate,
   fmtDateTime,
   isGap,
+  isLost,
   pad,
 } from "./mock";
 import s from "./availability.module.css";
@@ -249,6 +252,34 @@ function DatatakeCard({ d, onClose }: { d: Datatake; onClose: () => void }) {
   );
 }
 
+/** Tooltip content rendered inside the single fixed tip element. */
+function Tip({ item }: { item: Datatake }): ReactNode {
+  const { acq, pub } = cardSides(item);
+  const stop = new Date(item.start.getTime() + 6 * 60000);
+  const hhmm = (t: Date) => `${pad(t.getUTCHours())}:${pad(t.getUTCMinutes())}`;
+  return (
+    <>
+      <b className={s.tipH}>{item.id}</b>
+      <div className={s.tipTwo}>
+        <div>
+          <em>Acquisition</em>
+          <b style={{ color: acq.color }}>{acq.pct !== null ? `${acq.pct.toFixed(2)}%` : "—"}</b>
+        </div>
+        <div>
+          <em>Publication</em>
+          <b style={{ color: pub.color }}>{pub.pct !== null ? `${pub.pct.toFixed(2)}%` : "—"}</b>
+        </div>
+      </div>
+      <div className={s.tipWhen}>
+        <span>Start</span>
+        <b>{fmtDate(item.start)} {hhmm(item.start)}</b>
+        <span>Stop</span>
+        <b>{fmtDate(stop)} {hhmm(stop)}</b>
+      </div>
+    </>
+  );
+}
+
 export default function CoverageTimeline() {
   const motion = useAmbientMotion();
 
@@ -277,6 +308,38 @@ export default function CoverageTimeline() {
   // Where each row's strip pivots when it zooms (px from the strip's left edge). Kept per row and
   // never cleared, so a strip that is zooming back out keeps its pivot until it is flat again.
   const [origins, setOrigins] = useState<Record<string, number>>({});
+
+  // True on mount and for ~900 ms after each animated window change; tiles play the stagger entrance.
+  // All other renders (filter toggles, search, pager, pick) have animation: none on the tiles.
+  const [animating, setAnimating] = useState(true);
+  useEffect(() => {
+    setAnimating(true);
+    const t = setTimeout(() => setAnimating(false), 900);
+    return () => clearTimeout(t);
+  }, [animKey]);
+
+  // Tooltip: one fixed element, populated on bar mouseenter, hidden on leave and scroll.
+  const [tipItem, setTipItem] = useState<Datatake | null>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+
+  const positionTip = useCallback((clientX: number, clientY: number) => {
+    const el = tipRef.current;
+    if (!el) return;
+    const h = el.offsetHeight;
+    const w = el.offsetWidth;
+    let x = clientX + 18;
+    let y = clientY - h - 14;
+    if (x + w + 12 > window.innerWidth) x = clientX - w - 18;
+    if (y < 12) y = clientY + 20;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+  }, []);
+
+  useEffect(() => {
+    const hide = () => setTipItem(null);
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, []);
 
   // Every window change goes through changeWindow so the card/zoom always closes.
   // Pass animate:true for range/Custom/Reset changes that should replay the bar entrance.
@@ -733,16 +796,13 @@ export default function CoverageTimeline() {
               className={s.mapInner}
               style={{ ["--n" as string]: days.length }}
             >
-              {lanes.map(({ mission: m, frames, tw }) => {
+              {lanes.map(({ mission: m, frames, tw }, rowIndex) => {
                 const isRowFocused = focus?.mission === m;
                 const zoomed = isRowFocused && focus?.item != null;
                 const activeItem = isRowFocused ? focus?.item : null;
-                const rowRows = isRowFocused && focus.item ? [focus.item] : [];
                 return (
                   <div className={s.mapRowContainer} key={m}>
-                    <div
-                      className={`${s.mapRow} ${zoomed ? s.mapRowZoom : ""}`}
-                    >
+                    <div className={s.mapRow}>
                       <div className={s.mapLabel}>
                         <b>{m.replace("Sentinel-", "S")}</b>
                       </div>
@@ -763,15 +823,17 @@ export default function CoverageTimeline() {
                               No datatakes in range
                             </span>
                           )}
-                          {frames.map(({ item, n, leftPct }) => {
+                          {frames.map(({ item, leftPct }, barIndex) => {
                             const on =
                               focus?.mission === m &&
                               focus?.item?.id === item.id;
                             const faded = focus !== null && !on;
+                            const hatched = isLost(item);
                             const cls = [
                               s.tile,
                               on ? s.tileSelected : "",
                               faded ? s.tileFaded : "",
+                              hatched ? s.tileHatched : "",
                             ]
                               .filter(Boolean)
                               .join(" ");
@@ -784,17 +846,24 @@ export default function CoverageTimeline() {
                                 style={{
                                   ["--c" as string]: barColor(item),
                                   left: `${leftPct}%`,
+                                  animationDelay: animating
+                                    ? `${Math.min(420, rowIndex * 45 + barIndex * 2.4)}ms`
+                                    : undefined,
+                                  animation: animating ? undefined : "none",
                                 }}
-                                title={`${item.id} · ${item.status} · ${item.completeness}%${n > 1 ? ` (+${n - 1} more)` : ""}`}
                                 aria-label={item.id}
+                                onMouseEnter={(e) => {
+                                  const x = e.clientX, y = e.clientY;
+                                  setTipItem(item);
+                                  requestAnimationFrame(() => positionTip(x, y));
+                                }}
+                                onMouseMove={(e) => positionTip(e.clientX, e.clientY)}
+                                onMouseLeave={() => setTipItem(null)}
                                 onClick={(e) => {
                                   if (on) {
-                                    setFocus(null); // zoom back out
+                                    setFocus(null);
                                     return;
                                   }
-                                  // Bars are centred on `left` by translateX(-50%), and offsetLeft
-                                  // ignores transforms: this is the bar's centre in the strip's own,
-                                  // unscaled coordinates, even when the strip is already zoomed.
                                   const centre = e.currentTarget.offsetLeft;
                                   setOrigins((o) => ({ ...o, [m]: centre }));
                                   setFocus({
@@ -808,20 +877,21 @@ export default function CoverageTimeline() {
                             );
                           })}
                         </div>
+                      </div>
 
-                        <div
-                          className={`${s.axis} ${zoomed ? s.axisHidden : ""}`}
-                        >
-                          {ticks.map((t) => (
-                            <span
-                              key={t.key}
-                              className={`${s.axisTick} ${t.edge === "first" ? s.axisFirst : t.edge === "last" ? s.axisLast : ""}`}
-                              style={{ left: `${t.pct}%` }}
-                            >
-                              {t.label}
-                            </span>
-                          ))}
-                        </div>
+                      {/* axis is a sibling of .lane, absolutely positioned at 90% of the band */}
+                      <div
+                        className={`${s.axis} ${zoomed ? s.axisHidden : ""}`}
+                      >
+                        {ticks.map((t) => (
+                          <span
+                            key={t.key}
+                            className={`${s.axisTick} ${t.edge === "first" ? s.axisFirst : t.edge === "last" ? s.axisLast : ""}`}
+                            style={{ left: `${t.pct}%` }}
+                          >
+                            {t.label}
+                          </span>
+                        ))}
                       </div>
                     </div>
 
@@ -841,6 +911,16 @@ export default function CoverageTimeline() {
         </Reveal>
       </section>
 
+      {createPortal(
+        <div
+          ref={tipRef}
+          className={`${s.tip}${tipItem ? ` ${s.tipOn}` : ""}`}
+          aria-hidden="true"
+        >
+          {tipItem && <Tip item={tipItem} />}
+        </div>,
+        document.body,
+      )}
     </>
   );
 }
