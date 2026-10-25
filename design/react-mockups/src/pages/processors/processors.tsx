@@ -326,10 +326,8 @@ interface Tip {
   release: ReleaseRecord;
   isCurrent: boolean;
   isSelected: boolean;
-  /** Viewport position of the marker's centre, and where the card sits relative to it. */
-  x: number;
-  y: number;
-  below: boolean;
+  /** Marker rect snapshotted at hover time; useLayoutEffect places the card from it. */
+  markerRect: DOMRect;
 }
 
 interface ReleaseTimelineProps {
@@ -360,6 +358,9 @@ function ReleaseTimeline({
     ((ms - axis.start) / (axis.end - axis.start)) * 100;
   const scrollRef = useRef<HTMLDivElement>(null); // sideways scroll (long windows)
   const [tip, setTip] = useState<Tip | null>(null);
+  const [tipOn, setTipOn] = useState(false);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const tipRafRef = useRef(0);
 
   // All-words AND search over label, sub, baselines, year and notes (Decision 6).
   // Memoised per groups so the Map is only rebuilt when the data changes.
@@ -411,18 +412,53 @@ function ReleaseTimeline({
     });
   }, [moving, zoomed, axis.minWidth]);
 
-  const showTip = (el: HTMLElement, t: Omit<Tip, "x" | "y" | "below">) => {
-    const box = scrollRef.current?.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    const half = 118; // half the card's 236px width
-    const x = Math.min(
-      Math.max(r.left + r.width / 2, (box?.left ?? 0) + half),
-      (box?.right ?? window.innerWidth) - half,
-    );
-    // No room above (the card is ~260px tall, under a 68px fixed nav): open underneath.
-    const below = r.top < 330;
-    setTip({ ...t, x, y: below ? r.bottom + 12 : r.top - 12, below });
+  const showTip = (el: HTMLElement, t: Omit<Tip, "markerRect">) => {
+    cancelAnimationFrame(tipRafRef.current);
+    setTip({ ...t, markerRect: el.getBoundingClientRect() });
   };
+
+  const hideTip = () => {
+    cancelAnimationFrame(tipRafRef.current);
+    setTipOn(false);
+  };
+
+  // Placement: measure real card size, then compute §8 position, then fade in.
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!tip || !el) return;
+    const tw = el.offsetWidth;
+    const th = el.offsetHeight;
+    const br = tip.markerRect;
+    const tr = scrollRef.current?.getBoundingClientRect() ??
+      ({ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight } as DOMRect);
+    const navEl = document.querySelector<HTMLElement>(".nav");
+    const skyTop = (navEl?.getBoundingClientRect().bottom ?? 68) + 8;
+    const skyBot = window.innerHeight - 12;
+    const cx = br.left + br.width / 2;
+    const gap = 12;
+    let vx = Math.min(Math.max(cx - tw / 2, tr.left), tr.right - tw);
+    let vy: number;
+    if (br.top - th - gap >= skyTop) {
+      vy = br.top - th - gap;                                         // above
+    } else if (br.bottom + th + gap <= skyBot) {
+      vy = br.bottom + gap;                                           // below
+    } else {
+      vx = cx + 16 + tw <= tr.right ? cx + 16 : cx - 16 - tw;       // beside
+      vy = Math.min(Math.max(br.top + br.height / 2 - th / 2, skyTop), skyBot - th);
+    }
+    el.style.left = `${vx}px`;
+    el.style.top = `${vy}px`;
+    cancelAnimationFrame(tipRafRef.current);
+    tipRafRef.current = requestAnimationFrame(() => setTipOn(true));
+    return () => cancelAnimationFrame(tipRafRef.current);
+  }, [tip]);
+
+  // Hide on any page or ancestor scroll (capture phase, DA pattern).
+  useEffect(() => {
+    const hide = () => { cancelAnimationFrame(tipRafRef.current); setTipOn(false); };
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, []);
 
   return (
     <div className={s.tl}>
@@ -432,7 +468,7 @@ function ReleaseTimeline({
         <div
           className={s.tlScroll}
           ref={scrollRef}
-          onScroll={() => setTip(null)}
+          onScroll={hideTip}
         >
           <div className={s.tlChart} style={{ minWidth: axis.minWidth }}>
             {/* names: pinned to the left while the chart scrolls under them */}
@@ -555,10 +591,10 @@ function ReleaseTimeline({
                             isSelected,
                           })
                         }
-                        onMouseLeave={() => setTip(null)}
-                        onBlur={() => setTip(null)}
+                        onMouseLeave={hideTip}
+                        onBlur={hideTip}
                         onClick={() => {
-                          setTip(null);
+                          hideTip();
                           onPick(g.ipf, r.id);
                         }}
                       />
@@ -580,54 +616,61 @@ function ReleaseTimeline({
         </div>
       </div>
 
-      {/* The card lives on <body>, fixed to the window, so no mask or scroll box can clip it. */}
-      {tip &&
-        createPortal(
-          <div
-            className={`${s.tip} ${tip.below ? s.tipBelow : ""}`}
-            style={{ left: tip.x, top: tip.y }}
-            role="tooltip"
-          >
-            <div className={s.ttTitle}>{tip.group.label}</div>
-            <div className={s.ttStats}>
-              <div>
-                <span className={s.ttK}>Version</span>
-                <span className={`${s.ttV} ${tip.isCurrent ? s.ttGo : ""}`}>
-                  {tip.release.baseline}
-                </span>
+      {/* Always portalled to <body> so no ancestor transform or overflow can clip it.
+          Positioned imperatively in useLayoutEffect; fades in/out via .tipOn toggle. */}
+      {createPortal(
+        <div
+          ref={tipRef}
+          className={`${s.tip}${tipOn ? ` ${s.tipOn}` : ""}`}
+          role="tooltip"
+          aria-hidden={!tipOn}
+        >
+          {tip && (
+            <>
+              <div className={s.ttTitle}>{tip.group.label}</div>
+              <div className={s.ttStats}>
+                <div>
+                  <span className={s.ttK}>Version</span>
+                  <span className={`${s.ttV} ${tip.isCurrent ? s.ttGo : ""}`}>
+                    {tip.release.baseline}
+                  </span>
+                </div>
+                <div>
+                  <span className={s.ttK}>Status</span>
+                  <span
+                    className={`${s.ttV} ${tip.isCurrent ? s.ttGo : s.ttOld}`}
+                  >
+                    {tip.isCurrent ? "Current" : "Superseded"}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className={s.ttK}>Status</span>
-                <span
-                  className={`${s.ttV} ${tip.isCurrent ? s.ttGo : s.ttOld}`}
-                >
-                  {tip.isCurrent ? "Current" : "Superseded"}
-                </span>
+              <hr />
+              <dl className={s.ttRows}>
+                <dt>Released</dt>
+                <dd>
+                  {tip.release.releasedMs !== undefined
+                    ? isoDay(tip.release.releasedMs)
+                    : "—"}
+                </dd>
+                <dt>Operational since</dt>
+                <dd>{isoDay(tip.release.ms)}</dd>
+                <dt>Satellites</dt>
+                <dd>
+                  {tip.release.sats.length ? tip.release.sats.join(", ") : "—"}
+                </dd>
+                <dt>Changes</dt>
+                <dd>{changesOf(tip.release.notesHtml)}</dd>
+              </dl>
+              <div className={s.ttHint}>
+                {tip.isSelected
+                  ? "Click to go back to the overview"
+                  : "Click to zoom in and read the notes"}
               </div>
-            </div>
-            <hr />
-            <dl className={s.ttRows}>
-              <dt>Released</dt>
-              <dd>
-                {tip.release.releasedMs !== undefined
-                  ? isoDay(tip.release.releasedMs)
-                  : "—"}
-              </dd>
-              <dt>Operational since</dt>
-              <dd>{isoDay(tip.release.ms)}</dd>
-              <dt>Satellites</dt>
-              <dd>{tip.release.sats.length ? tip.release.sats.join(", ") : "—"}</dd>
-              <dt className={s.ttWide}>Changes</dt>
-              <dd className={s.ttWide}>{changesOf(tip.release.notesHtml)}</dd>
-            </dl>
-            <div className={s.ttHint}>
-              {tip.isSelected
-                ? "Click to go back to the overview"
-                : "Click to zoom in and read the notes"}
-            </div>
-          </div>,
-          document.body,
-        )}
+            </>
+          )}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }
