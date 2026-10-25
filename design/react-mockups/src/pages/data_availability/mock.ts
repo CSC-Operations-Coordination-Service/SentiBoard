@@ -166,16 +166,6 @@ export const WINDOW = acquisitionWindow();
 // Aggregation
 // ---------------------------------------------------------------------------
 
-export interface DayCell {
-  key: string;
-  date: Date;
-  count: number;
-  /** Mean publication completeness across the day's datatakes, or null when nothing flew. */
-  mean: number | null;
-  worst: Status | null;
-  lost: number;
-}
-
 /** The days of a range, oldest first — the heatmap's columns. */
 export function daysOf(from: Date, to: Date): Date[] {
   const days: Date[] = [];
@@ -183,45 +173,6 @@ export function daysOf(from: Date, to: Date): Date[] {
   const end = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
   for (let t = start; t <= end; t += DAY_MS) days.push(new Date(t));
   return days;
-}
-
-const SEVERITY: Record<Status, number> = {
-  Unavailable: 4, Partial: 3, Processing: 2, Planned: 1, Acquired: 0,
-};
-
-/** One row of the heatmap: a mission's day-by-day coverage over the visible range. */
-export function missionRow(rows: Datatake[], mission: string, days: Date[]): DayCell[] {
-  const byDay = new Map<string, Datatake[]>();
-  rows.forEach((r) => {
-    if (r.mission !== mission) return;
-    const k = dayKey(r.start);
-    byDay.set(k, [...(byDay.get(k) ?? []), r]);
-  });
-
-  return days.map((date) => {
-    const key = dayKey(date);
-    const list = byDay.get(key) ?? [];
-    if (list.length === 0) return { key, date, count: 0, mean: null, worst: null, lost: 0 };
-    const mean = Math.round(list.reduce((s, r) => s + r.completeness, 0) / list.length);
-    const worst = list.reduce((a, b) => (SEVERITY[b.status] > SEVERITY[a.status] ? b : a)).status;
-    return { key, date, count: list.length, mean, worst, lost: list.filter(isGap).length };
-  });
-}
-
-/** Daily means for a mission over the last n days — the sparkline series. */
-export function trendSeries(rows: Datatake[], mission: string, days: number, today: Date): (number | null)[] {
-  const from = new Date(today.getTime() - (days - 1) * DAY_MS);
-  return missionRow(rows, mission, daysOf(from, today)).map((c) => c.mean);
-}
-
-/** How long ago this mission last dropped below full publication, in days. The headline number on
- *  each trend chip: "days since the last gap" is the one figure an operator can act on. */
-export function daysSinceGap(rows: Datatake[], mission: string, today: Date): number | null {
-  const gaps = rows
-    .filter((r) => r.mission === mission && isGap(r) && r.start <= today)
-    .sort((a, b) => b.start.getTime() - a.start.getTime());
-  if (!gaps.length) return null;
-  return Math.floor((today.getTime() - gaps[0].start.getTime()) / DAY_MS);
 }
 
 // ---------------------------------------------------------------------------

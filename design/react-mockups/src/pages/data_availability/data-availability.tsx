@@ -1,20 +1,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  RotateCcw,
-  Search,
-  SlidersHorizontal,
-  X,
-} from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
 import { Collapse, PageHeader, Reveal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
-import DatatakeModal from "@/components/DatatakeModal";
-import type { DatatakeSummary } from "@/data/datatake-details";
 import {
   DEFAULT_PERIOD,
   PERIODS,
@@ -26,161 +15,23 @@ import {
   DATA,
   DAY_MS,
   MISSION_NAMES,
-  STATUS_COLOR,
   WINDOW,
   type Datatake,
   type Status,
   axisTicks,
   barColor,
   daysOf,
-  daysSinceGap,
   framesOf,
   fmtDate,
   fmtDateTime,
   isGap,
   pad,
-  trendSeries,
 } from "./mock";
 import s from "./availability.module.css";
-import {
-  AmbientSky,
-  MotionToggle,
-  ambientRoot,
-  useAmbientMotion,
-} from "@/components/ambient-motion";
-import "@/styles/data-availability.css";
-
-type Slice = { key: string; label: string; value: number; color: string };
-
-function Donut({
-  slices,
-  total,
-  caption,
-}: {
-  slices: Slice[];
-  total: number;
-  caption: string;
-}) {
-  const SIZE = 120;
-  const THICK = 9;
-  const r = (SIZE - THICK) / 2;
-  const circumference = 2 * Math.PI * r;
-  const sum = slices.reduce((s, x) => s + x.value, 0) || 1;
-  const GAP = 2;
-
-  let offset = 0;
-  const arcs = slices
-    .filter((s) => s.value > 0)
-    .map((s) => {
-      const len = (s.value / sum) * circumference;
-      const drawn = Math.max(1, len - GAP);
-      const node = (
-        <circle
-          key={s.key}
-          cx={SIZE / 2}
-          cy={SIZE / 2}
-          r={r}
-          fill="none"
-          strokeWidth={THICK}
-          strokeDasharray={`${drawn} ${circumference - drawn}`}
-          strokeDashoffset={-offset}
-          style={{ stroke: s.color }}
-        />
-      );
-      offset += len;
-      return node;
-    });
-
-  return (
-    <div className={s.donutChart}>
-      <svg
-        width={SIZE}
-        height={SIZE}
-        viewBox={`0 0 ${SIZE} ${SIZE}`}
-        role="img"
-        aria-label={caption}
-      >
-        <g transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}>
-          <circle
-            cx={SIZE / 2}
-            cy={SIZE / 2}
-            r={r}
-            fill="none"
-            strokeWidth={THICK}
-            className={s.donutTrack}
-          />
-          {arcs}
-        </g>
-      </svg>
-      <div className={s.donutMid}>
-        <span className={s.donutN}>{total}</span>
-        <span className={s.donutC}>{caption}</span>
-      </div>
-    </div>
-  );
-}
-
-function DonutLegend({ slices, total }: { slices: Slice[]; total: number }) {
-  const denom = total || 1;
-  return (
-    <ul className={s.donutLegend}>
-      {slices.map((slice) => (
-        <li key={slice.key}>
-          <span
-            className={s.donutDot}
-            style={{ background: slice.color }}
-            aria-hidden
-          />
-          <span className={s.donutLabel}>{slice.label}</span>
-          <span className={s.donutValue}>{slice.value}</span>
-          <span className={s.donutPercent}>
-            {Math.round((slice.value / denom) * 100)}%
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function statusSlices(rows: Datatake[]): Slice[] {
-  const STATUS_ORDER: Status[] = [
-    "Planned",
-    "Processing",
-    "Acquired",
-    "Partial",
-    "Unavailable",
-  ];
-  const acc = Object.fromEntries(STATUS_ORDER.map((st) => [st, 0])) as Record<
-    Status,
-    number
-  >;
-  rows.forEach((r) => (acc[r.status] += 1));
-  return STATUS_ORDER.map((st) => ({
-    key: st,
-    label: st.toUpperCase(),
-    value: acc[st],
-    color: STATUS_COLOR[st],
-  }));
-}
-
-function modeSlices(rows: Datatake[]): Slice[] {
-  const acc = new Map<string, number>();
-  rows.forEach((r) => acc.set(r.sensorMode, (acc.get(r.sensorMode) ?? 0) + 1));
-  return [...acc.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([mode, n]) => ({
-      key: mode,
-      label: mode,
-      value: n,
-      color: STATUS_COLOR["Acquired"],
-    }));
-}
+import { ambientRoot, useAmbientMotion } from "@/components/ambient-motion";
 
 /** How much a row's strip is magnified around the picked bar — PICK_Z in SentiBoard.html. */
 const STRIP_ZOOM = 1.9;
-
-type TrendWindow = 7 | 30 | 90;
-type SortKey = "gap" | "recent" | "worst";
 
 const RANGES: { id: PeriodId; label: string }[] = [
   { id: "day", label: "1D" },
@@ -408,7 +259,6 @@ export default function CoverageTimeline() {
     date: Date;
     item: Datatake;
   } | null>(null);
-  const [selected, setSelected] = useState<DatatakeSummary | null>(null);
   // Where each row's strip pivots when it zooms (px from the strip's left edge). Kept per row and
   // never cleared, so a strip that is zooming back out keeps its pivot until it is flat again.
   const [origins, setOrigins] = useState<Record<string, number>>({});
@@ -476,17 +326,6 @@ export default function CoverageTimeline() {
     return out;
   }, [inRange, mission, status, search]);
 
-  const rows = useMemo(
-    () =>
-      focus
-        ? matching.filter(
-            (r) =>
-              r.mission === focus.mission && fmtDate(r.start) === focus.key,
-          )
-        : matching,
-    [matching, focus],
-  );
-
   const active =
     period !== "month" ||
     mission !== "All" ||
@@ -496,10 +335,15 @@ export default function CoverageTimeline() {
     search !== "" ||
     focus !== null;
 
-  const gaps = rows.filter(isGap).length;
-  const lost = rows.filter((r) => r.status === "Unavailable").length;
-  const mean = rows.length
-    ? Math.round(rows.reduce((n, r) => n + r.completeness, 0) / rows.length)
+  const finalized = matching.filter(
+    (r) => r.status !== "Planned" && r.status !== "Processing",
+  );
+  const gaps = matching.filter(isGap).length;
+  const lost = matching.filter((r) => r.status === "Unavailable").length;
+  const mean = finalized.length
+    ? Math.round(
+        finalized.reduce((n, r) => n + r.completeness, 0) / finalized.length,
+      )
     : 0;
 
   // One row per mission: its datatakes folded into at most FRAMES evenly spaced bars, and one shared
@@ -541,7 +385,7 @@ export default function CoverageTimeline() {
         {/* ---------------- counters ---------------- */}
         <Reveal className={s.counters}>
           <div className={s.counter}>
-            <span className={s.counterV}>{pad(rows.length)}</span>
+            <span className={s.counterV}>{pad(matching.length)}</span>
             <span className={s.counterK}>Datatakes in range</span>
           </div>
           <div className={s.counter}>
@@ -549,7 +393,7 @@ export default function CoverageTimeline() {
             <span className={s.counterK}>Mean completeness</span>
           </div>
           <div className={s.counter}>
-            <span className={`${s.counterV} ${s.warn}`}>{pad(gaps)}</span>
+            <span className={s.counterV}>{pad(gaps)}</span>
             <span className={s.counterK}>Coverage gaps</span>
           </div>
           <div className={s.counter}>
@@ -839,9 +683,6 @@ export default function CoverageTimeline() {
         </Reveal>
       </section>
 
-      {selected && (
-        <DatatakeModal datatake={selected} onClose={() => setSelected(null)} />
-      )}
     </>
   );
 }
