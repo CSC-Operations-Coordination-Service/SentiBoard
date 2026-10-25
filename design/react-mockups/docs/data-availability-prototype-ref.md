@@ -502,15 +502,17 @@ Recommended choice first. Strike the ones you reject and write what you want ins
 
 1. **Toolbar → strips spacing.** The prototype's toolbar bottom padding here is `clamp(22px, 3vw,
    38px)`; on Acquisitions it is `clamp(10px, 1.6vw, 20px)`.
-   → *Recommended:* the toolbar component/classes keep the shared Acquisitions/Events values; add the
-   difference as top padding on the strips block, so the toolbar is identical everywhere and this page
-   still measures as the prototype.
-2. **Window end.** → *Recommended:* follow the prototype and the Description copy: the window ends at
+   **Done in Session 1 (2026-10-25) — do not change:** `.filters` keeps the shared
+   `padding-bottom: clamp(10px, 1.6vw, 20px)`; the difference is `.panel { padding-top: clamp(12px, 1.4vw, 18px) }`
+   with `.mapInner { padding: 0 }`, totalling the prototype's `clamp(22px, 3vw, 38px)`. If Session 4
+   restructures the strips wrapper, it must carry that padding-top over.
+2. **Window end.** **Confirmed 2026-10-25.** → follow the prototype and the Description copy: the window ends at
    the end of **tomorrow** (scheduled datatakes visible), 30d = 31 days, 7d = 8, 1d = today + tomorrow.
 3. **Pager step.** (a) prototype: one day per click, stays on the preset, ←/→ keys do the same;
    (b) current: one window per click, switches to Custom.
-   → *Recommended:* (a). Caveat: after shifting, the prototype's heading still reads "Last 30 days"
-   although the window no longer ends tomorrow; say if you prefer "30 days" or the dates there.
+   **Confirmed 2026-10-25: (a), exactly as the prototype** — one day per click, stays on the preset,
+   ←/→ keys do the same, and the heading keeps reading "Last N days" after shifting (the pager label
+   shows the actual dates).
 4. **KPI formulas.** Mean: *recommended* prototype (final pct only). Coverage gaps: the prototype counts
    satellite-days with no datatake; with our mock (random datatakes, ~1.2 per satellite-day) that number
    would be large and meaningless, while `isGap` (Partial + Unavailable) is documented in `mock.ts` as
@@ -520,14 +522,15 @@ Recommended choice first. Strike the ones you reject and write what you want ins
 5. **Mission / Status semantics.** (a) prototype: multi-toggle, no "All", list stays open, value empty
    or `3/4`, non-matching datatakes removed (switched-off missions lose their band), several lists can
    be open; (b) current: single choice + "All", dims non-matching bars.
-   → *Recommended:* (a) for the toggles, value and removal, but **one list open at a time, Escape and
-   a click outside close it** and the **chevron behaves as on Acquisitions** — the shared dropdown
-   behaviour wins. Confirm whether the stakeholders asked for the dimming (the CSS comment suggests it
-   was intentional); if they did, keep dimming for Status/search and record it here.
+   **Confirmed 2026-10-25:** (a) for the toggles, value text and removal (non-matching datatakes are
+   removed before folding, switched-off missions lose their band, no dimming — delete `.tileDim`), but
+   **one list open at a time, Escape and a click outside close it**, and the **chevron behaves as on
+   Acquisitions** — the shared dropdown behaviour wins. The list opens **in flow** (pushes the strips
+   down): the current absolute overlay renders *behind* the strips, which the in-flow list removes.
 6. **Processing in the card.** → *Recommended:* follow the prototype: Planned and Processing have no
    final acquisition completeness — ring `—`, grey, and they are excluded from the Mean KPI (one rule
    for both). The strips already colour them by state.
-7. **From/To alignment.** → *Recommended:* put the From/To block on the shared 49 px line (inputs'
+7. **From/To alignment.** **Confirmed 2026-10-25.** → put the From/To block on the shared 49 px line (inputs'
    hairline on the same bottom edge as the others); every other value as §3.3.
 8. **Zoomed strip clipping.** → *Recommended:* keep the current clip at the strip's left/right edges
    (no sideways overflow or scrollbar); the vertical growth stays unclipped.
@@ -544,3 +547,9 @@ Recommended choice first. Strike the ones you reject and write what you want ins
     navbar and Events use, so the pages stay aligned; the prototype's `clamp(18px, 4.4vw, 64px)` is not
     used. The space before the footer also stays on the shared mechanism
     (`padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)`, as Events) instead of §1's spacer.
+13. **Mean completeness with nothing final** (confirmed 2026-10-25, Session 2): show `—`, not the
+    prototype's `0%`, when the window has no datatake with a final completeness (only Planned /
+    Processing — e.g. 1D, which covers today + tomorrow).
+14. **Mock statuses** (Session 2): `mock.ts` decides Planned / Processing from the real current time:
+    start > now → Planned; started less than 24 h ago → Processing; older → outage / acquired /
+    partial logic. Every window change goes through one `changeWindow` helper that clears the pick.

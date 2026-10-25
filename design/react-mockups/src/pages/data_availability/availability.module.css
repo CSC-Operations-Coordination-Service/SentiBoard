@@ -282,13 +282,21 @@
   display: contents;
 }
 
-.filterHeading {
+.fhead {
+  height: 49px;
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.fhead h2 {
+  margin: 0;
   font-family: var(--font-sans);
-  font-size: 22px;
+  font-size: clamp(17px, 1.7vw, 22px);
   font-weight: 700;
   letter-spacing: 0.02em;
-  line-height: 22px;
   text-transform: uppercase;
+  line-height: 1;
   white-space: nowrap;
   color: #eaf0f6;
 }
@@ -317,9 +325,7 @@
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.frange button:hover {
-  color: #ffffff;
-}
+/* hover: no change — 0.72 opacity is the resting state (§3) */
 
 .frange button[aria-pressed="true"] {
   color: #ffffff;
@@ -348,16 +354,13 @@
   background: none;
   cursor: pointer;
   color: #ffffff;
-  transition: color 0.16s ease, background 0.16s ease;
 }
 
-.pagerBtn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-}
+/* hover: no change (§3.1) */
 
 .pagerBtn:disabled {
-  opacity: 0.35;
-  cursor: default;
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 .plabel {
@@ -367,8 +370,8 @@
   gap: 8px;
   min-width: 190px;
   height: 34px;
-  padding: 0 12px;
-  border: 1px solid transparent;
+  padding: 0;
+  border: 0;
   border-radius: 2px;
   background: none;
   cursor: pointer;
@@ -378,26 +381,84 @@
   letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
   color: #eaf0f6;
-  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
-}
-
-.plabel svg {
-  opacity: 0.8;
 }
 
 .plabel:hover {
-  border-color: #2fc6dc;
-  background: rgba(47, 198, 220, 0.1);
+  color: #ffffff;
 }
 
-.hiddenDate {
+/* From / To (Custom only) — Decision 7: inputs' hairline sits on the shared 49px bottom edge */
+.fdates {
+  height: 49px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  padding-bottom: 0;
+}
+
+.fdates label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.fdatesMicro {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.fdate {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fdates input {
+  min-height: 38px;
+  width: 150px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0;
+  background: none;
+  color-scheme: dark;
+  cursor: text;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #eaf0f6;
+  outline: none;
+}
+
+.fdates input:hover,
+.fdates input:focus {
+  border-bottom-color: rgba(255, 255, 255, 0.34);
+}
+
+.fdates input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.fcal {
   position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
+  right: 4px;
+  width: 28px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: #ffffff;
+  cursor: pointer;
 }
 
 /* Mission and Status: an underlined 176px field whose list drops over the page */

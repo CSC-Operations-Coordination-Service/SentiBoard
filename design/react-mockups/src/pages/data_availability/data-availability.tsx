@@ -1,19 +1,13 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 
-import { CalendarDays, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { Collapse, PageHeader, Reveal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import {
-  DEFAULT_PERIOD,
-  PERIODS,
-  PERIOD_LABEL,
-  periodStart,
-  type PeriodId,
-} from "@/data/period";
-import {
   DATA,
   DAY_MS,
+  LAST,
   MISSION_NAMES,
   WINDOW,
   type Datatake,
@@ -33,12 +27,18 @@ import { ambientRoot, useAmbientMotion } from "@/components/ambient-motion";
 /** How much a row's strip is magnified around the picked bar — PICK_Z in SentiBoard.html. */
 const STRIP_ZOOM = 1.9;
 
-const RANGES: { id: PeriodId; label: string }[] = [
-  { id: "day", label: "1D" },
-  { id: "week", label: "7D" },
-  { id: "month", label: "30D" },
-  { id: "custom", label: "Custom" },
+const RANGES: { id: 1 | 7 | 30 | null; label: string }[] = [
+  { id: 1, label: "1D" },
+  { id: 7, label: "7D" },
+  { id: 30, label: "30D" },
+  { id: null, label: "Custom" },
 ];
+
+const RANGE_HEADING: Record<number, string> = {
+  1: "Last 24 hours",
+  7: "Last 7 days",
+  30: "Last 30 days",
+};
 
 const STATUSES: Status[] = [
   "Planned",
@@ -244,15 +244,20 @@ function DatatakeCard({ d, onClose }: { d: Datatake; onClose: () => void }) {
 export default function CoverageTimeline() {
   const motion = useAmbientMotion();
 
-  const [period, setPeriod] = useState<PeriodId>("month");
+  const [rangeId, setRangeId] = useState<1 | 7 | 30 | null>(30);
+  const [offset, setOffset] = useState(0);
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+  // Incremented on range/Custom/Reset changes; strip entrance animation trigger for Session 4.
+  const [animKey, setAnimKey] = useState(0);
   const [mission, setMission] = useState("All");
   const [status, setStatus] = useState<Status | "All">("All");
   const [openDrop, setOpenDrop] = useState<"mission" | "status" | null>(null);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
   const [search, setSearch] = useState("");
-  const fromPicker = useRef<HTMLInputElement>(null);
-  const toPicker = useRef<HTMLInputElement>(null);
+  const fromInputRef = useRef<HTMLInputElement>(null);
+  const toInputRef = useRef<HTMLInputElement>(null);
+  // Set to true before switching to Custom via pager label click; cleared after picker is opened.
+  const pendingPickerRef = useRef(false);
   const [focus, setFocus] = useState<{
     mission: string;
     key: string;
@@ -263,56 +268,78 @@ export default function CoverageTimeline() {
   // never cleared, so a strip that is zooming back out keeps its pivot until it is flat again.
   const [origins, setOrigins] = useState<Record<string, number>>({});
 
-  const pinRange = useCallback((from: string, to: string) => {
-    setDateFrom(from);
-    setDateTo(to);
-    setPeriod("custom");
-  }, []);
+  // Every window change goes through changeWindow so the card/zoom always closes.
+  // Pass animate:true for range/Custom/Reset changes that should replay the bar entrance.
+  const changeWindow = useCallback(
+    (ch: {
+      rangeId?: 1 | 7 | 30 | null;
+      offset?: number;
+      customFrom?: string;
+      customTo?: string;
+      animate?: boolean;
+    }) => {
+      if (ch.rangeId !== undefined) setRangeId(ch.rangeId);
+      if (ch.offset !== undefined) setOffset(ch.offset);
+      if (ch.customFrom !== undefined) setCustomFrom(ch.customFrom);
+      if (ch.customTo !== undefined) setCustomTo(ch.customTo);
+      if (ch.animate) setAnimKey((k) => k + 1);
+      setFocus(null);
+    },
+    [],
+  );
 
   const reset = useCallback(() => {
-    setPeriod("month");
+    changeWindow({ rangeId: 30, offset: 0, customFrom: "", customTo: "", animate: true });
     setMission("All");
     setStatus("All");
-    setDateFrom("");
-    setDateTo("");
     setSearch("");
-    setFocus(null);
     setOpenDrop(null);
-  }, []);
+  }, [changeWindow]);
 
-  const range = useMemo(() => {
-    const to =
-      dateTo && period === "custom"
-        ? new Date(`${dateTo}T23:59:59Z`)
-        : WINDOW.today;
-    const from =
-      period === "custom"
-        ? dateFrom
-          ? new Date(`${dateFrom}T00:00:00Z`)
-          : new Date(WINDOW.today.getTime() - 29 * DAY_MS)
-        : periodStart(period, WINDOW.today)!;
-    return { from, to };
-  }, [period, dateFrom, dateTo]);
+  // winEnd / winStart: always UTC midnight of the respective day.
+  // For presets: LAST (tomorrow) minus offset days. For Custom: the selected dates.
+  const winEnd = useMemo(
+    () =>
+      rangeId !== null
+        ? new Date(LAST.getTime() - offset * DAY_MS)
+        : customTo
+          ? new Date(`${customTo}T00:00:00Z`)
+          : LAST,
+    [rangeId, offset, customTo],
+  );
+  const winStart = useMemo(
+    () =>
+      rangeId !== null
+        ? new Date(winEnd.getTime() - rangeId * DAY_MS)
+        : customFrom
+          ? new Date(`${customFrom}T00:00:00Z`)
+          : new Date(winEnd.getTime() - 30 * DAY_MS),
+    [rangeId, winEnd, customFrom],
+  );
 
-  const days = useMemo(() => daysOf(range.from, range.to), [range]);
+  // ‹ disabled at the data boundary (or in Custom); › disabled at offset 0 (or in Custom).
+  const atDataStart = rangeId === null || winStart.getTime() <= WINDOW.start.getTime();
+  const atLatest = rangeId === null || offset === 0;
 
-  const shiftRange = (direction: -1 | 1) => {
-    const step = direction * days.length * DAY_MS;
-    pinRange(
-      fmtDate(new Date(range.from.getTime() + step)),
-      fmtDate(new Date(range.to.getTime() + step)),
-    );
-  };
-  const atToday = range.to.getTime() >= WINDOW.today.getTime();
+  const shiftOffset = useCallback(
+    (dir: 1 | -1) => {
+      if (rangeId === null) return;
+      setOffset((o) => o + dir);
+      setFocus(null);
+    },
+    [rangeId],
+  );
+
+  const days = useMemo(() => daysOf(winStart, winEnd), [winStart, winEnd]);
 
   const inRange = useMemo(
     () =>
       DATA.filter(
         (r) =>
-          r.start >= range.from &&
-          r.start <= new Date(range.to.getTime() + DAY_MS - 1),
+          r.start.getTime() >= winStart.getTime() &&
+          r.start.getTime() < winEnd.getTime() + DAY_MS,
       ),
-    [range],
+    [winStart, winEnd],
   );
 
   const matching = useMemo(() => {
@@ -327,11 +354,12 @@ export default function CoverageTimeline() {
   }, [inRange, mission, status, search]);
 
   const active =
-    period !== "month" ||
+    rangeId !== 30 ||
+    offset !== 0 ||
+    customFrom !== "" ||
+    customTo !== "" ||
     mission !== "All" ||
     status !== "All" ||
-    dateFrom !== "" ||
-    dateTo !== "" ||
     search !== "" ||
     focus !== null;
 
@@ -344,7 +372,27 @@ export default function CoverageTimeline() {
     ? Math.round(
         finalized.reduce((n, r) => n + r.completeness, 0) / finalized.length,
       )
-    : 0;
+    : null;
+
+  // Open the From picker on the frame after Custom state is applied (the input renders on that frame).
+  useEffect(() => {
+    if (rangeId === null && pendingPickerRef.current) {
+      pendingPickerRef.current = false;
+      fromInputRef.current?.showPicker();
+    }
+  }, [rangeId]);
+
+  // ← / → keys move the window one day; disabled while a datatake card is open or an input has focus.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (focus !== null) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === "ArrowLeft") shiftOffset(1);
+      if (e.key === "ArrowRight") shiftOffset(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [focus, shiftOffset]);
 
   // One row per mission: its datatakes folded into at most FRAMES evenly spaced bars, and one shared
   // set of date labels under every row — the layout of SentiBoard.html#data-availability.
@@ -389,7 +437,7 @@ export default function CoverageTimeline() {
             <span className={s.counterK}>Datatakes in range</span>
           </div>
           <div className={s.counter}>
-            <span className={s.counterV}>{mean}%</span>
+            <span className={s.counterV}>{mean !== null ? `${mean}%` : "—"}</span>
             <span className={s.counterK}>Mean completeness</span>
           </div>
           <div className={s.counter}>
@@ -405,14 +453,22 @@ export default function CoverageTimeline() {
         {/* ---------------- filters ---------------- */}
         <div className={s.filters}>
           <div className={s.filterGroup}>
-            <span className={s.filterHeading}>{PERIOD_LABEL[period]}</span>
+            <div className={s.fhead}>
+              <h2>{rangeId !== null ? RANGE_HEADING[rangeId] : "Custom range"}</h2>
+            </div>
             <div className={s.frange} role="group" aria-label="Time range">
               {RANGES.map((r) => (
                 <button
-                  key={r.id}
+                  key={String(r.id)}
                   type="button"
-                  aria-pressed={period === r.id}
-                  onClick={() => setPeriod(r.id)}
+                  aria-pressed={rangeId === r.id}
+                  onClick={() => {
+                    if (r.id === null) {
+                      changeWindow({ rangeId: null, offset: 0, customFrom: fmtDate(winStart), customTo: fmtDate(winEnd), animate: true });
+                    } else {
+                      changeWindow({ rangeId: r.id, offset: 0, animate: true });
+                    }
+                  }}
                 >
                   {r.label}
                 </button>
@@ -424,48 +480,110 @@ export default function CoverageTimeline() {
                 type="button"
                 className={s.pagerBtn}
                 aria-label="Earlier days"
-                onClick={() => shiftRange(-1)}
+                disabled={atDataStart}
+                onClick={() => shiftOffset(1)}
               >
-                <ChevronLeft size={13} aria-hidden />
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
               </button>
               <button
                 type="button"
                 className={s.plabel}
                 title="Pick the days on a calendar"
-                onClick={() => fromPicker.current?.showPicker()}
+                onClick={() => {
+                  changeWindow({ rangeId: null, offset: 0, customFrom: fmtDate(winStart), customTo: fmtDate(winEnd), animate: true });
+                  pendingPickerRef.current = true;
+                }}
               >
-                {fmtDate(range.from)} <span aria-hidden>→</span>{" "}
-                {fmtDate(range.to)}
-                <CalendarDays size={12} aria-hidden />
+                {fmtDate(winStart)} <span aria-hidden>→</span> {fmtDate(winEnd)}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  aria-hidden
+                  style={{ opacity: 0.8 }}
+                >
+                  <rect x="2" y="3.2" width="12" height="11" rx="1.2" />
+                  <path d="M2 6.6h12M5.4 1.8v2.6M10.6 1.8v2.6" />
+                </svg>
               </button>
               <button
                 type="button"
                 className={s.pagerBtn}
                 aria-label="Later days"
-                disabled={atToday}
-                onClick={() => shiftRange(1)}
+                disabled={atLatest}
+                onClick={() => shiftOffset(-1)}
               >
-                <ChevronRight size={13} aria-hidden />
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.6" />
+                </svg>
               </button>
-              <input
-                ref={fromPicker}
-                className={s.hiddenDate}
-                type="date"
-                tabIndex={-1}
-                aria-hidden
-                value={fmtDate(range.from)}
-                onChange={(e) => pinRange(e.target.value, fmtDate(range.to))}
-              />
-              <input
-                ref={toPicker}
-                className={s.hiddenDate}
-                type="date"
-                tabIndex={-1}
-                aria-hidden
-                value={fmtDate(range.to)}
-                onChange={(e) => pinRange(fmtDate(range.from), e.target.value)}
-              />
             </div>
+
+            {rangeId === null && (
+              <div className={s.fdates}>
+                <label>
+                  <span className={s.fdatesMicro}>From</span>
+                  <span className={s.fdate}>
+                    <input
+                      ref={fromInputRef}
+                      type="date"
+                      min={fmtDate(WINDOW.start)}
+                      max={fmtDate(LAST)}
+                      value={customFrom}
+                      onChange={(e) => {
+                        let from = e.target.value, to = customTo;
+                        if (from && to && from > to) [from, to] = [to, from];
+                        changeWindow({ customFrom: from, customTo: to });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className={s.fcal}
+                      aria-label="Open calendar"
+                      onClick={() => fromInputRef.current?.showPicker()}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+                        <rect x="2" y="3.2" width="12" height="11" rx="1.2" />
+                        <path d="M2 6.6h12M5.4 1.8v2.6M10.6 1.8v2.6" />
+                      </svg>
+                    </button>
+                  </span>
+                </label>
+                <label>
+                  <span className={s.fdatesMicro}>To</span>
+                  <span className={s.fdate}>
+                    <input
+                      ref={toInputRef}
+                      type="date"
+                      min={fmtDate(WINDOW.start)}
+                      max={fmtDate(LAST)}
+                      value={customTo}
+                      onChange={(e) => {
+                        let from = customFrom, to = e.target.value;
+                        if (from && to && from > to) [from, to] = [to, from];
+                        changeWindow({ customFrom: from, customTo: to });
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className={s.fcal}
+                      aria-label="Open calendar"
+                      onClick={() => toInputRef.current?.showPicker()}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden>
+                        <rect x="2" y="3.2" width="12" height="11" rx="1.2" />
+                        <path d="M2 6.6h12M5.4 1.8v2.6M10.6 1.8v2.6" />
+                      </svg>
+                    </button>
+                  </span>
+                </label>
+              </div>
+            )}
           </div>
 
           <div className={s.filterGroup}>

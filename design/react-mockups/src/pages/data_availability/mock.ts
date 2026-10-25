@@ -109,6 +109,7 @@ function outageAt(mission: string, daysBack: number): Outage | undefined {
 function generate(count = 900): Datatake[] {
   const rng = seededRandom(1607);
   const w = acquisitionWindow();
+  const now = new Date(); // actual current moment, not today midnight
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rng() * arr.length)];
   const rows: Datatake[] = [];
 
@@ -124,10 +125,10 @@ function generate(count = 900): Datatake[] {
     let status: Status;
     let completeness: number;
 
-    if (start > w.today) {
+    if (start > now) {
       status = "Planned";
       completeness = 0;
-    } else if (daysBack < 1) {
+    } else if (now.getTime() - start.getTime() < DAY_MS) {
       status = "Processing";
       completeness = Math.round(20 + rng() * 60);
     } else {
@@ -161,6 +162,8 @@ function generate(count = 900): Datatake[] {
 
 export const DATA = generate();
 export const WINDOW = acquisitionWindow();
+/** The upper bound of the time window: tomorrow at midnight UTC (scheduled datatakes). */
+export const LAST = new Date(WINDOW.today.getTime() + DAY_MS);
 
 // ---------------------------------------------------------------------------
 // Aggregation
