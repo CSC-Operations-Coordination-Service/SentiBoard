@@ -92,6 +92,10 @@ interface RawRelease {
   target_ipfs: string[];
   validity_start_date: string;
   release_notes: string;
+  /** ISO date string (the feed's release_date). When set, build() populates releasedMs. */
+  release_date?: string;
+  /** The feed's processing_baseline string. When set, build() populates processingBaseline. */
+  processing_baseline?: string;
 }
 
 const RELEASES: RawRelease[] = [
@@ -102,9 +106,9 @@ const RELEASES: RawRelease[] = [
   { mission: "S1", satellite_units: "S1A", target_ipfs: ["S1_L1L2:003.40"], validity_start_date: "06/09/2022", release_notes: "<p>Extended-timeliness SLC support; revised noise vectors for the wide-swath modes.</p>" },
   { mission: "S1", satellite_units: "S1A", target_ipfs: ["S1_L1L2:003.52"], validity_start_date: "14/03/2023", release_notes: "<p>Radiometric calibration update for SLC and GRD. Azimuth geolocation corrected over high terrain.</p><p>Auxiliary data files are updated in step with this baseline.</p><p>No bulk reprocessing of the archive is planned.</p>" },
   { mission: "S1", satellite_units: "S1A, S1C", target_ipfs: ["S1_L1L2:003.61"], validity_start_date: "11/06/2024", release_notes: "<p>Revised OCN wind retrieval; DEM refresh.</p><p>Auxiliary data files are updated in step with this baseline.</p><p>No bulk reprocessing of the archive is planned.</p>" },
-  { mission: "S1", satellite_units: ["S1A", "S1C", "S1D"], target_ipfs: ["S1_L1L2:003.71"], validity_start_date: "16/06/2026", release_notes: "<p>Absolute geolocation improvement across SLC, GRD and OCN, and the first baseline to cover S1D alongside S1A and S1C.</p><ul><li>Thermal-noise removal reworked for the wide-swath modes; residual scalloping in EW sub-swath 1 reduced by roughly a factor of three.</li><li>Denoising vectors regenerated against the current instrument characterisation.</li><li>OCN wind retrieval now uses the updated GMF, changing wind speed by up to 0.3 m/s in the 4-12 m/s range.</li></ul><p>Products generated under 003.61 remain valid.</p><p>Auxiliary data files are updated in step with this baseline.</p>" },
+  { mission: "S1", satellite_units: ["S1A", "S1C", "S1D"], target_ipfs: ["S1_L1L2:003.71"], validity_start_date: "16/06/2026", release_date: "2026-06-18", release_notes: "<p>Absolute geolocation improvement across SLC, GRD and OCN, and the first baseline to cover S1D alongside S1A and S1C.</p><ul><li>Thermal-noise removal reworked for the wide-swath modes; residual scalloping in EW sub-swath 1 reduced by roughly a factor of three.</li><li>Denoising vectors regenerated against the current instrument characterisation.</li><li>OCN wind retrieval now uses the updated GMF, changing wind speed by up to 0.3 m/s in the 4-12 m/s range.</li></ul><p>Products generated under 003.61 remain valid.</p><p>Auxiliary data files are updated in step with this baseline.</p>" },
   { mission: "S1", satellite_units: ["S1A"], target_ipfs: ["S1_SETAP:001.04"], validity_start_date: "05/09/2023", release_notes: "" },
-  { mission: "S1", satellite_units: ["S1A", "S1C"], target_ipfs: ["S1_SETAP:001.06"], validity_start_date: "18/02/2025", release_notes: "<p>Auxiliary set-up parameter refresh.</p>" },
+  { mission: "S1", satellite_units: ["S1A", "S1C"], target_ipfs: ["S1_SETAP:001.06"], validity_start_date: "18/02/2025", processing_baseline: "S1_SETAP:001.06", release_notes: "<p>Auxiliary set-up parameter refresh.</p>" },
 
   // ---- Sentinel-2 ---------------------------------------------------------
   { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L0:06.03"], validity_start_date: "24/01/2023", release_notes: "" },
@@ -121,7 +125,7 @@ const RELEASES: RawRelease[] = [
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL1:OL_07.01"], validity_start_date: "24/09/2024", release_notes: "<p>OLCI radiometric characterisation update.</p>" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_06.10"], validity_start_date: "16/05/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_07.01"], validity_start_date: "24/09/2024", release_notes: "<p>Water and land colour retrieval aligned to the L1 characterisation.</p>" },
-  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_07.02"], validity_start_date: "02/06/2026", release_notes: "<p>Revised chlorophyll-a algorithm for Case-2 coastal and inland water. Open-ocean products agree with OL_07.01 to within 2%.</p>" },
+  { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_OL2:OL_07.02"], validity_start_date: "02/06/2026", release_date: "2026-06-09", release_notes: "<p>Revised chlorophyll-a algorithm for Case-2 coastal and inland water. Open-ocean products agree with OL_07.01 to within 2%.</p>" },
   { mission: "S3", satellite_units: ["S3A"], target_ipfs: ["S3_SL1:SL_06.08"], validity_start_date: "11/07/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SL1:SL_07.00"], validity_start_date: "04/11/2025", release_notes: "<p>SLSTR geolocation and cloud flag improvements.</p>" },
   { mission: "S3", satellite_units: ["S3A"], target_ipfs: ["S3_SL2_LST:SL_06.08"], validity_start_date: "11/07/2023", release_notes: "" },
@@ -145,7 +149,7 @@ const RELEASES: RawRelease[] = [
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2_VGP:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
   // ---- Sentinel-5P --------------------------------------------------------
   { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.01"], validity_start_date: "20/06/2023", release_notes: "" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.06"], validity_start_date: "25/02/2025", release_notes: "<p>Irradiance degradation correction extended to the full mission archive.</p>" },
+  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.06"], validity_start_date: "25/02/2025", release_date: "2025-03-01", processing_baseline: "S5P_L1B:02.06", release_notes: "<p>Irradiance degradation correction extended to the full mission archive.</p>" },
   { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_NO2:02.04"], validity_start_date: "14/11/2023", release_notes: "" },
   { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_NO2:02.06"], validity_start_date: "25/02/2025", release_notes: "<p>Tropospheric NO2 air-mass factor revision.</p>" },
   { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2O3_OFFL:02.04"], validity_start_date: "14/11/2023", release_notes: "" },
@@ -275,7 +279,7 @@ export function ageLabel(months: number): string {
 function build(): ProcessorGroup[] {
   const byIpf = new Map<
     string,
-    { id: string; baseline: string; start: string; notes: string; html: string; sats: string[] }[]
+    { id: string; baseline: string; start: string; notes: string; html: string; sats: string[]; releaseDate?: string; procBaseline?: string }[]
   >();
   RELEASES.forEach((r, n) => {
     const sats = normSats(r.satellite_units);
@@ -293,6 +297,8 @@ function build(): ProcessorGroup[] {
           notes,
           html: r.release_notes,
           sats,
+          releaseDate: r.release_date,
+          procBaseline: r.processing_baseline,
         },
       ]);
     }
@@ -320,6 +326,8 @@ function build(): ProcessorGroup[] {
         sats: rel.sats,
         notes: rel.notes || undefined,
         notesHtml: rel.html || undefined,
+        processingBaseline: rel.procBaseline?.trim() || undefined,
+        releasedMs: rel.releaseDate ? at(rel.releaseDate) : undefined,
         isCurrent: i === all.length - 1,
       })),
   }));

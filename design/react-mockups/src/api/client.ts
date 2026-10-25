@@ -12,8 +12,10 @@ import type { paths } from "./schema";
 /** Base URL for every call. "/api" goes through the dev-server proxy (vite.config.ts). */
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "/api").replace(/\/+$/, "");
 
-/** True when pages wired through src/api should serve their mock fixtures instead. */
-export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === "true";
+/** True when pages wired through src/api should serve their mock fixtures instead.
+ *  Default: on (VITE_USE_MOCKS unset or not "false"); set VITE_USE_MOCKS=false in .env.local
+ *  or at build time to call the real API instead. */
+export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== "false";
 
 export type ApiErrorKind = "unreachable" | "http" | "parse";
 
