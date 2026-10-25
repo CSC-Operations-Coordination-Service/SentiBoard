@@ -113,7 +113,7 @@ const RELEASES: RawRelease[] = [
   // ---- Sentinel-2 ---------------------------------------------------------
   { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L0:06.03"], validity_start_date: "24/01/2023", release_notes: "" },
   { mission: "S2", satellite_units: ["S2A", "S2B", "S2C"], target_ipfs: ["S2_L0:06.05", "S2_L1:06.05"], validity_start_date: "04/02/2026", release_notes: "<p>TLM marker in JP2K; antemeridian nodata fix.</p>" },
-  { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L1:05.09"], validity_start_date: "24/01/2023", release_notes: "<p>Geometric refinement using the global reference image.</p>" },
+  { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L1"], validity_start_date: "24/01/2023", release_notes: "<p>Geometric refinement using the global reference image.</p>" },
   { mission: "S2", satellite_units: ["S2A", "S2B", "S2C"], target_ipfs: ["S2_L1:05.11"], validity_start_date: "11/03/2025", release_notes: "<p>Cloud mask and radiometric offset update.</p>" },
 
   { mission: "S2", satellite_units: ["S2A", "S2B"], target_ipfs: ["S2_L2:05.09"], validity_start_date: "07/02/2023", release_notes: "<p>Sen2Cor 2.10 atmospheric correction.</p>" },
@@ -148,15 +148,8 @@ const RELEASES: RawRelease[] = [
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2_VGS:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
   { mission: "S3", satellite_units: ["S3A", "S3B"], target_ipfs: ["S3_SY2_VGP:06.20"], validity_start_date: "05/06/2023", release_notes: "" },
   // ---- Sentinel-5P --------------------------------------------------------
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.01"], validity_start_date: "20/06/2023", release_notes: "" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:02.06"], validity_start_date: "25/02/2025", release_date: "2025-03-01", processing_baseline: "S5P_L1B:02.06", release_notes: "<p>Irradiance degradation correction extended to the full mission archive.</p>" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_NO2:02.04"], validity_start_date: "14/11/2023", release_notes: "" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_NO2:02.06"], validity_start_date: "25/02/2025", release_notes: "<p>Tropospheric NO2 air-mass factor revision.</p>" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2O3_OFFL:02.04"], validity_start_date: "14/11/2023", release_notes: "" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2O3_OFFL:02.06"], validity_start_date: "25/02/2025", release_notes: "<p>Total ozone column reprocessed with the revised slant-column fit.</p>" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_CH4:02.04"], validity_start_date: "14/11/2023", release_notes: "" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_CH4:02.06"], validity_start_date: "25/02/2025", release_notes: "<p>Methane bias correction over low-albedo scenes.</p>" },
-  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L2_CH4:02.07"], validity_start_date: "14/07/2026", release_notes: "<p>Physics-based surface-albedo retrieval replacing the climatology.</p><ul><li>Bias against the TCCON ground network falls from 4.3 ppb to 1.1 ppb.</li><li>Scenes over snow and ice are no longer filtered out by the albedo pre-screen.</li></ul>" },
+  // One release note shared by L1B and L2 (as in the live feed: one release covers both).
+  { mission: "S5P", satellite_units: ["S5P"], target_ipfs: ["S5P_L1B:03.00.00", "S5P_L2:02.09.01 / 02.08.00"], validity_start_date: "26/11/2025", release_date: "2025-11-26", release_notes: "<p>Irradiance degradation correction extended to the full mission archive.</p>" },
 ];
 
 /* The display roster: which processors exist and in what order they read, in the processing-chain
@@ -192,8 +185,8 @@ export const ROSTER: { mission: MissionId; ipf: string; label: string; sub: stri
   { mission: "3", ipf: "S3_SY2_VGS", label: "S3 SY2_VGS", sub: "SYNERGY Level-2 Vegetation Synthesis " },
   { mission: "3", ipf: "S3_SY2_VGP", label: "S3 SY2_VGP", sub: "SYNERGY Level-2 SPOT VEGETATION Continuity Product" },
   { mission: "5P", ipf: "S5P_L1B", label: "S5P L1B", sub: "Radiance · irradiance" },
-  { mission: "5P", ipf: "S5P_L2_NO2", label: "S5P NO2", sub: "Nitrogen dioxide" },
-  { mission: "5P", ipf: "S5P_L2O3_OFFL", label: "S5P SNPP_CLOUD", sub: "Total ozone column" },
+  { mission: "5P", ipf: "S5P_L2", label: "S5P L2", sub: "Multi-species retrieval" },
+  { mission: "5P", ipf: "S5P_SNPP_CLOUD", label: "S5P SNPP_CLOUD", sub: "Cloud fraction" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -292,7 +285,7 @@ function build(): ProcessorGroup[] {
         ...(byIpf.get(ipf) ?? []),
         {
           id: `mock-${n}-${ipf}`,
-          baseline: (ver ?? "").trim() || "—",
+          baseline: (ver ?? "").trim() || r.processing_baseline?.trim() || "—",
           start: ddmmyyyyToISO(r.validity_start_date),
           notes,
           html: r.release_notes,

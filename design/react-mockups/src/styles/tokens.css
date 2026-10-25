@@ -113,6 +113,12 @@
      that reaches only 3.7:1 against the matrix's tinted cell, so it is lifted one step. */
    --bl-current: var(--ok);
    --bl-past: #8b95a6;
+
+   /* Processors page: prototype marker colours, separate from --bl-current/--bl-past which the
+      version matrix uses. --pr-current-text is the brighter green for tooltip/tag text. */
+   --pr-current: #3FCF7F;
+   --pr-past: #7D8792;
+   --pr-current-text: #19E27A;
 }
 
 /* -------------------- LIGHT -------------------- */
@@ -178,4 +184,9 @@
      colour: current 5.1:1, past 4.7:1. */
    --bl-current: #0b754e;
    --bl-past: #636d79;
+
+   /* Processors page: light-mode values chosen for ≥ 3:1 on the page background. */
+   --pr-current: #1F9D5C;
+   --pr-past: #7D8792;
+   --pr-current-text: #167A46;
 }

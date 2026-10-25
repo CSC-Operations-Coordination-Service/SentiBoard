@@ -405,6 +405,8 @@ Prototype rosters (lane counts drive the row height):
 - S5P (3): L1B, L2, **SNPP_CLOUD (no releases)**; L1B and L2 share one release (26 Nov 2025) whose notes
   are the real S5P release note.
 
+  **Session 4 (2026-10-25) mock state:** S5P ROSTER is exactly `S5P_L1B` (label "S5P L1B"), `S5P_L2` (label "S5P L2"), `S5P_SNPP_CLOUD` (label "S5P SNPP_CLOUD", no releases). One RELEASES entry targets both `["S5P_L1B:03.00.00", "S5P_L2:02.09.01 / 02.08.00"]`, date 26 Nov 2025, `release_date: "2025-11-26"`. §4 states covered by S5P: empty lane (SNPP_CLOUD), two releases on one date (L1B + L2), a release in the last 365 days (26 Nov 2025 is 334 days before 2026-10-25). Old entries (L2_NO2, L2O3_OFFL, L2_CH4) removed from both ROSTER and RELEASES.
+
 Our page reads `useProcessors()` (feed shape `ProcessorGroup`/`ReleaseRecord`, `isCurrent` from the
 feed). The mock must produce every state the design shows: current vs superseded; a processor with
 no releases (empty lane); a release without a version (if the feed allows it); several releases on
@@ -1334,8 +1336,12 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     **Applied in Session 3 (2026-10-25):** `focusClass` state drives `.split.focus` (grid switch). `detailOn` state drives `.detailpane.on` (opacity 1 / transform none), added 180 ms after open. `lcolEnter` state drives `.lcolEnter .orbit` animation (560 ms), applied on re-entry. FLIP: `useLayoutEffect` on `[focusClass]` — captures rect before `setFocusClass` (inside the orchestration `useEffect` on `[isDetail]`), measures after, applies `translate(dx,dy)` + 720 ms transition. Double `requestAnimationFrame` ensures the start-transform paints before the transition begins. Close sequence: `setDetailOn(false)` → 280 ms → capture rect → `setFocusClass(false)` + `setLcolEnter(true)` → 560 ms → `setLcolEnter(false)`. All timers cleared on cleanup. `prefers-reduced-motion`: JS delays set to 0; CSS adds `transition: none !important` on `.procpane`, `.detailpane`; `animation: none` on `.lcolEnter .orbit`. `lastSelected` ref keeps detail content while pane fades — unchanged from Session 2.
 13. **Chart width.** → _Recommended:_ the prototype's `max(600, 100 + 6 px × months)` (All ≈ 1054 px,
     scrolled to the end on load), unless the fixed 600 px was a stakeholder request — say so if it was.
+
+    **Applied in Session 4 (2026-10-25):** `buildAxis()` now returns `minWidth: Math.max(600, Math.round(100 + 6 * months))`; hardcoded `min-width: 600px` removed from `.tlChart` in CSS (set via inline style only). Width follows the animated window because `axis` is recomputed from `win` each frame. Scroll effect re-fires on `axis.minWidth` change (already in deps). §6.1.
 14. **Names column backdrop.** → _Recommended:_ keep ours (the gradient starts under the axis at 42 px,
     so year/month labels scrolled under the names stay readable); colour from `--bg` instead of `#000`.
+
+    **Applied in Session 4 (2026-10-25):** `.tlLabels span { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: color-mix(in srgb, var(--text) 55%, transparent) }`. Picked row `.on { color: var(--text) }`. Backdrop 42 px start unchanged. `laneName()` now also strips a leading `MSI ` or `TROPOMI ` prefix (§6.3).
 15. **First-year label** (confirmed 2026-10-25): **follow the prototype** — the year of the first
     month drawn is always labelled (`x >= -1 && x < 95`, printed once, at `max(0, x)`), with **no room
     check**: remove `leadRoom`. This is also what the live SentiBoard does ("2025" at the left edge).
@@ -1343,9 +1349,13 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     with Decision 13) before "2014" and the two overlap at the far left of the chart. The chart opens
     scrolled to the end, so this shows only when scrolling all the way left. 1Y, 2Y and the zoom window
     never overlap (the next January is at least 10 % of the track away).
+
+    **Applied in Session 4 (2026-10-25):** `leadRoom` variable and its guard removed from `buildAxis()`; year labels fire on `pct >= -1 && pct < 95 && (isYear || firstYear)`. §6.4.
 16. **Marker motion.** The resolved prototype keeps only `opacity 240ms` (hover scale/ring snap) and no
     version-label fade. → _Recommended:_ follow the resolved prototype (as we did for DA's killed
     hovers). Alternative: keep `transform .2s` for the hover scale.
+
+    **Applied in Session 4 (2026-10-25):** `.mk { transition: opacity 240ms ease }` only — hover scale (1.3) and border-colour snap. `.mkSel:hover { transform: scale(1.25) }` added so the picked marker stays at 1.25 on hover. `animation: vlIn 0.4s ease both` removed from `.vl`; `@keyframes vlIn` deleted. §6.5.
 17. **Tooltip.** → _Recommended:_ prototype frame, typography, colours (`.go #19E27A`), fade in and out,
     placement (§8, with `skyBot = innerHeight − 12`), hidden on page scroll; **keep our rows**
     (Released + Operational since from the feed, the release's own satellites, Changes from the
@@ -1424,6 +1434,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
 
     **§4 state → mock entry (derived from ROSTER + RELEASES, 2026-10-25):**
 
+    **Session 4 (2026-10-25) additions:** S2_L1 first release (24 Jan 2023) now has `target_ipfs: ["S2_L1"]` (no version part) → `baseline: "—"` → `verOf()` shows `"Jan 2023"` in the version label and aria-label. `build()` baseline fallback aligned with adapter line 143: `(ver ?? "").trim() || r.processing_baseline?.trim() || "—"` (same order: version → processing_baseline → "—"). `verOf(r)` tests `r.baseline === "—"`, the sentinel both mock and adapter produce.
+
     | §4 state                      | Processor · baseline · date                                                                                                                                                                                                                                                                                                                                                                               |
     | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
     | Current baseline              | Every processor's last release, e.g. S1_L1L2 003.71 (2026-06-16), S3_OL2 OL_07.02 (2026-06-02), S5P_L1B 02.06 (2025-02-25)                                                                                                                                                                                                                                                                                |
@@ -1447,6 +1459,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     that `--bl-current` = `#3FCF7F` and `--bl-past` = `#7D8792` in dark.
 
     **Applied in Session 1 (2026-10-25):** … (leave as it is)
+
+    **Applied in Session 4 (2026-10-25):** `--pr-current` (`#3FCF7F` dark / `#1F9D5C` light), `--pr-past` (`#7D8792` both), `--pr-current-text` (`#19E27A` dark / `#167A46` light) added to `src/styles/tokens.css`. `.tl` aliases updated: `--tl-inforce: var(--pr-current)`, `--tl-past: var(--pr-past)`. `.dot-bl-current` / `.dot-bl-superseded` in `page-header.css` now reference `--pr-current` / `--pr-past`. Light-mode deviation for month labels (`.ml`): `var(--text-mute)` in dark (`#6B7686`), `var(--tl-dim)` in light (contrast below 3:1 at 9px). Tooltip and detail tag remain for Sessions 5–6. Grid lines given own values: `.g` 6 %, `.gYear` 15 % (rows/stems/scrollbar keep `--tl-hair` 8 % / `--tl-hair-strong` 16 %). Year labels: `10px / .08em / color-mix(in srgb, var(--text) 60%, transparent)`.
 
     **Confirmed 2026-10-25 — option (b), the prototype's greens and greys on this page only.** Two NEW
     tokens in `src/styles/tokens.css` (do not change `--ok`, `--bl-current` or `--bl-past`: the

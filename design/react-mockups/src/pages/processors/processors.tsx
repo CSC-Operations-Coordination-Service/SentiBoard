@@ -235,10 +235,6 @@ function buildAxis([start, end]: Win, now: number): Axis {
   let y = cursor.getUTCFullYear();
   let m = cursor.getUTCMonth();
   let firstYear = true;
-  // The window rarely starts on 1 January, so its first year gets a label at the left edge —
-  // but only with room for it: 8% of the track (~40px at the narrowest) before the next
-  // January's label, which it would otherwise overprint ("2013" on top of "2014").
-  const leadRoom = (Date.UTC(y + 1, 0, 1) - start) / span >= 0.08;
   while (Date.UTC(y, m, 1) <= end) {
     const pct = at(Date.UTC(y, m, 1));
     const isYear = m === 0;
@@ -248,7 +244,9 @@ function buildAxis([start, end]: Win, now: number): Axis {
         monthMarks.push({ pct, label: MONTHS[m].slice(0, 3).toUpperCase() });
       }
     }
-    if (pct >= -1 && pct < 95 && (isYear || (firstYear && leadRoom))) {
+    // Decision 15: always label the first year (prototype behaviour); "2013" may overprint "2014"
+    // at the far-left scroll edge in All view — accepted (only visible when scrolled all the way).
+    if (pct >= -1 && pct < 95 && (isYear || firstYear)) {
       yearMarks.push({ pct: Math.max(0, pct), label: String(y) });
     }
     if (pct >= -1) firstYear = false;
@@ -263,16 +261,22 @@ function buildAxis([start, end]: Win, now: number): Axis {
     start,
     end,
     today: at(now),
-    minWidth: 600,
+    minWidth: Math.max(600, Math.round(100 + 6 * months)),
     grid,
     months: monthMarks,
     years: yearMarks,
   };
 }
 
-/** "S1 SAR L1/L2" → "SAR L1/L2": the lane names drop the mission prefix the page already shows. */
+/** "S1 SAR L1/L2" → "SAR L1/L2", "S2 MSI L1" → "L1": drops mission prefix then MSI/TROPOMI. */
 function laneName(label: string): string {
-  return label.replace(/^S(?:1|2|3|5P)\s+/, "");
+  return label.replace(/^S(?:1|2|3|5P)\s+/, "").replace(/^(TROPOMI|MSI)\s+/, "");
+}
+
+/** Version text: baseline tag, or 'Mon YYYY' when neither version nor processing_baseline was in
+ *  the record — the same "—" sentinel the adapter produces (adapters/processor.ts:143). */
+function verOf(r: ReleaseRecord): string {
+  return r.baseline === "—" ? r.from : r.baseline;
 }
 
 /** "5 February 2026" */
@@ -533,7 +537,7 @@ function ReleaseTimeline({
                         ].join(" ")}
                         style={{ left: `${x}%`, top: cy }}
                         disabled={moving || off}
-                        aria-label={`${laneName(g.label)} ${r.baseline}, operational since ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
+                        aria-label={`${laneName(g.label)} ${verOf(r)}, operational since ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
                         aria-pressed={isSelected}
                         onMouseEnter={(e) =>
                           showTip(e.currentTarget, {
@@ -564,7 +568,7 @@ function ReleaseTimeline({
                           className={`${s.vl} ${isCurrent ? s.vlNow : ""} ${state}`}
                           style={{ left: `${x}%`, top: cy }}
                         >
-                          {r.baseline}
+                          {verOf(r)}
                         </span>
                       )}
                     </span>
