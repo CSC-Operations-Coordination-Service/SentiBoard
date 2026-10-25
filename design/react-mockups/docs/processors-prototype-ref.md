@@ -1323,6 +1323,7 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     delivered with this file; ESA artist's impressions, alt text "Artist's impression of Sentinel-N").
 
     **Applied in Session 3 (2026-10-25):** Transparency check: `s1.webp`, `s2.webp`, `s3.webp`, `s5p.webp` all confirmed "RIFF Web/P image, with alpha" — used these. The `_` PNG variants are 8-bit colormap (likely black backgrounds). No cutout files needed. CSS: `.lcol` (was `.satpane`) not sticky, no glow/art/placeholder; `.orbit { width: 66%; height: var(--pr-sat-h); transition: opacity 0.5s ease; }`; `.split.focus .orbit { opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }`; `.sat { filter: drop-shadow(0 18px 40px rgba(0,0,0,0.5)); }`; `@container (max-width: 419px) { .orbit { width: 92%; } }`. In focus at ≥1081 px the `.lcol` is `position: absolute; left:0; top:0; width:50%; pointer-events:none` (stays painted for the fade). At ≤1080 focus: `display: none` (stacked layout). `@keyframes lcolIn` (from opacity:0 translateX(-24px)) applied via `.lcolEnter .orbit { animation: lcolIn 560ms ease both }` on re-entry. `.lcol margin-top: calc(12px + 0.125 * var(--pr-sat-h) - var(--pr-align))` positions the satellite ≈ 12 px under the toolbar.
+
 11. **Mission-change motion (§11).** → _Recommended:_ build it, in its own session (Session 7) after
     everything else works, so it can be dropped if it costs too much: satellites and the timeline sheet
     rotate about the planet centre (1300 + 600·(n−1) ms, ease-in-out cubic), the outgoing sheet fades at
@@ -1336,14 +1337,17 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     **Applied in Session 3 (2026-10-25):** `focusClass` state drives `.split.focus` (grid switch). `detailOn` state drives `.detailpane.on` (opacity 1 / transform none), added 180 ms after open. `lcolEnter` state drives `.lcolEnter .orbit` animation (560 ms), applied on re-entry. FLIP: `useLayoutEffect` on `[focusClass]` — captures rect before `setFocusClass` (inside the orchestration `useEffect` on `[isDetail]`), measures after, applies `translate(dx,dy)` + 720 ms transition. Double `requestAnimationFrame` ensures the start-transform paints before the transition begins. Close sequence: `setDetailOn(false)` → 280 ms → capture rect → `setFocusClass(false)` + `setLcolEnter(true)` → 560 ms → `setLcolEnter(false)`. All timers cleared on cleanup. `prefers-reduced-motion`: JS delays set to 0; CSS adds `transition: none !important` on `.procpane`, `.detailpane`; `animation: none` on `.lcolEnter .orbit`. `lastSelected` ref keeps detail content while pane fades — unchanged from Session 2.
 
     **Applied in Session 6 (2026-10-25) — vswap:** `@keyframes vswap { from { opacity: 0.25; } to { opacity: 1; } }` + `.dtIn.swap { animation: vswap 320ms ease }` + `@media(prefers-reduced-motion:reduce){ .dtIn.swap { animation: none } }`. In `ReleaseDetail`: `firstOpen` ref (suppresses swap on first pick); `swapId` state updated by a `useEffect` on `release.id` (skips first run). An inner `<div key={swapId} className={firstOpen.current ? undefined : s.swap}>` wraps all detail content — keyed remount ensures animation restarts on rapid successive steps. The outer `.dtIn` div has no key. `dtIn.swap` fires on every step/re-pick while the panel is open; the pane's own entrance (opacity 420 ms + slide 640 ms, Session 3) covers the first open.
+
 13. **Chart width.** → _Recommended:_ the prototype's `max(600, 100 + 6 px × months)` (All ≈ 1054 px,
     scrolled to the end on load), unless the fixed 600 px was a stakeholder request — say so if it was.
 
     **Applied in Session 4 (2026-10-25):** `buildAxis()` now returns `minWidth: Math.max(600, Math.round(100 + 6 * months))`; hardcoded `min-width: 600px` removed from `.tlChart` in CSS (set via inline style only). Width follows the animated window because `axis` is recomputed from `win` each frame. Scroll effect re-fires on `axis.minWidth` change (already in deps). §6.1.
+
 14. **Names column backdrop.** → _Recommended:_ keep ours (the gradient starts under the axis at 42 px,
     so year/month labels scrolled under the names stay readable); colour from `--bg` instead of `#000`.
 
     **Applied in Session 4 (2026-10-25):** `.tlLabels span { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; color: color-mix(in srgb, var(--text) 55%, transparent) }`. Picked row `.on { color: var(--text) }`. Backdrop 42 px start unchanged. `laneName()` now also strips a leading `MSI ` or `TROPOMI ` prefix (§6.3).
+
 15. **First-year label** (confirmed 2026-10-25): **follow the prototype** — the year of the first
     month drawn is always labelled (`x >= -1 && x < 95`, printed once, at `max(0, x)`), with **no room
     check**: remove `leadRoom`. This is also what the live SentiBoard does ("2025" at the left edge).
@@ -1353,11 +1357,13 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     never overlap (the next January is at least 10 % of the track away).
 
     **Applied in Session 4 (2026-10-25):** `leadRoom` variable and its guard removed from `buildAxis()`; year labels fire on `pct >= -1 && pct < 95 && (isYear || firstYear)`. §6.4.
+
 16. **Marker motion.** The resolved prototype keeps only `opacity 240ms` (hover scale/ring snap) and no
     version-label fade. → _Recommended:_ follow the resolved prototype (as we did for DA's killed
     hovers). Alternative: keep `transform .2s` for the hover scale.
 
     **Applied in Session 4 (2026-10-25):** `.mk { transition: opacity 240ms ease }` only — hover scale (1.3) and border-colour snap. `.mkSel:hover { transform: scale(1.25) }` added so the picked marker stays at 1.25 on hover. `animation: vlIn 0.4s ease both` removed from `.vl`; `@keyframes vlIn` deleted. §6.5.
+
 17. **Tooltip.** → _Recommended:_ prototype frame, typography, colours (`.go #19E27A`), fade in and out,
     placement (§8, with `skyBot = innerHeight − 12`), hidden on page scroll; **keep our rows**
     (Released + Operational since from the feed, the release's own satellites, Changes from the
@@ -1385,22 +1391,45 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     `#A78BFA`) — reuse mission colour tokens if the codebase has them, else skip; focus outlines stay the
     shared accent.
 
-    **Applied in Session 6 (2026-10-25):** No CSS mission-colour tokens existed. Added `--pr-mis-1/2/3/5P` to the dark block of `src/styles/tokens.css` (dark values only, per session instructions). `--pr-mis` is set via inline style on `<section className={s.detailpane}>` using `detailGroup.mission` (not `activeMission`, so the colour stays correct while the pane fades after a mission change): `{ '--pr-mis': \`var(--pr-mis-${detailGroup.mission})\` } as CSSProperties`. `.rnHtml code` split from `pre` and given `font-family: "JetBrains Mono","SF Mono",ui-monospace,Consolas,monospace; font-size: 11.5px; color: var(--pr-mis, var(--text))` (fallback to `--text` when `--pr-mis` unset). Focus outlines unchanged.
+    **Applied in Session 6 (2026-10-25):** No CSS mission-colour tokens existed. Added `--pr-mis-1/2/3/5P` to the dark block of `src/styles/tokens.css` (dark values only, per session instructions). `--pr-mis` is set via inline style on `<section className={s.detailpane}>` using `detailGroup.mission` (not `activeMission`, so the colour stays correct while the pane fades after a mission change): `{ '--pr-mis': \`var(--pr-mis-${detailGroup.mission})\` } as CSSProperties`. `.rnHtml code`split from`pre`and given`font-family: "JetBrains Mono","SF Mono",ui-monospace,Consolas,monospace; font-size: 11.5px; color: var(--pr-mis, var(--text))`(fallback to`--text`when`--pr-mis` unset). Focus outlines unchanged.
+
 20. **Text shadow** on the timeline and detail text. → _Recommended:_ do what DA did for its row-label
     shadow (check `availability.module.css`): if DA kept it in dark only, same here; light theme: none.
 
     **Applied in Session 3 (2026-10-25):** DA applies text-shadow as a bare rule (no dark guard). Here applied dark-only via `:root:not([data-theme="light"]) .procpane, :root:not([data-theme="light"]) .detailpane { text-shadow: 0 0 2px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.85), 0 1px 14px rgba(0,0,0,.7); }`. Existing `.rn h4 { text-shadow: none }` suppresses it on the notes heading. Noticed: DA applies the same dark text-shadow in light mode.
-21. **Prototype leftovers of the page's own planet.** The horizon mask (content fades out 56 px above a
-    fixed line at ~83 % of the viewport), the `--below` padding and the scene-height adjustment. →
-    _Recommended:_ not built; bottom spacing via `--sb-earth-h` as every page.
 
-    **Applied in Session 1 (2026-10-25):** `.headArt + .container` now has `padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)` (consolidated from the separate `.container` rule at file bottom). The duplicate bare `padding-bottom: 48px` on `.container` removed.
+21. Confirmed 2026-10-25 — build the horizon reveal (prototype `fitSky`): a line fixed in the
+    viewport at navBottom + 0.8334 × (innerHeight − navBottom) − 14 px; the timeline column and
+    the detail panel are masked so content below the line is transparent, with a 56 px fade above
+    it: mask-image: linear-gradient(to bottom, #000 0, #000 (cut − 56px), transparent cut), where
+    cut = line − element top. Recomputed on scroll and resize (rAF). The hover card (portalled) is
+    not masked. Bottom room so the last row can rise above the line. The scene-height adjustment
+    and the per-page planet geometry stay not built.
+
+    **Applied in Session 6b (2026-10-26):** `useHorizonMask(containerRef, procpaneRef, detailRef)` (inline
+    in `processors.tsx`). On scroll and resize: passive listeners → `requestAnimationFrame(update)`,
+    coalesced. On layout shift without scroll (dropdown open/close, mission change, fonts): `ResizeObserver`
+    on `.container` (`containerRef`) → same `schedule()`. During the 720 ms FLIP: `pumpHorizon(820)`
+    called in the FLIP `useLayoutEffect`, runs `update` every rAF frame for 820 ms, returned as the
+    effect cleanup. Formula: `line = navBottom + 0.8334 × (innerHeight − navBottom) − 14`; nav via
+    `document.querySelector(".nav")` (existing codebase pattern, line 435). CSS:
+    `mask-image: linear-gradient(to bottom, black 0px, black calc(var(--hz-cut, 9999px) − 56px),
+    transparent var(--hz-cut, 9999px))` + `-webkit-` mirror on a shared `.procpane, .detailpane` rule.
+    Fallback `9999px` = no clip before the first rAF. Hover card is portalled to `<body>` (`position:
+    fixed`, `z-index: 55`) — outside both masked elements, not clipped. Mission and Baseline dropdowns
+    verified inside `.filters` (sibling to `.split`), not inside `.procpane` — not clipped. Bottom room:
+    existing `padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)` (222 px on `.container`) is sufficient
+    at 900 px and 1080 px; no extra padding added.
+    Noticed, not done: at 900 px on S3 (All), scroll the page down ~80–100 px to raise the last row
+    above the line. With a long release note open, scroll the page down to read the note's bottom.
+    At 1080 px the S3 chart fits above the line without scrolling.
 
 22. **Responsive.** → _Recommended:_ the prototype's: satellite stays on the left (40/60 ≤1080, 34/66
     ≤640), detail under the timeline ≤1080; the toolbar wraps like Acquisitions/DA (match their narrow
     rules).
 
     **Applied in Session 3 (2026-10-25):** ≤1080: `.split { grid-template-columns: 40% 60% }`, `.sheet { padding-left: 12px }`. Focus at ≤1080: `grid-template-columns: 100%; grid-template-areas: "proc" "detail"`, `.split.focus .lcol { display: none }`, `.split.focus .sheet { padding-left: 0 }`, `.split.focus .detailpane { padding: 4px 0 48px 0 }`. ≤640: `grid-template-columns: 34% 66%`, `.lcol { padding-right: 10px }`, `.sheet { padding-left: 4px }`. Toolbar wraps centred by default (no extra rules needed).
+
 23. **Description.** → _Recommended:_ the §14 copy verbatim (stakeholders' text, as DA Decision 10),
     with the legend markers drawn like the timeline: Current baseline = filled `#3FCF7F` with glow,
     Superseded = hollow 1.5 px ring `#7D8792`; dot size the shared 8×8 (as DA). Open point for the

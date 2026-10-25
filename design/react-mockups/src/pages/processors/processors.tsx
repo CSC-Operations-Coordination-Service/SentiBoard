@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -809,6 +810,72 @@ function ReleaseDetail({ group, index, onClose, onStep }: ReleaseDetailProps) {
   );
 }
 
+/**
+ * Tracks the horizon line (navBottom + 0.8334 × (innerHeight − navBottom) − 14)
+ * and writes --hz-cut = line − element.top on each ref element every rAF frame
+ * triggered by scroll, resize, or a ResizeObserver on containerRef.
+ * Returns a pump(ms) function for continuous per-frame updates during the FLIP.
+ * Decision 21.
+ */
+function useHorizonMask(
+  containerRef: React.RefObject<HTMLElement | null>,
+  ...els: React.RefObject<HTMLElement | null>[]
+): (durationMs: number) => () => void {
+  const updateRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>(".nav");
+    let raf = 0;
+
+    function update() {
+      raf = 0;
+      const navBottom = nav?.getBoundingClientRect().bottom ?? 64;
+      const line =
+        navBottom + 0.8334 * (window.innerHeight - navBottom) - 14;
+      for (const ref of els) {
+        const el = ref.current;
+        if (!el) continue;
+        el.style.setProperty(
+          "--hz-cut",
+          `${Math.round(line - el.getBoundingClientRect().top)}px`,
+        );
+      }
+    }
+
+    updateRef.current = update;
+
+    function schedule() {
+      if (!raf) raf = requestAnimationFrame(update);
+    }
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+
+    const ro = new ResizeObserver(schedule);
+    if (containerRef.current) ro.observe(containerRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      ro.disconnect();
+      updateRef.current = null;
+    };
+  }, []); // refs are stable — no deps needed
+
+  return useCallback((durationMs: number): (() => void) => {
+    const deadline = performance.now() + durationMs;
+    let id = 0;
+    function tick() {
+      updateRef.current?.();
+      if (performance.now() < deadline) id = requestAnimationFrame(tick);
+    }
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, []);
+}
+
 export default function Processors() {
   // Captured once so the stats and the timeline window agree for the life of the page.
   const [now] = useState(() => Date.now());
@@ -829,6 +896,11 @@ export default function Processors() {
   const flipFrom = useRef<DOMRect | null>(null);
   const [focusClass, setFocusClass] = useState(false);
   const [detailOn, setDetailOn] = useState(false);
+
+  /* Horizon mask (Decision 21). containerRef → ResizeObserver; detailRef alongside procpaneRef. */
+  const containerRef = useRef<HTMLElement>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const pumpHorizon = useHorizonMask(containerRef, procpaneRef, detailRef);
   const [lcolEnter, setLcolEnter] = useState(false);
 
   const processors = useProcessors();
@@ -981,6 +1053,7 @@ export default function Processors() {
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     )
       return;
+    const cancelPump = pumpHorizon(820);
     el.style.transform = `translate(${dx}px, ${dy}px)`;
     el.style.transition = "none";
     requestAnimationFrame(() => {
@@ -994,6 +1067,7 @@ export default function Processors() {
         el.addEventListener("transitionend", done);
       });
     });
+    return cancelPump;
   }, [focusClass]);
 
   const missionReleases = missionGroups.flatMap((g) => g.releases);
@@ -1043,7 +1117,7 @@ export default function Processors() {
         />
       </div>
 
-      <section className={ambientRoot(motion.paused, s.container)}>
+      <section className={ambientRoot(motion.paused, s.container)} ref={containerRef}>
         <SpaceBackdrop page={2} paused={motion.paused} />
 
         {/* Headline counts for the selected mission */}
@@ -1271,6 +1345,7 @@ export default function Processors() {
           </section>
 
           <section
+            ref={detailRef}
             className={`${s.detailpane} ${detailOn ? s.on : ""}`}
             aria-live="polite"
             aria-hidden={focusClass ? undefined : true}

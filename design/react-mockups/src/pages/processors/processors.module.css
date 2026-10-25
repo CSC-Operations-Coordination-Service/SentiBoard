@@ -339,6 +339,24 @@
 
 /* Timeline pane. No horizontal padding — .sheet and .container handle edges.
    Text shadow per Decision 20 (dark theme only, below). */
+/* Horizon reveal mask (Decision 21). --hz-cut is set in px by useHorizonMask().
+   Fallback 9999px = no clipping before the first rAF fires. */
+.procpane,
+.detailpane {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0px,
+    black calc(var(--hz-cut, 9999px) - 56px),
+    transparent var(--hz-cut, 9999px)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0px,
+    black calc(var(--hz-cut, 9999px) - 56px),
+    transparent var(--hz-cut, 9999px)
+  );
+}
+
 .procpane {
   grid-area: proc;
   min-width: 0;
