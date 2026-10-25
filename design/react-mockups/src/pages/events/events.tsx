@@ -903,7 +903,7 @@ export default function EventsManifest() {
       </div>
 
       <div className={ambientRoot(motion.paused, s.page)}>
-        <SpaceBackdrop page={1} paused={motion.paused} />
+        <SpaceBackdrop page={0} paused={motion.paused} />
         <div className={s.inner}>
           {/* ---------- key metrics ---------- */}
           <div className={s.metrics} aria-label="Summary for the month">
