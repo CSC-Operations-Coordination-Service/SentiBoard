@@ -31,18 +31,10 @@ const SENSOR_MODES: Record<string, string[]> = {
 };
 
 export const MISSION_NAMES = Object.keys(MISSIONS);
-export const ALL_SATELLITES = MISSION_NAMES.flatMap((m) => MISSIONS[m]);
+const ALL_SATELLITES = MISSION_NAMES.flatMap((m) => MISSIONS[m]);
 const MISSION_OF: Record<string, string> = Object.fromEntries(
   MISSION_NAMES.flatMap((m) => MISSIONS[m].map((s) => [s, m])),
 );
-
-export const STATUS_COLOR: Record<Status, string> = {
-  Planned: "var(--cmp-planned)",
-  Processing: "var(--cmp-processing)",
-  Acquired: "var(--cmp-acquired)",
-  Partial: "var(--cmp-partial)",
-  Unavailable: "var(--cmp-unavailable)",
-};
 
 export const DAY_MS = 86_400_000;
 
@@ -58,11 +50,9 @@ export const pad = (n: number) => String(n).padStart(2, "0");
 export const fmtDate = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 export const fmtDateTime = (d: Date) =>
   `${fmtDate(d)} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
-export const dayKey = (d: Date) => fmtDate(d);
-
 /** The window the page describes: three months back plus everything scheduled to 23:59:59 of the
  *  following day, anchored to UTC midnight so the mock set is stable for a whole day. */
-export function acquisitionWindow() {
+function acquisitionWindow() {
   const n = new Date();
   const today = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
   const start = new Date(today);
@@ -202,9 +192,9 @@ export function barColor(d: Datatake): string {
 }
 
 /** Bars per strip: the same rhythm in every row, whatever its density. */
-export const FRAMES = 96;
+const FRAMES = 96;
 
-export interface Frame {
+interface Frame {
   /** The datatake the bar shows: the worst one in its group. */
   item: Datatake;
   /** How many datatakes the bar stands for (1 unless the row has more than FRAMES). */

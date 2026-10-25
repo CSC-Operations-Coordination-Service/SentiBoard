@@ -550,6 +550,9 @@ Recommended choice first. Strike the ones you reject and write what you want ins
     navbar and Events use, so the pages stay aligned; the prototype's `clamp(18px, 4.4vw, 64px)` is not
     used. The space before the footer also stays on the shared mechanism
     (`padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)`, as Events) instead of §1's spacer.
+    The page keeps its own `padding-inline` rather than the global `wrap` class: `wrap` also caps the
+    width (`max-width: var(--wrap)`, centred), and this page spans the full width like the navbar
+    (checked in Session 6).
 13. **Mean completeness with nothing final** (confirmed 2026-10-25, Session 2): show `—`, not the
     prototype's `0%`, when the window has no datatake with a final completeness (only Planned /
     Processing — e.g. 1D, which covers today + tomorrow).

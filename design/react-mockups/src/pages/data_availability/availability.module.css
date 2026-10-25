@@ -340,7 +340,10 @@
 @media (prefers-reduced-motion: reduce) {
   .track,
   .trackZoom,
-  .tile {
+  .tile,
+  .axis,
+  .fdropBody,
+  .tipOn {
     transition: none;
     animation: none;
   }
