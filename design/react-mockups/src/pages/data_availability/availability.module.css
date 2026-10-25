@@ -202,11 +202,6 @@
   outline-offset: 1px;
 }
 
-/* A datatake the filters have set aside: it keeps its place, but fades so the matches stand out. */
-.tileDim {
-  opacity: 0.18;
-}
-
 /* ---------- the date axis under each strip ---------- */
 .axis {
   position: relative;
@@ -269,7 +264,7 @@
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   gap: 2px 34px;
   margin-top: clamp(16px, 2.6vh, 28px);
@@ -461,12 +456,13 @@
   cursor: pointer;
 }
 
-/* Mission and Status: an underlined 176px field whose list drops over the page */
+/* Mission and Status: an underlined field whose list opens in flow and pushes the page down */
 .fdrop {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 176px;
+  min-width: 176px;
+  width: auto;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
@@ -486,13 +482,19 @@
 }
 
 .fdropLabel {
-  flex: 1;
+  flex: 1 1 auto;
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #ffffff;
+}
+
+/* caption turns cyan on hover/open; hairline stays rgba(255,255,255,.30) */
+.fdropHead:hover .fdropLabel,
+.fdropHead[aria-expanded="true"] .fdropLabel {
+  color: #2fc6dc;
 }
 
 .fdropVal {
@@ -506,59 +508,66 @@
 
 .fdropHead svg {
   flex-shrink: 0;
-  color: rgba(234, 240, 246, 0.6);
-  transition: transform 0.3s ease;
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.fdropHead[aria-expanded="true"] svg {
-  transform: rotate(180deg);
-}
-
-.fdrop:hover,
-.fdrop:has(.fdropHead[aria-expanded="true"]) {
-  border-bottom-color: #2fc6dc;
-}
-
-/* the list opens over the content below, so the toolbar never jumps */
-.fdrop > :global(.collapsible) {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 30;
-  background: rgba(9, 13, 18, 0.96);
-  -webkit-backdrop-filter: blur(9px);
-  backdrop-filter: blur(9px);
+/* in-flow dropdown body: grid rows animate 0fr → 1fr (420ms) */
+.fdropBody {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .fdropInner {
-  padding: 8px 10px 10px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.fdropPad {
+  padding: 12px 0 16px;
 }
 
 .fitem {
-  display: block;
   width: 100%;
   min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
   padding: 0;
   border: 0;
   background: none;
   cursor: pointer;
   text-align: left;
   font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(234, 240, 246, 0.66);
-  transition: color 0.2s ease;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 180ms ease, opacity 180ms ease;
 }
 
-.fitem:hover {
-  color: #ffffff;
+.fitem i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
 }
 
-.fitem[aria-pressed="true"] {
-  color: #2fc6dc;
+.fitem u {
+  flex: 1;
+  text-decoration: none;
+}
+
+.fitemMission {
+  gap: 0;
+}
+
+.fitemOff {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.3;
 }
 
 /* 🔍 Datatake ID */
@@ -572,10 +581,6 @@
   color: #ffffff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.3);
   transition: border-color 0.2s ease;
-}
-
-.fsearch:focus-within {
-  border-bottom-color: #2fc6dc;
 }
 
 .fsearch input {
@@ -614,34 +619,14 @@
   transition: color 0.2s ease;
 }
 
-.freset:hover:not(:disabled) {
-  color: #2fc6dc;
-}
-
-/* nothing to reset: same white as the reference, just not clickable */
-.freset:disabled {
-  cursor: default;
-}
 
 @media (max-width: 900px) {
   .counter { width: clamp(130px, 44vw, 200px); }
 }
 
-@media (max-width: 700px) {
-  .filters {
-    justify-content: flex-start;
-    gap: 6px 22px;
-  }
-
-  .fdrop {
-    flex: 1 1 140px;
-    width: auto;
-  }
-
-  .fsearch {
-    flex: 1 1 100%;
-    width: auto;
-  }
+@media (max-width: 760px) {
+  .fhead { width: 100%; }
+  .fsearch { min-width: 140px; }
 }
 
 /* -------------------- the datatake card (SentiBoard.html#data-availability) --------------------

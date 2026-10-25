@@ -553,3 +553,13 @@ Recommended choice first. Strike the ones you reject and write what you want ins
 14. **Mock statuses** (Session 2): `mock.ts` decides Planned / Processing from the real current time:
     start > now → Planned; started less than 24 h ago → Processing; older → outage / acquired /
     partial logic. Every window change goes through one `changeWindow` helper that clears the pick.
+15. **Lost datatakes must not look like Planned** (confirmed 2026-10-25, option b). In the prototype a
+    0 % bar is `#8B98A6`, almost the Planned grey `#7A8696`, and the Status list shows Unavailable as
+    red — two contradicting colour systems. Bars keep the completeness bands, except 0 %:
+    - lost colour = `#E8514B` (the Status dot and the "Datatakes lost" KPI colour) — replaces
+      `MISSING #8B98A6` in `barColor`, so the card's ring/badge and the tooltip use it too;
+    - the 0 % **bar** is drawn hatched, so it differs from a solid fire-red Partial (`#E8200F`):
+      `background: repeating-linear-gradient(135deg, #E8514B 0 2px, #12161B 2px 5px); border-color: #E8514B;`
+      (other bars keep the `#EAF0F6` border);
+    - Planned `#7A8696` and Processing `#5B9BE8` unchanged.
+    The Description legend (Decision 10) shows: the five bands, Lost (hatched), Planned, Processing.

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 
 import { Search, X } from "lucide-react";
-import { Collapse, PageHeader, Reveal } from "@/components/ui";
+import { PageHeader, Reveal } from "@/components/ui";
 import { AVAILABILITY_DESCRIPTION } from "@/data/copy";
 import {
   DATA,
@@ -47,6 +47,14 @@ const STATUSES: Status[] = [
   "Partial",
   "Unavailable",
 ];
+
+const STATUS_DOT: Record<Status, string> = {
+  Planned: "#7A8696",
+  Processing: "#5B9BE8",
+  Acquired: "#3FCF7F",
+  Partial: "#F0A63A",
+  Unavailable: "#E8514B",
+};
 
 function ChevronDown() {
   return (
@@ -250,10 +258,12 @@ export default function CoverageTimeline() {
   const [customTo, setCustomTo] = useState("");
   // Incremented on range/Custom/Reset changes; strip entrance animation trigger for Session 4.
   const [animKey, setAnimKey] = useState(0);
-  const [mission, setMission] = useState("All");
-  const [status, setStatus] = useState<Status | "All">("All");
+  const [offMissions, setOffMissions] = useState<Set<string>>(new Set());
+  const [offStatuses, setOffStatuses] = useState<Set<Status>>(new Set());
   const [openDrop, setOpenDrop] = useState<"mission" | "status" | null>(null);
   const [search, setSearch] = useState("");
+  const missionDropRef = useRef<HTMLDivElement>(null);
+  const statusDropRef = useRef<HTMLDivElement>(null);
   const fromInputRef = useRef<HTMLInputElement>(null);
   const toInputRef = useRef<HTMLInputElement>(null);
   // Set to true before switching to Custom via pager label click; cleared after picker is opened.
@@ -290,8 +300,8 @@ export default function CoverageTimeline() {
 
   const reset = useCallback(() => {
     changeWindow({ rangeId: 30, offset: 0, customFrom: "", customTo: "", animate: true });
-    setMission("All");
-    setStatus("All");
+    setOffMissions(new Set());
+    setOffStatuses(new Set());
     setSearch("");
     setOpenDrop(null);
   }, [changeWindow]);
@@ -344,24 +354,14 @@ export default function CoverageTimeline() {
 
   const matching = useMemo(() => {
     let out = inRange;
-    if (mission !== "All") out = out.filter((r) => r.mission === mission);
-    if (status !== "All") out = out.filter((r) => r.status === status);
+    if (offMissions.size > 0) out = out.filter((r) => !offMissions.has(r.mission));
+    if (offStatuses.size > 0) out = out.filter((r) => !offStatuses.has(r.status));
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       out = out.filter((r) => r.id.toLowerCase().includes(q));
     }
     return out;
-  }, [inRange, mission, status, search]);
-
-  const active =
-    rangeId !== 30 ||
-    offset !== 0 ||
-    customFrom !== "" ||
-    customTo !== "" ||
-    mission !== "All" ||
-    status !== "All" ||
-    search !== "" ||
-    focus !== null;
+  }, [inRange, offMissions, offStatuses, search]);
 
   const finalized = matching.filter(
     (r) => r.status !== "Planned" && r.status !== "Processing",
@@ -382,9 +382,15 @@ export default function CoverageTimeline() {
     }
   }, [rangeId]);
 
+  // Escape: close open dropdown first; if none open, close the datatake card.
   // ← / → keys move the window one day; disabled while a datatake card is open or an input has focus.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (openDrop !== null) { setOpenDrop(null); return; }
+        if (focus !== null) { setFocus(null); return; }
+        return;
+      }
       if (focus !== null) return;
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "ArrowLeft") shiftOffset(1);
@@ -392,29 +398,41 @@ export default function CoverageTimeline() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [focus, shiftOffset]);
+  }, [focus, openDrop, shiftOffset]);
+
+  // Click outside either open dropdown closes it.
+  useEffect(() => {
+    if (openDrop === null) return;
+    const handler = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!missionDropRef.current?.contains(t) && !statusDropRef.current?.contains(t)) {
+        setOpenDrop(null);
+      }
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [openDrop]);
+
+  // If a filter change removes the focused datatake from matching, close the card and zoom out.
+  useEffect(() => {
+    if (focus !== null && !matching.some((r) => r.id === focus.item.id)) {
+      setFocus(null);
+    }
+  }, [matching, focus]);
 
   // One row per mission: its datatakes folded into at most FRAMES evenly spaced bars, and one shared
   // set of date labels under every row — the layout of SentiBoard.html#data-availability.
   const ticks = useMemo(() => axisTicks(days), [days]);
   const lanes = useMemo(
     () =>
-      MISSION_NAMES.map((m) => {
-        const own = inRange.filter((r) => r.mission === m);
+      MISSION_NAMES.filter((m) => !offMissions.has(m)).map((m) => {
+        const own = matching.filter((r) => r.mission === m);
         const frames = framesOf(own);
-        const mean = own.length
-          ? Math.round(own.reduce((n, r) => n + r.completeness, 0) / own.length)
-          : 0;
         // Bar width: 76% of the strip shared by the bars, so ~24% is the gaps between them.
         const tw = frames.length ? 76 / frames.length : 2;
-        return { mission: m, mean, frames, tw };
+        return { mission: m, frames, tw };
       }),
-    [inRange],
-  );
-
-  const matchingIds = useMemo(
-    () => new Set(matching.map((r) => r.id)),
-    [matching],
+    [matching, offMissions],
   );
 
   return (
@@ -587,76 +605,101 @@ export default function CoverageTimeline() {
           </div>
 
           <div className={s.filterGroup}>
-            <div className={s.fdrop}>
+            <div className={s.fdrop} ref={missionDropRef}>
               <button
                 type="button"
                 className={s.fdropHead}
                 aria-expanded={openDrop === "mission"}
                 aria-controls="avail-mission"
-                onClick={() =>
-                  setOpenDrop(openDrop === "mission" ? null : "mission")
-                }
+                onClick={() => setOpenDrop(openDrop === "mission" ? null : "mission")}
               >
                 <span className={s.fdropLabel}>Mission</span>
-                {mission !== "All" && (
-                  <span className={s.fdropVal}>{mission}</span>
+                {offMissions.size > 0 && (
+                  <span className={s.fdropVal}>{MISSION_NAMES.length - offMissions.size}/{MISSION_NAMES.length}</span>
                 )}
                 <ChevronDown />
               </button>
-              <Collapse open={openDrop === "mission"} id="avail-mission">
+              <div
+                id="avail-mission"
+                className={s.fdropBody}
+                style={{ gridTemplateRows: openDrop === "mission" ? "1fr" : "0fr" }}
+                aria-hidden={openDrop !== "mission" ? true : undefined}
+                ref={(el) => { if (el) el.inert = openDrop !== "mission"; }}
+              >
                 <div className={s.fdropInner}>
-                  {["All", ...MISSION_NAMES].map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      className={s.fitem}
-                      aria-pressed={mission === m}
-                      onClick={() => {
-                        setMission(m);
-                        setOpenDrop(null);
-                      }}
-                    >
-                      {m}
-                    </button>
-                  ))}
+                  <div className={s.fdropPad}>
+                    {MISSION_NAMES.map((m) => {
+                      const isOff = offMissions.has(m);
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          className={`${s.fitem} ${s.fitemMission}${isOff ? ` ${s.fitemOff}` : ""}`}
+                          aria-pressed={!isOff}
+                          onClick={() => {
+                            setOffMissions((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(m)) next.delete(m); else next.add(m);
+                              return next;
+                            });
+                          }}
+                        >
+                          <u>{m}</u>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </Collapse>
+              </div>
             </div>
 
-            <div className={s.fdrop}>
+            <div className={s.fdrop} ref={statusDropRef}>
               <button
                 type="button"
                 className={s.fdropHead}
                 aria-expanded={openDrop === "status"}
                 aria-controls="avail-status"
-                onClick={() =>
-                  setOpenDrop(openDrop === "status" ? null : "status")
-                }
+                onClick={() => setOpenDrop(openDrop === "status" ? null : "status")}
               >
                 <span className={s.fdropLabel}>Status</span>
-                {status !== "All" && (
-                  <span className={s.fdropVal}>{status}</span>
+                {offStatuses.size > 0 && (
+                  <span className={s.fdropVal}>{STATUSES.length - offStatuses.size}/{STATUSES.length}</span>
                 )}
                 <ChevronDown />
               </button>
-              <Collapse open={openDrop === "status"} id="avail-status">
+              <div
+                id="avail-status"
+                className={s.fdropBody}
+                style={{ gridTemplateRows: openDrop === "status" ? "1fr" : "0fr" }}
+                aria-hidden={openDrop !== "status" ? true : undefined}
+                ref={(el) => { if (el) el.inert = openDrop !== "status"; }}
+              >
                 <div className={s.fdropInner}>
-                  {(["All", ...STATUSES] as const).map((st) => (
-                    <button
-                      key={st}
-                      type="button"
-                      className={s.fitem}
-                      aria-pressed={status === st}
-                      onClick={() => {
-                        setStatus(st);
-                        setOpenDrop(null);
-                      }}
-                    >
-                      {st}
-                    </button>
-                  ))}
+                  <div className={s.fdropPad}>
+                    {STATUSES.map((st) => {
+                      const isOff = offStatuses.has(st);
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          className={`${s.fitem}${isOff ? ` ${s.fitemOff}` : ""}`}
+                          aria-pressed={!isOff}
+                          onClick={() => {
+                            setOffStatuses((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(st)) next.delete(st); else next.add(st);
+                              return next;
+                            });
+                          }}
+                        >
+                          <i style={{ background: STATUS_DOT[st] }} />
+                          <u>{st}</u>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </Collapse>
+              </div>
             </div>
 
             <span className={s.fsearch}>
@@ -678,7 +721,6 @@ export default function CoverageTimeline() {
             type="button"
             className={s.freset}
             onClick={reset}
-            disabled={!active}
           >
             Reset filters
           </button>
@@ -725,13 +767,11 @@ export default function CoverageTimeline() {
                             const on =
                               focus?.mission === m &&
                               focus?.item?.id === item.id;
-                            const dim = !matchingIds.has(item.id);
                             const faded = focus !== null && !on;
                             const cls = [
                               s.tile,
                               on ? s.tileSelected : "",
                               faded ? s.tileFaded : "",
-                              dim ? s.tileDim : "",
                             ]
                               .filter(Boolean)
                               .join(" ");
