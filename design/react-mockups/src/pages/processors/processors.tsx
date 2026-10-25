@@ -25,6 +25,15 @@ import { useProcessors } from "@/api/processors";
 import { ApiError } from "@/api/client";
 import { htmlToText, notesSection, sanitizeHtml } from "@/lib/sanitize-html";
 
+/** Static chevron for dropdown heads — no rotation, matching DA behaviour (Decision 3). */
+function ChevronDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 // Map mission IDs to satellite image paths
 const SATELLITE_IMAGES: Record<MissionId, string> = {
   "1": "/assets/img/satellites/s1_.png",
@@ -347,6 +356,31 @@ function ReleaseTimeline({
   const scrollRef = useRef<HTMLDivElement>(null); // sideways scroll (long windows)
   const [tip, setTip] = useState<Tip | null>(null);
 
+  // All-words AND search over label, sub, baselines, year and notes (Decision 6).
+  // Memoised per groups so the Map is only rebuilt when the data changes.
+  const haystacks = useMemo(
+    () =>
+      new Map(
+        groups.flatMap((g) =>
+          g.releases.map((r) => [
+            r.id,
+            [
+              g.label,
+              g.sub ?? "",
+              r.baseline,
+              r.processingBaseline ?? "",
+              String(new Date(r.ms).getUTCFullYear()),
+              htmlToText(r.notesHtml),
+            ]
+              .join(" ")
+              .toLowerCase(),
+          ]),
+        ),
+      ),
+    [groups],
+  );
+  const words = query.trim() ? query.trim().split(/\s+/) : [];
+
   // Many rows (Sentinel-3) are drawn tighter, so the whole table stays in view.
   const n = groups.length;
   const rh = n > 12 ? 22 : n > 8 ? 28 : 44;
@@ -463,9 +497,6 @@ function ReleaseTimeline({
               {groups.map((g, i) => {
                 const cy = AXIS_TOP + i * rh + rh / 2;
                 const rowDim = zoomed && i !== selRow;
-                const groupHit =
-                  !query || `${g.label} ${g.sub}`.toLowerCase().includes(query);
-
                 return g.releases.map((r) => {
                   const x = toPct(r.ms);
                   if (x < -2 || x > 102) return null;
@@ -475,7 +506,8 @@ function ReleaseTimeline({
                   // Filters fade releases back instead of removing them, so the rows never jump.
                   const off = baselineFilter === "current" && !isCurrent;
                   const faint =
-                    !groupHit && !r.baseline.toLowerCase().includes(query);
+                    words.length > 0 &&
+                    !words.every((w) => haystacks.get(r.id)?.includes(w));
                   const state = [
                     rowDim ? s.dim : "",
                     off ? s.off : "",
@@ -591,105 +623,6 @@ function ReleaseTimeline({
           </div>,
           document.body,
         )}
-    </div>
-  );
-}
-
-interface FilterDropdownProps<T extends string> {
-  id: string;
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  /** Short text shown beside the label when closed, e.g. "Current". */
-  displayValue?: string;
-  onChange: (value: T) => void;
-}
-
-/** Label + chevron trigger that opens a vertical menu. Closes on outside click or Escape. */
-function FilterDropdown<T extends string>({
-  id,
-  label,
-  value,
-  options,
-  displayValue,
-  onChange,
-}: FilterDropdownProps<T>) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        triggerRef.current?.focus();
-      }
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
-
-  const choose = (next: T) => {
-    onChange(next);
-    setOpen(false);
-    triggerRef.current?.focus();
-  };
-
-  return (
-    <div ref={rootRef} className={`${s.dd} ${open ? s.ddOpen : ""}`}>
-      <button
-        ref={triggerRef}
-        id={id}
-        type="button"
-        className={s.ddTrigger}
-        aria-haspopup="true"
-        aria-expanded={open}
-        aria-controls={`${id}-menu`}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className={s.ddLabel}>{label}</span>
-        {displayValue && <span className={s.ddValue}>{displayValue}</span>}
-        <svg
-          className={`${s.ddChev} ${open ? s.ddChevUp : ""}`}
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          aria-hidden="true"
-        >
-          <path d="M6 9l6 6 6-6"></path>
-        </svg>
-      </button>
-
-      {open && (
-        <ul id={`${id}-menu`} className={s.ddMenu}>
-          {options.map((o) => {
-            const isOn = o.value === value;
-            return (
-              <li key={o.value}>
-                <button
-                  type="button"
-                  className={`${s.ddItem} ${isOn ? s.ddItemOn : ""}`}
-                  aria-current={isOn ? "true" : undefined}
-                  onClick={() => choose(o.value)}
-                >
-                  {o.label}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
     </div>
   );
 }
@@ -831,6 +764,10 @@ export default function Processors() {
   const [baselineFilter, setBaselineFilter] = useState<BaselineFilter>("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Selection | null>(null);
+  const [openDrop, setOpenDrop] = useState<"mission" | "baseline" | null>(null);
+  const missionDropRef = useRef<HTMLDivElement>(null);
+  const baselineDropRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const motion = useAmbientMotion();
 
   const processors = useProcessors();
@@ -886,15 +823,53 @@ export default function Processors() {
       ? detailGroup.releases.findIndex((r) => r.id === view.id)
       : -1;
 
-  // Escape closes the detail view, as the Overview button does.
+  // Single point of truth for all view changes (Decision 8).
+  const changeView = (
+    action: { mission: MissionId } | { range: Range } | { sel: Selection | null },
+  ) => {
+    if ("mission" in action) {
+      setActiveMission(action.mission);
+      setSelected(null);
+    } else if ("range" in action) {
+      setRange(action.range);
+      setSelected(null);
+    } else {
+      setSelected(action.sel);
+    }
+  };
+
+  // Unified Escape: open dropdown → close and restore focus; else detail → overview (Decision 24).
   useEffect(() => {
-    if (!isDetail) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setSelected(null);
+      if (e.key !== "Escape") return;
+      if (openDrop !== null) {
+        setOpenDrop(null);
+        const ref = openDrop === "mission" ? missionDropRef : baselineDropRef;
+        (ref.current?.querySelector("button") as HTMLButtonElement | null)?.focus();
+        return;
+      }
+      if (isDetail) changeView({ sel: null });
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isDetail]);
+    // changeView only calls stable setters; openDrop and isDetail are the real triggers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDrop, isDetail]);
+
+  // Click-outside closes any open dropdown (DA pointerdown pattern).
+  useEffect(() => {
+    if (openDrop === null) return;
+    const handler = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (
+        !missionDropRef.current?.contains(t) &&
+        !baselineDropRef.current?.contains(t)
+      )
+        setOpenDrop(null);
+    };
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
+  }, [openDrop]);
 
   const missionReleases = missionGroups.flatMap((g) => g.releases);
   const yearStart = now - 365 * DAY;
@@ -917,21 +892,19 @@ export default function Processors() {
     },
   ];
 
-  // A marker opens its release; a second click on the same marker returns to the overview.
+  // All view changes for markers go through changeView — no setSelected anywhere outside it (Decision 8).
   const toggleRelease = (ipf: string, id: string) =>
-    setSelected((prev) =>
-      prev && prev.ipf === ipf && prev.id === id ? null : { ipf, id },
-    );
+    changeView({
+      sel:
+        selected && selected.ipf === ipf && selected.id === id
+          ? null
+          : { ipf, id },
+    });
 
   const stepRelease = (delta: -1 | 1) => {
     if (!detailGroup) return;
     const next = detailGroup.releases[detailIndex + delta];
-    if (next) setSelected({ ipf: detailGroup.ipf, id: next.id });
-  };
-
-  const changeMission = (m: MissionId) => {
-    setActiveMission(m);
-    setSelected(null);
+    if (next) changeView({ sel: { ipf: detailGroup.ipf, id: next.id } });
   };
 
   return (
@@ -958,65 +931,142 @@ export default function Processors() {
           ))}
         </Reveal>
 
-        {/* Filter bar: mission menu, timeline window, baseline menu, search */}
+        {/* Filter bar: mission dropdown, range buttons, baseline dropdown, search (§3). */}
         <div className={s.filters}>
-          <FilterDropdown<MissionId>
-            id="mission-filter"
-            label="Mission"
-            value={activeMission}
-            options={MISSION_ORDER.map((m) => ({
-              value: m,
-              label: MISSION_NAMES[m].toUpperCase(),
-            }))}
-            onChange={changeMission}
-          />
+          {/* Mission — caption only, no value beside the label (Decision 4, §3.1). */}
+          <div className={s.fdrop} ref={missionDropRef}>
+            <button
+              id="mission-filter"
+              type="button"
+              className={s.fdropHead}
+              aria-expanded={openDrop === "mission"}
+              aria-controls="mission-filter-body"
+              onClick={() =>
+                setOpenDrop((d) => (d === "mission" ? null : "mission"))
+              }
+            >
+              <span className={s.fdropLabel}>Mission</span>
+              <ChevronDown />
+            </button>
+            <div
+              id="mission-filter-body"
+              className={s.fdropBody}
+              style={{
+                gridTemplateRows: openDrop === "mission" ? "1fr" : "0fr",
+              }}
+            >
+              <div
+                className={s.fdropInner}
+                {...(openDrop !== "mission" && { inert: "" as unknown as boolean })}
+              >
+                <div className={s.fdropPad}>
+                  {MISSION_ORDER.map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      className={`${s.fitem} ${activeMission !== m ? s.fitemOff : ""}`}
+                      onClick={() => {
+                        changeView({ mission: m });
+                        setOpenDrop(null);
+                      }}
+                    >
+                      {MISSION_NAMES[m].toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
-          <div className={s.tabs} role="group" aria-label="Timeline range">
+          {/* Range buttons — 49 px tall, cyan underline on active (§3.2, Decision 1). */}
+          <div className={s.frange} role="group" aria-label="Timeline range">
             {RANGES.map((r) => (
               <button
                 key={r}
                 type="button"
-                className={`${s.segBtn} ${range === r ? s.active : ""}`}
+                className={`${s.frangeBtn} ${range === r ? s.frangeBtnOn : ""}`}
                 aria-pressed={range === r}
-                onClick={() => {
-                  setRange(r);
-                  setSelected(null); // a range always shows the overview
-                }}
+                onClick={() => changeView({ range: r })}
               >
                 {r}
               </button>
             ))}
           </div>
 
-          <FilterDropdown<BaselineFilter>
-            id="baseline-filter"
-            label="Baseline"
-            value={baselineFilter}
-            displayValue={BASELINE_SHORT[baselineFilter]}
-            options={BASELINE_OPTIONS}
-            onChange={setBaselineFilter}
-          />
+          {/* Baseline — shows current value beside the label (Decision 5, §3.3). */}
+          <div className={s.fdrop} ref={baselineDropRef}>
+            <button
+              id="baseline-filter"
+              type="button"
+              className={s.fdropHead}
+              aria-expanded={openDrop === "baseline"}
+              aria-controls="baseline-filter-body"
+              onClick={() =>
+                setOpenDrop((d) => (d === "baseline" ? null : "baseline"))
+              }
+            >
+              <span className={s.fdropLabel}>Baseline</span>
+              <span className={s.fdropVal}>{BASELINE_SHORT[baselineFilter]}</span>
+              <ChevronDown />
+            </button>
+            <div
+              id="baseline-filter-body"
+              className={s.fdropBody}
+              style={{
+                gridTemplateRows: openDrop === "baseline" ? "1fr" : "0fr",
+              }}
+            >
+              <div
+                className={s.fdropInner}
+                {...(openDrop !== "baseline" && { inert: "" as unknown as boolean })}
+              >
+                <div className={s.fdropPad}>
+                  {BASELINE_OPTIONS.map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      className={`${s.fitem} ${baselineFilter !== o.value ? s.fitemOff : ""}`}
+                      onClick={() => {
+                        setBaselineFilter(o.value);
+                        setOpenDrop(null);
+                      }}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* Search: static hairline, no focus change, Escape clears the field (§3.4, Decision 24). */}
           <label className={s.search}>
             <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
+              width="13"
+              height="13"
+              viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2.2"
+              strokeWidth="1.6"
               aria-hidden="true"
             >
-              <circle cx="11" cy="11" r="7"></circle>
-              <path d="M20 20l-4-4"></path>
+              <circle cx="6.5" cy="6.5" r="4.5" />
+              <path d="M10.5 10.5l3.5 3.5" />
             </svg>
             <input
+              ref={searchInputRef}
               type="search"
               className={s.searchInput}
               placeholder="Search"
-              aria-label="Search processors"
+              aria-label="Search the releases"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  e.stopPropagation();
+                  setQuery("");
+                }
+              }}
             />
           </label>
         </div>
@@ -1106,7 +1156,7 @@ export default function Processors() {
               <ReleaseDetail
                 group={detailGroup}
                 index={detailIndex}
-                onClose={() => setSelected(null)}
+                onClose={() => changeView({ sel: null })}
                 onStep={stepRelease}
               />
             )}

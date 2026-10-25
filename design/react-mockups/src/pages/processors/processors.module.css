@@ -8,11 +8,12 @@
   overflow-x: hidden;
 }
 
-/* Content sits above SpaceBackdrop, which is the only layer with z-index. Without this the
-   absolutely positioned canvas would paint over static content. Stacking stays at auto so the
-   dropdown menus (z-index 30) still overlay the page. */
+/* Content sits above SpaceBackdrop and the hero's text block (.hero-in z-index:2).
+   SpaceBackdrop's own rule (z-index:0 !important) keeps it below everything else.
+   Same mechanism as DA availability.module.css:72–75. */
 .container > * {
   position: relative;
+  z-index: 1;
 }
 
 /* -------------------- counters -------------------- */
@@ -60,175 +61,162 @@
   .counter { width: clamp(130px, 44vw, 200px); }
 }
 
-/* Filter bar. Mission and Baseline are dropdowns, the range is text buttons, and search is an
-   underlined field. Everything shares one baseline so the underlines line up. */
+/* Filter toolbar: one centred wrapping row, 49 px line. §3, Decision 1. */
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  gap: 26px;
-  padding: 0 clamp(16px, 4vw, 56px);
+  gap: 2px 26px;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding-bottom: clamp(10px, 1.6vw, 20px);
 }
 
-/* Dropdown: the underline sits under the trigger when closed and moves under the menu when open. */
-.dd {
+/* Mission and Baseline: in-flow dropdown, hairline always visible, caption cyan on hover/open.
+   Ported from DA availability.module.css. Decisions 3–5, §3.1, §3.3. */
+.fdrop {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 220px;
-  border-bottom: 1px solid var(--line-strong);
-  transition: border-color 0.2s ease;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
 }
 
-.ddOpen {
-  border-bottom-color: transparent;
-}
-
-.ddTrigger {
+.fdropHead {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 6px 0 9px;
+  height: 48px;
+  padding: 0;
   border: 0;
+  border-radius: 0;
   background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
   cursor: pointer;
+  text-align: left;
+  color: var(--text);
 }
 
-.ddTrigger:focus-visible {
+.fdropHead:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-.ddLabel {
+.fdropLabel {
+  flex: 1 1 auto;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text);
-  white-space: nowrap;
 }
 
-.ddOpen .ddLabel {
+.fdropHead:hover .fdropLabel,
+.fdropHead[aria-expanded="true"] .fdropLabel {
   color: var(--accent);
 }
 
-.ddValue {
+.fdropVal {
+  flex: 0 0 auto;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--text);
-  white-space: nowrap;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
 }
 
-.ddChev {
-  margin-left: auto;
-  flex: none;
-  color: var(--text);
-  transition: transform 0.2s ease;
+/* Chevron: static, no rotation (Decision 3 — DA behaviour wins over §3.1 prototype value). */
+.fdropHead svg {
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--text) 85%, transparent);
 }
 
-.ddChevUp {
-  transform: rotate(180deg);
+/* In-flow body: grid-template-rows 0fr → 1fr animates height without a fixed max-height. */
+.fdropBody {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.ddMenu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 30;
-  width: max-content;
-  min-width: 100%;
-  margin: 0;
-  padding: 10px 0 12px;
-  list-style: none;
-  background: var(--bg-1);
-  border-bottom: 1px solid var(--line-strong);
+.fdropInner {
+  min-height: 0;
+  overflow: hidden;
 }
 
-.ddItem {
-  display: block;
+.fdropPad {
+  padding: 6px 0 14px;
+}
+
+/* Items: 12.5 px, no underline on selected (Decision 5), non-chosen at half opacity (Decisions 4–5). */
+.fitem {
   width: 100%;
-  padding: 7px 0;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
   border: 0;
   background: none;
-  color: var(--text-mute);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  text-align: left;
-  white-space: nowrap;
   cursor: pointer;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 90%, transparent);
 }
 
-.ddItem:hover {
-  color: var(--text);
+.fitem u {
+  text-decoration: none;
 }
 
-.ddItem:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.fitemOff {
+  color: color-mix(in srgb, var(--text) 50%, transparent);
 }
 
-.ddItemOn {
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 6px;
-}
-
-.tabs {
+/* Range buttons: 49 px tall, cyan underline on the active one, no hover colour change. §3.2. */
+.frange {
+  height: 49px;
   display: flex;
+  align-items: center;
   gap: 18px;
-  padding-bottom: 3px;
 }
 
-.segBtn {
-  padding: 4px 0 3px;
+.frangeBtn {
+  height: 49px;
+  min-height: 49px;
+  padding: 0 1px;
   border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: none;
-  color: var(--text-mute);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.segBtn:hover {
-  color: var(--text);
-}
-
-.segBtn.active {
+.frangeBtnOn {
   color: var(--text);
   border-bottom-color: var(--accent);
 }
 
-.segBtn:focus-visible {
+.frangeBtn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-/* Search: the underline spans the field and turns accent while focused. */
+/* Search: 49 px tall, static hairline, no focus-border change (§3.4).
+   The always-visible line doubles as the keyboard focus indicator, same as DA's .fsearch. */
 .search {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 220px;
-  padding: 6px 0 9px;
-  border-bottom: 1px solid var(--line-strong);
+  height: 49px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
   color: var(--text);
-  transition: border-color 0.2s ease;
-}
-
-.search:focus-within {
-  border-bottom-color: var(--accent);
 }
 
 .search svg {
@@ -244,14 +232,14 @@
   background: none;
   color: var(--text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 .searchInput::placeholder {
   color: var(--text);
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .searchInput::-webkit-search-cancel-button {
@@ -1233,12 +1221,12 @@
     gap: 14px;
   }
 
-  .dd,
+  .fdrop,
   .search {
     width: 100%;
   }
 
-  .tabs {
+  .frange {
     gap: 14px;
     flex-wrap: wrap;
   }
@@ -1267,6 +1255,10 @@
   .stem,
   .step {
     animation: none;
+    transition: none;
+  }
+
+  .fdropBody {
     transition: none;
   }
 

@@ -1251,6 +1251,9 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
    `padding-bottom: clamp(10px, 1.6vw, 20px)` and give the split
    `margin-top: max(0px, clamp(24px, calc(49.4vh - 355px), 240px) - clamp(10px, 1.6vw, 20px))`, so the
    total equals the prototype (same approach as DA Decision 1).
+
+   **Applied in Session 2 (2026-10-25):** `.filters` gets `margin-top: clamp(16px, 2.6vh, 28px)` and `padding-bottom: clamp(10px, 1.6vw, 20px)`. `.split` margin-top deferred to Session 3.
+
 2. **Side padding and gutters.** → _Recommended:_ page outer edges at the codebase
    `clamp(18px, 4vw, 48px)` (DA Decision 12); inner gutters as the prototype: 30 px before the timeline
    in the overview, 34 px before the detail; in the detail view the timeline's **left** edge sits at the
@@ -1264,17 +1267,29 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
    lists can be open). → _Recommended:_ the shared dropdown exactly as Acquisitions/DA implement it
    (in flow, 420 ms, caption cyan on hover/open, hairline `.30` fixed, chevron as Acquisitions, one
    open at a time, Escape and a click outside close it). Widths 220 px for both.
+
+   **Applied in Session 2 (2026-10-25):** DA in-flow fdrop pattern ported to `processors.tsx` / `processors.module.css`. Static chevron (`ChevronDown`, 12 × 12, viewBox 0 0 16 16, path `M3 6l5 5 5-5`, no rotation). Body: `grid-template-rows 0fr → 1fr`, 420 ms `cubic-bezier(0.2,0.7,0.2,1)`. Head 48 px, caption 11/600/.2em → cyan on hover/open. `inert` on closed body. `aria-expanded` / `aria-controls` on each head. One `openDrop` state for both dropdowns.
+
 4. **Mission list: showing the choice.** The prototype shows nothing (no value, no highlight — the
    `!important .9` kills it). → _Recommended:_ dim the non-chosen missions with `.off` (`.5`), the same
    rule Baseline uses; no value text beside the caption (the heading and the satellite name the
    mission). Alternative: prototype as is.
+
+   **Applied in Session 2 (2026-10-25):** Mission items: non-chosen get `.fitemOff` (`.5` opacity via `color-mix`). No value beside the caption.
+
 5. **Baseline list.** → _Recommended:_ no underline on the labels (the `<u>` underline is an accident:
    every other page has `.fitem u { text-decoration: none }`); keep the prototype rule that the item
    not chosen is `.off`, also when "All releases" is chosen.
+
+   **Applied in Session 2 (2026-10-25):** `.fitem u { text-decoration: none }` on both lists. Baseline items: non-chosen get `.fitemOff`. Current value (`All` / `Current`) shown as `.fdropVal` beside the label.
+
 6. **Search.** → _Recommended:_ the prototype's free search (§3.4: every word must appear in processor
    name, description, version, year, notes text), applied on every render (the prototype loses it after
    a pick). Non-matching markers and stems at `.12`; nothing else changes. Search text in our feed =
    label, sub, baseline, `processingBaseline`, year of `ms`, `htmlToText(notesHtml)`.
+
+   **Applied in Session 2 (2026-10-25):** `haystacks` useMemo in `ReleaseTimeline` — Map from release id to lowercased haystack joining `g.label`, `g.sub`, `r.baseline`, `r.processingBaseline`, `year(r.ms)` and `htmlToText(r.notesHtml)`. `words = query.trim().split(/\s+/)`. `faint = words.length > 0 && !words.every(w => haystack.includes(w))`. Applied on every render, fixing the prototype bug of losing dimming after a pick.
+
 7. **Range memory.** The prototype remembers 1Y/2Y/All per mission. → _Recommended:_ one range for the
    page (it is a toolbar filter; switching mission keeps it). Alternative: per mission.
 8. **One view helper.** Mission change in the prototype leaves a stale detail open (bug). →
@@ -1282,6 +1297,9 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
    steps) goes through one helper, so the pick, the zoom window and the scroll position are always reset
    together: mission → clear pick, keep range and filters; range → clear pick; Baseline and search
    never clear the pick (they only fade markers; a picked release that becomes faded stays open).
+
+   **Applied in Session 2 (2026-10-25):** `changeView` helper in `Processors()`. `toggleRelease`, `stepRelease`, and `onClose` all call `changeView`. No `setSelected` anywhere outside `changeView`.
+
 9. **KPIs.** → _Recommended:_ real `now` (the prototype's fixed 24 Sep 2026 is a demo artefact);
    date = `ms` (operational since, the date the timeline plots); Processors counts every lane
    (including those without releases); Releases counts all; Last year = `(now − 365 d, now]`;
@@ -1359,6 +1377,9 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     **Applied in Session 1 (2026-10-25):** Copy verbatim in `DESCRIPTION` constant. Legend uses `.dot-bl-current` (filled `var(--bl-current)` + glow via `color-mix`) and `.dot-bl-superseded` (hollow, `inset 0 0 0 1.5px var(--bl-past)`), both added to `src/styles/page-header.css`. Token colours differ from prototype hex (`--bl-current` = `#00e676` dark / `#0b754e` light; `--bl-past` = `#8b95a6` dark / `#636d79` light vs prototype `#3FCF7F` / `#7D8792`). Paragraph spacing 20 px via `.desc-in p { margin: 0 0 20px }` (prototype §14 says 22 px — accepted 2 px deviation, no inline styles).
 
 24. **Escape.** → _Recommended:_ as Acquisitions: Escape closes the open dropdown, else the detail.
+
+    **Applied in Session 2 (2026-10-25):** Single `keydown` useEffect, deps `[openDrop, isDetail]`. Escape: if `openDrop !== null` → `setOpenDrop(null)` and refocus the head button; else if `isDetail` → `changeView({ sel: null })`. Search input intercepts Escape via `stopPropagation` and only clears `query`.
+
 25. **Backdrop window.** Check the `page` index Events and DA pass to `SpaceBackdrop`; Processors is the
     third window (prototype `PAGE = 2`), currently `1`. → _Recommended:_ fix it to the third window.
 
