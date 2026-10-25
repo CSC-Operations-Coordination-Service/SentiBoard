@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -34,12 +35,12 @@ function ChevronDown() {
   );
 }
 
-// Map mission IDs to satellite image paths
+// Transparent WebP cut-outs (alpha confirmed). Decision 10, §5.3.
 const SATELLITE_IMAGES: Record<MissionId, string> = {
-  "1": "/assets/img/satellites/s1_.png",
-  "2": "/assets/img/satellites/s2_.png",
-  "3": "/assets/img/satellites/s3_.png",
-  "5P": "/assets/img/satellites/s5_.png",
+  "1": "/assets/img/satellites/s1.webp",
+  "2": "/assets/img/satellites/s2.webp",
+  "3": "/assets/img/satellites/s3.webp",
+  "5P": "/assets/img/satellites/s5p.webp",
 };
 
 const DESCRIPTION = (
@@ -770,6 +771,13 @@ export default function Processors() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const motion = useAmbientMotion();
 
+  /* Refs and state for the overview ↔ detail FLIP (Decision 12, §10). */
+  const procpaneRef = useRef<HTMLElement>(null);
+  const flipFrom = useRef<DOMRect | null>(null);
+  const [focusClass, setFocusClass] = useState(false);
+  const [detailOn, setDetailOn] = useState(false);
+  const [lcolEnter, setLcolEnter] = useState(false);
+
   const processors = useProcessors();
   const allGroups = processors.data ?? NO_GROUPS;
   const ready = processors.status === "ready";
@@ -870,6 +878,70 @@ export default function Processors() {
     document.addEventListener("pointerdown", handler);
     return () => document.removeEventListener("pointerdown", handler);
   }, [openDrop]);
+
+  // Overview ↔ detail motion orchestration (Decision 12, §10).
+  // Captures the procpane rect before the grid switch, drives focusClass,
+  // delays detailOn by 180 ms (open) and delays the grid-back by 280 ms (close).
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let t1: ReturnType<typeof setTimeout> | undefined;
+    let t2: ReturnType<typeof setTimeout> | undefined;
+    let t3: ReturnType<typeof setTimeout> | undefined;
+
+    if (isDetail) {
+      if (procpaneRef.current)
+        flipFrom.current = procpaneRef.current.getBoundingClientRect();
+      setFocusClass(true);
+      t1 = setTimeout(() => setDetailOn(true), reduce ? 0 : 180);
+    } else {
+      setDetailOn(false);
+      t2 = setTimeout(() => {
+        if (procpaneRef.current)
+          flipFrom.current = procpaneRef.current.getBoundingClientRect();
+        setFocusClass(false);
+        setLcolEnter(true);
+        t3 = setTimeout(() => setLcolEnter(false), 560);
+      }, reduce ? 0 : 280);
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [isDetail]);
+
+  // FLIP: after focusClass changes the grid, translate the procpane from its
+  // old position (captured above) to its new position, then animate to zero.
+  // Both x and y are translated so the animation also works at ≤1080 where the
+  // detail stacks below the timeline.
+  useLayoutEffect(() => {
+    if (!flipFrom.current) return;
+    const el = procpaneRef.current;
+    if (!el) return;
+    const after = el.getBoundingClientRect();
+    const dx = flipFrom.current.left - after.left;
+    const dy = flipFrom.current.top - after.top;
+    flipFrom.current = null;
+    if (
+      (dx === 0 && dy === 0) ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    el.style.transition = "none";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 720ms cubic-bezier(.2,.7,.2,1)";
+        el.style.transform = "";
+        const done = () => {
+          el.style.transition = "";
+          el.removeEventListener("transitionend", done);
+        };
+        el.addEventListener("transitionend", done);
+      });
+    });
+  }, [focusClass]);
 
   const missionReleases = missionGroups.flatMap((g) => g.releases);
   const yearStart = now - 365 * DAY;
@@ -1071,86 +1143,84 @@ export default function Processors() {
           </label>
         </div>
 
-        {/* Three panes: satellite, timeline, and the release detail. The satellite and the detail
-            trade places on the grid so the timeline compresses to the left as the detail opens. */}
-        <div className={`${s.split} ${isDetail ? s.isDetail : ""}`}>
+        {/* Satellite column | timeline column | detail panel (Decision 12, §5.1, §10).
+            The grid flips between "lcol proc" (overview) and "proc detail" (focus) via a
+            JS FLIP on the procpane element. The lcol stays absolutely painted while
+            focused so the satellite can fade smoothly before being aria-hidden. */}
+        <div className={`${s.split} ${focusClass ? s.focus : ""}`}>
           <section
-            className={s.satpane}
+            className={`${s.lcol} ${lcolEnter ? s.lcolEnter : ""}`}
             aria-label={`Sentinel-${activeMission}`}
-            aria-hidden={isDetail || undefined}
+            aria-hidden={focusClass || undefined}
           >
-            <div className={s.artGlow} aria-hidden="true"></div>
-            <div className={s.art} aria-hidden="true"></div>
-
-            {satelliteImageUrl && (
-              <img
-                src={satelliteImageUrl}
-                alt={`Sentinel-${activeMission} satellite`}
-                className={s.satelliteImage}
-              />
-            )}
-
-            <div className={s.placeholder}>
-              <div className={s.placeholderText}>
-                Sentinel-{activeMission} Visualization
-              </div>
+            <div className={s.orbit}>
+              {satelliteImageUrl && (
+                <img
+                  src={satelliteImageUrl}
+                  className={s.sat}
+                  alt={`Artist's impression of Sentinel-${activeMission}`}
+                />
+              )}
             </div>
           </section>
 
-          <section className={s.procpane}>
-            <h2 className={s.phead}>
-              {MISSION_NAMES[activeMission]} processors
-            </h2>
-
-            <p className={s.caption}>Release timeline</p>
-            {processors.status === "loading" ? (
-              <p className={s.status} role="status">
-                <span className={s.statusPulse} aria-hidden="true" />
-                Loading processor releases…
-              </p>
-            ) : processors.status === "error" ? (
-              <div className={s.statusError} role="alert">
-                <p className={s.statusTitle}>
-                  {processors.error instanceof ApiError &&
-                  processors.error.kind === "unreachable"
-                    ? "Backend unreachable"
-                    : "Could not load processor releases"}
-                </p>
-                <p className={s.statusText}>
-                  {processors.error instanceof ApiError &&
-                  processors.error.kind === "unreachable"
-                    ? "The processor feed did not answer. Check that the backend is running, then try again."
-                    : processors.error instanceof Error
-                      ? processors.error.message
-                      : "Unexpected error."}
-                </p>
-                <button
-                  type="button"
-                  className={s.retry}
-                  onClick={processors.retry}
-                >
-                  Try again
-                </button>
+          <section className={s.procpane} ref={procpaneRef}>
+            <div className={s.sheet}>
+              <div className={s.phead}>
+                <h2>{MISSION_NAMES[activeMission]} processors</h2>
               </div>
-            ) : missionGroups.length > 0 ? (
-              <ReleaseTimeline
-                groups={missionGroups}
-                axis={axis}
-                baselineFilter={baselineFilter}
-                query={normalisedQuery}
-                selected={selected}
-                moving={moving}
-                onPick={toggleRelease}
-              />
-            ) : (
-              <p className={s.none}>No processors for this mission.</p>
-            )}
+              <div className={s.tlBar}>
+                <span className={s.tlCap}>Release timeline</span>
+              </div>
+              {processors.status === "loading" ? (
+                <p className={s.status} role="status">
+                  <span className={s.statusPulse} aria-hidden="true" />
+                  Loading processor releases…
+                </p>
+              ) : processors.status === "error" ? (
+                <div className={s.statusError} role="alert">
+                  <p className={s.statusTitle}>
+                    {processors.error instanceof ApiError &&
+                    processors.error.kind === "unreachable"
+                      ? "Backend unreachable"
+                      : "Could not load processor releases"}
+                  </p>
+                  <p className={s.statusText}>
+                    {processors.error instanceof ApiError &&
+                    processors.error.kind === "unreachable"
+                      ? "The processor feed did not answer. Check that the backend is running, then try again."
+                      : processors.error instanceof Error
+                        ? processors.error.message
+                        : "Unexpected error."}
+                  </p>
+                  <button
+                    type="button"
+                    className={s.retry}
+                    onClick={processors.retry}
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : missionGroups.length > 0 ? (
+                <ReleaseTimeline
+                  groups={missionGroups}
+                  axis={axis}
+                  baselineFilter={baselineFilter}
+                  query={normalisedQuery}
+                  selected={selected}
+                  moving={moving}
+                  onPick={toggleRelease}
+                />
+              ) : (
+                <p className={s.none}>No processors for this mission.</p>
+              )}
+            </div>
           </section>
 
           <section
-            className={`${s.detailpane} ${isDetail ? s.detailOpen : ""}`}
+            className={`${s.detailpane} ${detailOn ? s.on : ""}`}
             aria-live="polite"
-            aria-hidden={!isDetail || undefined}
+            aria-hidden={focusClass ? undefined : true}
           >
             {detailGroup && detailIndex >= 0 && (
               <ReleaseDetail

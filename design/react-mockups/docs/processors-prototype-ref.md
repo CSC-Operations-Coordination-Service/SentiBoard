@@ -1254,6 +1254,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
 
    **Applied in Session 2 (2026-10-25):** `.filters` gets `margin-top: clamp(16px, 2.6vh, 28px)` and `padding-bottom: clamp(10px, 1.6vw, 20px)`. `.split` margin-top deferred to Session 3.
 
+   **Applied in Session 3 (2026-10-25):** `.split { --pr-align: clamp(24px, calc(49.4vh - 355px), 240px); margin-top: max(0px, var(--pr-align) - clamp(10px, 1.6vw, 20px)); }`. The `--pr-align` custom property is also used by `.lcol` margin-top (satellite positioning).
+
 2. **Side padding and gutters.** → _Recommended:_ page outer edges at the codebase
    `clamp(18px, 4vw, 48px)` (DA Decision 12); inner gutters as the prototype: 30 px before the timeline
    in the overview, 34 px before the detail; in the detail view the timeline's **left** edge sits at the
@@ -1261,6 +1263,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
    and 4 px (≤640) before the timeline; the satellite column's right padding 10 px at ≤640.
 
    **Applied in Session 1 (2026-10-25):** `padding-inline: clamp(18px, 4vw, 48px)` added to `.container` in `processors.module.css`. Inner gutters and narrow-screen breakpoints are Session 2+.
+
+   **Applied in Session 3 (2026-10-25):** Outer edges from `.container padding-inline` only. Inner gutters: `.sheet { padding: 0 0 0 30px }` (overview); `.split.focus .sheet { padding-left: 0 }` (detail: timeline left edge at page padding); `.detailpane { padding: 14px 0 48px 34px }`; ≤1080 `.sheet { padding-left: 12px }`, `.focus .detailpane { padding: 4px 0 48px 0 }`; ≤640 `.sheet { padding-left: 4px }`, `.lcol { padding-right: 10px }`. No `var(--pad)` used anywhere.
 
 3. **Dropdown behaviour.** The prototype's lists here differ from Acquisitions/DA (480 ms, inner
    `6px 0 14px`, head padding 0, chevron rotates 180° in 460 ms, Baseline ignores Escape/outside, two
@@ -1315,6 +1319,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     `/assets/img/satellites/s*_.png` have transparent backgrounds (the current `mix-blend-mode: screen`
     suggests black ones); if not, use the prototype cut-outs (`s1-cutout.webp` … `s5p-cutout.webp`,
     delivered with this file; ESA artist's impressions, alt text "Artist's impression of Sentinel-N").
+
+    **Applied in Session 3 (2026-10-25):** Transparency check: `s1.webp`, `s2.webp`, `s3.webp`, `s5p.webp` all confirmed "RIFF Web/P image, with alpha" — used these. The `_` PNG variants are 8-bit colormap (likely black backgrounds). No cutout files needed. CSS: `.lcol` (was `.satpane`) not sticky, no glow/art/placeholder; `.orbit { width: 66%; height: var(--pr-sat-h); transition: opacity 0.5s ease; }`; `.split.focus .orbit { opacity: 0; visibility: hidden; transition: opacity 0.5s ease, visibility 0s linear 0.5s; }`; `.sat { filter: drop-shadow(0 18px 40px rgba(0,0,0,0.5)); }`; `@container (max-width: 419px) { .orbit { width: 92%; } }`. In focus at ≥1081 px the `.lcol` is `position: absolute; left:0; top:0; width:50%; pointer-events:none` (stays painted for the fade). At ≤1080 focus: `display: none` (stacked layout). `@keyframes lcolIn` (from opacity:0 translateX(-24px)) applied via `.lcolEnter .orbit { animation: lcolIn 560ms ease both }` on re-entry. `.lcol margin-top: calc(12px + 0.125 * var(--pr-sat-h) - var(--pr-align))` positions the satellite ≈ 12 px under the toolbar.
 11. **Mission-change motion (§11).** → _Recommended:_ build it, in its own session (Session 7) after
     everything else works, so it can be dropped if it costs too much: satellites and the timeline sheet
     rotate about the planet centre (1300 + 600·(n−1) ms, ease-in-out cubic), the outgoing sheet fades at
@@ -1324,6 +1330,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     timeline column 720 ms `cubic-bezier(.2,.7,.2,1)`, detail fade 420 ms + slide from 56 px 640 ms
     after 180 ms, close = detail out first then layout back after 280 ms with the satellite column
     entering from −24 px (560 ms). Replaces the animated `grid-template-columns`.
+
+    **Applied in Session 3 (2026-10-25):** `focusClass` state drives `.split.focus` (grid switch). `detailOn` state drives `.detailpane.on` (opacity 1 / transform none), added 180 ms after open. `lcolEnter` state drives `.lcolEnter .orbit` animation (560 ms), applied on re-entry. FLIP: `useLayoutEffect` on `[focusClass]` — captures rect before `setFocusClass` (inside the orchestration `useEffect` on `[isDetail]`), measures after, applies `translate(dx,dy)` + 720 ms transition. Double `requestAnimationFrame` ensures the start-transform paints before the transition begins. Close sequence: `setDetailOn(false)` → 280 ms → capture rect → `setFocusClass(false)` + `setLcolEnter(true)` → 560 ms → `setLcolEnter(false)`. All timers cleared on cleanup. `prefers-reduced-motion`: JS delays set to 0; CSS adds `transition: none !important` on `.procpane`, `.detailpane`; `animation: none` on `.lcolEnter .orbit`. `lastSelected` ref keeps detail content while pane fades — unchanged from Session 2.
 13. **Chart width.** → _Recommended:_ the prototype's `max(600, 100 + 6 px × months)` (All ≈ 1054 px,
     scrolled to the end on load), unless the fixed 600 px was a stakeholder request — say so if it was.
 14. **Names column backdrop.** → _Recommended:_ keep ours (the gradient starts under the axis at 42 px,
@@ -1360,6 +1368,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     shared accent.
 20. **Text shadow** on the timeline and detail text. → _Recommended:_ do what DA did for its row-label
     shadow (check `availability.module.css`): if DA kept it in dark only, same here; light theme: none.
+
+    **Applied in Session 3 (2026-10-25):** DA applies text-shadow as a bare rule (no dark guard). Here applied dark-only via `:root:not([data-theme="light"]) .procpane, :root:not([data-theme="light"]) .detailpane { text-shadow: 0 0 2px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.85), 0 1px 14px rgba(0,0,0,.7); }`. Existing `.rn h4 { text-shadow: none }` suppresses it on the notes heading. Noticed: DA applies the same dark text-shadow in light mode.
 21. **Prototype leftovers of the page's own planet.** The horizon mask (content fades out 56 px above a
     fixed line at ~83 % of the viewport), the `--below` padding and the scene-height adjustment. →
     _Recommended:_ not built; bottom spacing via `--sb-earth-h` as every page.
@@ -1369,6 +1379,8 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
 22. **Responsive.** → _Recommended:_ the prototype's: satellite stays on the left (40/60 ≤1080, 34/66
     ≤640), detail under the timeline ≤1080; the toolbar wraps like Acquisitions/DA (match their narrow
     rules).
+
+    **Applied in Session 3 (2026-10-25):** ≤1080: `.split { grid-template-columns: 40% 60% }`, `.sheet { padding-left: 12px }`. Focus at ≤1080: `grid-template-columns: 100%; grid-template-areas: "proc" "detail"`, `.split.focus .lcol { display: none }`, `.split.focus .sheet { padding-left: 0 }`, `.split.focus .detailpane { padding: 4px 0 48px 0 }`. ≤640: `grid-template-columns: 34% 66%`, `.lcol { padding-right: 10px }`, `.sheet { padding-left: 4px }`. Toolbar wraps centred by default (no extra rules needed).
 23. **Description.** → _Recommended:_ the §14 copy verbatim (stakeholders' text, as DA Decision 10),
     with the legend markers drawn like the timeline: Current baseline = filled `#3FCF7F` with glow,
     Superseded = hollow 1.5 px ring `#7D8792`; dot size the shared 8×8 (as DA). Open point for the

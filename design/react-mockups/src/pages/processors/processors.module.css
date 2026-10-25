@@ -246,131 +246,146 @@
   filter: invert(0.6);
 }
 
-/* Three panes on one grid: satellite | timeline | detail. Opening a release collapses the
-   satellite and opens the detail, so the timeline compresses to the left half. Animating the
-   track sizes gives the slide; the visibility delay keeps collapsed panes out of the way. */
+/* Two-area split: satellite (lcol) | timeline (proc) in overview,
+   timeline (proc) | detail in focus. Decision 1, 2, 12, §5.1. */
 .split {
+  --pr-align: clamp(24px, calc(49.4vh - 355px), 240px);
+  --pr-sat-h: clamp(220px, calc(57vh - 103px), 640px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr);
-  margin-top: 56px;
-  min-height: 640px;
-  transition: grid-template-columns 0.7s var(--ease);
+  grid-template-areas: "lcol proc";
+  grid-template-columns: 50% 50%;
+  align-items: start;
+  position: relative;
+  z-index: 3;
+  margin-top: max(0px, var(--pr-align) - clamp(10px, 1.6vw, 20px));
 }
 
-.split.isDetail {
-  grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 1fr);
+.split.focus {
+  grid-template-areas: "proc detail";
 }
 
-.satpane {
- position: sticky; /* Keeps the satellite pane pinned while scrolling long tables */
-  top: 24px;        /* Distance from top of the viewport when fixed */
-  align-self: start;
+/* Satellite column. Not sticky; scrolls with the page (Decision 10, §5.3).
+   In focus: leaves the grid but stays painted as absolute so the orbit can
+   fade smoothly; pointer-events disabled and aria-hidden set in TSX. */
+.lcol {
+  grid-area: lcol;
+  min-width: 0;
+  container-type: inline-size;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  min-width: 0;
-  padding: 32px 24px 0;
-  overflow: hidden;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0s;
+  margin-top: calc(12px + 0.125 * var(--pr-sat-h) - var(--pr-align));
 }
 
-.isDetail .satpane {
-  padding: 0;
-  visibility: hidden;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0.7s;
-}
-
-.artGlow,
-.art {
+.split.focus .lcol {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 50%;
   pointer-events: none;
 }
 
-.artGlow {
-  z-index: 1;
-  opacity: 0.15;
-  filter: blur(26px);
-  background: radial-gradient(circle at center, var(--accent) 0%, transparent 100%);
-}
-
-.art {
-  z-index: 2;
-  opacity: 0.3;
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, var(--accent) 20%, transparent) 0%,
-    transparent 70%
-  );
-}
-
-.satelliteImage {
+/* Satellite image container — sized and centred per §5.3 placeSats() CSS approximation. */
+.orbit {
   position: relative;
-  z-index: 3;
-  max-width: 100%;
-  max-height: 640px;
-  object-fit: contain;
-  opacity: 0.92;
-  mix-blend-mode: screen;
-  transition: opacity 0.4s ease;
-  animation: satFloat 9s ease-in-out infinite;
+  width: 66%;
+  height: var(--pr-sat-h);
+  /* Fade to invisible in focus (.5 s); visibility hides after the fade. */
+  transition: opacity 0.5s ease;
 }
 
-/* A slow vertical drift, so the satellite never sits perfectly still. */
-@keyframes satFloat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+.split.focus .orbit {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0s linear 0.5s;
 }
 
-:root[data-theme="light"] .satelliteImage {
-  mix-blend-mode: normal;
+/* 92 % width when the column is narrower than 420 px (container query, §5.3). */
+@container (max-width: 419px) {
+  .orbit { width: 92%; }
 }
 
-.placeholder {
+@keyframes lcolIn {
+  from { opacity: 0; transform: translateX(-24px); }
+}
+
+/* Applied via React state on satellite column re-entry after detail closes (§10). */
+.lcolEnter .orbit {
+  animation: lcolIn 560ms ease both;
+}
+
+/* Transparent WebP cut-out (alpha confirmed). Drop-shadow per §5.3. */
+.sat {
   position: absolute;
   inset: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-mute);
-  pointer-events: none;
-  transition: opacity 0.3s ease;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.5));
+  transition: opacity 0.35s ease;
 }
 
-.satpane:has(.satelliteImage) .placeholder {
-  opacity: 0;
-}
-
-.placeholderText {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  opacity: 0.5;
-}
-
-/* Timeline pane */
+/* Timeline pane. No horizontal padding — .sheet and .container handle edges.
+   Text shadow per Decision 20 (dark theme only, below). */
 .procpane {
+  grid-area: proc;
   min-width: 0;
-  max-width: 100%;
-  padding: 0 clamp(16px, 3vw, 48px) 96px;
+  position: relative;
   overflow-x: hidden;
 }
 
+/* Inner column wrapper: left gutter only (outer edge comes from .container). Decision 2. */
+.sheet {
+  padding: 0 0 0 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Heading block: 49 px min-height (14 px top padding + text), 16 px below. §5.2. */
 .phead {
-  margin: 0 0 30px;
-  font-family: var(--font-display);
-  font-size: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 49px;
+  padding-top: 14px;
+  margin-bottom: 16px;
+}
+
+.phead h2 {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 22px);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* Caption bar sits between the heading and the chart. §5.2. */
+.tlBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tlCap {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text);
+}
+
+/* Text shadow on the timeline and detail columns (Decision 20).
+   Dark theme only — matching the pattern the other pages use for on-sky text.
+   DA applies theirs bare; here we scope to dark to avoid a grey haze in light mode. */
+:root:not([data-theme="light"]) .procpane,
+:root:not([data-theme="light"]) .detailpane {
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.85),
+    0 1px 14px rgba(0, 0, 0, 0.7);
 }
 
 .none {
@@ -487,14 +502,6 @@
   padding: 0 0 10px;
   border-bottom: 1px solid var(--line);
   font-family: var(--font-sans);
-}
-
-.caption {
-  font-family: var(--font-sans);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: var(--text-dim);
 }
 
 /* Every lane at full height: the densest mission (Sentinel-3, 18 processors at 22px rows) is
@@ -875,32 +882,29 @@
   color: var(--accent);
 }
 
-/* Detail pane: collapsed to zero width until a release is open. */
+/* Detail pane. Hidden (display:none) until the grid switches to focus.
+   Enters by fading in (420 ms) and sliding from 56 px after 180 ms.
+   Exits by reversing (420 ms); the grid reverts at 280 ms so the pane
+   disappears while nearly transparent. §9, Decision 12. */
 .detailpane {
+  grid-area: detail;
   min-width: 0;
-  overflow: hidden;
-  padding: 0;
-  visibility: hidden;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0.7s;
+  padding: 14px 0 48px 34px;
+  display: none;
+  opacity: 0;
+  transform: translateX(56px);
+  transition:
+    opacity 420ms ease,
+    transform 640ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.detailOpen {
-  padding: 0 clamp(16px, 3vw, 48px) 96px 0;
-  visibility: visible;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0s;
+.split.focus .detailpane {
+  display: block;
 }
 
-/* Fixed inner width so the content does not reflow while the pane is still sliding open. */
-.dtIn {
-  min-width: 440px;
-  animation: dtIn 0.45s var(--ease);
-}
-
-@keyframes dtIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
+.detailpane.on {
+  opacity: 1;
+  transform: none;
 }
 
 .dtTop {
@@ -1164,93 +1168,46 @@
   border-top: 1px solid var(--line);
 }
 
-/* Responsive: stacked panes below 1080px. The satellite leaves the flow once a release opens,
-   and the detail takes no space until it is open. */
+/* Responsive: satellite stays on the left at 40/60 (≤1080) and 34/66 (≤640).
+   In focus at ≤1080 the detail stacks below the timeline (100% wide grid).
+   §13, Decision 22. */
 @media (max-width: 1080px) {
-  .split,
-  .split.isDetail {
-    grid-template-columns: minmax(0, 1fr);
-    min-height: 0;
+  .split { grid-template-columns: 40% 60%; }
+
+  .sheet { padding-left: 12px; }
+
+  .split.focus {
+    grid-template-columns: 100%;
+    grid-template-areas: "proc" "detail";
   }
 
-  .satpane {
-    min-height: 52vh;
-    padding-top: 16px;
-  }
+  /* In the stacked focus layout, hide the satellite entirely (no space for it). */
+  .split.focus .lcol { display: none; }
 
-  .satelliteImage {
-    max-height: 440px;
-  }
+  .split.focus .sheet { padding-left: 0; }
 
-  .isDetail .satpane {
-    display: none;
-  }
-
-  .procpane {
-    padding-bottom: 48px;
-  }
-
-  .detailpane {
-    display: none;
-  }
-
-  .detailOpen {
-    display: block;
-    padding: 0 clamp(16px, 3vw, 48px) 72px;
-  }
-
-  .dtIn {
-    min-width: 0;
+  .split.focus .detailpane {
+    padding: 4px 0 48px 0;
   }
 }
 
-@media (max-width: 768px) {
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: 32px;
-    padding-top: 40px;
-  }
+@media (max-width: 640px) {
+  .split { grid-template-columns: 34% 66%; }
 
-  .stat dd {
-    font-size: 34px;
-  }
+  /* §13: satellite column right padding 10 px at ≤640. */
+  .lcol { padding-right: 10px; }
 
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-
-  .fdrop,
-  .search {
-    width: 100%;
-  }
-
-  .frange {
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-
-  .phead {
-    font-size: 16px;
-  }
-
-  .dtVer {
-    font-size: 32px;
-  }
-
-  .dtHead {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .sheet { padding-left: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .split,
-  .satpane,
+  /* The FLIP timers are already set to 0 in JS; kill any residual CSS motion. */
+  .procpane { transition: none !important; }
   .detailpane,
-  .detailOpen,
-  .dtIn,
+  .detailpane.on { transition: none !important; }
+  .orbit { transition: none !important; }
+  .lcolEnter .orbit { animation: none; }
+
   .mk,
   .stem,
   .step {
@@ -1261,12 +1218,6 @@
   .fdropBody {
     transition: none;
   }
-
-  /* Ambient motion is removed outright, not just slowed. */
-  .satelliteImage {
-    animation: none;
-  }
-
 }
 
 
