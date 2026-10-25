@@ -578,7 +578,10 @@ export default function AcquisitionsGlobeEarthPage({
 
   // Simulation Time States
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [simTime, setSimTime] = useState<number>(0);
+  const [simTime, setSimTime] = useState<number>(() => {
+    const n = new Date();
+    return n.getUTCHours() * 3600 + n.getUTCMinutes() * 60 + n.getUTCSeconds();
+  });
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(60);
 
   const isPlayingRef = useRef(isPlaying);
@@ -592,6 +595,8 @@ export default function AcquisitionsGlobeEarthPage({
   const atmosphereRef = useRef<THREE.Sprite | null>(null);
   const simTimeRef = useRef(0);
   simTimeRef.current = simTime;
+  const stageVisibleRef = useRef(true);
+  const stageElRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => () => dayNightRef.current?.dispose(), []);
 
   useEffect(() => {
@@ -601,6 +606,17 @@ export default function AcquisitionsGlobeEarthPage({
     });
     prepMapRef.current = map;
   }, [todayMs]);
+
+  useEffect(() => {
+    const el = stageElRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { stageVisibleRef.current = entry.isIntersecting; },
+      { threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const satObjectsRef = useRef<
     {
@@ -1558,7 +1574,7 @@ export default function AcquisitionsGlobeEarthPage({
         selectedFootRef.current.fill.opacity = 0.34 + 0.18 * pulse;
       }
 
-      if (cameraRef.current && rendererRef.current && sceneRef.current) {
+      if (stageVisibleRef.current && cameraRef.current && rendererRef.current && sceneRef.current) {
         const camera = cameraRef.current as THREE.PerspectiveCamera;
         const renderer = rendererRef.current;
         const cvs = renderer.domElement;
@@ -1886,7 +1902,7 @@ export default function AcquisitionsGlobeEarthPage({
       {/* GLOBE + DATATAKE: one row. Selecting a datatake opens the side column and the globe's
           column narrows to make room (SentiBoard.html .acq-layout.has-sel). */}
       <div className={`${g.stageRow} ${selIdx >= 0 ? g.hasSel : ""}`}>
-        <div className={g.globeStage}>
+        <div className={g.globeStage} ref={stageElRef}>
           <div style={{ width: "100%", height: "100%", position: "relative" }}>
             <ThreeEarth
               transparent
@@ -1903,128 +1919,40 @@ export default function AcquisitionsGlobeEarthPage({
             {/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"} + scroll to zoom the globe
           </div>
 
-          {/* FLOATING BOTTOM OVERLAY CONTROL BAR */}
-          <div
-            style={{
-              position: "absolute",
-              bottom: "28px",
-              left: "32px",
-              right: "32px",
-              zIndex: 50,
-              display: "flex",
-              alignItems: "center",
-              gap: "20px",
-              pointerEvents: "auto",
-              fontFamily: "system-ui, -apple-system, sans-serif",
-            }}
-          >
-            {/* Circular Play / Pause Button */}
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              style={{
-                width: "42px",
-                height: "42px",
-                borderRadius: "50%",
-                background: "#00a8b5",
-                border: "none",
-                color: "#090d16",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                flexShrink: 0,
-                boxShadow: "0 0 12px rgba(0, 168, 181, 0.4)",
-              }}
-            >
-              {isPlaying ? (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <rect x="6" y="4" width="4" height="16" rx="1" />
-                  <rect x="14" y="4" width="4" height="16" rx="1" />
-                </svg>
-              ) : (
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                >
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              )}
-            </button>
-
-            {/* Timestamp Display */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  color: "#ffffff",
-                  fontSize: "14px",
-                  fontWeight: 700,
-                  letterSpacing: "0.5px",
-                }}
+          {/* §9 Simulation bar */}
+          <div className={g.simbar}>
+            <div className={g.simctl} role="toolbar" aria-label="Simulation clock">
+              <button
+                className={g.play}
+                onClick={() => setIsPlaying(!isPlaying)}
+                aria-pressed={isPlaying}
+                aria-label={isPlaying ? "Pause simulation" : "Play simulation"}
               >
-                {todayStr} {formatSimTime(simTime)}
-              </span>
-              <span
-                style={{
-                  color: "#6b7280",
-                  fontSize: "10px",
-                  fontWeight: 700,
-                  letterSpacing: "1px",
-                }}
-              >
-                SIMULATION TIME
-              </span>
-            </div>
-
-            {/* Timeline Slider Track */}
-            <div style={{ flex: 1, display: "flex", alignItems: "center" }}>
+                <span aria-hidden="true">{isPlaying ? "❚❚" : "▶"}</span>
+              </button>
+              <div className={g.simtime}>
+                <span>{todayStr} {formatSimTime(simTime)}</span>
+                <small>SIMULATION TIME</small>
+              </div>
               <input
+                className={g.scrub}
                 type="range"
                 min={0}
-                max={86400}
+                max={1440}
                 step={1}
-                value={Math.floor(simTime)}
-                onChange={(e) => setSimTime(Number(e.target.value))}
-                style={{
-                  width: "100%",
-                  accentColor: "#00c7d6",
-                  cursor: "pointer",
-                  height: "4px",
-                }}
+                aria-label="Simulation time of day"
+                value={Math.round(simTime / 60)}
+                onChange={(e) => setSimTime(Number(e.target.value) * 60)}
+                style={{ "--fill": (simTime / 86400 * 100).toFixed(1) + "%" } as React.CSSProperties}
               />
+              <button
+                className={g.speed}
+                onClick={handleCycleSpeed}
+                aria-label={`Simulation speed ${speedMultiplier} times real time. Activate to change.`}
+              >
+                <span aria-hidden="true">×{speedMultiplier}</span>
+              </button>
             </div>
-
-            {/* Single Speed Control Pill Button */}
-            <button
-              onClick={handleCycleSpeed}
-              style={{
-                background: "rgba(15, 23, 42, 0.85)",
-                color: "#ffffff",
-                border: "1px solid rgba(255, 255, 255, 0.2)",
-                borderRadius: "16px",
-                padding: "6px 14px",
-                fontSize: "12px",
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-                backdropFilter: "blur(8px)",
-                flexShrink: 0,
-              }}
-            >
-              ×{speedMultiplier}
-            </button>
           </div>
 
           {/* Zoom controls (SentiBoard.html .zoomctl): frosted 32px squares; each step is a short
