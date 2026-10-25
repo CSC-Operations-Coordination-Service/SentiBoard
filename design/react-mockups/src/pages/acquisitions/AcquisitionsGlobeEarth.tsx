@@ -198,7 +198,12 @@ function DatatakePanel({
   const unit = dt.unit ?? dt.sat;
   const pct = dt.comp;
   const status = dt.status || "Processing";
-  const tone = hex(STATUS_HEX[dt.cls] ?? 0x8a96a8);
+  const PILL_COLOR: Record<string, string> = {
+    Published: "#00e676",
+    Processing: "#9d4edd",
+    Failed: "#ff3366",
+  };
+  const tone = PILL_COLOR[status] ?? "#737373";
   const types: number[] = expectedTypes(dt.levels).map((p) => p.pct as number);
   const dur = dt.sensingS;
   const nTypes = types.length;
@@ -547,6 +552,8 @@ export default function AcquisitionsGlobeEarthPage({
 
   /** Index into ACQ_DATATAKES of the selected datatake, or -1. */
   const [selIdx, setSelIdx] = useState(-1);
+  const [displayedDtk, setDisplayedDtk] = useState<(typeof ACQ_DATATAKES)[number] | null>(null);
+  const closeFadeRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [satelliteFilter, setSatelliteFilter] = useState("*");
   const [dayFilter, setDayFilter] = useState("*");
@@ -854,6 +861,17 @@ export default function AcquisitionsGlobeEarthPage({
   handleSelectDatatakeRef.current = handleSelectDatatake;
   const closeDatatakeRef = useRef(closeDatatake);
   closeDatatakeRef.current = closeDatatake;
+
+  // Keep the panel mounted while the column fades closed (820 ms = flex-basis transition).
+  useEffect(() => {
+    if (selIdx >= 0 && ACQ_DATATAKES[selIdx]) {
+      clearTimeout(closeFadeRef.current);
+      setDisplayedDtk(ACQ_DATATAKES[selIdx]);
+    } else {
+      closeFadeRef.current = setTimeout(() => setDisplayedDtk(null), 820);
+    }
+    return () => clearTimeout(closeFadeRef.current);
+  }, [selIdx]);
 
   const handleCycleSpeed = () => {
     const currentIndex = SPEED_OPTIONS.indexOf(speedMultiplier);
@@ -2040,10 +2058,10 @@ export default function AcquisitionsGlobeEarthPage({
 
         {/* the datatake's record, in its own column: it grows to its full height, no inner scroll */}
         <div className={g.side}>
-          {selIdx >= 0 && ACQ_DATATAKES[selIdx] && (
+          {displayedDtk && (
             <DatatakePanel
-              key={ACQ_DATATAKES[selIdx].id}
-              dt={ACQ_DATATAKES[selIdx]}
+              key={displayedDtk.id}
+              dt={displayedDtk}
               onClose={closeDatatake}
             />
           )}
