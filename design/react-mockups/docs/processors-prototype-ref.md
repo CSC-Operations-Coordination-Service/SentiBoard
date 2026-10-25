@@ -7,6 +7,7 @@ the page is off-screen (pauses the star twinkle). Everything below comes from th
 are the exact values to reproduce. Do not decode the bundle again; use this file.
 
 How to read it:
+
 - The page's CSS is a pile of overrides: the page's own sheet, three "aligned with the other pages"
   sheets, the shared `#sb-unified` block (`html body …` and `!important`), then two late page sheets
   (`.pr-toolbar`, `.sb-kpis`, `.sheet .mk` …). Scripts then **move and rebuild parts of the markup**
@@ -27,6 +28,7 @@ How to read it:
   is recorded (§14).
 
 Things the final prototype **hides or never builds** (do not build them):
+
 - The processor **accordion list**: `.plist`, `.prow`, `.phdr` (name, current version in mission
   colour, chevron), `.panel`, `.chev` — CSS only, no markup.
 - The **version select** `.vsel` (`<select>` + label) and the satellite chips `.rn .sats` — CSS only.
@@ -55,14 +57,14 @@ Things the final prototype **hides or never builds** (do not build them):
 
 ## 1. Page layout and spacing (top to bottom)
 
-| Block | Value |
-|---|---|
-| Board (page body) | same rise over the hero as every page: `margin-top: calc(-1 * clamp(140px, 17vh, 230px))`, `.scene padding-top: clamp(66px, 8vh, 112px)`, transparent — **reuse the Events/Acquisitions/Data Availability implementation**. Side padding: **`clamp(18px, 4vw, 48px)`, the codebase value** (prototype `--pad clamp(18px, 4.4vw, 64px)`) — Decision 2 |
-| KPIs row | `padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px)`, `margin-top: calc(-1 * var(--sb-lede-comp, 0px))` — the shared KPI block (§2) |
-| Toolbar | `margin-top: clamp(16px, 2.6vh, 28px)`, `padding: 0 var(--pad)`, **no padding-bottom** (shared value is `clamp(10px, 1.6vw, 20px)` — Decision 1) |
-| Toolbar → timeline | `.split { margin-top: var(--pr-align) }`, `--pr-align: clamp(24px, calc(49.4vh - 355px), 240px)` → ≈ 90 px on a 900 px-high window, 179 px at 1080, 240 px from 1205 up (comment: "one distance from the filters to the processors table for every mission"). Decision 1 |
-| Split | `position: relative; z-index: 3; display: grid; grid-template-columns: 50% 50%; align-items: start` — satellite column \| timeline column (§5) |
-| After the split | the prototype grows the scene so the planet's edge sits `max(24px, 3.5vh)` under the satellite; **use the shared bottom spacing** `padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)` (Decision 21) |
+| Block              | Value                                                                                                                                                                                                                                                                                                                                                |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Board (page body)  | same rise over the hero as every page: `margin-top: calc(-1 * clamp(140px, 17vh, 230px))`, `.scene padding-top: clamp(66px, 8vh, 112px)`, transparent — **reuse the Events/Acquisitions/Data Availability implementation**. Side padding: **`clamp(18px, 4vw, 48px)`, the codebase value** (prototype `--pad clamp(18px, 4.4vw, 64px)`) — Decision 2 |
+| KPIs row           | `padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px)`, `margin-top: calc(-1 * var(--sb-lede-comp, 0px))` — the shared KPI block (§2)                                                                                                                                                                                                           |
+| Toolbar            | `margin-top: clamp(16px, 2.6vh, 28px)`, `padding: 0 var(--pad)`, **no padding-bottom** (shared value is `clamp(10px, 1.6vw, 20px)` — Decision 1)                                                                                                                                                                                                     |
+| Toolbar → timeline | `.split { margin-top: var(--pr-align) }`, `--pr-align: clamp(24px, calc(49.4vh - 355px), 240px)` → ≈ 90 px on a 900 px-high window, 179 px at 1080, 240 px from 1205 up (comment: "one distance from the filters to the processors table for every mission"). Decision 1                                                                             |
+| Split              | `position: relative; z-index: 3; display: grid; grid-template-columns: 50% 50%; align-items: start` — satellite column \| timeline column (§5)                                                                                                                                                                                                       |
+| After the split    | the prototype grows the scene so the planet's edge sits `max(24px, 3.5vh)` under the satellite; **use the shared bottom spacing** `padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)` (Decision 21)                                                                                                                                              |
 
 Nothing on the page has a card or box: KPIs, filters, satellite, timeline and detail all sit on the
 starfield.
@@ -72,13 +74,45 @@ starfield.
 The shared KPI block (identical to Acquisitions §2 / Data Availability §2 — reuse it):
 
 ```css
-.sb-kpis { position: relative; z-index: 3; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 0;
-           padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px); margin-top: calc(-1 * var(--sb-lede-comp, 0px));
-           animation: sbUp 760ms cubic-bezier(.2,.7,.2,1) 380ms backwards; }      /* sbUp: from opacity 0, translateY(20px) */
-.kpi   { width: clamp(140px, 16vw, 220px); display: flex; flex-direction: column; align-items: center; text-align: center; gap: 5px; }
-.kpi b { font-size: clamp(26px, 2.9vw, 37px); font-weight: 700; line-height: 1; color: #EAF0F6; font-variant-numeric: tabular-nums; }
-.micro { font-size: 10.5px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; line-height: 1.5; color: rgba(255,255,255,0.72); }  /* the !important .72 / 10.5px win */
-@media (max-width: 900px) { .kpi { width: clamp(130px, 44vw, 200px); } }
+.sb-kpis {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+  margin-top: calc(-1 * var(--sb-lede-comp, 0px));
+  animation: sbUp 760ms cubic-bezier(0.2, 0.7, 0.2, 1) 380ms backwards;
+} /* sbUp: from opacity 0, translateY(20px) */
+.kpi {
+  width: clamp(140px, 16vw, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 5px;
+}
+.kpi b {
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
+  line-height: 1;
+  color: #eaf0f6;
+  font-variant-numeric: tabular-nums;
+}
+.micro {
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+} /* the !important .72 / 10.5px win */
+@media (max-width: 900px) {
+  .kpi {
+    width: clamp(130px, 44vw, 200px);
+  }
+}
 ```
 
 Value **over** caption. No value is coloured. Labels, in order: `Processors` · `Releases` ·
@@ -101,8 +135,20 @@ One centred, wrapping row built by script: **Mission · 1Y 2Y ALL · Baseline ·
 (no heading, no Reset). Every control sits on one **49 px line** so all hairlines share one bottom edge.
 
 ```css
-.pr-toolbar          { position: relative; z-index: 3; margin-top: clamp(16px, 2.6vh, 28px); padding: 0 var(--pad); }
-.pr-toolbar .filters { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 2px 26px; text-shadow: none; }
+.pr-toolbar {
+  position: relative;
+  z-index: 3;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding: 0 var(--pad);
+}
+.pr-toolbar .filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2px 26px;
+  text-shadow: none;
+}
 ```
 
 No narrow-screen rule: the row just wraps, centred (Decision 22).
@@ -110,22 +156,77 @@ No narrow-screen rule: the row just wraps, centred (Decision 22).
 ### 3.1 Mission dropdown
 
 ```css
-.fdrop          { position: relative; width: 220px; margin: 0; border-top: 0; border-bottom: 1px solid rgba(255,255,255,0.30); }  /* hairline never changes */
-.fdrop-head     { width: 100%; min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer; }
-.fdrop-head > span:first-child { flex: 1 1 auto; text-align: left; font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #FFFFFF; }
+.fdrop {
+  position: relative;
+  width: 220px;
+  margin: 0;
+  border-top: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+} /* hairline never changes */
+.fdrop-head {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.fdrop-head > span:first-child {
+  flex: 1 1 auto;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
 .fdrop-head:hover > span:first-child,
-.fdrop.open .fdrop-head > span:first-child { color: #2FC6DC; }                    /* the CAPTION turns cyan */
-.fdrop-head svg { color: rgba(255,255,255,0.85); transition: transform 460ms cubic-bezier(.2,.7,.2,1); }
-.fdrop.open .fdrop-head svg { transform: rotate(180deg); }                        /* on THIS page the chevron rotates (Events style) */
+.fdrop.open .fdrop-head > span:first-child {
+  color: #2fc6dc;
+} /* the CAPTION turns cyan */
+.fdrop-head svg {
+  color: rgba(255, 255, 255, 0.85);
+  transition: transform 460ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.fdrop.open .fdrop-head svg {
+  transform: rotate(180deg);
+} /* on THIS page the chevron rotates (Events style) */
 /* chevron 12×12: <svg viewBox="0 0 16 16" fill="none"><path d="M3 6l5 5 5-5" stroke="currentColor" stroke-width="1.4"/></svg> */
 
 /* the list opens IN FLOW (.pr-toolbar .fdrop-body { position: relative }) and pushes the page down */
-.fdrop-body  { position: relative; height: 0; overflow: hidden; transition: height 480ms cubic-bezier(.2,.7,.2,1); }   /* JS: height = inner.offsetHeight */
-.fdrop-inner { padding: 6px 0 14px; }
-.fgroup      { display: flex; flex-direction: column; align-items: flex-start; }
+.fdrop-body {
+  position: relative;
+  height: 0;
+  overflow: hidden;
+  transition: height 480ms cubic-bezier(0.2, 0.7, 0.2, 1);
+} /* JS: height = inner.offsetHeight */
+.fdrop-inner {
+  padding: 6px 0 14px;
+}
+.fgroup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
 
-.fmis { width: 100%; min-height: 34px; padding: 0; border: 0; background: none; text-align: left; cursor: pointer;
-        font-size: 12.5px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.9); }
+.fmis {
+  width: 100%;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
 /* hover and aria-pressed="true" → #FFF are beaten by the !important 0.9: no visible hover, no visible choice */
 ```
 
@@ -144,10 +245,32 @@ chevron static — Decision 3.)
 ### 3.2 Range buttons `1Y 2Y ALL`
 
 ```css
-.frange        { height: 49px; display: flex; align-items: center; gap: 18px; border: 0; }
-.frange button { height: 49px; min-height: 49px; padding: 0 1px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none;
-                 font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.72); cursor: pointer; }
-.frange button.on { color: #FFFFFF; border-bottom-color: #2FC6DC; }
+.frange {
+  height: 49px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  border: 0;
+}
+.frange button {
+  height: 49px;
+  min-height: 49px;
+  padding: 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+}
+.frange button.on {
+  color: #ffffff;
+  border-bottom-color: #2fc6dc;
+}
 /* hover: NO change (the !important .72 wins); no transition */
 ```
 
@@ -173,10 +296,33 @@ Same `.fdrop` box as Mission (220 px, hairline `.30`, caption cyan on hover/open
 in-flow list 480 ms, inner `6px 0 14px`), plus a value:
 
 ```css
-.fdrop-val { flex: 0 0 auto; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; color: rgba(255,255,255,0.92); }
-.pr-toolbar .fitem { display: flex; align-items: center; width: 100%; min-height: 34px; padding: 0 2px; border: 0; background: none; text-align: left; cursor: pointer;
-                     font-size: 12.5px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.9); }
-.fitem.off { color: rgba(255,255,255,0.5); }       /* no opacity on this page (DA/Acq also had opacity .3) */
+.fdrop-val {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.92);
+}
+.pr-toolbar .fitem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+}
+.fitem.off {
+  color: rgba(255, 255, 255, 0.5);
+} /* no opacity on this page (DA/Acq also had opacity .3) */
 /* hover: no change */
 ```
 
@@ -194,11 +340,32 @@ in-flow list 480 ms, inner `6px 0 14px`), plus a value:
 ### 3.4 Search
 
 ```css
-.fsearch { width: 220px; height: 49px; box-sizing: border-box; display: flex; align-items: center; gap: 8px;
-           color: #FFFFFF; border-bottom: 1px solid rgba(255,255,255,0.30); }            /* no change on focus */
-.fsearch input { flex: 1; min-width: 0; height: 100%; background: none; border: 0; outline: 0;
-                 font-size: 14px; font-weight: 500; letter-spacing: 0; color: #FFFFFF; }
-.fsearch input::placeholder { color: #FFFFFF; opacity: 1; }
+.fsearch {
+  width: 220px;
+  height: 49px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+} /* no change on focus */
+.fsearch input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  background: none;
+  border: 0;
+  outline: 0;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: #ffffff;
+}
+.fsearch input::placeholder {
+  color: #ffffff;
+  opacity: 1;
+}
 ```
 
 Icon 13×13: `<svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.6" stroke="currentColor" stroke-width="1.3"/><path d="M10.4 10.4L14 14" stroke="currentColor" stroke-width="1.3"/></svg>`.
@@ -229,6 +396,7 @@ the processor** (`j === hist.length - 1`), whatever its date. `v` may be null �
 S3: S3A, S3B; S5P: S5P).
 
 Prototype rosters (lane counts drive the row height):
+
 - S1 (3 lanes): L0, SAR L1/L2, SETAP — 3/4/2 releases, versions present.
 - S2 (4): MSI L0, MSI L1 (first release without a version), MSI L2, **EUP (no releases)**.
 - S3 (20): PUG, L0, OL1, OL1_RAC, OL1_SPC, OL2, SL1, SL2, SL2_LST, SL2_FRP, SR1, SR2, SM2_HY, SM2_LI,
@@ -249,11 +417,31 @@ in the future; release notes with and without a "Changes introduced" section; em
 ### 5.1 Overview (nothing picked)
 
 ```css
-.split  { display: grid; grid-template-columns: 50% 50%; grid-template-areas: "lcol proc"; align-items: start; }
-.lcol   { grid-area: lcol; min-width: 0; padding: 0 var(--pad); }          /* holds nothing but the satellite (§5.3) */
-.procpane { grid-area: proc; min-width: 0; position: relative;
-            text-shadow: 0 0 2px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.85), 0 1px 14px rgba(0,0,0,.7); }   /* Decision 20 */
-.sheet  { padding: 0 var(--pad) 0 30px; display: flex; flex-direction: column; }   /* one per mission; the current one is in flow */
+.split {
+  display: grid;
+  grid-template-columns: 50% 50%;
+  grid-template-areas: "lcol proc";
+  align-items: start;
+}
+.lcol {
+  grid-area: lcol;
+  min-width: 0;
+  padding: 0 var(--pad);
+} /* holds nothing but the satellite (§5.3) */
+.procpane {
+  grid-area: proc;
+  min-width: 0;
+  position: relative;
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.85),
+    0 1px 14px rgba(0, 0, 0, 0.7);
+} /* Decision 20 */
+.sheet {
+  padding: 0 var(--pad) 0 30px;
+  display: flex;
+  flex-direction: column;
+} /* one per mission; the current one is in flow */
 ```
 
 Satellite on the left half, timeline on the right half. The timeline column has **30 px** on its left
@@ -262,10 +450,36 @@ and the page padding on its right.
 ### 5.2 Heading and caption
 
 ```css
-.sheet .phead    { display: flex; align-items: baseline; gap: 12px; min-height: 49px; padding-top: 14px; margin-bottom: 16px; }   /* border-box: 49 includes the 14 */
-.sheet .phead h2 { margin: 0; font-size: clamp(17px, 1.7vw, 22px); font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; line-height: 1; color: #EAF0F6; }
-.tl-bar          { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.tl-cap          { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: #FFFFFF; }   /* !important winners */
+.sheet .phead {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 49px;
+  padding-top: 14px;
+  margin-bottom: 16px;
+} /* border-box: 49 includes the 14 */
+.sheet .phead h2 {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: #eaf0f6;
+}
+.tl-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.tl-cap {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffffff;
+} /* !important winners */
 ```
 
 Texts: `Sentinel-1 processors` (shown `SENTINEL-1 PROCESSORS`), caption `Release timeline`. Heading top
@@ -277,10 +491,20 @@ The images are transparent cut-outs (WebP with alpha, ESA artist's impressions):
 layers, no blend mode, no float animation.
 
 ```css
-.orbit .sat { position: absolute; left: 0; top: 0; object-fit: contain; filter: drop-shadow(0 18px 40px rgba(0,0,0,.5));
-              transition: opacity .35s ease; }        /* alt: "Artist's impression of Sentinel-1" */
-.orbit      { transition: opacity .5s ease; }
-body.tl-focus .orbit { opacity: 0; }                    /* hidden while a release is open (§10) */
+.orbit .sat {
+  position: absolute;
+  left: 0;
+  top: 0;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.5));
+  transition: opacity 0.35s ease;
+} /* alt: "Artist's impression of Sentinel-1" */
+.orbit {
+  transition: opacity 0.5s ease;
+}
+body.tl-focus .orbit {
+  opacity: 0;
+} /* hidden while a release is open (§10) */
 ```
 
 Size and place (`placeSats`), computed once for the settled layout, not while scrolling:
@@ -303,12 +527,32 @@ stage on purpose: "the satellites travel with the page").
 ### 6.1 Frame
 
 ```css
-.tl        { position: relative; z-index: 3; padding: 0 0 10px; border-bottom: 1px solid rgba(255,255,255,0.12); }
-.tl-scroll { margin-top: 8px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
-             scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.18) transparent; }
-.tl-scroll::-webkit-scrollbar { height: 6px; }
-.tl-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 3px; }
-.tl-chart  { position: relative; display: grid; grid-template-columns: 100px 1fr; }
+.tl {
+  position: relative;
+  z-index: 3;
+  padding: 0 0 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.tl-scroll {
+  margin-top: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.tl-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.tl-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 3px;
+}
+.tl-chart {
+  position: relative;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+}
 ```
 
 **Width:** `min-width = max(600, round(100 + months × 6)) px`, `months = window / 30.44 days` — the
@@ -332,13 +576,39 @@ x(t) = (t − win.start) / (win.end − win.start) × 100 %     // releases outs
 ### 6.3 Names column (pinned)
 
 ```css
-.tl-labels { position: sticky; left: 0; z-index: 2; height: H;
-             background: linear-gradient(to right, #000 82%, rgba(0,0,0,0)); }       /* full height in the prototype — Decision 14 */
-.tl-labels span { position: absolute; left: 0; top: y; height: rh; width: 96px; display: flex; align-items: center;
-                  font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(234,240,246,0.55);
-                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color .3s, opacity .3s; }
-.tl-labels span.on  { color: #FFFFFF; }       /* the picked release's row */
-.tl .dim            { opacity: 0.3; }          /* every other row while a release is picked (names, stems, markers, version labels) */
+.tl-labels {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  height: H;
+  background: linear-gradient(to right, #000 82%, rgba(0, 0, 0, 0));
+} /* full height in the prototype — Decision 14 */
+.tl-labels span {
+  position: absolute;
+  left: 0;
+  top: y;
+  height: rh;
+  width: 96px;
+  display: flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    color 0.3s,
+    opacity 0.3s;
+}
+.tl-labels span.on {
+  color: #ffffff;
+} /* the picked release's row */
+.tl .dim {
+  opacity: 0.3;
+} /* every other row while a release is picked (names, stems, markers, version labels) */
 ```
 
 Name = processor name minus the mission prefix **and** minus a leading `MSI `/`TROPOMI `:
@@ -348,16 +618,71 @@ Name = processor name minus the mission prefix **and** minus a leading `MSI `/`T
 ### 6.4 Axis, grid, rows, TODAY
 
 ```css
-.tl-track { position: relative; overflow: hidden; height: H; }
-.g        { position: absolute; top: 22px; bottom: 0; width: 1px; background: rgba(255,255,255,.06); pointer-events: none; }   /* month line */
-.g.y      { top: 0; background: rgba(255,255,255,.15); }                                                                    /* January */
-.yl { position: absolute; top: 3px; padding-left: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; color: rgba(234,240,246,0.6); white-space: nowrap; }  /* unified wins over 11px/.06em */
-.ml { position: absolute; top: 24px; padding-left: 4px; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #6B7686; white-space: nowrap; }
-.rl { position: absolute; left: 0; right: 0; height: 1px; background: rgba(255,255,255,.08); }   /* at TOP + i × rh, i = 0 … n */
-.today   { position: absolute; top: 40px; bottom: 22px; width: 1px; background: #2FC6DC; }
-.today b { position: absolute; left: 0; top: calc(100% + 6px); transform: translateX(-50%);
-           font-size: 9px; font-weight: 700; letter-spacing: 0.18em; color: #2FC6DC; white-space: nowrap; }   /* text "TODAY" */
-.today.end b { transform: translateX(-100%); }      /* when TODAY is past 94 % */
+.tl-track {
+  position: relative;
+  overflow: hidden;
+  height: H;
+}
+.g {
+  position: absolute;
+  top: 22px;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+} /* month line */
+.g.y {
+  top: 0;
+  background: rgba(255, 255, 255, 0.15);
+} /* January */
+.yl {
+  position: absolute;
+  top: 3px;
+  padding-left: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(234, 240, 246, 0.6);
+  white-space: nowrap;
+} /* unified wins over 11px/.06em */
+.ml {
+  position: absolute;
+  top: 24px;
+  padding-left: 4px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7686;
+  white-space: nowrap;
+}
+.rl {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+} /* at TOP + i × rh, i = 0 … n */
+.today {
+  position: absolute;
+  top: 40px;
+  bottom: 22px;
+  width: 1px;
+  background: #2fc6dc;
+}
+.today b {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #2fc6dc;
+  white-space: nowrap;
+} /* text "TODAY" */
+.today.end b {
+  transform: translateX(-100%);
+} /* when TODAY is past 94 % */
 /* every grid element, label, TODAY and version label: pointer-events: none */
 ```
 
@@ -377,19 +702,72 @@ our `leadRoom` 8 % check is kept — Decision 15.)
 ### 6.5 Releases: stem, marker, version label
 
 ```css
-.stem { position: absolute; top: 40px; height: cy − 40; width: 1px; background: rgba(255,255,255,.16); pointer-events: none; }
-.mk   { position: absolute; z-index: 1; left: x; top: cy; width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; padding: 0; box-sizing: border-box;
-        border-radius: 50%; background: #000; border: 1.5px solid #7D8792; cursor: pointer; }          /* superseded = ring */
-.mk:hover   { border-color: #C3CAD1; transform: scale(1.3); }
-.mk.now     { background: #3FCF7F; border-color: #3FCF7F; box-shadow: 0 0 10px rgba(63,207,127,.45); }   /* current = filled; keeps its green border on hover */
-.mk.sel     { transform: scale(1.25); box-shadow: 0 0 0 4px #000, 0 0 0 5px #FFF, 0 0 18px 6px rgba(255,255,255,.35); }   /* stays 1.25 on hover */
-.mk.now.sel { box-shadow: 0 0 0 4px #000, 0 0 0 5px #3FCF7F, 0 0 18px 6px rgba(63,207,127,.55); }
-.sheet .mk, .sheet .stem { transition: opacity 240ms ease; }
+.stem {
+  position: absolute;
+  top: 40px;
+  height: cy − 40;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+.mk {
+  position: absolute;
+  z-index: 1;
+  left: x;
+  top: cy;
+  width: 13px;
+  height: 13px;
+  margin: -6.5px 0 0 -6.5px;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: #000;
+  border: 1.5px solid #7d8792;
+  cursor: pointer;
+} /* superseded = ring */
+.mk:hover {
+  border-color: #c3cad1;
+  transform: scale(1.3);
+}
+.mk.now {
+  background: #3fcf7f;
+  border-color: #3fcf7f;
+  box-shadow: 0 0 10px rgba(63, 207, 127, 0.45);
+} /* current = filled; keeps its green border on hover */
+.mk.sel {
+  transform: scale(1.25);
+  box-shadow:
+    0 0 0 4px #000,
+    0 0 0 5px #fff,
+    0 0 18px 6px rgba(255, 255, 255, 0.35);
+} /* stays 1.25 on hover */
+.mk.now.sel {
+  box-shadow:
+    0 0 0 4px #000,
+    0 0 0 5px #3fcf7f,
+    0 0 18px 6px rgba(63, 207, 127, 0.55);
+}
+.sheet .mk,
+.sheet .stem {
+  transition: opacity 240ms ease;
+}
 /* ↑ this later rule REPLACES the marker's own "transform .2s, box-shadow .3s, opacity .3s, border-color .2s":
    hover scale, ring and border colour snap with no animation; only opacity fades (Decision 16) */
-.vl     { position: absolute; left: x; top: cy; margin: -8px 0 0 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
-          color: #93A0B0; white-space: nowrap; pointer-events: none; }   /* only while zoomed; no entrance animation */
-.vl.now { color: #3FCF7F; }
+.vl {
+  position: absolute;
+  left: x;
+  top: cy;
+  margin: -8px 0 0 14px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #93a0b0;
+  white-space: nowrap;
+  pointer-events: none;
+} /* only while zoomed; no entrance animation */
+.vl.now {
+  color: #3fcf7f;
+}
 ```
 
 Marker `aria-label`: `"<processor> <version>, <D Month YYYY>, current baseline|superseded"`,
@@ -422,22 +800,100 @@ labels) at `.3`; every release in the window shows its version label.
 Lives on `<body>`, fixed to the window (keep our portal — an ancestor has a transform).
 
 ```css
-.tl-tip { position: fixed; z-index: 55; width: 236px; padding: 14px 16px 13px; box-sizing: border-box;
-          background: rgba(9,12,16,.96); border: 1px solid rgba(255,255,255,.18); border-radius: 12px; box-shadow: 0 12px 28px rgba(0,0,0,.55);
-          backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); pointer-events: none; text-shadow: none;
-          opacity: 0; transform: translateY(4px); transition: opacity .18s ease, transform .18s ease; }
-.tl-tip.on { opacity: 1; transform: none; }               /* fades out the same way on hide */
-.tt-title  { margin: 0 0 10px; font-size: 14.5px; font-weight: 700; letter-spacing: 0.01em; color: #FFF; }
-.tt-stats  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.tt-k      { display: block; font-size: 8.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(234,240,246,.45); }
-.tt-v      { display: block; margin-top: 4px; font-size: 15px; font-weight: 700; line-height: 1.15; color: #EAF0F6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tt-v.go   { color: #19E27A; }                            /* NOTE: brighter than the marker green #3FCF7F */
-.tt-v.old  { color: #93A0B0; }
-.tl-tip hr { margin: 11px 0 9px; border: 0; border-top: 1px solid rgba(255,255,255,.12); }
-.tt-rows   { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; align-items: baseline; margin: 0; }
-.tt-rows dt { font-size: 8.5px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(234,240,246,.45); }
-.tt-rows dd { margin: 0; font-size: 11.5px; line-height: 1.4; color: rgba(234,240,246,.88); }
-.tt-hint   { margin-top: 9px; font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #2FC6DC; }
+.tl-tip {
+  position: fixed;
+  z-index: 55;
+  width: 236px;
+  padding: 14px 16px 13px;
+  box-sizing: border-box;
+  background: rgba(9, 12, 16, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  pointer-events: none;
+  text-shadow: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.tl-tip.on {
+  opacity: 1;
+  transform: none;
+} /* fades out the same way on hide */
+.tt-title {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+.tt-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.tt-k {
+  display: block;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.45);
+}
+.tt-v {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: #eaf0f6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tt-v.go {
+  color: #19e27a;
+} /* NOTE: brighter than the marker green #3FCF7F */
+.tt-v.old {
+  color: #93a0b0;
+}
+.tl-tip hr {
+  margin: 11px 0 9px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.tt-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 12px;
+  align-items: baseline;
+  margin: 0;
+}
+.tt-rows dt {
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.45);
+}
+.tt-rows dd {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: rgba(234, 240, 246, 0.88);
+}
+.tt-hint {
+  margin-top: 9px;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #2fc6dc;
+}
 ```
 
 Content: title = processor name; Version (green `.go` if current) · Status `Current`/`Superseded`;
@@ -464,42 +920,172 @@ Shown on mouseenter and focus; hidden on mouseleave, blur, click, **page scroll*
 ## 9. Detail panel (right half while a release is picked)
 
 ```css
-.detailpane { grid-area: detail; min-width: 0; padding: 14px var(--pad) 48px 34px;          /* +var(--below) in the prototype — Decision 21 */
-              text-shadow: 0 0 2px rgba(0,0,0,.95), 0 0 8px rgba(0,0,0,.85), 0 1px 14px rgba(0,0,0,.7);
-              opacity: 0; transform: translateX(56px); transition: opacity 420ms ease, transform 640ms cubic-bezier(.2,.7,.2,1); }
-.detailpane.on { opacity: 1; transform: none; }
-.dt-in.swap    { animation: vswap 320ms ease; }          /* vswap: opacity .25 → 1 — stepping / picking another release while open */
+.detailpane {
+  grid-area: detail;
+  min-width: 0;
+  padding: 14px var(--pad) 48px 34px; /* +var(--below) in the prototype — Decision 21 */
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.85),
+    0 1px 14px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  transform: translateX(56px);
+  transition:
+    opacity 420ms ease,
+    transform 640ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.detailpane.on {
+  opacity: 1;
+  transform: none;
+}
+.dt-in.swap {
+  animation: vswap 320ms ease;
+} /* vswap: opacity .25 → 1 — stepping / picking another release while open */
 
-.dt-top   { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
-.dt-back  { display: inline-flex; align-items: center; gap: 10px; min-height: 40px; padding: 0; border: 0; background: none; cursor: pointer;
-            font-size: 10.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(234,240,246,.55); transition: color .2s; }
-.dt-back:hover { color: #FFF; }
+.dt-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.dt-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.55);
+  transition: color 0.2s;
+}
+.dt-back:hover {
+  color: #fff;
+}
 /* back icon 12×12: viewBox 0 0 16 16, stroke 1.5, path "M7 3L2 8l5 5M2 8h12"; text "Overview" */
-.dt-steps { display: flex; gap: 8px; }
-.step     { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 0; border: 1px solid #454C53;
-            background: rgba(8,12,16,.35); color: #B9C2C8; cursor: pointer; transition: color .2s, border-color .2s; }
-.step:hover:not(:disabled) { border-color: #6A737A; color: #FFF; }
-.step:disabled { border-color: #262C31; color: #3B4247; cursor: default; }           /* no opacity change */
+.dt-steps {
+  display: flex;
+  gap: 8px;
+}
+.step {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  border: 1px solid #454c53;
+  background: rgba(8, 12, 16, 0.35);
+  color: #b9c2c8;
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    border-color 0.2s;
+}
+.step:hover:not(:disabled) {
+  border-color: #6a737a;
+  color: #fff;
+}
+.step:disabled {
+  border-color: #262c31;
+  color: #3b4247;
+  cursor: default;
+} /* no opacity change */
 /* chevrons 13×13: viewBox 0 0 24 24, stroke 2.4; previous "M15 5l-7 7 7 7", next "M9 5l7 7-7 7"; aria-labels "Previous release" / "Next release" */
 
-.dt-head  { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
-.dt-proc  { display: block; font-size: 11.5px; color: #6B7686; }                      /* "S1 SAR L1/L2 · SLC · GRD · OCN · all modes" */
-.dt-ver   { display: block; margin-top: 4px; font-size: 28px; font-weight: 700; letter-spacing: -0.01em; line-height: 1; color: #EAF0F6; }
-.vtag     { margin-left: auto; padding: 6px 12px; border-radius: 0; border: 1px solid currentColor;
-            font-size: 10.5px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; }
-.vtag.now { color: #3FCF7F; }   .vtag.old { color: #6B7686; }                         /* "Current baseline" / "Superseded" */
+.dt-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.dt-proc {
+  display: block;
+  font-size: 11.5px;
+  color: #6b7686;
+} /* "S1 SAR L1/L2 · SLC · GRD · OCN · all modes" */
+.dt-ver {
+  display: block;
+  margin-top: 4px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  color: #eaf0f6;
+}
+.vtag {
+  margin-left: auto;
+  padding: 6px 12px;
+  border-radius: 0;
+  border: 1px solid currentColor;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.vtag.now {
+  color: #3fcf7f;
+}
+.vtag.old {
+  color: #6b7686;
+} /* "Current baseline" / "Superseded" */
 
-.meta     { display: grid; gap: 8px; margin: 0 0 20px; }
-.meta div { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: #93A0B0; }
-.meta dt  { font-weight: 400; color: #6B7686; }
-.meta dd  { margin: 0; font-weight: 600; color: #EAF0F6; }
+.meta {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+}
+.meta div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12.5px;
+  color: #93a0b0;
+}
+.meta dt {
+  font-weight: 400;
+  color: #6b7686;
+}
+.meta dd {
+  margin: 0;
+  font-weight: 600;
+  color: #eaf0f6;
+}
 
-.rn h4    { margin: 0 0 12px; font-size: 12.5px; font-weight: 700; }                   /* "Release notes" */
-.rn p     { margin: 0 0 10px; font-size: 12.5px; color: #93A0B0; }                     /* the lead */
-.rn ul    { margin: 0 0 18px; padding-left: 19px; }
-.rn li    { margin-bottom: 5px; font-size: 12.5px; line-height: 1.62; color: #93A0B0; }
-.rn li b  { font-weight: 600; color: #EAF0F6; }                                         /* item heading, then ": text" */
-.rn code  { font-family: "JetBrains Mono","SF Mono",ui-monospace,Consolas,monospace; font-size: 11.5px; color: var(--mis); }   /* mission colour — Decision 19 */
+.rn h4 {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+} /* "Release notes" */
+.rn p {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: #93a0b0;
+} /* the lead */
+.rn ul {
+  margin: 0 0 18px;
+  padding-left: 19px;
+}
+.rn li {
+  margin-bottom: 5px;
+  font-size: 12.5px;
+  line-height: 1.62;
+  color: #93a0b0;
+}
+.rn li b {
+  font-weight: 600;
+  color: #eaf0f6;
+} /* item heading, then ": text" */
+.rn code {
+  font-family: "JetBrains Mono", "SF Mono", ui-monospace, Consolas, monospace;
+  font-size: 11.5px;
+  color: var(--mis);
+} /* mission colour — Decision 19 */
 ```
 
 Meta rows (prototype): `Processor Baseline ID:` `June 2026 Release` (`<Month> <YYYY> Release`) ·
@@ -560,15 +1146,31 @@ Prototype: Escape closes the Mission list only. No Escape for Baseline or for th
 
 ```css
 @media (max-width: 1080px) {
-  .split { grid-template-columns: 40% 60%; }                 /* satellite stays on the left */
-  .sheet { padding: 0 var(--pad) 0 12px; }
-  .split.focus { grid-template-columns: 100%; grid-template-areas: "proc" "detail"; }   /* detail under the timeline */
-  .split.focus .detailpane { padding-left: var(--pad); padding-top: 4px; }
+  .split {
+    grid-template-columns: 40% 60%;
+  } /* satellite stays on the left */
+  .sheet {
+    padding: 0 var(--pad) 0 12px;
+  }
+  .split.focus {
+    grid-template-columns: 100%;
+    grid-template-areas: "proc" "detail";
+  } /* detail under the timeline */
+  .split.focus .detailpane {
+    padding-left: var(--pad);
+    padding-top: 4px;
+  }
 }
 @media (max-width: 640px) {
-  .split { grid-template-columns: 34% 66%; }
-  .lcol  { padding: 0 10px 0 var(--pad); }
-  .sheet { padding: 0 var(--pad) 0 4px; }
+  .split {
+    grid-template-columns: 34% 66%;
+  }
+  .lcol {
+    padding: 0 10px 0 var(--pad);
+  }
+  .sheet {
+    padding: 0 var(--pad) 0 4px;
+  }
   /* the 14px heading rule is beaten by the unified clamp(17px, 1.7vw, 22px) */
 }
 /* satellite box width: 92 % of the column when the column is under 420 px, else 66 % */
@@ -582,10 +1184,10 @@ Prototype: Escape closes the Mission list only. No Escape for Baseline or for th
 > coloured box, the details relevant to the selected processor release is displayed in the lower part
 > of the screen.
 >
-> Select a release on the timeline to read its baseline notes. *(same paragraph style; `margin-top: 22px`)*
+> Select a release on the timeline to read its baseline notes. _(same paragraph style; `margin-top: 22px`)_
 >
-> Legend: ● Current baseline *(filled `#3FCF7F`, glow `0 0 8px rgba(63,207,127,.45)`)* ○ Superseded
-> *(1.5px ring `#7D8792`, hollow)* — dots 11×11, gap 9px; labels 11px/600/.16em uppercase `.55`; legend gap `10px 22px`.
+> Legend: ● Current baseline _(filled `#3FCF7F`, glow `0 0 8px rgba(63,207,127,.45)`)_ ○ Superseded
+> _(1.5px ring `#7D8792`, hollow)_ — dots 11×11, gap 9px; labels 11px/600/.16em uppercase `.55`; legend gap `10px 22px`.
 
 Paragraphs: 15px, line-height 1.75, `rgba(234,240,246,.70)`, margin `0 0 20px`. Hero subtitle (lede):
 `The complete list of Copernicus Sentinel processor releases on an interactive timeline.`
@@ -600,44 +1202,44 @@ none of them — Decision 23.)
 Files: `processors.tsx`, `processors.module.css` (check the global styles and `page-header.css` for
 overrides before changing anything).
 
-| Area | Current code | Reference |
-|---|---|---|
-| Dead code | sky strip (`.skyStrip/.skyTrack/.skyTile`, `skyDrift` 150 s), `satFloat`, `.artGlow/.art`, `.placeholder`, `.captionRow`, `.motionBtn`, `.paused`, `motionPaused` state, unused imports `AmbientSky`, `MotionToggle`, `ambientRoot`, `useAmbientMotion`; `.caption` declared twice | none of it exists |
-| Backdrop | `<SpaceBackdrop page={1}>` | Processors is the **third** window of the shared panorama (prototype `PAGE = 2`; Events 0, DA 1) — Decision 25 |
-| Page rise over hero | `.headArt + .container { margin-top: calc(16px - var(--hero-after-pad, 72px)) }`, stats `padding-top: 22px` | same board rise as the other pages (§1) |
-| KPI block | own `<dl>` grid, 4 columns, `padding 56px 16px 44px`, label **above** value, value `font-display` 600 `clamp(36px,4.2vw,52px)` | the shared KPI block (§2): value over caption, 700 `clamp(26px,2.9vw,37px)` |
-| KPI formulas | real now; last year = `ms >= now − 1 calendar year` (includes future); latest = max of all | `t ∈ (now − 365 d, now]`; latest = max ≤ now; fixed NOW in the prototype (Decision 9) |
-| Toolbar spacing | none above; `.split margin-top: 56px` | toolbar `margin-top clamp(16px,2.6vh,28px)`; toolbar → split `--pr-align` (Decision 1) |
-| Toolbar alignment | `align-items: flex-end` | `flex-start`, every control on the 49 px line |
-| Dropdowns | local `FilterDropdown`: absolute menu, head `padding 6px 0 9px`, caption 11/700/.16em, hairline `--line-strong` → transparent when open, chevron 13 px (24 box, 2.4) rotating 0.2 s, items 11/700/.16em mute, chosen = underlined white | the shared dropdown (Decision 3): in flow, 48 px head, caption 11/600/.2em white → cyan, hairline `.30` fixed, 12 px chevron (16 box, 1.4), items 12.5/500/.12em `.9`, non-chosen `.off .5` |
-| Mission list | no indication of the choice | prototype: none either; Decision 4 |
-| Range buttons | `font-mono` 12px/600/.12em mute, `padding 4px 0 3px`, hover → white, 0.2 s transitions | 11px/600/.16em `.72`, 49 px tall, 2 px cyan underline, no hover, no transition |
-| Search box | `padding 6px 0 9px`, gap 10, icon 14 px (24 box), focus → cyan hairline, input 13px/600/.02em, placeholder `.85` | 49 px, gap 8, icon 13 px (16 box), no focus change, input 14px/500/0, placeholder white `1` |
-| Search semantics | group label/sub or baseline substring | all words, over name, description, version, year, notes text (Decision 6) |
-| Layout mechanism | 3-column grid `1fr 1fr 0fr` ↔ `0fr 1fr 1fr`, `grid-template-columns 0.7s var(--ease)` | 2 areas 50/50, FLIP 720 ms + detail slide 56 px (Decision 12) |
-| Satellite column | sticky `top: 24px`, `padding 32px 24px 0`, max-height 640, glow + radial art, `mix-blend-mode: screen`, opacity .92, 9 s float, placeholder text | scrolls with the page; transparent cut-out with `drop-shadow(0 18px 40px rgba(0,0,0,.5))`; size §5.3; fades out (.5 s) in detail (Decision 10) |
-| Columns' padding | timeline `padding: 0 clamp(16px,3vw,48px) 96px`; detail `0 clamp(16px,3vw,48px) 96px 0` | sheet `0 pad 0 30px`; detail `14px pad 48px 34px` (Decision 2) |
-| Heading | `font-display` 20px/700/.08em, `margin 0 0 30px` | `clamp(17px,1.7vw,22px)`/700/.02em, lh 1, block 49 px with 14 px top padding, 16 px below |
-| Caption | 10.5px/700/.22em `--text-dim` | 11px/600/.2em white |
-| Chart frame | border-bottom `var(--line)` | `rgba(255,255,255,.12)` |
-| Chart width | fixed `minWidth: 600` | `max(600, 100 + 6 px/month)` (Decision 13) |
-| Names | 10.5/700/.12em `--text-dim`; backdrop starts at 42 px; prefix rule drops only `S1 …` | 10/600/.14em `.55`; backdrop full height (Decision 14); also drops `MSI `/`TROPOMI ` |
-| Grid / labels | hairlines 8 % / 16 % of text; years 11px/.06em dim; months dim (contrast fix for light) | `.06` / `.15`; years 10px/600/.08em `.6`; months 9px `#6B7686` |
-| Markers | transitions transform .2 s etc.; hovering the picked marker scales to 1.3 | only opacity 240 ms survives; picked stays 1.25 on hover (Decision 16) |
-| Version labels | `vlIn` 0.4 s fade-in | no animation |
-| Tooltip | unmounts at once (in: `tipIn` 0.18 s with margin-top 4px); placement: above unless `r.top < 330`, clamped to the scroll box; bg `--bg-1 96%`, `--shadow`; Version green = `--bl-current`; rows Released / Operational since / Satellites / Changes (full width) | fades in **and out** (opacity + translateY 4 px, .18 s); placement §8; `rgba(9,12,16,.96)`, `0 12px 28px rgba(0,0,0,.55)`; `.go #19E27A`; rows Released / Satellites / Changes inline (Decision 17); hides on page scroll too |
-| Detail entrance | `dtIn` 0.45 s translateY(8px); `min-width: 440px` | pane fade 420 ms + slide X 56 px 640 ms after 180 ms; steps/reselect `vswap` 320 ms |
-| Back button | font-mono 11px, stroke 1.6 | 10.5px/700/.2em `.55`, stroke 1.5 |
-| Step buttons | 36 × 36, `--line-strong`, hover cyan + glow, disabled opacity .3 | 40 × 40, `#454C53`, bg `rgba(8,12,16,.35)`, hover `#6A737A`/white, disabled `#262C31`/`#3B4247` |
-| Detail head | proc 12px; version `font-display` 40px, margin-top 8; `margin-bottom 28px`; `dtTop margin-bottom 36px` | 11.5px `#6B7686`; 28px/700, margin-top 4; 18 px; 18 px |
-| Status tag | 11px, `padding 9px 14px`, green = `--ok` | 10.5px/600/.18em, `6px 12px`, `#3FCF7F` |
-| Meta | 13px, gap 10, margin-bottom 32; rows Processing baseline / Released / Operational since / Impacted satellite(s) | 12.5px, gap 8, margin-bottom 20; rows Processor Baseline ID / Operational since / Impacted satellite(s) (Decision 18) |
-| Release notes | sanitized feed HTML, 13px lh 1.62, h4 13px | 12.5px; h4 12.5px; items `<b>heading</b>: text`; `code` mission colour (Decision 19) |
-| Text shadow | none | dark halo on the timeline and detail columns (Decision 20) |
-| Escape | closes the detail; dropdown has its own | prototype: Mission list only (Decision 24) |
-| Mission change | clears the pick (good), instant swap | orbit rotation (Decision 11) |
-| Responsive | ≤1080 stacked (satellite on top, `min-height 52vh`), ≤768 toolbar in a column | ≤1080 40/60 and ≤640 34/66 with the satellite still left; detail under the timeline ≤1080 (Decision 22) |
-| Description legend | both dots filled (green `--ok`, grey `--text-mute`) | filled green vs hollow ring (Decision 23) |
+| Area                | Current code                                                                                                                                                                                                                                                                       | Reference                                                                                                                                                                                                                     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dead code           | sky strip (`.skyStrip/.skyTrack/.skyTile`, `skyDrift` 150 s), `satFloat`, `.artGlow/.art`, `.placeholder`, `.captionRow`, `.motionBtn`, `.paused`, `motionPaused` state, unused imports `AmbientSky`, `MotionToggle`, `ambientRoot`, `useAmbientMotion`; `.caption` declared twice | none of it exists                                                                                                                                                                                                             |
+| Backdrop            | `<SpaceBackdrop page={1}>`                                                                                                                                                                                                                                                         | Processors is the **third** window of the shared panorama (prototype `PAGE = 2`; Events 0, DA 1) — Decision 25                                                                                                                |
+| Page rise over hero | `.headArt + .container { margin-top: calc(16px - var(--hero-after-pad, 72px)) }`, stats `padding-top: 22px`                                                                                                                                                                        | same board rise as the other pages (§1)                                                                                                                                                                                       |
+| KPI block           | own `<dl>` grid, 4 columns, `padding 56px 16px 44px`, label **above** value, value `font-display` 600 `clamp(36px,4.2vw,52px)`                                                                                                                                                     | the shared KPI block (§2): value over caption, 700 `clamp(26px,2.9vw,37px)`                                                                                                                                                   |
+| KPI formulas        | real now; last year = `ms >= now − 1 calendar year` (includes future); latest = max of all                                                                                                                                                                                         | `t ∈ (now − 365 d, now]`; latest = max ≤ now; fixed NOW in the prototype (Decision 9)                                                                                                                                         |
+| Toolbar spacing     | none above; `.split margin-top: 56px`                                                                                                                                                                                                                                              | toolbar `margin-top clamp(16px,2.6vh,28px)`; toolbar → split `--pr-align` (Decision 1)                                                                                                                                        |
+| Toolbar alignment   | `align-items: flex-end`                                                                                                                                                                                                                                                            | `flex-start`, every control on the 49 px line                                                                                                                                                                                 |
+| Dropdowns           | local `FilterDropdown`: absolute menu, head `padding 6px 0 9px`, caption 11/700/.16em, hairline `--line-strong` → transparent when open, chevron 13 px (24 box, 2.4) rotating 0.2 s, items 11/700/.16em mute, chosen = underlined white                                            | the shared dropdown (Decision 3): in flow, 48 px head, caption 11/600/.2em white → cyan, hairline `.30` fixed, 12 px chevron (16 box, 1.4), items 12.5/500/.12em `.9`, non-chosen `.off .5`                                   |
+| Mission list        | no indication of the choice                                                                                                                                                                                                                                                        | prototype: none either; Decision 4                                                                                                                                                                                            |
+| Range buttons       | `font-mono` 12px/600/.12em mute, `padding 4px 0 3px`, hover → white, 0.2 s transitions                                                                                                                                                                                             | 11px/600/.16em `.72`, 49 px tall, 2 px cyan underline, no hover, no transition                                                                                                                                                |
+| Search box          | `padding 6px 0 9px`, gap 10, icon 14 px (24 box), focus → cyan hairline, input 13px/600/.02em, placeholder `.85`                                                                                                                                                                   | 49 px, gap 8, icon 13 px (16 box), no focus change, input 14px/500/0, placeholder white `1`                                                                                                                                   |
+| Search semantics    | group label/sub or baseline substring                                                                                                                                                                                                                                              | all words, over name, description, version, year, notes text (Decision 6)                                                                                                                                                     |
+| Layout mechanism    | 3-column grid `1fr 1fr 0fr` ↔ `0fr 1fr 1fr`, `grid-template-columns 0.7s var(--ease)`                                                                                                                                                                                              | 2 areas 50/50, FLIP 720 ms + detail slide 56 px (Decision 12)                                                                                                                                                                 |
+| Satellite column    | sticky `top: 24px`, `padding 32px 24px 0`, max-height 640, glow + radial art, `mix-blend-mode: screen`, opacity .92, 9 s float, placeholder text                                                                                                                                   | scrolls with the page; transparent cut-out with `drop-shadow(0 18px 40px rgba(0,0,0,.5))`; size §5.3; fades out (.5 s) in detail (Decision 10)                                                                                |
+| Columns' padding    | timeline `padding: 0 clamp(16px,3vw,48px) 96px`; detail `0 clamp(16px,3vw,48px) 96px 0`                                                                                                                                                                                            | sheet `0 pad 0 30px`; detail `14px pad 48px 34px` (Decision 2)                                                                                                                                                                |
+| Heading             | `font-display` 20px/700/.08em, `margin 0 0 30px`                                                                                                                                                                                                                                   | `clamp(17px,1.7vw,22px)`/700/.02em, lh 1, block 49 px with 14 px top padding, 16 px below                                                                                                                                     |
+| Caption             | 10.5px/700/.22em `--text-dim`                                                                                                                                                                                                                                                      | 11px/600/.2em white                                                                                                                                                                                                           |
+| Chart frame         | border-bottom `var(--line)`                                                                                                                                                                                                                                                        | `rgba(255,255,255,.12)`                                                                                                                                                                                                       |
+| Chart width         | fixed `minWidth: 600`                                                                                                                                                                                                                                                              | `max(600, 100 + 6 px/month)` (Decision 13)                                                                                                                                                                                    |
+| Names               | 10.5/700/.12em `--text-dim`; backdrop starts at 42 px; prefix rule drops only `S1 …`                                                                                                                                                                                               | 10/600/.14em `.55`; backdrop full height (Decision 14); also drops `MSI `/`TROPOMI `                                                                                                                                          |
+| Grid / labels       | hairlines 8 % / 16 % of text; years 11px/.06em dim; months dim (contrast fix for light)                                                                                                                                                                                            | `.06` / `.15`; years 10px/600/.08em `.6`; months 9px `#6B7686`                                                                                                                                                                |
+| Markers             | transitions transform .2 s etc.; hovering the picked marker scales to 1.3                                                                                                                                                                                                          | only opacity 240 ms survives; picked stays 1.25 on hover (Decision 16)                                                                                                                                                        |
+| Version labels      | `vlIn` 0.4 s fade-in                                                                                                                                                                                                                                                               | no animation                                                                                                                                                                                                                  |
+| Tooltip             | unmounts at once (in: `tipIn` 0.18 s with margin-top 4px); placement: above unless `r.top < 330`, clamped to the scroll box; bg `--bg-1 96%`, `--shadow`; Version green = `--bl-current`; rows Released / Operational since / Satellites / Changes (full width)                    | fades in **and out** (opacity + translateY 4 px, .18 s); placement §8; `rgba(9,12,16,.96)`, `0 12px 28px rgba(0,0,0,.55)`; `.go #19E27A`; rows Released / Satellites / Changes inline (Decision 17); hides on page scroll too |
+| Detail entrance     | `dtIn` 0.45 s translateY(8px); `min-width: 440px`                                                                                                                                                                                                                                  | pane fade 420 ms + slide X 56 px 640 ms after 180 ms; steps/reselect `vswap` 320 ms                                                                                                                                           |
+| Back button         | font-mono 11px, stroke 1.6                                                                                                                                                                                                                                                         | 10.5px/700/.2em `.55`, stroke 1.5                                                                                                                                                                                             |
+| Step buttons        | 36 × 36, `--line-strong`, hover cyan + glow, disabled opacity .3                                                                                                                                                                                                                   | 40 × 40, `#454C53`, bg `rgba(8,12,16,.35)`, hover `#6A737A`/white, disabled `#262C31`/`#3B4247`                                                                                                                               |
+| Detail head         | proc 12px; version `font-display` 40px, margin-top 8; `margin-bottom 28px`; `dtTop margin-bottom 36px`                                                                                                                                                                             | 11.5px `#6B7686`; 28px/700, margin-top 4; 18 px; 18 px                                                                                                                                                                        |
+| Status tag          | 11px, `padding 9px 14px`, green = `--ok`                                                                                                                                                                                                                                           | 10.5px/600/.18em, `6px 12px`, `#3FCF7F`                                                                                                                                                                                       |
+| Meta                | 13px, gap 10, margin-bottom 32; rows Processing baseline / Released / Operational since / Impacted satellite(s)                                                                                                                                                                    | 12.5px, gap 8, margin-bottom 20; rows Processor Baseline ID / Operational since / Impacted satellite(s) (Decision 18)                                                                                                         |
+| Release notes       | sanitized feed HTML, 13px lh 1.62, h4 13px                                                                                                                                                                                                                                         | 12.5px; h4 12.5px; items `<b>heading</b>: text`; `code` mission colour (Decision 19)                                                                                                                                          |
+| Text shadow         | none                                                                                                                                                                                                                                                                               | dark halo on the timeline and detail columns (Decision 20)                                                                                                                                                                    |
+| Escape              | closes the detail; dropdown has its own                                                                                                                                                                                                                                            | prototype: Mission list only (Decision 24)                                                                                                                                                                                    |
+| Mission change      | clears the pick (good), instant swap                                                                                                                                                                                                                                               | orbit rotation (Decision 11)                                                                                                                                                                                                  |
+| Responsive          | ≤1080 stacked (satellite on top, `min-height 52vh`), ≤768 toolbar in a column                                                                                                                                                                                                      | ≤1080 40/60 and ≤640 34/66 with the satellite still left; detail under the timeline ≤1080 (Decision 22)                                                                                                                       |
+| Description legend  | both dots filled (green `--ok`, grey `--text-mute`)                                                                                                                                                                                                                                | filled green vs hollow ring (Decision 23)                                                                                                                                                                                     |
 
 ## 16. Decisions (to confirm — edit this list before running the prompts; the prompts follow it)
 
@@ -645,62 +1247,68 @@ Recommended choice first. Strike the ones you reject and write what you want ins
 applies one, it writes **"Applied in Session N (date): …"** under it with the exact values.
 
 1. **Toolbar → timeline distance.** The prototype has no toolbar padding-bottom and a split margin of
-   `clamp(24px, calc(49.4vh - 355px), 240px)`. → *Recommended:* keep the shared toolbar
+   `clamp(24px, calc(49.4vh - 355px), 240px)`. → _Recommended:_ keep the shared toolbar
    `padding-bottom: clamp(10px, 1.6vw, 20px)` and give the split
    `margin-top: max(0px, clamp(24px, calc(49.4vh - 355px), 240px) - clamp(10px, 1.6vw, 20px))`, so the
    total equals the prototype (same approach as DA Decision 1).
-2. **Side padding and gutters.** → *Recommended:* page outer edges at the codebase
+2. **Side padding and gutters.** → _Recommended:_ page outer edges at the codebase
    `clamp(18px, 4vw, 48px)` (DA Decision 12); inner gutters as the prototype: 30 px before the timeline
    in the overview, 34 px before the detail; in the detail view the timeline's **left** edge sits at the
    page padding (the prototype leaves it at 30 px from the window edge). Narrow screens: 12 px (≤1080)
    and 4 px (≤640) before the timeline; the satellite column's right padding 10 px at ≤640.
+
+   **Applied in Session 1 (2026-10-25):** `padding-inline: clamp(18px, 4vw, 48px)` added to `.container` in `processors.module.css`. Inner gutters and narrow-screen breakpoints are Session 2+.
+
 3. **Dropdown behaviour.** The prototype's lists here differ from Acquisitions/DA (480 ms, inner
    `6px 0 14px`, head padding 0, chevron rotates 180° in 460 ms, Baseline ignores Escape/outside, two
-   lists can be open). → *Recommended:* the shared dropdown exactly as Acquisitions/DA implement it
+   lists can be open). → _Recommended:_ the shared dropdown exactly as Acquisitions/DA implement it
    (in flow, 420 ms, caption cyan on hover/open, hairline `.30` fixed, chevron as Acquisitions, one
    open at a time, Escape and a click outside close it). Widths 220 px for both.
 4. **Mission list: showing the choice.** The prototype shows nothing (no value, no highlight — the
-   `!important .9` kills it). → *Recommended:* dim the non-chosen missions with `.off` (`.5`), the same
+   `!important .9` kills it). → _Recommended:_ dim the non-chosen missions with `.off` (`.5`), the same
    rule Baseline uses; no value text beside the caption (the heading and the satellite name the
    mission). Alternative: prototype as is.
-5. **Baseline list.** → *Recommended:* no underline on the labels (the `<u>` underline is an accident:
+5. **Baseline list.** → _Recommended:_ no underline on the labels (the `<u>` underline is an accident:
    every other page has `.fitem u { text-decoration: none }`); keep the prototype rule that the item
    not chosen is `.off`, also when "All releases" is chosen.
-6. **Search.** → *Recommended:* the prototype's free search (§3.4: every word must appear in processor
+6. **Search.** → _Recommended:_ the prototype's free search (§3.4: every word must appear in processor
    name, description, version, year, notes text), applied on every render (the prototype loses it after
    a pick). Non-matching markers and stems at `.12`; nothing else changes. Search text in our feed =
    label, sub, baseline, `processingBaseline`, year of `ms`, `htmlToText(notesHtml)`.
-7. **Range memory.** The prototype remembers 1Y/2Y/All per mission. → *Recommended:* one range for the
+7. **Range memory.** The prototype remembers 1Y/2Y/All per mission. → _Recommended:_ one range for the
    page (it is a toolbar filter; switching mission keeps it). Alternative: per mission.
 8. **One view helper.** Mission change in the prototype leaves a stale detail open (bug). →
-   *Recommended:* every action that changes the view (mission, range, Overview, Escape, same marker,
+   _Recommended:_ every action that changes the view (mission, range, Overview, Escape, same marker,
    steps) goes through one helper, so the pick, the zoom window and the scroll position are always reset
    together: mission → clear pick, keep range and filters; range → clear pick; Baseline and search
    never clear the pick (they only fade markers; a picked release that becomes faded stays open).
-9. **KPIs.** → *Recommended:* real `now` (the prototype's fixed 24 Sep 2026 is a demo artefact);
+9. **KPIs.** → _Recommended:_ real `now` (the prototype's fixed 24 Sep 2026 is a demo artefact);
    date = `ms` (operational since, the date the timeline plots); Processors counts every lane
    (including those without releases); Releases counts all; Last year = `(now − 365 d, now]`;
    Latest = year of the latest release ≤ now, `—` if none; `—` for all four while loading. Use the shared
    KPI block; count-up only if Events/Acquisitions/DA have it (keep the block identical).
-10. **Satellite column.** → *Recommended:* follow the prototype: not sticky, no glow layers, no blend
+
+   **Applied in Session 1 (2026-10-25):** `now = Date.now()`; `yearStart = now − 365 * DAY`; last-year window is `r.ms > yearStart && r.ms <= now`; latest = max `r.ms` where `r.ms <= now`, then `getUTCFullYear()`, `—` if none. `—` for all four while `!ready`. Entrance animation: `<Reveal>` (global translateY 20px / 0.7s) instead of §2's `sbUp` keyframe (same opacity+translateY motion, IntersectionObserver trigger instead of page-load delay).
+
+10. **Satellite column.** → _Recommended:_ follow the prototype: not sticky, no glow layers, no blend
     mode, no float, no placeholder text; `drop-shadow(0 18px 40px rgba(0,0,0,.5))`; box 66 % of the
     column width (92 % under 420 px) × `clamp(220px, calc(57vh - 103px), 640px)`, centred, top ≈ 12 px
     under the toolbar; hidden (opacity 0, .5 s) in the detail view. **Check** that
     `/assets/img/satellites/s*_.png` have transparent backgrounds (the current `mix-blend-mode: screen`
     suggests black ones); if not, use the prototype cut-outs (`s1-cutout.webp` … `s5p-cutout.webp`,
     delivered with this file; ESA artist's impressions, alt text "Artist's impression of Sentinel-N").
-11. **Mission-change motion (§11).** → *Recommended:* build it, in its own session (Session 7) after
+11. **Mission-change motion (§11).** → _Recommended:_ build it, in its own session (Session 7) after
     everything else works, so it can be dropped if it costs too much: satellites and the timeline sheet
     rotate about the planet centre (1300 + 600·(n−1) ms, ease-in-out cubic), the outgoing sheet fades at
     1.4× its offset; the shared planet/sky turn only if our backdrop component already exposes a turn
     (check how Events/DA turn it). Until then: instant swap. Reduced motion: instant.
-12. **Overview ↔ detail motion (§10).** → *Recommended:* the prototype's: two 50 % areas, FLIP of the
+12. **Overview ↔ detail motion (§10).** → _Recommended:_ the prototype's: two 50 % areas, FLIP of the
     timeline column 720 ms `cubic-bezier(.2,.7,.2,1)`, detail fade 420 ms + slide from 56 px 640 ms
     after 180 ms, close = detail out first then layout back after 280 ms with the satellite column
     entering from −24 px (560 ms). Replaces the animated `grid-template-columns`.
-13. **Chart width.** → *Recommended:* the prototype's `max(600, 100 + 6 px × months)` (All ≈ 1054 px,
+13. **Chart width.** → _Recommended:_ the prototype's `max(600, 100 + 6 px × months)` (All ≈ 1054 px,
     scrolled to the end on load), unless the fixed 600 px was a stakeholder request — say so if it was.
-14. **Names column backdrop.** → *Recommended:* keep ours (the gradient starts under the axis at 42 px,
+14. **Names column backdrop.** → _Recommended:_ keep ours (the gradient starts under the axis at 42 px,
     so year/month labels scrolled under the names stay readable); colour from `--bg` instead of `#000`.
 15. **First-year label** (confirmed 2026-10-25): **follow the prototype** — the year of the first
     month drawn is always labelled (`x >= -1 && x < 95`, printed once, at `max(0, x)`), with **no room
@@ -710,9 +1318,9 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     scrolled to the end, so this shows only when scrolling all the way left. 1Y, 2Y and the zoom window
     never overlap (the next January is at least 10 % of the track away).
 16. **Marker motion.** The resolved prototype keeps only `opacity 240ms` (hover scale/ring snap) and no
-    version-label fade. → *Recommended:* follow the resolved prototype (as we did for DA's killed
+    version-label fade. → _Recommended:_ follow the resolved prototype (as we did for DA's killed
     hovers). Alternative: keep `transform .2s` for the hover scale.
-17. **Tooltip.** → *Recommended:* prototype frame, typography, colours (`.go #19E27A`), fade in and out,
+17. **Tooltip.** → _Recommended:_ prototype frame, typography, colours (`.go #19E27A`), fade in and out,
     placement (§8, with `skyBot = innerHeight − 12`), hidden on page scroll; **keep our rows**
     (Released + Operational since from the feed, the release's own satellites, Changes from the
     "Changes introduced" section) but put Changes **inline** beside its label as the prototype does,
@@ -724,35 +1332,47 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     - `Operational since:` = `ms` as `24 June 2025` (`longDate`, never the raw `Date.toString()` the
       live site prints);
     - `Impacted satellite(s):` = the release's satellites joined with `, ` (`S1A, S1C`).
-    The `Released:` row is removed from the detail (it stays in the hover card, Decision 17).
-    Check while doing it: the feed's dates are local midnight (`… 00:00:00 GMT+0200`), and the page
-    formats in UTC (`toISOString`, `timeZone: "UTC"`) — make sure a release on 24 June still shows
-    24 June (not 23) in the detail, the tooltip and on the axis.
+      The `Released:` row is removed from the detail (it stays in the hover card, Decision 17).
+      Check while doing it: the feed's dates are local midnight (`… 00:00:00 GMT+0200`), and the page
+      formats in UTC (`toISOString`, `timeZone: "UTC"`) — make sure a release on 24 June still shows
+      24 June (not 23) in the detail, the tooltip and on the axis.
 19. **Mission colour.** In the prototype it appears only on release-note `code` and on focus outlines.
-    → *Recommended:* `code` in the mission colour (S1 `#FF8F5E`, S2 `#4ADE80`, S3 `#6FA8FF`, S5P
+    → _Recommended:_ `code` in the mission colour (S1 `#FF8F5E`, S2 `#4ADE80`, S3 `#6FA8FF`, S5P
     `#A78BFA`) — reuse mission colour tokens if the codebase has them, else skip; focus outlines stay the
     shared accent.
-20. **Text shadow** on the timeline and detail text. → *Recommended:* do what DA did for its row-label
+20. **Text shadow** on the timeline and detail text. → _Recommended:_ do what DA did for its row-label
     shadow (check `availability.module.css`): if DA kept it in dark only, same here; light theme: none.
 21. **Prototype leftovers of the page's own planet.** The horizon mask (content fades out 56 px above a
     fixed line at ~83 % of the viewport), the `--below` padding and the scene-height adjustment. →
-    *Recommended:* not built; bottom spacing via `--sb-earth-h` as every page.
-22. **Responsive.** → *Recommended:* the prototype's: satellite stays on the left (40/60 ≤1080, 34/66
+    _Recommended:_ not built; bottom spacing via `--sb-earth-h` as every page.
+
+    **Applied in Session 1 (2026-10-25):** `.headArt + .container` now has `padding-bottom: calc(var(--sb-earth-h, 190px) + 32px)` (consolidated from the separate `.container` rule at file bottom). The duplicate bare `padding-bottom: 48px` on `.container` removed.
+
+22. **Responsive.** → _Recommended:_ the prototype's: satellite stays on the left (40/60 ≤1080, 34/66
     ≤640), detail under the timeline ≤1080; the toolbar wraps like Acquisitions/DA (match their narrow
     rules).
-23. **Description.** → *Recommended:* the §14 copy verbatim (stakeholders' text, as DA Decision 10),
+23. **Description.** → _Recommended:_ the §14 copy verbatim (stakeholders' text, as DA Decision 10),
     with the legend markers drawn like the timeline: Current baseline = filled `#3FCF7F` with glow,
     Superseded = hollow 1.5 px ring `#7D8792`; dot size the shared 8×8 (as DA). Open point for the
     stakeholders: the copy promises wheel zoom, drag and a detail "in the lower part of the screen".
-24. **Escape.** → *Recommended:* as Acquisitions: Escape closes the open dropdown, else the detail.
+
+    **Applied in Session 1 (2026-10-25):** Copy verbatim in `DESCRIPTION` constant. Legend uses `.dot-bl-current` (filled `var(--bl-current)` + glow via `color-mix`) and `.dot-bl-superseded` (hollow, `inset 0 0 0 1.5px var(--bl-past)`), both added to `src/styles/page-header.css`. Token colours differ from prototype hex (`--bl-current` = `#00e676` dark / `#0b754e` light; `--bl-past` = `#8b95a6` dark / `#636d79` light vs prototype `#3FCF7F` / `#7D8792`). Paragraph spacing 20 px via `.desc-in p { margin: 0 0 20px }` (prototype §14 says 22 px — accepted 2 px deviation, no inline styles).
+
+24. **Escape.** → _Recommended:_ as Acquisitions: Escape closes the open dropdown, else the detail.
 25. **Backdrop window.** Check the `page` index Events and DA pass to `SpaceBackdrop`; Processors is the
-    third window (prototype `PAGE = 2`), currently `1`. → *Recommended:* fix it to the third window.
-26. **Loading / error / empty states.** Not in the prototype. → *Recommended:* keep ours, restyled in
+    third window (prototype `PAGE = 2`), currently `1`. → _Recommended:_ fix it to the third window.
+
+    **Applied in Session 1 (2026-10-25):** `<SpaceBackdrop page={2} …>` in `processors.tsx`. Noticed: Events currently passes `page={1}` but should be `page={0}` (DA is `page={1}`); not fixed here (out of scope).
+
+26. **Loading / error / empty states.** Not in the prototype. → _Recommended:_ keep ours, restyled in
     the caption register (11px/600/.2em, Noto Sans — the "Try again" button is still in the mono font).
     Seen 2026-10-25: the page shows "Backend unreachable" because `useProcessors()` fetches from a
     backend that is not running, while the other pages read local mock data. Session 0 gives the page a
     local mock source first (Decision 29), so the error state only appears when it is really wanted.
-29. **Data source** (added 2026-10-25). → *Recommended:* the mock-ups read processors from **local
+
+    **Applied in Session 1 (2026-10-25):** `.status`, `.statusTitle`, `.retry` in `processors.module.css` — `font-family` → `var(--font-sans)`, `font-weight` → `600`. The retry border is kept. Decision text said "Try again button is still in mono font" — applied as written: corrected as a defect, not deviation. Font-size and letter-spacing unchanged (already correct).
+
+27. **Data source** (added 2026-10-25). → _Recommended:_ the mock-ups read processors from **local
     mock data by default**, as the other pages do, so the page works with no backend (locally and on the
     server where the designers review it). The API path stays available behind one switch (an env
     variable, or whatever switch the other pages already use). The mock has the feed's exact shape
@@ -771,25 +1391,41 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
 
     **§4 state → mock entry (derived from ROSTER + RELEASES, 2026-10-25):**
 
-    | §4 state | Processor · baseline · date |
-    |---|---|
-    | Current baseline | Every processor's last release, e.g. S1_L1L2 003.71 (2026-06-16), S3_OL2 OL_07.02 (2026-06-02), S5P_L1B 02.06 (2025-02-25) |
-    | Superseded | All non-last releases, e.g. S1_L1L2 003.40 (2022-09-06), 003.52 (2023-03-14), 003.61 (2024-06-11); S3_OL2 OL_06.10 (2023-05-16) |
-    | Empty lane (0 releases) | S3_SR2 — ROSTER entry, no RELEASES match |
+    | §4 state                      | Processor · baseline · date                                                                                                                                                                                                                                                                                                                                                                               |
+    | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | Current baseline              | Every processor's last release, e.g. S1_L1L2 003.71 (2026-06-16), S3_OL2 OL_07.02 (2026-06-02), S5P_L1B 02.06 (2025-02-25)                                                                                                                                                                                                                                                                                |
+    | Superseded                    | All non-last releases, e.g. S1_L1L2 003.40 (2022-09-06), 003.52 (2023-03-14), 003.61 (2024-06-11); S3_OL2 OL_06.10 (2023-05-16)                                                                                                                                                                                                                                                                           |
+    | Empty lane (0 releases)       | S3_SR2 — ROSTER entry, no RELEASES match                                                                                                                                                                                                                                                                                                                                                                  |
     | Several releases on same date | S3_OL1 OL_06.10 + S3_OL2 OL_06.10 + S3_L0 03.00: 2023-05-16; S3_OL1 OL_07.01 + S3_OL2 OL_07.01 + S3_OL1_RAC 07.01: 2024-09-24; S3_SL1 SL_07.00 + S3_SL2 07.00 + S3_SL2_LST SL_07.00 + S3_SL2_FRP 07.00: 2025-11-04; S3_SM2 + S3_SM2_LI + S3_SM2_SI 06.10: 2023-03-19; S3_SY2 + S3_SY2_AOD + S3_SY2_VGS + S3_SY2_VGP 06.20: 2023-06-05; S5P_L1B 02.06 + S5P_L2_NO2 02.06 + S5P_L2O3_OFFL 02.06: 2025-02-25 |
-    | > 12 lanes → 22 px rows | S3: 20 ROSTER entries |
-    | ≤ 8 lanes → 44 px rows | S1: 3 ROSTER entries |
-    | Release in last 365 days | S3_OL2 OL_07.02 (2026-06-02), S1_L1L2 003.71 (2026-06-16), S2_L0/L1/L2 06.05 (2026-02-04), S3_SR1 SR_07.00 (2026-01-21) |
-    | No future releases | Latest is S1_L1L2 003.71 on 2026-06-16 |
-    | Notes with `<ul><li>` items | S1_L1L2 003.71; S2_L2 06.05 |
-    | Empty notes | S1_SETAP 001.04; S2_L0 06.03; S3_L0 03.00; S3_OL1 OL_06.10; S3_OL2 OL_06.10; S3_SL1 SL_06.08; S3_SL2_LST SL_06.08; S3_SR1 SR_06.20; S3_SM2/SM2_LI/SM2_SI 06.10; S3_SY2/SY2_AOD/SY2_VGS/SY2_VGP 06.20; S5P_L1B 02.01; S5P_L2_NO2 02.04; S5P_L2O3_OFFL 02.04 |
-    | `releasedMs` absent | All entries without `release_date` (default) |
-    | `releasedMs` present | S1_L1L2 003.71 (`release_date: "2026-06-18"`); S3_OL2 OL_07.02 (`release_date: "2026-06-09"`); S5P_L1B 02.06 (`release_date: "2025-03-01"`) |
-    | `processingBaseline` absent | All entries without `processing_baseline` (default) |
-    | `processingBaseline` present | S1_SETAP 001.06 (`"S1_SETAP:001.06"`); S5P_L1B 02.06 (`"S5P_L1B:02.06"`) |
-27. **Satellites fading while the Mission list is open** (`.16`). → *Recommended:* skip: in our layout
-    the in-flow list pushes the satellite down with everything else, so nothing overlaps.
-28. **Theme.** → *Recommended:* values above are the dark theme; implement with the module's tokens
+    | > 12 lanes → 22 px rows       | S3: 20 ROSTER entries                                                                                                                                                                                                                                                                                                                                                                                     |
+    | ≤ 8 lanes → 44 px rows        | S1: 3 ROSTER entries                                                                                                                                                                                                                                                                                                                                                                                      |
+    | Release in last 365 days      | S3_OL2 OL_07.02 (2026-06-02), S1_L1L2 003.71 (2026-06-16), S2_L0/L1/L2 06.05 (2026-02-04), S3_SR1 SR_07.00 (2026-01-21)                                                                                                                                                                                                                                                                                   |
+    | No future releases            | Latest is S1_L1L2 003.71 on 2026-06-16                                                                                                                                                                                                                                                                                                                                                                    |
+    | Notes with `<ul><li>` items   | S1_L1L2 003.71; S2_L2 06.05                                                                                                                                                                                                                                                                                                                                                                               |
+    | Empty notes                   | S1_SETAP 001.04; S2_L0 06.03; S3_L0 03.00; S3_OL1 OL_06.10; S3_OL2 OL_06.10; S3_SL1 SL_06.08; S3_SL2_LST SL_06.08; S3_SR1 SR_06.20; S3_SM2/SM2_LI/SM2_SI 06.10; S3_SY2/SY2_AOD/SY2_VGS/SY2_VGP 06.20; S5P_L1B 02.01; S5P_L2_NO2 02.04; S5P_L2O3_OFFL 02.04                                                                                                                                                |
+    | `releasedMs` absent           | All entries without `release_date` (default)                                                                                                                                                                                                                                                                                                                                                              |
+    | `releasedMs` present          | S1_L1L2 003.71 (`release_date: "2026-06-18"`); S3_OL2 OL_07.02 (`release_date: "2026-06-09"`); S5P_L1B 02.06 (`release_date: "2025-03-01"`)                                                                                                                                                                                                                                                               |
+    | `processingBaseline` absent   | All entries without `processing_baseline` (default)                                                                                                                                                                                                                                                                                                                                                       |
+    | `processingBaseline` present  | S1_SETAP 001.06 (`"S1_SETAP:001.06"`); S5P_L1B 02.06 (`"S5P_L1B:02.06"`)                                                                                                                                                                                                                                                                                                                                  |
+
+28. **Theme.** → _Recommended:_ values above are the dark theme; implement with the module's tokens
     (`--text`, `--text-dim`, `--text-mute`, `--line`, `--line-strong`, `--accent`, `--bl-current`,
     `--bl-past`, `--bg`) and `color-mix` of `--text` for the white alphas, as the module does now; check
     that `--bl-current` = `#3FCF7F` and `--bl-past` = `#7D8792` in dark.
+
+    **Applied in Session 1 (2026-10-25):** … (leave as it is)
+
+    **Confirmed 2026-10-25 — option (b), the prototype's greens and greys on this page only.** Two NEW
+    tokens in `src/styles/tokens.css` (do not change `--ok`, `--bl-current` or `--bl-past`: the
+    version matrix uses them):
+    - `--pr-current`: dark `#3FCF7F`, light `#1F9D5C`
+    - `--pr-past`: dark `#7D8792`, light `#7D8792`
+    - `--pr-current-text` (tooltip "Current" and version text): dark `#19E27A`, light `#167A46`
+
+    Use them for: the module aliases `--tl-inforce: var(--pr-current)` and `--tl-past: var(--pr-past)`
+    (markers, ring, glow, version labels), the tooltip's `.go` text (`--pr-current-text`) and `.old`
+    text (`--text-dim`), the detail's "Current baseline" tag (`--pr-current`), and the Description
+    legend classes `.dot-bl-current` / `.dot-bl-superseded` in `page-header.css`. Glows use
+    `color-mix(in srgb, var(--pr-current) 45%, transparent)` (55% on the picked marker). Light values
+    were chosen for contrast on the light background: markers and rings ≥ 3:1, tooltip text ≥ 4.5:1.
+    Every other colour follows the recommendation above.

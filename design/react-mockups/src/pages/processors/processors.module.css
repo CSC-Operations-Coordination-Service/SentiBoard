@@ -3,101 +3,61 @@
 .container {
   position: relative;
   width: 100%;
-  padding-bottom: 48px;
+  padding-inline: clamp(18px, 4vw, 48px);
   background: var(--bg);
   overflow-x: hidden;
 }
 
-/* Content sits above the sky strip, which is the only layer with z-index. Without this the
-   absolutely positioned strip would paint over static content. Stacking stays at auto so the
+/* Content sits above SpaceBackdrop, which is the only layer with z-index. Without this the
+   absolutely positioned canvas would paint over static content. Stacking stays at auto so the
    dropdown menus (z-index 30) still overlay the page. */
 .container > * {
   position: relative;
 }
 
-/* Sky strip: a starfield tile repeated twice and translated by one tile, so the loop is seamless.
-   The tile is 1800px, a multiple of the 600px star cell, which keeps the pattern continuous at the
-   seam. It is decorative only and never receives pointer events. */
-.skyStrip {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.skyTrack {
-  position: absolute;
-  top: 0;
-  left: 0;
+/* -------------------- counters -------------------- */
+/* Flat KPI counts, centred as one group: value above caption, all in Noto Sans. Copied from
+   data-availability.module.css; entrance via the shared Reveal component (global.css). */
+.counters {
   display: flex;
-  width: 3600px;
-  height: 100%;
-  animation: skyDrift 150s linear infinite;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+  background: none;
+  border: 0;
 }
 
-.skyTile {
-  flex: none;
-  width: 1800px;
-  height: 100%;
-  background-image:
-    radial-gradient(1px 1px at 40px 60px, #fff 50%, transparent 100%),
-    radial-gradient(1px 1px at 180px 310px, #cfe6ff 50%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 330px 120px, #fff 50%, transparent 100%),
-    radial-gradient(1px 1px at 470px 240px, #fff 50%, transparent 100%),
-    radial-gradient(1px 1px at 540px 380px, #9fd8ea 50%, transparent 100%),
-    radial-gradient(1px 1px at 260px 20px, #fff 50%, transparent 100%);
-  background-size: 600px 420px;
-}
-
-@keyframes skyDrift {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-1800px);
-  }
-}
-
-/* Paused: every ambient motion stops where it is. The scan band is hidden rather than frozen so it
-   does not sit half-way across the timeline. */
-.paused .skyTrack,
-.paused .satelliteImage {
-  animation-play-state: paused;
-}
-
-
-/* Headline counts. A definition list so each label stays paired with its value. */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 56px 16px 44px;
+.counter {
+  width: clamp(140px, 16vw, 220px);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   text-align: center;
 }
 
-.stat {
-  padding: 0 12px;
+.counterK {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
 }
 
-.stat dd {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(36px, 4.2vw, 52px);
-  font-weight: 600;
+.counterV {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--text);
 }
 
-.stat dt {
-  margin-top: 12px;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+@media (max-width: 900px) {
+  .counter { width: clamp(130px, 44vw, 200px); }
 }
 
 /* Filter bar. Mission and Baseline are dropdowns, the range is text buttons, and search is an
@@ -425,15 +385,6 @@
   color: var(--text);
 }
 
-.caption {
-  margin: 0 0 12px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text);
-}
-
 .none {
   margin: 0;
   font-size: 12.5px;
@@ -441,16 +392,16 @@
   color: var(--text-mute);
 }
 
-/* Loading and error states of the timeline pane, in the pane's own mono / uppercase register. */
+/* Loading and error states — caption register: 11px/600/.2em/Noto Sans (Decision 26). */
 .status {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 0;
   padding: 24px 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text-mute);
@@ -491,9 +442,9 @@
 
 .statusTitle {
   margin: 0 0 8px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--crit);
@@ -512,9 +463,9 @@
   border: 1px solid var(--line-strong);
   background: transparent;
   color: var(--text);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
@@ -529,44 +480,6 @@
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-.captionRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.captionRow .caption {
-  margin: 0;
-}
-
-/* Pause/resume for the ambient motion. Sized and set in the same mono as the other controls. */
-.motionBtn {
-  padding: 4px 10px;
-  border: 1px solid var(--line-strong);
-  background: transparent;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.motionBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.motionBtn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* ==================== release timeline (SentiBoard.html#processors) ====================
    One chart, drawn with absolute positions like drawTimeline(): a 100px name column pinned to the
    left, and a track where every release is a dot on its own row with a hairline STEM rising to the
@@ -1358,7 +1271,6 @@
   }
 
   /* Ambient motion is removed outright, not just slowed. */
-  .skyTrack,
   .satelliteImage {
     animation: none;
   }
@@ -1368,20 +1280,7 @@
 
 .headArt + .container {
   margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding-top: 0;
   background: transparent;
-}
-
-.headArt + .container .stats {
-  padding-top: 22px;
-}
-
-/* the drifting stars fade in over the photo instead of starting on a hard edge */
-.headArt + .container .skyStrip {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
-}
-
-/* room under the content for the planet, as on Data Availability */
-.container {
   padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
 }

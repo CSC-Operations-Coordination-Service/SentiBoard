@@ -5,7 +5,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { PageHeader } from "@/components/ui";
+import { PageHeader, Reveal } from "@/components/ui";
 import { PROCESSORS_DESCRIPTION } from "@/data/copy";
 import {
   MISSION_ORDER,
@@ -17,8 +17,6 @@ import {
 } from "@/data/processor-releases";
 import s from "./processors.module.css";
 import {
-  AmbientSky,
-  MotionToggle,
   ambientRoot,
   useAmbientMotion,
 } from "@/components/ambient-motion";
@@ -39,23 +37,15 @@ const DESCRIPTION = (
   <>
     <p>{PROCESSORS_DESCRIPTION}</p>
     <p>Select a release on the timeline to read its baseline notes.</p>
-    <div className="desc-legend" style={{ marginTop: "16px" }}>
-      <span className="legend-item">
-        <span
-          className="dot"
-          style={{ backgroundColor: "var(--ok, #3fe096)" }}
-          aria-hidden="true"
-        />
-        Current Baseline
-      </span>
-      <span className="legend-item">
-        <span
-          className="dot"
-          style={{ backgroundColor: "var(--text-mute, #7a8696)" }}
-          aria-hidden="true"
-        />
+    <div className="desc-legend">
+      <div className="legend-item">
+        <span className="dot dot-bl-current" aria-hidden="true" />
+        Current baseline
+      </div>
+      <div className="legend-item">
+        <span className="dot dot-bl-superseded" aria-hidden="true" />
         Superseded
-      </span>
+      </div>
     </div>
   </>
 );
@@ -841,13 +831,7 @@ export default function Processors() {
   const [baselineFilter, setBaselineFilter] = useState<BaselineFilter>("all");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Selection | null>(null);
-  // Ambient motion (sky strip, satellite float, timeline scan). Reduced-motion users start paused;
-  // everyone can pause it, since the motion runs longer than five seconds.
-  const [motionPaused, setMotionPaused] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true,
-  );
+  const motion = useAmbientMotion();
 
   const processors = useProcessors();
   const allGroups = processors.data ?? NO_GROUPS;
@@ -913,21 +897,22 @@ export default function Processors() {
   }, [isDetail]);
 
   const missionReleases = missionGroups.flatMap((g) => g.releases);
-  const yearAgo = new Date(now);
-  yearAgo.setUTCFullYear(yearAgo.getUTCFullYear() - 1);
-  const latestMs = missionReleases.reduce((m, r) => Math.max(m, r.ms), 0);
+  const yearStart = now - 365 * DAY;
+  const latestMs = missionReleases
+    .filter((r) => r.ms <= now)
+    .reduce((m, r) => Math.max(m, r.ms), 0);
   // Until the data is in, the counts read "—" rather than a misleading 0.
   const stats = [
     { value: ready ? missionGroups.length : "—", label: "Processors" },
     { value: ready ? missionReleases.length : "—", label: "Releases" },
     {
       value: ready
-        ? missionReleases.filter((r) => r.ms >= yearAgo.getTime()).length
+        ? missionReleases.filter((r) => r.ms > yearStart && r.ms <= now).length
         : "—",
       label: "Released in the last year",
     },
     {
-      value: latestMs ? new Date(latestMs).getUTCFullYear() : "—",
+      value: ready ? (latestMs ? new Date(latestMs).getUTCFullYear() : "—") : "—",
       label: "Latest release",
     },
   ];
@@ -960,25 +945,18 @@ export default function Processors() {
         />
       </div>
 
-      <section className={`${s.container} ${motionPaused ? s.paused : ""}`}>
-        <SpaceBackdrop page={1} paused={motionPaused} />
-        {/* Decorative starfield that loops behind the page. Purely visual, so it is hidden from AT. */}
-        <div className={s.skyStrip} aria-hidden="true">
-          <div className={s.skyTrack}>
-            <div className={s.skyTile} />
-            <div className={s.skyTile} />
-          </div>
-        </div>
+      <section className={ambientRoot(motion.paused, s.container)}>
+        <SpaceBackdrop page={2} paused={motion.paused} />
 
         {/* Headline counts for the selected mission */}
-        <dl className={s.stats}>
+        <Reveal className={s.counters}>
           {stats.map((st) => (
-            <div key={st.label} className={s.stat}>
-              <dt>{st.label}</dt>
-              <dd>{st.value}</dd>
+            <div key={st.label} className={s.counter}>
+              <span className={s.counterV}>{st.value}</span>
+              <span className={s.counterK}>{st.label}</span>
             </div>
           ))}
-        </dl>
+        </Reveal>
 
         {/* Filter bar: mission menu, timeline window, baseline menu, search */}
         <div className={s.filters}>
