@@ -753,20 +753,16 @@ select.control {
 }
 
 /* ---------- reference filter dropdowns (.fdrop / .ftype / .fmis / .fsat) ----------
-   The trigger head lives in the 49px row. The body is position:absolute so it overlays
-   the calendar without pushing other fields or changing the row height. */
+   The trigger head sits in the 49px bar. The body opens IN FLOW below it, pushing the
+   calendar down. The 1px hairline is on the whole .fdrop so it sits under the open list.
+   Hairline colour does not change on open. */
 .fdrop {
   position: relative;
-  z-index: 99;
+  display: flex;
+  flex-direction: column;
   width: 200px;
-  height: 49px;
   box-sizing: border-box;
   border-bottom: 1px solid color-mix(in srgb, var(--mf-text) 30%, transparent);
-  transition: border-color 200ms ease;
-}
-
-.fdropOpen {
-  border-bottom-color: var(--mf-signal);
 }
 
 .fdropHead {
@@ -818,29 +814,26 @@ select.control {
   transform: rotate(180deg);
 }
 
-/* body: absolutely positioned so it never shifts the 49px toolbar row;
-   z-index is inherited from .fdrop's stacking context (z:99 within inner) */
+/* body opens in flow; height animated with grid-template-rows 0fr → 1fr */
 .fdropBody {
-  position: absolute;
-  left: 0;
-  top: 49px;
-  min-width: 100%;
-  max-height: 0;
-  overflow: hidden;
-  background: var(--mf-bg);
-  border: 1px solid color-mix(in srgb, var(--mf-text) 20%, transparent);
-  border-top: none;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
-  transition: max-height 480ms cubic-bezier(.2,.7,.2,1);
-  box-sizing: border-box;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 480ms cubic-bezier(.2,.7,.2,1);
 }
 
 .fdropOpen .fdropBody {
-  max-height: 400px;
+  grid-template-rows: 1fr;
 }
 
 .fdropInner {
-  padding-bottom: 14px;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+  transition: padding 480ms cubic-bezier(.2,.7,.2,1);
+}
+
+.fdropOpen .fdropInner {
+  padding: 6px 0 14px;
 }
 
 /* Event type: icon + label in the type colour. Off state: grey + reduced opacity. */
@@ -930,20 +923,16 @@ select.control {
   .fdrop {
     width: 100%;
   }
-
-  .fdropBody {
-    width: 100%;
-  }
 }
 
-/* Overlay rendered when any dropdown is open: intercepts outside clicks to close the dropdown
-   without the click reaching the calendar. z:98 within inner's stacking context (z:1 in root),
-   so it sits above the calendar (z:1 within inner) but below monthBar (z:99 within inner). */
-.fdropOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 98;
-  cursor: default;
+@media (prefers-reduced-motion: reduce) {
+  .fdropBody {
+    transition: none;
+  }
+
+  .fdropInner {
+    transition: none;
+  }
 }
 
 /* ≥1140px: both monthNav and barFilters fit on one line — enforce it so flex-wrap cannot
@@ -959,10 +948,6 @@ select.control {
 @media (max-width: 1259px) {
   .fdrop {
     width: 170px;
-  }
-
-  .fdropBody {
-    min-width: 170px;
   }
 
   .inline {

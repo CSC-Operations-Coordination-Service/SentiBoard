@@ -705,3 +705,22 @@ bottom padding plus a fixed spacer after it, before the section ends and the foo
 </section>
 <footer class="sb-footer"> … </footer>
 ```
+
+---
+
+## Applied — 2026-10-26 (DEVOCS-219)
+
+Filter dropdowns converted from absolute overlay to in-flow height animation
+(`events.tsx`, `events.module.css`):
+
+- `.fdrop` — no fixed height; `display:flex; flex-direction:column`; hairline
+  `color-mix(in srgb, var(--mf-text) 30%, transparent)` does not change on open.
+- `.fdropBody` — `position:static`; `display:grid; grid-template-rows:0fr→1fr`;
+  480 ms `cubic-bezier(.2,.7,.2,1)`. No background, border, or shadow.
+- `.fdropInner` — `min-height:0; overflow:hidden; padding:6px 0 14px`.
+- `.fdropOverlay` removed; replaced with a `document` `pointerdown` listener
+  (stops inside the `.fdrop` via `onPointerDown` propagation stop).
+- Escape closes the open list and returns focus to its trigger head.
+- Closed body carries `inert` so its contents are not focusable.
+- `@media (prefers-reduced-motion:reduce)` suppresses the height transition.
+- `.monthBar` `align-items:flex-start` unchanged — row grows down naturally.

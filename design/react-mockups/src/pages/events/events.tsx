@@ -481,27 +481,30 @@ function shortSat(name: string): string {
 }
 
 /** A single collapsible filter row: caption + value in the head, animated body below it.
- *  The body is absolutely positioned so it overlays the calendar without changing the row height.
- *  Clicks inside are stopped at this element so they cannot fall through to a day cell below. */
+ *  The body opens in the page flow, pushing the calendar down.
+ *  pointerdown is stopped at this element so the document outside-click listener cannot fire. */
 function FilterDrop({
   label,
   val,
   open,
   onToggle,
+  headRef,
   children,
 }: {
   label: string;
   val: string;
   open: boolean;
   onToggle: () => void;
+  headRef?: React.RefObject<HTMLButtonElement>;
   children: React.ReactNode;
 }) {
   return (
     <div
       className={`${s.fdrop} ${open ? s.fdropOpen : ""}`}
-      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
     >
       <button
+        ref={headRef}
         type="button"
         className={s.fdropHead}
         onClick={onToggle}
@@ -513,7 +516,7 @@ function FilterDrop({
           <path d="M3 4.5l3 3 3-3" />
         </svg>
       </button>
-      <div className={s.fdropBody}>
+      <div className={s.fdropBody} {...(!open ? { inert: '' } as React.HTMLAttributes<HTMLDivElement> : {})}>
         <div className={s.fdropInner}>{children}</div>
       </div>
     </div>
@@ -629,6 +632,10 @@ export default function EventsManifest() {
     filters.offMissions.size > 0 ||
     filters.offSats.size > 0 ||
     filters.query !== "";
+
+  const typesHeadRef = useRef<HTMLButtonElement>(null);
+  const missionsHeadRef = useRef<HTMLButtonElement>(null);
+  const satsHeadRef = useRef<HTMLButtonElement>(null);
 
   const gridRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState<ZoomGeom | null>(null); // mounted while the stage exists
@@ -774,6 +781,28 @@ export default function EventsManifest() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [openDay, close]);
+
+  // Close open filter dropdown on outside pointerdown (calendar cells still receive their click).
+  useEffect(() => {
+    if (!openDrop) return;
+    const onPointerDown = () => setOpenDrop(null);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [openDrop]);
+
+  // Escape closes the open filter dropdown and returns focus to its trigger.
+  useEffect(() => {
+    if (!openDrop) return;
+    const headRefs = { types: typesHeadRef, missions: missionsHeadRef, sats: satsHeadRef };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        headRefs[openDrop]?.current?.focus();
+        setOpenDrop(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [openDrop]);
 
   // While the drawer is open the page behind it must not move at all. Overflow is cleared on the
   // root and the body, with the scrollbar's width padded back in so the layout does not shift. Wheel
@@ -938,13 +967,13 @@ export default function EventsManifest() {
             </div>
 
             <div className={s.barFilters}>
-              {openDrop && <div className={s.fdropOverlay} onClick={() => setOpenDrop(null)} />}
               {/* Event type — icon + uppercase label in the type colour */}
               <FilterDrop
                 label="Event type"
                 val={typeVal}
                 open={openDrop === "types"}
                 onToggle={() => toggleDrop("types")}
+                headRef={typesHeadRef}
               >
                 {CATEGORIES.map((c) => {
                   const on = !filters.offTypes.has(c);
@@ -971,6 +1000,7 @@ export default function EventsManifest() {
                 val={misVal}
                 open={openDrop === "missions"}
                 onToggle={() => toggleDrop("missions")}
+                headRef={missionsHeadRef}
               >
                 {MISSION_NAMES.map((m) => {
                   const on = !filters.offMissions.has(m);
@@ -994,6 +1024,7 @@ export default function EventsManifest() {
                 val={satVal}
                 open={openDrop === "sats"}
                 onToggle={() => toggleDrop("sats")}
+                headRef={satsHeadRef}
               >
                 <div className={s.fsatRow}>
                   {visibleSats.map((sat) => {
