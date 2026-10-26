@@ -11,6 +11,16 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   `>=3.3.0,<4`). 3.3.0 is the first release with `schema_adapter.ApiList` and
   `list_documents(size=)`. Its tag CI is green; that the package is on Nexus is confirmed by
   that run, not checked here.
+- Both workflows read their secrets from OpenBao (`secrets-source: openbao`, role `ci-sentiboard`,
+  `ci-sentiboard-release` on a tag), not from GitHub secrets: the repository cannot rely on the
+  organisation secrets (the Docker login got `Forbidden`). They run on `containerized` and grant
+  `id-token: write`. Each job's `openbao-tools` lists every tool it reads (`nexus`, plus
+  `sonarqube`, `dependency-track`, `dockerhub` where used); a tool left out is read from
+  `ocs/ci/shared`, which the role cannot read.
+- The roles were applied in prod on 2026-10-23 (see the platform repository's deploy runbook).
+  Not verified: a login from this repository with them, that `devsecops/ci/{dev,prod}/{nexus,
+  sonarqube,dependency-track,dockerhub}` hold values, and that the Nexus in `devsecops/ci/dev/nexus`
+  is the one that serves maas-model's dev builds.
 - Not verified here: the Nexus install itself, and the backend CI run on this branch.
 
 ## Frontend — still to port (2026-10-21)

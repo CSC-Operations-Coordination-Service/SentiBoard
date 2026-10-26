@@ -1,7 +1,8 @@
 name: sentiboard-backend CI/CD
 
 # Thin caller for the FastAPI backend, wired like maas-engine to the reusable building blocks
-# of the workflow-catalog repo:
+# of the workflow-catalog repo. Every secret (Nexus, SonarQube, Dependency-Track, Docker Hub) is
+# read from OpenBao, role ci-sentiboard (ci-sentiboard-release on a tag):
 #   python-ci.yml     — test (pytest + SonarQube) -> build (wheel/sdist) -> publish to Nexus,
 #                       every package through the Nexus PyPI group (nexus-context)
 #   sbom.yml          — package CycloneDX SBOM -> Dependency-Track
@@ -38,10 +39,18 @@ jobs:
   ci:
     permissions:
       contents: read
+      # secrets-source: openbao logs in with the job's OIDC token
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/python-ci.yml@develop
     with:
       project-dir: sentiboard-backend
       python-version: "3.11"
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus sonarqube
     secrets: inherit
 
   # Package SBOM -> Dependency-Track project "sentiboard-backend".
@@ -50,8 +59,15 @@ jobs:
     needs: ci
     permissions:
       contents: read
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/sbom.yml@develop
     with:
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus dependency-track
       project-dir: sentiboard-backend
       project-name: sentiboard-backend
       project-version: ${{ needs.ci.outputs.version }}
@@ -64,8 +80,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/docker-build.yml@develop
     with:
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus dockerhub dependency-track
       image-name: sentiboard-backend
       context: sentiboard-backend
       dockerfile: sentiboard-backend/Dockerfile.prod

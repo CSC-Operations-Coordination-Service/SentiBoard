@@ -1,7 +1,7 @@
 name: sentiboard-frontend CI
 
 # Thin caller for the Next.js frontend, wired to the reusable building blocks of the
-# workflow-catalog repo:
+# workflow-catalog repo. Every secret (Nexus, Docker Hub) is read from OpenBao, role ci-sentiboard:
 #   node-workflow.yml — install -> lint -> build -> test, every package through the Nexus npm proxy
 #   docker-build.yml  — production image (sentiboard-frontend/Dockerfile), npm through the same
 #                       proxy, pushed to the Nexus Docker registry
@@ -35,10 +35,18 @@ jobs:
   frontend:
     permissions:
       contents: read
+      # secrets-source: openbao logs in with the job's OIDC token
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/node-workflow.yml@develop
     with:
       working-directory: sentiboard-frontend
       node-version: "22"
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus
       # The runner has no direct internet access: npm (and so pnpm) goes through the Nexus npm proxy.
       use-nexus-registry: true
       # The project uses pnpm (packageManager in package.json). It is installed with npm rather
@@ -58,8 +66,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/docker-build.yml@develop
     with:
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus dockerhub
       image-name: sentiboard-frontend
       context: sentiboard-frontend
       dockerfile: sentiboard-frontend/Dockerfile
