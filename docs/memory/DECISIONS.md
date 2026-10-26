@@ -411,3 +411,43 @@ count and the day summary header count datatakes classified as LOST (`classifyDa
 mean completeness < 10 %). This matches the "Lost datatakes" KPI, which uses `isDatatakeLost`
 from `adapter.ts` (same classification). The prior code used `dt.noData` (all levels null),
 which was inconsistent.
+
+## 2026-10-26 — Filter dropdowns open in page flow, pushing the calendar down
+
+**Context.** The Event type / Mission / Satellite dropdowns were `position: absolute`, opening as
+an overlay above the calendar. The prototype (events-prototype-ref.md §Filters, acquisitions
+prototype §3) opens them in flow so the calendar shifts down beneath the open list.
+**Decision.**
+- `.fdrop` gains `display: flex; flex-direction: column`; the 1px hairline colour does not
+  change when open (removed `.fdropOpen { border-bottom-color }` override).
+- `.fdropBody` becomes `display: grid; grid-template-rows: 0fr → 1fr` (480ms cubic-bezier
+  (.2,.7,.2,1)); removed `position: absolute`, background, border and shadow.
+- `.fdropInner` gets `min-height: 0; overflow: hidden`; padding (`6px 0 14px`) only on
+  `.fdropOpen .fdropInner`, with a matching `padding` transition so it moves with the height.
+  Closed bodies carry `inert` so their contents are not focusable.
+- Reduced motion: both `fdropBody` and `fdropInner` transitions suppressed.
+- `.fdropOverlay` (fixed z-98 element) removed; replaced with a `document.pointerdown` listener
+  that checks `el.contains(target)` — outside clicks close the active filter without swallowing
+  the subsequent click on the calendar.
+**Consequences.** Opening a filter pushes the calendar down; closing it restores the layout.
+Calendar interactions work normally immediately after a filter closes.
+
+## 2026-10-26 — Filter dropdowns: replaced inert with CSS visibility to fix React 19 hydration mismatch
+
+**Context.** After the previous session added `inert={openFilter !== "<key>"}` to the three
+`.fdropBody` divs, a hydration warning appeared: the server HTML had `inert=""` on all three
+(all closed at startup) but the client render did not. `openFilter` starts as `useState(null)` —
+no URL, window or effect involved, so both sides agree on its value. The root cause is React 19:
+it takes internal ownership of the `inert` attribute (used by React itself for Suspense
+boundaries) and the client-side reconciler silently strips user-authored `inert` on elements it
+doesn't manage with it, while the server serializer writes it verbatim, producing the mismatch.
+**Decision.** Removed `inert` from all three `.fdropBody` divs (Explorer.tsx lines 895/938/980).
+Focusability of closed lists is enforced in CSS instead: `.fdropInner` gets `visibility: hidden`
+and a `transition: … visibility 0s linear 480ms` (delay equals the height animation so the
+element stays visible during close). `.fdropOpen .fdropInner` sets `visibility: visible` with
+`transition-delay: 0s` so it reveals immediately on open. Reduced motion: transition suppressed.
+Processors Explorer (tweenTarget inert, Session 3c) is unaffected: that element only mounts when
+`tweenTarget !== null`, which never happens at SSR time, so no mismatch.
+**Consequences.** No hydration warning. Closed filter contents are hidden (not focusable via
+screen reader virtual cursor either, since `visibility: hidden` removes descendants from the
+accessibility tree). The open/close animation is unchanged.

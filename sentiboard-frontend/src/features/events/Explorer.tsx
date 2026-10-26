@@ -464,6 +464,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   // Filter accordion open state
   const [openFilter, setOpenFilter] = useState<"type" | "mission" | "satellite" | null>(null);
   const filterBtnRefs = useRef<Partial<Record<"type" | "mission" | "satellite", HTMLButtonElement | null>>>({});
+  const fdropRefs = useRef<Partial<Record<"type" | "mission" | "satellite", HTMLDivElement | null>>>({});
 
   // Navigate: update local state AND URL
   const navigate = useCallback(
@@ -630,6 +631,17 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [openDay]);
+
+  // Close open filter on outside pointerdown (lets subsequent calendar clicks through normally)
+  useEffect(() => {
+    if (openFilter === null) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const el = fdropRefs.current[openFilter];
+      if (el && !el.contains(e.target as Node)) setOpenFilter(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [openFilter]);
 
   // Escape closes open filter first, then drawer
   useEffect(() => {
@@ -864,21 +876,10 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
           <div className={s.barFilters}>
 
-            {/* Invisible overlay: intercepts outside-clicks when a dropdown is open, preventing
-                them from reaching calendar dots. Sits above the calendar (z 98) but below the
-                monthBar (z 99), which contains the fdrop elements. */}
-            {openFilter && (
-              <div
-                className={s.fdropOverlay}
-                onClick={() => setOpenFilter(null)}
-                aria-hidden
-              />
-            )}
-
             {/* Event type fdrop — multi-select toggle, no "All" item */}
             <div
               className={`${s.fdrop} ${openFilter === "type" ? s.fdropOpen : ""}`}
-              onClick={(e) => e.stopPropagation()}
+              ref={(el) => { fdropRefs.current["type"] = el; }}
             >
               <button
                 type="button"
@@ -921,7 +922,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             {/* Mission fdrop — multi-select toggle */}
             <div
               className={`${s.fdrop} ${openFilter === "mission" ? s.fdropOpen : ""}`}
-              onClick={(e) => e.stopPropagation()}
+              ref={(el) => { fdropRefs.current["mission"] = el; }}
             >
               <button
                 type="button"
@@ -961,7 +962,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             {/* Satellite fdrop — multi-select toggle, codes in wrapping row */}
             <div
               className={`${s.fdrop} ${openFilter === "satellite" ? s.fdropOpen : ""} ${satelliteDisabled ? s.fdropDisabled : ""}`}
-              onClick={(e) => e.stopPropagation()}
+              ref={(el) => { fdropRefs.current["satellite"] = el; }}
             >
               <button
                 type="button"
