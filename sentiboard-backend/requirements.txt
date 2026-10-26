@@ -1,6 +1,6 @@
-# maas-model brings opensearch-py; [api] adds pydantic + fastapi.
-# Pinned to a commit: tag 3.0.0 predates the id/_id fix and list pagination.
-maas-model[api] @ git+https://github.com/CSC-Operations-Coordination-Service/maas-model.git@b1df94e37a068835585befcf5027eb0c213ff5ec
+# maas-model brings opensearch-py; [api] adds pydantic, fastapi and ApiDate/ApiList.
+# 3.3.0 is the first release with schema_adapter.ApiList and list_documents(size=).
+maas-model[api]==3.3.0
 uvicorn==0.53.0
 # bson reader for the Config Tools Mongo dump (migrate_processors.py)
 pymongo==4.15.3

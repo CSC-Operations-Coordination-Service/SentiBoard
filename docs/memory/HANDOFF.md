@@ -2,6 +2,17 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## CI — backend on maas-model 3.3.0 (2026-10-26)
+
+- Both CI workflows (`.github/workflows/frontend-ci.yml`, `backend-ci.yml`) install every package
+  through the Nexus proxies and push to Nexus. The backend image installs the wheel that
+  `python-ci.yml` built, with its dependencies from the Nexus PyPI group.
+- The backend pins `maas-model[api]==3.3.0` (`requirements.txt`; the `setup.cfg` bound is
+  `>=3.3.0,<4`). 3.3.0 is the first release with `schema_adapter.ApiList` and
+  `list_documents(size=)`. Its tag CI is green; that the package is on Nexus is confirmed by
+  that run, not checked here.
+- Not verified here: the Nexus install itself, and the backend CI run on this branch.
+
 ## Frontend — still to port (2026-10-21)
 
 - Only the shell and `/processors` are ported. Placeholders ("coming soon", noindex, not in the
@@ -48,9 +59,9 @@ From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier fi
 
 - **500 on null arrays.** Fixed in code on `feat/hinted-templates-generated-schemas`: `target_ipfs`
   and `satellite_units` are `ApiList` (a null reads as `[]`), set by the `array` hint in the
-  processor template. Live only after the maas-model release that has `ApiList` is pinned (see the
-  CI blocker above). Then check that `GET /processor/` returns 200 for the records with null lists
-  (`target_ipfs`: 5 records, `satellite_units`: 3 records).
+  processor template. maas-model 3.3.0 has `ApiList` and is pinned in `requirements.txt`, so this
+  is live once the backend is deployed. Then check that `GET /processor/` returns 200 for the records
+  with null lists (`target_ipfs`: 5 records, `satellite_units`: 3 records).
 - **Literal `"undefined"` versions.** 3 `target_ipfs` values carry the literal `undefined` as the
   version (e.g. `S1_L1L2:undefined`). The adapter treats it as "no version" and falls back to
   `processing_baseline`.
