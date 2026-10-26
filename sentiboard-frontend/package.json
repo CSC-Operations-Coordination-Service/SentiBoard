@@ -10,6 +10,7 @@
     "type-check": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "gen:api": "openapi-typescript api/openapi.json -o src/lib/api/schema.d.ts",
     "gen:api:refresh": "curl -fsS \"${BACKEND_URL:-http://localhost:8000}/openapi.json\" -o api/openapi.json.tmp && mv api/openapi.json.tmp api/openapi.json && pnpm gen:api",
     "postinstall": "pnpm gen:api"
@@ -28,6 +29,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "5.0.5",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "openapi-typescript": "^7.13.0",
