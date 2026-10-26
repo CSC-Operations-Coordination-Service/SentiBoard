@@ -36,6 +36,9 @@ export interface ReleaseRecord {
   releasedMs?: number;
   /** Whether this is the processor's baseline in force (the adapter's current-baseline rule). */
   isCurrent: boolean;
+  /** Precomputed lowercase search haystack: label, sub, baseline, processingBaseline, year of ms,
+   *  and notes text with tags stripped. All-words AND matching in ReleaseTimeline. */
+  searchText: string;
 }
 
 /** Release notes by ReleaseRecord.notesId, SANITIZED on the server (src/lib/sanitize-html.ts). */
@@ -94,9 +97,9 @@ export function ipfLabel(ipf: string): string {
   return ipf.replace(/^S(?:1|2|3|5P)_/, "");
 }
 
-/** "S1 SAR L1/L2" → "SAR L1/L2": the lane names drop the mission prefix the page already shows. */
+/** "S1 SAR L1/L2" → "SAR L1/L2", "S2 MSI L1" → "L1": drops mission prefix then MSI/TROPOMI. */
 export function laneName(label: string): string {
-  return label.replace(/^S(?:1|2|3|5P)\s+/, "");
+  return label.replace(/^S(?:1|2|3|5P)\s+/, "").replace(/^(TROPOMI|MSI)\s+/, "");
 }
 
 /** "5 February 2026" */

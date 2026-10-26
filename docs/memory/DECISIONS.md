@@ -103,6 +103,7 @@ bottom of the window ("entry 0%"), 1 at "cover 25%" — as inline `translate: 0 
 `filter: opacity(p)` on the lane's elements (name, hairline, stems, markers, version labels). These
 compose with the elements' own `transform` and `opacity` states and do not affect layout. At p = 1
 both properties are removed. No React state, no re-render on scroll.
+
 - **Accepted consequence (chosen by the repo owner over "complete when fully inside"):** as in the
   prototype, a lane reaches full visibility about a quarter of the window above its bottom edge,
   so lanes in the bottom ~25% of the window are part-faded while they sit there.
@@ -181,6 +182,7 @@ Metrics (Events / Datatakes / Lost / Satellites) count only the shown events.
 inconsistent status classifications and a "Lost datatakes" metric that counted any level < 100 %
 (matching no legacy metric).
 **Decision.** One rule, applied everywhere from a single location (`event-types.tsx`):
+
 - `meanCompleteness(dt)` returns the arithmetic mean of the non-null levels (L0, L1, L2), or
   `null` when all are null.
 - `classifyDatatake(dt)` classifies one datatake: ACQUIRED (mean ≥ 90), PARTIAL (10 ≤ mean < 90),
@@ -190,11 +192,11 @@ inconsistent status classifications and a "Lost datatakes" metric that counted a
 - `isFullyRecovered(datatakes)` in `adapter.ts` uses `classifyDatatake`: at least one datatake
   with data, and every datatake with data is ACQUIRED.
 - "Lost datatakes" metric counts datatakes with LOST status (mean < 10 %).
-All four call sites (drawer row, impact dot, fully-recovered filter, metrics) import from
-`event-types.tsx`; nothing computes completeness or status locally.
-**Consequences.** A datatake with e.g. L0 = 100, L1 = 80, L2 = null has mean 90 → ACQUIRED and
-counts as fully recovered. This differs from a per-level threshold. The mean better reflects
-overall throughput rather than the worst single processing level.
+  All four call sites (drawer row, impact dot, fully-recovered filter, metrics) import from
+  `event-types.tsx`; nothing computes completeness or status locally.
+  **Consequences.** A datatake with e.g. L0 = 100, L1 = 80, L2 = null has mean 90 → ACQUIRED and
+  counts as fully recovered. This differs from a per-level threshold. The mean better reflects
+  overall throughput rather than the worst single processing level.
 
 ## 2026-10-23 — Events: fully-recovered events hidden before EventCards
 
@@ -207,7 +209,7 @@ inconsistent with the legacy hide behaviour.
 (non-`noData`) datatake exists and every real datatake has all non-null levels ≥ 90 %. Events that
 pass this check are excluded from `adaptEvents()` before `EventCard[]` or `dayEvents` are built —
 the calendar, drawer and all metrics never see them. Events with zero datatakes or with only noData
-datatakes are *not* considered fully recovered and are kept. The excluded count is logged once per
+datatakes are _not_ considered fully recovered and are kept. The excluded count is logged once per
 load via `console.info("[events] excluded N fully-recovered events (all datatakes ≥ 90 %)")`.
 **Threshold rationale.** 90 % matches the threshold used by `classifyImpact` / `classifyDatatake`
 to classify a datatake as "spared" (ACQUIRED). An event is fully recovered when all its datatakes
@@ -232,6 +234,7 @@ not under automated test (see HANDOFF.md).
 Applied MOCK's `processors.module.css` with the following deviations from the prototype reference:
 
 **Kept for now (Session 3a will update when ReleaseTimeline is ported):**
+
 - `.tip` / `.tipBelow` / `@keyframes tipIn` — REAL's `ReleaseTimeline` positions the tooltip with
   `transform:translate(-50%,-100%)` and uses `animation:tipIn` for its entrance, not the MOCK's
   `opacity:0 + .tipOn` toggle. Replacing the rule would hide every tooltip until `tipOn` is added
@@ -239,30 +242,92 @@ Applied MOCK's `processors.module.css` with the following deviations from the pr
 - `.ttWide` — used by `ReleaseTimeline` for the "Changes" row in the tooltip; not present in MOCK.
 
 **Tokens added to `tokens.css`** (dark + light):
-  `--pr-current`, `--pr-past`, `--pr-current-text`, `--pr-mis-1/2/3/5P` (dark only).
-  Values match the MOCK exactly.
+`--pr-current`, `--pr-past`, `--pr-current-text`, `--pr-mis-1/2/3/5P` (dark only).
+Values match the MOCK exactly.
 
 **`page-header.css`:** added `.dot-bl-current` and `.dot-bl-superseded` using the new tokens.
 
 **Satellite images:** copied `s1/s2/s3/s5p.webp` from the mock branch into
-  `public/assets/img/satellites/`; REAL's `.png` variants (`s1_/s2_/s3_/s5_`) are left in place
-  (nothing references them now).
+`public/assets/img/satellites/`; REAL's `.png` variants (`s1_/s2_/s3_/s5_`) are left in place
+(nothing references them now).
 
 **`FilterDropdown`:** kept `<details>/<summary>` for the no-JS fallback. Applied MOCK's `fdrop*`
-  CSS classes. Open/close animation uses `details[open] .fdropBody { grid-template-rows: 1fr }`
-  instead of a JS-toggled class, so it works with and without JS. Closing animation is instant
-  (native `<details>`) rather than 420 ms — acceptable for now.
+CSS classes. Open/close animation uses `details[open] .fdropBody { grid-template-rows: 1fr }`
+instead of a JS-toggled class, so it works with and without JS. Closing animation is instant
+(native `<details>`) rather than 420 ms — acceptable for now.
 
 **Escape handler:** single handler in `Explorer` (the own handler in `FilterDropdown` is removed).
-  On Escape: closes the first open `<details>` and refocuses its `<summary>`; else closes the
-  detail pane.
+On Escape: closes the first open `<details>` and refocuses its `<summary>`; else closes the
+detail pane.
 
 **`Reveal`:** implemented as a local function in `Explorer.tsx` using `IntersectionObserver` and
-  the existing global `.reveal` / `.reveal.in` CSS classes, since no shared `Reveal` component
-  exists in REAL.
+the existing global `.reveal` / `.reveal.in` CSS classes, since no shared `Reveal` component
+exists in REAL.
 
 **KPI counters:** changed to MOCK's counters block (`b.counterV` over `span.counterK`) wrapped in
-  `Reveal`. Formulas: last year = `r.ms > (now − 365 d)`, latest = year of `max(r.ms ≤ now)`.
+`Reveal`. Formulas: last year = `r.ms > (now − 365 d)`, latest = year of `max(r.ms ≤ now)`.
 
 **`SpaceBackdrop`:** changed to `page={2}` (Processors window); removed `paused` prop and sky
-  strip; `turn` (orbit rotation) is out of scope for this session.
+strip; `turn` (orbit rotation) is out of scope for this session.
+
+## 2026-10-26 — Real-data Session 3a: Decisions 13–17 applied to REAL; scroll-linked lane reveal removed
+
+### Decisions 13, 14, 15 (chart, names, axis)
+
+Applied as specified in the prototype ref §16:
+
+- **Decision 13 (§6.1):** `buildAxis()` returns `minWidth: Math.max(600, Math.round(100 + 6 * months))`
+  instead of the hardcoded 600. Width follows the animated window each frame.
+- **Decision 14 (§6.3):** `laneName()` in `model.ts` now also strips a leading `MSI ` or `TROPOMI `
+  prefix after the mission prefix: `"S2 MSI L1" → "L1"`, `"S5P TROPOMI L2" → "L2"`.
+- **Decision 15 (§6.4):** `leadRoom` removed from `buildAxis()`; the first year in view is always
+  labelled. "2013" may overprint "2014" in All at the far-left scroll edge — accepted.
+
+### Decision 6 (§3.4) — searchText precomputed in the adapter
+
+**Context.** The prototype computes the search haystack client-side in a `useMemo` per render.
+**Decision.** `searchText` is precomputed in `adapter.ts` once per release and added to
+`ReleaseRecord`. Content: `[label, sub, baseline, processingBaseline, year, notesText].join(" ").toLowerCase()`.
+`ReleaseTimeline` uses it for all-words AND search (`every word is a substring of searchText`).
+**Consequence.** Moves CPU from client (per render) to server (once per cache invalidation).
+Payload grows by roughly the sum of searchText strings (~4–6 KB raw uncompressed across all releases;
+much less after GZip, since the words are repeated across records).
+
+### Decision 17 (§8) — tooltip: always-mounted portal with §8 placement and fade
+
+Applied as specified in the prototype ref §16 Decision 17:
+
+- Always-mounted portal (`createPortal` is always rendered; `tipOn` state controls `opacity`).
+- `.tip { opacity:0; transform:translateY(4px); transition:opacity 0.18s ease,transform 0.18s ease }` + `.tipOn { opacity:1; transform:none }`.
+- `useLayoutEffect([tip])` places the card using real `offsetWidth`/`offsetHeight` after content renders, then fires rAF to add `tipOn=true`.
+- `skyTop = .nav getBoundingClientRect().bottom + 8`; `skyBot = innerHeight − 12`.
+- Full §8 above → below → beside algorithm; position set via `el.style.left/top`.
+- `hideTip` cancels any pending rAF and sets `tipOn=false`.
+- Page-scroll hide via `window.addEventListener("scroll", hide, true)` (capture phase).
+- Chart-scroll, mouseleave, blur and click all call `hideTip`.
+- `.ttWide` removed from Changes row — Changes is now inline in the 2-column grid.
+- `@media(prefers-reduced-motion:reduce){ .tip{transition:none} }`.
+- **Deviation from Decision 17:** `verOf(r)` used for the Version row in the tooltip when `baseline === "—"`, showing `Mon YYYY` instead of "—".
+
+### Scroll-linked lane reveal — removed (overrides 2026-10-21 decision)
+
+**Context.** The 2026-10-21 DECISIONS.md entry implemented a JavaScript scroll-linked reveal in
+`ReleaseTimeline.tsx` as a substitute for `animation-timeline: view()` (which cannot work inside
+the chart's scroll containers).
+**Decision.** The scroll-linked reveal is removed as of Real-data Session 3a. The MOCK (Session 4) does not
+include it: the prototype ref specifies a horizon mask (§21 / Decision 21, applied in Session 6b)
+instead. The horizon mask already masks content below the planet line; adding a per-lane reveal on
+top would produce a double-masking effect.
+**What was removed from ReleaseTimeline.tsx:**
+
+- Constants: `LANE_RISE_PX`, `LANE_RANGE_COVER`, `LANE_IN_MS`, `LANE_IN_SPREAD_MS`,
+  `LANE_IN_STEP_MS`, `LANE_IN_EASING`
+- `reducedMotion()` helper function
+- `paintLane()` function
+- Refs: `chartRef`, `lanesRef`, `paintedRef`, `geomRef`, `paintRef`
+- `shownMission` ref and the mission-change staggered entrance `useLayoutEffect`
+- Two `useLayoutEffect` hooks (paintRef setup and element re-collection per render)
+- One `useEffect` (scroll/resize listeners driving paintRef)
+- `data-lane-row` attributes on all lane elements
+  **Consequence.** Lanes no longer fade in as they scroll into view. The horizon mask (already in
+  place) provides the only scroll-linked visual boundary.

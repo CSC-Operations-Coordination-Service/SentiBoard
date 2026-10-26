@@ -28,8 +28,9 @@ const ROSTER_ALIASES: Record<string, string> = { S3_SM2_HY: "S3_SM2" };
 
 function toMs(v: string | null | undefined): number | null {
   if (!v) return null;
-  const ms = new Date(v).getTime();
-  return isNaN(ms) ? null : ms;
+  const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3]);
 }
 
 /** Versions the feed carries that mean "no version": some records were written with a literal
@@ -189,6 +190,14 @@ export function adaptProcessors(records: ApiProcessor[], now = Date.now()): Adap
           processingBaseline: r.record.processing_baseline?.trim() || undefined,
           releasedMs: toMs(r.record.release_date) ?? undefined,
           isCurrent: i === current,
+          searchText: [
+            label,
+            sub,
+            r.version || r.record.processing_baseline?.trim() || "—",
+            r.record.processing_baseline?.trim() || "",
+            String(new Date(r.startMs).getUTCFullYear()),
+            htmlToText(r.record.release_notes),
+          ].join(" ").toLowerCase(),
         };
       }),
     });

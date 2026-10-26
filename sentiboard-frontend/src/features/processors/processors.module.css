@@ -843,9 +843,6 @@ details[open] .fdropBody {
 }
 
 /* ---- hover card (portalled to <body>, fixed to the window) ---- */
-/* KEEP FOR NOW (Session 3a): REAL's ReleaseTimeline positions the tooltip with
-   transform:translate(-50%,-100%) and uses animation:tipIn instead of the MOCK's
-   opacity:0 + .tipOn toggle. Switching to .tipOn requires updating ReleaseTimeline. */
 .tip {
   position: fixed;
   z-index: 55;
@@ -862,21 +859,14 @@ details[open] .fdropBody {
   color: var(--text);
   pointer-events: none;
   text-shadow: none;
-  transform: translate(-50%, -100%);
-  animation: tipIn 0.18s ease both;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-/* KEEP FOR NOW: used by ReleaseTimeline for below-dot placement. */
-.tipBelow {
-  transform: translate(-50%, 0);
-}
-
-@keyframes tipIn {
-  from { opacity: 0; margin-top: 4px; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tip { animation: none; }
+.tipOn {
+  opacity: 1;
+  transform: none;
 }
 
 .tip hr {
@@ -949,15 +939,6 @@ details[open] .fdropBody {
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-dim);
-}
-
-/* KEEP FOR NOW: "Changes" is prose — its own full-width line. Used by ReleaseTimeline. */
-.ttRows .ttWide {
-  grid-column: 1 / -1;
-}
-
-.ttRows dt.ttWide {
-  margin-top: 3px;
 }
 
 .ttHint {
@@ -1308,6 +1289,10 @@ details[open] .fdropBody {
   }
 
   .fdropBody {
+    transition: none;
+  }
+
+  .tip {
     transition: none;
   }
 }
