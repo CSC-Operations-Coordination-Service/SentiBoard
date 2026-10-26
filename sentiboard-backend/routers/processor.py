@@ -32,7 +32,7 @@ def list_processor(
     limit: int = Query(100, ge=1, le=1000),
 ) -> List[Processor]:
     """List all Processor resources."""
-    documents = list_documents(ProcessorDocument, offset=offset, limit=limit)
+    documents = list_documents(ProcessorDocument, offset=offset, size=limit)
     return [document_to_schema(document, Processor) for document in documents]
 
 

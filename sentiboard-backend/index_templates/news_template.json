@@ -14,7 +14,8 @@
     "mappings": {
         "properties": {
             "id": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "title": {
                 "type": "text", "fields": { "keyword": { "type": "keyword"}}
@@ -44,10 +45,11 @@
                 "type": "nested",
                 "properties": {
                     "datatakeID": { "type": "keyword" },
-                    "L0_": { "type": "float" },
-                    "L1_": { "type": "float" },
-                    "L2_": { "type": "float" }
-                }
+                    "L0_": { "type": "float", "meta": { "optional": true } },
+                    "L1_": { "type": "float", "meta": { "optional": true } },
+                    "L2_": { "type": "float", "meta": { "optional": true } }
+                },
+                "meta": { "array": true }
             },
             "modify_date": {
                 "type": "date"

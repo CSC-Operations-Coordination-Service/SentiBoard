@@ -32,7 +32,7 @@ def list_news(
     limit: int = Query(100, ge=1, le=1000),
 ) -> List[News]:
     """List all News resources."""
-    documents = list_documents(NewsDocument, offset=offset, limit=limit)
+    documents = list_documents(NewsDocument, offset=offset, size=limit)
     return [document_to_schema(document, News) for document in documents]
 
 

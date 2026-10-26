@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
-from maas_model.schema_adapter import ApiDate
 from typing import Optional
+from maas_model.schema_adapter import ApiDate
 
 
 class Instantmessage(BaseModel):

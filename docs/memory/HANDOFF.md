@@ -2,7 +2,33 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
-## Frontend — still to port (2026-10-22)
+## CI — backend on maas-model 3.3.0 (2026-10-26)
+
+- Both CI workflows (`.github/workflows/frontend-ci.yml`, `backend-ci.yml`) install every package
+  through the Nexus proxies and push to Nexus. The backend image installs the wheel that
+  `python-ci.yml` built, with its dependencies from the Nexus PyPI group.
+- The backend needs maas-model 3.3.0 or later (`setup.cfg`: `>=3.3.0.dev0,<4`; `requirements.txt`
+  the same). 3.3.0 is the first release with `schema_adapter.ApiList` and `list_documents(size=)`.
+  The bound ends in `.dev0` on purpose: the dev index only holds develop builds
+  (`3.3.0.post1.devN`), which pip skips as pre-releases unless the bound names one.
+- Both workflows read their secrets from OpenBao (`secrets-source: openbao`, role `ci-sentiboard`,
+  `ci-sentiboard-release` on a tag), not from GitHub secrets: the repository cannot rely on the
+  organisation secrets (the Docker login got `Forbidden`). They run on `containerized` and grant
+  `id-token: write`. Each job's `openbao-tools` lists every tool it reads (`nexus`, plus
+  `sonarqube`, `dependency-track`, `dockerhub` where used); a tool left out is read from
+  `ocs/ci/shared`, which the role cannot read.
+- The roles were applied in prod on 2026-10-23 (see the platform repository's deploy runbook).
+  Reported by the operator on 2026-10-26: the frontend and the backend pipelines are green on
+  `develop`, so the login with `ci-sentiboard`, the Nexus installs and the SonarQube scans work, and
+  SonarQube shows 30.1% coverage for the frontend. Not exercised yet: a tag build (the
+  `ci-sentiboard-release` role, the prod values, the Docker Hub push), and what the dev image run
+  looks like once deployed.
+- The frontend CI runs `pnpm test:coverage` and a SonarQube scan (`run-sonarqube`, project key
+  `sentiboard-frontend`, `sentiboard-frontend/sonar-project.properties`), through the catalog's
+  `node-workflow.yml` (merged into the catalog's `develop` on 2026-10-26, PR #5). 151 tests; the
+  low figure is because only four modules have tests.
+
+## Frontend — still to port (2026-10-21)
 
 - Shell, `/processors` and `/events` are ported. Placeholders ("coming soon", noindex, not in the
   sitemap) remain for `/` (home), `/acquisitions-globe`, `/acquisitions-globe-earth`,
@@ -74,6 +100,7 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   as `now` on both ok and error variants; Explorer never calls `nowYM()` itself.
 
 ## Events — legacy parity, to do at the end
+
 - Datatake list per event: in-place expand ("+N more" / "Show less", max 5 shown) is **done**
   (2026-10-23). Still missing: "View all N datatakes →" link to Data Availability filtered by
   the event (legacy: /data-availability?event_id=<key>). Needs the Availability page's final URL.
@@ -88,12 +115,12 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 
 **Excluded category counts** (records excluded from the events page — not shown to users):
 
-| Raw category | Count |
-|---|---|
-| Data access | 10 |
-| DD | 4 |
-| Archive | 3 |
-| MP | 2 |
+| Raw category       | Count  |
+| ------------------ | ------ |
+| Data access        | 10     |
+| DD                 | 4      |
+| Archive            | 3      |
+| MP                 | 2      |
 | **Total excluded** | **19** |
 
 Shown types: Acquisition 2797, Production 603, Platform (→ Satellite) 147, Manoeuvre 102,
@@ -101,8 +128,8 @@ Calibration 37, Satellite 15. Total shown: 3701 of 3720.
 
 **Records whose satellite resolves to a unit that did not exist on the event's start date:**
 
-| id | start | impacted_satellite | first datatake IDs |
-|---|---|---|---|
+| id                                     | start      | impacted_satellite     | first datatake IDs |
+| -------------------------------------- | ---------- | ---------------------- | ------------------ |
 | `42a36f6a_3a6d_11f1_b2c4_0242ac110002` | 2025-01-01 | Copernicus Sentinel-1D | S1D-4964, S1D-3274 |
 
 S1D launched Nov 2025; this record's start date (2025-01-01) predates the launch. A second
@@ -117,9 +144,11 @@ record in the feed starts 2025-01-01.
 From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier findings on
 `GET /processor/`:
 
-- **500 on null arrays.** `GET /processor/` returns HTTP 500 when `target_ipfs` (5 records) or
-  `satellite_units` (3 records) is null. The backend developer approved the local validator patch
-  and is committing it on the backend branch (2026-10-22).
+- **500 on null arrays.** Fixed in code on `feat/hinted-templates-generated-schemas`: `target_ipfs`
+  and `satellite_units` are `ApiList` (a null reads as `[]`), set by the `array` hint in the
+  processor template. maas-model 3.3.0 has `ApiList` and is pinned in `requirements.txt`, so this
+  is live once the backend is deployed. Then check that `GET /processor/` returns 200 for the records
+  with null lists (`target_ipfs`: 5 records, `satellite_units`: 3 records).
 - **Literal `"undefined"` versions.** 3 `target_ipfs` values carry the literal `undefined` as the
   version (e.g. `S1_L1L2:undefined`). The adapter treats it as "no version" and falls back to
   `processing_baseline`. The backend developer is fixing it in the migration (`map_release`) on the backend branch (2026-10-22).

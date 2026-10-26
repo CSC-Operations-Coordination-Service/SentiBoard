@@ -5,6 +5,7 @@
 #
 # Load the legacy data (DB file in ../legacy_data/sentiboard/):
 #   docker compose run --rm api python migrate_legacy.py /legacy_data/sentiboard/<file>.db --apply
+name: sentiboard-backend
 services:
   opensearch:
     image: opensearchproject/opensearch:2.19.1

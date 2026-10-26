@@ -1,0 +1,17 @@
+[run]
+branch = True
+# Paths relative to the project root, so routers/news.py and documents/news.py stay distinct
+# and match sonar.sources.
+relative_files = True
+source = .
+omit =
+    tests/*
+    setup.py
+    migrate_*.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:

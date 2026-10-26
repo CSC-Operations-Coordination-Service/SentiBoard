@@ -22,5 +22,15 @@ export default defineConfig({
     restoreMocks: true,
     unstubGlobals: true,
     unstubEnvs: true,
+    coverage: {
+      provider: "v8",
+      // lcov is what SonarQube reads (sonar-project.properties); the summary is for the CI log.
+      reporter: ["text-summary", "lcov"],
+      // Every source file, tested or not, so an untested module lowers the figure instead of
+      // missing from it. The rest is not code under test: the tests, their fixtures, the
+      // generated API types, and the stylesheets and fonts.
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.ts", "src/**/__fixtures__/**", "src/lib/api/schema.d.ts"],
+    },
   },
 });

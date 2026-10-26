@@ -1,0 +1,53 @@
+# Production image for the SentiBoard API (FastAPI + uvicorn). The dev image stays in Dockerfile.
+# It installs the wheel in dist/, which CI hands over from python-ci.yml (artifact `dist`).
+# Locally, build it first:
+#   tox -e build
+#   docker build -f Dockerfile.prod -t sentiboard-backend .
+#   docker run -p 8000:8000 -e OPENSEARCH_URL=http://opensearch:9200 sentiboard-backend
+
+# --- build: the wheel and its dependencies into a venv ---
+FROM python:3.14-slim AS build
+
+ENV PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# `pip_index_url` (the Nexus PyPI group, credential-free) and `netrc` (its credentials) are
+# mounted by docker-build.yml (mount-pip-index). Absent in a plain local build, where pip uses
+# PyPI. --no-input: without a TTY a 401 would otherwise end in an opaque EOFError from pip's
+# credential prompt instead of a readable auth error.
+COPY dist/ /tmp/dist/
+RUN --mount=type=secret,id=pip_index_url \
+    --mount=type=secret,id=netrc,target=/root/.netrc \
+    set -eu; \
+    if [ -s /run/secrets/pip_index_url ]; then \
+        index_url="$(tr -d '\r\n' < /run/secrets/pip_index_url)"; \
+        hostpart="${index_url#*://}"; hostpart="${hostpart%%/*}"; \
+        index_host="${hostpart##*@}"; index_host="${index_host%%:*}"; \
+        set -- --index-url "$index_url" --trusted-host "$index_host"; \
+    fi; \
+    pip install --no-input "$@" /tmp/dist/*.whl
+
+# --- runtime: no build tools, non-root ---
+FROM python:3.14-slim AS runtime
+
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+RUN groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --no-create-home app
+
+# The app is in the venv's site-packages (main, routers, schemas, ... from the wheel).
+# Run the maintenance scripts as modules: `python -m setup_indices`, `python -m migrate_legacy`.
+COPY --from=build /opt/venv /opt/venv
+
+WORKDIR /app
+USER app
+EXPOSE 8000
+
+# /health answers in seconds even when OpenSearch is down (see main.py).
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"]
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]

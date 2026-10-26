@@ -229,6 +229,29 @@ not from live calls.
 **Consequences.** Tests cover pure modules and data loading; rendering and browser behaviour are
 not under automated test (see HANDOFF.md).
 
+## 2026-10-23 — Backend stores Sentiboard's own data in OpenSearch, not a relational store
+
+**Context.** AGENTS.md §3.4 says Sentiboard's own data (users, roles, anomaly mirror, news,
+messages) lives in the backend's relational store. The backend in `sentiboard-backend/` was instead
+generated with `maas-model` (pygen documents + fastapigen schemas/routers) from the index templates
+in `sentiboard-backend/index_templates/`, and keeps its data in OpenSearch (2.19.1 in
+`docker-compose.yml`). `maas-model` has no relational backend; adding one would mean a second set
+of models kept in sync by hand. Approved by the project manager (2026-10-23).
+**Decision.** OpenSearch is the backend's only data store. Sentiboard's own resources live in its
+own indices behind aliases: `anomaly`, `news`, `instantmessage`, `processor` (the last partitioned
+by `release_date` month). Legacy data is loaded by `migrate_legacy.py` (SQLite backup) and
+`migrate_processors.py` (Config Tool Mongo dump). No relational store for now.
+**Consequences.**
+
+- Supersedes AGENTS.md §3.4 ("relational store"). §3.3 still holds: the `cds-*` indices stay
+  read-only and are separate from Sentiboard's own indices.
+- No transactions, joins or unique constraints; a new write is searchable after the index refresh
+  (~1 s). Duplicates are prevented by document ids (`create` → 409), not by constraints.
+- Users and roles were not migrated. Revisit this decision if auth needs a local user store rather
+  than roles from the OIDC token (AGENTS.md §4).
+- Still to align (not done in this entry): AGENTS.md §3.4 wording, and the backend sections of
+  STATE.md and ARCHITECTURE.md, which still say the backend is not in this repo.
+
 ## 2026-10-26 — Processors Session 2: CSS, KPIs, toolbar, satellite, page join
 
 Applied MOCK's `processors.module.css` with the following deviations from the prototype reference:
@@ -418,6 +441,7 @@ which was inconsistent.
 an overlay above the calendar. The prototype (events-prototype-ref.md §Filters, acquisitions
 prototype §3) opens them in flow so the calendar shifts down beneath the open list.
 **Decision.**
+
 - `.fdrop` gains `display: flex; flex-direction: column`; the 1px hairline colour does not
   change when open (removed `.fdropOpen { border-bottom-color }` override).
 - `.fdropBody` becomes `display: grid; grid-template-rows: 0fr → 1fr` (480ms cubic-bezier
@@ -429,18 +453,15 @@ prototype §3) opens them in flow so the calendar shifts down beneath the open l
 - `.fdropOverlay` (fixed z-98 element) removed; replaced with a `document.pointerdown` listener
   that checks `el.contains(target)` — outside clicks close the active filter without swallowing
   the subsequent click on the calendar.
-**Consequences.** Opening a filter pushes the calendar down; closing it restores the layout.
-Calendar interactions work normally immediately after a filter closes.
+  **Consequences.** Opening a filter pushes the calendar down; closing it restores the layout.
+  Calendar interactions work normally immediately after a filter closes.
 
 ## 2026-10-26 — Filter dropdowns: replaced inert with CSS visibility to fix React 19 hydration mismatch
 
 **Context.** After the previous session added `inert={openFilter !== "<key>"}` to the three
 `.fdropBody` divs, a hydration warning appeared: the server HTML had `inert=""` on all three
 (all closed at startup) but the client render did not. `openFilter` starts as `useState(null)` —
-no URL, window or effect involved, so both sides agree on its value. The root cause is React 19:
-it takes internal ownership of the `inert` attribute (used by React itself for Suspense
-boundaries) and the client-side reconciler silently strips user-authored `inert` on elements it
-doesn't manage with it, while the server serializer writes it verbatim, producing the mismatch.
+no URL, window or effect involved, so both sides agree on its value.The exact cause was not confirmed (React 19.3, Next.js 16.4); removing the attribute avoids it.
 **Decision.** Removed `inert` from all three `.fdropBody` divs (Explorer.tsx lines 895/938/980).
 Focusability of closed lists is enforced in CSS instead: `.fdropInner` gets `visibility: hidden`
 and a `transition: … visibility 0s linear 480ms` (delay equals the height animation so the

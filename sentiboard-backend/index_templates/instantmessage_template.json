@@ -14,7 +14,8 @@
     "mappings": {
         "properties": {
             "id": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "title": {
                 "type": "text", "fields": { "keyword": { "type": "keyword"}}

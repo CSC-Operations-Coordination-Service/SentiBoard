@@ -14,7 +14,8 @@
     "mappings": {
         "properties": {
             "id": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "key": {
                 "type": "keyword"
@@ -29,10 +30,12 @@
                 "type": "keyword"
             },
             "impacted_satellite": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "impacted_item": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "start": {
                 "type": "date"
@@ -47,16 +50,19 @@
                 "type": "nested",
                 "properties": {
                     "datatakeID": { "type": "keyword" },
-                    "L0_": { "type": "float" },
-                    "L1_": { "type": "float" },
-                    "L2_": { "type": "float" }
-                }
+                    "L0_": { "type": "float", "meta": { "optional": true } },
+                    "L1_": { "type": "float", "meta": { "optional": true } },
+                    "L2_": { "type": "float", "meta": { "optional": true } }
+                },
+                "meta": { "array": true }
             },
             "news_link": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "news_title": {
-                "type": "text", "fields": { "keyword": { "type": "keyword"}}
+                "type": "text", "fields": { "keyword": { "type": "keyword"}},
+                "meta": { "optional": true }
             },
             "publication_date": {
                 "type": "date"
