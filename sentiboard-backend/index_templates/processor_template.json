@@ -14,31 +14,40 @@
     "mappings": {
         "properties": {
             "id": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "mission": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "satellite_units": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "array": true }
             },
             "target_ipfs": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "array": true }
             },
             "processing_baseline": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
             },
             "release_date": {
-                "type": "date"
+                "type": "date",
+                "meta": { "optional": true }
             },
             "validity_start_date": {
-                "type": "date"
+                "type": "date",
+                "meta": { "optional": true }
             },
             "validity_end_date": {
-                "type": "date"
+                "type": "date",
+                "meta": { "optional": true }
             },
             "release_notes": {
-                "type": "text"
+                "type": "text",
+                "meta": { "optional": true }
             }
         },
         "_meta": {

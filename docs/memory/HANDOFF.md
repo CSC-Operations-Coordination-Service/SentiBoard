@@ -46,9 +46,11 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier findings on
 `GET /processor/`:
 
-- **500 on null arrays.** `GET /processor/` returns HTTP 500 when `target_ipfs` (5 records) or
-  `satellite_units` (3 records) is null: the response model declares them as non-null lists. A local
-  validator patch exists; the backend developer has been informed.
+- **500 on null arrays.** Fixed in code on `feat/hinted-templates-generated-schemas`: `target_ipfs`
+  and `satellite_units` are `ApiList` (a null reads as `[]`), set by the `array` hint in the
+  processor template. Live only after the maas-model release that has `ApiList` is pinned (see the
+  CI blocker above). Then check that `GET /processor/` returns 200 for the records with null lists
+  (`target_ipfs`: 5 records, `satellite_units`: 3 records).
 - **Literal `"undefined"` versions.** 3 `target_ipfs` values carry the literal `undefined` as the
   version (e.g. `S1_L1L2:undefined`). The adapter treats it as "no version" and falls back to
   `processing_baseline`.
