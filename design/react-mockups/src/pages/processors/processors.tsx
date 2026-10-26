@@ -1507,11 +1507,11 @@ export default function Processors() {
               viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
-              strokeWidth="1.6"
+              strokeWidth="1.3"
               aria-hidden="true"
             >
-              <circle cx="6.5" cy="6.5" r="4.5" />
-              <path d="M10.5 10.5l3.5 3.5" />
+              <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.3"/>
+              <path d="M10.4 10.4L14 14" stroke="currentColor" strokeWidth="1.3"/>
             </svg>
             <input
               ref={searchInputRef}
