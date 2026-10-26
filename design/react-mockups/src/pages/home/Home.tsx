@@ -1,5 +1,4 @@
-import { useState } from "react";
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Reveal } from "@/components/ui";
 import { REALTIME, MODULES } from "@/data/mock";
@@ -158,14 +157,94 @@ export default function Home() {
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({});
   const [newsOpen, setNewsOpen] = useState(false);
 
+  const listRef   = useRef<HTMLDivElement>(null);
+  const btnRef    = useRef<HTMLButtonElement>(null);
+  const raf1Ref   = useRef(0);
+  const raf2Ref   = useRef(0);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const isOpenRef = useRef(false);
+
+  function setNews(open: boolean) {
+    cancelAnimationFrame(raf1Ref.current);
+    cancelAnimationFrame(raf2Ref.current);
+    clearTimeout(timerRef.current);
+    const el = listRef.current;
+    if (!el) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (open) {
+      isOpenRef.current = true;
+      setNewsOpen(true);
+      const max = window.innerHeight - 140;
+      if (reduced) {
+        const natural = el.scrollHeight;
+        const h = Math.min(natural, max);
+        el.style.height = `${h}px`;
+        el.style.opacity = '1';
+        el.style.overflow = 'hidden';
+        el.style.overflowY = natural > max ? 'auto' : 'hidden';
+        return;
+      }
+      el.style.cssText = 'height:0px;opacity:0;overflow:hidden;transition:none';
+      raf1Ref.current = requestAnimationFrame(() => {
+        raf2Ref.current = requestAnimationFrame(() => {
+          const natural = el.scrollHeight;
+          const h = Math.min(natural, max);
+          el.style.overflowY = natural > max ? 'auto' : 'hidden';
+          el.style.transition = 'height 520ms cubic-bezier(.2,.7,.2,1),opacity 360ms ease';
+          el.style.height = `${h}px`;
+          el.style.opacity = '1';
+        });
+      });
+    } else {
+      isOpenRef.current = false;
+      setNewsOpen(false);
+      if (reduced) {
+        el.style.cssText = '';
+        return;
+      }
+      const h = el.offsetHeight;
+      el.style.cssText = `height:${h}px;opacity:1;overflow:hidden;transition:none`;
+      raf1Ref.current = requestAnimationFrame(() => {
+        raf2Ref.current = requestAnimationFrame(() => {
+          el.style.transition = 'height 520ms cubic-bezier(.2,.7,.2,1),opacity 360ms ease';
+          el.style.height = '0px';
+          el.style.opacity = '0';
+          timerRef.current = setTimeout(() => {
+            if (!isOpenRef.current) el.style.cssText = '';
+          }, 540);
+        });
+      });
+    }
+  }
+
+  useEffect(() => {
+    if (!newsOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') { setNews(false); btnRef.current?.focus(); }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [newsOpen]);
+
+  useEffect(() => {
+    return () => {
+      cancelAnimationFrame(raf1Ref.current);
+      cancelAnimationFrame(raf2Ref.current);
+      clearTimeout(timerRef.current);
+    };
+  }, []);
+
   return (
     <>
       <div className={styles.bar}>
         <div className={styles.row}>
           <button
-            onClick={() => setNewsOpen(!newsOpen)}
+            ref={btnRef}
+            onClick={() => setNews(!isOpenRef.current)}
             className={styles.news}
             aria-expanded={newsOpen}
+            aria-controls="news-list"
           >
             <i className={styles.dot} />
             <span>News</span>
@@ -200,52 +279,22 @@ export default function Home() {
           </div>
         </div>
         <div
-          style={{
-            maxHeight: newsOpen ? "400px" : "0",
-            overflow: "hidden",
-            opacity: newsOpen ? 1 : 0,
-            transition:
-              "max-height 720ms cubic-bezier(.65,0,.25,1), opacity 720ms cubic-bezier(.65,0,.25,1)",
-            background: "rgba(6,12,16,.94)",
-            backdropFilter: "blur(10px)",
-            borderTop: newsOpen
-              ? "1px solid rgba(255,255,255,.10)"
-              : "1px solid rgba(255,255,255,0)",
-            zIndex: 1,
-            pointerEvents: newsOpen ? "auto" : "none",
-          }}
+          ref={listRef}
+          id="news-list"
+          className={newsOpen ? `${styles.list} ${styles.listOpen}` : styles.list}
+          aria-hidden={!newsOpen ? true : undefined}
+          {...(!newsOpen && { inert: "" as unknown as boolean })}
         >
-          <ul style={{ margin: 0, padding: "6px 0 12px", listStyle: "none" }}>
-            {REALTIME.slice(0, 5).map((item, idx) => (
-              <li
-                key={idx}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "140px 1fr",
-                  gap: "18px",
-                  padding: "13px 26px",
-                  borderBottom:
-                    idx < 4 ? "1px solid rgba(255,255,255,.06)" : "none",
-                  fontSize: "13px",
-                  lineHeight: 1.5,
-                  color: "var(--text)",
-                }}
-              >
-                <time
-                  style={{
-                    fontFamily: "var(--mono)",
-                    fontSize: "10.5px",
-                    letterSpacing: ".04em",
-                    color: "var(--text-dim)",
-                    paddingTop: "2px",
-                  }}
-                >
-                  {item.date} {item.time}
-                </time>
-                <span>{item.text}</span>
-              </li>
-            ))}
-          </ul>
+          {REALTIME.map((item, k) => (
+            <div
+              key={k}
+              className={styles.listRow}
+              style={{ "--k": k } as React.CSSProperties}
+            >
+              <time className={styles.listTime}>{item.date} {item.time}</time>
+              <span className={styles.listText}>{item.title}</span>
+            </div>
+          ))}
         </div>
       </div>
 

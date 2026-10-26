@@ -140,3 +140,48 @@
   letter-spacing: 0.04em;
   color: var(--text);
 }
+
+/* ── News list ───────────────────────────────────────────── */
+.list {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  background: var(--home-ground);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.listRow {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding: 14px 24px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.listTime {
+  flex: 0 0 auto;
+  font-size: 13px;
+  letter-spacing: .04em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.listText {
+  font-size: 15px;
+  color: var(--text);
+  opacity: .92;
+}
+
+@keyframes sbNewsIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.listOpen .listRow {
+  animation: sbNewsIn 420ms cubic-bezier(.2,.7,.2,1) calc(80ms + var(--k) * 60ms) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list { transition: none !important; }
+  .listOpen .listRow { animation: none !important; }
+}
