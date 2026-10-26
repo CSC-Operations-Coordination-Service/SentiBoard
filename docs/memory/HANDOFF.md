@@ -7,10 +7,10 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 - Both CI workflows (`.github/workflows/frontend-ci.yml`, `backend-ci.yml`) install every package
   through the Nexus proxies and push to Nexus. The backend image installs the wheel that
   `python-ci.yml` built, with its dependencies from the Nexus PyPI group.
-- The backend pins `maas-model[api]==3.3.0` (`requirements.txt`; the `setup.cfg` bound is
-  `>=3.3.0,<4`). 3.3.0 is the first release with `schema_adapter.ApiList` and
-  `list_documents(size=)`. Its tag CI is green; that the package is on Nexus is confirmed by
-  that run, not checked here.
+- The backend needs maas-model 3.3.0 or later (`setup.cfg`: `>=3.3.0.dev0,<4`; `requirements.txt`
+  the same). 3.3.0 is the first release with `schema_adapter.ApiList` and `list_documents(size=)`.
+  The bound ends in `.dev0` on purpose: the dev index only holds develop builds
+  (`3.3.0.post1.devN`), which pip skips as pre-releases unless the bound names one.
 - Both workflows read their secrets from OpenBao (`secrets-source: openbao`, role `ci-sentiboard`,
   `ci-sentiboard-release` on a tag), not from GitHub secrets: the repository cannot rely on the
   organisation secrets (the Docker login got `Forbidden`). They run on `containerized` and grant
@@ -18,16 +18,15 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   `sonarqube`, `dependency-track`, `dockerhub` where used); a tool left out is read from
   `ocs/ci/shared`, which the role cannot read.
 - The roles were applied in prod on 2026-10-23 (see the platform repository's deploy runbook).
-  Not verified: a login from this repository with them, that `devsecops/ci/{dev,prod}/{nexus,
-  sonarqube,dependency-track,dockerhub}` hold values, and that the Nexus in `devsecops/ci/dev/nexus`
-  is the one that serves maas-model's dev builds.
-- Not verified here: the Nexus install itself, and the backend CI run on this branch.
+  Reported by the operator on 2026-10-26: the frontend and the backend pipelines are green on
+  `develop`, so the login with `ci-sentiboard`, the Nexus installs and the SonarQube scans work, and
+  SonarQube shows 30.1% coverage for the frontend. Not exercised yet: a tag build (the
+  `ci-sentiboard-release` role, the prod values, the Docker Hub push), and what the dev image run
+  looks like once deployed.
 - The frontend CI runs `pnpm test:coverage` and a SonarQube scan (`run-sonarqube`, project key
   `sentiboard-frontend`, `sentiboard-frontend/sonar-project.properties`), through the catalog's
-  `node-workflow.yml`. That option exists on the catalog branch `feat/node-sonarqube` only until it
-  is merged into the catalog's `develop`: the frontend workflow fails on an unknown input before
-  that. Coverage was 29.9% of lines on 2026-10-26, 151 tests. Not verified: a scan on the server,
-  and that `devsecops/ci/{dev,prod}/sonarqube` holds values (the backend scan needs the same).
+  `node-workflow.yml` (merged into the catalog's `develop` on 2026-10-26, PR #5). 151 tests; the
+  low figure is because only four modules have tests.
 
 ## Frontend — still to port (2026-10-21)
 

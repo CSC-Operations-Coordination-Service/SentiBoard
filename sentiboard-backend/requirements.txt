@@ -1,6 +1,7 @@
 # maas-model brings opensearch-py; [api] adds pydantic, fastapi and ApiDate/ApiList.
-# 3.3.0 is the first release with schema_adapter.ApiList and list_documents(size=).
-maas-model[api]==3.3.0
+# 3.3.0 is the first release with schema_adapter.ApiList and list_documents(size=). Same bound as
+# setup.cfg: .dev0 lets pip take the dev index's develop builds (pre-releases); an exact pin finds none.
+maas-model[api]>=3.3.0.dev0,<4
 uvicorn==0.53.0
 # bson reader for the Config Tools Mongo dump (migrate_processors.py)
 pymongo==4.15.3
