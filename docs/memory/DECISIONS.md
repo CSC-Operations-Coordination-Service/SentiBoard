@@ -347,3 +347,25 @@ top would produce a double-masking effect.
 - **`useHorizonMask` deps array is empty** (refs are stable — same as MOCK). An `// eslint-disable-line` comment is added, as in MOCK.
 
 - **`verOf` for dtVer (Decision §2b/3a).** When `release.baseline === "—"` (adapter produces this when neither version nor processing_baseline is present), the detail heading shows `MONTHS[m] + " " + year` derived from `release.ms`. REAL's model has no separate `from` field (MOCK did); the fallback is computed inline.
+
+## 2026-10-26 — Mission-change orbit rotation (Real-data Session 7, §11 / Decision 11)
+
+**Context.** Porting the orbit rotation tween from MOCK into REAL (feature/DEVOCS-219-events). REAL drives mission through URL state (`useSearchParams`) rather than local `activeMission` state.
+
+**Decisions that differ from the prototype ref / MOCK:**
+
+- **`verOf` moved to `model.ts`.** Was duplicated in `Explorer.tsx` and `ReleaseTimeline.tsx`. Moved to `model.ts` as a named export; both files now import it. No behaviour change.
+
+- **Mission change detected from URL, not from a click handler.** REAL has no `changeView({ mission })` callback; navigation is handled by `ViewLink`/`navigate`. A `useEffect([activeMission])` detects when `view.mission` changes (from any source, including back/forward navigation) and calls `startMissionTween` or instant-swaps. `prevMissionRef` tracks the outgoing mission.
+
+- **`displayedMission` state decouples the main sheet from the URL mission during the tween.** The main sheet's heading and `missionGroups` are driven by `displayedMission` (the outgoing mission), which is updated to `activeMission` only when the tween completes. KPIs use `kpiGroups` based on `activeMission` (new mission) so they switch immediately at tween start — matching §11 point 4.
+
+- **SpaceBackdrop `turn` prop eases independently.** `turn` is set to `toIdx * STEP` once at tween start via `setTurn(toIdx * STEP)`. SpaceBackdrop applies its own 900 ms ease-out cubic to reach that value. The orbit rAF runs a separate 1300 + 600·(n−1) ms ease-in-out cubic. The two curves diverge slightly. This is the stated §11 deviation: SpaceBackdrop exposes no per-frame API, so we cannot drive the planet at the same rate as the orbit.
+
+- **`turn` initialized from `orbitGeometry()` at component construction.** Reads `window.innerWidth/Height` in a `useState` lazy initializer (safe: Explorer is `"use client"` and runs only on the client; on SSR the `typeof window === "undefined"` guard returns 0). Avoids a 900 ms planet drift on pages where the URL mission is not S1.
+
+- **Overlay `ReleaseTimeline` uses REAL's internal axis/window.** MOCK passed an external `axis` prop; REAL's ReleaseTimeline manages its own window. The overlay mounts with `selected={null}` and the current `range`, so its `useAnimatedWindow` initialises to the correct target immediately (no animation from 0). The scroll-to-end fires on mount because `moving` starts `false`. No `scrollToEnd` prop needed.
+
+- **`cancelAnimationFrame(0)` in the instant-swap branch is a no-op.** The actual rAF cancellation is handled by the `useLayoutEffect([tweenTarget])` cleanup when `setTweenTarget(null)` fires. The explicit call was removed in the final code (relying solely on the cleanup).
+
+- **Interrupted tween (mission change mid-flight) is handled by the `useLayoutEffect` cleanup.** When `setTweenTarget(toMission2)` fires during an in-flight tween, the previous effect's cleanup cancels the rAF and clears inline styles, then the new effect starts fresh from `posRef.current` (wherever the orbit was). Edge case: if the user interrupts S1→S3 with S3→S1 before `setDisplayedMission("3")` fires, `displayedMission` stays "1" and both main and overlay sheets momentarily show S1 data. Accepted as a minor edge case.

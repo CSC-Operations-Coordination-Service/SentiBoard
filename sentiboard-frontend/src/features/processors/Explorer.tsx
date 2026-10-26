@@ -27,6 +27,7 @@ import {
   MISSION_ORDER,
   MONTHS,
   longDate,
+  verOf,
   type MissionId,
   type ProcessorGroup,
   type ProcessorNotes,
@@ -73,6 +74,30 @@ const BASELINE_SHORT: Record<BaselineFilter, string> = {
   all: "All",
   current: "Current",
 };
+
+// §11 / Decision 11 — orbit rotation on mission change.
+// NAV_H matches the shell's fixed nav (§11: "H = 100vh − 64px").
+const NAV_H = 64;
+
+function easeInOutCubic(q: number): number {
+  return q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2;
+}
+
+/**
+ * Planet-centre and STEP for the orbit rotation (§11).
+ *   H_stage = innerHeight − 64  (stage below the nav)
+ *   centreY_stage = H_stage + 6133.05 × (H_stage / 1600)
+ *   centreY_vp    = NAV_H + centreY_stage   (viewport coords)
+ *   STEP = W × 1.08 / (centreY_stage − H_stage / 2)
+ */
+function orbitGeometry() {
+  const W = window.innerWidth;
+  const H = window.innerHeight - NAV_H;
+  const centreY_stage = H + 6133.05 * (H / 1600);
+  const centreY_vp = NAV_H + centreY_stage;
+  const STEP = (W * 1.08) / (centreY_stage - H / 2);
+  return { W, centreY_vp, STEP };
+}
 
 /**
  * Tracks the horizon line (navBottom + 0.8334 × (innerHeight − navBottom) − 14)
@@ -138,13 +163,6 @@ function useHorizonMask(
   }, []);
 }
 
-/** Version display: baseline tag, or 'Mon YYYY' when the baseline is "—". Decision §2b/3a. */
-function verOf(r: ReleaseRecord): string {
-  if (r.baseline !== "—") return r.baseline;
-  const d = new Date(r.ms);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
-
 /** A plain left click, which the History API can take over; anything else (new tab, …) is left
  *  to the browser and follows the link. */
 function isPlainClick(e: MouseEvent): boolean {
@@ -190,7 +208,13 @@ function ViewLink({
 /** Static chevron for dropdown heads — no rotation, matching DA behaviour (Decision 3). */
 function ChevronDown() {
   return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 16 16"
+      fill="none"
+      aria-hidden="true"
+    >
       <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
     </svg>
   );
@@ -305,10 +329,7 @@ function Reveal({
     return () => io.disconnect();
   }, []);
   return (
-    <Tag
-      ref={ref}
-      className={`reveal ${seen ? "in" : ""} ${className}`}
-    >
+    <Tag ref={ref} className={`reveal ${seen ? "in" : ""} ${className}`}>
       {children}
     </Tag>
   );
@@ -320,7 +341,9 @@ function ReleaseNotes({ html }: { html?: string }) {
   if (!html) {
     return <p className={s.none}>No release notes in the feed.</p>;
   }
-  return <div className={s.rnHtml} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div className={s.rnHtml} dangerouslySetInnerHTML={{ __html: html }} />
+  );
 }
 
 const ARROW = {
@@ -356,7 +379,14 @@ interface ReleaseDetailProps {
 }
 
 /** The selected baseline's details. Steps replay the vswap animation; first open does not. */
-function ReleaseDetail({ group, notes, index, view, navigate, paneOpen }: ReleaseDetailProps) {
+function ReleaseDetail({
+  group,
+  notes,
+  index,
+  view,
+  navigate,
+  paneOpen,
+}: ReleaseDetailProps) {
   const release: ReleaseRecord = group.releases[index];
   const isCurrent = release.isCurrent;
   const prev = group.releases[index - 1];
@@ -455,7 +485,9 @@ function ReleaseDetail({ group, notes, index, view, navigate, paneOpen }: Releas
 
         <div className={s.rn}>
           <h4>Release notes</h4>
-          <ReleaseNotes html={release.notesId ? notes[release.notesId] : undefined} />
+          <ReleaseNotes
+            html={release.notesId ? notes[release.notesId] : undefined}
+          />
         </div>
       </div>
     </div>
@@ -488,11 +520,14 @@ export default function Explorer({
   const activeMission = view.mission;
   const selected = view.release;
 
-  const navigate: Navigate = useCallback((next: ProcessorsView, mode: "push" | "replace") => {
-    const href = viewHref(next);
-    if (mode === "push") window.history.pushState(null, "", href);
-    else window.history.replaceState(null, "", href);
-  }, []);
+  const navigate: Navigate = useCallback(
+    (next: ProcessorsView, mode: "push" | "replace") => {
+      const href = viewHref(next);
+      if (mode === "push") window.history.pushState(null, "", href);
+      else window.history.replaceState(null, "", href);
+    },
+    [],
+  );
 
   // The search box answers every keystroke from local state; the URL follows (replace, so typing
   // adds no history entries). A URL change from elsewhere (back/forward) resets the box.
@@ -512,9 +547,56 @@ export default function Explorer({
   const normalisedQuery = query.trim().toLowerCase();
   const isDetail = selected !== null;
 
+  // §11 / Decision 11 — orbit rotation state and refs.
+  const posRef = useRef(MISSION_ORDER.indexOf(activeMission) as number);
+  const [tweenTarget, setTweenTarget] = useState<MissionId | null>(null);
+  const tweenTargetRef = useRef<MissionId | null>(null);
+  const tweenParamsRef = useRef<{
+    fromPos: number;
+    toIdx: number;
+    dur: number;
+    mainIdx: number;
+  } | null>(null);
+  // SpaceBackdrop turn — set once per mission change (§11 deviation: SpaceBackdrop eases 900ms
+  // ease-out cubic independently; the orbit rAF runs its own 1300+600n ms ease-in-out cubic).
+  const [turn, setTurn] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    const { STEP } = orbitGeometry();
+    return MISSION_ORDER.indexOf(activeMission) * STEP;
+  });
+  const sheetMainRef = useRef<HTMLDivElement | null>(null);
+  const sheetOverRef = useRef<HTMLDivElement | null>(null);
+  // All four satellite images are always in the DOM so the rAF can target them without re-mounting.
+  const satImgRefs = useRef<Record<MissionId, HTMLImageElement | null>>({
+    "1": null,
+    "2": null,
+    "3": null,
+    "5P": null,
+  });
+  // displayedMission: what the main sheet shows. Stays at the outgoing mission during the tween.
+  const [displayedMission, setDisplayedMission] =
+    useState<MissionId>(activeMission);
+  const prevMissionRef = useRef<MissionId>(activeMission);
+
+  // Main-sheet groups (outgoing mission during tween so the sheet stays still while rotating away).
   const missionGroups = useMemo(
+    () => allGroups.filter((g) => g.mission === displayedMission),
+    [allGroups, displayedMission],
+  );
+
+  // KPI groups always follow the URL mission (switch to incoming at tween start — §11 point 4).
+  const kpiGroups = useMemo(
     () => allGroups.filter((g) => g.mission === activeMission),
     [allGroups, activeMission],
+  );
+
+  // Overlay groups: the incoming mission's processors for the overlay sheet (§11 point 1).
+  const overlayGroups = useMemo(
+    () =>
+      tweenTarget
+        ? allGroups.filter((g) => g.mission === tweenTarget)
+        : NO_GROUPS,
+    [allGroups, tweenTarget],
   );
 
   // Keep the last selection while the pane slides shut, so its content does not vanish mid-motion.
@@ -542,7 +624,9 @@ export default function Explorer({
 
   // Overview ↔ detail motion orchestration (Decision 12, §10).
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     let t1: ReturnType<typeof setTimeout> | undefined;
     let t2: ReturnType<typeof setTimeout> | undefined;
     let t3: ReturnType<typeof setTimeout> | undefined;
@@ -554,13 +638,16 @@ export default function Explorer({
       t1 = setTimeout(() => setDetailOn(true), reduce ? 0 : 180);
     } else {
       setDetailOn(false);
-      t2 = setTimeout(() => {
-        if (procpaneRef.current)
-          flipFrom.current = procpaneRef.current.getBoundingClientRect();
-        setFocusClass(false);
-        setLcolEnter(true);
-        t3 = setTimeout(() => setLcolEnter(false), 560);
-      }, reduce ? 0 : 280);
+      t2 = setTimeout(
+        () => {
+          if (procpaneRef.current)
+            flipFrom.current = procpaneRef.current.getBoundingClientRect();
+          setFocusClass(false);
+          setLcolEnter(true);
+          t3 = setTimeout(() => setLcolEnter(false), 560);
+        },
+        reduce ? 0 : 280,
+      );
     }
 
     return () => {
@@ -605,7 +692,8 @@ export default function Explorer({
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
-      const openDrop = document.querySelector<HTMLDetailsElement>("details[open]");
+      const openDrop =
+        document.querySelector<HTMLDetailsElement>("details[open]");
       if (openDrop) {
         openDrop.removeAttribute("open");
         openDrop.querySelector<HTMLElement>("summary")?.focus();
@@ -617,19 +705,192 @@ export default function Explorer({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [isDetail, view, navigate]);
 
-  const missionReleases = missionGroups.flatMap((g) => g.releases);
+  // A: Preload all four satellite images on mount so the tween never shows a blank frame.
+  useEffect(() => {
+    for (const src of Object.values(SATELLITE_IMAGES)) {
+      const img = new Image();
+      img.src = src;
+      img.decode().catch(() => {});
+    }
+  }, []);
+
+  // §11 / Decision 11 — detect URL mission change and start the orbit tween (or instant-swap).
+  useEffect(() => {
+    const from = prevMissionRef.current;
+    const to = activeMission;
+    if (from === to) return;
+    prevMissionRef.current = to;
+    const toIdx = MISSION_ORDER.indexOf(to);
+
+    if (isDetail) {
+      // Release open: instant swap — avoid collision with the FLIP (§11).
+      cancelAnimationFrame(0); // noop; cleanup of useLayoutEffect([tweenTarget]) cancels the rAF
+      setTweenTarget(null);
+      tweenTargetRef.current = null;
+      posRef.current = toIdx;
+      const { STEP } = orbitGeometry();
+      setTurn(toIdx * STEP);
+      setDisplayedMission(to);
+      return;
+    }
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      posRef.current = toIdx;
+      const { STEP } = orbitGeometry();
+      setTurn(toIdx * STEP);
+      setDisplayedMission(to);
+      return;
+    }
+    const fromPos = posRef.current;
+    const { STEP } = orbitGeometry();
+    setTurn(toIdx * STEP); // SpaceBackdrop eases independently (§11 deviation, Decision 11)
+    const steps = Math.abs(toIdx - fromPos);
+    const dur = 1300 + 600 * Math.max(0, steps - 1); // §11: 1300 + 600·(n−1) ms
+    const mainIdx = MISSION_ORDER.indexOf(from);
+    tweenParamsRef.current = { fromPos, toIdx, dur, mainIdx };
+    tweenTargetRef.current = to;
+    setTweenTarget(to); // triggers overlay render; useLayoutEffect starts the rAF after commit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMission]);
+
+  // Start the rAF only after the overlay DOM is committed (avoids refs being null on frame 1).
+  useLayoutEffect(() => {
+    if (!tweenTarget || !tweenParamsRef.current) return;
+
+    const { fromPos, toIdx, dur, mainIdx } = tweenParamsRef.current;
+    const toMission = tweenTarget;
+    const mainMission = MISSION_ORDER[mainIdx] as MissionId;
+
+    // Read ALL geometry before any style write (§11 issue-2 fix).
+    const W = window.innerWidth;
+    const H = window.innerHeight - NAV_H;
+    const centreY_stage = H + 6133.05 * (H / 1600);
+    const centreY_vp = NAV_H + centreY_stage;
+    let STEP_f = (W * 1.08) / (centreY_stage - H / 2);
+    const pcx = W / 2;
+    const pcy = centreY_vp;
+
+    const sheetMainR = sheetMainRef.current?.getBoundingClientRect();
+    const sheetOverR = sheetOverRef.current?.getBoundingClientRect();
+    const orbitR = (
+      satImgRefs.current[mainMission] ?? satImgRefs.current[toMission]
+    )?.getBoundingClientRect();
+
+    const mainSheetO = {
+      x: sheetMainR ? pcx - sheetMainR.left : 0,
+      y: sheetMainR ? pcy - sheetMainR.top : 0,
+    };
+    const overSheetO = {
+      x: sheetOverR ? pcx - sheetOverR.left : 0,
+      y: sheetOverR ? pcy - sheetOverR.top : 0,
+    };
+    const orbitO = {
+      x: orbitR ? pcx - orbitR.left : 0,
+      y: orbitR ? pcy - orbitR.top : 0,
+    };
+
+    // Pre-hide incoming satellite before first paint (cleared by clearStyles at end/cancel).
+    const toSatEl = satImgRefs.current[toMission];
+    if (toSatEl) {
+      toSatEl.style.visibility = "hidden";
+      toSatEl.style.opacity = "0";
+    }
+
+    let raf = 0;
+    let t0 = 0; // captured on first rAF frame so slow renders don't eat the tween budget
+
+    const clearStyles = () => {
+      for (const r of [sheetMainRef, sheetOverRef]) {
+        const el = r.current;
+        if (!el) continue;
+        el.style.opacity = "";
+        el.style.visibility = "";
+        el.style.transform = "";
+        el.style.transformOrigin = "";
+      }
+      for (const mid of [mainMission, toMission] as MissionId[]) {
+        const el = satImgRefs.current[mid];
+        if (!el) continue;
+        el.style.opacity = "";
+        el.style.visibility = "";
+        el.style.transform = "";
+        el.style.transformOrigin = "";
+      }
+    };
+
+    const applyEl = (
+      el: HTMLElement | null,
+      origin: { x: number; y: number },
+      off: number,
+    ) => {
+      if (!el) return;
+      const abs = Math.abs(off);
+      if (abs >= 0.999) {
+        el.style.opacity = "0";
+        el.style.visibility = "hidden";
+        el.style.transform = "";
+        return;
+      }
+      el.style.visibility = "";
+      el.style.opacity = String(Math.max(0, 1 - abs * 1.4));
+      el.style.transformOrigin = `${origin.x.toFixed(1)}px ${origin.y.toFixed(1)}px`;
+      el.style.transform = `rotate(${(off * STEP_f).toFixed(5)}rad)`;
+    };
+
+    const frame = (now_t: number) => {
+      if (t0 === 0) t0 = now_t;
+      const q = Math.min(1, (now_t - t0) / dur);
+      const e = easeInOutCubic(q);
+      const pos = fromPos + (toIdx - fromPos) * e;
+      posRef.current = pos;
+
+      applyEl(sheetMainRef.current, mainSheetO, mainIdx - pos);
+      applyEl(sheetOverRef.current, overSheetO, toIdx - pos);
+      applyEl(satImgRefs.current[mainMission], orbitO, mainIdx - pos);
+      applyEl(satImgRefs.current[toMission], orbitO, toIdx - pos);
+
+      if (q < 1) {
+        raf = requestAnimationFrame(frame);
+      } else {
+        posRef.current = toIdx;
+        setDisplayedMission(toMission);
+        setTweenTarget(null);
+        tweenTargetRef.current = null;
+      }
+    };
+
+    const onResize = () => {
+      const W2 = window.innerWidth;
+      const H2 = window.innerHeight - NAV_H;
+      const c2 = H2 + 6133.05 * (H2 / 1600);
+      STEP_f = (W2 * 1.08) / (c2 - H2 / 2);
+    };
+    window.addEventListener("resize", onResize);
+    raf = requestAnimationFrame(frame);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+      clearStyles();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tweenTarget]);
+
   // KPI formulas: last year = ms in (now-365d, now]; latest = year of max ms <= now; "—" when not ok.
+  const kpiReleases = kpiGroups.flatMap((g) => g.releases);
   const lastYearCutoff = now - 365 * DAY_MS;
-  const latestMs = missionReleases.reduce(
+  const latestMs = kpiReleases.reduce(
     (m, r) => (r.ms <= now ? Math.max(m, r.ms) : m),
     0,
   );
   const counters = [
-    { value: data.ok ? String(missionGroups.length) : "—", label: "Processors" },
-    { value: data.ok ? String(missionReleases.length) : "—", label: "Releases" },
+    { value: data.ok ? String(kpiGroups.length) : "—", label: "Processors" },
+    { value: data.ok ? String(kpiReleases.length) : "—", label: "Releases" },
     {
       value: data.ok
-        ? String(missionReleases.filter((r) => r.ms > lastYearCutoff && r.ms <= now).length)
+        ? String(
+            kpiReleases.filter((r) => r.ms > lastYearCutoff && r.ms <= now)
+              .length,
+          )
         : "—",
       label: "Released in the last year",
     },
@@ -645,7 +906,7 @@ export default function Explorer({
 
   return (
     <section className={s.container} ref={containerRef}>
-      <SpaceBackdrop page={2} />
+      <SpaceBackdrop page={2} turn={turn} />
 
       {/* Headline counts for the selected mission */}
       <Reveal as="dl" className={s.counters}>
@@ -745,22 +1006,34 @@ export default function Explorer({
           aria-label={`Sentinel-${activeMission}`}
           aria-hidden={focusClass || undefined}
         >
+          {/* All four images always in DOM so the rAF can target them without re-mounting.
+              .satOff hides non-active/non-target images; rAF writes inline styles on top. */}
           <div className={s.orbit}>
-            {SATELLITE_IMAGES[activeMission] && (
+            {MISSION_ORDER.map((mid) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={SATELLITE_IMAGES[activeMission]}
-                alt={`Sentinel-${activeMission} satellite`}
-                className={s.sat}
+                key={mid}
+                ref={(el) => {
+                  satImgRefs.current[mid] = el;
+                }}
+                src={SATELLITE_IMAGES[mid]}
+                className={`${s.sat}${mid !== displayedMission && mid !== tweenTarget ? ` ${s.satOff}` : ""}`}
+                alt={mid === activeMission ? `Sentinel-${mid} satellite` : ""}
+                aria-hidden={mid !== activeMission || undefined}
               />
-            )}
+            ))}
           </div>
         </section>
 
-        <section className={s.procpane} ref={procpaneRef}>
-          <div className={s.sheet}>
+        {/* `.tweening` lifts overflow-x so rotating sheets can extend outside (§11). */}
+        <section
+          className={`${s.procpane} ${tweenTarget ? s.tweening : ""}`}
+          ref={procpaneRef}
+        >
+          {/* Outgoing mission sheet — rotated away by the rAF tween (§11). */}
+          <div ref={sheetMainRef} className={s.sheet}>
             <div className={s.phead}>
-              <h2>{MISSION_NAMES[activeMission]} processors</h2>
+              <h2>{MISSION_NAMES[displayedMission]} processors</h2>
             </div>
             <div className={s.tlBar}>
               <span className={s.tlCap}>Release timeline</span>
@@ -779,7 +1052,10 @@ export default function Explorer({
                     : data.message}
                 </p>
                 {/* A reload of the same view: works with and without JavaScript. */}
-                <a className={`${s.retry} ${x.retryLink}`} href={viewHref(view)}>
+                <a
+                  className={`${s.retry} ${x.retryLink}`}
+                  href={viewHref(view)}
+                >
                   Try again
                 </a>
               </div>
@@ -800,6 +1076,35 @@ export default function Explorer({
               <p className={s.none}>No processors for this mission.</p>
             )}
           </div>
+
+          {/* Incoming mission sheet — full heading + timeline, swings in during the tween (§11).
+              inert + aria-hidden: no focus, no events, no tooltip. */}
+          {tweenTarget && (
+            <div
+              ref={sheetOverRef}
+              className={`${s.sheet} ${s.sheetOver}`}
+              aria-hidden="true"
+              inert
+            >
+              <div className={s.phead}>
+                <h2>{MISSION_NAMES[tweenTarget]} processors</h2>
+              </div>
+              <div className={s.tlBar}>
+                <span className={s.tlCap}>Release timeline</span>
+              </div>
+              {overlayGroups.length > 0 && (
+                <ReleaseTimeline
+                  groups={overlayGroups}
+                  now={now}
+                  range={view.range}
+                  baselineFilter={view.baseline}
+                  query={normalisedQuery}
+                  selected={null}
+                  onPick={() => {}}
+                />
+              )}
+            </div>
+          )}
         </section>
 
         <section
@@ -809,7 +1114,9 @@ export default function Explorer({
           aria-hidden={focusClass ? undefined : true}
           style={
             detailGroup
-              ? ({ "--pr-mis": `var(--pr-mis-${detailGroup.mission})` } as CSSProperties)
+              ? ({
+                  "--pr-mis": `var(--pr-mis-${detailGroup.mission})`,
+                } as CSSProperties)
               : undefined
           }
         >

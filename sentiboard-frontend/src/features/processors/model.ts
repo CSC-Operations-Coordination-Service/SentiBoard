@@ -116,3 +116,10 @@ export function longDate(ms: number): string {
 export function isoDay(ms: number): string {
   return new Date(ms).toISOString().slice(0, 10);
 }
+
+/** Baseline tag, or 'Mon YYYY' when the baseline is "—". Decision §2b / §6.5 verOf. */
+export function verOf(r: ReleaseRecord): string {
+  if (r.baseline !== "—") return r.baseline;
+  const d = new Date(r.ms);
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
