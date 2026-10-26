@@ -28,10 +28,11 @@ export const viewport: Viewport = {
   themeColor: "#006B7C",
 };
 
-/* Runs before first paint: applies the saved theme (dark by default) so the page never flashes the
-   wrong one, and marks <html> with .js so CSS can tell the JavaScript and no-JavaScript layouts
-   apart (src/styles/shell.css). Same key as the theme toggle: localStorage "sb-theme". */
-const PRE_PAINT = `(function(){var d=document.documentElement;d.classList.add("js");try{var t=localStorage.getItem("sb-theme");if(t!=="light"&&t!=="dark")t="dark";d.setAttribute("data-theme",t);}catch(e){}})();`;
+/* Runs before first paint: marks <html> with .js so CSS can tell the JavaScript and no-JavaScript
+   layouts apart (src/styles/shell.css). Dark-only mode — data-theme="dark" is already in the HTML;
+   we clear any stored light choice so it can never flash on reload. To restore the toggle, reinstate
+   the localStorage read here and bring back <ThemeToggle /> in Nav.tsx. */
+const PRE_PAINT = `(function(){var d=document.documentElement;d.classList.add("js");try{localStorage.removeItem("sb-theme");}catch(e){}})();`;
 
 export default function RootLayout({
   children,
@@ -39,9 +40,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    // The pre-paint script changes data-theme and class before React hydrates.
     <html lang="en" data-theme="dark" data-scroll-behavior="smooth" className={notoSans.variable} suppressHydrationWarning>
       <head>
+        <meta name="color-scheme" content="dark" />
         <script dangerouslySetInnerHTML={{ __html: PRE_PAINT }} />
       </head>
       <body>

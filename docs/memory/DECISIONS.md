@@ -369,3 +369,16 @@ top would produce a double-masking effect.
 - **`cancelAnimationFrame(0)` in the instant-swap branch is a no-op.** The actual rAF cancellation is handled by the `useLayoutEffect([tweenTarget])` cleanup when `setTweenTarget(null)` fires. The explicit call was removed in the final code (relying solely on the cleanup).
 
 - **Interrupted tween (mission change mid-flight) is handled by the `useLayoutEffect` cleanup.** When `setTweenTarget(toMission2)` fires during an in-flight tween, the previous effect's cleanup cancels the rAF and clears inline styles, then the new effect starts fresh from `posRef.current` (wherever the orbit was). Edge case: if the user interrupts S1→S3 with S3→S1 before `setDisplayedMission("3")` fires, `displayedMission` stays "1" and both main and overlay sheets momentarily show S1 data. Accepted as a minor edge case.
+
+## 2026-10-26 — Dark-only mode (toggle removed, light CSS kept unused)
+
+**Decision.** The app is dark-only, matching the mock-up branch
+`feature-DEVOCS-219-Frontend-Restyling` commit `6e6477b`. The theme toggle (`ThemeToggle` component)
+is hidden in Nav.tsx; the root layout renders `<html data-theme="dark">` from the server and adds
+`<meta name="color-scheme" content="dark">`. The pre-paint inline script no longer reads
+`localStorage "sb-theme"` — it only removes the key (one-liner, side-effect-free). All
+`:root[data-theme="light"]` CSS blocks are kept untouched for a future re-enable. No
+`prefers-color-scheme` rules exist in the codebase, so none needed scoping.
+**Consequences.** The toggle cannot be reached; any stored light preference is cleared on load.
+To restore: re-add `<ThemeToggle />` in `Nav.tsx`, reinstate the localStorage read in the
+`PRE_PAINT` string in `layout.tsx`, and revert the `<meta name="color-scheme">` entry.
