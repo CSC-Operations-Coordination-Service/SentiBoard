@@ -13,6 +13,7 @@ import {
   MONTHS,
   isoDay,
   laneName,
+  verOf,
   type ProcessorGroup,
   type ReleaseRecord,
 } from "./model";
@@ -197,12 +198,6 @@ function buildAxis([start, end]: Win, now: number): Axis {
   };
 }
 
-/** Version text: baseline tag, or 'Mon YYYY' when baseline is "—" (Decision 14 / §6.5 verOf). */
-function verOf(r: ReleaseRecord): string {
-  if (r.baseline !== "—") return r.baseline;
-  const d = new Date(r.ms);
-  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
-}
 
 interface Tip {
   group: ProcessorGroup;
