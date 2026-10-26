@@ -169,6 +169,30 @@ function zoomWindow(ms: number, bounds: Win): Win {
   return [t0, t1];
 }
 
+// §11 / Decision 11 — orbit rotation on mission change.
+// NAV_H matches the shell's fixed nav (§11: "H = 100vh − 64px").
+const NAV_H = 64;
+
+function easeInOutCubic(q: number): number {
+  return q < 0.5 ? 4 * q * q * q : 1 - Math.pow(-2 * q + 2, 3) / 2;
+}
+
+/**
+ * Planet-centre and STEP for the orbit rotation (§11).
+ *   H_stage = innerHeight − 64  (stage below the nav)
+ *   centreY_stage = H_stage + 6133.05 × (H_stage / 1600)   ≈ 4.833 × H_stage
+ *   centreY_vp    = NAV_H + centreY_stage   (viewport coords)
+ *   STEP = W × 1.08 / (centreY_stage − H_stage / 2)        ≈ 0.43 rad at 1440 × 836
+ */
+function orbitGeometry() {
+  const W = window.innerWidth;
+  const H = window.innerHeight - NAV_H;
+  const centreY_stage = H + 6133.05 * (H / 1600);
+  const centreY_vp = NAV_H + centreY_stage;
+  const STEP = (W * 1.08) / (centreY_stage - H / 2);
+  return { W, centreY_vp, STEP };
+}
+
 /**
  * Glides the visible window to `target` like a camera: the centre moves on an ease-in-out curve
  * and the WIDTH is interpolated logarithmically, so zooming from 12 years to 10 months feels as
@@ -340,6 +364,8 @@ interface ReleaseTimelineProps {
   selected: Selection | null;
   moving: boolean;
   onPick: (ipf: string, id: string) => void;
+  scrollToEnd?: boolean;
+  scrollContainerRef?: { current: HTMLDivElement | null };
 }
 
 /* Row geometry, as drawTimeline() lays it out in SentiBoard.html. */
@@ -355,10 +381,20 @@ function ReleaseTimeline({
   selected,
   moving,
   onPick,
+  scrollToEnd = false,
+  scrollContainerRef,
 }: ReleaseTimelineProps) {
   const toPct = (ms: number) =>
     ((ms - axis.start) / (axis.end - axis.start)) * 100;
   const scrollRef = useRef<HTMLDivElement>(null); // sideways scroll (long windows)
+  // C: snap to end on mount so the overlay timeline is already at the right position before the
+  // first rAF frame, and to expose the scrollable element to the parent for post-tween snapping.
+  useLayoutEffect(() => {
+    if (scrollContainerRef) scrollContainerRef.current = scrollRef.current;
+    if (!scrollToEnd) return;
+    const sc = scrollRef.current;
+    if (sc) sc.scrollLeft = sc.scrollWidth - sc.clientWidth;
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const [tip, setTip] = useState<Tip | null>(null);
   const [tipOn, setTipOn] = useState(false);
   const tipRef = useRef<HTMLDivElement>(null);
@@ -903,11 +939,31 @@ export default function Processors() {
   const pumpHorizon = useHorizonMask(containerRef, procpaneRef, detailRef);
   const [lcolEnter, setLcolEnter] = useState(false);
 
+  /* §11 / Decision 11 — orbit rotation state and refs. */
+  // Animated float position 0–3 (S1=0 … S5P=3); written by the rAF loop, read at cancel.
+  const posRef = useRef(MISSION_ORDER.indexOf(DEFAULT_MISSION) as number);
+  // Incoming mission while the tween runs; null at rest.
+  const [tweenTarget, setTweenTarget] = useState<MissionId | null>(null);
+  const tweenTargetRef = useRef<MissionId | null>(null); // set immediately (closure companion)
+  // Tween params stored here so the useLayoutEffect can read them after overlay mounts.
+  const tweenParamsRef = useRef<{ fromPos: number; toIdx: number; dur: number; mainIdx: number } | null>(null);
+  // SpaceBackdrop turn — set once per mission change (§11 deviation, see Decision 11).
+  const [turn, setTurn] = useState(0);
+  // Direct DOM refs for per-frame style mutations (no React setState in the rAF loop).
+  const sheetMainRef = useRef<HTMLDivElement | null>(null);
+  const sheetOverRef  = useRef<HTMLDivElement | null>(null);
+  // Four satellite img refs (one per mission) — stacked in one .orbit div; no src ever changes.
+  const satImgRefs = useRef<Record<MissionId, HTMLImageElement | null>>({
+    "1": null, "2": null, "3": null, "5P": null,
+  });
+  // C: snap main timeline scroll to end after tween hands over, avoiding a smooth-scroll from 0.
+  const mainScrollRef   = useRef<HTMLDivElement | null>(null);
+  const justTweenedRef  = useRef(false);
+
   const processors = useProcessors();
   const allGroups = processors.data ?? NO_GROUPS;
   const ready = processors.status === "ready";
 
-  const satelliteImageUrl = SATELLITE_IMAGES[activeMission];
   const normalisedQuery = query.trim().toLowerCase();
   const isDetail = selected !== null;
 
@@ -915,6 +971,28 @@ export default function Processors() {
     () => allGroups.filter((g) => g.mission === activeMission),
     [allGroups, activeMission],
   );
+
+  // Overlay data for the incoming mission's full ReleaseTimeline (§11 point 1).
+  const overlayGroups = useMemo(
+    () => (tweenTarget ? allGroups.filter((g) => g.mission === tweenTarget) : NO_GROUPS),
+    [allGroups, tweenTarget],
+  );
+  const overlayBounds = useMemo((): Win => {
+    if (!tweenTarget) return [now, now];
+    const earliest = overlayGroups.reduce(
+      (min, g) => g.releases.reduce((m, r) => Math.min(m, r.ms), min),
+      now,
+    );
+    return timelineBounds(earliest, now);
+  }, [overlayGroups, now, tweenTarget]);
+  const overlayAxis = useMemo(
+    () => (tweenTarget ? buildAxis(rangeWindow(range, now, overlayBounds), now) : null),
+    [tweenTarget, range, now, overlayBounds],
+  );
+
+  // KPIs and the mission caption switch to the incoming mission at tween start (§11 point 4).
+  const displayMission = tweenTarget ?? activeMission;
+  const statsGroups = tweenTarget ? overlayGroups : missionGroups;
 
   // The window the timeline should show: the range (1Y/2Y/ALL), or — with a release picked — ten
   // months around that release. useAnimatedWindow glides from one to the other.
@@ -956,13 +1034,193 @@ export default function Processors() {
       ? detailGroup.releases.findIndex((r) => r.id === view.id)
       : -1;
 
+  // §11 / Decision 11 — orbit rotation tween.
+  // `activeMission` at call time is the outgoing mission; it stays stable until tween end.
+  const startMissionTween = useCallback(
+    (toMission: MissionId) => {
+      const toIdx = MISSION_ORDER.indexOf(toMission);
+      const fromPos = posRef.current;
+      const { STEP } = orbitGeometry();
+
+      // Start SpaceBackdrop easing immediately (§11: phi = pos × STEP).
+      // Deviation: turn prop has a fixed 900 ms ease-out cubic independent of the orbit tween
+      // (SpaceBackdrop exposes no per-frame API without modifying the shared component).
+      setTurn(toIdx * STEP);
+
+      // prefers-reduced-motion: instant swap, no rAF (§11).
+      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+        posRef.current = toIdx;
+        setActiveMission(toMission);
+        setTweenTarget(null); // clears any in-flight tween via the useLayoutEffect cleanup
+        tweenTargetRef.current = null;
+        return;
+      }
+
+      const steps = Math.abs(toIdx - fromPos);
+      const dur = 1300 + 600 * Math.max(0, steps - 1); // §11: 1300 + 600·(n−1) ms
+      const mainIdx = MISSION_ORDER.indexOf(activeMission); // outgoing, stable for this tween
+
+      // Store params so the useLayoutEffect can start the rAF after the overlay commits.
+      tweenParamsRef.current = { fromPos, toIdx, dur, mainIdx };
+      tweenTargetRef.current = toMission;
+      setTweenTarget(toMission); // triggers render of overlay; useLayoutEffect starts the rAF
+    },
+    // activeMission is intentionally captured at call time (it is the outgoing mission).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeMission],
+  );
+
+  // A: preload all satellite images on mount so the tween handover never shows a blank frame.
+  useEffect(() => {
+    for (const src of Object.values(SATELLITE_IMAGES)) {
+      const img = new Image();
+      img.src = src;
+      img.decode().catch(() => {});
+    }
+  }, []);
+
+  // Start the rAF loop only after the overlay DOM is committed (§11 fix: avoids the race between
+  // setTweenTarget and requestAnimationFrame where the overlay refs could be null on frame 1).
+  useLayoutEffect(() => {
+    if (!tweenTarget || !tweenParamsRef.current) return;
+
+    const { fromPos, toIdx, dur, mainIdx } = tweenParamsRef.current;
+    const toMission = tweenTarget; // stable for this closure
+
+    const mainMission = MISSION_ORDER[mainIdx];
+
+    // §11 issue-2 fix: read ALL geometry here — before any style write — so the rAF only writes.
+    // planet-centre x = W/2; y (viewport) = NAV_H + centreY_stage (§11).
+    const W = window.innerWidth;
+    const H = window.innerHeight - NAV_H;
+    const centreY_stage = H + 6133.05 * (H / 1600);
+    const centreY_vp    = NAV_H + centreY_stage;
+    let STEP_f = (W * 1.08) / (centreY_stage - H / 2);
+    const pcx = W / 2;
+    const pcy = centreY_vp;
+
+    const sheetMainR = sheetMainRef.current?.getBoundingClientRect();
+    const sheetOverR  = sheetOverRef.current?.getBoundingClientRect();
+    const orbitR = (satImgRefs.current[mainMission] ?? satImgRefs.current[toMission])?.getBoundingClientRect();
+
+    const mainSheetO = { x: sheetMainR ? pcx - sheetMainR.left : 0, y: sheetMainR ? pcy - sheetMainR.top : 0 };
+    const overSheetO  = { x: sheetOverR  ? pcx - sheetOverR.left  : 0, y: sheetOverR  ? pcy - sheetOverR.top  : 0 };
+    const orbitO      = { x: orbitR      ? pcx - orbitR.left      : 0, y: orbitR      ? pcy - orbitR.top      : 0 };
+
+    // Pre-hide incoming satellite before first paint (inline style; cleared by clearStyles).
+    const toSatEl = satImgRefs.current[toMission];
+    if (toSatEl) { toSatEl.style.visibility = "hidden"; toSatEl.style.opacity = "0"; }
+
+    let raf = 0;
+    let t0 = 0; // captured on first rAF frame so slow renders don't eat the tween budget
+
+    const clearStyles = () => {
+      for (const r of [sheetMainRef, sheetOverRef]) {
+        const el = r.current;
+        if (!el) continue;
+        el.style.opacity = "";
+        el.style.visibility = "";
+        el.style.transform = "";
+        el.style.transformOrigin = "";
+      }
+      for (const mid of [mainMission, toMission]) {
+        const el = satImgRefs.current[mid];
+        if (!el) continue;
+        el.style.opacity = "";
+        el.style.visibility = "";
+        el.style.transform = "";
+        el.style.transformOrigin = "";
+      }
+    };
+
+    const applyEl = (
+      el: HTMLElement | null,
+      origin: { x: number; y: number },
+      off: number,
+    ) => {
+      if (!el) return;
+      const abs = Math.abs(off);
+      if (abs >= 0.999) {
+        el.style.opacity = "0";
+        el.style.visibility = "hidden";
+        el.style.transform = "";
+        return;
+      }
+      el.style.visibility = "";
+      el.style.opacity = String(Math.max(0, 1 - abs * 1.4));
+      el.style.transformOrigin = `${origin.x.toFixed(1)}px ${origin.y.toFixed(1)}px`;
+      el.style.transform = `rotate(${(off * STEP_f).toFixed(5)}rad)`;
+    };
+
+    // rAF only writes — all reads were taken above.
+    const frame = (now_t: number) => {
+      if (t0 === 0) t0 = now_t; // t0 on first rAF frame, not at click time
+      const q = Math.min(1, (now_t - t0) / dur);
+      const e = easeInOutCubic(q);
+      const pos = fromPos + (toIdx - fromPos) * e;
+      posRef.current = pos;
+
+      applyEl(sheetMainRef.current,            mainSheetO, mainIdx - pos);
+      applyEl(sheetOverRef.current,             overSheetO,  toIdx - pos);
+      applyEl(satImgRefs.current[mainMission],  orbitO,     mainIdx - pos);
+      applyEl(satImgRefs.current[toMission],    orbitO,      toIdx - pos);
+
+      if (q < 1) {
+        raf = requestAnimationFrame(frame);
+      } else {
+        posRef.current = toIdx;
+        justTweenedRef.current = true; // C: snap main scroll before next paint
+        setActiveMission(toMission);
+        setTweenTarget(null);
+        tweenTargetRef.current = null;
+      }
+    };
+
+    // On resize: update STEP_f from viewport dims only — no getBoundingClientRect reads.
+    const onResize = () => {
+      const W2 = window.innerWidth;
+      const H2 = window.innerHeight - NAV_H;
+      const c2  = H2 + 6133.05 * (H2 / 1600);
+      STEP_f = (W2 * 1.08) / (c2 - H2 / 2);
+    };
+    window.addEventListener("resize", onResize);
+
+    raf = requestAnimationFrame(frame);
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      cancelAnimationFrame(raf);
+      clearStyles();
+    };
+  }, [tweenTarget]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // C: snap main timeline scroll to end after tween, before the first post-tween paint, so the
+  // settled useEffect([moving]) scroll-to-end fires as a no-op instead of a visible slide.
+  useLayoutEffect(() => {
+    if (!justTweenedRef.current) return;
+    justTweenedRef.current = false;
+    const sc = mainScrollRef.current;
+    if (sc) sc.scrollLeft = sc.scrollWidth - sc.clientWidth;
+  }, [activeMission]);
+
   // Single point of truth for all view changes (Decision 8).
   const changeView = (
     action: { mission: MissionId } | { range: Range } | { sel: Selection | null },
   ) => {
     if ("mission" in action) {
-      setActiveMission(action.mission);
       setSelected(null);
+      if (isDetail) {
+        // Detail open: instant swap — avoid the FLIP and rotation colliding (§11 / Decision 11).
+        // setTweenTarget(null) triggers the useLayoutEffect cleanup, which cancels any rAF.
+        setTweenTarget(null);
+        tweenTargetRef.current = null;
+        posRef.current = MISSION_ORDER.indexOf(action.mission);
+        const { STEP } = orbitGeometry();
+        setTurn(posRef.current * STEP);
+        setActiveMission(action.mission);
+      } else {
+        startMissionTween(action.mission);
+      }
     } else if ("range" in action) {
       setRange(action.range);
       setSelected(null);
@@ -988,6 +1246,8 @@ export default function Processors() {
     // changeView only calls stable setters; openDrop and isDetail are the real triggers.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDrop, isDetail]);
+
+  // Unmount: the useLayoutEffect([tweenTarget]) cleanup cancels the rAF automatically.
 
   // Click-outside closes any open dropdown (DA pointerdown pattern).
   useEffect(() => {
@@ -1070,14 +1330,15 @@ export default function Processors() {
     return cancelPump;
   }, [focusClass]);
 
-  const missionReleases = missionGroups.flatMap((g) => g.releases);
+  // KPIs use statsGroups (= overlay mission during tween, active mission otherwise — §11 point 4).
+  const missionReleases = statsGroups.flatMap((g) => g.releases);
   const yearStart = now - 365 * DAY;
   const latestMs = missionReleases
     .filter((r) => r.ms <= now)
     .reduce((m, r) => Math.max(m, r.ms), 0);
   // Until the data is in, the counts read "—" rather than a misleading 0.
   const stats = [
-    { value: ready ? missionGroups.length : "—", label: "Processors" },
+    { value: ready ? statsGroups.length : "—", label: "Processors" },
     { value: ready ? missionReleases.length : "—", label: "Releases" },
     {
       value: ready
@@ -1118,7 +1379,7 @@ export default function Processors() {
       </div>
 
       <section className={ambientRoot(motion.paused, s.container)} ref={containerRef}>
-        <SpaceBackdrop page={2} paused={motion.paused} />
+        <SpaceBackdrop page={2} paused={motion.paused} turn={turn} />
 
         {/* Headline counts for the selected mission */}
         <Reveal className={s.counters}>
@@ -1163,7 +1424,7 @@ export default function Processors() {
                     <button
                       key={m}
                       type="button"
-                      className={`${s.fitem} ${activeMission !== m ? s.fitemOff : ""}`}
+                      className={`${s.fitem} ${displayMission !== m ? s.fitemOff : ""}`}
                       onClick={() => {
                         changeView({ mission: m });
                         setOpenDrop(null);
@@ -1277,22 +1538,30 @@ export default function Processors() {
         <div className={`${s.split} ${focusClass ? s.focus : ""}`}>
           <section
             className={`${s.lcol} ${lcolEnter ? s.lcolEnter : ""}`}
-            aria-label={`Sentinel-${activeMission}`}
+            aria-label={`Sentinel-${displayMission}`}
             aria-hidden={focusClass || undefined}
           >
+            {/* All four satellite images stacked in one .orbit — src never changes (§11 fix).
+                .satOff hides non-active/non-target images; the rAF writes inline styles on top.
+                clearStyles() removes inline styles so the CSS class resumes control. */}
             <div className={s.orbit}>
-              {satelliteImageUrl && (
+              {MISSION_ORDER.map((mid) => (
                 <img
-                  src={satelliteImageUrl}
-                  className={s.sat}
-                  alt={`Artist's impression of Sentinel-${activeMission}`}
+                  key={mid}
+                  ref={(el) => { satImgRefs.current[mid] = el; }}
+                  src={SATELLITE_IMAGES[mid]}
+                  className={`${s.sat}${mid !== activeMission && mid !== tweenTarget ? ` ${s.satOff}` : ""}`}
+                  alt={mid === displayMission ? `Artist's impression of Sentinel-${mid}` : ""}
+                  aria-hidden={mid !== displayMission ? true : undefined}
                 />
-              )}
+              ))}
             </div>
           </section>
 
-          <section className={s.procpane} ref={procpaneRef}>
-            <div className={s.sheet}>
+          {/* `.tweening` lifts overflow-x so the rotating sheets can extend outside (§11). */}
+          <section className={`${s.procpane} ${tweenTarget ? s.tweening : ""}`} ref={procpaneRef}>
+            {/* Outgoing mission sheet — rotated away by the rAF tween (§11). */}
+            <div ref={sheetMainRef} className={s.sheet}>
               <div className={s.phead}>
                 <h2>{MISSION_NAMES[activeMission]} processors</h2>
               </div>
@@ -1335,13 +1604,43 @@ export default function Processors() {
                   baselineFilter={baselineFilter}
                   query={normalisedQuery}
                   selected={selected}
-                  moving={moving}
+                  moving={moving || !!tweenTarget}
                   onPick={toggleRelease}
+                  scrollContainerRef={mainScrollRef}
                 />
               ) : (
                 <p className={s.none}>No processors for this mission.</p>
               )}
             </div>
+            {/* Incoming mission sheet — full heading + timeline, swings in during the tween (§11).
+                inert + aria-hidden: no focus, no events, no tooltip. */}
+            {tweenTarget && overlayAxis && (
+              <div
+                ref={sheetOverRef}
+                className={`${s.sheet} ${s.sheetOver}`}
+                aria-hidden="true"
+                {...({ inert: "" } as Record<string, unknown>)}
+              >
+                <div className={s.phead}>
+                  <h2>{MISSION_NAMES[tweenTarget]} processors</h2>
+                </div>
+                <div className={s.tlBar}>
+                  <span className={s.tlCap}>Release timeline</span>
+                </div>
+                {overlayGroups.length > 0 && (
+                  <ReleaseTimeline
+                    groups={overlayGroups}
+                    axis={overlayAxis}
+                    baselineFilter={baselineFilter}
+                    query={normalisedQuery}
+                    selected={null}
+                    moving={true}
+                    onPick={() => {}}
+                    scrollToEnd={true}
+                  />
+                )}
+              </div>
+            )}
           </section>
 
           <section

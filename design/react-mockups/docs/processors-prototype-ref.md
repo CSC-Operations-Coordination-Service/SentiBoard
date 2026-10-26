@@ -1329,6 +1329,28 @@ applies one, it writes **"Applied in Session N (date): …"** under it with the 
     rotate about the planet centre (1300 + 600·(n−1) ms, ease-in-out cubic), the outgoing sheet fades at
     1.4× its offset; the shared planet/sky turn only if our backdrop component already exposes a turn
     (check how Events/DA turn it). Until then: instant swap. Reduced motion: instant.
+
+    **Applied in Session 7 (2026-10-26):** One rAF tween drives `posRef` (float 0–3, S1=0…S5P=3)
+    with `dur = 1300 + 600·max(0, |to−from|−1) ms`, ease-in-out cubic
+    (`q<0.5 ? 4q³ : 1−(−2q+2)³/2`). Geometry: `H_stage = innerHeight − 64` (stage below nav, §11
+    "H = 100vh − 64px"); `centreY_stage = H_stage + 6133.05·(H_stage/1600)`;
+    `centreY_vp = 64 + centreY_stage` (viewport coords); `STEP = W·1.08/(centreY_stage − H_stage/2)`.
+    Per-frame: `off = missionIndex − pos`; `|off|≥0.999 → hidden`; `opacity = max(0,1−|off|·1.4)`;
+    `transform: rotate(off·STEP rad)` with `transform-origin` = planet centre in element local
+    coords (= `centreY_vp − el.getBoundingClientRect().top`), captured from `getBoundingClientRect()`
+    on the first frame. Both outgoing and incoming mission render simultaneously: heading + full
+    `ReleaseTimeline` in each (incoming sheet uses `inert` + `aria-hidden`, `moving={true}`, no
+    tooltip). KPIs, mission dropdown highlight and `aria-label` switch to the incoming mission at
+    tween start via `displayMission = tweenTarget ?? activeMission`. If a release is open at
+    mission-change time: instant swap only (avoids FLIP + rotation collision). Interrupt: new
+    mission change cancels the running rAF, starts from `posRef.current`. Planet/sky: `turn={phi}`
+    passed to `SpaceBackdrop` once at mission-change time; backdrop eases over its own 900 ms
+    ease-out cubic independently — **deviation from §11** (SpaceBackdrop exposes no per-frame API
+    without modifying the shared component; confirmed same units: `phi = pos × STEP`, texture shift
+    `≈ 6.42·phi·W px`). SpaceBackdrop snaps under `prefers-reduced-motion` (confirmed line 356-360
+    of `SpaceBackdrop.tsx`). `prefers-reduced-motion`: instant swap, overlays hidden via CSS
+    `display:none`. `.procpane.tweening { overflow: visible }` lifts the clip so rotating sheets
+    extend outside. `moving || !!tweenTarget` suppresses marker interactivity during the tween.
 12. **Overview ↔ detail motion (§10).** → _Recommended:_ the prototype's: two 50 % areas, FLIP of the
     timeline column 720 ms `cubic-bezier(.2,.7,.2,1)`, detail fade 420 ms + slide from 56 px 640 ms
     after 180 ms, close = detail out first then layout back after 280 ms with the satellite column
