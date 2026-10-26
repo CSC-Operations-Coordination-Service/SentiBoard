@@ -516,7 +516,7 @@ function FilterDrop({
           <path d="M3 4.5l3 3 3-3" />
         </svg>
       </button>
-      <div className={s.fdropBody} {...(!open ? { inert: '' } as React.HTMLAttributes<HTMLDivElement> : {})}>
+      <div className={s.fdropBody}>
         <div className={s.fdropInner}>{children}</div>
       </div>
     </div>

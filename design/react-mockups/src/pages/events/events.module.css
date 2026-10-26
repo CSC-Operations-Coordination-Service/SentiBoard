@@ -829,11 +829,14 @@ select.control {
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  transition: padding 480ms cubic-bezier(.2,.7,.2,1);
+  visibility: hidden;
+  transition: padding 480ms cubic-bezier(.2,.7,.2,1), visibility 0s linear 480ms;
 }
 
 .fdropOpen .fdropInner {
   padding: 6px 0 14px;
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 /* Event type: icon + label in the type colour. Off state: grey + reduced opacity. */
