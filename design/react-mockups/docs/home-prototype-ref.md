@@ -809,28 +809,35 @@ playsInline`; under `prefers-reduced-motion` do not autoplay (first frame, pause
     "Open module →", contact link (the FAQ bars: Decision 12). Every interactive element keeps (or
     gets) the shared `:focus-visible` ring other pages use.
     **Applied in Session 1 (2026-10-26):** No `:hover` rule anywhere in `home.module.css`. `.news:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }` — colour/width from `processors.module.css:100-103`; offset `-2px` (inside) instead of `+3px` because `.row` has `overflow: hidden` and an outset ring would be clipped.
+    **Applied in Session 5 (2026-10-26):** `.faqContact a` and `.faqAnswer a` — no `:hover` rule (Decision 11). `.faqQ:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }` added (matches shared ring pattern).
 12. **FAQ bars (closed).** → _Recommended:_ prototype geometry: `padding: 16px 20px` (49 px), gap 12,
     icon box 19 (svg 17, stroke 1.7), chevron 14 px stroke 2.4 rotating 0.2 s, no border when closed,
     ground `#070D11` (token), 12 px between bars; title weight **700** (what the prototype renders).
     Interactive states the prototype cannot show — keep ours: hover ground `#0A1217`, open edge
     `rgba(54,208,224,.35)`, chevron rotated when open. Alternative: no hover (strict prototype).
+    **Applied in Session 5 (2026-10-26):** `.faqList { display:flex; flex-direction:column; gap:12px }`. `.faqItem { background:var(--home-faq-bar); transition:background-color .2s, box-shadow .2s }`. `.faqItem:hover { background:var(--home-faq-bar-hover) }`. `.faqItemOpen { box-shadow:inset 0 0 0 1px var(--home-faq-open) }` (inset ring, no border property). `.faqQ { padding:16px 20px; min-height:49px; gap:12px; font-size:15px; font-weight:700; font-family:var(--font-sans) }`. `.faqIco { width:19px; display:grid; place-items:center }` — SVG 17×17 strokeWidth 1.7 unchanged. `.faqChev { width:14px; height:14px; transition:transform .2s }` — SVG strokeWidth updated 2.6→2.4. `.faqItemOpen .faqChev { transform:rotate(180deg) }`. All in `home.module.css`.
 13. **FAQ eyebrow `05 — Support`.** It numbers a 5th section, but the panels carry no 01–04.
     → _Recommended:_ leave it out (as the current code). Alternative: prototype (10px, .2em, uppercase,
     `#00E5FF`, 16 px below).
+    **Applied in Session 5 (2026-10-26):** No eyebrow. `<header className={styles.faqHead}>` contains only `<h2>FAQs</h2>` and `<p>Find answers…</p>`.
 14. **FAQ open state.** No prototype. → _Recommended:_ keep ours (several groups open at once, answers
     as now, reveal 0.25 s) moved into the module, with a reduced-motion guard, `aria-expanded` and
     `aria-controls`. Values recorded in the Applied note.
+    **Applied in Session 5 (2026-10-26):** Body conditionally rendered `{isOpen && <div className={styles.faqBody} id={\`faq-body-${idx}\`}>…</div>}`. `@keyframes faqReveal { from {opacity:0; transform:translateY(-3px)} to {opacity:1; transform:none} }`. `.faqBody { animation:faqReveal .25s ease }`. Several open simultaneously — `openSections: Record<number,boolean>`, `toggleFaq(idx)` helper. `@media (prefers-reduced-motion:reduce) { .faqBody { animation:none } .faqChev, .faqItem { transition:none } }`. `aria-expanded={isOpen}` already present; `aria-controls={\`faq-body-${idx}\`}` added. All in `home.module.css` / `Home.tsx`.
 15. **FAQ column.** → _Recommended:_ 808 px of bars at desktop as the prototype, with the shared
     padding: `max-width: calc(808px + 2 * clamp(18px, 4vw, 48px)); padding-inline: clamp(18px, 4vw, 48px)`
     (18 px on phones, replacing the current 640 px media rule). Answers keep their left inset under the
     title (icon box + gap + side padding).
+    **Applied in Session 5 (2026-10-26):** `.faqIn { max-width:calc(808px + 2 * clamp(18px,4vw,48px)); margin:0 auto; padding-inline:clamp(18px,4vw,48px) }`. Answer left inset: `.faqBody { padding:2px 20px 18px 51px }` (51 = 20 pad + 19 icon + 12 gap); `@media (max-width:640px) { .faqBody { padding-left:20px } }`. In `home.module.css`.
 16. **`section#faq` overrides in `examples.css`.** They use `!important` and hit any `section#faq`
     while that sheet is loaded (Vite keeps a CSS import global once any page imports it).
     → _Recommended:_ after the move, check whether anything links to `#faq` (grep); if nothing does,
     drop the `id`; if something does, keep it and verify in the browser that every FAQ colour still
     equals the module's value (the overrides set h2, button spans, `p` and svg to `#fff !important`).
+    **Applied in Session 5 (2026-10-26):** Grep confirmed no `href="#faq"` in any TSX/TS file. `id="faq"` dropped from `<section>`. `import "@/styles/examples.css"` removed from `Home.tsx` (line 5). `examples.css` remains loaded by `IndexExamples.tsx` and `AboutRedesign.tsx` — the `section#faq !important` overrides no longer reach the Home page.
 17. **Bottom spacing.** → _Recommended:_ the FAQ's own `padding: 120px 0 130px`; no `--sb-earth-h`
     (Home has no planet).
+    **Applied in Session 5 (2026-10-26):** `.faqSec { padding:120px 0 130px }` in `home.module.css`.
 18. **SpaceBackdrop.** → _Recommended:_ none — the prototype Home has no sky and no planet. Do not add one.
 19. **Tokens** (new, in `tokens.css`, dark block; never change shared ones):
     - `--home-ground: #000000` — News bar, row, button, list; hero; FAQ section
@@ -852,3 +859,4 @@ playsInline`; under `prefers-reduced-motion` do not autoplay (first frame, pause
     check at 320 / 390 px that no panel title (`white-space: nowrap`) overflows; h1 stays 56 px
     (prototype) unless it overflows at 320 px.
     **Applied in Session 4 (2026-10-26):** `.panelTitle { white-space:nowrap }` kept for ≥ 400 px. `@media (max-width:399px) { .panelTitle { white-space:normal } }` added — titles wrap rather than overflow at ≤ 399 px. No visual test possible without a browser; 320 px available text width = 274 px (320 − 18 − 28) with 30 px font; "Acquisitions Status" is the borderline title.
+    **Applied in Session 5 (2026-10-26):** FAQ narrow screen — `@media (max-width:640px) { .faqBody { padding-left:20px } }` (answer copy aligns with button left edge at small widths). `.faqIn` inherits the `clamp` padding from Decision 15 (no separate narrow rule needed for the column). `faqQuestion` visible per this session; no display-none behaviour.

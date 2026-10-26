@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Reveal } from "@/components/ui";
 import { REALTIME, MODULES } from "@/data/mock";
-import "@/styles/examples.css";
 import styles from './home.module.css';
 
 const FAQ_GROUPS: {
@@ -156,6 +155,7 @@ export default function Home() {
   const live = [...REALTIME, ...REALTIME];
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({});
   const [newsOpen, setNewsOpen] = useState(false);
+  function toggleFaq(idx: number) { setOpenSections(s => ({ ...s, [idx]: !s[idx] })); }
 
   const videoRef  = useRef<HTMLVideoElement>(null);
   const listRef   = useRef<HTMLDivElement>(null);
@@ -367,29 +367,31 @@ export default function Home() {
         ))}
       </div>
 
-      <section className="faq-sec" id="faq">
-        <div className="faq-in">
-          <header className="faq-head">
+      <section className={styles.faqSec}>
+        <div className={styles.faqIn}>
+          <header className={styles.faqHead}>
             <h2>FAQs</h2>
             <p>
               Find answers to the most common questions about the dashboard.
             </p>
           </header>
 
-          <div className="faq-list">
+          <div className={styles.faqList}>
             {FAQ_GROUPS.map((section, idx) => {
               const isOpen = !!openSections[idx];
               return (
-                <div key={idx} className={`faq-item${isOpen ? " open" : ""}`}>
+                <div
+                  key={idx}
+                  className={`${styles.faqItem}${isOpen ? " " + styles.faqItemOpen : ""}`}
+                >
                   <button
                     type="button"
-                    className="faq-q"
+                    className={styles.faqQ}
                     aria-expanded={isOpen}
-                    onClick={() =>
-                      setOpenSections({ ...openSections, [idx]: !isOpen })
-                    }
+                    aria-controls={`faq-body-${idx}`}
+                    onClick={() => toggleFaq(idx)}
                   >
-                    <span className="faq-ico">
+                    <span className={styles.faqIco}>
                       <svg
                         width="17"
                         height="17"
@@ -403,26 +405,26 @@ export default function Home() {
                         {section.icon}
                       </svg>
                     </span>
-                    <span className="faq-title">{section.title}</span>
+                    <span className={styles.faqTitle}>{section.title}</span>
                     <svg
-                      className="faq-chev"
-                      width="12"
-                      height="12"
+                      className={styles.faqChev}
+                      width="14"
+                      height="14"
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2.6"
+                      strokeWidth="2.4"
                       aria-hidden="true"
                     >
                       <path d="M6 9l6 6 6-6" />
                     </svg>
                   </button>
                   {isOpen && (
-                    <div className="faq-body">
+                    <div className={styles.faqBody} id={`faq-body-${idx}`}>
                       {section.items.map((item, itemIdx) => (
-                        <div className="faq-qa" key={itemIdx}>
-                          <p className="faq-question">{item.q}</p>
-                          <p className="faq-answer">{item.a}</p>
+                        <div className={styles.faqQa} key={itemIdx}>
+                          <p className={styles.faqQuestion}>{item.q}</p>
+                          <p className={styles.faqAnswer}>{item.a}</p>
                         </div>
                       ))}
                     </div>
@@ -432,7 +434,7 @@ export default function Home() {
             })}
           </div>
 
-          <p className="faq-contact">
+          <p className={styles.faqContact}>
             For any inquiries on the Copernicus Sentinel Operations Dashboard
             contact{" "}
             <a href="mailto:sentiboard@coordination-service.eu">
