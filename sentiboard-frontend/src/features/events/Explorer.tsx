@@ -19,6 +19,7 @@ import {
   useTransition,
   type CSSProperties,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   ChevronDown,
   ChevronLeft,
@@ -245,7 +246,7 @@ function DayManifest({
 
   const totalDatatakes = dayEvents.reduce((n, e) => n + e.datatakes.length, 0);
   const unavailable = dayEvents.reduce(
-    (n, e) => n + e.datatakes.filter((dt) => dt.noData).length,
+    (n, e) => n + e.datatakes.filter((dt) => classifyDatatake(dt) === "lost").length,
     0,
   );
 
@@ -257,7 +258,8 @@ function DayManifest({
         <span className={s.ziSum}>
           {dayEvents.length} occurrence{dayEvents.length === 1 ? "" : "s"}{" "}
           · {totalDatatakes} datatake{totalDatatakes === 1 ? "" : "s"}{" "}
-          · {unavailable} unavailable
+          · {unavailable} unavailable{" "}
+          · times in UTC
         </span>
       </header>
 
@@ -266,7 +268,7 @@ function DayManifest({
         const color = CATEGORY_COLOR[event.category];
         const impactStatus = classifyImpact(event.datatakes);
         const impactColor = STATUS_COLOR[impactStatus];
-        const unavailableCount = event.datatakes.filter((dt) => dt.noData).length;
+        const unavailableCount = event.datatakes.filter((dt) => classifyDatatake(dt) === "lost").length;
 
         const isExpanded = expandedDtk.has(event.id);
         const shownDtk = isExpanded ? event.datatakes : event.datatakes.slice(0, DTK_SHOWN);
@@ -278,11 +280,12 @@ function DayManifest({
             className={`${s.ziOcc} ${isSelected ? s.ziOccSelected : s.ziOccDim}`}
             style={{ animationDelay: `${280 + i * 130}ms` }}
             ref={isSelected ? selectedRef : undefined}
+            onClick={!isSelected ? () => onSelect(event.id) : undefined}
           >
             <button
               type="button"
               className={s.ziTop}
-              onClick={() => onSelect(event.id)}
+              onClick={(e) => { e.stopPropagation(); onSelect(event.id); }}
             >
               <span className={s.ziTime}>{event.startTime}</span>
               <span>
@@ -322,40 +325,43 @@ function DayManifest({
               </details>
             )}
 
-            {event.datatakes.length > 0 && (
-              <section style={{ marginTop: 4 }}>
-                <div className={s.ziDtkHead}>
-                  Impacted datatakes · {event.datatakes.length}
-                  {unavailableCount > 0 ? ` · ${unavailableCount} unavailable` : ""}
-                  {/* Note: "+N more → Data Availability" link comes in legacy-parity pass */}
-                </div>
-                {shownDtk.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
-                {!isExpanded && hiddenDtkCount > 0 && (
-                  <button
-                    type="button"
-                    className={s.dtkMoreBtn}
-                    onClick={() => setExpandedDtk((prev) => new Set([...prev, event.id]))}
-                  >
-                    +{hiddenDtkCount} more
-                  </button>
-                )}
-                {isExpanded && hiddenDtkCount > 0 && (
-                  <button
-                    type="button"
-                    className={s.dtkMoreBtn}
-                    onClick={() =>
-                      setExpandedDtk((prev) => {
-                        const next = new Set(prev);
-                        next.delete(event.id);
-                        return next;
-                      })
-                    }
-                  >
-                    Show less
-                  </button>
-                )}
-              </section>
-            )}
+            <section style={{ marginTop: 4 }}>
+              <div className={s.ziDtkHead}>
+                Impacted datatakes · {event.datatakes.length}
+                {unavailableCount > 0 ? ` · ${unavailableCount} unavailable` : ""}
+              </div>
+              {event.datatakes.length === 0 ? (
+                <p className={s.emptyDetail}>No impacted datatakes recorded</p>
+              ) : (
+                <>
+                  {shownDtk.map((dt) => <DatatakeRow key={dt.datatakeId} dt={dt} />)}
+                  {!isExpanded && hiddenDtkCount > 0 && (
+                    <button
+                      type="button"
+                      className={s.dtkMoreBtn}
+                      onClick={() => setExpandedDtk((prev) => new Set([...prev, event.id]))}
+                    >
+                      +{hiddenDtkCount} more
+                    </button>
+                  )}
+                  {isExpanded && hiddenDtkCount > 0 && (
+                    <button
+                      type="button"
+                      className={s.dtkMoreBtn}
+                      onClick={() =>
+                        setExpandedDtk((prev) => {
+                          const next = new Set(prev);
+                          next.delete(event.id);
+                          return next;
+                        })
+                      }
+                    >
+                      Show less
+                    </button>
+                  )}
+                </>
+              )}
+            </section>
           </div>
         );
       })}
@@ -374,7 +380,7 @@ function StarDot({
   category: EventCategory;
   withIcon: boolean;
 }) {
-  const r = 3.5;
+  const r = 4;
   const cx = 17, cy = 17;
   return (
     <svg width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden>
@@ -443,6 +449,11 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     if (!data.ok || data.dayEvents.length === 0) return null;
     return new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate();
   });
+  // Frozen snapshot rendered during the drawer's fade-out so it never goes blank
+  const [drawerSnap, setDrawerSnap] = useState<{ dayEvents: EventDetail[]; selectedId: string | null } | null>(() => {
+    if (!data.ok || data.dayEvents.length === 0) return null;
+    return { dayEvents: data.dayEvents, selectedId: data.selectedEventId };
+  });
   const [zoom, setZoom] = useState<ZoomGeom | null>(null);
   const [zoomOn, setZoomOn] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -452,6 +463,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
   // Filter accordion open state
   const [openFilter, setOpenFilter] = useState<"type" | "mission" | "satellite" | null>(null);
+  const filterBtnRefs = useRef<Partial<Record<"type" | "mission" | "satellite", HTMLButtonElement | null>>>({});
 
   // Navigate: update local state AND URL
   const navigate = useCallback(
@@ -619,13 +631,21 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     return () => window.removeEventListener("resize", onResize);
   }, [openDay]);
 
-  // Escape closes drawer
+  // Escape closes open filter first, then drawer
   useEffect(() => {
-    if (openDay === null) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") close(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (openFilter !== null) {
+        const btn = filterBtnRefs.current[openFilter];
+        setOpenFilter(null);
+        btn?.focus();
+      } else if (openDay !== null) {
+        close();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openDay, close]);
+  }, [openDay, openFilter, close]);
 
   // Freeze scroll while drawer is open
   useEffect(() => {
@@ -657,6 +677,18 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     if (openDay !== null) setTip(null);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [openDay]);
+
+  // Keep drawer snapshot in sync: update when fresh server data arrives for the open day
+  useEffect(() => {
+    if (!data.ok || data.dayEvents.length === 0) return;
+    const day = new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate();
+    if (day === openDay) {
+      /* eslint-disable react-hooks/set-state-in-effect */
+      setDrawerSnap({ dayEvents: data.dayEvents, selectedId: data.selectedEventId });
+      /* eslint-enable react-hooks/set-state-in-effect */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   // Metrics computed from the filtered events in the current month
   const datatakesInScope = useMemo(
@@ -724,7 +756,8 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         );
       const events = byDay.get(c.day) ?? [];
       const groups = byDayByType.get(c.day) ?? [];
-      const shownGroups = groups.slice(0, MARKS_SHOWN);
+      const overflow = groups.length - MARKS_SHOWN;
+      const shownGroups = overflow > 0 ? groups.slice(0, MARKS_SHOWN - 1) : groups;
       const hiddenCount = groups.length - shownGroups.length;
       const totalItems = shownGroups.length + (hiddenCount > 0 ? 1 : 0);
 
@@ -768,13 +801,13 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                         selectDayEvent(c.day, group.events[0]!.id);
                       }
                     }}
-                    onMouseMove={!zoomed ? (e) => setTip({ category: group.category, events: group.events, x: e.clientX, y: e.clientY }) : undefined}
-                    onMouseLeave={!zoomed ? () => setTip(null) : undefined}
-                    onFocus={!zoomed ? (e) => {
+                    onMouseMove={(e) => setTip({ category: group.category, events: group.events, x: e.clientX, y: e.clientY })}
+                    onMouseLeave={() => setTip(null)}
+                    onFocus={(e) => {
                       const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
                       setTip({ category: group.category, events: group.events, x: r.left + r.width / 2, y: r.top });
-                    } : undefined}
-                    onBlur={!zoomed ? () => setTip(null) : undefined}
+                    }}
+                    onBlur={() => setTip(null)}
                   >
                     <StarDot color={color} category={group.category} withIcon={zoomed} />
                   </button>
@@ -849,6 +882,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             >
               <button
                 type="button"
+                ref={(el) => { filterBtnRefs.current["type"] = el; }}
                 className={s.fdropHead}
                 aria-expanded={openFilter === "type"}
                 onClick={() => setOpenFilter((o) => (o === "type" ? null : "type"))}
@@ -891,6 +925,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             >
               <button
                 type="button"
+                ref={(el) => { filterBtnRefs.current["mission"] = el; }}
                 className={s.fdropHead}
                 aria-expanded={openFilter === "mission"}
                 onClick={() => setOpenFilter((o) => (o === "mission" ? null : "mission"))}
@@ -930,6 +965,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             >
               <button
                 type="button"
+                ref={(el) => { filterBtnRefs.current["satellite"] = el; }}
                 className={s.fdropHead}
                 aria-expanded={openFilter === "satellite"}
                 disabled={satelliteDisabled}
@@ -1077,20 +1113,18 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         aria-label="Event detail"
         aria-hidden={openDay === null}
         inert={openDay === null}
+        onTransitionEnd={(e: React.TransitionEvent<HTMLElement>) => {
+          if (e.target === e.currentTarget && e.propertyName === "opacity" && openDay === null) {
+            setDrawerSnap(null);
+          }
+        }}
       >
         {(() => {
-          if (!data.ok) return null;
-          const drawerMatchesDay =
-            data.dayEvents.length > 0 &&
-            new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate() === openDay;
-          if (drawerMatchesDay)
+          if (drawerSnap) {
             return (
-              <DayManifest
-                dayEvents={data.dayEvents}
-                selectedId={data.selectedEventId}
-                onSelect={selectEventId}
-              />
+              <DayManifest dayEvents={drawerSnap.dayEvents} selectedId={drawerSnap.selectedId} onSelect={selectEventId} />
             );
+          }
           if (openDay !== null)
             return (
               <div className={s.drawerBody}>
@@ -1103,14 +1137,15 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         })()}
       </aside>
 
-      {/* Hover tooltip — only shown on hover-capable devices */}
-      {tip && (
+      {/* Hover tooltip — portalled to body so it appears above the zoom stage */}
+      {tip && typeof document !== "undefined" && createPortal(
         <div
           className={s.tipEl}
           style={{
             left: tipLeft,
             top: tipTop,
             transform: tipFlip ? "translateX(calc(-100% - 28px))" : undefined,
+            zIndex: 10000,
           }}
           aria-hidden
         >
@@ -1126,7 +1161,8 @@ export default function Explorer({ data }: { data: ExplorerData }) {
               <span className={s.tipName} style={{ color: "var(--mf-faint)" }}>+{tip.events.length - 3} more</span>
             )}
           </span>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

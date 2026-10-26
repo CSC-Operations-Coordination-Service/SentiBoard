@@ -382,3 +382,32 @@ is hidden in Nav.tsx; the root layout renders `<html data-theme="dark">` from th
 **Consequences.** The toggle cannot be reached; any stored light preference is cleared on load.
 To restore: re-add `<ThemeToggle />` in `Nav.tsx`, reinstate the localStorage read in the
 `PRE_PAINT` string in `layout.tsx`, and revert the `<meta name="color-scheme">` entry.
+
+## 2026-10-26 — Real-data Events Session 5: calendar dots, drawer, filters, tooltip, CSS
+
+**One star per type.** The calendar shows one dot per event category (type), not one per event.
+All events of a given type on a day are grouped under one dot. This was chosen over the prototype's
+one-dot-per-event to keep the cell readable when many events share the same date.
+
+**"+N more" after 5 datatakes.** The drawer shows the first `DTK_SHOWN = 5` datatakes per
+occurrence; a "+N more" / "Show less" toggle reveals the rest. The 5-item threshold matches the
+prototype's `maxShown` value.
+
+**Description, impacted item, and news link in drawer.** Each occurrence in the drawer renders
+the impacted item, news link (where present), and a collapsible `<details>` block with the full
+description text (parsed to `TextSegment[]`). These fields come from the server's `EventDetail`
+shape; only events for the selected day are fetched (on demand, one RSC round-trip per day).
+
+**Day, time and month come from the occurrence date.** `startDate`, `startDay`, `startTime` and
+`months` are derived from `publication_date` (= `occurence_date` in the Elasticsearch source, the
+date when the anomaly actually happened). `start` = record-created and `end` = record-last-edited;
+neither is shown in the UI. If `publication_date` is null the adapter falls back to `start` and
+logs a console.info warning with the count. `months` is always a single-element array — one
+occurrence month — not a span from start to end. The drawer time column shows `HH:MM` only.
+The summary line ends with "· times in UTC".
+
+**"N unavailable" counts LOST datatakes (mean < 10 %).** Both the per-occurrence "unavailable"
+count and the day summary header count datatakes classified as LOST (`classifyDatatake === "lost"`,
+mean completeness < 10 %). This matches the "Lost datatakes" KPI, which uses `isDatatakeLost`
+from `adapter.ts` (same classification). The prior code used `dt.noData` (all levels null),
+which was inconsistent.

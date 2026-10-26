@@ -621,6 +621,19 @@ select.control {
   gap: 2px 26px;
 }
 
+@media (min-width: 1140px) {
+  .monthBar {
+    flex-wrap: nowrap;
+  }
+}
+
+@media (max-width: 1259px) {
+  .fdrop,
+  .inline {
+    width: 170px;
+  }
+}
+
 .inline {
   --field-line: color-mix(in srgb, var(--mf-text) 30%, transparent);
   display: flex;
@@ -807,19 +820,18 @@ select.control {
 }
 
 /* Centred halfway between the left edge of the viewport and the calendar's left edge.
-   Derived formula: width = clamp(120, 0.72 × space_left_of_grid, 380)
-   where space_left ≈ (100vw − calRowWidth)/2 + calRowWidth × 5.696%.
-   In CSS (100% = calRowWidth): width = clamp(120px, calc(36vw − 31.9%), 380px).
-   Horizontal centre of the space = (space_left)/2 from viewport left
-   = (100vw − calRowWidth)/4 + calRowWidth × 2.848% from viewport left
-   = −(100vw − calRowWidth)/4 + 2.848% from calRow left.
-   With translate(−50%, −50%) to place the element's centre at that point. */
-@media (min-width: 1400px) {
+   --cal-w is defined on .calRow as the calendar box width.
+   --ls (left space) = (100vw - --cal-w) / 2; zodiac width = clamp(120px, 0.72 * --ls, 380px).
+   Centre of left space = --ls / 2 from viewport left = (--ls / 2 - --cal-w / 2) from calRow left. */
+@media (min-width: 1280px) {
+  .calRow {
+    --cal-w: min(100vw, max(560px, calc((100vh - 203px) * 1580 / 1148)));
+  }
   .zodiac {
     position: absolute;
     top: 50%;
-    left: calc(2.848% - (100vw - 100%) / 4);
-    width: clamp(120px, calc(36vw - 31.9%), 380px);
+    left: calc((var(--cal-w, 100%) - 100vw) / 4 + 2.848%);
+    width: clamp(120px, calc((100vw - var(--cal-w, 100%)) * 0.36), 380px);
     margin: 0;
     transform: translate(-50%, -50%);
   }
@@ -889,11 +901,11 @@ select.control {
   .conLine {
     animation: none;
     stroke-dashoffset: 0;
-    opacity: 1;
+    opacity: 0.45;
   }
   .conLabel {
     animation: none;
-    opacity: 1;
+    opacity: 0.42;
   }
 }
 
@@ -1048,6 +1060,12 @@ select.control {
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .starBtn {
+    animation: none;
+  }
+}
+
 /* Type icon fades in after the zoom fly-in settles (prototype: 460ms ease 1140ms backwards) */
 .zicon {
   animation: ziconIn 460ms ease 1140ms backwards;
@@ -1056,6 +1074,13 @@ select.control {
 @keyframes ziconIn {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zicon {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* "+2" when a day has more events than the cell can show. */
@@ -1086,7 +1111,7 @@ select.control {
 /* Only rendered when a star is hovered/focused (React-controlled), so no display:none needed. */
 .tipEl {
   position: fixed;
-  z-index: 45;
+  z-index: 10000;
   pointer-events: none;
   white-space: nowrap;
   display: flex;
@@ -1177,7 +1202,7 @@ select.control {
 .emptyDetail {
   margin: 0;
   padding: 32px 0;
-  text-align: center;
+  text-align: left;
   font-family: var(--font-mono, var(--mono));
   font-size: 11.5px;
   color: var(--mf-faint);
@@ -2479,8 +2504,8 @@ select.control {
 .fdropLabel {
   flex: 1 1 auto;
   font-family: var(--font-sans, var(--sans));
-  font-size: 10px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -2508,7 +2533,7 @@ select.control {
 .fdropChev {
   flex: 0 0 auto;
   display: flex;
-  color: color-mix(in srgb, var(--mf-text) 50%, transparent);
+  color: color-mix(in srgb, var(--mf-text) 85%, transparent);
   transition: transform 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -2521,14 +2546,14 @@ select.control {
   position: absolute;
   top: 49px; /* below the fdropHead */
   left: 0;
-  min-width: 200px;
+  min-width: 100%;
   overflow: hidden;
   max-height: 0;
   background: var(--mf-bg, #05070a);
   border: 1px solid var(--mf-line);
   border-top: none;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-  transition: max-height 400ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: max-height 480ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 :global(:root[data-theme="light"]) .fdropBody {
@@ -2537,7 +2562,7 @@ select.control {
 }
 
 .fdropOpen .fdropBody {
-  max-height: 320px;
+  max-height: 400px;
 }
 
 .fdropInner {
@@ -2557,7 +2582,7 @@ select.control {
   gap: 10px;
   width: 100%;
   min-height: 38px;
-  padding: 0 10px;
+  padding: 0;
   border: none;
   background: transparent;
   font-family: var(--font-sans, var(--sans));
@@ -2577,7 +2602,7 @@ select.control {
 .fmisItem {
   width: 100%;
   min-height: 34px;
-  padding: 0 10px;
+  padding: 0;
   border: none;
   background: transparent;
   font-family: var(--font-sans, var(--sans));
@@ -2585,7 +2610,7 @@ select.control {
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--mf-text);
+  color: color-mix(in srgb, var(--mf-text) 66%, transparent);
   cursor: pointer;
   text-align: left;
   transition: opacity 200ms ease, color 200ms ease;
@@ -2601,7 +2626,7 @@ select.control {
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 4px;
-  padding: 0 10px;
+  padding: 0;
 }
 
 .fsatItem {
@@ -2613,7 +2638,7 @@ select.control {
   font-size: 11.5px;
   font-weight: 500;
   letter-spacing: 0.08em;
-  color: var(--mf-text);
+  color: color-mix(in srgb, var(--mf-text) 60%, transparent);
   cursor: pointer;
   transition: opacity 200ms ease, color 200ms ease;
 }
@@ -2626,6 +2651,10 @@ select.control {
 /* Dimmed state: item is toggled off */
 .filterItemOff {
   opacity: 0.28;
+}
+
+.ftypeItem.filterItemOff {
+  opacity: 0.3;
 }
 
 /* Mark group: one button per category type present in a day cell, icon/dot + count */

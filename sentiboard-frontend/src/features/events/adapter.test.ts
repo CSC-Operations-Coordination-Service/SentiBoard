@@ -355,17 +355,38 @@ describe("adaptEvents", () => {
     expect(dt?.L0).toBeNull();
   });
 
-  it("computes months for a same-month event", () => {
+  it("uses publication_date for startDate, startTime and month", () => {
     const { events } = adaptEvents(RECORDS);
-    const e = events.find((e) => e.id === "EVT-001");
-    expect(e?.months).toEqual([{ year: 2023, month: 4 }]);
+    // EVT-001: start="2023-04-10T06:00:00Z", publication_date="2023-04-10T09:00:00Z"
+    const e1 = events.find((e) => e.id === "EVT-001");
+    expect(e1?.startDate).toBe("2023-04-10");
+    expect(e1?.startTime).toBe("09:00");
+    expect(e1?.months).toEqual([{ year: 2023, month: 4 }]);
+    // EVT-002: start="2023-04-10T22:00:00Z", publication_date="2023-04-11T03:00:00Z" → Apr 11
+    const e2 = events.find((e) => e.id === "EVT-002");
+    expect(e2?.startDate).toBe("2023-04-11");
+    expect(e2?.startTime).toBe("03:00");
+    expect(e2?.months).toEqual([{ year: 2023, month: 4 }]);
   });
 
-  it("computes months for a cross-month event (Apr–May)", () => {
+  it("event with start/end spanning Apr–May is bucketed to its publication_date month only", () => {
+    // EVT-003: start=Apr 27, end=May 3, publication_date=Apr 27 → April only
     const { events } = adaptEvents(RECORDS);
     const e = events.find((e) => e.id === "EVT-003");
-    expect(e?.months).toContainEqual({ year: 2023, month: 4 });
-    expect(e?.months).toContainEqual({ year: 2023, month: 5 });
+    expect(e?.months).toEqual([{ year: 2023, month: 4 }]);
+    expect(e?.months).not.toContainEqual({ year: 2023, month: 5 });
+  });
+
+  it("falls back to start when publication_date is null", () => {
+    const noOccDate = {
+      ...RECORDS[0]!,
+      id: "EVT-FALLBACK",
+      start: "2023-06-15T08:00:00Z",
+      publication_date: null,
+    };
+    const { events } = adaptEvents([noOccDate]);
+    expect(events[0]?.startDate).toBe("2023-06-15");
+    expect(events[0]?.startTime).toBe("08:00");
   });
 
   it("drops records with no start/end and reports them in unresolved", () => {

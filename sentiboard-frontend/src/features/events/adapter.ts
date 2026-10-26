@@ -200,6 +200,7 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
   const unresolved: string[] = [];
   const excludedByCategory = new Map<string, number>();
   let fullRecoveredCount = 0;
+  let pubDateFallbackCount = 0;
 
   for (const r of records) {
     if (!r.start || !r.end) {
@@ -235,6 +236,14 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       continue;
     }
 
+    // Use publication_date (= occurence_date) for the display date/time.
+    // r.start = created, r.end = updated — those are not shown.
+    const occIso = r.publication_date ?? r.start;
+    if (!r.publication_date) pubDateFallbackCount++;
+    const occMs = new Date(occIso).getTime();
+    const occDate = utcDateStr(occIso);
+    const occMonth = { year: new Date(occMs).getUTCFullYear(), month: new Date(occMs).getUTCMonth() + 1 };
+
     events.push({
       id: r.id ?? r.key,
       key: r.key,
@@ -242,11 +251,11 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       category,
       satellite,
       mission,
-      startDate: utcDateStr(r.start),
-      endDate: utcDateStr(r.end),
-      startDay: new Date(r.start).getUTCDate(),
-      startTime: utcTimeStr(r.start),
-      months: monthsOverlapped(startMs, endMs),
+      startDate: occDate,
+      endDate: occDate,
+      startDay: new Date(occMs).getUTCDate(),
+      startTime: utcTimeStr(occIso),
+      months: [occMonth],
       textSegments: parseTextSegments(r.text ?? ""),
       datatakes,
       newsLink: r.news_link ?? null,
@@ -267,6 +276,9 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
   }
   if (fullRecoveredCount > 0) {
     console.info(`[events] excluded ${fullRecoveredCount} fully-recovered events (all datatakes ≥ 90 %)`);
+  }
+  if (pubDateFallbackCount > 0) {
+    console.info(`[events] ${pubDateFallbackCount} record(s) missing publication_date — fell back to start (created) date`);
   }
 
   return { events, unresolved };
