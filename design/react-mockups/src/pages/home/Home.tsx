@@ -157,6 +157,7 @@ export default function Home() {
   const [openSections, setOpenSections] = useState<Record<number, boolean>>({});
   const [newsOpen, setNewsOpen] = useState(false);
 
+  const videoRef  = useRef<HTMLVideoElement>(null);
   const listRef   = useRef<HTMLDivElement>(null);
   const btnRef    = useRef<HTMLButtonElement>(null);
   const raf1Ref   = useRef(0);
@@ -226,6 +227,18 @@ export default function Home() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [newsOpen]);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function apply() {
+      if (!videoRef.current) return;
+      if (mq.matches) videoRef.current.pause();
+      else videoRef.current.play().catch(() => {});
+    }
+    apply();
+    mq.addEventListener('change', apply);
+    return () => mq.removeEventListener('change', apply);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -298,60 +311,24 @@ export default function Home() {
         </div>
       </div>
 
-      <section
-        style={{
-          position: "relative",
-          zIndex: 1,
-          minHeight: "100vh",
-          paddingTop: "calc(56px + 68px)",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "flex-end",
-          overflow: "hidden",
-          background: "#000",
-        }}
-      >
+      <section className={styles.hero}>
         <video
-          autoPlay
+          ref={videoRef}
           muted
           loop
           playsInline
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          aria-hidden="true"
+          className={styles.heroVideo}
         >
           <source src="/assets/mv/home.mp4" type="video/mp4" />
         </video>
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background: "rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            textAlign: "center",
-          }}
-        >
-          <div style={{ maxWidth: "600px", padding: "0 28px" }}>
-            <h1
-              style={{
-                fontSize: "56px",
-                fontWeight: 700,
-                margin: "0 0 16px",
-                color: "#fff",
-                letterSpacing: "-.02em",
-              }}
-            >
-              Copernicus <span style={{ color: "#29c3d6" }}>Sentinel</span>{" "}
+        <div className={styles.heroOverlay}>
+          <div className={styles.heroCopy}>
+            <h1>
+              Copernicus <span>Sentinel</span>{" "}
               Operations Dashboard
             </h1>
-            <p
-              style={{
-                fontSize: "16px",
-                margin: "0",
-                color: "rgba(255,255,255,0.8)",
-                lineHeight: 1.6,
-              }}
-            >
+            <p>
               Real-time mission monitoring — a central point of access for
               events impacting data availability, real-time data collection
               insights, and key stats on products delivered.
