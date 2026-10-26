@@ -238,3 +238,74 @@
   color: color-mix(in srgb, var(--text) 80%, transparent);
   line-height: 1.6;
 }
+
+/* ── Module panels ──────────────────────────────────────── */
+.panels {
+  position: relative;
+  z-index: 1;
+}
+
+.panelLeft  { justify-content: flex-start; }
+.panelRight { justify-content: flex-end; }
+
+.panelInner {
+  position: relative;
+  z-index: 2;
+  max-width: 640px;
+  padding-bottom: clamp(56px, 11vh, 130px);
+}
+
+.panelLeft .panelInner {
+  text-align: left;
+  margin-right: auto;
+  padding-left: clamp(18px, 4vw, 48px);
+  padding-right: 28px;
+}
+
+.panelRight .panelInner {
+  text-align: right;
+  margin-left: auto;
+  padding-left: 28px;
+  padding-right: clamp(18px, 4vw, 48px);
+}
+
+.panelTitle {
+  margin: 0 0 15px;
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@media (max-width: 399px) {
+  .panelTitle { white-space: normal; }
+}
+
+.panelLead {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
+}
+
+.panelLong {
+  margin: 0 0 30px;
+  font-size: 13px;
+  line-height: 1.72;
+  color: color-mix(in srgb, var(--text) 74%, transparent);
+}
+
+.panelLink {
+  display: inline-block;
+  font-size: clamp(19px, 1.7vw, 26px);
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.panelLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}

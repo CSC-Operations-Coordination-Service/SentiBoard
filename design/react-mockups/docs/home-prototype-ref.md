@@ -802,7 +802,9 @@ playsInline`; under `prefers-reduced-motion` do not autoplay (first frame, pause
    `clamp(18px, 4vw, 48px)` (aligned with the nav and every other page; 48 px instead of 56 px at
    desktop, 18 px on phones), inner edge 28 px as the prototype; `max-width: 640px` box unchanged.
    Alternative: prototype 56 / 28 everywhere.
+   **Applied in Session 4 (2026-10-26):** Recommended applied. `.panelInner { position:relative; z-index:2; max-width:640px; padding-bottom:clamp(56px,11vh,130px) }`. Left panels: `padding-left:clamp(18px,4vw,48px); padding-right:28px; text-align:left; margin-right:auto`. Right panels: `padding-left:28px; padding-right:clamp(18px,4vw,48px); text-align:right; margin-left:auto`. Side class selectors `.panelLeft .panelInner` / `.panelRight .panelInner` in `home.module.css`. The outer wrapper `<div style=…>` replaced with `<div className={styles.panels}>` (`position:relative; z-index:1`). Inline side styles on `<Reveal>` and on `px-panel-inner` removed.
 10. **Panel eyebrow.** → _Recommended:_ remove the empty `<span>` (prototype has none; it adds 14 px).
+   **Applied in Session 4 (2026-10-26):** Empty `<span>` with inline eyebrow styles removed from `Home.tsx`. The `<div className="copy">` wrapper removed at the same time (it added a redundant level with no CSS meaning).
 11. **Hovers.** → _Recommended:_ follow the resolved prototype — no hover on the News button, ticker,
     "Open module →", contact link (the FAQ bars: Decision 12). Every interactive element keeps (or
     gets) the shared `:focus-visible` ring other pages use.
@@ -842,8 +844,11 @@ playsInline`; under `prefers-reduced-motion` do not autoplay (first frame, pause
       **Applied in Session 1 (2026-10-26):** Tokens added to `:root[data-theme="dark"]` (`tokens.css:59` — the selector applied when the app sets `data-theme="dark"` on `<html>`): `--home-ground: #000000`, `--home-live: #3DDC84`, `--home-accent: #29C3D6`, `--home-faq-bar: #070D11`, `--home-faq-bar-hover: #0A1217`, `--home-faq-open: rgba(54, 208, 224, 0.35)`. `--home-link` not added — Session 5 uses `var(--accent-cyan)` directly (`tokens.css:27`, value `#00E5FF`). `--home-ink` not needed: `--text` is `#ffffff` in dark so `color-mix(in srgb, var(--text) N%, transparent)` works.
 20. **Copy.** → _Recommended:_ the §5 texts verbatim (check `MODULES` in `mock.ts` word for word; the
     Processors long text is the stakeholders' copy, keep it even though it promises wheel zoom/drag).
+    **Applied in Session 4 (2026-10-26):** All four titles, leads and long texts verified word-for-word against §5 — every entry in `src/data/mock.ts:38-41` matches exactly. No changes needed.
 21. **Panel images.** → _Recommended:_ compare `sha256sum` of the files `MODULES[i].img` points to with
     §5; if any differs, tell me and I will send the prototype's four JPEGs.
+    **Applied in Session 4 (2026-10-26):** Acquisitions (`3cce5f0…`) ✓, Availability (`703527a…`) ✓, Processors (`be23cfe…`) ✓. Events image differs — codebase `8a446d6c81a0d39560d3d42fadf410ad716bdf096af99c9a53d3e54cd670743e`, prototype `466fdddf72a47ec853f8ee1df9955788b8b8da03bf20043d22728722158378bf`. Left as-is per instruction; replacement deferred to owner.
 22. **Narrow screens.** No prototype rules. → _Recommended:_ only what Decisions 9 and 15 give, plus a
     check at 320 / 390 px that no panel title (`white-space: nowrap`) overflows; h1 stays 56 px
     (prototype) unless it overflows at 320 px.
+    **Applied in Session 4 (2026-10-26):** `.panelTitle { white-space:nowrap }` kept for ≥ 400 px. `@media (max-width:399px) { .panelTitle { white-space:normal } }` added — titles wrap rather than overflow at ≤ 399 px. No visual test possible without a browser; 320 px available text width = 274 px (320 − 18 − 28) with 30 px font; "Acquisitions Status" is the borderline title.

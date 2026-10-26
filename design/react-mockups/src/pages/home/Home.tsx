@@ -337,21 +337,12 @@ export default function Home() {
         </div>
       </section>
 
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <div className={styles.panels}>
         {MODULES.map((m, i) => (
           <Reveal
             key={m.idx}
             as="section"
-            className="px-panel"
-            style={{
-              position: "sticky",
-              top: 0,
-              height: "100vh",
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: i % 2 === 0 ? "flex-start" : "flex-end",
-            }}
+            className={`px-panel ${i % 2 === 0 ? styles.panelLeft : styles.panelRight}`}
           >
             <div
               className="px-panel-bg"
@@ -361,75 +352,16 @@ export default function Home() {
               }}
             />
             <div className="px-panel-veil" />
-            <div
-              className="px-panel-inner wrap"
-              style={{
-                maxWidth: "640px",
-                textAlign: i % 2 === 0 ? "left" : "right",
-                marginLeft: i % 2 === 0 ? "0" : "auto",
-                marginRight: i % 2 === 0 ? "auto" : "0",
-                paddingLeft: i % 2 === 0 ? "56px" : "28px",
-                paddingRight: i % 2 === 0 ? "28px" : "56px",
-              }}
-            >
-              <div className="copy">
-                <span
-                  style={{
-                    display: "block",
-                    fontFamily: "var(--mono)",
-                    fontSize: "10px",
-                    letterSpacing: ".2em",
-                    textTransform: "uppercase",
-                    color: "#36d0e0",
-                    marginBottom: "14px",
-                  }}
-                ></span>
-                <h2
-                  style={{
-                    margin: "0 0 15px",
-                    fontSize: "clamp(30px, 3.6vw, 46px)",
-                    fontWeight: 700,
-                    letterSpacing: "-.025em",
-                    lineHeight: 1.08,
-                    color: "#fff",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {m.title}
-                </h2>
-                <p
-                  style={{
-                    margin: "0 0 16px",
-                    fontSize: "15px",
-                    lineHeight: 1.6,
-                    color: "rgba(255,255,255,.92)",
-                  }}
-                >
-                  {m.desc}
-                </p>
-                <p
-                  style={{
-                    fontSize: "13px",
-                    lineHeight: 1.72,
-                    color: "rgba(255,255,255,.74)",
-                    marginBottom: "30px",
-                  }}
-                  dangerouslySetInnerHTML={{ __html: m.long }}
-                />
-                <Link
-                  to={m.href}
-                  style={{
-                    display: "inline-block",
-                    fontFamily: "var(--mono)",
-                    fontSize: "clamp(19px, 1.7vw, 26px)",
-                    letterSpacing: "-.01em",
-                    color: "#fff",
-                    textDecoration: "none",
-                  }}
-                >
-                  Open module →
-                </Link>
-              </div>
+            <div className={styles.panelInner}>
+              <h2 className={styles.panelTitle}>{m.title}</h2>
+              <p className={styles.panelLead}>{m.desc}</p>
+              <p
+                className={styles.panelLong}
+                dangerouslySetInnerHTML={{ __html: m.long }}
+              />
+              <Link to={m.href} className={styles.panelLink}>
+                Open module →
+              </Link>
             </div>
           </Reveal>
         ))}
