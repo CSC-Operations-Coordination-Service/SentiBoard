@@ -860,3 +860,170 @@ playsInline`; under `prefers-reduced-motion` do not autoplay (first frame, pause
     (prototype) unless it overflows at 320 px.
     **Applied in Session 4 (2026-10-26):** `.panelTitle { white-space:nowrap }` kept for ≥ 400 px. `@media (max-width:399px) { .panelTitle { white-space:normal } }` added — titles wrap rather than overflow at ≤ 399 px. No visual test possible without a browser; 320 px available text width = 274 px (320 − 18 − 28) with 30 px font; "Acquisitions Status" is the borderline title.
     **Applied in Session 5 (2026-10-26):** FAQ narrow screen — `@media (max-width:640px) { .faqBody { padding-left:20px } }` (answer copy aligns with button left edge at small widths). `.faqIn` inherits the `clamp` padding from Decision 15 (no separate narrow rule needed for the column). `faqQuestion` visible per this session; no display-none behaviour.
+
+---
+
+## Session 6 check (2026-10-26)
+
+Read-only audit. Files checked: `src/pages/home/Home.tsx`, `src/pages/home/home.module.css`, `src/styles/tokens.css`, `src/data/mock.ts`, `src/components/ui.tsx`, `src/styles/global.css`. No fixes applied; mismatches reported for owner decision.
+
+### §2 News bar — closed state
+
+| Item | Reference | Actual | Status |
+|------|-----------|--------|--------|
+| `.bar` position / z-index / flex-column | `fixed; top:56px; z-index:45; flex-direction:column` | `fixed; top:var(--nav-h)=68px; z-index:45; flex-direction:column` | OK — D3 applied; visible strip y=68–124 (56px) correct |
+| `.bar` background | `#000` | `var(--home-ground)=#000000` | OK |
+| `.row` height | `68px` (prototype) → D3: **56px** | `height:56px` (`home.module.css:15`) | OK — D3 |
+| `.row` border-bottom | `rgba(255,255,255,0.08)` | `color-mix(in srgb,var(--text) 8%,transparent)` | OK — equivalent |
+| `.news` gap/padding/font-size/weight/spacing/uppercase/color | `11px / 0 24px / 12px / 400 / 0.18em / uppercase / #3DDC84` | same values; color `var(--home-live)=#3DDC84` (`home.module.css:23–41`) | OK |
+| `.news` border-right | `rgba(255,255,255,0.14)` | `color-mix(in srgb,var(--text) 14%,transparent)` | OK |
+| `.news:focus-visible` | not in prototype | `outline:2px solid var(--accent); outline-offset:-2px` (`home.module.css:45–48`) | OK — D11 addition |
+| `.dot` size/shape/color/glow | `8px; 50%; #3DDC84; 0 0 11px #3DDC84` | same; `var(--home-live)` (`home.module.css:50–57`) | OK |
+| `.count` size/color | `11px / #3DDC84` | `11px / var(--home-live)` + `font-variant-numeric:tabular-nums` (`home.module.css:59–63`) | OK |
+| `.count` letter-spacing | `2.16px inherited` from `.news` | inherits from `.news` (`letter-spacing:0.18em × 12px = 2.16px`) | OK |
+| `.chevron` size/color/transition | `9×9; #3DDC84; 420ms cubic-bezier(.2,.7,.2,1)` | same; `var(--home-live)` (`home.module.css:65–70`) | OK |
+| `.chevronOpen` rotation | `rotate(180deg)` while open | applied via `.chevronOpen` class when `newsOpen` (`Home.tsx:272`) | OK |
+| Chevron reduced-motion | no rule (prototype) | `transition:none` (`home.module.css:76–80`) | OK — D11/D8 addition |
+| Count value | number of REALTIME items | `{REALTIME.length}` = 5 (`Home.tsx:264`) | OK |
+
+### §2.1 Ticker
+
+| Item | Reference | Actual | Status |
+|------|-----------|--------|--------|
+| `.mask` layout | `flex:1 1 auto; min-width:0; height:100%; align-items:center; no-wrap; overflow:hidden; relative` | identical (`home.module.css:89–98`) | OK |
+| `.track` animation | `slide 68s linear infinite; translateX(0→−50%)` | `tickerSlide var(--ticker-dur,68s) linear infinite` (`home.module.css:84–107`) | OK |
+| Ticker duration | 68s for 5 items; speed 43px/s | `style={{ "--ticker-dur": \`${13.6 * REALTIME.length}s\` }}` = 68s (`Home.tsx:280`) | OK |
+| Ticker reduced-motion | not in prototype | `animation:none` on `.track` (`home.module.css:109–113`) | OK — D7 |
+| `.item` | `inline-flex; gap:12px; padding:0 4px; 16px/400; color:#fff; opacity:0.92` | identical; `color:var(--text)` (`home.module.css:115–125`) | OK |
+| `.sep` | `2×16px; #29C3D6; margin:0 6px` | `var(--home-accent)=#29C3D6` (`home.module.css:127–133`) | OK |
+| `.time` | `13px; letter-spacing:0.04em; color:#fff` | `13px; 0.04em; var(--text)` + `tabular-nums` (`home.module.css:135–142`) | OK |
+| Items in DOM | `[...REALTIME, ...REALTIME]` (2N, seamless loop) | `const live = [...REALTIME, ...REALTIME]` (`Home.tsx:155`) | OK |
+| Item content | `{title} | {sep} | {date} {time}` | `{e.title} / {e.date} {e.time}` (`Home.tsx:283–292`) | OK |
+| Mock items (order) | 5 items per §2.1 | `REALTIME` in `mock.ts:26–31` — titles, dates, times match exactly | OK |
+
+### §3 News list
+
+| Item | Reference | Actual | Status |
+|------|-----------|--------|--------|
+| `.list` initial | `height:0; opacity:0; overflow:hidden; background:#000; border-bottom:.08` | identical with tokens (`home.module.css:145–151`) | OK |
+| List content | every REALTIME item, title + date/time | `REALTIME.map(...)` all 5 items, `{item.title}` + `{item.date} {item.time}` (`Home.tsx:301–310`) | OK |
+| `.listRow` | `flex; baseline; gap:18; padding:14px 24px; border-top:.06` | identical with tokens (`home.module.css:153–159`) | OK |
+| `.listTime` | `13px; 0.04em; white` | `13px; .04em; var(--text)` + `tabular-nums` (`home.module.css:161–167`) | OK |
+| `.listText` | `15px; white; opacity:0.92` | `15px; var(--text); opacity:.92` (`home.module.css:169–173`) | OK |
+| Row stagger | `sbNewsIn 420ms; delay 80+k×60ms` | `sbNewsIn 420ms cubic-bezier(.2,.7,.2,1) calc(80ms + var(--k)*60ms) backwards`; `--k` from `style={{ "--k":k }}` (`home.module.css:180–182; Home.tsx:305`) | OK |
+| List transition on open | `height 520ms cubic-bezier(.2,.7,.2,1) + opacity 360ms ease` | set via JS inline in `setNews()`: `transition:'height 520ms cubic-bezier(.2,.7,.2,1),opacity 360ms ease'` (`Home.tsx:195`) | OK |
+| Max height cap | `window.innerHeight − 140; scroll inside when taller` | `const max = window.innerHeight - 140; el.style.overflowY = natural > max ? 'auto' : 'hidden'` (`Home.tsx:179,186,194`) | OK |
+| Close animation | `snapshot offsetHeight → rAF → height:0; opacity:0; after 540ms reset` | identical pattern (`Home.tsx:207–218`) | OK |
+| Reduced-motion open | no transition, direct height | `el.style.height = ...; el.style.opacity = '1'` (no rAF) (`Home.tsx:181–187`) | OK |
+| Reduced-motion close | immediate reset | `el.style.cssText = ''` immediately (`Home.tsx:203–204`) | OK |
+| CSS reduced-motion guard | `transition:none; animation:none` | `home.module.css:184–187` | OK |
+| `aria-expanded` | per D6 | `aria-expanded={newsOpen}` (`Home.tsx:259`) | OK |
+| `aria-controls` | per D6 | `aria-controls="news-list"` (`Home.tsx:260`); list `id="news-list"` (`Home.tsx:296`) | OK |
+| Escape → close + focus | per D6 | `onKey` on `document` while `newsOpen`; `setNews(false); btnRef.current?.focus()` (`Home.tsx:222–228`) | OK |
+| `inert` when closed | not in prototype | `{...(!newsOpen && { inert: "" as unknown as boolean })}` (`Home.tsx:299`) — type-cast workaround for React's `inert` prop; functionally correct | OK |
+
+### §4 Hero
+
+| Item | Reference | Actual | Status |
+|------|-----------|--------|--------|
+| `.hero` | `relative; z-index:1; min-height:100vh; padding-top:124px; flex column; justify-content:flex-end; overflow:hidden; background:#000` | `relative; z-index:1; min-height:100vh; overflow:hidden; background:var(--home-ground)` — no flex, no padding-top (`home.module.css:190–196`) | OK — D8: nothing in flow; flex/padding-top inert |
+| `.heroVideo` | `width:100%; height:100%; object-fit:cover` (in-flow per prototype) | `position:absolute; inset:0; width:100%; height:100%; object-fit:cover` (`home.module.css:198–204`) | OK — D8 applied |
+| `<video>` attributes | `autoplay loop playsinline` (no `muted`) | `muted loop playsInline aria-hidden="true"` + `useEffect` drives play/pause (`Home.tsx:316–321; 231–241`) | OK — D8 |
+| Reduced-motion: no autoplay | not in prototype | `useEffect` → `mq.matches` → `videoRef.current.pause()` (`Home.tsx:232–241`) | OK — D8 |
+| `.heroOverlay` | `absolute; inset:0; rgba(0,0,0,0.3); flex center` | `absolute; inset:0; color-mix(in srgb,var(--home-ground) 30%,transparent); flex center` (`home.module.css:206–214`) | OK |
+| `.heroCopy` | `max-width:600px; padding:0 28px` | identical (`home.module.css:216–219`) | OK |
+| `h1` font/size/weight/margin/spacing/line-height/color | `56px/700/0 0 16px/−0.02em/1.1/#fff` | identical; `color:var(--text)` (`home.module.css:221–229`) | OK |
+| `h1 span` color | `#29C3D6` | `var(--home-accent)=#29C3D6` (`home.module.css:231–233`) | OK |
+| `p` font/color/line-height | `16px/rgba(255,255,255,.8)/1.6` | `16px/color-mix(in srgb,var(--text) 80%,transparent)/1.6` (`home.module.css:235–239`) | OK |
+| h1 text | `Copernicus <span>Sentinel</span> Operations Dashboard` | identical (`Home.tsx:328–330`) | OK |
+
+### §5 Module panels
+
+| Item | Reference | Actual | Status |
+|------|-----------|--------|--------|
+| `.panels` | `position:relative; z-index:1` | identical (`home.module.css:243–246`) | OK |
+| Global `px-panel / px-panel-bg / px-panel-veil` | identical to `global.css` | `<Reveal className="px-panel …">` + `<div className="px-panel-bg" …>` + `<div className="px-panel-veil" />` (`Home.tsx:344–354`) | OK |
+| Left/right justify | `flex-start / flex-end` | `.panelLeft / .panelRight` classes (`home.module.css:248–249`) | OK |
+| `.panelInner` max-width/padding-bottom | `640px; clamp(56px,11vh,130px)` | identical (`home.module.css:251–256`) | OK |
+| Left outer padding | `56px` (prototype) → D9: **48px at 1440** | `padding-left:clamp(18px,4vw,48px)` = 48px at 1440 (`home.module.css:258–263`) | OK — D9 |
+| Right outer padding | `56px` (prototype) → D9: **48px at 1440** | `padding-right:clamp(18px,4vw,48px)` (`home.module.css:265–270`) | OK — D9 |
+| `.panelTitle` | `clamp(30px,3.6vw,46px)/700/−0.025em/1.08/#fff/nowrap` | identical; `color:var(--text)` (`home.module.css:272–280`) | OK |
+| `panelTitle` narrow | no prototype rule | `white-space:normal` at ≤399px (`home.module.css:282–284`) | OK — D22 |
+| `.panelLead` | `15px/1.6/rgba(255,255,255,.92)` | `color-mix(in srgb,var(--text) 92%,transparent)` (`home.module.css:286–291`) | OK |
+| `.panelLong` | `13px/1.72/rgba(255,255,255,.74)` | `color-mix(in srgb,var(--text) 74%,transparent)` (`home.module.css:293–298`) | OK |
+| `.panelLink` | `inline-block; clamp(19px,1.7vw,26px)/−0.01em/#fff/no-underline` | identical; `color:var(--text)` + `:focus-visible` ring (`home.module.css:300–311`) | OK |
+| No eyebrow span | none | no `<span>` above `<h2>` (`Home.tsx:355–357`) | OK — D10 |
+| Panel copy | 4 panels, titles/leads/longs per §5 | verified against `mock.ts:38–41` — exact match | OK — D20 |
+| Panel images | 4 JPEGs per §5 sha256 | events image differs (known, D21 deferred) | OK — D21 |
+| Reveal entrance | `opacity:0; translateY(20px); 700ms var(--ease); IO threshold:0.12; once` | `Reveal` in `ui.tsx:34–72` — `threshold:0.12`, `reveal` + `in` classes, `global.css:3363–3378` | OK |
+| Ken Burns reduced-motion | `animation:none; transform:none` | `global.css:1411–1413` (not in Home module — global handles it) | OK |
+
+### §7 FAQ
+
+| Item | Reference | Actual | Status |
+|------|-----------|--------|--------|
+| `<section>` id | `id="faq"` | no `id` — removed per D16 (`Home.tsx:370`) | OK — D16 |
+| `.faqSec` | `relative; z-index:10; padding:120px 0 130px; background:transparent` | `background:var(--home-ground)=#000` (`home.module.css:315`) | **Minor:** opaque #000 vs transparent — same visual on black body; no practical effect |
+| `.faqIn` max-width/padding | `920px / 0 56px` → D15: `calc(808px + 2×clamp(18px,4vw,48px)) / clamp(18px,4vw,48px)` | identical to D15 (`home.module.css:316`) | OK — D15 |
+| `.faqHead` | `text-align:center; margin-bottom:44px` | identical (`home.module.css:318`) | OK |
+| No eyebrow "05 — Support" | not in prototype | none (`Home.tsx:372–374`) | OK — D13 |
+| `.faqHead h2` | `clamp(30px,3.6vw,46px)/700/−0.025em/1.08/#fff` | identical; `color:var(--text)` (`home.module.css:319`) | OK |
+| `.faqHead p` | `15px/1.6/rgba(255,255,255,.82)` | `color-mix(in srgb,var(--text) 82%,transparent)` (`home.module.css:320`) | OK |
+| `.faqList` gap | `12px margin-bottom per item` | `gap:12px` flex column (`home.module.css:322`) | OK |
+| `.faqItem` background | `#070D11` | `var(--home-faq-bar)=#070D11` (`home.module.css:323`) | OK |
+| `.faqItem:hover` | not in prototype | `var(--home-faq-bar-hover)=#0A1217` (`home.module.css:324`) | OK — D12 |
+| `.faqItemOpen` edge | not in prototype | `box-shadow:inset 0 0 0 1px var(--home-faq-open)` (`home.module.css:325`) | OK — D12 |
+| `.faqQ` padding/min-height/gap/size/weight | `16px 20px / 49px / 12px / 15px / 600→700` | `padding:16px 20px; min-height:49px; gap:12px; font-size:15px; font-weight:700` (`home.module.css:327–329`) | OK — D12 |
+| `.faqQ:focus-visible` | not in prototype | `outline:2px solid var(--accent); outline-offset:-2px` (`home.module.css:330`) | OK — D11 |
+| `.faqIco` | `width:19px; grid; place-items:center` | identical + `color:var(--text)` (`home.module.css:332`) | OK |
+| `.faqChev` | `14×14; stroke 2.4; transition:transform .2s` | identical (`home.module.css:334`) — SVG `strokeWidth` in `Home.tsx:416` | OK — D12 |
+| `.faqItemOpen .faqChev` | not in prototype | `transform:rotate(180deg)` (`home.module.css:335`) | OK — D12 |
+| FAQ open state | not in prototype | `{isOpen && <div className={styles.faqBody}>}` + `faqReveal .25s ease` + `aria-expanded`/`aria-controls` (`Home.tsx:422–433; home.module.css:337–339`) | OK — D14 |
+| Several FAQ open simultaneously | not in prototype | `openSections: Record<number,boolean>`; `toggleFaq(idx)` (`Home.tsx:156,158`) | OK — D14 |
+| `.faqBody` padding/animation | D14 choice | `padding:2px 20px 18px 51px; faqReveal .25s ease` (`home.module.css:338`) | OK |
+| FAQ narrow: body padding-left | D15 | `@media (max-width:640px) { .faqBody { padding-left:20px } }` (`home.module.css:346`) | OK |
+| FAQ reduced-motion | D14 | `faqBody { animation:none }; faqChev, faqItem { transition:none }` (`home.module.css:347`) | OK |
+| `.faqContact` margin/size/color | `40px 0 16px / 13px / white` | `margin:40px 0 16px; font-size:13px; color:var(--text)` (`home.module.css:344`) | OK |
+| Contact/answer link color | `#00E5FF` | `var(--accent-cyan)=#00E5FF` (`home.module.css:343`) | OK |
+| No hover on links | D11 | no `:hover` rule for `.faqContact a` or `.faqAnswer a` | OK — D11 |
+
+### Code quality checks
+
+| Check | Result |
+|-------|--------|
+| `tsc -b` | Clean — no errors |
+| Hex values in `home.module.css` | None — all colors via `var(--home-*)` or `color-mix()` |
+| Inline styles in `Home.tsx` | 3 inline styles, all computed values: `--ticker-dur` (from REALTIME.length), `--k` (loop index), `backgroundImage`/`backgroundPosition` (from mock data). No style-prop hex, no style-prop duplicating a CSS property that belongs in the module |
+| `import "@/styles/examples.css"` | Absent — removed D16 |
+| Tokens present | `--home-ground/#000000; --home-live/#3DDC84; --home-accent/#29C3D6; --home-faq-bar/#070D11; --home-faq-bar-hover/#0A1217; --home-faq-open/rgba(54,208,224,.35)` — all in `tokens.css:129–134` (dark block) |
+
+### State and behaviour checks (static analysis — no browser run)
+
+| State / scenario | Expected | Code path | Status |
+|------------------|----------|-----------|--------|
+| News list closed | `height:0; opacity:0; overflow:hidden` via CSS | `.list` initial state (`home.module.css:145–151`) | OK |
+| News list open — normal | double rAF, `scrollHeight`, clamp `innerHeight−140`, transition `height 520ms + opacity 360ms` | `setNews(true)` branch, `raf1Ref / raf2Ref` (`Home.tsx:176–199`) | OK |
+| News list open taller than window | `overflowY:'auto'` scroll inside | `el.style.overflowY = natural > max ? 'auto' : 'hidden'` (`Home.tsx:194`) | OK |
+| News list close | snapshot `offsetHeight`, rAF, `height:0; opacity:0`, reset after 540ms | `setNews(false)` branch (`Home.tsx:200–218`) | OK |
+| Reduced-motion: ticker still | `animation:none` on `.track` | `home.module.css:109–113` | OK |
+| Reduced-motion: list instant open | no rAF, direct `height`/`opacity` set | `Home.tsx:181–187` | OK |
+| Reduced-motion: list instant close | `el.style.cssText = ''` | `Home.tsx:203–204` | OK |
+| Reduced-motion: reveal off | `.reveal { opacity:1; transform:none }` | `global.css:3374–3379` | OK |
+| Reduced-motion: Ken Burns off | `animation:none; transform:none` on `px-panel-bg` | `global.css:1411–1413` | OK |
+| Reduced-motion: video paused | `videoRef.current.pause()` when `mq.matches` | `Home.tsx:233–236; 238` | OK |
+| Keyboard: Escape closes + returns focus | `onKey` handler on `document` while `newsOpen` | `Home.tsx:222–228` | OK |
+| Keyboard: focus rings | news button, panel link, FAQ buttons | `home.module.css:45–48, 308–311, 330` | OK |
+| `aria-expanded` on news button | ✓ | `Home.tsx:259` | OK |
+| `aria-expanded` on FAQ buttons | ✓ | `Home.tsx:389` | OK |
+| `aria-controls` / `id` pairing (news) | `aria-controls="news-list"` / `id="news-list"` | `Home.tsx:260, 296` | OK |
+| `aria-controls` / `id` pairing (FAQ) | `aria-controls="faq-body-{idx}"` / `id="faq-body-{idx}"` | `Home.tsx:391, 423` | OK |
+| `inert` when list closed | `inert=""` spread | `Home.tsx:299` — type-cast workaround `as unknown as boolean`; functionally correct | OK |
+
+### Summary
+
+**No blocking mismatches.** Two minor deviations found:
+
+1. **`.faqSec { background: var(--home-ground) }`** (opaque `#000`) vs reference `background: transparent`. Both render identical black on the body's `#000`. No action needed.
+2. **`.hero` omits `display:flex; flex-direction:column; justify-content:flex-end`** that the reference has. With `<video>` and `.heroOverlay` both `position:absolute`, nothing is in flow and these flex properties have no visual effect. No action needed.
+
+All Applied notes in §11 match the code at the cited locations. `tsc -b` clean.
