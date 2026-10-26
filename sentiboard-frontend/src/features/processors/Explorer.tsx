@@ -12,9 +12,11 @@ import { useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -23,6 +25,7 @@ import x from "./explorer.module.css";
 import {
   MISSION_NAMES,
   MISSION_ORDER,
+  MONTHS,
   longDate,
   type MissionId,
   type ProcessorGroup,
@@ -70,6 +73,77 @@ const BASELINE_SHORT: Record<BaselineFilter, string> = {
   all: "All",
   current: "Current",
 };
+
+/**
+ * Tracks the horizon line (navBottom + 0.8334 × (innerHeight − navBottom) − 14)
+ * and writes --hz-cut = line − element.top on each ref element every rAF frame.
+ * Returns a pump(ms) function for continuous per-frame updates during the FLIP.
+ * Decision 21.
+ */
+function useHorizonMask(
+  containerRef: React.RefObject<HTMLElement | null>,
+  ...els: React.RefObject<HTMLElement | null>[]
+): (durationMs: number) => () => void {
+  const updateRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>(".nav");
+    let raf = 0;
+
+    function update() {
+      raf = 0;
+      const navBottom = nav?.getBoundingClientRect().bottom ?? 64;
+      const line = navBottom + 0.8334 * (window.innerHeight - navBottom) - 14;
+      for (const ref of els) {
+        const el = ref.current;
+        if (!el) continue;
+        el.style.setProperty(
+          "--hz-cut",
+          `${Math.round(line - el.getBoundingClientRect().top)}px`,
+        );
+      }
+    }
+
+    updateRef.current = update;
+
+    function schedule() {
+      if (!raf) raf = requestAnimationFrame(update);
+    }
+
+    update();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule, { passive: true });
+
+    const ro = new ResizeObserver(schedule);
+    if (containerRef.current) ro.observe(containerRef.current);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      ro.disconnect();
+      updateRef.current = null;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return useCallback((durationMs: number): (() => void) => {
+    const deadline = performance.now() + durationMs;
+    let id = 0;
+    function tick() {
+      updateRef.current?.();
+      if (performance.now() < deadline) id = requestAnimationFrame(tick);
+    }
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, []);
+}
+
+/** Version display: baseline tag, or 'Mon YYYY' when the baseline is "—". Decision §2b/3a. */
+function verOf(r: ReleaseRecord): string {
+  if (r.baseline !== "—") return r.baseline;
+  const d = new Date(r.ms);
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
 
 /** A plain left click, which the History API can take over; anything else (new tab, …) is left
  *  to the browser and follows the link. */
@@ -277,14 +351,32 @@ interface ReleaseDetailProps {
   index: number;
   view: ProcessorsView;
   navigate: Navigate;
+  /** True while the detail pane is open; suppresses vswap on the first open. */
+  paneOpen: boolean;
 }
 
-/** The selected baseline's details. Keyed by release so each step replays the entrance. */
-function ReleaseDetail({ group, notes, index, view, navigate }: ReleaseDetailProps) {
+/** The selected baseline's details. Steps replay the vswap animation; first open does not. */
+function ReleaseDetail({ group, notes, index, view, navigate, paneOpen }: ReleaseDetailProps) {
   const release: ReleaseRecord = group.releases[index];
   const isCurrent = release.isCurrent;
   const prev = group.releases[index - 1];
   const next = group.releases[index + 1];
+
+  // vswap: play on step / re-pick while open; suppress on first open and while closing.
+  const firstOpen = useRef(true);
+  const [swapKey, setSwapKey] = useState(release.id);
+
+  useEffect(() => {
+    if (!paneOpen) {
+      firstOpen.current = true;
+      return;
+    }
+    if (firstOpen.current) {
+      firstOpen.current = false;
+      return;
+    }
+    setSwapKey(release.id);
+  }, [release.id, paneOpen]);
 
   const step = (r: ReleaseRecord | undefined, dir: "prev" | "next") => {
     const label = dir === "prev" ? "Previous release" : "Next release";
@@ -306,73 +398,65 @@ function ReleaseDetail({ group, notes, index, view, navigate }: ReleaseDetailPro
   };
 
   return (
-    <div key={release.id} className={s.dtIn}>
-      <div className={s.dtTop}>
-        <ViewLink
-          view={{ ...view, release: null }}
-          mode="push"
-          navigate={navigate}
-          className={s.dtBack}
-        >
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.6"
-            aria-hidden="true"
+    <div className={s.dtIn}>
+      <div key={swapKey} className={firstOpen.current ? undefined : s.swap}>
+        <div className={s.dtTop}>
+          <ViewLink
+            view={{ ...view, release: null }}
+            mode="push"
+            navigate={navigate}
+            className={s.dtBack}
           >
-            {ARROW.back}
-          </svg>
-          Overview
-        </ViewLink>
-        <div className={s.dtSteps}>
-          {step(prev, "prev")}
-          {step(next, "next")}
-        </div>
-      </div>
-
-      <div className={s.dtHead}>
-        <div>
-          <span className={s.dtProc}>
-            {group.sub ? `${group.label} · ${group.sub}` : group.label}
-          </span>
-          <b className={s.dtVer}>{release.baseline}</b>
-        </div>
-        <span className={isCurrent ? s.tagNow : s.tagOld}>
-          {isCurrent ? "Current baseline" : "Superseded"}
-        </span>
-      </div>
-
-      <dl className={s.meta}>
-        {release.processingBaseline && (
-          <div>
-            <dt>Processing baseline:</dt>
-            <dd>{release.processingBaseline}</dd>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              aria-hidden="true"
+            >
+              {ARROW.back}
+            </svg>
+            Overview
+          </ViewLink>
+          <div className={s.dtSteps}>
+            {step(prev, "prev")}
+            {step(next, "next")}
           </div>
-        )}
-        <div>
-          <dt>Released:</dt>
-          <dd>
-            {release.releasedMs !== undefined
-              ? longDate(release.releasedMs)
-              : "—"}
-          </dd>
         </div>
-        <div>
-          <dt>Operational since:</dt>
-          <dd>{longDate(release.ms)}</dd>
-        </div>
-        <div>
-          <dt>Impacted satellite(s):</dt>
-          <dd>{release.sats.length ? release.sats.join(", ") : "—"}</dd>
-        </div>
-      </dl>
 
-      <div className={s.rn}>
-        <h4>Release notes</h4>
-        <ReleaseNotes html={release.notesId ? notes[release.notesId] : undefined} />
+        <div className={s.dtHead}>
+          <div>
+            <span className={s.dtProc}>
+              {group.sub ? `${group.label} · ${group.sub}` : group.label}
+            </span>
+            <b className={s.dtVer}>{verOf(release)}</b>
+          </div>
+          <span className={isCurrent ? s.tagNow : s.tagOld}>
+            {isCurrent ? "Current baseline" : "Superseded"}
+          </span>
+        </div>
+
+        <dl className={s.meta}>
+          <div>
+            <dt>Processor Baseline ID:</dt>
+            <dd>{release.processingBaseline ?? "—"}</dd>
+          </div>
+          <div>
+            <dt>Operational since:</dt>
+            <dd>{longDate(release.ms)}</dd>
+          </div>
+          <div>
+            <dt>Impacted satellite(s):</dt>
+            <dd>{release.sats.length ? release.sats.join(", ") : "—"}</dd>
+          </div>
+        </dl>
+
+        <div className={s.rn}>
+          <h4>Release notes</h4>
+          <ReleaseNotes html={release.notesId ? notes[release.notesId] : undefined} />
+        </div>
       </div>
     </div>
   );
@@ -446,6 +530,77 @@ export default function Explorer({
     ? detailGroup.releases.findIndex((r) => r.id === shown)
     : -1;
 
+  /* Refs and state for the overview ↔ detail FLIP (Decision 12, §10). */
+  const containerRef = useRef<HTMLElement>(null);
+  const procpaneRef = useRef<HTMLElement>(null);
+  const detailRef = useRef<HTMLElement>(null);
+  const flipFrom = useRef<DOMRect | null>(null);
+  const [focusClass, setFocusClass] = useState(false);
+  const [detailOn, setDetailOn] = useState(false);
+  const [lcolEnter, setLcolEnter] = useState(false);
+  const pumpHorizon = useHorizonMask(containerRef, procpaneRef, detailRef);
+
+  // Overview ↔ detail motion orchestration (Decision 12, §10).
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let t1: ReturnType<typeof setTimeout> | undefined;
+    let t2: ReturnType<typeof setTimeout> | undefined;
+    let t3: ReturnType<typeof setTimeout> | undefined;
+
+    if (isDetail) {
+      if (procpaneRef.current)
+        flipFrom.current = procpaneRef.current.getBoundingClientRect();
+      setFocusClass(true);
+      t1 = setTimeout(() => setDetailOn(true), reduce ? 0 : 180);
+    } else {
+      setDetailOn(false);
+      t2 = setTimeout(() => {
+        if (procpaneRef.current)
+          flipFrom.current = procpaneRef.current.getBoundingClientRect();
+        setFocusClass(false);
+        setLcolEnter(true);
+        t3 = setTimeout(() => setLcolEnter(false), 560);
+      }, reduce ? 0 : 280);
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [isDetail]);
+
+  // FLIP: after focusClass changes the grid, animate procpane from its old position to the new.
+  useLayoutEffect(() => {
+    if (!flipFrom.current) return;
+    const el = procpaneRef.current;
+    if (!el) return;
+    const after = el.getBoundingClientRect();
+    const dx = flipFrom.current.left - after.left;
+    const dy = flipFrom.current.top - after.top;
+    flipFrom.current = null;
+    if (
+      (dx === 0 && dy === 0) ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    const cancelPump = pumpHorizon(820);
+    el.style.transform = `translate(${dx}px, ${dy}px)`;
+    el.style.transition = "none";
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 720ms cubic-bezier(.2,.7,.2,1)";
+        el.style.transform = "";
+        const done = () => {
+          el.style.transition = "";
+          el.removeEventListener("transitionend", done);
+        };
+        el.addEventListener("transitionend", done);
+      });
+    });
+    return cancelPump;
+  }, [focusClass]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // One Escape handler: if a dropdown is open close it first, else close the detail.
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -489,7 +644,7 @@ export default function Explorer({
     navigate({ ...view, release: selected === id ? null : id }, "push");
 
   return (
-    <section className={s.container}>
+    <section className={s.container} ref={containerRef}>
       <SpaceBackdrop page={2} />
 
       {/* Headline counts for the selected mission */}
@@ -579,13 +734,16 @@ export default function Explorer({
       </div>
 
       {/* Three panes: satellite, timeline, and the release detail. The satellite and the detail
-          trade places on the grid so the timeline compresses to the left as the detail opens. */}
-      <div className={`${s.split} ${isDetail ? s.focus : ""}`}>
+          trade places on the grid so the timeline compresses to the left as the detail opens.
+          The grid flips between "lcol proc" (overview) and "proc detail" (focus) via a
+          JS FLIP on the procpane element. The lcol stays absolutely painted while
+          focused so the satellite can fade smoothly before being aria-hidden. */}
+      <div className={`${s.split} ${focusClass ? s.focus : ""}`}>
         {/* Satellite column: not sticky, no glow/blend/placeholder. Hidden while detail is open. */}
         <section
-          className={s.lcol}
+          className={`${s.lcol} ${lcolEnter ? s.lcolEnter : ""}`}
           aria-label={`Sentinel-${activeMission}`}
-          aria-hidden={isDetail || undefined}
+          aria-hidden={focusClass || undefined}
         >
           <div className={s.orbit}>
             {SATELLITE_IMAGES[activeMission] && (
@@ -599,7 +757,7 @@ export default function Explorer({
           </div>
         </section>
 
-        <section className={s.procpane}>
+        <section className={s.procpane} ref={procpaneRef}>
           <div className={s.sheet}>
             <div className={s.phead}>
               <h2>{MISSION_NAMES[activeMission]} processors</h2>
@@ -645,9 +803,15 @@ export default function Explorer({
         </section>
 
         <section
-          className={`${s.detailpane} ${isDetail ? s.on : ""}`}
+          ref={detailRef}
+          className={`${s.detailpane} ${detailOn ? s.on : ""}`}
           aria-live="polite"
-          aria-hidden={!isDetail || undefined}
+          aria-hidden={focusClass ? undefined : true}
+          style={
+            detailGroup
+              ? ({ "--pr-mis": `var(--pr-mis-${detailGroup.mission})` } as CSSProperties)
+              : undefined
+          }
         >
           {detailGroup && detailIndex >= 0 && (
             <ReleaseDetail
@@ -656,6 +820,7 @@ export default function Explorer({
               index={detailIndex}
               view={view}
               navigate={navigate}
+              paneOpen={isDetail}
             />
           )}
         </section>

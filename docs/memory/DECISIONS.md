@@ -331,3 +331,19 @@ top would produce a double-masking effect.
 - `data-lane-row` attributes on all lane elements
   **Consequence.** Lanes no longer fade in as they scroll into view. The horizon mask (already in
   place) provides the only scroll-linked visual boundary.
+
+## 2026-10-26 — Detail pane, FLIP, horizon mask, vswap (Real-data Session 3b)
+
+**Context.** Porting §§9–10, §15 decisions 2, 10, 12, 18–22 from MOCK (feature-DEVOCS-219-Frontend-Restyling) into REAL (feature/DEVOCS-219-events). REAL keeps URL state, ViewLinks, and server-sanitized notes; MOCK uses local state and callbacks.
+
+**Decisions that differ from the prototype ref:**
+
+- **vswap with ViewLinks (Decision 18 / §9).** MOCK fires vswap via an `onStep` callback. REAL drives steps through URL navigation (ViewLinks → `pushState`). The `swapKey` state is still keyed on `release.id`; a `paneOpen` prop (= `isDetail`) gates the animation: when the pane first opens, the effect sets `firstOpen.current = false` but skips `setSwapKey`, so no vswap plays on open. When the pane closes, the effect resets `firstOpen.current = true` so the next open is also suppressed.
+
+- **`--pr-mis` on detailpane section (Decision 19).** Applied as an inline `style` prop via `CSSProperties`. REAL's `detailGroup` is derived from `selected ?? lastSelected` (string id), which stays populated during the closing fade. The variable is therefore always set while the pane is visible.
+
+- **FLIP via `focusClass` / `detailOn` split (Decision 12).** `focusClass` drives the grid class switch; `detailOn` drives the `s.on` fade, delayed 180 ms on open and 280 ms before the grid reverts on close. This matches the MOCK exactly. `useHorizonMask` is pumped for 820 ms during the FLIP (the animated-window duration from MOCK), covering the transition.
+
+- **`useHorizonMask` deps array is empty** (refs are stable — same as MOCK). An `// eslint-disable-line` comment is added, as in MOCK.
+
+- **`verOf` for dtVer (Decision §2b/3a).** When `release.baseline === "—"` (adapter produces this when neither version nor processing_baseline is present), the detail heading shows `MONTHS[m] + " " + year` derived from `release.ms`. REAL's model has no separate `from` field (MOCK did); the fallback is computed inline.
