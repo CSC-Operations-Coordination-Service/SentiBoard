@@ -226,3 +226,43 @@ come from a committed fixture of six records captured from the backend (provenan
 not from live calls.
 **Consequences.** Tests cover pure modules and data loading; rendering and browser behaviour are
 not under automated test (see HANDOFF.md).
+
+## 2026-10-26 — Processors Session 2: CSS, KPIs, toolbar, satellite, page join
+
+Applied MOCK's `processors.module.css` with the following deviations from the prototype reference:
+
+**Kept for now (Session 3a will update when ReleaseTimeline is ported):**
+- `.tip` / `.tipBelow` / `@keyframes tipIn` — REAL's `ReleaseTimeline` positions the tooltip with
+  `transform:translate(-50%,-100%)` and uses `animation:tipIn` for its entrance, not the MOCK's
+  `opacity:0 + .tipOn` toggle. Replacing the rule would hide every tooltip until `tipOn` is added
+  to the timeline component.
+- `.ttWide` — used by `ReleaseTimeline` for the "Changes" row in the tooltip; not present in MOCK.
+
+**Tokens added to `tokens.css`** (dark + light):
+  `--pr-current`, `--pr-past`, `--pr-current-text`, `--pr-mis-1/2/3/5P` (dark only).
+  Values match the MOCK exactly.
+
+**`page-header.css`:** added `.dot-bl-current` and `.dot-bl-superseded` using the new tokens.
+
+**Satellite images:** copied `s1/s2/s3/s5p.webp` from the mock branch into
+  `public/assets/img/satellites/`; REAL's `.png` variants (`s1_/s2_/s3_/s5_`) are left in place
+  (nothing references them now).
+
+**`FilterDropdown`:** kept `<details>/<summary>` for the no-JS fallback. Applied MOCK's `fdrop*`
+  CSS classes. Open/close animation uses `details[open] .fdropBody { grid-template-rows: 1fr }`
+  instead of a JS-toggled class, so it works with and without JS. Closing animation is instant
+  (native `<details>`) rather than 420 ms — acceptable for now.
+
+**Escape handler:** single handler in `Explorer` (the own handler in `FilterDropdown` is removed).
+  On Escape: closes the first open `<details>` and refocuses its `<summary>`; else closes the
+  detail pane.
+
+**`Reveal`:** implemented as a local function in `Explorer.tsx` using `IntersectionObserver` and
+  the existing global `.reveal` / `.reveal.in` CSS classes, since no shared `Reveal` component
+  exists in REAL.
+
+**KPI counters:** changed to MOCK's counters block (`b.counterV` over `span.counterK`) wrapped in
+  `Reveal`. Formulas: last year = `r.ms > (now − 365 d)`, latest = year of `max(r.ms ≤ now)`.
+
+**`SpaceBackdrop`:** changed to `page={2}` (Processors window); removed `paused` prop and sky
+  strip; `turn` (orbit rotation) is out of scope for this session.

@@ -10,6 +10,7 @@
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -53,12 +54,12 @@ const SpaceBackdrop = dynamic(() => import("@/components/SpaceBackdrop"), {
   ssr: false,
 });
 
-// Map mission IDs to satellite image paths
+// Transparent WebP cut-outs (alpha confirmed). Decision 10, §5.3.
 const SATELLITE_IMAGES: Record<MissionId, string> = {
-  "1": "/assets/img/satellites/s1_.png",
-  "2": "/assets/img/satellites/s2_.png",
-  "3": "/assets/img/satellites/s3_.png",
-  "5P": "/assets/img/satellites/s5_.png",
+  "1": "/assets/img/satellites/s1.webp",
+  "2": "/assets/img/satellites/s2.webp",
+  "3": "/assets/img/satellites/s3.webp",
+  "5P": "/assets/img/satellites/s5p.webp",
 };
 
 const BASELINE_OPTIONS: { value: BaselineFilter; label: string }[] = [
@@ -112,18 +113,27 @@ function ViewLink({
   );
 }
 
+/** Static chevron for dropdown heads — no rotation, matching DA behaviour (Decision 3). */
+function ChevronDown() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 interface FilterDropdownProps<T extends string> {
   id: string;
   label: string;
   value: T;
   options: { value: T; label: string; view: ProcessorsView }[];
-  /** Short text shown beside the label when closed, e.g. "Current". */
+  /** Short text shown beside the label when closed (Baseline only). */
   displayValue?: string;
   navigate: Navigate;
 }
 
-/** Label + chevron trigger that opens a vertical menu of links. A <details>, so it opens without
- *  JavaScript; with it, it also closes on outside click or Escape. */
+/** In-flow dropdown: <details>/<summary> for no-JS, JS closes on outside click.
+ *  Uses MOCK's fdrop* classes. No own Escape listener — Explorer handles it. */
 function FilterDropdown<T extends string>({
   id,
   label,
@@ -134,11 +144,12 @@ function FilterDropdown<T extends string>({
 }: FilterDropdownProps<T>) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDetailsElement>(null);
-  const triggerRef = useRef<HTMLElement>(null);
 
   const close = (focus: boolean) => {
     if (rootRef.current) rootRef.current.open = false;
-    if (focus) triggerRef.current?.focus();
+    if (focus) {
+      rootRef.current?.querySelector<HTMLElement>("summary")?.focus();
+    }
   };
 
   useEffect(() => {
@@ -146,65 +157,86 @@ function FilterDropdown<T extends string>({
     const onPointerDown = (e: globalThis.MouseEvent) => {
       if (!rootRef.current?.contains(e.target as Node)) close(false);
     };
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close(true);
-    };
     document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
+    return () => document.removeEventListener("mousedown", onPointerDown);
   }, [open]);
 
   return (
     <details
       ref={rootRef}
-      className={`${s.dd} ${open ? s.ddOpen : ""}`}
+      className={`${s.fdrop} ${x.fdropDetails}`}
       onToggle={(e) => setOpen(e.currentTarget.open)}
     >
       <summary
-        ref={triggerRef}
         id={id}
-        className={`${s.ddTrigger} ${x.summary}`}
+        className={`${s.fdropHead} ${x.summary}`}
         aria-controls={`${id}-menu`}
       >
-        <span className={s.ddLabel}>{label}</span>
-        {displayValue && <span className={s.ddValue}>{displayValue}</span>}
-        <svg
-          className={`${s.ddChev} ${open ? s.ddChevUp : ""}`}
-          width="13"
-          height="13"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          aria-hidden="true"
-        >
-          <path d="M6 9l6 6 6-6"></path>
-        </svg>
+        <span className={s.fdropLabel}>{label}</span>
+        {displayValue && <span className={s.fdropVal}>{displayValue}</span>}
+        <ChevronDown />
       </summary>
 
-      <ul id={`${id}-menu`} className={s.ddMenu}>
-        {options.map((o) => {
-          const isOn = o.value === value;
-          return (
-            <li key={o.value}>
-              <ViewLink
-                view={o.view}
-                mode="replace"
-                navigate={navigate}
-                onNavigate={() => close(true)}
-                className={`${s.ddItem} ${x.asButton} ${isOn ? s.ddItemOn : ""}`}
-                aria-current={isOn ? "true" : undefined}
-              >
-                {o.label}
-              </ViewLink>
-            </li>
-          );
-        })}
-      </ul>
+      <div className={s.fdropBody}>
+        <div className={s.fdropInner}>
+          <div className={s.fdropPad} id={`${id}-menu`}>
+            {options.map((o) => {
+              const isOn = o.value === value;
+              return (
+                <ViewLink
+                  key={o.value}
+                  view={o.view}
+                  mode="replace"
+                  navigate={navigate}
+                  onNavigate={() => close(true)}
+                  className={`${s.fitem} ${x.asButton} ${isOn ? "" : s.fitemOff}`}
+                  aria-current={isOn ? "true" : undefined}
+                >
+                  {o.label}
+                </ViewLink>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </details>
+  );
+}
+
+/** Scroll-reveal fade-in using global .reveal / .reveal.in CSS. */
+function Reveal({
+  children,
+  as: Tag = "div",
+  className = "",
+}: {
+  children: ReactNode;
+  as?: React.ElementType;
+  className?: string;
+}) {
+  const ref = useRef<HTMLElement>(null);
+  const [seen, setSeen] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setSeen(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.12 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <Tag
+      ref={ref}
+      className={`reveal ${seen ? "in" : ""} ${className}`}
+    >
+      {children}
+    </Tag>
   );
 }
 
@@ -353,6 +385,8 @@ export type ExplorerData =
 const NO_GROUPS: ProcessorGroup[] = [];
 const NO_NOTES: ProcessorNotes = {};
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export default function Explorer({
   data,
   releaseList,
@@ -370,11 +404,11 @@ export default function Explorer({
   const activeMission = view.mission;
   const selected = view.release;
 
-  const navigate: Navigate = (next, mode) => {
+  const navigate: Navigate = useCallback((next: ProcessorsView, mode: "push" | "replace") => {
     const href = viewHref(next);
     if (mode === "push") window.history.pushState(null, "", href);
     else window.history.replaceState(null, "", href);
-  };
+  }, []);
 
   // The search box answers every keystroke from local state; the URL follows (replace, so typing
   // adds no history entries). A URL change from elsewhere (back/forward) resets the box.
@@ -390,15 +424,7 @@ export default function Explorer({
     navigate({ ...view, q }, "replace");
   };
 
-  // Ambient motion (sky strip, satellite float, timeline scan). Reduced-motion users start paused.
-  const [motionPaused] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true,
-  );
-
   const now = data.ok ? data.now : 0;
-  const satelliteImageUrl = SATELLITE_IMAGES[activeMission];
   const normalisedQuery = query.trim().toLowerCase();
   const isDetail = selected !== null;
 
@@ -420,32 +446,40 @@ export default function Explorer({
     ? detailGroup.releases.findIndex((r) => r.id === shown)
     : -1;
 
-  // Escape closes the detail view, as the Overview button does.
+  // One Escape handler: if a dropdown is open close it first, else close the detail.
   useEffect(() => {
-    if (!isDetail) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") navigate({ ...view, release: null }, "push");
+      if (e.key !== "Escape") return;
+      const openDrop = document.querySelector<HTMLDetailsElement>("details[open]");
+      if (openDrop) {
+        openDrop.removeAttribute("open");
+        openDrop.querySelector<HTMLElement>("summary")?.focus();
+      } else if (isDetail) {
+        navigate({ ...view, release: null }, "push");
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  });
+  }, [isDetail, view, navigate]);
 
   const missionReleases = missionGroups.flatMap((g) => g.releases);
-  const yearAgo = new Date(now);
-  yearAgo.setUTCFullYear(yearAgo.getUTCFullYear() - 1);
-  const latestMs = missionReleases.reduce((m, r) => Math.max(m, r.ms), 0);
-  // Without data (backend down), the counts read "—" rather than a misleading 0.
-  const stats = [
-    { value: data.ok ? missionGroups.length : "—", label: "Processors" },
-    { value: data.ok ? missionReleases.length : "—", label: "Releases" },
+  // KPI formulas: last year = ms in (now-365d, now]; latest = year of max ms <= now; "—" when not ok.
+  const lastYearCutoff = now - 365 * DAY_MS;
+  const latestMs = missionReleases.reduce(
+    (m, r) => (r.ms <= now ? Math.max(m, r.ms) : m),
+    0,
+  );
+  const counters = [
+    { value: data.ok ? String(missionGroups.length) : "—", label: "Processors" },
+    { value: data.ok ? String(missionReleases.length) : "—", label: "Releases" },
     {
       value: data.ok
-        ? missionReleases.filter((r) => r.ms >= yearAgo.getTime()).length
+        ? String(missionReleases.filter((r) => r.ms > lastYearCutoff && r.ms <= now).length)
         : "—",
       label: "Released in the last year",
     },
     {
-      value: latestMs ? new Date(latestMs).getUTCFullYear() : "—",
+      value: latestMs ? String(new Date(latestMs).getUTCFullYear()) : "—",
       label: "Latest release",
     },
   ];
@@ -455,25 +489,18 @@ export default function Explorer({
     navigate({ ...view, release: selected === id ? null : id }, "push");
 
   return (
-    <section className={`${s.container} ${motionPaused ? s.paused : ""}`}>
-      <SpaceBackdrop page={1} paused={motionPaused} />
-      {/* Decorative starfield that loops behind the page. Purely visual, so it is hidden from AT. */}
-      <div className={s.skyStrip} aria-hidden="true">
-        <div className={s.skyTrack}>
-          <div className={s.skyTile} />
-          <div className={s.skyTile} />
-        </div>
-      </div>
+    <section className={s.container}>
+      <SpaceBackdrop page={2} />
 
       {/* Headline counts for the selected mission */}
-      <dl className={s.stats}>
-        {stats.map((st) => (
-          <div key={st.label} className={s.stat}>
-            <dt>{st.label}</dt>
-            <dd>{st.value}</dd>
+      <Reveal as="dl" className={s.counters}>
+        {counters.map((ct) => (
+          <div key={ct.label} className={s.counter}>
+            <b className={s.counterV}>{ct.value}</b>
+            <span className={s.counterK}>{ct.label}</span>
           </div>
         ))}
-      </dl>
+      </Reveal>
 
       {/* Filter bar: mission menu, timeline window, baseline menu, search */}
       <div className={s.filters}>
@@ -489,15 +516,14 @@ export default function Explorer({
           navigate={navigate}
         />
 
-        <div className={s.tabs} role="group" aria-label="Timeline range">
+        <div className={s.frange} role="group" aria-label="Timeline range">
           {RANGES.map((r) => (
             <ViewLink
               key={r}
-              // a range always shows the overview
               view={{ ...view, range: r, release: null }}
               mode="replace"
               navigate={navigate}
-              className={`${s.segBtn} ${x.asButton} ${view.range === r ? s.active : ""}`}
+              className={`${s.frangeBtn} ${x.asButton} ${view.range === r ? s.frangeBtnOn : ""}`}
               aria-current={view.range === r ? "true" : undefined}
             >
               {r}
@@ -525,8 +551,8 @@ export default function Explorer({
           onSubmit={(e) => e.preventDefault()}
         >
           <svg
-            width="14"
-            height="14"
+            width="13"
+            height="13"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -554,73 +580,72 @@ export default function Explorer({
 
       {/* Three panes: satellite, timeline, and the release detail. The satellite and the detail
           trade places on the grid so the timeline compresses to the left as the detail opens. */}
-      <div className={`${s.split} ${isDetail ? s.isDetail : ""}`}>
+      <div className={`${s.split} ${isDetail ? s.focus : ""}`}>
+        {/* Satellite column: not sticky, no glow/blend/placeholder. Hidden while detail is open. */}
         <section
-          className={s.satpane}
+          className={s.lcol}
           aria-label={`Sentinel-${activeMission}`}
           aria-hidden={isDetail || undefined}
         >
-          <div className={s.artGlow} aria-hidden="true"></div>
-          <div className={s.art} aria-hidden="true"></div>
-
-          {satelliteImageUrl && (
-            // A fixed-size decorative render the prototype loads as-is; next/image adds nothing here.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={satelliteImageUrl}
-              alt={`Sentinel-${activeMission} satellite`}
-              className={s.satelliteImage}
-            />
-          )}
-
-          <div className={s.placeholder}>
-            <div className={s.placeholderText}>
-              Sentinel-{activeMission} Visualization
-            </div>
+          <div className={s.orbit}>
+            {SATELLITE_IMAGES[activeMission] && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={SATELLITE_IMAGES[activeMission]}
+                alt={`Sentinel-${activeMission} satellite`}
+                className={s.sat}
+              />
+            )}
           </div>
         </section>
 
         <section className={s.procpane}>
-          <h2 className={s.phead}>{MISSION_NAMES[activeMission]} processors</h2>
-
-          <p className={s.caption}>Release timeline</p>
-          {!data.ok ? (
-            <div className={s.statusError} role="alert">
-              <p className={s.statusTitle}>
-                {data.unreachable
-                  ? "Backend unreachable"
-                  : "Could not load processor releases"}
-              </p>
-              <p className={s.statusText}>
-                {data.unreachable
-                  ? "The processor feed did not answer. Check that the backend is running, then try again."
-                  : data.message}
-              </p>
-              {/* A reload of the same view: works with and without JavaScript. */}
-              <a className={`${s.retry} ${x.retryLink}`} href={viewHref(view)}>
-                Try again
-              </a>
+          <div className={s.sheet}>
+            <div className={s.phead}>
+              <h2>{MISSION_NAMES[activeMission]} processors</h2>
             </div>
-          ) : missionGroups.length > 0 ? (
-            <>
-              <ReleaseTimeline
-                groups={missionGroups}
-                now={now}
-                range={view.range}
-                baselineFilter={view.baseline}
-                query={normalisedQuery}
-                selected={selected}
-                onPick={toggleRelease}
-              />
-              {releaseList}
-            </>
-          ) : (
-            <p className={s.none}>No processors for this mission.</p>
-          )}
+            <div className={s.tlBar}>
+              <span className={s.tlCap}>Release timeline</span>
+            </div>
+
+            {!data.ok ? (
+              <div className={s.statusError} role="alert">
+                <p className={s.statusTitle}>
+                  {data.unreachable
+                    ? "Backend unreachable"
+                    : "Could not load processor releases"}
+                </p>
+                <p className={s.statusText}>
+                  {data.unreachable
+                    ? "The processor feed did not answer. Check that the backend is running, then try again."
+                    : data.message}
+                </p>
+                {/* A reload of the same view: works with and without JavaScript. */}
+                <a className={`${s.retry} ${x.retryLink}`} href={viewHref(view)}>
+                  Try again
+                </a>
+              </div>
+            ) : missionGroups.length > 0 ? (
+              <>
+                <ReleaseTimeline
+                  groups={missionGroups}
+                  now={now}
+                  range={view.range}
+                  baselineFilter={view.baseline}
+                  query={normalisedQuery}
+                  selected={selected}
+                  onPick={toggleRelease}
+                />
+                {releaseList}
+              </>
+            ) : (
+              <p className={s.none}>No processors for this mission.</p>
+            )}
+          </div>
         </section>
 
         <section
-          className={`${s.detailpane} ${isDetail ? s.detailOpen : ""}`}
+          className={`${s.detailpane} ${isDetail ? s.on : ""}`}
           aria-live="polite"
           aria-hidden={!isDetail || undefined}
         >
