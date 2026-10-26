@@ -2,7 +2,8 @@ name: sentiboard-frontend CI
 
 # Thin caller for the Next.js frontend, wired to the reusable building blocks of the
 # workflow-catalog repo. Every secret (Nexus, Docker Hub) is read from OpenBao, role ci-sentiboard:
-#   node-workflow.yml — install -> lint -> build -> test, every package through the Nexus npm proxy
+#   node-workflow.yml — install -> lint -> build -> test (with coverage) -> SonarQube scan,
+#                       every package through the Nexus npm proxy
 #   docker-build.yml  — production image (sentiboard-frontend/Dockerfile), npm through the same
 #                       proxy, pushed to the Nexus Docker registry
 #
@@ -46,7 +47,7 @@ jobs:
       # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
       secrets-source: openbao
       openbao-role: ci-sentiboard
-      openbao-tools: nexus
+      openbao-tools: nexus sonarqube
       # The runner has no direct internet access: npm (and so pnpm) goes through the Nexus npm proxy.
       use-nexus-registry: true
       # The project uses pnpm (packageManager in package.json). It is installed with npm rather
@@ -56,7 +57,10 @@ jobs:
       lint-command: pnpm lint && pnpm type-check
       build-command: pnpm build
       run-tests: true
-      test-command: pnpm test
+      # The lcov report SonarQube reads: coverage/lcov.info (vitest.config.mts).
+      test-command: pnpm test:coverage
+      # The scan base directory is the working directory: sentiboard-frontend/sonar-project.properties.
+      run-sonarqube: true
     secrets: inherit
 
   # Image (Dockerfile): develop -> dev image, tag x.y.z -> release image. Not built on PRs.

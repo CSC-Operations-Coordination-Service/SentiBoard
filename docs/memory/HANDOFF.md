@@ -22,6 +22,12 @@ Open work and known issues, newest first. Remove an item when it is resolved.
   sonarqube,dependency-track,dockerhub}` hold values, and that the Nexus in `devsecops/ci/dev/nexus`
   is the one that serves maas-model's dev builds.
 - Not verified here: the Nexus install itself, and the backend CI run on this branch.
+- The frontend CI runs `pnpm test:coverage` and a SonarQube scan (`run-sonarqube`, project key
+  `sentiboard-frontend`, `sentiboard-frontend/sonar-project.properties`), through the catalog's
+  `node-workflow.yml`. That option exists on the catalog branch `feat/node-sonarqube` only until it
+  is merged into the catalog's `develop`: the frontend workflow fails on an unknown input before
+  that. Coverage was 29.9% of lines on 2026-10-26, 151 tests. Not verified: a scan on the server,
+  and that `devsecops/ci/{dev,prod}/sonarqube` holds values (the backend scan needs the same).
 
 ## Frontend — still to port (2026-10-21)
 
