@@ -14,8 +14,8 @@ import {
   IndexGallery,
   IndexReveal,
   IndexFleetGallery,
-  Index1,
 } from "./pages/IndexExamples";
+import Home from "./pages/home/Home";
 import AboutRedesign from "./pages/AboutRedesign";
 import AboutBriefing from "./pages/about-briefing/AboutBriefing";
 import AboutDossier from "./pages/about-dossier/AboutDossier";
@@ -57,7 +57,7 @@ export default function App() {
 
           {/* PROPOSAL examples (do not affect the real pages above) */}
           <Route path="/examples" element={<ExamplesHome />} />
-          <Route path="/index" element={<Index1 />} />
+          <Route path="/index" element={<Home />} />
           <Route path="/examples/fleet" element={<IndexFleet />} />
           <Route path="/examples/gallery" element={<IndexGallery />} />
           <Route
