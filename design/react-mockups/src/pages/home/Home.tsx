@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Reveal } from "@/components/ui";
 import { REALTIME, MODULES } from "@/data/mock";
 import "@/styles/examples.css";
+import styles from './home.module.css';
 
 const FAQ_GROUPS: {
   icon: React.ReactNode;
@@ -159,68 +160,16 @@ export default function Home() {
 
   return (
     <>
-      <div
-        style={{
-          position: "fixed",
-          top: "56px",
-          left: 0,
-          right: 0,
-          display: "flex",
-          flexDirection: "column",
-          background: "var(--ground)",
-          zIndex: 45,
-        }}
-      >
-        <div
-          style={{
-            height: "68px",
-            display: "flex",
-            alignItems: "center",
-            borderBottom: "1px solid rgba(255,255,255,.08)",
-            overflow: "hidden",
-          }}
-        >
+      <div className={styles.bar}>
+        <div className={styles.row}>
           <button
             onClick={() => setNewsOpen(!newsOpen)}
-            style={{
-              flex: "none",
-              display: "flex",
-              alignItems: "center",
-              gap: "11px",
-              height: "100%",
-              padding: "0 24px",
-              position: "relative",
-              zIndex: 2,
-              background: "var(--ground)",
-              border: "none",
-              borderRight: "1px solid rgba(255,255,255,.14)",
-              fontFamily: "var(--mono)",
-              fontSize: "12px",
-              letterSpacing: ".18em",
-              textTransform: "uppercase",
-              color: "#3DDC84 !important",
-              cursor: "pointer",
-            }}
+            className={styles.news}
+            aria-expanded={newsOpen}
           >
-            <i
-              style={{
-                width: "8px",
-                height: "8px",
-                borderRadius: "50%",
-                background: "#3DDC84",
-                boxShadow: "0 0 11px #3DDC84",
-              }}
-            />
-            <span style={{ color: "#3DDC84" }}>News</span>
-            <span
-              style={{
-                fontFamily: "var(--mono)",
-                fontSize: "11px",
-                color: "#3DDC84",
-              }}
-            >
-              {REALTIME.length}
-            </span>
+            <i className={styles.dot} />
+            <span>News</span>
+            <span className={styles.count}>{REALTIME.length}</span>
             <svg
               width="9"
               height="9"
@@ -228,62 +177,21 @@ export default function Home() {
               fill="none"
               stroke="currentColor"
               strokeWidth="3"
-              style={{
-                transition: "transform 720ms cubic-bezier(.65,0,.25,1)",
-                transform: newsOpen ? "rotate(180deg)" : "rotate(0deg)",
-                color: "#3DDC84",
-              }}
+              className={newsOpen ? `${styles.chevron} ${styles.chevronOpen}` : styles.chevron}
             >
               <path d="M5 9l7 7 7-7" />
             </svg>
           </button>
-          <div
-            style={{
-              flex: "1 1 auto",
-              minWidth: "0",
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              flexWrap: "nowrap",
-              overflow: "hidden",
-              position: "relative",
-            }}
-          >
+          <div className={styles.mask}>
             <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "nowrap",
-                width: "max-content",
-                whiteSpace: "nowrap",
-                animation: "slide 68s linear infinite",
-              }}
+              className={styles.track}
+              style={{ "--ticker-dur": `${13.6 * REALTIME.length}s` } as React.CSSProperties}
             >
               {live.map((e, i) => (
-                <span
-                  key={i}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    flex: "0 0 auto",
-                    padding: "0 4px",
-                    fontSize: "16px",
-                    color: "var(--text)",
-                    opacity: 0.92,
-                  }}
-                >
+                <span key={i} className={styles.item}>
                   <span>{e.title}</span>
-                  <span className="nt-sep" />
-                  <time
-                    style={{
-                      fontFamily: "var(--mono)",
-                      fontSize: "13px",
-                      letterSpacing: ".04em",
-                      color: "var(--muted)",
-                      flex: "0 0 auto",
-                    }}
-                  >
+                  <span className={styles.sep} />
+                  <time className={styles.time}>
                     {e.date} {e.time}
                   </time>
                 </span>

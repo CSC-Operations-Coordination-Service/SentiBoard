@@ -124,6 +124,14 @@
    --pr-mis-2: #4ADE80;
    --pr-mis-3: #6FA8FF;
    --pr-mis-5P: #A78BFA;
+
+   /* Home page (Decision 19) */
+   --home-ground: #000000;
+   --home-live: #3DDC84;
+   --home-accent: #29C3D6;
+   --home-faq-bar: #070D11;
+   --home-faq-bar-hover: #0A1217;
+   --home-faq-open: rgba(54, 208, 224, 0.35);
 }
 
 /* -------------------- LIGHT -------------------- */
