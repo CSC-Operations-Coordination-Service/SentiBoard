@@ -23,6 +23,36 @@ TEMPLATES = Path(__file__).parent / "index_templates"
 PARTITIONED = {"processor"}
 
 
+def stringify_meta(node, field_names=False):
+    """The templates, ready for OpenSearch.
+
+    OpenSearch only accepts strings as the values of a field's `meta`, but the template files
+    carry hints for the schema generator as booleans (`"meta": {"optional": true}`): a request
+    with them is a 400, "[meta] values can only be strings", and the API never starts. The
+    files stay as they are (the generator reads them); only what is sent is changed.
+
+    An object or nested field (one with `properties`) takes no `meta` at all: OpenSearch refuses
+    it ("unsupported parameters: [meta : {array=true}]"), so the hint is left out there.
+
+    `field_names` is True for the dict under `properties`, whose keys are field names: a field
+    called "meta" is a field, not a hint.
+    """
+    if isinstance(node, list):
+        return [stringify_meta(item) for item in node]
+    if not isinstance(node, dict):
+        return node
+    out = {}
+    is_object_field = "properties" in node and not field_names
+    for key, value in node.items():
+        if key == "meta" and is_object_field:
+            continue
+        if key == "meta" and not field_names and isinstance(value, dict):
+            out[key] = {k: (str(v).lower() if isinstance(v, bool) else str(v)) for k, v in value.items()}
+        else:
+            out[key] = stringify_meta(value, field_names=(key == "properties" and not field_names))
+    return out
+
+
 class SetupError(RuntimeError):
     """The existing OpenSearch state needs a manual fix before the API can run."""
 
@@ -30,7 +60,7 @@ class SetupError(RuntimeError):
 def setup(client, apply):
     for path in sorted(TEMPLATES.glob("*_template.json")):
         name = path.name.removesuffix("_template.json")
-        body = json.loads(path.read_text())
+        body = stringify_meta(json.loads(path.read_text()))
         template = {"index_patterns": body.pop("index_patterns"), "template": body}
 
         exists = client.indices.exists_index_template(name=name)
