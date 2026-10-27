@@ -14,4 +14,6 @@ Code and tests are the truth; these files record the verified state. Anything un
 
 | Feature | State |
 | --- | --- |
+| [Home page](features/home.md) | `IMPLEMENTED` (2026-10-27) |
+| [Events & Anomalies page](features/events.md) | `IMPLEMENTED` (2026-10-22; visual check pending) |
 | [Processors page](features/processors.md) | `IMPLEMENTED` (desktop verified; mobile + tests open) |

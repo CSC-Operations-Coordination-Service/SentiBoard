@@ -6,11 +6,43 @@ import NewsBar from "@/features/home/NewsBar";
 import { MODULES, FAQ_GROUPS } from "@/features/home/copy";
 import { getInstantMessages } from "@/features/home/data";
 import s from "@/features/home/home.module.css";
+import { ROUTES, SITE_NAME } from "@/lib/routes";
 
-// Not ported yet (ROUTES.home.ported = false; docs/memory/HANDOFF.md).
+const SEO = {
+  title: "Copernicus Sentinel Operations Dashboard | Real-Time Satellite Monitoring",
+  description:
+    "Track live Sentinel satellite events, data availability, " +
+    "and acquisition status on the official Copernicus Operations Dashboard (Sentiboard). " +
+    "Updated every hour for ESA Sentinel-1, -2, -3, and -5P missions.",
+  keywords: [
+    "Copernicus Sentinel Operations Dashboard real-time",
+    "Sentiboard live satellite data",
+    "ESA Sentinel mission monitoring dashboard",
+    "Sentinel real-time acquisition and events",
+    "Copernicus Earth observation status",
+  ],
+};
+
 export const metadata: Metadata = {
-  title: "SentiBoard",
-  robots: { index: false, follow: true },
+  title: SEO.title,
+  description: SEO.description,
+  keywords: SEO.keywords,
+  alternates: { canonical: ROUTES.home.path },
+  openGraph: {
+    siteName: SITE_NAME,
+    title: SEO.title,
+    description: SEO.description,
+    type: "website",
+    url: ROUTES.home.path,
+    locale: "en_GB",
+  },
+  twitter: {
+    card: "summary_large_image",
+    site: "@sentinelonline_",
+    creator: "@sentinelonline_",
+    title: SEO.title,
+    description: SEO.description,
+  },
 };
 
 export default async function HomePage() {

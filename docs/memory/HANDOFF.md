@@ -66,8 +66,8 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 
 ## Frontend — still to port (2026-10-21)
 
-- Shell, `/processors` and `/events` are ported. Placeholders ("coming soon", noindex, not in the
-  sitemap) remain for `/` (home), `/acquisitions-globe`, `/acquisitions-globe-earth`,
+- Shell, `/processors`, `/events` and `/` (home) are ported. Placeholders ("coming soon", noindex,
+  not in the sitemap) remain for `/acquisitions-globe`, `/acquisitions-globe-earth`,
   `/availability`, `/terms-conditions`, `/cookie-notice`. Port each as its own vertical slice
   (AGENTS.md §7), from the prototype at `~/work/SentiBoard/design/react-mockups`. Their final URLs
   and legacy redirects are not decided yet: the placeholders use the prototype's paths; apply the
