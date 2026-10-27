@@ -2,6 +2,15 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Home — groundwork laid (2026-10-27)
+
+- `docs/design/home-prototype-ref.md` copied from the mock-up branch.
+- `src/components/Reveal.tsx` extracted from `Explorer.tsx` (`"use client"`); Explorer now imports it from there. Behaviour unchanged.
+- Six `--home-*` tokens added to `src/styles/tokens.css` (dark block, after `--pr-mis-5P`).
+- `public/assets/img/modules/availability.jpg` and `events.jpg` copied from the mock-up branch. `events.jpg` SHA256 verified (`8a446d6c…`).
+- **`public/assets/mv/home.mp4` NOT copied:** the file on the mock-up branch is ~19 MB (20 057 975 bytes), above the 10 MB threshold. Needs a compressed copy before it can land in the repo.
+- ESLint, tsc --noEmit, pnpm test (266/266), pnpm build all clean.
+
 ## CI — backend on maas-model 3.3.0 (2026-10-26)
 
 - Both CI workflows (`.github/workflows/frontend-ci.yml`, `backend-ci.yml`) install every package
