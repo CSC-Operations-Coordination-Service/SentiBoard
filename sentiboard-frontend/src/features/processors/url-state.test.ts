@@ -137,5 +137,5 @@ describe("resolveView", () => {
 });
 
 function release(id: string): ProcessorGroup["releases"][number] {
-  return { id, baseline: "1.0", ms: 0, sats: [], changes: "—", isCurrent: true };
+  return { id, baseline: "1.0", ms: 0, sats: [], changes: "—", isCurrent: true, searchText: "" };
 }

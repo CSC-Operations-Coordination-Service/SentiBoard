@@ -3,272 +3,225 @@
 .container {
   position: relative;
   width: 100%;
-  padding-bottom: 48px;
+  padding-inline: clamp(18px, 4vw, 48px);
   background: var(--bg);
   overflow-x: hidden;
 }
 
-/* Content sits above the sky strip, which is the only layer with z-index. Without this the
-   absolutely positioned strip would paint over static content. Stacking stays at auto so the
-   dropdown menus (z-index 30) still overlay the page. */
+/* Content sits above SpaceBackdrop and the hero's text block (.hero-in z-index:2).
+   SpaceBackdrop's own rule (z-index:0 !important) keeps it below everything else.
+   Same mechanism as DA availability.module.css:72–75. */
 .container > * {
   position: relative;
+  z-index: 1;
 }
 
-/* Sky strip: a starfield tile repeated twice and translated by one tile, so the loop is seamless.
-   The tile is 1800px, a multiple of the 600px star cell, which keeps the pattern continuous at the
-   seam. It is decorative only and never receives pointer events. */
-.skyStrip {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
-  opacity: 0.55;
-  pointer-events: none;
-}
-
-.skyTrack {
-  position: absolute;
-  top: 0;
-  left: 0;
+/* -------------------- counters -------------------- */
+/* Flat KPI counts, centred as one group: value above caption, all in Noto Sans. Copied from
+   data-availability.module.css; entrance via the shared Reveal component (global.css). */
+.counters {
   display: flex;
-  width: 3600px;
-  height: 100%;
-  animation: skyDrift 150s linear infinite;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+  background: none;
+  border: 0;
 }
 
-.skyTile {
-  flex: none;
-  width: 1800px;
-  height: 100%;
-  background-image:
-    radial-gradient(1px 1px at 40px 60px, #fff 50%, transparent 100%),
-    radial-gradient(1px 1px at 180px 310px, #cfe6ff 50%, transparent 100%),
-    radial-gradient(1.5px 1.5px at 330px 120px, #fff 50%, transparent 100%),
-    radial-gradient(1px 1px at 470px 240px, #fff 50%, transparent 100%),
-    radial-gradient(1px 1px at 540px 380px, #9fd8ea 50%, transparent 100%),
-    radial-gradient(1px 1px at 260px 20px, #fff 50%, transparent 100%);
-  background-size: 600px 420px;
-}
-
-@keyframes skyDrift {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-1800px);
-  }
-}
-
-/* Paused: every ambient motion stops where it is. The scan band is hidden rather than frozen so it
-   does not sit half-way across the timeline. */
-.paused .skyTrack,
-.paused .satelliteImage {
-  animation-play-state: paused;
-}
-
-
-/* Headline counts. A definition list so each label stays paired with its value. */
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 56px 16px 44px;
+.counter {
+  width: clamp(140px, 16vw, 220px);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
   text-align: center;
 }
 
-.stat {
-  padding: 0 12px;
+.counterK {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
 }
 
-.stat dd {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(36px, 4.2vw, 52px);
-  font-weight: 600;
+.counterV {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--text);
 }
 
-.stat dt {
-  margin-top: 12px;
-  font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text-dim);
+@media (max-width: 900px) {
+  .counter { width: clamp(130px, 44vw, 200px); }
 }
 
-/* Filter bar. Mission and Baseline are dropdowns, the range is text buttons, and search is an
-   underlined field. Everything shares one baseline so the underlines line up. */
+/* Filter toolbar: one centred wrapping row, 49 px line. §3, Decision 1. */
 .filters {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  gap: 26px;
-  padding: 0 clamp(16px, 4vw, 56px);
+  gap: 2px 26px;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding-bottom: clamp(10px, 1.6vw, 20px);
 }
 
-/* Dropdown: the underline sits under the trigger when closed and moves under the menu when open. */
-.dd {
+/* Mission and Baseline: in-flow dropdown, hairline always visible, caption cyan on hover/open.
+   Ported from DA availability.module.css. Decisions 3–5, §3.1, §3.3. */
+.fdrop {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 220px;
-  border-bottom: 1px solid var(--line-strong);
-  transition: border-color 0.2s ease;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
 }
 
-.ddOpen {
-  border-bottom-color: transparent;
-}
-
-.ddTrigger {
+.fdropHead {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
-  padding: 6px 0 9px;
+  height: 48px;
+  padding: 0;
   border: 0;
+  border-radius: 0;
   background: none;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
   cursor: pointer;
+  text-align: left;
+  color: var(--text);
 }
 
-.ddTrigger:focus-visible {
+.fdropHead:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-.ddLabel {
+.fdropLabel {
+  flex: 1 1 auto;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text);
-  white-space: nowrap;
 }
 
-.ddOpen .ddLabel {
+.fdropHead:hover .fdropLabel,
+details[open] .fdropHead .fdropLabel {
   color: var(--accent);
 }
 
-.ddValue {
+.fdropVal {
+  flex: 0 0 auto;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--text);
-  white-space: nowrap;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
 }
 
-.ddChev {
-  margin-left: auto;
-  flex: none;
-  color: var(--text);
-  transition: transform 0.2s ease;
+/* Chevron: static, no rotation (Decision 3 — DA behaviour wins over §3.1 prototype value). */
+.fdropHead svg {
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--text) 85%, transparent);
 }
 
-.ddChevUp {
-  transform: rotate(180deg);
+/* In-flow body: grid-template-rows 0fr → 1fr animates height without a fixed max-height.
+   details[open] handles the open state for both JS and no-JS. */
+.fdropBody {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.ddMenu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 30;
-  width: max-content;
-  min-width: 100%;
-  margin: 0;
-  padding: 10px 0 12px;
-  list-style: none;
-  background: var(--bg-1);
-  border-bottom: 1px solid var(--line-strong);
+details[open] .fdropBody {
+  grid-template-rows: 1fr;
 }
 
-.ddItem {
-  display: block;
+.fdropInner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.fdropPad {
+  padding: 6px 0 14px;
+}
+
+/* Items: 12.5 px, no underline on selected (Decision 5), non-chosen at half opacity (Decisions 4–5). */
+.fitem {
   width: 100%;
-  padding: 7px 0;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  padding: 0 2px;
   border: 0;
   background: none;
-  color: var(--text-mute);
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  text-align: left;
-  white-space: nowrap;
   cursor: pointer;
+  text-align: left;
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 90%, transparent);
 }
 
-.ddItem:hover {
-  color: var(--text);
+.fitem u {
+  text-decoration: none;
 }
 
-.ddItem:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+.fitemOff {
+  color: color-mix(in srgb, var(--text) 50%, transparent);
 }
 
-.ddItemOn {
-  color: var(--text);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 6px;
-}
-
-.tabs {
+/* Range buttons: 49 px tall, cyan underline on the active one, no hover colour change. §3.2. */
+.frange {
+  height: 49px;
   display: flex;
+  align-items: center;
   gap: 18px;
-  padding-bottom: 3px;
 }
 
-.segBtn {
-  padding: 4px 0 3px;
+.frangeBtn {
+  height: 49px;
+  min-height: 49px;
+  padding: 0 1px;
   border: 0;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   background: none;
-  color: var(--text-mute);
-  font-family: var(--font-mono);
-  font-size: 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
 }
 
-.segBtn:hover {
-  color: var(--text);
-}
-
-.segBtn.active {
+.frangeBtnOn {
   color: var(--text);
   border-bottom-color: var(--accent);
 }
 
-.segBtn:focus-visible {
+.frangeBtn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
 
-/* Search: the underline spans the field and turns accent while focused. */
+/* Search: 49 px tall, static hairline, no focus-border change (§3.4).
+   The always-visible line doubles as the keyboard focus indicator, same as DA's .fsearch. */
 .search {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   width: 220px;
-  padding: 6px 0 9px;
-  border-bottom: 1px solid var(--line-strong);
+  height: 49px;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
   color: var(--text);
-  transition: border-color 0.2s ease;
-}
-
-.search:focus-within {
-  border-bottom-color: var(--accent);
 }
 
 .search svg {
@@ -284,154 +237,227 @@
   background: none;
   color: var(--text);
   font: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
 .searchInput::placeholder {
   color: var(--text);
-  opacity: 0.85;
+  opacity: 1;
 }
 
 .searchInput::-webkit-search-cancel-button {
   filter: invert(0.6);
 }
 
-/* Three panes on one grid: satellite | timeline | detail. Opening a release collapses the
-   satellite and opens the detail, so the timeline compresses to the left half. Animating the
-   track sizes gives the slide; the visibility delay keeps collapsed panes out of the way. */
+/* Two-area split: satellite (lcol) | timeline (proc) in overview,
+   timeline (proc) | detail in focus. Decision 1, 2, 12, §5.1. */
 .split {
+  --pr-align: clamp(24px, calc(49.4vh - 355px), 240px);
+  --pr-sat-h: clamp(220px, calc(57vh - 103px), 640px);
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0fr);
-  margin-top: 56px;
-  min-height: 640px;
-  transition: grid-template-columns 0.7s var(--ease);
+  grid-template-areas: "lcol proc";
+  grid-template-columns: 50% 50%;
+  align-items: start;
+  position: relative;
+  z-index: 3;
+  margin-top: max(0px, var(--pr-align) - clamp(10px, 1.6vw, 20px));
 }
 
-.split.isDetail {
-  grid-template-columns: minmax(0, 0fr) minmax(0, 1fr) minmax(0, 1fr);
+.split.focus {
+  grid-template-areas: "proc detail";
 }
 
-.satpane {
- position: sticky; /* Keeps the satellite pane pinned while scrolling long tables */
-  top: 24px;        /* Distance from top of the viewport when fixed */
-  align-self: start;
+/* Satellite column. Not sticky; scrolls with the page (Decision 10, §5.3).
+   In focus: leaves the grid but stays painted as absolute so the orbit can
+   fade smoothly; pointer-events disabled and aria-hidden set in TSX.
+   position: relative is required so .orbitOver (§11) can use absolute positioning. */
+.lcol {
+  grid-area: lcol;
+  min-width: 0;
+  position: relative;
+  container-type: inline-size;
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  min-width: 0;
-  padding: 32px 24px 0;
-  overflow: hidden;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0s;
+  margin-top: calc(12px + 0.125 * var(--pr-sat-h) - var(--pr-align));
 }
 
-.isDetail .satpane {
-  padding: 0;
-  visibility: hidden;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0.7s;
-}
-
-.artGlow,
-.art {
+.split.focus .lcol {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 50%;
   pointer-events: none;
 }
 
-.artGlow {
-  z-index: 1;
-  opacity: 0.15;
-  filter: blur(26px);
-  background: radial-gradient(circle at center, var(--accent) 0%, transparent 100%);
+/* Satellite image container — sized and centred per §5.3 placeSats() CSS approximation. */
+.orbit {
+  position: relative;
+  width: 66%;
+  height: var(--pr-sat-h);
+  /* Fade to invisible in focus (.5 s); visibility hides after the fade. */
+  transition: opacity 0.5s ease;
 }
 
-.art {
-  z-index: 2;
-  opacity: 0.3;
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, var(--accent) 20%, transparent) 0%,
-    transparent 70%
+.split.focus .orbit {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease, visibility 0s linear 0.5s;
+}
+
+/* 92 % width when the column is narrower than 420 px (container query, §5.3). */
+@container (max-width: 419px) {
+  .orbit { width: 92%; }
+}
+
+@keyframes lcolIn {
+  from { opacity: 0; transform: translateX(-24px); }
+}
+
+/* Content swap when stepping or re-picking while the detail pane is already open (§9, §15). */
+@keyframes vswap {
+  from { opacity: 0.25; }
+  to   { opacity: 1; }
+}
+.dtIn.swap {
+  animation: vswap 320ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .dtIn.swap { animation: none; }
+}
+
+/* Applied via React state on satellite column re-entry after detail closes (§10). */
+.lcolEnter .orbit {
+  animation: lcolIn 560ms ease both;
+}
+
+/* Transparent WebP cut-out (alpha confirmed). Drop-shadow per §5.3. */
+.sat {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.5));
+  transition: opacity 0.35s ease;
+}
+
+/* §11 / Decision 11 — mission-change orbit rotation.
+   .satOff: hides satellite images that are neither the active mission nor the tween target;
+   React toggles the class, the rAF writes inline transform/opacity/visibility on top of it,
+   clearStyles() removes the inline properties so the class resumes control after the tween.
+   .sheetOver: absolutely covers the active .sheet so the incoming sheet starts at the same
+   position and is rotated in by the rAF tween; direct DOM mutation, no React style. */
+.satOff {
+  visibility: hidden;
+}
+
+.sheetOver {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+}
+
+/* Lift the overflow clip while rotating so the swinging sheets can extend outside the pane. */
+.procpane.tweening {
+  overflow: visible;
+}
+
+/* Markers remain inert during the tween; tooltip is already suppressed via moving={true} (§11). */
+.procpane.tweening .mk {
+  pointer-events: none;
+}
+
+/* Reduced motion: overlay sheet is never shown (the rAF branch returns early in JS). */
+@media (prefers-reduced-motion: reduce) {
+  .sheetOver {
+    display: none;
+  }
+}
+
+/* Timeline pane. No horizontal padding — .sheet and .container handle edges.
+   Text shadow per Decision 20 (dark theme only, below). */
+/* Horizon reveal mask (Decision 21). --hz-cut is set in px by useHorizonMask().
+   Fallback 9999px = no clipping before the first rAF fires. */
+.procpane,
+.detailpane {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0px,
+    black calc(var(--hz-cut, 9999px) - 56px),
+    transparent var(--hz-cut, 9999px)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0px,
+    black calc(var(--hz-cut, 9999px) - 56px),
+    transparent var(--hz-cut, 9999px)
   );
 }
 
-.satelliteImage {
-  position: relative;
-  z-index: 3;
-  max-width: 100%;
-  max-height: 640px;
-  object-fit: contain;
-  opacity: 0.92;
-  mix-blend-mode: screen;
-  transition: opacity 0.4s ease;
-  animation: satFloat 9s ease-in-out infinite;
-}
-
-/* A slow vertical drift, so the satellite never sits perfectly still. */
-@keyframes satFloat {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-:root[data-theme="light"] .satelliteImage {
-  mix-blend-mode: normal;
-}
-
-.placeholder {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-mute);
-  pointer-events: none;
-  transition: opacity 0.3s ease;
-}
-
-.satpane:has(.satelliteImage) .placeholder {
-  opacity: 0;
-}
-
-.placeholderText {
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  opacity: 0.5;
-}
-
-/* Timeline pane */
 .procpane {
+  grid-area: proc;
   min-width: 0;
-  max-width: 100%;
-  padding: 0 clamp(16px, 3vw, 48px) 96px;
+  position: relative;
   overflow-x: hidden;
 }
 
+/* Inner column wrapper: left gutter only (outer edge comes from .container). Decision 2. */
+.sheet {
+  padding: 0 0 0 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Heading block: 49 px min-height (14 px top padding + text), 16 px below. §5.2. */
 .phead {
-  margin: 0 0 30px;
-  font-family: var(--font-display);
-  font-size: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 49px;
+  padding-top: 14px;
+  margin-bottom: 16px;
+}
+
+.phead h2 {
+  margin: 0;
+  font-size: clamp(17px, 1.7vw, 22px);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--text);
+}
+
+/* Caption bar sits between the heading and the chart. §5.2. */
+.tlBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tlCap {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text);
 }
 
-.caption {
-  margin: 0 0 12px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--text);
+/* Text shadow on the timeline and detail columns (Decision 20).
+   Dark theme only — matching the pattern the other pages use for on-sky text.
+   DA applies theirs bare; here we scope to dark to avoid a grey haze in light mode. */
+:root:not([data-theme="light"]) .procpane,
+:root:not([data-theme="light"]) .detailpane {
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(0, 0, 0, 0.85),
+    0 1px 14px rgba(0, 0, 0, 0.7);
 }
 
 .none {
@@ -441,16 +467,16 @@
   color: var(--text-mute);
 }
 
-/* Loading and error states of the timeline pane, in the pane's own mono / uppercase register. */
+/* Loading and error states — caption register: 11px/600/.2em/Noto Sans (Decision 26). */
 .status {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 0;
   padding: 24px 0;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--text-mute);
@@ -491,9 +517,9 @@
 
 .statusTitle {
   margin: 0 0 8px;
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--crit);
@@ -512,9 +538,9 @@
   border: 1px solid var(--line-strong);
   background: transparent;
   color: var(--text);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
@@ -529,44 +555,6 @@
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
-.captionRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 12px;
-}
-
-.captionRow .caption {
-  margin: 0;
-}
-
-/* Pause/resume for the ambient motion. Sized and set in the same mono as the other controls. */
-.motionBtn {
-  padding: 4px 10px;
-  border: 1px solid var(--line-strong);
-  background: transparent;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease;
-}
-
-.motionBtn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.motionBtn:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
 /* ==================== release timeline (SentiBoard.html#processors) ====================
    One chart, drawn with absolute positions like drawTimeline(): a 100px name column pinned to the
    left, and a track where every release is a dot on its own row with a hairline STEM rising to the
@@ -578,22 +566,16 @@
   --tl-ink: var(--text);
   --tl-dim: var(--text-dim);
   --tl-accent: var(--accent);
-  --tl-inforce: var(--bl-current);
-  --tl-past: var(--bl-past);
+  --tl-inforce: var(--pr-current);
+  --tl-past: var(--pr-past);
   --tl-hair: color-mix(in srgb, var(--text) 8%, transparent);
   --tl-hair-strong: color-mix(in srgb, var(--text) 16%, transparent);
+  --tl-frame: color-mix(in srgb, var(--text) 12%, transparent);
+  --tl-year-ink: color-mix(in srgb, var(--text) 60%, transparent);
   position: relative;
   padding: 0 0 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--tl-frame);
   font-family: var(--font-sans);
-}
-
-.caption {
-  font-family: var(--font-sans);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  color: var(--text-dim);
 }
 
 /* Every lane at full height: the densest mission (Sentinel-3, 18 processors at 22px rows) is
@@ -628,7 +610,6 @@
   position: relative;
   display: grid;
   grid-template-columns: 100px 1fr;
-  min-width: 600px;
 }
 
 /* ---- names ---- */
@@ -648,11 +629,11 @@
   width: 96px;
   display: flex;
   align-items: center;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--tl-dim);
+  color: color-mix(in srgb, var(--text) 55%, transparent);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -660,7 +641,7 @@
 }
 
 .tlLabels span.on {
-  color: var(--tl-ink);
+  color: var(--text);
 }
 
 /* ---- the track and its grid ---- */
@@ -678,23 +659,23 @@
   top: 22px;
   bottom: 0;
   width: 1px;
-  background: var(--tl-hair);
+  background: color-mix(in srgb, var(--text) 6%, transparent);
   pointer-events: none;
 }
 
 .gYear {
   top: 0;
-  background: var(--tl-hair-strong);
+  background: color-mix(in srgb, var(--text) 15%, transparent);
 }
 
 .yl {
   position: absolute;
   top: 3px;
   padding-left: 4px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  color: var(--tl-dim);
+  letter-spacing: 0.08em;
+  color: var(--tl-year-ink);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -706,9 +687,15 @@
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--tl-dim); /* --text-mute is under 3:1 on the light background at 9px */
+  color: var(--text-mute); /* dark: #6B7686 per prototype; light: see override below */
   white-space: nowrap;
   pointer-events: none;
+}
+
+/* Light-mode deviation (Decision 28): #6B7686 is under 3:1 at 9px on the light background;
+   use --tl-dim (the standard dim text token) for contrast. */
+:root[data-theme="light"] .ml {
+  color: var(--tl-dim);
 }
 
 .rl {
@@ -775,7 +762,7 @@
   border-radius: 50%;
   background: var(--bg);
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.3s ease, opacity 0.3s, border-color 0.2s;
+  transition: opacity 240ms ease;
 }
 
 .mk:hover {
@@ -802,6 +789,11 @@
   border-color: var(--tl-inforce);
 }
 
+/* picked marker stays at 1.25 on hover (Decision 16: scale snaps, no transition on transform) */
+.mkSel:hover {
+  transform: scale(1.25);
+}
+
 /* the picked release: a gap in the page colour, a ring, and a soft halo */
 .mkSel {
   transform: scale(1.25);
@@ -818,7 +810,7 @@
     0 0 18px 6px color-mix(in srgb, var(--tl-inforce) 45%, transparent);
 }
 
-/* zoomed in: the version beside each dot */
+/* zoomed in: the version beside each dot; no entrance animation (Decision 16) */
 .vl {
   position: absolute;
   margin: -8px 0 0 14px;
@@ -828,15 +820,10 @@
   color: var(--tl-dim);
   white-space: nowrap;
   pointer-events: none;
-  animation: vlIn 0.4s ease both;
 }
 
 .vlNow {
   color: var(--tl-inforce);
-}
-
-@keyframes vlIn {
-  from { opacity: 0; }
 }
 
 /* zoomed in, the other processors step back */
@@ -863,31 +850,29 @@
   padding: 14px 16px 13px;
   box-sizing: border-box;
   background: color-mix(in srgb, var(--bg-1) 96%, transparent);
-  border: 1px solid var(--line-strong);
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
   border-radius: 12px;
-  box-shadow: var(--shadow);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   font-family: var(--font-sans);
   color: var(--text);
   pointer-events: none;
-  /* anchored on the dot's centre: above it by default */
-  transform: translate(-50%, -100%);
-  animation: tipIn 0.18s ease both;
+  text-shadow: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.tipBelow {
-  transform: translate(-50%, 0);
-}
-
-@keyframes tipIn {
-  from { opacity: 0; margin-top: 4px; }
+.tipOn {
+  opacity: 1;
+  transform: none;
 }
 
 .tip hr {
   margin: 11px 0 9px;
   border: 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
 }
 
 .ttTitle {
@@ -910,7 +895,7 @@
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: color-mix(in srgb, var(--text) 45%, transparent);
 }
 
 .ttV {
@@ -926,11 +911,11 @@
 }
 
 .ttGo {
-  color: var(--bl-current);
+  color: var(--pr-current-text);
 }
 
 .ttOld {
-  color: var(--bl-past);
+  color: var(--text-dim);
 }
 
 .ttRows {
@@ -946,7 +931,7 @@
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-mute);
+  color: color-mix(in srgb, var(--text) 45%, transparent);
 }
 
 .ttRows dd {
@@ -954,15 +939,6 @@
   font-size: 11.5px;
   line-height: 1.4;
   color: var(--text-dim);
-}
-
-/* "Changes" is prose: its own full-width line under the label, not squeezed beside it. */
-.ttRows .ttWide {
-  grid-column: 1 / -1;
-}
-
-.ttRows dt.ttWide {
-  margin-top: 3px;
 }
 
 .ttHint {
@@ -974,39 +950,36 @@
   color: var(--accent);
 }
 
-/* Detail pane: collapsed to zero width until a release is open. */
+/* Detail pane. Hidden (display:none) until the grid switches to focus.
+   Enters by fading in (420 ms) and sliding from 56 px after 180 ms.
+   Exits by reversing (420 ms); the grid reverts at 280 ms so the pane
+   disappears while nearly transparent. §9, Decision 12. */
 .detailpane {
+  grid-area: detail;
   min-width: 0;
-  overflow: hidden;
-  padding: 0;
-  visibility: hidden;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0.7s;
+  padding: 14px 0 48px 34px;
+  display: none;
+  opacity: 0;
+  transform: translateX(56px);
+  transition:
+    opacity 420ms ease,
+    transform 640ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
-.detailOpen {
-  padding: 0 clamp(16px, 3vw, 48px) 96px 0;
-  visibility: visible;
-  transition: padding 0.7s var(--ease), visibility 0s linear 0s;
+.split.focus .detailpane {
+  display: block;
 }
 
-/* Fixed inner width so the content does not reflow while the pane is still sliding open. */
-.dtIn {
-  min-width: 440px;
-  animation: dtIn 0.45s var(--ease);
-}
-
-@keyframes dtIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
+.detailpane.on {
+  opacity: 1;
+  transform: none;
 }
 
 .dtTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 36px;
+  margin-bottom: 18px;
 }
 
 .dtBack {
@@ -1017,14 +990,13 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+  font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: color 0.2s ease;
+  transition: color 0.2s;
 }
 
 .dtBack:hover {
@@ -1045,20 +1017,20 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
-  border: 1px solid var(--line-strong);
-  background: transparent;
-  color: var(--text-dim);
+  border-radius: 0;
+  border: 1px solid color-mix(in srgb, var(--text) 28%, transparent);
+  background: rgba(8, 12, 16, 0.35);
+  color: color-mix(in srgb, var(--text) 73%, transparent);
   cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s, color 0.2s;
 }
 
 .step:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 25%, transparent);
+  border-color: color-mix(in srgb, var(--text) 42%, transparent);
+  color: var(--text);
 }
 
 .step:focus-visible {
@@ -1067,7 +1039,8 @@
 }
 
 .step:disabled {
-  opacity: 0.3;
+  border-color: color-mix(in srgb, var(--text) 16%, transparent);
+  color: color-mix(in srgb, var(--text) 23%, transparent);
   cursor: default;
 }
 
@@ -1076,20 +1049,19 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .dtProc {
   display: block;
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-mute);
 }
 
 .dtVer {
   display: block;
-  margin-top: 8px;
-  font-family: var(--font-display);
-  font-size: 40px;
+  margin-top: 4px;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -1100,19 +1072,18 @@
 .tagNow,
 .tagOld {
   flex: none;
-  padding: 9px 14px;
+  padding: 6px 12px;
   border: 1px solid;
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .tagNow {
-  color: var(--ok);
-  border-color: var(--ok);
+  color: var(--pr-current);
+  border-color: var(--pr-current);
 }
 
 .tagOld {
@@ -1122,19 +1093,20 @@
 
 .meta {
   display: grid;
-  gap: 10px;
-  margin: 0 0 32px;
+  gap: 8px;
+  margin: 0 0 20px;
 }
 
 .meta div {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-dim);
 }
 
 .meta dt {
+  font-weight: 400;
   color: var(--text-mute);
 }
 
@@ -1146,9 +1118,9 @@
 
 /* Not the global display-heading style: its -0.02em tracking at 13px/700 smudges the glyphs. */
 .rn h4 {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   font-family: var(--font-sans);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: normal;
   color: var(--text);
@@ -1158,7 +1130,7 @@
 /* Release notes: sanitized feed HTML (no inline styles or classes survive), styled here so it
    follows the theme in dark and light alike. */
 .rnHtml {
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.62;
   color: var(--text-dim);
   overflow-wrap: anywhere;
@@ -1170,17 +1142,17 @@
 
 .rnHtml p,
 .rnHtml div:not(:has(> p, > div, > ul, > ol)) {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .rnHtml ul,
 .rnHtml ol {
   margin: 0 0 18px;
-  padding-left: 20px;
+  padding-left: 19px;
 }
 
 .rnHtml li {
-  margin-bottom: 8px;
+  margin-bottom: 5px;
 }
 
 .rnHtml li > p,
@@ -1223,10 +1195,16 @@
   outline-offset: 2px;
 }
 
-.rnHtml code,
+/* code: mission colour set via --pr-mis on the detail pane (Decision 19). pre: neutral. */
+.rnHtml code {
+  font-family: "JetBrains Mono","SF Mono",ui-monospace,Consolas,monospace;
+  font-size: 11.5px;
+  color: var(--pr-mis, var(--text));
+}
+
 .rnHtml pre {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text);
 }
 
@@ -1263,93 +1241,46 @@
   border-top: 1px solid var(--line);
 }
 
-/* Responsive: stacked panes below 1080px. The satellite leaves the flow once a release opens,
-   and the detail takes no space until it is open. */
+/* Responsive: satellite stays on the left at 40/60 (≤1080) and 34/66 (≤640).
+   In focus at ≤1080 the detail stacks below the timeline (100% wide grid).
+   §13, Decision 22. */
 @media (max-width: 1080px) {
-  .split,
-  .split.isDetail {
-    grid-template-columns: minmax(0, 1fr);
-    min-height: 0;
+  .split { grid-template-columns: 40% 60%; }
+
+  .sheet { padding-left: 12px; }
+
+  .split.focus {
+    grid-template-columns: 100%;
+    grid-template-areas: "proc" "detail";
   }
 
-  .satpane {
-    min-height: 52vh;
-    padding-top: 16px;
-  }
+  /* In the stacked focus layout, hide the satellite entirely (no space for it). */
+  .split.focus .lcol { display: none; }
 
-  .satelliteImage {
-    max-height: 440px;
-  }
+  .split.focus .sheet { padding-left: 0; }
 
-  .isDetail .satpane {
-    display: none;
-  }
-
-  .procpane {
-    padding-bottom: 48px;
-  }
-
-  .detailpane {
-    display: none;
-  }
-
-  .detailOpen {
-    display: block;
-    padding: 0 clamp(16px, 3vw, 48px) 72px;
-  }
-
-  .dtIn {
-    min-width: 0;
+  .split.focus .detailpane {
+    padding: 4px 0 48px 0;
   }
 }
 
-@media (max-width: 768px) {
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: 32px;
-    padding-top: 40px;
-  }
+@media (max-width: 640px) {
+  .split { grid-template-columns: 34% 66%; }
 
-  .stat dd {
-    font-size: 34px;
-  }
+  /* §13: satellite column right padding 10 px at ≤640. */
+  .lcol { padding-right: 10px; }
 
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 14px;
-  }
-
-  .dd,
-  .search {
-    width: 100%;
-  }
-
-  .tabs {
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-
-  .phead {
-    font-size: 16px;
-  }
-
-  .dtVer {
-    font-size: 32px;
-  }
-
-  .dtHead {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+  .sheet { padding-left: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .split,
-  .satpane,
+  /* The FLIP timers are already set to 0 in JS; kill any residual CSS motion. */
+  .procpane { transition: none !important; }
   .detailpane,
-  .detailOpen,
-  .dtIn,
+  .detailpane.on { transition: none !important; }
+  .orbit { transition: none !important; }
+  .lcolEnter .orbit { animation: none; }
+
   .mk,
   .stem,
   .step {
@@ -1357,31 +1288,19 @@
     transition: none;
   }
 
-  /* Ambient motion is removed outright, not just slowed. */
-  .skyTrack,
-  .satelliteImage {
-    animation: none;
+  .fdropBody {
+    transition: none;
   }
 
+  .tip {
+    transition: none;
+  }
 }
 
 
 .headArt + .container {
   margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding-top: 0;
   background: transparent;
-}
-
-.headArt + .container .stats {
-  padding-top: 22px;
-}
-
-/* the drifting stars fade in over the photo instead of starting on a hard edge */
-.headArt + .container .skyStrip {
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 160px);
-}
-
-/* room under the content for the planet, as on Data Availability */
-.container {
   padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
 }
