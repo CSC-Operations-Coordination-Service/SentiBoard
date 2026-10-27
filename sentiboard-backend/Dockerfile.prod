@@ -46,8 +46,9 @@ WORKDIR /app
 USER app
 EXPOSE 8000
 
-# /health answers in seconds even when OpenSearch is down (see main.py).
+# /healthz is liveness only and never looks at OpenSearch, so an outage does not mark a working API
+# unhealthy (see main.py). Readiness is /readyz.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4).status == 200 else 1)"]
+    CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status == 200 else 1)"]
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
