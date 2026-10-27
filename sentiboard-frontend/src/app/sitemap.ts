@@ -5,6 +5,7 @@ import { ROUTES, siteUrl } from "@/lib/routes";
  *  priorities follow the legacy sitemap (apps/__init__.py on main). */
 const LEGACY_HINTS: Record<string, Pick<MetadataRoute.Sitemap[number], "changeFrequency" | "priority">> = {
   [ROUTES.processors.path]: { changeFrequency: "weekly", priority: 0.7 },
+  [ROUTES.events.path]: { changeFrequency: "weekly", priority: 0.7 },
 };
 
 export default function sitemap(): MetadataRoute.Sitemap {

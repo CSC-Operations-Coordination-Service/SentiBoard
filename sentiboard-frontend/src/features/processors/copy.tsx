@@ -16,23 +16,15 @@ export const DESCRIPTION = (
   <>
     <p>{PROCESSORS_DESCRIPTION}</p>
     <p>Select a release on the timeline to read its baseline notes.</p>
-    <div className="desc-legend" style={{ marginTop: "16px" }}>
-      <span className="legend-item">
-        <span
-          className="dot"
-          style={{ backgroundColor: "var(--ok, #3fe096)" }}
-          aria-hidden="true"
-        />
-        Current Baseline
-      </span>
-      <span className="legend-item">
-        <span
-          className="dot"
-          style={{ backgroundColor: "var(--text-mute, #7a8696)" }}
-          aria-hidden="true"
-        />
+    <div className="desc-legend">
+      <div className="legend-item">
+        <span className="dot dot-bl-current" aria-hidden="true" />
+        Current baseline
+      </div>
+      <div className="legend-item">
+        <span className="dot dot-bl-superseded" aria-hidden="true" />
         Superseded
-      </span>
+      </div>
     </div>
   </>
 );

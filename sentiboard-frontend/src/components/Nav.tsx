@@ -6,7 +6,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Menu, X } from "lucide-react";
-import ThemeToggle from "./ThemeToggle";
 import { ROUTES } from "@/lib/routes";
 
 type NavItem = { to: string; label: string };
@@ -136,7 +135,7 @@ export default function Nav({ partners }: { partners: ReactNode }) {
         </nav>
         <div className="nav-right">
           <div className="nav-partners">{partners}</div>
-          <ThemeToggle />
+          {/* ThemeToggle hidden — dark-only mode; restore to bring the toggle back */}
           <button
             className="nav-burger"
             aria-label={open ? "Close menu" : "Menu"}

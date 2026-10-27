@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61", "setuptools_scm[toml]>=8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+version_scheme = "no-guess-dev"
+# The backend lives in a subdirectory of the repository, so there is no .git in
+# sentiboard-backend/ itself. setuptools_scm v8 stopped walking up to a parent
+# repository by default, so without this every build that is not handed a
+# SETUPTOOLS_SCM_PRETEND_VERSION fails with "unable to detect version".
+search_parent_directories = true
+# Used only when the version can't be derived from git (e.g. the shallow CI test
+# checkout with no tags). A real tag (x.y.z) always wins over this.
+fallback_version = "0.1.0"
+
+[tool.pytest.ini_options]
+# The API is flat (main.py at the project root): test the source tree, so coverage paths
+# match sonar.sources without remapping.
+pythonpath = ["."]
+testpaths = ["tests"]

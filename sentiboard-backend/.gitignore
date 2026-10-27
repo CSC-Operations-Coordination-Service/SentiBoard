@@ -1,0 +1,10 @@
+
+# Test, build and packaging output
+.tox/
+.coverage
+coverage.xml
+pytest-report.xml
+dist/
+build/
+*.egg-info/
+sbom-python.cdx.json

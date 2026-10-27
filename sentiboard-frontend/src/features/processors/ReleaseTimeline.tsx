@@ -6,13 +6,14 @@
    Ported from the prototype's processors.tsx; the window math moved in here from the page, so it
    ships in this lazily loaded chunk. */
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import s from "./processors.module.css";
 import {
   MONTHS,
   isoDay,
   laneName,
+  verOf,
   type ProcessorGroup,
   type ReleaseRecord,
 } from "./model";
@@ -139,7 +140,6 @@ function useAnimatedWindow(target: Win): [Win, boolean] {
       if (k < 1) raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    // interrupted (a new target): the next run starts from wherever this one got to
     return () => cancelAnimationFrame(raf);
   }, [b0, b1]);
 
@@ -149,6 +149,9 @@ function useAnimatedWindow(target: Win): [Win, boolean] {
 /**
  * Ticks for a window. Density follows the window length: monthly labels up to 15 months, every
  * second month up to 28, quarterly up to 60, and only the years beyond that.
+ * Decision 13: minWidth = max(600, round(100 + 6 × months)); follows the animated window.
+ * Decision 15: first year always labelled (no leadRoom guard); "2013" may overprint "2014"
+ * at the far-left scroll edge in All view — accepted.
  */
 function buildAxis([start, end]: Win, now: number): Axis {
   const span = end - start;
@@ -164,10 +167,6 @@ function buildAxis([start, end]: Win, now: number): Axis {
   let y = cursor.getUTCFullYear();
   let m = cursor.getUTCMonth();
   let firstYear = true;
-  // The window rarely starts on 1 January, so its first year gets a label at the left edge —
-  // but only with room for it: 8% of the track (~40px at the narrowest) before the next
-  // January's label, which it would otherwise overprint ("2013" on top of "2014").
-  const leadRoom = (Date.UTC(y + 1, 0, 1) - start) / span >= 0.08;
   while (Date.UTC(y, m, 1) <= end) {
     const pct = at(Date.UTC(y, m, 1));
     const isYear = m === 0;
@@ -177,7 +176,7 @@ function buildAxis([start, end]: Win, now: number): Axis {
         monthMarks.push({ pct, label: MONTHS[m].slice(0, 3).toUpperCase() });
       }
     }
-    if (pct >= -1 && pct < 95 && (isYear || (firstYear && leadRoom))) {
+    if (pct >= -1 && pct < 95 && (isYear || firstYear)) {
       yearMarks.push({ pct: Math.max(0, pct), label: String(y) });
     }
     if (pct >= -1) firstYear = false;
@@ -192,22 +191,21 @@ function buildAxis([start, end]: Win, now: number): Axis {
     start,
     end,
     today: at(now),
-    minWidth: 600,
+    minWidth: Math.max(600, Math.round(100 + 6 * months)),
     grid,
     months: monthMarks,
     years: yearMarks,
   };
 }
 
+
 interface Tip {
   group: ProcessorGroup;
   release: ReleaseRecord;
   isCurrent: boolean;
   isSelected: boolean;
-  /** Viewport position of the marker's centre, and where the card sits relative to it. */
-  x: number;
-  y: number;
-  below: boolean;
+  /** Marker rect snapshotted at hover time; useLayoutEffect places the card from it. */
+  markerRect: DOMRect;
 }
 
 export interface ReleaseTimelineProps {
@@ -221,41 +219,6 @@ export interface ReleaseTimelineProps {
   /** Id of the release whose detail is open, if any. */
   selected: string | null;
   onPick: (id: string) => void;
-}
-
-/* Lane reveal, scroll-linked as in the prototype (37782d3 / b342a73: keyframes opacity 0 → 1 and
-   translateY(15px) → 0, linear, `animation-timeline: view()` with `animation-range: entry 0%
-   cover 25%`). view() cannot be used here — the lanes sit inside scroll containers that never
-   scroll vertically (docs/memory/DECISIONS.md) — so the same mapping is computed from the page
-   scroll in JavaScript. A lane's progress runs from 0 when its top reaches the bottom of the
-   window ("entry 0%") to 1 a quarter of (window height + lane height) further ("cover 25%"); it
-   follows the scroll both ways. */
-const LANE_RISE_PX = 15;
-const LANE_RANGE_COVER = 0.25;
-/* Staggered entrance on a mission change with the timeline on screen. */
-const LANE_IN_MS = 450;
-const LANE_IN_SPREAD_MS = 240;
-const LANE_IN_STEP_MS = 40;
-const LANE_IN_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // --ease in tokens.css
-
-const reducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-
-/** Writes one lane's reveal onto its elements: `translate` and `filter: opacity()`, which compose
- *  with their own `transform` (marker hover/selection scale) and `opacity` (dim/off/faint) instead
- *  of overriding them, and affect neither layout nor neighbours. At 1 both are removed, so a
- *  settled lane carries no style at all. */
-function paintLane(els: HTMLElement[], p: number) {
-  for (const el of els) {
-    if (p >= 1) {
-      el.style.removeProperty("translate");
-      el.style.removeProperty("filter");
-    } else {
-      el.style.translate = `0 ${(LANE_RISE_PX * (1 - p)).toFixed(2)}px`;
-      el.style.filter = `opacity(${p.toFixed(3)})`;
-    }
-  }
 }
 
 /* Row geometry, as drawTimeline() lays it out in SentiBoard.html. */
@@ -272,8 +235,6 @@ export default function ReleaseTimeline({
   selected,
   onPick,
 }: ReleaseTimelineProps) {
-  // The window the timeline should show: the range (1Y/2Y/ALL), or — with a release picked — ten
-  // months around that release. useAnimatedWindow glides from one to the other.
   const bounds = useMemo(() => {
     const earliest = groups.reduce(
       (min, g) => g.releases.reduce((m, r) => Math.min(m, r.ms), min),
@@ -300,156 +261,93 @@ export default function ReleaseTimeline({
 
   const toPct = (ms: number) =>
     ((ms - axis.start) / (axis.end - axis.start)) * 100;
-  const scrollRef = useRef<HTMLDivElement>(null); // sideways scroll (long windows)
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const tipRafRef = useRef(0);
   const [tip, setTip] = useState<Tip | null>(null);
+  const [tipOn, setTipOn] = useState(false);
 
-  // Many rows (Sentinel-3) are drawn tighter, so the whole table stays in view.
   const n = groups.length;
   const rh = n > 12 ? 22 : n > 8 ? 28 : 44;
   const H = AXIS_TOP + rh * n + FOOT;
   const zoomed = selRow >= 0;
 
-  // Scroll-linked lane reveal (see LANE_RANGE_COVER). Nothing here goes through React state: a
-  // passive scroll/resize listener, batched per animation frame, reads one untransformed box (the
-  // chart) and writes the lanes' styles directly, only for lanes whose progress changed.
-  const mission = groups[0]?.mission;
-  const chartRef = useRef<HTMLDivElement>(null);
-  const lanesRef = useRef<HTMLElement[][]>([]); // elements of each lane (data-lane-row)
-  const paintedRef = useRef<number[]>([]); // progress last written per lane
-  const geomRef = useRef({ n, rh });
-  const paintRef = useRef(() => {});
+  // All-words AND search using precomputed searchText (Decision 6).
+  const words = query ? query.split(/\s+/).filter(Boolean) : [];
 
-  useLayoutEffect(() => {
-    geomRef.current = { n, rh };
-    paintRef.current = () => {
-      const chart = chartRef.current;
-      if (!chart || reducedMotion()) return;
-      const { n: lanes, rh: h } = geomRef.current;
-      const vh = window.innerHeight;
-      const top = chart.getBoundingClientRect().top;
-      // How much further the page can scroll: a lane the page cannot scroll far enough to finish
-      // finishes at the bottom of the page instead, so none can stay part-faded.
-      const more = Math.max(
-        0,
-        document.documentElement.scrollHeight - vh - window.scrollY,
-      );
-      for (let i = 0; i < lanes; i++) {
-        const d = vh - (top + AXIS_TOP + i * h); // scrolled since "entry 0%"
-        const len = Math.min(LANE_RANGE_COVER * (vh + h), d + more);
-        const p = len <= 0 ? 1 : Math.round(Math.min(1, Math.max(0, d / len)) * 1000) / 1000;
-        if (paintedRef.current[i] === p) continue;
-        paintedRef.current[i] = p;
-        paintLane(lanesRef.current[i] ?? [], p);
-      }
-    };
-  });
-
-  // After every render: re-collect each lane's elements (markers mount and unmount as the window
-  // zooms) and repaint them before the browser paints.
-  useLayoutEffect(() => {
-    const chart = chartRef.current;
-    if (!chart) return;
-    const lanes: HTMLElement[][] = Array.from({ length: n }, () => []);
-    chart
-      .querySelectorAll<HTMLElement>("[data-lane-row]")
-      .forEach((el) => lanes[Number(el.dataset.laneRow)]?.push(el));
-    lanesRef.current = lanes;
-    paintedRef.current = [];
-    paintRef.current();
-  });
-
-  useEffect(() => {
-    let raf = 0;
-    const schedule = () => {
-      if (!raf) {
-        raf = requestAnimationFrame(() => {
-          raf = 0;
-          paintRef.current();
-        });
-      }
-    };
-    window.addEventListener("scroll", schedule, { passive: true });
-    window.addEventListener("resize", schedule, { passive: true });
-    const ro = new ResizeObserver(schedule); // the page grows or shrinks (images, panes)
-    ro.observe(document.documentElement);
-    return () => {
-      window.removeEventListener("scroll", schedule);
-      window.removeEventListener("resize", schedule);
-      ro.disconnect();
-      cancelAnimationFrame(raf);
-    };
-  }, []);
-
-  // Mission change with the timeline on screen: the new lanes rise and fade in, staggered row by
-  // row. Web Animations with only a "from" keyframe, so each lane animates from hidden to its
-  // scroll-linked state of the moment, and scroll-linking simply carries on when it ends. Not on
-  // first render (the scroll-linked reveal covers it) and never on zoom or range changes.
-  const shownMission = useRef(mission);
-  useLayoutEffect(() => {
-    const chart = chartRef.current;
-    if (shownMission.current === mission || !chart) return;
-    shownMission.current = mission;
-    if (reducedMotion() || typeof chart.animate !== "function") return;
-    const box = chart.getBoundingClientRect();
-    const lanesTop = box.top + AXIS_TOP;
-    if (box.bottom <= 0 || lanesTop >= window.innerHeight) return; // off screen
-    const lanes = lanesRef.current;
-    const step = lanes.length > 1 ? Math.min(LANE_IN_STEP_MS, LANE_IN_SPREAD_MS / (lanes.length - 1)) : 0;
-    const running = lanes.flatMap((els, i) =>
-      els.map((el) =>
-        el.animate([{ translate: `0 ${LANE_RISE_PX}px`, filter: "opacity(0)" }], {
-          duration: LANE_IN_MS,
-          delay: Math.round(i * step),
-          easing: LANE_IN_EASING,
-          fill: "backwards",
-        }),
-      ),
-    );
-    return () => running.forEach((a) => a.cancel());
-  }, [mission]);
-
-  // Once the window has settled: overview → scrolled to the end (latest releases and TODAY in
-  // view); zoomed → the picked release in the middle.
+  // Once the window has settled: overview → scroll to end; zoomed → scroll to middle.
   useEffect(() => {
     if (moving) return;
     const sc = scrollRef.current;
     if (!sc) return;
-    const reduce = window.matchMedia?.(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     sc.scrollTo({
       left: (sc.scrollWidth - sc.clientWidth) * (zoomed ? 0.5 : 1),
       behavior: reduce ? "auto" : "smooth",
     });
   }, [moving, zoomed, axis.minWidth]);
 
-  const showTip = (el: HTMLElement, t: Omit<Tip, "x" | "y" | "below">) => {
-    const box = scrollRef.current?.getBoundingClientRect();
-    const r = el.getBoundingClientRect();
-    const half = 118; // half the card's 236px width
-    const x = Math.min(
-      Math.max(r.left + r.width / 2, (box?.left ?? 0) + half),
-      (box?.right ?? window.innerWidth) - half,
-    );
-    // No room above (the card is ~260px tall, under a 68px fixed nav): open underneath.
-    const below = r.top < 330;
-    setTip({ ...t, x, y: below ? r.bottom + 12 : r.top - 12, below });
-  };
+  const showTip = useCallback((el: HTMLElement, t: Omit<Tip, "markerRect">) => {
+    cancelAnimationFrame(tipRafRef.current);
+    setTip({ ...t, markerRect: el.getBoundingClientRect() });
+  }, []);
+
+  const hideTip = useCallback(() => {
+    cancelAnimationFrame(tipRafRef.current);
+    setTipOn(false);
+  }, []);
+
+  // §8 placement: measure real card size, compute above/below/beside, fade in.
+  useLayoutEffect(() => {
+    const el = tipRef.current;
+    if (!tip || !el) return;
+    const tw = el.offsetWidth;
+    const th = el.offsetHeight;
+    const br = tip.markerRect;
+    const tr =
+      scrollRef.current?.getBoundingClientRect() ??
+      ({ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight } as DOMRect);
+    const navEl = document.querySelector<HTMLElement>(".nav");
+    const skyTop = (navEl?.getBoundingClientRect().bottom ?? 68) + 8;
+    const skyBot = window.innerHeight - 12;
+    const cx = br.left + br.width / 2;
+    const gap = 12;
+    let vx = Math.min(Math.max(cx - tw / 2, tr.left), tr.right - tw);
+    let vy: number;
+    if (br.top - th - gap >= skyTop) {
+      vy = br.top - th - gap;
+    } else if (br.bottom + th + gap <= skyBot) {
+      vy = br.bottom + gap;
+    } else {
+      vx = cx + 16 + tw <= tr.right ? cx + 16 : cx - 16 - tw;
+      vy = Math.min(Math.max(br.top + br.height / 2 - th / 2, skyTop), skyBot - th);
+    }
+    el.style.left = `${vx}px`;
+    el.style.top = `${vy}px`;
+    cancelAnimationFrame(tipRafRef.current);
+    tipRafRef.current = requestAnimationFrame(() => setTipOn(true));
+    return () => cancelAnimationFrame(tipRafRef.current);
+  }, [tip]);
+
+  // Hide on page scroll (capture phase, DA pattern).
+  useEffect(() => {
+    const hide = () => {
+      cancelAnimationFrame(tipRafRef.current);
+      setTipOn(false);
+    };
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, []);
 
   return (
-    <div
-      className={s.tl}
-    >
-      {/* Every lane is shown at full height (no cap, no fade). The inner box is the sideways
-          scroll for narrow screens, with the names pinned on the left. */}
+    <div className={s.tl}>
       <div className={s.tlView}>
         <div
           className={s.tlScroll}
           ref={scrollRef}
-          onScroll={() => setTip(null)}
+          onScroll={hideTip}
         >
-          <div ref={chartRef} className={s.tlChart} style={{ minWidth: axis.minWidth }}>
-            {/* names: pinned to the left while the chart scrolls under them */}
+          <div className={s.tlChart} style={{ minWidth: axis.minWidth }}>
             <div className={s.tlLabels} style={{ height: H }}>
               {groups.map((g, i) => (
                 <span
@@ -460,7 +358,6 @@ export default function ReleaseTimeline({
                   ].join(" ")}
                   style={{ top: AXIS_TOP + i * rh, height: rh }}
                   title={g.label}
-                  data-lane-row={i}
                 >
                   {laneName(g.label)}
                 </span>
@@ -468,7 +365,6 @@ export default function ReleaseTimeline({
             </div>
 
             <div className={s.tlTrack} style={{ height: H }}>
-              {/* grid: year lines run the full height, month lines start under the year row */}
               {axis.grid.map((line) => (
                 <i
                   key={`g${line.pct}`}
@@ -495,13 +391,11 @@ export default function ReleaseTimeline({
                 </span>
               ))}
 
-              {/* one hairline between rows */}
               {Array.from({ length: n + 1 }, (_, i) => (
                 <i
                   key={`r${i}`}
                   className={s.rl}
                   style={{ top: AXIS_TOP + i * rh }}
-                  data-lane-row={Math.min(i, n - 1)}
                 />
               ))}
 
@@ -518,18 +412,16 @@ export default function ReleaseTimeline({
               {groups.map((g, i) => {
                 const cy = AXIS_TOP + i * rh + rh / 2;
                 const rowDim = zoomed && i !== selRow;
-                const groupHit =
-                  !query || `${g.label} ${g.sub}`.toLowerCase().includes(query);
 
                 return g.releases.map((r) => {
                   const x = toPct(r.ms);
                   if (x < -2 || x > 102) return null;
                   const isCurrent = r.isCurrent;
                   const isSelected = selected === r.id;
-                  // Filters fade releases back instead of removing them, so the rows never jump.
                   const off = baselineFilter === "current" && !isCurrent;
                   const faint =
-                    !groupHit && !r.baseline.toLowerCase().includes(query);
+                    words.length > 0 &&
+                    !words.every((w) => r.searchText.includes(w));
                   const state = [
                     rowDim ? s.dim : "",
                     off ? s.off : "",
@@ -538,12 +430,9 @@ export default function ReleaseTimeline({
 
                   return (
                     <span key={r.id} className={s.mkWrap}>
-                      {/* the stem: from under the axis down to the release, so every release can be
-                        read against the month labels */}
                       <i
                         className={`${s.stem} ${state}`}
                         style={{ left: `${x}%`, height: cy - STEM_TOP }}
-                        data-lane-row={i}
                       />
                       <button
                         type="button"
@@ -554,9 +443,8 @@ export default function ReleaseTimeline({
                           state,
                         ].join(" ")}
                         style={{ left: `${x}%`, top: cy }}
-                        data-lane-row={i}
                         disabled={moving || off}
-                        aria-label={`${laneName(g.label)} ${r.baseline}, operational since ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
+                        aria-label={`${laneName(g.label)} ${verOf(r)}, operational since ${isoDay(r.ms)}${isCurrent ? ", current baseline" : ", superseded"}`}
                         aria-pressed={isSelected}
                         onMouseEnter={(e) =>
                           showTip(e.currentTarget, {
@@ -574,21 +462,19 @@ export default function ReleaseTimeline({
                             isSelected,
                           })
                         }
-                        onMouseLeave={() => setTip(null)}
-                        onBlur={() => setTip(null)}
+                        onMouseLeave={hideTip}
+                        onBlur={hideTip}
                         onClick={() => {
-                          setTip(null);
+                          hideTip();
                           onPick(r.id);
                         }}
                       />
-                      {/* zoomed in, each release carries its version beside it */}
                       {zoomed && (
                         <span
                           className={`${s.vl} ${isCurrent ? s.vlNow : ""} ${state}`}
                           style={{ left: `${x}%`, top: cy }}
-                          data-lane-row={i}
                         >
-                          {r.baseline}
+                          {verOf(r)}
                         </span>
                       )}
                     </span>
@@ -600,54 +486,56 @@ export default function ReleaseTimeline({
         </div>
       </div>
 
-      {/* The card lives on <body>, fixed to the window, so no mask or scroll box can clip it. */}
-      {tip &&
-        createPortal(
-          <div
-            className={`${s.tip} ${tip.below ? s.tipBelow : ""}`}
-            style={{ left: tip.x, top: tip.y }}
-            role="tooltip"
-          >
-            <div className={s.ttTitle}>{tip.group.label}</div>
-            <div className={s.ttStats}>
-              <div>
-                <span className={s.ttK}>Version</span>
-                <span className={`${s.ttV} ${tip.isCurrent ? s.ttGo : ""}`}>
-                  {tip.release.baseline}
-                </span>
+      {/* Always portalled to <body>; fades in/out via tipOn. Positioned imperatively in useLayoutEffect. */}
+      {createPortal(
+        <div
+          ref={tipRef}
+          className={`${s.tip}${tipOn ? ` ${s.tipOn}` : ""}`}
+          role="tooltip"
+          aria-hidden={!tipOn}
+        >
+          {tip && (
+            <>
+              <div className={s.ttTitle}>{tip.group.label}</div>
+              <div className={s.ttStats}>
+                <div>
+                  <span className={s.ttK}>Version</span>
+                  <span className={`${s.ttV} ${tip.isCurrent ? s.ttGo : ""}`}>
+                    {verOf(tip.release)}
+                  </span>
+                </div>
+                <div>
+                  <span className={s.ttK}>Status</span>
+                  <span className={`${s.ttV} ${tip.isCurrent ? s.ttGo : s.ttOld}`}>
+                    {tip.isCurrent ? "Current" : "Superseded"}
+                  </span>
+                </div>
               </div>
-              <div>
-                <span className={s.ttK}>Status</span>
-                <span
-                  className={`${s.ttV} ${tip.isCurrent ? s.ttGo : s.ttOld}`}
-                >
-                  {tip.isCurrent ? "Current" : "Superseded"}
-                </span>
+              <hr />
+              <dl className={s.ttRows}>
+                <dt>Released</dt>
+                <dd>
+                  {tip.release.releasedMs !== undefined
+                    ? isoDay(tip.release.releasedMs)
+                    : "—"}
+                </dd>
+                <dt>Operational since</dt>
+                <dd>{isoDay(tip.release.ms)}</dd>
+                <dt>Satellites</dt>
+                <dd>{tip.release.sats.length ? tip.release.sats.join(", ") : "—"}</dd>
+                <dt>Changes</dt>
+                <dd>{tip.release.changes}</dd>
+              </dl>
+              <div className={s.ttHint}>
+                {tip.isSelected
+                  ? "Click to go back to the overview"
+                  : "Click to zoom in and read the notes"}
               </div>
-            </div>
-            <hr />
-            <dl className={s.ttRows}>
-              <dt>Released</dt>
-              <dd>
-                {tip.release.releasedMs !== undefined
-                  ? isoDay(tip.release.releasedMs)
-                  : "—"}
-              </dd>
-              <dt>Operational since</dt>
-              <dd>{isoDay(tip.release.ms)}</dd>
-              <dt>Satellites</dt>
-              <dd>{tip.release.sats.length ? tip.release.sats.join(", ") : "—"}</dd>
-              <dt className={s.ttWide}>Changes</dt>
-              <dd className={s.ttWide}>{tip.release.changes}</dd>
-            </dl>
-            <div className={s.ttHint}>
-              {tip.isSelected
-                ? "Click to go back to the overview"
-                : "Click to zoom in and read the notes"}
-            </div>
-          </div>,
-          document.body,
-        )}
+            </>
+          )}
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

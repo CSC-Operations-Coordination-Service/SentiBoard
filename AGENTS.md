@@ -92,7 +92,7 @@ Frontend commands run from `sentiboard-frontend/` (pnpm via `corepack enable pnp
 | Build / production server | `UNKNOWN` | `pnpm build`, then `pnpm start` |
 | Lint / format | `UNKNOWN` | `pnpm lint` (no formatter configured) |
 | Type-check | `UNKNOWN` | `pnpm type-check` |
-| Tests | `UNKNOWN` | `pnpm test` (Vitest; `pnpm test:watch` while developing) |
+| Tests | `UNKNOWN` | `pnpm test` (Vitest; `pnpm test:watch` while developing; `pnpm test:coverage` for the lcov report CI sends to SonarQube) |
 | Local data stores | `UNKNOWN` | — |
 
 Before you report a task as done, run lint, type-check and tests for every repo you touched. Report failures as failures.

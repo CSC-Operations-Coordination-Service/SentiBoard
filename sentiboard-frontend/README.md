@@ -20,7 +20,7 @@ cp .env.sample .env.local   # then adjust BACKEND_URL
 | Production build / server | `pnpm build`, then `pnpm start` |
 | Lint | `pnpm lint` |
 | Type-check | `pnpm type-check` |
-| Tests (no backend or network needed) | `pnpm test`, or `pnpm test:watch` while developing |
+| Tests (no backend or network needed) | `pnpm test`, or `pnpm test:watch` while developing; `pnpm test:coverage` writes `coverage/lcov.info`, the report SonarQube reads |
 | API types from the committed contract | `pnpm gen:api` |
 | Refresh the contract from a running backend, then regenerate | `pnpm gen:api:refresh` |
 

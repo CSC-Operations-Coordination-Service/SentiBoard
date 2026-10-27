@@ -1,7 +1,20 @@
 name: sentiboard-frontend CI
 
-# Thin caller for the Next.js frontend. Triggers live here; the steps live in the
-# workflow-catalog reusable workflow (install -> lint -> build -> test).
+# Thin caller for the Next.js frontend, wired to the reusable building blocks of the
+# workflow-catalog repo. Every secret (Nexus, Docker Hub) is read from OpenBao, role ci-sentiboard:
+#   node-workflow.yml — install -> lint -> build -> test (with coverage) -> SonarQube scan,
+#                       every package through the Nexus npm proxy
+#   docker-build.yml  — production image (sentiboard-frontend/Dockerfile), npm through the same
+#                       proxy, pushed to the Nexus Docker registry
+#
+# Triggers:
+#   pull_request      -> node CI only (no registry push from PRs)
+#   push to develop   -> node CI + dev image (Nexus dev)
+#   push tag x.y.z    -> node CI + release image (Nexus prod, GHCR, Docker Hub)
+#   workflow_dispatch -> manual run
+#
+# The image is its own job rather than node-workflow.yml's build-image: node-workflow.yml does
+# not forward insecure-registry, and the dev Docker connector is plain HTTP.
 
 on:
   push:
@@ -21,14 +34,20 @@ permissions:
 
 jobs:
   frontend:
-    # packages: write is for the image push (GHCR on release tags).
     permissions:
       contents: read
-      packages: write
+      # secrets-source: openbao logs in with the job's OIDC token
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/node-workflow.yml@develop
     with:
       working-directory: sentiboard-frontend
       node-version: "22"
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus sonarqube
       # The runner has no direct internet access: npm (and so pnpm) goes through the Nexus npm proxy.
       use-nexus-registry: true
       # The project uses pnpm (packageManager in package.json). It is installed with npm rather
@@ -38,14 +57,40 @@ jobs:
       lint-command: pnpm lint && pnpm type-check
       build-command: pnpm build
       run-tests: true
-      test-command: pnpm test
-      # Image (Dockerfile): develop -> dev image, tag x.y.z -> release image. Not built on PRs.
-      build-image: ${{ github.event_name != 'pull_request' }}
+      # The lcov report SonarQube reads: coverage/lcov.info (vitest.config.mts).
+      test-command: pnpm test:coverage
+      # The scan base directory is the working directory: sentiboard-frontend/sonar-project.properties.
+      run-sonarqube: true
+    secrets: inherit
+
+  # Image (Dockerfile): develop -> dev image, tag x.y.z -> release image. Not built on PRs.
+  docker:
+    needs: frontend
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/docker-build.yml@develop
+    with:
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus dockerhub
       image-name: sentiboard-frontend
+      context: sentiboard-frontend
       dockerfile: sentiboard-frontend/Dockerfile
-      docker-context: sentiboard-frontend
-      docker-release: ${{ startsWith(github.ref, 'refs/tags/') }}
+      # The `npmrc` build secret: the Dockerfile's pnpm installs resolve through the same Nexus
+      # npm proxy as the frontend job (a RUN step has no internet egress of its own).
+      mount-npm-registry: true
+      release: ${{ startsWith(github.ref, 'refs/tags/') }}
       push-to-ghcr: ${{ startsWith(github.ref, 'refs/tags/') }}
       push-to-dockerhub: ${{ startsWith(github.ref, 'refs/tags/') }}
-      docker-environment: ${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'dev' }}
+      environment: ${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'dev' }}
+      scan-dockerfile: true
+      scan-dockerfile-soft-fail: true
+      # The dev Docker connector is plain HTTP (see workflow-catalog python-demo.yml).
+      insecure-registry: ${{ !startsWith(github.ref, 'refs/tags/') }}
     secrets: inherit

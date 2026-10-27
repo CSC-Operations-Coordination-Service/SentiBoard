@@ -94,6 +94,14 @@ describe("adaptProcessors — placing records on lanes", () => {
     expect(g.releases[0].ms).toBe(Date.UTC(2025, 2, 4));
   });
 
+  it("builds dates from the YYYY-MM-DD part so a timezone offset cannot shift the day", () => {
+    const g = lane(
+      [rec({ validity_start_date: "2025-06-24T00:00:00+02:00" })],
+      "S1_L0",
+    );
+    expect(g.releases[0].ms).toBe(Date.UTC(2025, 5, 24));
+  });
+
   it("reads null satellite_units as none, and dedupes and trims the rest", () => {
     const none = lane([rec({ satellite_units: null as unknown as string[] })], "S1_L0");
     expect(none.releases[0].sats).toEqual([]);
@@ -280,6 +288,22 @@ describe("adaptProcessors — notes", () => {
     const releases = groups[0].releases;
     expect(releases.find((r) => r.id.startsWith(`${withNotes.id}:`))?.notesId).toBe(withNotes.id);
     expect(releases.find((r) => r.id.startsWith(`${without.id}:`))?.notesId).toBeUndefined();
+  });
+});
+
+describe("adaptProcessors — searchText", () => {
+  it("precomputes a lowercase haystack with label, sub, baseline, year and notes text", () => {
+    const g = lane(
+      [rec({ release_notes: "<p>Fix <b>critical bug</b></p>", validity_start_date: "2024-03-15T00:00:00Z" })],
+      "S1_L0",
+    );
+    const r = g.releases[0];
+    expect(r.searchText).toContain("s1 l0");        // label
+    expect(r.searchText).toContain("level-0");      // sub
+    expect(r.searchText).toContain("1.0");           // baseline (from target_ipfs "S1_L0:1.0")
+    expect(r.searchText).toContain("2024");          // year
+    expect(r.searchText).toContain("fix critical bug"); // notes text stripped
+    expect(r.searchText).toBe(r.searchText.toLowerCase()); // always lowercase
   });
 });
 

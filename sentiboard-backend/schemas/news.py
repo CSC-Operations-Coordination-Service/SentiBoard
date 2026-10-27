@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
+from typing import Optional
 from maas_model.schema_adapter import ApiDate
-from typing import List, Optional
+from maas_model.schema_adapter import ApiList
 
 
 class NewsDatatakesCompleteness(BaseModel):
@@ -21,5 +22,5 @@ class News(BaseModel):
     category: str
     impacted_satellite: str
     environment: str
-    datatakes_completeness: List[NewsDatatakesCompleteness]
+    datatakes_completeness: ApiList[NewsDatatakesCompleteness] = []
     modify_date: ApiDate

@@ -1,16 +1,30 @@
-name: sentiboard-backend CI
+name: sentiboard-backend CI/CD
 
-# Thin caller for the FastAPI backend. There is no test suite yet, so the pipeline is the
-# image build only (docker-build.yml from workflow-catalog):
-#   push to develop  -> dev image (Nexus)
-#   push tag x.y.z   -> release image (Nexus + GHCR + Docker Hub)
-#   pull_request     -> not built (no registry push from PRs)
+# Thin caller for the FastAPI backend, wired like maas-engine to the reusable building blocks
+# of the workflow-catalog repo. Every secret (Nexus, SonarQube, Dependency-Track, Docker Hub) is
+# read from OpenBao, role ci-sentiboard (ci-sentiboard-release on a tag):
+#   python-ci.yml     — test (pytest + SonarQube) -> build (wheel/sdist) -> publish to Nexus,
+#                       every package through the Nexus PyPI group (nexus-context)
+#   sbom.yml          — package CycloneDX SBOM -> Dependency-Track
+#   docker-build.yml  — production image (sentiboard-backend/Dockerfile.prod) from the built
+#                       wheel, dependencies through the same Nexus group, pushed to Nexus
+#
+# Triggers:
+#   push to develop   -> ci (Nexus dev) + package SBOM (dev) + dev image
+#   push tag x.y.z    -> ci (Nexus prod) + package SBOM (prod) + release image (Nexus/GHCR/Docker Hub)
+#   workflow_dispatch -> manual run
+#
+# The package lives in sentiboard-backend/, so project-dir points there. SonarQube is scanned
+# from the repository root: see sonar-project.properties.
 
 on:
   push:
     branches: ["develop"]
     tags: ["[0-9]+.[0-9]+.[0-9]+"]
-    paths: ["sentiboard-backend/**", ".github/workflows/backend-ci.yml"]
+    paths:
+      - "sentiboard-backend/**"
+      - "sonar-project.properties"
+      - ".github/workflows/backend-ci.yml"
   workflow_dispatch:
 
 concurrency:
@@ -21,15 +35,69 @@ permissions:
   contents: read
 
 jobs:
+  # Test, build the wheel/sdist, publish to Nexus. Exposes `version`.
+  ci:
+    permissions:
+      contents: read
+      # secrets-source: openbao logs in with the job's OIDC token
+      id-token: write
+    uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/python-ci.yml@develop
+    with:
+      project-dir: sentiboard-backend
+      python-version: "3.11"
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus sonarqube
+    secrets: inherit
+
+  # Package SBOM -> Dependency-Track project "sentiboard-backend".
+  # Consumes the `dist` artifact built by ci. Prod Nexus context on release tags, dev otherwise.
+  sbom:
+    needs: ci
+    permissions:
+      contents: read
+      id-token: write
+    uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/sbom.yml@develop
+    with:
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus dependency-track
+      project-dir: sentiboard-backend
+      project-name: sentiboard-backend
+      project-version: ${{ needs.ci.outputs.version }}
+      python-version: "3.11"
+      context: ${{ startsWith(github.ref, 'refs/tags/') && 'prod' || 'dev' }}
+    secrets: inherit
+
   docker:
+    needs: ci
     permissions:
       contents: read
       packages: write
+      id-token: write
     uses: CSC-Operations-Coordination-Service/workflow-catalog/.github/workflows/docker-build.yml@develop
     with:
+      runs-on: containerized
+      # Values come from OpenBao (role ci-sentiboard). openbao-tools must list every tool this job
+      # reads: a tool left out is read from ocs/ci/shared, which the role cannot read.
+      secrets-source: openbao
+      openbao-role: ci-sentiboard
+      openbao-tools: nexus dockerhub dependency-track
       image-name: sentiboard-backend
       context: sentiboard-backend
       dockerfile: sentiboard-backend/Dockerfile.prod
+      # The image installs the wheel ci built (and published to Nexus), not the source tree.
+      artifact-name: dist
+      artifact-path: sentiboard-backend/dist/
+      # The `pip_index_url` + `netrc` build secrets: the wheel's dependencies resolve through the
+      # Nexus PyPI group of the same context ci installed from (a RUN step has no internet egress).
+      mount-pip-index: true
       release: ${{ startsWith(github.ref, 'refs/tags/') }}
       push-to-ghcr: ${{ startsWith(github.ref, 'refs/tags/') }}
       push-to-dockerhub: ${{ startsWith(github.ref, 'refs/tags/') }}
@@ -38,4 +106,8 @@ jobs:
       scan-dockerfile-soft-fail: true
       # The dev Docker connector is plain HTTP (see workflow-catalog python-demo.yml).
       insecure-registry: ${{ !startsWith(github.ref, 'refs/tags/') }}
+      # Image SBOM, release only (the package SBOM is the `sbom` job above).
+      generate-sbom: ${{ startsWith(github.ref, 'refs/tags/') }}
+      sbom-project-name: sentiboard-backend-image
+      sbom-project-version: ${{ needs.ci.outputs.version }}
     secrets: inherit

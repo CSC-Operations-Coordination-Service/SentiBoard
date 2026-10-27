@@ -1,7 +1,8 @@
 from pydantic import BaseModel
 
+from typing import Optional
 from maas_model.schema_adapter import ApiDate
-from typing import List, Optional
+from maas_model.schema_adapter import ApiList
 
 
 class AnomalyDatatakesCompleteness(BaseModel):
@@ -22,7 +23,7 @@ class Anomaly(BaseModel):
     start: ApiDate
     end: ApiDate
     environment: str
-    datatakes_completeness: List[AnomalyDatatakesCompleteness] = []
+    datatakes_completeness: ApiList[AnomalyDatatakesCompleteness] = []
     news_link: Optional[str] = None
     news_title: Optional[str] = None
     publication_date: ApiDate

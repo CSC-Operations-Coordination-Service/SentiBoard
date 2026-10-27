@@ -15,6 +15,14 @@
   display: none;
 }
 
+/* fdrop dropdown is a <details>: ensure the browser doesn't draw extra list/disclosure chrome. */
+.fdropDetails {
+  list-style: none;
+}
+.fdropDetails > summary {
+  list-style: none;
+}
+
 /* "Try again" is a link: centre its label as the button's was. */
 .retryLink {
   display: inline-flex;
