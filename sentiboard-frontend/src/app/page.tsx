@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { connection } from "next/server";
 import { Reveal } from "@/components/Reveal";
 import HeroVideo from "@/features/home/HeroVideo";
 import NewsBar from "@/features/home/NewsBar";
@@ -45,13 +47,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function HomePage() {
-  const msgsResult = await getInstantMessages();
-  const newsItems = msgsResult.ok ? msgsResult.items : [];
+async function NewsBarContent() {
+  await connection();
+  const result = await getInstantMessages();
+  return <NewsBar items={result.ok ? result.items : []} />;
+}
 
+export default function HomePage() {
   return (
     <>
-      <NewsBar items={newsItems} />
+      <Suspense>
+        <NewsBarContent />
+      </Suspense>
 
       {/* Hero */}
       <section className={s.hero}>

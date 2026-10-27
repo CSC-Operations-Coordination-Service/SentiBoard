@@ -492,3 +492,18 @@ records via `fetchAll` and sorts in the adapter (`adaptInstantMessages`). `MAX_N
 `src/features/home/adapter.ts` and slices after sorting. Consequence: on a cold cache the adapter
 reads the full feed to surface 5 items; this is acceptable since the feed is small (O(10²) records)
 and is already cached for 300 s/1 h.
+
+## 2026-10-27 — Pages must not call the API at build time; CI builds without a backend
+
+**Context.** CI has no backend, so `BACKEND_URL` is unset. The home page `/` called
+`getInstantMessages()` directly in the top-level `async function HomePage()`, which caused Next.js
+to attempt that fetch during `pnpm build` static prerendering, throwing
+`"BACKEND_URL is not set"` and failing the build.
+**Decision.** Any page that fetches from the backend must isolate the fetch in a dedicated async
+server component that calls `await connection()` (from `next/server`) before the first API call.
+`connection()` is the explicit opt-in to request-time rendering; it prevents the component from
+being evaluated at build time. The component is wrapped in `<Suspense>` so the rest of the page
+can be prerendered as a static shell (PPR). Applied to `/`: `NewsBarContent` is the
+request-time component; the hero, module panels and FAQ remain in the static shell.
+**Consequences.** `pnpm build` succeeds with no backend present. The home page shows as `◐`
+(Partial Prerender) in the route table. Pages added in future must follow the same pattern.

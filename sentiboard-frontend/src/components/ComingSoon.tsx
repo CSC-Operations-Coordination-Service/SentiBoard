@@ -38,10 +38,10 @@ export function MessagePage({
           <p style={{ color: "var(--text-dim)" }}>{text}</p>
           <Link
             className="btn primary"
-            href={ROUTES.processors.path}
+            href={ROUTES.home.path}
             style={{ marginTop: 16 }}
           >
-            Go to Processors <span className="arrow">→</span>
+            Go to Home <span className="arrow">→</span>
           </Link>
         </div>
       </section>
