@@ -193,6 +193,8 @@ Real app · No card. Differences (prototype ref §10 "Card type" / §7):
 
 ## Data gaps
 
+Reference for the legacy code: branch `support/sentiboard-2026-10-09` (the live version). Its `apps/routes/home/routes.py` is newer than `origin/main`; `apps/elastic/modules/datatakes.py` is the same on both.
+
 **Primary gap: no datatake endpoint.** The backend has no endpoint that exposes CDS datatake data.
 The Sentiboard backend currently reads from four Sentiboard-owned OpenSearch indices (anomaly, news,
 instantmessage, processor). Datatake data lives in the read-only `cds-*` indices managed by
