@@ -8,7 +8,10 @@ import { ROUTES, type PageRoute } from "@/lib/routes";
 
 /** Placeholders are kept out of search results (and out of the sitemap). */
 export function comingSoonMetadata(route: PageRoute): Metadata {
-  return { title: `${route.title} — SentiBoard`, robots: { index: false, follow: true } };
+  return {
+    title: `${route.title} — SentiBoard`,
+    robots: { index: false, follow: true },
+  };
 }
 
 export function MessagePage({
@@ -28,11 +31,17 @@ export function MessagePage({
       <section className="wrap pad">
         <div style={{ textAlign: "center", padding: "60px 0" }}>
           <div className="stat" style={{ alignItems: "center" }}>
-            <span className="v" style={{ fontSize: 72 }}>{big}</span>
+            <span className="v" style={{ fontSize: 72 }}>
+              {big}
+            </span>
           </div>
           <p style={{ color: "var(--text-dim)" }}>{text}</p>
-          <Link className="btn primary" href={ROUTES.processors.path} style={{ marginTop: 16 }}>
-            Go to Processors <span className="arrow">→</span>
+          <Link
+            className="btn primary"
+            href={ROUTES.home.path}
+            style={{ marginTop: 16 }}
+          >
+            Go to Home <span className="arrow">→</span>
           </Link>
         </div>
       </section>
@@ -46,7 +55,7 @@ export default function ComingSoon({ route }: { route: PageRoute }) {
       crumb={route.title}
       title={route.title}
       big="Soon"
-      text="This page is being moved to the new SentiBoard and will be available here soon."
+      text="This page will be available here soon."
     />
   );
 }

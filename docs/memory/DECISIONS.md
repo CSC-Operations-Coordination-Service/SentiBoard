@@ -472,3 +472,38 @@ Processors Explorer (tweenTarget inert, Session 3c) is unaffected: that element 
 **Consequences.** No hydration warning. Closed filter contents are hidden (not focusable via
 screen reader virtual cursor either, since `visibility: hidden` removes descendants from the
 accessibility tree). The open/close animation is unchanged.
+
+## 2026-10-27 — Home page ported: legacy redirects, Events panel image, news bar limit
+
+**Legacy redirects.** The legacy Flask app served the home page at `/index` (with `/index.html`
+permanently redirecting to `/index` at the Flask layer). Both paths now redirect 308 to `/` in
+`next.config.ts`, per the general rule in the 2026-10-21 redirect decision. Query strings pass
+through.
+
+**Events panel image.** The mock-up branch (`feature-DEVOCS-219-Frontend-Restyling`) committed
+`events.jpg` at `public/assets/img/modules/`. The prototype reference had a different image. The
+owner chose to keep the mock-up's `events.jpg` (SHA256 `8a446d6c…`) rather than the prototype's.
+This was the image already in the codebase when the home page was ported; no replacement was made.
+
+**News bar: 5 most recent messages (`MAX_NEWS = 5`).** The news bar shows the 5 most recent
+instant messages, sorted by `publication_date` descending. The `/instantmessage/` backend endpoint
+exposes only `offset`/`limit` pagination with no sort parameter, so the frontend fetches all
+records via `fetchAll` and sorts in the adapter (`adaptInstantMessages`). `MAX_NEWS` is defined in
+`src/features/home/adapter.ts` and slices after sorting. Consequence: on a cold cache the adapter
+reads the full feed to surface 5 items; this is acceptable since the feed is small (O(10²) records)
+and is already cached for 300 s/1 h.
+
+## 2026-10-27 — Pages must not call the API at build time; CI builds without a backend
+
+**Context.** CI has no backend, so `BACKEND_URL` is unset. The home page `/` called
+`getInstantMessages()` directly in the top-level `async function HomePage()`, which caused Next.js
+to attempt that fetch during `pnpm build` static prerendering, throwing
+`"BACKEND_URL is not set"` and failing the build.
+**Decision.** Any page that fetches from the backend must isolate the fetch in a dedicated async
+server component that calls `await connection()` (from `next/server`) before the first API call.
+`connection()` is the explicit opt-in to request-time rendering; it prevents the component from
+being evaluated at build time. The component is wrapped in `<Suspense>` so the rest of the page
+can be prerendered as a static shell (PPR). Applied to `/`: `NewsBarContent` is the
+request-time component; the hero, module panels and FAQ remain in the static shell.
+**Consequences.** `pnpm build` succeeds with no backend present. The home page shows as `◐`
+(Partial Prerender) in the route table. Pages added in future must follow the same pattern.

@@ -4,6 +4,7 @@ import { ROUTES, siteUrl } from "@/lib/routes";
 /** Ported pages only: "coming soon" placeholders are noindex and stay out. Frequencies and
  *  priorities follow the legacy sitemap (apps/__init__.py on main). */
 const LEGACY_HINTS: Record<string, Pick<MetadataRoute.Sitemap[number], "changeFrequency" | "priority">> = {
+  [ROUTES.home.path]: { changeFrequency: "daily", priority: 1.0 },
   [ROUTES.processors.path]: { changeFrequency: "weekly", priority: 0.7 },
   [ROUTES.events.path]: { changeFrequency: "weekly", priority: 0.7 },
 };

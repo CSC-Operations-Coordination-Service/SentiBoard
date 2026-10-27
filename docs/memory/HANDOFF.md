@@ -2,6 +2,42 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Home — News bar wired to real data (2026-10-27)
+
+`src/features/home/NewsBar.tsx` created; `src/app/page.tsx` now `async` and renders `<NewsBar>`.
+
+- **`src/features/home/data.ts`:** `getInstantMessages()` — `fetchAll("/instantmessage/")`, `"use cache"`, `cacheLife({stale:300,revalidate:300,expire:3600})`, `cacheTag("instantmessages")`, `ApiError` degraded-state handling. Failed load → `ok:false`, empty `newsItems` passed to `NewsBar` (bar hidden).
+- **`src/features/home/adapter.ts`:** `adaptInstantMessages()` — sorts by `publication_date` descending, excludes null-dated records (logged via `console.info`), formats date as `"D Mon YYYY"` and time as `"HH:MM"` in UTC. Exported type `InstantMessage { title, date, time }`.
+- **`src/lib/utc-date.ts`:** shared UTC helpers extracted from `events/adapter.ts` (`utcDateStr`, `utcTimeStr`, `pad`) plus new `utcDayMonthYearStr("D Mon YYYY")`. Events adapter updated to import from here.
+- **`src/features/home/adapter.test.ts`:** 7 tests — sorting, UTC formatting, month-boundary midnight, null date exclusion, empty input, shape of output.
+- **`src/features/home/NewsBar.tsx`:** `"use client"`, bar + ticker + expandable list. CSS visibility (`.listOpen` class) instead of `inert` for the closed list. Double-rAF height animation (same pattern as events). Escape closes + returns focus. `aria-expanded`, `aria-controls="news-list"`. Ticker stops under `prefers-reduced-motion`. Empty `items` → `null` (bar not rendered).
+- **`src/features/home/home.module.css`:** bar section added at the top. Bar styles (`.bar/.row/.news/.dot/.count/.chevron`), ticker (`.mask/.track/.item/.sep/.time`, `@keyframes tickerSlide`), list (`.list/.listOpen/.listRow/.listTime/.listText`, `@keyframes sbNewsIn`). Reduced-motion guards for ticker and list.
+- **`src/app/page.tsx`:** `async`, awaits `getInstantMessages()`, passes `newsItems` to `<NewsBar>`.
+- **`message_type` / `cls`:** `cls` in the mock-up `RtEvent` is **not used in any rendering logic** of the NewsBar (no cls-based className or style in mock-up `Home.tsx`). It does not drive styling. The UI model omits it. The backend `message_type` field has no enum in the OpenAPI schema or index template — actual values in the live index are UNKNOWN from static analysis. Verify with a live backend query when available.
+- ESLint, `tsc --noEmit`, 273/273 tests (was 266), `pnpm build` all clean. `/` builds with `Revalidate 5m, Expire 1h`.
+
+## Home — static page built (2026-10-27)
+
+`src/features/home/` created; `src/app/page.tsx` replaced with the static home page.
+
+- **Implemented ref sections:** §4 Hero, §5 Module panels, §6 Narrow screens (Decisions 9/15/22 — clamp padding, title wrap at ≤399 px), §7 FAQ.
+- **Not implemented this session:** §2 News bar + §3 News list (next session).
+- **`src/features/home/copy.tsx`:** `MODULES` (4 entries, `ReactNode` `long` fields with `<b>` JSX, `ROUTES` paths for `href`) and `FAQ_GROUPS` (6 groups, icon JSX, Q&A with `ReactNode` answers).
+- **`src/features/home/home.module.css`:** hero, module panels (`.panelInner` replaces `.px-panel-inner`; global `.px-panel`, `.px-panel-bg`, `.px-panel-veil` reused), FAQ. No news bar styles.
+- **`src/features/home/HeroVideo.tsx`:** `"use client"`, no `autoPlay` attribute, `useEffect` drives play/pause and respects `prefers-reduced-motion`; `change` listener syncs on OS setting change.
+- **FAQ uses `<details>/<summary>`:** works without JS; no `inert` attribute on server-rendered elements; closed content hidden by native `<details>` behavior; open animation via CSS `.faqItem[open] .faqBody { animation: faqReveal 0.25s ease }`; chevron rotated via `.faqItem[open] .faqChev`.
+- **`home.mp4` present:** committed in a008501 at `public/assets/mv/home.mp4`; `HeroVideo.tsx` src matches that path.
+- ESLint, `tsc --noEmit`, 266/266 tests, `pnpm build` all clean. `/` builds as a static page (○).
+
+## Home — groundwork laid (2026-10-27)
+
+- `docs/design/home-prototype-ref.md` copied from the mock-up branch.
+- `src/components/Reveal.tsx` extracted from `Explorer.tsx` (`"use client"`); Explorer now imports it from there. Behaviour unchanged.
+- Six `--home-*` tokens added to `src/styles/tokens.css` (dark block, after `--pr-mis-5P`).
+- `public/assets/img/modules/availability.jpg` and `events.jpg` copied from the mock-up branch. `events.jpg` SHA256 verified (`8a446d6c…`).
+- `public/assets/mv/home.mp4` committed in a008501 (compressed by the repo owner).
+- ESLint, tsc --noEmit, pnpm test (266/266), pnpm build all clean.
+
 ## CI — backend on maas-model 3.3.0 (2026-10-26)
 
 - Both CI workflows (`.github/workflows/frontend-ci.yml`, `backend-ci.yml`) install every package
@@ -30,8 +66,8 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 
 ## Frontend — still to port (2026-10-21)
 
-- Shell, `/processors` and `/events` are ported. Placeholders ("coming soon", noindex, not in the
-  sitemap) remain for `/` (home), `/acquisitions-globe`, `/acquisitions-globe-earth`,
+- Shell, `/processors`, `/events` and `/` (home) are ported. Placeholders ("coming soon", noindex,
+  not in the sitemap) remain for `/acquisitions-globe`, `/acquisitions-globe-earth`,
   `/availability`, `/terms-conditions`, `/cookie-notice`. Port each as its own vertical slice
   (AGENTS.md §7), from the prototype at `~/work/SentiBoard/design/react-mockups`. Their final URLs
   and legacy redirects are not decided yet: the placeholders use the prototype's paths; apply the

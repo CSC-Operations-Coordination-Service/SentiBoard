@@ -10,7 +10,7 @@ export interface PageRoute {
 }
 
 export const ROUTES = {
-  home: { path: "/", title: "SentiBoard", ported: false },
+  home: { path: "/", title: "SentiBoard", ported: true },
   acquisitionsGlobe: { path: "/acquisitions-globe", title: "Acquisitions - Globe", ported: false },
   acquisitionsEarth: { path: "/acquisitions-globe-earth", title: "Acquisitions - Earth", ported: false },
   events: { path: "/events", title: "Events", ported: true },

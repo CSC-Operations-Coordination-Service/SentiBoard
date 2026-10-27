@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-10-21 (branch `feature/DEVOCS-219-frontend`, uncommitted at time of writing).
+Last updated: 2026-10-27 (branch `feature/DEVOCS-219-home`).
 
 ## Frontend (`sentiboard-frontend/`)
 
@@ -15,12 +15,14 @@ Last updated: 2026-10-21 (branch `feature/DEVOCS-219-frontend`, uncommitted at t
 - **Second vertical slice ported** (2026-10-22, branch `feature/DEVOCS-219-events`):
   - Events & Anomalies page at `/events` with real backend data — see [features/events.md](features/events.md).
   - Legacy `/events.html` redirects there with 308.
-- Every other page (home, acquisitions ×2, data availability, terms, cookie notice) is a
-  "coming soon" placeholder (noindex, not in the sitemap).
+- **Third vertical slice ported** (2026-10-27, branch `feature/DEVOCS-219-home`):
+  - Home page at `/` — hero video, module panels, FAQ, live news bar — see [features/home.md](features/home.md).
+  - Legacy `/index.html` and `/index` redirect there with 308.
+- Remaining pages (acquisitions ×2, data availability, terms, cookie notice) are
+  "coming soon" placeholders (noindex, not in the sitemap).
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
-- Automated tests: `pnpm test` (Vitest, 151 tests for the Processors slice: adapter, URL state,
-  sanitizer, data loading), runnable with no backend and no network.
+- Automated tests: `pnpm test` (Vitest, 273 tests as of 2026-10-27), runnable with no backend and no network.
 
 ## Backend (`sentiboard-backend/`)
 

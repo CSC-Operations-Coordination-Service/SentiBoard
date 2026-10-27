@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
       { source: "/processors-viewer.html", destination: "/processors", permanent: true },
       { source: "/processors-viewer", destination: "/processors", permanent: true },
       { source: "/events.html", destination: "/events", permanent: true },
+      { source: "/index.html", destination: "/", permanent: true },
+      { source: "/index", destination: "/", permanent: true },
     ];
   },
 };
