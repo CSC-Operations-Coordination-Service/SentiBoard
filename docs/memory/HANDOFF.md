@@ -2,13 +2,26 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Home — static page built (2026-10-27)
+
+`src/features/home/` created; `src/app/page.tsx` replaced with the static home page.
+
+- **Implemented ref sections:** §4 Hero, §5 Module panels, §6 Narrow screens (Decisions 9/15/22 — clamp padding, title wrap at ≤399 px), §7 FAQ.
+- **Not implemented this session:** §2 News bar + §3 News list (next session).
+- **`src/features/home/copy.tsx`:** `MODULES` (4 entries, `ReactNode` `long` fields with `<b>` JSX, `ROUTES` paths for `href`) and `FAQ_GROUPS` (6 groups, icon JSX, Q&A with `ReactNode` answers).
+- **`src/features/home/home.module.css`:** hero, module panels (`.panelInner` replaces `.px-panel-inner`; global `.px-panel`, `.px-panel-bg`, `.px-panel-veil` reused), FAQ. No news bar styles.
+- **`src/features/home/HeroVideo.tsx`:** `"use client"`, no `autoPlay` attribute, `useEffect` drives play/pause and respects `prefers-reduced-motion`; `change` listener syncs on OS setting change.
+- **FAQ uses `<details>/<summary>`:** works without JS; no `inert` attribute on server-rendered elements; closed content hidden by native `<details>` behavior; open animation via CSS `.faqItem[open] .faqBody { animation: faqReveal 0.25s ease }`; chevron rotated via `.faqItem[open] .faqChev`.
+- **`home.mp4` present:** committed in a008501 at `public/assets/mv/home.mp4`; `HeroVideo.tsx` src matches that path.
+- ESLint, `tsc --noEmit`, 266/266 tests, `pnpm build` all clean. `/` builds as a static page (○).
+
 ## Home — groundwork laid (2026-10-27)
 
 - `docs/design/home-prototype-ref.md` copied from the mock-up branch.
 - `src/components/Reveal.tsx` extracted from `Explorer.tsx` (`"use client"`); Explorer now imports it from there. Behaviour unchanged.
 - Six `--home-*` tokens added to `src/styles/tokens.css` (dark block, after `--pr-mis-5P`).
 - `public/assets/img/modules/availability.jpg` and `events.jpg` copied from the mock-up branch. `events.jpg` SHA256 verified (`8a446d6c…`).
-- **`public/assets/mv/home.mp4` NOT copied:** the file on the mock-up branch is ~19 MB (20 057 975 bytes), above the 10 MB threshold. Needs a compressed copy before it can land in the repo.
+- `public/assets/mv/home.mp4` committed in a008501 (compressed by the repo owner).
 - ESLint, tsc --noEmit, pnpm test (266/266), pnpm build all clean.
 
 ## CI — backend on maas-model 3.3.0 (2026-10-26)

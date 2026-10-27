@@ -1,0 +1,296 @@
+/* Home page CSS module — hero, module panels, FAQ.
+   News bar excluded (next session).
+   Global .px-panel / .px-panel-bg / .px-panel-veil are used from global.css;
+   .px-panel-inner is NOT used — .panelInner below replaces it per prototype ref §5. */
+
+/* ── Hero ───────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  overflow: hidden;
+  background: var(--home-ground);
+}
+
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--home-ground) 30%, transparent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.heroCopy {
+  max-width: 600px;
+  padding: 0 28px;
+}
+
+/* font-family intentionally omitted — global h1 rule supplies the display face */
+.heroCopy h1 {
+  font-size: 56px;
+  font-weight: 700;
+  margin: 0 0 16px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.heroCopy h1 span {
+  color: var(--home-accent);
+}
+
+.heroCopy p {
+  font-size: 16px;
+  margin: 0;
+  color: color-mix(in srgb, var(--text) 80%, transparent);
+  line-height: 1.6;
+}
+
+/* ── Module panels ──────────────────────────────────────── */
+
+.panels {
+  position: relative;
+  z-index: 1;
+}
+
+.panelLeft  { justify-content: flex-start; }
+.panelRight { justify-content: flex-end; }
+
+/* Replaces .px-panel-inner (not used on home); sits inside .px-panel */
+.panelInner {
+  position: relative;
+  z-index: 2;
+  max-width: 640px;
+  padding-bottom: clamp(56px, 11vh, 130px);
+  color: var(--text);
+}
+
+.panelLeft .panelInner {
+  text-align: left;
+  margin-right: auto;
+  padding-left: clamp(18px, 4vw, 48px);
+  padding-right: 28px;
+}
+
+.panelRight .panelInner {
+  text-align: right;
+  margin-left: auto;
+  padding-left: 28px;
+  padding-right: clamp(18px, 4vw, 48px);
+}
+
+.panelTitle {
+  margin: 0 0 15px;
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@media (max-width: 399px) {
+  .panelTitle { white-space: normal; }
+}
+
+.panelLead {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
+}
+
+.panelLong {
+  margin: 0 0 30px;
+  font-size: 13px;
+  line-height: 1.72;
+  color: color-mix(in srgb, var(--text) 74%, transparent);
+}
+
+.panelLink {
+  display: inline-block;
+  font-size: clamp(19px, 1.7vw, 26px);
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.panelLink:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── FAQ ──────────────────────────────────────────────────── */
+
+.faqSec {
+  position: relative;
+  z-index: 10;
+  padding: 120px 0 130px;
+  background: var(--home-ground);
+}
+
+.faqIn {
+  max-width: calc(808px + 2 * clamp(18px, 4vw, 48px));
+  margin: 0 auto;
+  padding-inline: clamp(18px, 4vw, 48px);
+}
+
+.faqHead {
+  text-align: center;
+  margin-bottom: 44px;
+}
+
+.faqHead h2 {
+  margin: 0 0 12px;
+  font-size: clamp(30px, 3.6vw, 46px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  color: var(--text);
+}
+
+.faqHead p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+}
+
+.faqList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* <details> element */
+.faqItem {
+  background: var(--home-faq-bar);
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.faqItem:hover {
+  background: var(--home-faq-bar-hover);
+}
+
+.faqItem[open] {
+  box-shadow: inset 0 0 0 1px var(--home-faq-open);
+}
+
+/* <summary> element — suppress browser disclosure triangle */
+.faqQ {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 49px;
+  padding: 16px 20px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: left;
+  color: var(--text);
+  list-style: none; /* Firefox: hide native disclosure triangle */
+}
+
+.faqQ::-webkit-details-marker {
+  display: none; /* Chrome/Safari: hide native disclosure triangle */
+}
+
+.faqQ:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.faqIco {
+  flex: none;
+  width: 19px;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+}
+
+.faqTitle {
+  flex: 1;
+}
+
+.faqChev {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--text);
+  transition: transform 0.2s;
+}
+
+.faqItem[open] .faqChev {
+  transform: rotate(180deg);
+}
+
+.faqBody {
+  padding: 2px 20px 18px 51px; /* 51 = 20 pad + 19 icon + 12 gap */
+}
+
+/* Animate body in on open; no close animation (native <details> behavior) */
+.faqItem[open] .faqBody {
+  animation: faqReveal 0.25s ease;
+}
+
+@keyframes faqReveal {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.faqQa + .faqQa {
+  margin-top: 14px;
+}
+
+.faqQuestion {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.faqAnswer {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+}
+
+.faqAnswer a,
+.faqContact a {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+
+.faqContact {
+  margin: 40px 0 16px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+@media (max-width: 640px) {
+  .faqBody { padding-left: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faqItem[open] .faqBody { animation: none; }
+  .faqChev { transition: none; }
+  .faqItem { transition: none; }
+}
