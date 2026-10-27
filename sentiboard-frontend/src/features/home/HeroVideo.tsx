@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import s from "./home.module.css";
+import { asset } from "@/lib/asset";
 
 /** Full-bleed background video for the hero.
  *  No autoPlay attribute — useEffect drives play/pause so prefers-reduced-motion is respected. */
@@ -33,7 +34,7 @@ export default function HeroVideo() {
       aria-hidden="true"
       className={s.heroVideo}
     >
-      <source src="/assets/mv/home.mp4" type="video/mp4" />
+      <source src={asset("/assets/mv/home.mp4")} type="video/mp4" />
     </video>
   );
 }

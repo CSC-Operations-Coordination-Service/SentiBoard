@@ -1,10 +1,12 @@
+import { asset } from "@/lib/asset";
+
 /* Page copy, from the prototype (src/data/copy.tsx and processors.tsx), plus the SEO metadata
    carried over from the legacy app (apps/routes/home/routes.py PAGE_METADATA on main). */
 
 export const PROCESSORS_TITLE = "Processors";
 export const PROCESSORS_SUBTITLE =
   "The complete list of Copernicus Sentinel processor releases on an interactive timeline.";
-export const PROCESSORS_HERO_IMG = "/assets/img/modules/processors.jpg";
+export const PROCESSORS_HERO_IMG = asset("/assets/img/modules/processors.jpg");
 
 export const PROCESSORS_DESCRIPTION =
   "The Processors tab shows the complete list of the releases of the Copernicus Sentinels processors, on an interactive timeline. The " +

@@ -4,6 +4,10 @@
 #
 # BACKEND_URL, SITE_URL and ALLOW_INDEXING are read on the server at runtime (see .env.sample),
 # so they are passed to `docker run`, not baked into the image.
+#
+# BASE_PATH is the opposite: Next bakes the sub-path into links, assets and redirects at build time.
+#   docker build --build-arg BASE_PATH=/sentiboard/frontend -t sentiboard-frontend .
+# Empty (the default) serves at "/".
 
 # The npmrc secret is the Nexus registry config, mounted by docker-build.yml (mount-npm-registry);
 # absent in a plain local build, where npm uses registry.npmjs.org.
@@ -23,6 +27,8 @@ RUN --mount=type=secret,id=npmrc,target=/root/.npmrc \
 # --- build ---
 FROM base AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+ARG BASE_PATH=""
+ENV BASE_PATH=${BASE_PATH}
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # schema.d.ts is generated (git-ignored): the deps stage made it, but `COPY . .` does not carry it over.
