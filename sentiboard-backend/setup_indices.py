@@ -6,21 +6,25 @@ anything. Safe to re-run: existing templates are updated, existing indices kept.
     python setup_indices.py           # dry run: show what would change
     python setup_indices.py --apply
 
-OPENSEARCH_URL defaults to http://localhost:9200 (see docker-compose.yml).
+OpenSearch is reached as opensearch_config.py describes (OPENSEARCH_URL and friends).
+A conflict it cannot resolve (a plain index where the alias should be) raises SetupError, so
+the API refuses to start instead of serving on wrong mappings.
 """
 
 import json
-import os
 import sys
 from pathlib import Path
 
-from opensearchpy import OpenSearch
+from opensearch_config import OPENSEARCH_URL, new_client  # noqa: F401 (re-exported)
 
-OPENSEARCH_URL = os.getenv("OPENSEARCH_URL", "http://localhost:9200")
 TEMPLATES = Path(__file__).parent / "index_templates"
 
 # Date-partitioned: indices (e.g. processor-2024-05) are created on first write.
 PARTITIONED = {"processor"}
+
+
+class SetupError(RuntimeError):
+    """The existing OpenSearch state needs a manual fix before the API can run."""
 
 
 def setup(client, apply):
@@ -41,8 +45,9 @@ def setup(client, apply):
         if client.indices.exists_alias(name=name):
             print(f"{name}: alias already exists, nothing to do")
         elif client.indices.exists(index=name):
-            print(f"{name}: ERROR plain index '{name}' exists without mappings; "
-                  f"delete it (or `docker compose down -v`) and re-run")
+            raise SetupError(
+                f"{name}: plain index '{name}' exists without mappings; "
+                f"delete it (or `docker compose down -v`) and re-run")
         else:
             print(f"{name}: create index {name}-000001 with alias {name}")
             if apply:
@@ -50,4 +55,4 @@ def setup(client, apply):
 
 
 if __name__ == "__main__":
-    setup(OpenSearch(OPENSEARCH_URL), "--apply" in sys.argv)
+    setup(new_client(), "--apply" in sys.argv)

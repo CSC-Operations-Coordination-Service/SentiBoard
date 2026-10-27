@@ -43,6 +43,7 @@ import {
   type BaselineFilter,
   type ProcessorsView,
 } from "./url-state";
+import { asset, withBasePath } from "@/lib/asset";
 
 const ReleaseTimeline = dynamic(() => import("./ReleaseTimeline"), {
   ssr: false,
@@ -60,10 +61,10 @@ const SpaceBackdrop = dynamic(() => import("@/components/SpaceBackdrop"), {
 
 // Transparent WebP cut-outs (alpha confirmed). Decision 10, §5.3.
 const SATELLITE_IMAGES: Record<MissionId, string> = {
-  "1": "/assets/img/satellites/s1.webp",
-  "2": "/assets/img/satellites/s2.webp",
-  "3": "/assets/img/satellites/s3.webp",
-  "5P": "/assets/img/satellites/s5p.webp",
+  "1": asset("/assets/img/satellites/s1.webp"),
+  "2": asset("/assets/img/satellites/s2.webp"),
+  "3": asset("/assets/img/satellites/s3.webp"),
+  "5P": asset("/assets/img/satellites/s5p.webp"),
 };
 
 const BASELINE_OPTIONS: { value: BaselineFilter; label: string }[] = [
@@ -191,7 +192,7 @@ function ViewLink({
   return (
     <a
       {...rest}
-      href={viewHref(view)}
+      href={withBasePath(viewHref(view))}
       className={className}
       onClick={(e) => {
         if (!isPlainClick(e)) return;
@@ -487,7 +488,7 @@ export default function Explorer({
 
   const navigate: Navigate = useCallback(
     (next: ProcessorsView, mode: "push" | "replace") => {
-      const href = viewHref(next);
+      const href = withBasePath(viewHref(next));
       if (mode === "push") window.history.pushState(null, "", href);
       else window.history.replaceState(null, "", href);
     },
@@ -939,7 +940,7 @@ export default function Explorer({
           className={s.search}
           role="search"
           method="get"
-          action={PROCESSORS_PATH}
+          action={withBasePath(PROCESSORS_PATH)}
           onSubmit={(e) => e.preventDefault()}
         >
           <svg
@@ -1030,7 +1031,7 @@ export default function Explorer({
                 {/* A reload of the same view: works with and without JavaScript. */}
                 <a
                   className={`${s.retry} ${x.retryLink}`}
-                  href={viewHref(view)}
+                  href={withBasePath(viewHref(view))}
                 >
                   Try again
                 </a>

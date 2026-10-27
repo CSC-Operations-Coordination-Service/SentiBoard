@@ -2,6 +2,25 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Deployment settings: base path, OpenSearch TLS and startup (2026-10-27, branch `feat/deploy-config`)
+
+Backend: `opensearch_config.py` (URL, basic auth, TLS verification, CA bundle), the startup rule and
+`/healthz` / `/readyz` (see DECISIONS.md, same date). Frontend: `BASE_PATH` build argument,
+`src/lib/asset.ts`. Backend tests 23, frontend tests 277, lint and `type-check` clean. Checked on
+local images: the backend stays up with OpenSearch unreachable (`/healthz` 200, `/readyz` and data
+routes 503), exits with code 3 on a TLS error, and every route of the frontend answers 200 under
+`/sentiboard/frontend` with no URL outside it.
+
+- **Not verified:** a run against a real OpenSearch (templates created, a read-only user refused),
+  and a swarm rolling update with a failing new task. The TLS case used a self-signed fake server.
+- **`.about-bg` in `src/styles/global.css`** uses `url("/assets/...")` in CSS, which Next cannot
+  prefix. No component uses it yet. When the About page is ported, set the image from the component
+  with `asset()` (an inline custom property) instead.
+- **Frontend `HEALTHCHECK` in the Dockerfile** fetches `/`, which is a 404 under a base path. The
+  check accepts anything below 500, so it still passes, but it no longer proves the app is serving
+  its pages. A health route inside the base path would fix that.
+- **CI** builds one frontend image for dev and prod with `BASE_PATH=/sentiboard/frontend`.
+
 ## Home — News bar wired to real data (2026-10-27)
 
 `src/features/home/NewsBar.tsx` created; `src/app/page.tsx` now `async` and renders `<NewsBar>`.
