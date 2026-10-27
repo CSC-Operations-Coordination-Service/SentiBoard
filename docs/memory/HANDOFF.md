@@ -2,6 +2,20 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Home — News bar wired to real data (2026-10-27)
+
+`src/features/home/NewsBar.tsx` created; `src/app/page.tsx` now `async` and renders `<NewsBar>`.
+
+- **`src/features/home/data.ts`:** `getInstantMessages()` — `fetchAll("/instantmessage/")`, `"use cache"`, `cacheLife({stale:300,revalidate:300,expire:3600})`, `cacheTag("instantmessages")`, `ApiError` degraded-state handling. Failed load → `ok:false`, empty `newsItems` passed to `NewsBar` (bar hidden).
+- **`src/features/home/adapter.ts`:** `adaptInstantMessages()` — sorts by `publication_date` descending, excludes null-dated records (logged via `console.info`), formats date as `"D Mon YYYY"` and time as `"HH:MM"` in UTC. Exported type `InstantMessage { title, date, time }`.
+- **`src/lib/utc-date.ts`:** shared UTC helpers extracted from `events/adapter.ts` (`utcDateStr`, `utcTimeStr`, `pad`) plus new `utcDayMonthYearStr("D Mon YYYY")`. Events adapter updated to import from here.
+- **`src/features/home/adapter.test.ts`:** 7 tests — sorting, UTC formatting, month-boundary midnight, null date exclusion, empty input, shape of output.
+- **`src/features/home/NewsBar.tsx`:** `"use client"`, bar + ticker + expandable list. CSS visibility (`.listOpen` class) instead of `inert` for the closed list. Double-rAF height animation (same pattern as events). Escape closes + returns focus. `aria-expanded`, `aria-controls="news-list"`. Ticker stops under `prefers-reduced-motion`. Empty `items` → `null` (bar not rendered).
+- **`src/features/home/home.module.css`:** bar section added at the top. Bar styles (`.bar/.row/.news/.dot/.count/.chevron`), ticker (`.mask/.track/.item/.sep/.time`, `@keyframes tickerSlide`), list (`.list/.listOpen/.listRow/.listTime/.listText`, `@keyframes sbNewsIn`). Reduced-motion guards for ticker and list.
+- **`src/app/page.tsx`:** `async`, awaits `getInstantMessages()`, passes `newsItems` to `<NewsBar>`.
+- **`message_type` / `cls`:** `cls` in the mock-up `RtEvent` is **not used in any rendering logic** of the NewsBar (no cls-based className or style in mock-up `Home.tsx`). It does not drive styling. The UI model omits it. The backend `message_type` field has no enum in the OpenAPI schema or index template — actual values in the live index are UNKNOWN from static analysis. Verify with a live backend query when available.
+- ESLint, `tsc --noEmit`, 273/273 tests (was 266), `pnpm build` all clean. `/` builds with `Revalidate 5m, Expire 1h`.
+
 ## Home — static page built (2026-10-27)
 
 `src/features/home/` created; `src/app/page.tsx` replaced with the static home page.

@@ -1,7 +1,210 @@
-/* Home page CSS module — hero, module panels, FAQ.
-   News bar excluded (next session).
+/* Home page CSS module — news bar, hero, module panels, FAQ.
    Global .px-panel / .px-panel-bg / .px-panel-veil are used from global.css;
    .px-panel-inner is NOT used — .panelInner below replaces it per prototype ref §5. */
+
+/* ── News bar ────────────────────────────────────────────── */
+
+/* Fixed bar sits at the nav bottom edge (top: var(--nav-h)).
+   Row is 56px including the 1px hairline (Decision 3 / prototype ref §2). */
+.bar {
+  position: fixed;
+  top: var(--nav-h);
+  left: 0;
+  right: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  background: var(--home-ground);
+}
+
+.row {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  overflow: hidden;
+  background: var(--home-ground);
+}
+
+.news {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  height: 100%;
+  padding: 0 24px;
+  position: relative;
+  z-index: 2;
+  background: var(--home-ground);
+  border: 0;
+  border-right: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--home-live);
+  cursor: pointer;
+}
+
+.news:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--home-live);
+  box-shadow: 0 0 11px var(--home-live);
+}
+
+.count {
+  font-size: 11px;
+  color: var(--home-live);
+  font-variant-numeric: tabular-nums;
+}
+
+.chevron {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  color: var(--home-live);
+  transition: transform 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Ticker ──────────────────────────────────────────────── */
+
+.mask {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  position: relative;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: max-content;
+  white-space: nowrap;
+  animation: tickerSlide var(--ticker-dur, 68s) linear infinite;
+}
+
+@keyframes tickerSlide {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--text);
+  opacity: 0.92;
+}
+
+.sep {
+  flex: none;
+  width: 2px;
+  height: 16px;
+  background: var(--home-accent);
+  margin: 0 6px;
+}
+
+.time {
+  flex: 0 0 auto;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { animation: none; }
+  .chevron { transition: none; }
+}
+
+/* ── News list ───────────────────────────────────────────── */
+
+/* Closed: height 0, opacity 0, visibility hidden (CSS, never inert).
+   visibility stays hidden until .listOpen is applied; during close, a 540ms
+   delay keeps content visible throughout the height/opacity transition. */
+.list {
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+  background: var(--home-ground);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  visibility: hidden;
+  transition:
+    height 520ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 360ms ease,
+    visibility 0s linear 540ms;
+}
+
+.listOpen {
+  visibility: visible;
+  transition:
+    height 520ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 360ms ease,
+    visibility 0s;
+}
+
+.listRow {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  padding: 14px 24px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.listTime {
+  flex: 0 0 auto;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.listText {
+  font-size: 15px;
+  color: var(--text);
+  opacity: 0.92;
+}
+
+@keyframes sbNewsIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.listOpen .listRow {
+  animation: sbNewsIn 420ms cubic-bezier(0.2, 0.7, 0.2, 1) calc(80ms + var(--k) * 60ms) backwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .list,
+  .listOpen {
+    transition: none !important;
+  }
+  .listOpen .listRow {
+    animation: none !important;
+  }
+}
 
 /* ── Hero ───────────────────────────────────────────────── */
 

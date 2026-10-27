@@ -9,6 +9,7 @@
 
 import "server-only";
 import type { components } from "@/lib/api/schema";
+import { utcDateStr, utcTimeStr } from "@/lib/utc-date";
 import {
   MISSIONS,
   MISSION_ORDER,
@@ -62,21 +63,7 @@ function mapCategory(raw: string | null | undefined): EventCategory | null {
   return CATEGORY_MAP[(raw ?? "").trim()] ?? null;
 }
 
-/* ---- date / time helpers ---- */
-
-function pad(n: number): string {
-  return String(n).padStart(2, "0");
-}
-
-function utcDateStr(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
-}
-
-function utcTimeStr(iso: string): string {
-  const d = new Date(iso);
-  return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
-}
+/* ---- date / time helpers: imported from @/lib/utc-date ---- */
 
 /* ---- month overlap ---- */
 

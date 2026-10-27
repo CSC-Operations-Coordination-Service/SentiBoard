@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Reveal } from "@/components/Reveal";
 import HeroVideo from "@/features/home/HeroVideo";
+import NewsBar from "@/features/home/NewsBar";
 import { MODULES, FAQ_GROUPS } from "@/features/home/copy";
+import { getInstantMessages } from "@/features/home/data";
 import s from "@/features/home/home.module.css";
 
 // Not ported yet (ROUTES.home.ported = false; docs/memory/HANDOFF.md).
@@ -11,9 +13,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const msgsResult = await getInstantMessages();
+  const newsItems = msgsResult.ok ? msgsResult.items : [];
+
   return (
     <>
+      <NewsBar items={newsItems} />
+
       {/* Hero */}
       <section className={s.hero}>
         <HeroVideo />
