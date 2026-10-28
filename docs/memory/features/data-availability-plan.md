@@ -210,11 +210,9 @@ Completeness is not a flat field in the index. For S1 and S2 the index stores pe
 The legacy route serves a lightweight list: each record carries `id`, `platform` (`satellite_unit`), `start_time`/`observation_time_start`, `stop_time`/`observation_time_stop`, `acquisition_status`, `publication_status`, and a `raw` dict that includes the full `completeness_status` object. Only the first record is enriched for SSR; the rest are lightweight. Card detail is loaded on click via a separate POST to `/data-availability/enrich` (`enrich_datatake_modal`), which calls `datatakes_cache.load_datatake_details(datatake_id)` then `enrich_datatake()`, returning the per-product `completeness_list`, `instrument_mode`, timing, and CAMS ticket metadata. The new backend endpoint should replicate this list + enrich-on-click pattern.
 
 **Required query parameters**: `date_from`, `date_to` (ISO date), optionally `mission` (multi),
-`satellite_unit` (multi). Stakeholders now want the full history available in the range picker, not
-just three months. Without server-side date filtering the frontend cannot fetch this page — an
-unbounded history across S1/S2/S3/S5P would be an unacceptably large payload. How to bound a single view is Decisions for Ana #11. The §9 description
-text, which currently references the three-month window, must also be updated (see Decisions for
-Ana #13).
+`satellite_unit` (multi). The page covers three months (past three months plus scheduled datatakes
+up to 23:59:59 of the following day), which is still far too many records to fetch whole, so
+server-side date filtering is required.
 
 **Secondary gap: KPI formula for Coverage gaps.** The prototype counts satellite-days (one per
 satellite per calendar day) that have no matching datatake — a "hole in the schedule". The current
@@ -270,24 +268,13 @@ endpoint should return it already computed; `cardSides()` stays only for the moc
 10. **Backend endpoint name and filter parameters.** The API contract must be agreed and committed
     to `sentiboard-frontend/api/openapi.json` before Session 5 can start.
 
-11. **Full-history range bound.** Stakeholders want the full available history, not just three
-    months. A single view must still be bounded to keep payloads manageable. Decide whether to cap
-    the Custom range picker at a maximum span (e.g. one year enforced client-side), or have the
-    backend fold records to at most 96 bars per mission per date range server-side regardless of
-    the requested span. This affects the Custom picker min/max, `framesOf`, and the backend query
-    contract — confirm before Session 2.
+11. **Withdrawn (2026-10-28): the full-history request was for Events, not Data Availability.**
 
-12. **Full history: access roles.** The legacy page restricted the "previous quarter" window to
-    authenticated users with roles `admin`, `ecuser`, or `esauser`; the default 7-day view was
-    public. With full history now the stated goal, decide whether the entire history is publicly
-    accessible or whether windows beyond some threshold (e.g. beyond 30 days) require
-    authentication. This determines whether the backend query gate checks the session role and
-    whether the toolbar needs a login prompt for longer ranges.
+12. **Previous-quarter access.** The legacy page passed `quarter_authorized` (roles `admin`,
+    `ecuser`, `esauser`) for the previous quarter. Confirm whether the new page keeps any role
+    restriction or is fully public.
 
-13. **§9 description copy update.** The current §9 description text (committed in the prototype
-    ref) references the three-month window. It must be revised to reflect full-history access.
-    Confirm the new wording before Session 7, where it feeds both the `PageHeader` subtitle and the
-    SEO metadata.
+13. **Withdrawn (2026-10-28): the full-history request was for Events, not Data Availability.**
 
 14. **DELAYED status.** The legacy logic produces a DELAYED status (data arrived late, percentage
     still below 90%) that the mockup's five statuses do not include. Decide whether it gets its own
@@ -336,7 +323,7 @@ the page handled in production.
 The mockup generates 900 datatakes over 93 days = ~9.7 / day across four missions. Real Sentinel
 missions produce far more: a single S1 pass can yield 10–30 datatakes, and S2 runs near-continuous
 coverage. A rough lower bound for the default 31-day (30D) window is 5,000–20,000 records;
-with full history the total is unbounded — the backend date range is the only bound that matters. Check the legacy app first — the real number may be larger or
+the full three-month history is roughly 3x the 30-day window. Check the legacy app first — the real number may be larger or
 the legacy app may have already solved this with aggregation rather than raw records.
 
 This means:
@@ -433,7 +420,7 @@ Goal: wire the two events-page links that HANDOFF.md lists as pending:
 - "View all N datatakes →" per occurrence → `ROUTES.availability + ?q=<first-datatake-id>` (or
   no query if there is no equivalent; confirm the final URL scheme first).
 - Individual datatake ID links: S1 IDs `S\d[A-Z0-9]-\d+` and others link to
-  `/availability?q=<id>` regardless of how far back they fall.
+  `/availability?q=<id>` for datatakes newer than 3 months; older ones stay plain text.
 
 ### Session 7 — SEO, ported flag, sitemap, redirects, docs
 
