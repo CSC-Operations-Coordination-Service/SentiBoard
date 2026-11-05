@@ -72,7 +72,8 @@ def setup(client, apply):
             continue
         # Documents write to `name`; it must be the alias the template adds, not a
         # plain index, or OpenSearch guesses the mappings (losing nested etc).
-        if client.indices.exists_alias(name=name):
+        # Scoped to our own indices: a user limited to `{name}*` gets 403 on a cluster-wide lookup.
+        if client.indices.exists_alias(index=f"{name}-*", name=name):
             print(f"{name}: alias already exists, nothing to do")
         elif client.indices.exists(index=name):
             raise SetupError(
