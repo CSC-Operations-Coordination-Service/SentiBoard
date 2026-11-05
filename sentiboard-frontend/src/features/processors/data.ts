@@ -6,7 +6,7 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { ApiError, type ApiErrorKind } from "@/lib/api/client";
 import { fetchAll } from "@/lib/api/paginate";
-import { adaptProcessors } from "./adapter";
+import { adaptProcessors, prepareNotes } from "./adapter";
 import type { ProcessorGroup, ProcessorNotes } from "./model";
 
 export type ProcessorsResult =
@@ -31,6 +31,7 @@ async function loadProcessors(): Promise<{
   cacheTag("processors");
 
   const records = await fetchAll("/processor/");
+  await prepareNotes(records); // keeps the sanitizer's memory peak low (see prepareNotes)
   const now = Date.now();
   const { groups, notes, unplaced } = adaptProcessors(records, now);
   if (unplaced.length) {

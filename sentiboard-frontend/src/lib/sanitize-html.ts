@@ -183,9 +183,39 @@ function isEmpty(el: Element): boolean {
   return !(el.textContent ?? "").replace(/[\s ]+/g, "") && !el.querySelector("hr");
 }
 
+/* Memory: jsdom tracks every Range and NodeIterator (DOMPurify creates one per call) through a
+   WeakRef, and V8 keeps a WeakRef's target alive until the current synchronous job ends. One
+   processors revalidation sanitizes ~230 notes in one job, so nothing it allocates could be
+   collected before the end: measured ~600 MB pinned for one pass over the fixtures, which crashed
+   the production container (heap ~256 MB, "Ineffective mark-compacts near heap limit").
+   Two defences: results are memoized by their input, so a note reaches jsdom once per process,
+   not on every revalidation; and nothing here creates a Range. */
+
+/** Memoized results, keyed by function and input. Notes rarely change, so a revalidation is all
+ *  hits; the bound keeps a feed that rewrites every note from growing the map without end. */
+const MEMO_MAX = 2000;
+const memo = new Map<string, string>();
+
+function memoized(key: string, compute: () => string): string {
+  const hit = memo.get(key);
+  if (hit !== undefined) {
+    memo.delete(key); // re-insert: Map order is the LRU order
+    memo.set(key, hit);
+    return hit;
+  }
+  const value = compute();
+  memo.set(key, value);
+  if (memo.size > MEMO_MAX) memo.delete(memo.keys().next().value!);
+  return value;
+}
+
 /** Safe, unstyled, structured HTML for dangerouslySetInnerHTML. "" when there is nothing to show. */
 export function sanitizeHtml(raw: string | null | undefined): string {
   if (!raw || !raw.trim()) return "";
+  return memoized(`html\0${raw}`, () => sanitizeUncached(raw));
+}
+
+function sanitizeUncached(raw: string): string {
 
   // 1. Structure from newlines, on an inert document (DOMParser runs no scripts, loads nothing).
   const src = new DOMParser().parseFromString(HAS_TAG.test(raw) ? raw : "", "text/html");
@@ -224,10 +254,10 @@ export function sanitizeHtml(raw: string | null | undefined): string {
 }
 
 /** Text of sanitized content: soft wraps collapse, <br> and blocks break lines, items read "• …". */
-function fragmentToText(content: DocumentFragment): string {
+function nodesToText(content: Iterable<Node>): string {
   const doc = document.implementation.createHTMLDocument("");
   const box = doc.createElement("div");
-  box.append(doc.importNode(content, true));
+  for (const node of content) box.append(doc.importNode(node, true));
   const walker = doc.createTreeWalker(box, NodeFilter.SHOW_TEXT);
   while (walker.nextNode()) {
     const t = walker.currentNode as Text;
@@ -252,11 +282,46 @@ function parseSanitized(raw: string | null | undefined): Document | null {
 
 /** Plain text of the notes, structure kept as line breaks and "• " items. */
 export function htmlToText(raw: string | null | undefined): string {
-  const doc = parseSanitized(raw);
-  if (!doc) return "";
-  const all = doc.createRange();
-  all.selectNodeContents(doc.body);
-  return fragmentToText(all.cloneContents());
+  if (!raw || !raw.trim()) return "";
+  return memoized(`text\0${raw}`, () => {
+    const doc = parseSanitized(raw);
+    return doc ? nodesToText(doc.body.childNodes) : "";
+  });
+}
+
+/**
+ * What Range.cloneContents() gives for the range from just after `from` to just before `to` (or
+ * to the end of `body`), without a Range (see the memory note above sanitizeHtml): nodes wholly
+ * inside are deep-cloned; an element the range cuts through — an ancestor of `from` or `to` below
+ * their common ancestor — is cloned bare, holding only its in-range children.
+ */
+function cloneBetween(from: Node, to: Node | null, body: HTMLElement): Node[] {
+  const afterFrom = (n: Node) => {
+    const pos = from.compareDocumentPosition(n);
+    return !!(pos & Node.DOCUMENT_POSITION_FOLLOWING) && !(pos & Node.DOCUMENT_POSITION_CONTAINED_BY);
+  };
+  const beforeTo = (n: Node) => {
+    if (!to) return true;
+    const pos = to.compareDocumentPosition(n);
+    return !!(pos & Node.DOCUMENT_POSITION_PRECEDING) && !(pos & Node.DOCUMENT_POSITION_CONTAINS);
+  };
+  // contains() is inclusive: `from` and `to` themselves are outside the range, not cut by it.
+  const cut = (n: Node) =>
+    (n !== from && n.contains(from)) || (!!to && n !== to && n.contains(to));
+
+  const walk = (parent: Node): Node[] =>
+    [...parent.childNodes].flatMap((child) => {
+      if (afterFrom(child) && beforeTo(child)) return [child.cloneNode(true)];
+      if (!cut(child)) return [];
+      // Only an element can hold `from` or `to`, so a cut node always has children to append.
+      const shell = child.cloneNode(false) as Element;
+      shell.append(...walk(child));
+      return [shell];
+    });
+
+  let root: Node = from.parentNode ?? body;
+  while (to && !root.contains(to)) root = root.parentNode ?? body;
+  return walk(to ? root : body);
 }
 
 /**
@@ -265,20 +330,19 @@ export function htmlToText(raw: string | null | undefined): string {
  * the title (Word notes often bold a paragraph instead). "" when the notes have no such section.
  */
 export function notesSection(raw: string | null | undefined, title: RegExp): string {
-  const doc = parseSanitized(raw);
-  if (!doc) return "";
-  const isTitle = (el: Element) => title.test((el.textContent ?? "").trim());
-  const heading =
-    [...doc.body.querySelectorAll(HEADINGS)].find(isTitle) ??
-    [...doc.body.querySelectorAll(BLOCKS)].find((el) => !el.querySelector(BLOCKS) && isTitle(el));
-  if (!heading) return "";
+  if (!raw || !raw.trim()) return "";
+  return memoized(`section\0${title.source}\0${title.flags}\0${raw}`, () => {
+    const doc = parseSanitized(raw);
+    if (!doc) return "";
+    const isTitle = (el: Element) => title.test((el.textContent ?? "").trim());
+    const heading =
+      [...doc.body.querySelectorAll(HEADINGS)].find(isTitle) ??
+      [...doc.body.querySelectorAll(BLOCKS)].find((el) => !el.querySelector(BLOCKS) && isTitle(el));
+    if (!heading) return "";
 
-  const range = doc.createRange();
-  range.setStartAfter(heading);
-  const next = [...doc.body.querySelectorAll(HEADINGS)].find(
-    (h) => heading.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING,
-  );
-  if (next) range.setEndBefore(next);
-  else range.setEndAfter(doc.body.lastChild ?? heading);
-  return fragmentToText(range.cloneContents());
+    const next = [...doc.body.querySelectorAll(HEADINGS)].find(
+      (h) => heading.compareDocumentPosition(h) & Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    return nodesToText(cloneBetween(heading, next ?? null, doc.body));
+  });
 }

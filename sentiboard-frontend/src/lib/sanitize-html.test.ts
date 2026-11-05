@@ -202,6 +202,24 @@ describe("htmlToText / notesSection", () => {
   it("gives an empty string when the section is missing", () => {
     expect(notesSection("<p>Nothing here</p>", /^changes introduced$/i)).toBe("");
   });
+
+  // Expected values are what the earlier Range.cloneContents() implementation gave.
+  it("cuts through elements that hold the heading or the next heading, as a Range would", () => {
+    const t = /^changes introduced\s*:?$/i;
+    expect(notesSection("<div><h3>Changes introduced</h3><ul><li>A</li></ul></div><h3>Impact</h3><p>None</p>", t)).toBe("• A");
+    expect(notesSection("<div><h3>Changes introduced</h3><ul><li>A</li></ul><h4>Impact</h4><p>None</p></div><p>Tail</p>", t)).toBe("• A");
+    expect(
+      notesSection("<ul><li><h3>Changes introduced</h3>Inside</li><li>Sibling</li></ul><p>After</p><h3>Stop</h3><p>No</p>", t),
+    ).toBe("• Inside\n• Sibling\nAfter");
+  });
+
+  it("memoizes: the same input gives the same result without parsing again", () => {
+    const html = "<h3>Changes introduced</h3><ul><li>A</li></ul>";
+    const first = [sanitizeHtml(html), htmlToText(html), notesSection(html, /^changes introduced$/i)];
+    expect([sanitizeHtml(html), htmlToText(html), notesSection(html, /^changes introduced$/i)]).toEqual(first);
+    // a different title is a different entry, not the cached one
+    expect(notesSection(html, /^impact$/i)).toBe("");
+  });
 });
 
 /* ---------------------------------------------------------------------------------------------
