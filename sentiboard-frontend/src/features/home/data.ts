@@ -4,6 +4,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { ApiError, type ApiErrorKind } from "@/lib/api/client";
+import { logger } from "@/lib/log";
 import { fetchAll } from "@/lib/api/paginate";
 import { adaptInstantMessages } from "./adapter";
 import type { InstantMessage } from "./adapter";
@@ -26,7 +27,7 @@ export async function getInstantMessages(): Promise<InstantMessagesResult> {
   try {
     return { ok: true, items: await loadInstantMessages() };
   } catch (err) {
-    console.error("[home] could not load instant messages:", err);
+    logger("home").error("could not load instant messages", { err });
     if (err instanceof ApiError) return { ok: false, kind: err.kind, message: err.message };
     return { ok: false, kind: "unknown", message: "Unexpected error." };
   }

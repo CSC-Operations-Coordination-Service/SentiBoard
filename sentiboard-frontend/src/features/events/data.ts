@@ -4,6 +4,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { ApiError, type ApiErrorKind } from "@/lib/api/client";
+import { logger } from "@/lib/log";
 import { fetchAll } from "@/lib/api/paginate";
 import { adaptEvents } from "./adapter";
 import type { EventDetail } from "./model";
@@ -11,6 +12,8 @@ import type { EventDetail } from "./model";
 export type EventsResult =
   | { ok: true; events: EventDetail[]; now: number }
   | { ok: false; kind: ApiErrorKind | "unknown"; message: string };
+
+const log = logger("events");
 
 async function loadEvents(): Promise<{ events: EventDetail[]; now: number }> {
   "use cache";
@@ -21,10 +24,9 @@ async function loadEvents(): Promise<{ events: EventDetail[]; now: number }> {
   const now = Date.now();
   const { events, unresolved } = adaptEvents(records);
   if (unresolved.length) {
-    console.warn(
-      `[events] ${unresolved.length} of ${records.length} anomalies have no valid dates and are not shown:`,
-      unresolved.slice(0, 10).join(", "),
-    );
+    log.warn(`${unresolved.length} of ${records.length} anomalies have no valid dates and are not shown`, {
+      ids: unresolved.slice(0, 10),
+    });
   }
   return { events, now };
 }
@@ -34,7 +36,7 @@ export async function getEvents(): Promise<EventsResult> {
   try {
     return { ok: true, ...(await loadEvents()) };
   } catch (err) {
-    console.error("[events] could not load anomalies:", err);
+    log.error("could not load anomalies", { err });
     if (err instanceof ApiError) return { ok: false, kind: err.kind, message: err.message };
     return { ok: false, kind: "unknown", message: "Unexpected error." };
   }

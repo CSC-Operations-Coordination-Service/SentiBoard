@@ -9,6 +9,7 @@
 
 import "server-only";
 import type { components } from "@/lib/api/schema";
+import { logger } from "@/lib/log";
 import { utcDateStr, utcTimeStr } from "@/lib/utc-date";
 import {
   MISSIONS,
@@ -259,13 +260,13 @@ export function adaptEvents(records: ApiAnomaly[]): AdaptedEvents {
       .sort((a, b) => b[1] - a[1])
       .map(([cat, n]) => `${cat}: ${n}`)
       .join(", ");
-    console.info(`[events] excluded ${total} records with non-shown categories — ${detail}`);
+    logger("events").info(`excluded ${total} records with non-shown categories — ${detail}`);
   }
   if (fullRecoveredCount > 0) {
-    console.info(`[events] excluded ${fullRecoveredCount} fully-recovered events (all datatakes ≥ 90 %)`);
+    logger("events").info(`excluded ${fullRecoveredCount} fully-recovered events (all datatakes ≥ 90 %)`);
   }
   if (pubDateFallbackCount > 0) {
-    console.info(`[events] ${pubDateFallbackCount} record(s) missing publication_date — fell back to start (created) date`);
+    logger("events").info(`${pubDateFallbackCount} record(s) missing publication_date — fell back to start (created) date`);
   }
 
   return { events, unresolved };

@@ -88,7 +88,7 @@ describe("getEvents — success", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.events).toHaveLength(1);
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[events]"), expect.anything());
+    expect(warnSpy.mock.calls[0].join(" ")).toMatch(/\[events\] 1 of 2 anomalies have no valid dates/);
   });
 });
 

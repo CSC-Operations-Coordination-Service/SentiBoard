@@ -541,3 +541,27 @@ prefix twice.
 **Consequences.** One image serves one path. Serving the public site at `/` (the legacy host) needs
 a second build with an empty `BASE_PATH`. A new raw anchor, history call or asset URL must use the
 helpers, or it leaves the sub-path and answers 404 behind the ingress.
+
+## 2026-11-04 — Sanitizer memoized and Range-free; structured logs; opt-in OpenTelemetry
+
+**Context.** The deployed frontend died with "Ineffective mark-compacts near heap limit" (~250 MB
+heap) after 82 min; GC could free almost nothing. Measured locally: jsdom 30 tracks every `Range`
+and `NodeIterator` (DOMPurify makes one per call) through a `WeakRef`, and V8 keeps a WeakRef's
+target alive until the synchronous job ends. The processors adapter sanitized ~230 notes, several
+times each, in one job on every revalidation: ~600 MB pinned for one pass over the fixtures, plus
+a few MB kept after each pass. Logs reached Loki as free text with level "unk", and nothing showed
+the heap growing before the crash.
+**Decision.** `sanitize-html.ts` memoizes `sanitizeHtml`/`htmlToText`/`notesSection` by input (LRU,
+2000 entries) and replaces `Range.cloneContents()` with an equivalent DOM walk (`cloneBetween`;
+old and new outputs compared on the fixtures and edge cases, 0 differences). The processors loader
+calls `prepareNotes()` first, yielding a macrotask (`setImmediate`) between records; a microtask
+does not release the pinned objects. Server logging goes through `src/lib/log.ts` (JSON lines in
+production), and in production every other server-side `console.*` call is routed through it
+too (console bridge, 2026-11-05), so stray calls and Next's own messages are JSON as well.
+OpenTelemetry (Node SDK, OTLP, runtime metrics) starts only when an OTLP endpoint is configured;
+no vendor package (`@vercel/otel` not used). Logs stay on stdout (collected by alloy-logs), not
+OTLP, so no line is shipped twice.
+**Consequences.** After the first pass a revalidation does no jsdom work (0 s, heap flat); the first
+pass peaks at ~+18 MB instead of ~+600 MB. A future sanitizer caller should keep both rules: no
+`Range`, and no long synchronous loop over un-memoized notes. Telemetry costs nothing until
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set; the deployment decides where it goes.

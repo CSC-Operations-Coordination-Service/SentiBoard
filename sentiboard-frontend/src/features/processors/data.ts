@@ -5,6 +5,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { ApiError, type ApiErrorKind } from "@/lib/api/client";
+import { logger } from "@/lib/log";
 import { fetchAll } from "@/lib/api/paginate";
 import { adaptProcessors, prepareNotes } from "./adapter";
 import type { ProcessorGroup, ProcessorNotes } from "./model";
@@ -19,6 +20,8 @@ export type ProcessorsResult =
       now: number;
     }
   | { ok: false; kind: ApiErrorKind | "unknown"; message: string };
+
+const log = logger("processors");
 
 async function loadProcessors(): Promise<{
   groups: ProcessorGroup[];
@@ -35,10 +38,9 @@ async function loadProcessors(): Promise<{
   const now = Date.now();
   const { groups, notes, unplaced } = adaptProcessors(records, now);
   if (unplaced.length) {
-    console.warn(
-      `[processors] ${unplaced.length} of ${records.length} releases have no target IPF and are not shown:`,
-      unplaced.map((r) => r.id).join(", "),
-    );
+    log.warn(`${unplaced.length} of ${records.length} releases have no target IPF and are not shown`, {
+      ids: unplaced.map((r) => r.id),
+    });
   }
   return { groups, notes, now };
 }
@@ -48,7 +50,7 @@ export async function getProcessors(): Promise<ProcessorsResult> {
   try {
     return { ok: true, ...(await loadProcessors()) };
   } catch (err) {
-    console.error("[processors] could not load releases:", err);
+    log.error("could not load releases", { err });
     if (err instanceof ApiError) return { ok: false, kind: err.kind, message: err.message };
     return { ok: false, kind: "unknown", message: "Unexpected error." };
   }

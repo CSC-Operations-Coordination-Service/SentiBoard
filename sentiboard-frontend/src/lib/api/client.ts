@@ -9,6 +9,7 @@
      · "parse"       — the backend answered 2xx with a body that is not JSON. */
 
 import "server-only";
+import { context, propagation } from "@opentelemetry/api";
 import type { paths } from "./schema";
 
 /** A hung backend must degrade the page, not hold the request open. */
@@ -84,10 +85,15 @@ export async function apiGet<P extends GetPath>(
 ): Promise<GetResponse<P>> {
   const url = buildUrl(path, query as Record<string, string | number | undefined>);
 
+  // W3C trace context (traceparent), so an instrumented backend joins this request's trace.
+  // Next traces the fetch but does not add the header; with tracing off this adds nothing.
+  const headers: Record<string, string> = { Accept: "application/json" };
+  propagation.inject(context.active(), headers);
+
   let res: Response;
   try {
     res = await fetch(url, {
-      headers: { Accept: "application/json" },
+      headers,
       signal: AbortSignal.timeout(TIMEOUT_MS),
       // Caching is decided by the caller's "use cache" scope, not by fetch.
       cache: "no-store",

@@ -2,6 +2,37 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Frontend OOM fix, structured logs, OpenTelemetry (2026-11-04, branch `fix/frontend-oom-observability`)
+
+Cause, fix and measurements: DECISIONS.md, same date. Tests 287, lint and `type-check` clean,
+`next build` passes. Checked on the standalone build with a 256 MB heap, a mock backend (228
+processor records built from the fixtures) and a local OTLP receiver: JSON log lines, traces and
+runtime metrics exported, `traceparent` received by the backend, RSS flat over 600 requests.
+
+- **Not verified:** the deployed container over hours (watch the heap metric or RSS after the
+  rollout), and a background revalidation end to end (only measured on the sanitizer directly).
+- **Platform side, not in this repo:**
+  - set `OTEL_EXPORTER_OTLP_ENDPOINT` (and `OTEL_RESOURCE_ATTRIBUTES=deployment.environment.name=…`)
+    on the frontend service, pointing at an OTLP receiver (Alloy `otelcol.receiver.otlp` → Tempo for
+    traces, Prometheus/Mimir for metrics). Whether such a receiver exists: `UNKNOWN`.
+  - Alloy log pipeline: the Loki entries showed raw Docker JSON (`{"log":"\n",...}`) and one entry
+    per line of a V8 crash dump. A `stage.docker {}` (or `loki.source.docker`), a `stage.json` +
+    `stage.labels` on `level`/`logger`, and a `stage.multiline` would fix that. The app now emits
+    one JSON line per record; Next's own banner lines stay plain text.
+- **Console bridge (2026-11-05):** server-side `console.*` is JSON too (ARCHITECTURE.md,
+  Observability). Browser `console.*` is not collected; a beacon route for browser errors would go
+  with the Web Vitals work below.
+- **Found while checking the bridge, not fixed:** in a production build the error a `get*()`
+  wrapper catches from its `"use cache"` function is Next's sanitized "Server Components render"
+  error (digest only), not the `ApiError`. So `err instanceof ApiError` is false and the degraded
+  state is always `kind: "unknown"` ("Could not load"), never "Backend unreachable". Next logs the
+  real `ApiError` itself (logger `console`, same `digest`). Unit tests do not see it: they call the
+  function without Next's cache layer.
+- **Not done:** browser Web Vitals (LCP/INP/CLS per page). Needs a beacon route on the frontend
+  that turns them into OTel metrics; worth it once traces are flowing.
+- **Backend:** instrumenting FastAPI with OpenTelemetry would join its spans to the frontend's
+  traces (the header is already sent).
+
 ## Deployment settings: base path, OpenSearch TLS and startup (2026-10-27, branch `feat/deploy-config`)
 
 Backend: `opensearch_config.py` (URL, basic auth, TLS verification, CA bundle), the startup rule and
@@ -113,9 +144,10 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
   next major), the `/processors` HTML carries the page data twice: 759 KB raw / 130 KB gzip,
   versus 393 KB / 67 KB with it off (measured locally). Options if it matters: keep it off for now,
   or stop sending every release's notes up front (load the selected release's notes on demand).
-- **Cold-cache latency.** The first request after the cache expires (`expire` 3600 s, or a fresh
-  process) takes ~7 s: fetch plus sanitizing 228 release notes with jsdom. Warm requests ~45 ms.
-  The default cache handler is in-memory per process.
+- **Cold-cache latency.** The first `/processors` request of a fresh process takes ~7 s: fetch
+  plus sanitizing 228 release notes with jsdom. Since 2026-11-04 the sanitizer memoizes by input, so
+  later revalidations and cache expiries re-sanitize only new or changed notes. Warm requests
+  ~45 ms. The default cache handler is in-memory per process.
 - Backend failures render the degraded state with **HTTP 200** (the response cannot change status
   once rendering has started); search engines could index the degraded page during an outage.
 - `pnpm memory:check` (AGENTS.md §0) **does not exist: there is no root `package.json`.** The repo
@@ -204,6 +236,10 @@ From `~/work/SentiBoard/design/react-mockups/BACKEND-FINDINGS.md` and earlier fi
   processor template. maas-model 3.3.0 has `ApiList` and is pinned in `requirements.txt`, so this
   is live once the backend is deployed. Then check that `GET /processor/` returns 200 for the records
   with null lists (`target_ipfs`: 5 records, `satellite_units`: 3 records).
+  Checked 2026-11-05: the image `cscocs/sentiboard-backend:2.6.1` (Docker Hub) has maas-model
+  3.3.0 (`pip show`), with `ApiList` and `list_documents(size=)`; the generated schemas, routers
+  and documents in the repo match maas-model 3.3.0's generators exactly (fastapigen byte for
+  byte, pygen apart from the date line). The live `GET /processor/` 200 is still not checked.
 - **Literal `"undefined"` versions.** 3 `target_ipfs` values carry the literal `undefined` as the
   version (e.g. `S1_L1L2:undefined`). The adapter treats it as "no version" and falls back to
   `processing_baseline`. The backend developer is fixing it in the migration (`map_release`) on the backend branch (2026-10-22).
