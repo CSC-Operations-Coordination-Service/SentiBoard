@@ -2,6 +2,19 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Data Availability — Session 1 static shell (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+`src/features/availability/copy.tsx`, `src/features/availability/availability.module.css`,
+`src/app/availability/page.tsx` created. ESLint, `tsc --noEmit`, 296/296 tests, `pnpm build` all clean.
+
+- **What is in:** `PageHeader` (title + §9 description copy + completeness legend), `SpaceBackdrop page={1}`, counters block (static 0/—/0/0 placeholders), toolbar shell (range heading "Last 30 days" + 1D/7D/30D/CUSTOM buttons with correct CSS; 30D marked active).
+- **What is not in yet:** pager, From/To, Mission/Status dropdowns, search, Reset, strips, tooltip, datatake card (Sessions 2–4).
+- **`SpaceBackdrop page={1}`:** confirmed from the component's own JSDoc — "page 1 = Data Availability, middle third: the top of the globe, almost flat".
+- **CSS module:** full 954-line mockup module ported verbatim; all classes present for Sessions 2–4.
+- **No new tokens in tokens.css:** `--bandh` is defined on `.mapInner` in the CSS module (page-local, as in the mockup).
+- **`ported: false`** and `noindex` metadata unchanged.
+- **Next:** Session 2 — URL state, toolbar controls, KPI computations, mock data. Requires Decisions for Ana #1 (Coverage gaps formula) and #7 (URL param names) before starting.
+
 ## Frontend OOM fix, structured logs, OpenTelemetry (2026-11-04, branch `fix/frontend-oom-observability`)
 
 Cause, fix and measurements: DECISIONS.md, same date. Tests 287, lint and `type-check` clean,

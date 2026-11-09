@@ -1,0 +1,953 @@
+/* -------------------- counters -------------------- */
+/* Flat stats, centred as one group: 220px per figure, value above label, all in Noto Sans. */
+.counters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+  background: none;
+  border: 0;
+}
+
+.counter {
+  width: clamp(140px, 16vw, 220px);
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.counterK {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+}
+
+.counterV {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #eaf0f6;
+}
+
+.counterV.crit {
+  color: #e8514b;
+}
+
+/* -------------------- heatmap -------------------- */
+/* The map sits flat on the page: no panel box, no header or footer rule. */
+.panel {
+  max-width: 100%;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+  padding-top: clamp(12px, 1.4vw, 18px);
+  margin-bottom: 18px;
+}
+
+/* The page spans the viewport, like the navbar: the same side padding, and no 1320px cap. */
+.page {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: clamp(18px, 4vw, 48px);
+  padding-block: clamp(56px, 8vw, 120px);
+}
+
+.page {
+  position: relative;
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px); /* room for the planet */
+}
+
+.page > :not(:first-child) {
+  position: relative;
+  z-index: 1; /* content above the stars */
+}
+
+.mapScroll {
+  overflow: visible;
+}
+
+.mapInner {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  --bandh: clamp(74px, 16.5vh, 190px);
+}
+
+/* ---------- one row per mission (SentiBoard.html#data-availability) ----------
+   Fixed-height band: label and strip centred at 66%, axis at 90%, 10px between bands. */
+.mapRow {
+  position: relative;
+  height: var(--bandh);
+  margin-bottom: 10px;
+  overflow: visible;
+}
+
+.mapRowContainer:last-child .mapRow {
+  margin-bottom: 0;
+}
+
+.mapLabel {
+  position: absolute;
+  left: 0;
+  top: 66%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 56px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.mapLabel b {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.95);
+}
+
+.lane {
+  position: absolute;
+  left: 60px;
+  right: 4px;
+  top: 66%;
+  height: 46%;
+  transform: translateY(-50%);
+  z-index: 2;
+  /* clip horizontal overflow of bars at the strip edges (Decision 8); vertical zoom overflows freely */
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+/* ---------- the strip ----------
+   Fills the lane (inset: 0). Zoom is applied here (scale), with ZOOM_OUT as the default
+   (going-back) curve and ZOOM_IN via .trackZoom when picking a bar. */
+.track {
+  position: absolute;
+  inset: 0;
+  transition: transform 700ms cubic-bezier(0.8, 0, 0.8, 0.3);
+}
+
+.trackZoom {
+  transition: transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.trackNone {
+  position: absolute;
+  left: 4px;
+  top: 6px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 70%, transparent);
+}
+
+.tile {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  width: clamp(3px, var(--tw), 30px);
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 1px solid #eaf0f6;
+  border-radius: 1px;
+  background: var(--c);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 200ms ease;
+  animation: tileIn 420ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+@keyframes tileIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(10px) scaleY(0.4); }
+  to { opacity: 1; transform: translateX(-50%); }
+}
+
+.tile:hover {
+  z-index: 3;
+  transform: translateX(-50%) scale(1.12, 1.16);
+}
+
+/* the picked bar: a white ring and a little lift, on top of the strip's zoom */
+.tileSelected,
+.tileSelected:hover {
+  z-index: 4;
+  transform: translateX(-50%) scale(1.16, 1.2);
+  box-shadow: 0 0 0 1.5px #fff, 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+/* while a bar is picked, every other bar steps back */
+.tileFaded {
+  opacity: 0.45;
+}
+
+.tile:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---------- the date axis: absolutely positioned at 90% of the band, flush with the strip ---------- */
+.axis {
+  position: absolute;
+  left: 60px;
+  right: 4px;
+  top: 90%;
+  height: 18px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 22%, transparent);
+  transition: opacity 320ms ease;
+}
+
+.axisTick {
+  position: absolute;
+  top: 5px;
+  transform: translateX(-50%);
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(234, 240, 246, 0.6);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px rgba(6, 9, 13, 0.95), 0 0 10px rgba(6, 9, 13, 0.7);
+}
+
+/* a small tick above each label */
+.axisTick::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -5px;
+  width: 1px;
+  height: 4px;
+  background: color-mix(in srgb, var(--text) 40%, transparent);
+}
+
+.axisFirst { transform: none; }
+.axisFirst::before { left: 0; }
+.axisLast { transform: translateX(-100%); }
+.axisLast::before { left: auto; right: 0; }
+
+/* the zoomed row's date axis steps aside while its strip is magnified */
+.axisHidden {
+  opacity: 0;
+}
+
+/* -------------------- bar hover tooltip (§6.5) -------------------- */
+.tip {
+  position: fixed;
+  z-index: 55;
+  display: none;
+  pointer-events: none;
+  width: max-content;
+  min-width: 226px;
+  max-width: 300px;
+  padding: 15px 17px;
+  border-radius: 14px;
+  background: rgba(9, 13, 18, 0.96);
+  border: 1px solid color-mix(in srgb, var(--text) 18%, transparent);
+  box-shadow: 0 20px 44px rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  font-family: var(--font-sans);
+}
+
+.tipOn {
+  display: block;
+  animation: tipFade 160ms ease backwards;
+}
+
+@keyframes tipFade {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+.tipH {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.tipTwo {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 13px;
+}
+
+.tipTwo em {
+  display: block;
+  font-style: normal;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+}
+
+.tipTwo b {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.tipWhen {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 5px 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.tipWhen span {
+  align-self: center;
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 45%, transparent);
+}
+
+.tipWhen b {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--text) 88%, transparent);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track,
+  .trackZoom,
+  .tile,
+  .axis,
+  .fdropBody,
+  .tipOn {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* -------------------- filters: one toolbar row (SentiBoard.html) --------------------
+   One centred, wrapping row, 34px between items, everything 49px tall and in Noto Sans: the range
+   heading, 1D/7D/30D/Custom, the date pager, Mission, Status, the search and Reset. The two
+   .filterGroup wrappers are dissolved (display: contents) so every item shares the same gap. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px 34px;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding-bottom: clamp(10px, 1.6vw, 20px);
+  font-family: var(--font-sans);
+  color: #eaf0f6;
+}
+
+.filterGroup {
+  display: contents;
+}
+
+.fhead {
+  height: 49px;
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.fhead h2 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  color: #eaf0f6;
+}
+
+/* 1D 7D 30D CUSTOM */
+.frange {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.frange button {
+  height: 49px;
+  padding: 0 1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 72%, transparent);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+/* hover: no change — 0.72 opacity is the resting state (§3) */
+
+.frange button[aria-pressed="true"] {
+  color: var(--text);
+  border-bottom-color: #2fc6dc;
+}
+
+/* ‹  2026-08-20 → 2026-09-19 📅  › */
+.pager {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 49px;
+  white-space: nowrap;
+}
+
+.pagerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  cursor: pointer;
+  color: var(--text);
+}
+
+/* hover: no change (§3.1) */
+
+.pagerBtn:disabled {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.plabel {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 190px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: #eaf0f6;
+}
+
+.plabel:hover {
+  color: var(--text);
+}
+
+/* From / To (Custom only) — Decision 7: inputs' hairline sits on the shared 49px bottom edge */
+.fdates {
+  height: 49px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 8px;
+  padding-bottom: 0;
+}
+
+.fdates label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+
+.fdatesMicro {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.fdate {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fdates input {
+  min-height: 38px;
+  width: 150px;
+  padding: 0 2px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 0;
+  background: none;
+  color-scheme: dark;
+  cursor: text;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #eaf0f6;
+  outline: none;
+}
+
+.fdates input:hover,
+.fdates input:focus {
+  border-bottom-color: color-mix(in srgb, var(--text) 34%, transparent);
+}
+
+.fdates input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
+.fcal {
+  position: absolute;
+  right: 4px;
+  width: 28px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* Mission and Status: an underlined field whose list opens in flow and pushes the page down */
+.fdrop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 176px;
+  width: auto;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+.fdropHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  color: #eaf0f6;
+  text-align: left;
+}
+
+.fdropLabel {
+  flex: 1 1 auto;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* caption turns cyan on hover/open; hairline stays rgba(255,255,255,.30) */
+.fdropHead:hover .fdropLabel,
+.fdropHead[aria-expanded="true"] .fdropLabel {
+  color: #2fc6dc;
+}
+
+.fdropVal {
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--text) 92%, transparent);
+}
+
+.fdropHead svg {
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--text) 85%, transparent);
+}
+
+/* in-flow dropdown body: grid rows animate 0fr → 1fr (420ms) */
+.fdropBody {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.fdropInner {
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.fdropPad {
+  padding: 12px 0 16px;
+}
+
+.fitem {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 90%, transparent);
+  transition: color 180ms ease, opacity 180ms ease;
+}
+
+.fitem i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.fitem u {
+  flex: 1;
+  text-decoration: none;
+}
+
+.fitemMission {
+  gap: 0;
+}
+
+.fitemOff {
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+  opacity: 0.3;
+}
+
+/* 🔍 Datatake ID */
+.fsearch {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 210px;
+  height: 49px;
+  padding-bottom: 2px;
+  color: var(--text);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 30%, transparent);
+  transition: border-color 0.2s ease;
+}
+
+.fsearch input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 1px 2px;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.fsearch input::placeholder {
+  color: var(--text);
+  opacity: 1;
+}
+
+.freset {
+  display: flex;
+  align-items: center;
+  height: 49px;
+  padding: 1px 6px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+  transition: color 0.2s ease;
+}
+
+@media (max-width: 900px) {
+  .counter { width: clamp(130px, 44vw, 200px); }
+}
+
+@media (max-width: 760px) {
+  .fhead { width: 100%; }
+  .fsearch { min-width: 140px; }
+}
+
+/* -------------------- the datatake card (SentiBoard.html#data-availability) --------------------
+   Opens under the strip whose bar was picked, aligned with the strip (past the 60px row label).
+   ID and time on top, then one wrapping row: the two completeness rings, and the key/value list.
+
+   Type is deliberately brighter than the reference: its --ink4 (#4E5866) and --ink3 (#6B7686)
+   read as near-black on the starfield, so captions here sit at 62–78% white and the values at full
+   white, and the smallest labels are a step larger. The ink ramp lives in three variables so it
+   can be tuned in one place. */
+.dtkCard {
+  --card-ink: var(--text);
+  --card-ink-2: rgba(234, 240, 246, 0.78); /* time, ring titles, legends */
+  --card-ink-3: rgba(234, 240, 246, 0.62); /* keys, "COMPLETENESS" */
+  margin: 4px 0 14px 60px;
+  overflow: hidden;
+  border-top: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 16%, transparent);
+  color: var(--card-ink);
+  font-family: var(--font-sans);
+}
+
+.dtkHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 2px 0;
+}
+
+.dtkHead b {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--card-ink);
+}
+
+.dtkClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: var(--card-ink-2);
+  transition: color 160ms ease;
+}
+
+.dtkClose:hover {
+  color: var(--text);
+}
+
+.dtkWhen {
+  padding: 6px 2px 0;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--card-ink-2);
+}
+
+.dtkBody {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: clamp(22px, 5vw, 70px);
+  padding: 18px 2px 22px;
+}
+
+.dtkRings {
+  display: flex;
+  gap: clamp(20px, 4vw, 54px);
+}
+
+/* one ring */
+.ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.ringTitle {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--card-ink-2);
+}
+
+.ringWrap {
+  position: relative;
+  width: 118px;
+  height: 118px;
+}
+
+.ringWrap svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ringMid {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  font-weight: 400;              /* the wrapper is a <b>; keep it from bolding the caption */
+}
+
+.ringMid em {
+  font-style: normal;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--card-ink-3);
+}
+
+.ringMid span {
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.ringLegend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--card-ink-2);
+}
+
+.ringLegend i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* key / value list */
+.dtkMeta {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 10px 22px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.dtkMeta dt {
+  align-self: center;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--card-ink-3);
+}
+
+.dtkMeta dd {
+  margin: 0;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--card-ink);
+}
+
+/* solid status badge in the band colour, dark text */
+.dtkBadge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #070b0f;
+}
+
+/* "COMPLETENESS": the reference's 6.5px caption */
+.dtkCard .ringMid em {
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-size: 6.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--text) 62%, transparent);
+}
+
+/* the percentage, in the band colour set inline */
+.dtkCard .ringMid span {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 480px) {
+  .dtkRings {
+    width: 100%;
+    justify-content: space-around;
+  }
+
+  .ringWrap {
+    width: 104px;
+    height: 104px;
+  }
+}
+
+/* -------------------- inline row expansion below tiles -------------------- */
+.mapRowContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pull the content up into the header's faded bottom, as in SentiBoard.html:
+   cancel the spacer PageHeader leaves for the Description panel and drop the page's own top
+   padding. The Description panel still pushes everything down when it opens. */
+.headArt + .page {
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding-top: 0;
+  background: transparent; /* let the header photo show through behind the counters */
+}
