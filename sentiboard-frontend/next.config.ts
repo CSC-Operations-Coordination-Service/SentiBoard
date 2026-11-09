@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
       { source: "/events.html", destination: "/events", permanent: true },
       { source: "/index.html", destination: "/", permanent: true },
       { source: "/index", destination: "/", permanent: true },
+      { source: "/acquisitions-status.html", destination: "/acquisitions-globe-earth", permanent: true },
+      { source: "/acquisitions-status", destination: "/acquisitions-globe-earth", permanent: true },
     ];
   },
 };

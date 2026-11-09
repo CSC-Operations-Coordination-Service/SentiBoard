@@ -2,6 +2,24 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 1b: route shells (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/copy.ts` — SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE
+- `src/features/acquisitions/acq-globe.module.css` — `.page` and `.empty` (Slice 2 extends)
+
+Updated files:
+- `src/app/acquisitions-globe-earth/page.tsx` — full route with metadata, Suspense, AcquisitionsContent
+- `src/app/acquisitions-globe/page.tsx` — same; canonical → `/acquisitions-globe-earth`
+- `sentiboard-frontend/next.config.ts` — 308 redirects for `/acquisitions-status.html` and `/acquisitions-status`
+- `sentiboard-frontend/src/app/sitemap.ts` — LEGACY_HINTS for both acquisitions routes (daily, 0.9)
+
+ESLint, `tsc --noEmit`, 418/418 tests, `pnpm build` all clean. Both routes show as `◐` (PPR).
+
+- **`Date.now()` blocked by `react-hooks/purity` ESLint rule** in render context. Used `new Date()` instead (same semantics; matches `availability/page.tsx` pattern). Slice 2 uses `now.getTime()` to get `nowMs` for `AcquisitionsGlobe`.
+- **Slice 7 — future-start datatakes:** Decide how datatakes with a `startIso` in the future (ahead of the current wall-clock time during dayKey) are shown when real data arrives: hidden, labelled "PLANNED", or shown as-is. All mock datatakes start in the past so this only matters for the real endpoint.
+- **Next:** Session 1b is complete. Session 2 — globe engine (ThreeEarth, day/night and stylised Earth materials, zoom controls, cleanup).
+
 ## Acquisitions — Session 1a: data layer (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
 
 New files:

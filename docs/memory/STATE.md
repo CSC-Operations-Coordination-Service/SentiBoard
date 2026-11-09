@@ -20,10 +20,12 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   - Legacy `/index.html` and `/index` redirect there with 308.
 - Remaining pages (acquisitions ×2, terms, cookie notice) are
   "coming soon" placeholders (noindex, not in the sitemap).
-- **Acquisitions — Session 1a done (2026-11-09, branch `feature/DEVOCS-219-acquisitions`):**
-  data layer only. New shared lib: `src/lib/missions.ts`, `src/lib/url-params.ts`.
-  New feature files: types, mock-data (11 datatakes, removed in Slice 7), adapter, model, data (`"use cache"` getAcquisitions), url-state. 418 tests pass.
-  Session 1b (routes, Suspense, metadata) is next.
+- **Acquisitions — Slice 1 done (Sessions 1a + 1b, 2026-11-09, branch `feature/DEVOCS-219-acquisitions`):**
+  Full data layer + route shells. Both `/acquisitions-globe` and `/acquisitions-globe-earth` render as PPR
+  pages with PageHeader + Suspense-wrapped `AcquisitionsContent`. 308 redirects for
+  `/acquisitions-status(.html)` → `/acquisitions-globe-earth`. Sitemap hints ready for when
+  `ported` flips. 418 tests pass. Build clean.
+  Session 2 (globe engine: ThreeEarth, materials, zoom) is next.
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.

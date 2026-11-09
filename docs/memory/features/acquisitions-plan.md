@@ -1,4 +1,4 @@
-State: PLANNED
+State: IN_PROGRESS
 
 # Acquisitions Status — implementation plan
 

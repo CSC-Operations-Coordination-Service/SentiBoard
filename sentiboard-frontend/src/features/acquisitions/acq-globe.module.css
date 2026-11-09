@@ -1,0 +1,22 @@
+/* Acquisitions globe page wrapper and shared states.
+   Slice 2 extends this file with globe, simulation bar and filter toolbar styles. */
+
+.page {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: clamp(18px, 4vw, 48px);
+  padding-block: clamp(40px, 6vw, 80px);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+}
