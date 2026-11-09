@@ -565,3 +565,54 @@ OTLP, so no line is shipped twice.
 pass peaks at ~+18 MB instead of ~+600 MB. A future sanitizer caller should keep both rules: no
 `Range`, and no long synchronous loop over un-memoized notes. Telemetry costs nothing until
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set; the deployment decides where it goes.
+
+## 2026-11-09 — Data Availability Session 2: three decisions resolved
+
+**#1 Coverage gaps KPI formula.** The KPI counts *satellite-days with no matching datatake* (the
+prototype's formula): for every (satellite, calendar day) pair in the active window, if zero
+datatakes pass the mission+status+search filters for that pair, it counts as one gap. This matches
+the operational meaning (a hole in the daily schedule). Implemented in `kpiStats()` in
+`src/features/availability/model.ts`.
+
+**#7 URL search params.** Confirmed as proposed: `range=1|7|30|custom`, `offset=N`, `from=YYYY-MM-DD`,
+`to=YYYY-MM-DD`, `missionsOff=S1,S2,...`, `statusesOff=Planned,...`, `q=<id>`, `pick=<id>`.
+Multi-select toggles store what is OFF so the default URL stays clean. Implemented in
+`src/features/availability/url-state.ts`.
+
+**#14 DELAYED status.** DELAYED is shown as Processing for now; `statusesOff=Processing` hides both.
+The `Status` type in `model.ts` has five values (Planned, Processing, Acquired, Partial, Unavailable).
+The adapter (Session 5) will map DELAYED → Processing.
+
+## 2026-11-09 — Data Availability Session 4: three card decisions resolved
+
+**#2 Sensor mode row in the card.** Kept. The description copy mentions sensor mode and the real data
+(`instrument_mode`) carries it. The `Sensor mode` row appears between Platform and Start date in the
+metadata `<dl>`.
+
+**#3 Card contrast.** Using the brighter ink ramp: `--card-ink-2 rgba(234,240,246,.78)` for time,
+ring titles and legend text; `--card-ink-3 rgba(234,240,246,.62)` for keys and "COMPLETENESS". The
+prototype's `#6B7686`/`#4E5866` read as near-black on the starfield. The three variables are defined
+on `.dtkCard` so they can be tuned in one place.
+
+**#4 Processing card.** Acquisition ring: `"—"` and grey (`#7A8696`), no arc drawn. Badge reads
+`ACQUIRED`. Publication ring shows a partial simulated value with `PROCESSING` label and blue
+(`#5B9BE8`). This keeps one rule for Planned and Processing acquisition display and matches the
+prototype ref Decision 6.
+
+## 2026-11-09 — Client-only portal guard
+
+Client-only portals use a `useSyncExternalStore` guard (subscribe: no-op, `getSnapshot: () => true`, `getServerSnapshot: () => false`), never `typeof document/window` checks in render.
+
+## 2026-11-09 — Data Availability: push to develop without mock data (Anthony)
+
+**Context.** Sessions 1–4 are complete. The real `GET /datatake/` endpoint does not exist yet.
+Pushing `feature/DEVOCS-219-data-availability` to develop with mock data was reconsidered because
+mock data is dead weight on the main branch and the page is `noindex` / `ported: false` anyway.
+**Decision.** Remove `mock-data.ts` and all runtime uses before merging. `getDatatakes()` in
+`src/features/availability/data.ts` returns `[]` for now. The page renders an empty-state message
+("Datatake data is not available yet.") in place of the strips; KPIs show 0 / "—". The toolbar
+renders normally. The window (`windowStart`/`windowLast`) is now computed by `computeDataWindow(now)`
+in `model.ts` instead of `getMockWindow()` in mock data. Session 5 replaces the stub with the real
+API call once the backend endpoint exists.
+**Consequences.** No mock data on `develop`. Empty state visible at `/availability` until Session 5.
+Tests that used `mkDtk` already defined their own fixture helper; no `__fixtures__/` migration needed.

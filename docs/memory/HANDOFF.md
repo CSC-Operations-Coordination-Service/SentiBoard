@@ -2,6 +2,111 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Data Availability — push without mock data, empty state (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated files: `src/features/availability/data.ts` (new), `src/features/availability/model.ts`,
+`src/features/availability/model.test.ts`, `src/features/availability/copy.tsx`,
+`src/features/availability/Explorer.tsx`, `src/app/availability/page.tsx`,
+`src/features/availability/availability.module.css`.
+Deleted: `src/features/availability/mock-data.ts`.
+ESLint, `tsc --noEmit`, 369/369 tests, `pnpm build` all clean.
+
+- **Decision (Anthony 2026-11-09):** push to develop without mock data; real endpoint comes in Session 5.
+- **mock-data.ts removed.** `getDatatakes()` in `data.ts` returns `[]`. Page computes the window via
+  `computeDataWindow(now)` exported from `model.ts` (3 new tests).
+- **Empty state:** when `datatakes` is empty the strips area shows one message ("Datatake data is not
+  available yet.") instead of four empty strips. KPIs show 0 / "—". Toolbar works normally.
+- **`ported: false`** and `noindex` metadata unchanged.
+- **Next:** Session 5 — implement `getDatatakes()` with the real `GET /datatake/` endpoint, remove the
+  empty state. Requires backend endpoint and `api/openapi.json` update.
+
+## Data Availability — Session 4 follow-ups: no-anim reload + extract DatatakeCard (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated files: `src/features/availability/Explorer.tsx`, new `src/features/availability/DatatakeCard.tsx`.
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+- **Reload with `?pick=`:** card now appears already open with no open animation. `cardItem`,
+  `cardMission`, `cardPhase` are initialized via lazy `useState` initializers from `view.pick` and
+  `lanes`. `cardPhase` initializes to `"swap"` (instant display) when a pick is in the URL.
+  `prevPickRef` is seeded to `view.pick` so the pick-sync effect returns early on first render
+  and does not re-trigger the already-open card.
+- **Extraction:** `Ring` and `DatatakeCard` moved to `src/features/availability/DatatakeCard.tsx`
+  (default export `DatatakeCard`, named export `type CardPhase`). Explorer imports from there.
+
+## Data Availability — Session 4 datatake card (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated file: `src/features/availability/Explorer.tsx`.
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+- **What is in:** `DatatakeCard` component with height-grow open (560 ms), height-shrink close (560 ms),
+  instant swap. `Ring` SVG component (viewBox 0 0 70 70, r 27, track rgba .14, arc in side colour, no
+  draw-in animation). Metadata rows: Data take ID, Platform, Sensor mode, Start date, Stop date,
+  Acquisition badge, Publication badge (Decision #2: sensor mode kept; Decision #3: brighter ink;
+  Decision #4: Processing → grey ring / "—" / ACQUIRED badge). × button `aria-label="Close details"`;
+  focus returns to the picked bar on close (from `barBtnRefs` map, restored in `onClosed` via rAF).
+  Card opens driven by `?pick=` in the URL (reload or shared link shows it open). Closes on Escape,
+  × button, clicking the same bar again, Reset, range/pager changes (all navigate to `pick: null`).
+  Filter removal that hides the picked datatake: deferred `navigate({ pick: null })` via `setTimeout(0)`.
+  Instant open/close under `prefers-reduced-motion`. `ported: false` and `noindex` unchanged.
+- **Decisions recorded:** DECISIONS.md 2026-11-09 session 4 entry (#2, #3, #4); plan updated.
+- **What is not in yet:** real data (Session 5).
+- **Next:** Session 5 — real data wiring (requires backend datatake endpoint and `openapi.json` update).
+
+## Data Availability — Session 3 strips, zoom, axis, tooltip (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated file: `src/features/availability/Explorer.tsx`.
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+- **What is in:** four mission bands (S1/S2/S3/S5P) with folded bars from `framesOf` and `barColor`.
+  Entrance animation (900 ms stagger) on load, range change, Custom apply and Reset; `animation: none`
+  on all other renders; suppressed by `prefers-reduced-motion` via CSS. Date axis per band with
+  `axisTicks` ticks (5 intervals, 4 for ≤3-day windows; `DD/MM` or `DD/MM HH:00` for short windows;
+  first/last ticks flush-aligned). "No datatakes in range" empty state.
+- **Zoom:** clicking a bar stores its ID in `?pick=`, scales the row's `.track` to 1.9× from the
+  bar's `offsetLeft`, fades all other bars (`.tileFaded`), hides the row's axis (`.axisHidden`).
+  Click the same bar → zoom out. Escape also zooms out (dropdown closes first if open). Range change,
+  Custom apply, Reset all pass `pick: null` and clear zoom. Origin persists per row in local state;
+  falls back to `leftPct%` for reloads with pick in URL.
+- **Tooltip:** single fixed `<div>` portal on `document.body` (created after mount). Populated on
+  bar `mouseenter` and keyboard `focus`; hidden on `mouseleave`, `blur` and scroll. Content: ID,
+  Acquisition %, Publication % (via `cardSides`), Start/Stop UTC HH:MM. Position: `clientX+18,
+  clientY−h−14`; right-overflow flips to `clientX−w−18`; top-overflow drops to `clientY+20`.
+- **Bar buttons:** `aria-label="<id> <status>"`. `tileSelected` ring on the picked bar.
+- **Animation state management:** `animating` starts `true` from `useState`; mount effect schedules
+  `setAnimating(false)` via `setTimeout` (not synchronously in the effect body — avoids the
+  `react-hooks/set-state-in-effect` rule). `navigateWithAnim` sets `animating=true` in event
+  handler context and restarts the 900 ms timer. No `animKey` state.
+- **`ported: false`** and `noindex` metadata unchanged.
+- **What is not in yet:** datatake card (Session 4).
+- **Next:** Session 4 — datatake card (inline panel, two SVG rings, metadata table, height animation).
+
+## Data Availability — Session 2 URL state, toolbar, KPIs, mock data (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+New files: `src/features/availability/mock-data.ts`, `src/features/availability/model.ts`,
+`src/features/availability/model.test.ts`, `src/features/availability/url-state.ts`,
+`src/features/availability/url-state.test.ts`, `src/features/availability/Explorer.tsx`.
+Updated: `src/app/availability/page.tsx` (uses Explorer inside `<Suspense>`),
+`src/features/availability/availability.module.css` (added `fdropOpen` CSS visibility pattern).
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+Decisions recorded (see DECISIONS.md 2026-11-09): #1 coverage gaps = satellite-days with no datatake;
+#7 URL params confirmed; #14 DELAYED → Processing for now.
+
+- **What is in:** full toolbar (range heading, 1D/7D/30D/Custom buttons, pager ‹›, arrow keys, From/To,
+  Mission + Status multi-toggle dropdowns, search, Reset) driven by URL with `history.pushState`; four
+  KPIs computed live from mock data; `framesOf`, `axisTicks`, `barColor`, `cardSides`, `kpiStats` as
+  pure functions with 70 tests.
+- **Dropdown CSS visibility:** `fdropHead[aria-expanded="true"] ~ .fdropBody` selector drives
+  `grid-template-rows` animation; `fdropInner` has `visibility: hidden` by default, revealed on open —
+  no `inert` on server-rendered elements (avoids React 19 hydration mismatch).
+- **Mock data:** `src/features/availability/mock-data.ts` generates 900 datatakes with the same seeded
+  RNG and outage windows as the mockup's `mock.ts`. Temporary — replaced in Session 5.
+- **URL state:** `src/features/availability/url-state.ts` follows the events/processors pattern;
+  `pick` param reserved for the datatake card (Session 4).
+- **`ported: false`** and `noindex` metadata unchanged.
+- **What is not in yet:** strip bands (Session 3), datatake card and tooltip (Session 4).
+- **Next:** Session 3 — strip bands with folded bars, zoom, axis, entrance animation.
+
 ## Frontend OOM fix, structured logs, OpenTelemetry (2026-11-04, branch `fix/frontend-oom-observability`)
 
 Cause, fix and measurements: DECISIONS.md, same date. Tests 287, lint and `type-check` clean,
