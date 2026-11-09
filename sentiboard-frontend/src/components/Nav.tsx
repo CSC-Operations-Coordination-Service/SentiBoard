@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
+import { asset } from "@/lib/asset";
 
 type NavItem = { to: string; label: string };
 type NavGroup = { label: string; children: NavItem[] };
@@ -78,7 +79,7 @@ export default function Nav({ partners }: { partners: ReactNode }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             className="brand-logo"
-            src="/assets/img/sentiboard.png"
+            src={asset("/assets/img/sentiboard.png")}
             alt="SentiBoard"
           />
         </Link>

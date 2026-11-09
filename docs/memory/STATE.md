@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-10-27 (branch `feature/DEVOCS-219-home`).
+Last updated: 2026-11-04 (branch `fix/frontend-oom-observability`).
 
 ## Frontend (`sentiboard-frontend/`)
 
@@ -22,7 +22,11 @@ Last updated: 2026-10-27 (branch `feature/DEVOCS-219-home`).
   "coming soon" placeholders (noindex, not in the sitemap).
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
-- Automated tests: `pnpm test` (Vitest, 273 tests as of 2026-10-27), runnable with no backend and no network.
+- Automated tests: `pnpm test` (Vitest, 287 tests as of 2026-11-04), runnable with no backend and no network.
+- **Observability (2026-11-04):** structured JSON server logs (`src/lib/log.ts`), `onRequestError`
+  logging, opt-in OpenTelemetry traces + Node runtime metrics over OTLP
+  (`src/instrumentation*.ts`). Fixed a jsdom memory leak in the release-notes sanitizer that
+  crashed the deployed container (DECISIONS.md 2026-11-04).
 
 ## Backend (`sentiboard-backend/`)
 

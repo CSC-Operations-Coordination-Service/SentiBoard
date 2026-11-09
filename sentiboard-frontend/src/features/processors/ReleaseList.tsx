@@ -5,6 +5,7 @@
 import x from "./explorer.module.css";
 import { isoDay, laneName, type ProcessorGroup } from "./model";
 import { viewHref, type ProcessorsView } from "./url-state";
+import { withBasePath } from "@/lib/asset";
 
 export default function ReleaseList({
   groups,
@@ -39,7 +40,7 @@ export default function ReleaseList({
             {[...releases].reverse().map((r) => (
               <li key={r.id}>
                 <a
-                  href={viewHref({ ...view, release: r.id })}
+                  href={withBasePath(viewHref({ ...view, release: r.id }))}
                   aria-current={view.release === r.id ? "true" : undefined}
                 >
                   <span>{r.baseline}</span>

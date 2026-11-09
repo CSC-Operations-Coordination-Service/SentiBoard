@@ -16,13 +16,13 @@ from collections import Counter
 
 from bson import decode_file_iter
 from maas_model.schema_adapter import schema_to_document
-from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 from pydantic import ValidationError
 
 from documents.processor import Processor as ProcessorDocument
 from schemas.processor import Processor
-from setup_indices import OPENSEARCH_URL, setup
+from opensearch_config import new_client
+from setup_indices import setup
 
 
 def load(path):
@@ -98,4 +98,4 @@ def run(releases, client, apply=False):
 
 
 if __name__ == "__main__":
-    run(load(sys.argv[1]), OpenSearch(OPENSEARCH_URL), apply="--apply" in sys.argv)
+    run(load(sys.argv[1]), new_client(), apply="--apply" in sys.argv)

@@ -3,6 +3,7 @@
 
 import type { EventCategory } from "./model";
 import { CategoryIcon, CATEGORY_COLOR } from "./event-types";
+import { asset } from "@/lib/asset";
 
 /** Collapsible description panel content, ported from the prototype's EventsManifest. */
 export function EventsDescription() {
@@ -81,7 +82,7 @@ export function EventsDescription() {
 export const EVENTS_TITLE = "Events";
 export const EVENTS_SUBTITLE =
   "Every occurrence across the constellation, mapped onto the datatakes it puts at risk. Pick a day to inspect its events, their origin and the completeness they cost.";
-export const EVENTS_HERO_IMG = "/assets/img/modules/events.jpg";
+export const EVENTS_HERO_IMG = asset("/assets/img/modules/events.jpg");
 
 export const SEO = {
   title: "Copernicus Sentinel Events & Anomalies | Mission Calendar",

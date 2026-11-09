@@ -507,3 +507,61 @@ can be prerendered as a static shell (PPR). Applied to `/`: `NewsBarContent` is 
 request-time component; the hero, module panels and FAQ remain in the static shell.
 **Consequences.** `pnpm build` succeeds with no backend present. The home page shows as `◐`
 (Partial Prerender) in the route table. Pages added in future must follow the same pattern.
+
+## 2026-10-27 — The backend starts without OpenSearch, and refuses to start when it is wrong
+**Context.** The backend installs its index templates and first indices at startup, so it writes to
+OpenSearch. It used to exit on any failure, including an OpenSearch that was merely down, and it
+printed (and ignored) a conflicting plain index. In the swarm a rolling update starts the new task
+before stopping the old one, so what the new task does at start decides whether an update is safe.
+**Decision.** Startup splits failures in two. OpenSearch unreachable (connection refused, timeout,
+DNS): the API starts, retries the setup every 30 s in the background, and answers 503 on the routes
+that need OpenSearch. Anything else (rejected credentials, a TLS error, a template OpenSearch
+refuses, a plain index where the alias should be): the process exits before it is ever healthy, so
+the update stops on the new task and the old one keeps serving. A TLS error is a connection error
+in the client library, but waiting does not fix it, so it counts as the second kind. `/healthz` is
+liveness (always 200), `/readyz` is readiness (OpenSearch answers and the indices are set up),
+`/health` is unchanged. OpenSearch is configured with `OPENSEARCH_URL`, `OPENSEARCH_USER` and
+`OPENSEARCH_PASSWORD`, `OPENSEARCH_VERIFY_CERTS` (only `false` turns it off) and
+`OPENSEARCH_CA_CERTS` (`opensearch_config.py`).
+**Consequences.** An OpenSearch outage no longer restarts the API; the orchestrator should probe
+`/healthz`. The user the API runs as needs the right to put templates and create `anomaly-*`,
+`instantmessage-*`, `news-*` and `processor-*` indices. `setup()` raises `SetupError` for the
+conflicting index instead of printing it.
+
+## 2026-10-27 — The frontend is built for a sub-path with BASE_PATH
+**Context.** The swarm ingress routes `/sentiboard/frontend` to the frontend and does not strip the
+prefix, so the app must serve under it. Next.js reads `basePath` at build time.
+**Decision.** `next.config.ts` reads `BASE_PATH` (empty = served at `/`, otherwise `/a/b` with no
+trailing slash, checked at build). The Dockerfile takes it as a build argument and `frontend-ci.yml`
+passes `/sentiboard/frontend`. Next prefixes `<Link>`, `router.push` and `next/image` itself; raw
+`<a href>`, `<form action>`, `history.pushState/replaceState`, `<img src>` and `<source src>` are
+not, so those go through `withBasePath()` / `asset()` (`src/lib/asset.ts`, fed by
+`NEXT_PUBLIC_BASE_PATH`). Never wrap a value that goes to `<Link>` or the router: it would get the
+prefix twice.
+**Consequences.** One image serves one path. Serving the public site at `/` (the legacy host) needs
+a second build with an empty `BASE_PATH`. A new raw anchor, history call or asset URL must use the
+helpers, or it leaves the sub-path and answers 404 behind the ingress.
+
+## 2026-11-04 — Sanitizer memoized and Range-free; structured logs; opt-in OpenTelemetry
+
+**Context.** The deployed frontend died with "Ineffective mark-compacts near heap limit" (~250 MB
+heap) after 82 min; GC could free almost nothing. Measured locally: jsdom 30 tracks every `Range`
+and `NodeIterator` (DOMPurify makes one per call) through a `WeakRef`, and V8 keeps a WeakRef's
+target alive until the synchronous job ends. The processors adapter sanitized ~230 notes, several
+times each, in one job on every revalidation: ~600 MB pinned for one pass over the fixtures, plus
+a few MB kept after each pass. Logs reached Loki as free text with level "unk", and nothing showed
+the heap growing before the crash.
+**Decision.** `sanitize-html.ts` memoizes `sanitizeHtml`/`htmlToText`/`notesSection` by input (LRU,
+2000 entries) and replaces `Range.cloneContents()` with an equivalent DOM walk (`cloneBetween`;
+old and new outputs compared on the fixtures and edge cases, 0 differences). The processors loader
+calls `prepareNotes()` first, yielding a macrotask (`setImmediate`) between records; a microtask
+does not release the pinned objects. Server logging goes through `src/lib/log.ts` (JSON lines in
+production), and in production every other server-side `console.*` call is routed through it
+too (console bridge, 2026-11-05), so stray calls and Next's own messages are JSON as well.
+OpenTelemetry (Node SDK, OTLP, runtime metrics) starts only when an OTLP endpoint is configured;
+no vendor package (`@vercel/otel` not used). Logs stay on stdout (collected by alloy-logs), not
+OTLP, so no line is shipped twice.
+**Consequences.** After the first pass a revalidation does no jsdom work (0 s, heap flat); the first
+pass peaks at ~+18 MB instead of ~+600 MB. A future sanitizer caller should keep both rules: no
+`Range`, and no long synchronous loop over un-memoized notes. Telemetry costs nothing until
+`OTEL_EXPORTER_OTLP_ENDPOINT` is set; the deployment decides where it goes.

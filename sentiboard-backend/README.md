@@ -71,4 +71,24 @@ docker compose down -v     # stop and wipe all data
 | Variable | Default |
 |---|---|
 | `OPENSEARCH_URL` | `http://localhost:9200` (`http://opensearch:9200` in Docker) |
+| `OPENSEARCH_USER`, `OPENSEARCH_PASSWORD` | none: no authentication. Set both or neither |
+| `OPENSEARCH_VERIFY_CERTS` | `true`. Only the value `false` turns TLS verification off |
+| `OPENSEARCH_CA_CERTS` | none: the system CA store. A path to a CA bundle to trust instead |
 | `CORS_ORIGINS` | `http://localhost:3000` (comma-separated) |
+
+## Startup and probes
+
+At start the API installs the index templates and creates the first indices
+(`setup_indices.py`). It writes to OpenSearch, so its user needs that right.
+
+| situation at start | result |
+|---|---|
+| OpenSearch answers | indices set up, `/readyz` is 200 |
+| OpenSearch is unreachable | the API starts anyway and retries every 30 s. Routes that need OpenSearch answer 503, `/readyz` is 503 |
+| anything else: rejected credentials, a TLS error, a template or index that cannot be applied | the process exits before it is healthy, so a rolling update stops on the new task and the old one keeps serving |
+
+| probe | meaning |
+|---|---|
+| `/healthz` | liveness: 200 whenever the process answers, whatever OpenSearch does |
+| `/readyz` | readiness: 200 only when OpenSearch answers and the indices are set up |
+| `/health` | 200 when OpenSearch answers, 503 otherwise. Kept for existing callers |

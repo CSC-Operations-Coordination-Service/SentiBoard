@@ -17,7 +17,6 @@ import sys
 from collections import Counter
 
 from maas_model.schema_adapter import schema_to_document
-from opensearchpy import OpenSearch
 from opensearchpy.helpers import bulk
 from pydantic import ValidationError
 
@@ -27,7 +26,8 @@ from documents.news import News as NewsDocument
 from schemas.anomaly import Anomaly
 from schemas.instantmessage import Instantmessage
 from schemas.news import News
-from setup_indices import OPENSEARCH_URL, setup
+from opensearch_config import new_client
+from setup_indices import setup
 
 TABLES = [
     ("instantMessages", Instantmessage, InstantmessageDocument),
@@ -150,5 +150,5 @@ def run(db, client, apply=False, include_dashboard=False):
 if __name__ == "__main__":
     db = sqlite3.connect(f"file:{sys.argv[1]}?mode=ro", uri=True)
     db.row_factory = sqlite3.Row
-    run(db, OpenSearch(OPENSEARCH_URL), apply="--apply" in sys.argv,
+    run(db, new_client(), apply="--apply" in sys.argv,
         include_dashboard="--include-dashboard" in sys.argv)

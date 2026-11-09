@@ -1,3 +1,5 @@
+import { asset } from "@/lib/asset";
+
 /* Official partner logos (ESA, European Commission, Copernicus), each linking to the organisation.
    The artwork swaps with the theme: white / EU-flag versions on dark, dark-on-white versions on
    light. Both are rendered and CSS shows the right one (src/styles/shell.css), so this is a server
@@ -17,11 +19,11 @@ interface Partner {
 
 const PARTNERS: Partner[] = [
   { href: "https://www.esa.int/", alt: "ESA — European Space Agency",
-    dark: "/assets/img/esa_logo.png", light: "/assets/img/ESA_Logo_white.png", h: 30, hLight: 46 },
+    dark: asset("/assets/img/esa_logo.png"), light: asset("/assets/img/ESA_Logo_white.png"), h: 30, hLight: 46 },
   { href: "https://ec.europa.eu/info/index_en", alt: "European Commission",
-    dark: "/assets/img/ec_logo_white.png", light: "/assets/img/ec_logo_white_.png", h: 34, hLight: 40 },
+    dark: asset("/assets/img/ec_logo_white.png"), light: asset("/assets/img/ec_logo_white_.png"), h: 34, hLight: 40 },
   { href: "https://www.copernicus.eu/", alt: "Copernicus",
-    dark: "/assets/img/copernicus_logo.png", light: null, h: 22 },
+    dark: asset("/assets/img/copernicus_logo.png"), light: null, h: 22 },
 ];
 
 export default function Partners({ compact = false }: { compact?: boolean }) {

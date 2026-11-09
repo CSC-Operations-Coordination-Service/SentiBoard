@@ -3,6 +3,7 @@
 
 import type { ReactNode } from "react";
 import { ROUTES } from "@/lib/routes";
+import { asset } from "@/lib/asset";
 
 export interface Module {
   href: string;
@@ -17,7 +18,7 @@ export const MODULES: Module[] = [
   {
     href: ROUTES.acquisitionsGlobe.path,
     title: "Acquisitions Status",
-    img: "/assets/img/modules/acquisitions.jpg",
+    img: asset("/assets/img/modules/acquisitions.jpg"),
     desc: "Past, current and planned Sentinel acquisitions on an interactive 3D globe.",
     long: (
       <>
@@ -31,7 +32,7 @@ export const MODULES: Module[] = [
   {
     href: ROUTES.events.path,
     title: "Events",
-    img: "/assets/img/modules/events.jpg",
+    img: asset("/assets/img/modules/events.jpg"),
     desc: "Calibration activities, manoeuvres and anomalies that could impede data production.",
     long: (
       <>
@@ -45,7 +46,7 @@ export const MODULES: Module[] = [
   {
     href: ROUTES.availability.path,
     title: "Data Availability",
-    img: "/assets/img/modules/availability.jpg",
+    img: asset("/assets/img/modules/availability.jpg"),
     desc: "Real-time list of available collections delivered by the missions, with key metrics.",
     long: (
       <>
@@ -60,7 +61,7 @@ export const MODULES: Module[] = [
   {
     href: ROUTES.processors.path,
     title: "Processors",
-    img: "/assets/img/modules/processors.jpg",
+    img: asset("/assets/img/modules/processors.jpg"),
     desc: "The complete list of Copernicus Sentinel processor releases on an interactive timeline.",
     long: (
       <>

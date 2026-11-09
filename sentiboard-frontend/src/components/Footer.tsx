@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
 import { ROUTES } from "@/lib/routes";
+import { asset } from "@/lib/asset";
 
 /** From the prototype's src/data/about.ts. */
 const ABOUT_CONTACT_EMAIL = "sentiboard@coordination-service.eu";
@@ -36,7 +37,7 @@ export default function Footer() {
         <div className="footer-top">
           <Link href={ROUTES.home.path} className="footer-logo" aria-label="SentiBoard home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/img/sentiboard.png" alt="SentiBoard" />
+            <img src={asset("/assets/img/sentiboard.png")} alt="SentiBoard" />
           </Link>
           <nav className="footer-legal" aria-label="Legal">
             <Link href={ROUTES.terms.path}>Terms &amp; Conditions</Link>

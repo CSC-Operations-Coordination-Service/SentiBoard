@@ -6,6 +6,7 @@
 
 import "server-only";
 import type { components } from "@/lib/api/schema";
+import { logger } from "@/lib/log";
 import { utcDayMonthYearStr, utcTimeStr } from "@/lib/utc-date";
 
 export type ApiInstantMessage = components["schemas"]["Instantmessage"];
@@ -39,8 +40,8 @@ export function adaptInstantMessages(records: ApiInstantMessage[]): InstantMessa
   }
 
   if (nullCount > 0) {
-    console.info(
-      `[home] ${nullCount} instant message${nullCount === 1 ? "" : "s"} have no publication_date and are not shown.`,
+    logger("home").info(
+      `${nullCount} instant message${nullCount === 1 ? "" : "s"} have no publication_date and are not shown.`,
     );
   }
 

@@ -8,6 +8,7 @@
    no lane to sit on and is left out (reported in `unplaced`). */
 
 import "server-only";
+import { setImmediate as yieldToEventLoop } from "node:timers/promises";
 import type { components } from "@/lib/api/schema";
 import { htmlToText, notesSection, sanitizeHtml } from "@/lib/sanitize-html";
 import {
@@ -114,6 +115,23 @@ export function changesOf(html?: string | null): string {
   }
   const text = htmlToText(html);
   return text ? clip(text.replace(/\s*\n+\s*/g, " ").replace(/•\s*/g, "")) : "—";
+}
+
+/**
+ * Runs every record's notes through the sanitizer once, yielding to the event loop between
+ * records, so adaptProcessors() then only reads the sanitizer's memo. jsdom keeps what each call
+ * allocates alive until the synchronous job ends (see src/lib/sanitize-html.ts); one job over ~230
+ * notes pinned >100 MB, one job per note keeps the peak to a few MB. Optional: adaptProcessors
+ * gives the same result without it, just with that peak.
+ */
+export async function prepareNotes(records: ApiProcessor[]): Promise<void> {
+  for (const record of records) {
+    if (!record.release_notes?.trim()) continue;
+    sanitizeHtml(record.release_notes);
+    changesOf(record.release_notes);
+    htmlToText(record.release_notes);
+    await yieldToEventLoop(); // a macrotask: a resolved promise does not end the job
+  }
 }
 
 export interface AdaptedProcessors {

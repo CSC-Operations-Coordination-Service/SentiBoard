@@ -85,6 +85,10 @@ jobs:
       # The `npmrc` build secret: the Dockerfile's pnpm installs resolve through the same Nexus
       # npm proxy as the frontend job (a RUN step has no internet egress of its own).
       mount-npm-registry: true
+      # The sub-path the swarm stack routes to the frontend (stacks/apps/sentiboard, no strip
+      # middleware). Baked in at build time; one image serves dev and prod at the same path.
+      build-args: |
+        BASE_PATH=/sentiboard/frontend
       release: ${{ startsWith(github.ref, 'refs/tags/') }}
       push-to-ghcr: ${{ startsWith(github.ref, 'refs/tags/') }}
       push-to-dockerhub: ${{ startsWith(github.ref, 'refs/tags/') }}

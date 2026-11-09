@@ -59,6 +59,7 @@ import {
   meanCompleteness,
 } from "./event-types";
 import s from "./events.module.css";
+import { withBasePath } from "@/lib/asset";
 
 const SpaceBackdrop = dynamic(() => import("@/components/SpaceBackdrop"), { ssr: false });
 
@@ -471,7 +472,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     (next: EventsView, mode: "push" | "replace" = "push") => {
       setView(next);
       const qs = viewParams(next, data.now).toString();
-      const href = qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH;
+      const href = withBasePath(qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH);
       if (mode === "push") history.pushState(null, "", href);
       else history.replaceState(null, "", href);
     },
@@ -554,7 +555,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     if (sp.has("event")) {
       sp.delete("event");
       const qs = sp.toString();
-      history.replaceState(null, "", qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH);
+      history.replaceState(null, "", withBasePath(qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH));
     }
   }, []);
 

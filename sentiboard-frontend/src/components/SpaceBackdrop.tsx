@@ -26,9 +26,10 @@
 
 import { useEffect, useRef } from "react";
 import s from "./SpaceBackdrop.module.css";
+import { asset } from "@/lib/asset";
 
 /** The Earth-limb photo strip: 512px across the edge (space → ground), 1480px along it. */
-const TEXTURE = "/assets/img/earth-limb.jpg";
+const TEXTURE = asset("/assets/img/earth-limb.jpg");
 
 /* Texture strip geometry: D0..D1 is space above the limb (negative) to deep inside the planet, L is
    the strip's length along the edge, ROT how many texture units one unit of `turn` moves. */

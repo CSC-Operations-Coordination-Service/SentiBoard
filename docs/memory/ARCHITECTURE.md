@@ -41,6 +41,32 @@ backend ──HTTP──▶ src/lib/api/client.ts (server-only, BACKEND_URL, 10 
   uncached wrapper turns it into a degraded result. Default in-memory cache handler (per process).
 - **Degraded state.** Backend failures render the page's own "Backend unreachable" / "Could not load"
   block with HTTP 200; `error.tsx` is the last resort for unexpected errors.
+- **Sanitizer memory.** `sanitize-html.ts` memoizes its results by input (LRU, 2000 entries) and
+  creates no `Range`; the processors loader runs `prepareNotes()` (one event-loop turn per record)
+  before the synchronous adapter. Reason: jsdom pins every Range/NodeIterator through a `WeakRef`
+  until the synchronous job ends (DECISIONS.md 2026-11-04).
+
+### Observability
+
+- **Logs.** Server code logs through `src/lib/log.ts` (`logger("processors").warn(msg, fields)`),
+  not `console.*`: one JSON line per record in production (`time`, `level`, `logger`, `msg`,
+  `trace_id`/`span_id` when tracing, `err` with ApiError `kind`/`url`/`status`). Client components
+  keep `console.*` (browser). `onRequestError` in `src/instrumentation.ts` logs every error Next
+  catches, with the route. One `server starting` line per start carries `heap_limit_mb`.
+- **Console bridge.** In JSON format, `installConsoleBridge()` (called from `register()`) routes
+  every server-side `console.log/info/debug/warn/error` — stray calls, libraries, Next's own
+  messages — through the logger as `logger: "console"`: level from the method, first `Error` under
+  `err` (stack on the same line), colours and Next's `⨯ ⚠ ✓` prefix stripped, blank lines dropped,
+  messages cut at 32,000 chars. The saved console methods live on `globalThis`
+  (`Symbol.for("sentiboard.log.originalConsole")`), because Next gives `instrumentation.ts` and the
+  pages separate copies of `log.ts`. Next's startup banner is printed before `register()` and stays
+  plain text. Verified 2026-11-05 on the standalone build.
+- **OpenTelemetry.** `src/instrumentation.node.ts` starts the Node SDK only when
+  `OTEL_EXPORTER_OTLP_ENDPOINT` is set: Next's spans (one root span per request, render and backend
+  fetch children) and runtime metrics (`@opentelemetry/instrumentation-runtime-node`: heap per V8
+  space, GC, event-loop delay). `client.ts` injects `traceparent` into backend calls (Next's fetch
+  span does not), so an instrumented backend joins the trace. Verified 2026-11-04 against a local
+  OTLP receiver: traces and metrics arrive (protobuf), the backend receives `traceparent`.
 
 ### Rendering
 
@@ -78,7 +104,9 @@ backend ──HTTP──▶ src/lib/api/client.ts (server-only, BACKEND_URL, 10 
 
 ### Environment (all server-only; `.env.sample`)
 
-`BACKEND_URL`, `SITE_URL`, `ALLOW_INDEXING`. Nothing is exposed through `NEXT_PUBLIC_*`.
+`BACKEND_URL`, `SITE_URL`, `ALLOW_INDEXING`, `LOG_LEVEL`, `LOG_FORMAT`, and the standard `OTEL_*`
+variables (`OTEL_EXPORTER_OTLP_ENDPOINT` turns telemetry on). Nothing is exposed through
+`NEXT_PUBLIC_*`.
 
 ## Backend
 
