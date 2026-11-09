@@ -6,6 +6,34 @@ decisions in `design/react-mockups/docs/data-availability-prototype-ref.md §11`
 
 ---
 
+## Rules from develop (2026-11)
+
+Three decisions merged to `develop` after this plan was written apply to every new page, including
+this one. Apply them from the first session.
+
+**Public file paths — use `asset()`.** Next.js prefixes `<Link>`, `router.push` and `next/image`
+automatically, but not raw `<a href>`, `history.pushState/replaceState`, `<img src>`,
+`<source src>`, or CSS `url()`. Every such reference to a public asset must go through
+`asset()` / `withBasePath()` from `src/lib/asset.ts` (fed by `NEXT_PUBLIC_BASE_PATH`).
+CSS files cannot call `asset()` directly — set the URL via an inline CSS custom property in the
+component and reference the variable in the stylesheet (see DECISIONS.md 2026-10-27 BASE_PATH
+entry and the `.about-bg` note in HANDOFF.md). Never wrap a value that goes to `<Link>` or the
+router: it would get the prefix twice.
+
+**Server-side logging — use `src/lib/log.ts`.** Intentional server-side log calls must use the
+logger from `src/lib/log.ts` (JSON lines in production, structured fields, level-aware). Do not
+call `console.*` directly in new server modules; the console bridge routes stray calls through the
+logger anyway, but explicit calls should be structured at the source (DECISIONS.md 2026-11-04).
+
+**No backend calls at build time.** Any page component that fetches from the backend must isolate
+the call in a dedicated async server component that calls `await connection()` (from `next/server`)
+before the first API call, then wraps that component in `<Suspense>` for PPR. This keeps
+`pnpm build` working when `BACKEND_URL` is unset. Do not call `getDatatakes()` or any loader
+directly at the top level of a page component (DECISIONS.md 2026-10-27, "Pages must not call the
+API at build time"; mirrored by `AvailabilityContent` in Session 5 of this plan).
+
+---
+
 ## Critical blocker: no datatake API endpoint exists
 
 The current OpenAPI contract (`sentiboard-frontend/api/openapi.json`) exposes five paths:
