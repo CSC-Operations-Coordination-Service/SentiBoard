@@ -8,6 +8,7 @@ import {
   cardSides,
   kpiStats,
   kpiFmt,
+  computeDataWindow,
   DAY_MS,
   type Datatake,
 } from "./model";
@@ -292,6 +293,43 @@ describe("cardSides", () => {
     expect(sides.acq.label).toBe("UNAVAILABLE");
     expect(sides.pub.pct).toBe(0);
     expect(sides.pub.label).toBe("MISSING");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computeDataWindow
+// ---------------------------------------------------------------------------
+
+describe("computeDataWindow", () => {
+  it("windowLast is the next calendar day at 23:59:59 UTC", () => {
+    const now = new Date("2026-11-09T12:34:56Z");
+    const { windowLast } = computeDataWindow(now);
+    expect(windowLast.getUTCFullYear()).toBe(2026);
+    expect(windowLast.getUTCMonth()).toBe(10); // 0-based: November
+    expect(windowLast.getUTCDate()).toBe(10);
+    expect(windowLast.getUTCHours()).toBe(23);
+    expect(windowLast.getUTCMinutes()).toBe(59);
+    expect(windowLast.getUTCSeconds()).toBe(59);
+  });
+
+  it("windowStart is exactly three months before today at UTC midnight", () => {
+    const now = new Date("2026-11-09T12:34:56Z");
+    const { windowStart } = computeDataWindow(now);
+    expect(windowStart.getUTCFullYear()).toBe(2026);
+    expect(windowStart.getUTCMonth()).toBe(7); // 0-based: August
+    expect(windowStart.getUTCDate()).toBe(9);
+    expect(windowStart.getUTCHours()).toBe(0);
+    expect(windowStart.getUTCMinutes()).toBe(0);
+    expect(windowStart.getUTCSeconds()).toBe(0);
+  });
+
+  it("time-of-day does not affect the window boundaries (uses UTC dates only)", () => {
+    const early = new Date("2026-11-09T00:00:01Z");
+    const late  = new Date("2026-11-09T23:59:59Z");
+    const w1 = computeDataWindow(early);
+    const w2 = computeDataWindow(late);
+    expect(w1.windowStart.getTime()).toBe(w2.windowStart.getTime());
+    expect(w1.windowLast.getTime()).toBe(w2.windowLast.getTime());
   });
 });
 

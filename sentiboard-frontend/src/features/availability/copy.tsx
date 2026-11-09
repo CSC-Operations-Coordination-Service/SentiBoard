@@ -1,5 +1,7 @@
 import { asset } from "@/lib/asset";
 
+export const DATATAKES_NOT_AVAILABLE = "Datatake data is not available yet.";
+
 export const AVAILABILITY_HERO_IMG = asset(
   "/assets/img/modules/availability.jpg",
 );

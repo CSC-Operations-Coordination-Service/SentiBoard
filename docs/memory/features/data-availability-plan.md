@@ -424,16 +424,20 @@ Prerequisite: Decisions for Ana #2 (sensor mode row), #3 (card contrast), #4 (Pr
 
 ### Session 5 — Real data wiring (requires backend endpoint)
 
-Files: `src/features/availability/adapter.ts`, `src/features/availability/data.ts`.
+**Updated 2026-11-09 (decision by Anthony):** `mock-data.ts` has been removed from the branch.
+`getDatatakes()` in `data.ts` currently returns `[]`. The page shows an empty-state message
+("Datatake data is not available yet.") in place of the strips. Session 5 replaces the stub and
+removes the empty state.
 
-Goal: replace mock data with the real backend. `getDatatakes(from, to, missions?)` in `data.ts`
-is purely `"use cache"` with `cacheLife({ stale:3600, revalidate:3600, expire:86400 })` and
-`cacheTag` — a cached function cannot contain request-time calls, so `connection()` does not go
-here. Instead, a thin async server component in `page.tsx` (call it `AvailabilityContent`, mirroring
-`NewsBarContent` from the home page) calls `await connection()` and then `getDatatakes()`, and is
-wrapped in `<Suspense>` (PPR pattern; Explorer is `"use client"` and streams inside it). Adapter
-maps raw records to `Datatake[]`, derives `mission` from `satellite_unit`, classifies `status`,
-formats dates. Degraded state when backend is unreachable.
+Files: `src/features/availability/adapter.ts`, `src/features/availability/data.ts` (replace stub).
+
+Goal: wire `getDatatakes(from, to, missions?)` to the real backend. The function in `data.ts` should
+be purely `"use cache"` with `cacheLife({ stale:3600, revalidate:3600, expire:86400 })` and
+`cacheTag("datatakes")` — a cached function cannot contain request-time calls, so `connection()` stays
+in `AvailabilityData` in `page.tsx` (already there). Create `adapter.ts` to map raw records to
+`Datatake[]`, derive `mission` from `satellite_unit`, classify `status` (including DELAYED → Processing
+per Decision #14), format dates. Remove the `datatakes.length === 0` empty-state branch from
+`Explorer.tsx` (or repurpose it as the degraded-state branch if the endpoint is unreachable).
 
 Prerequisite: `openapi.json` updated with the datatake endpoint contract; `pnpm gen:api` run.
 

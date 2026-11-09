@@ -602,3 +602,17 @@ prototype ref Decision 6.
 ## 2026-11-09 — Client-only portal guard
 
 Client-only portals use a `useSyncExternalStore` guard (subscribe: no-op, `getSnapshot: () => true`, `getServerSnapshot: () => false`), never `typeof document/window` checks in render.
+
+## 2026-11-09 — Data Availability: push to develop without mock data (Anthony)
+
+**Context.** Sessions 1–4 are complete. The real `GET /datatake/` endpoint does not exist yet.
+Pushing `feature/DEVOCS-219-data-availability` to develop with mock data was reconsidered because
+mock data is dead weight on the main branch and the page is `noindex` / `ported: false` anyway.
+**Decision.** Remove `mock-data.ts` and all runtime uses before merging. `getDatatakes()` in
+`src/features/availability/data.ts` returns `[]` for now. The page renders an empty-state message
+("Datatake data is not available yet.") in place of the strips; KPIs show 0 / "—". The toolbar
+renders normally. The window (`windowStart`/`windowLast`) is now computed by `computeDataWindow(now)`
+in `model.ts` instead of `getMockWindow()` in mock data. Session 5 replaces the stub with the real
+API call once the backend endpoint exists.
+**Consequences.** No mock data on `develop`. Empty state visible at `/availability` until Session 5.
+Tests that used `mkDtk` already defined their own fixture helper; no `__fixtures__/` migration needed.

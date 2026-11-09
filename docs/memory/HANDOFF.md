@@ -2,6 +2,24 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Data Availability — push without mock data, empty state (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated files: `src/features/availability/data.ts` (new), `src/features/availability/model.ts`,
+`src/features/availability/model.test.ts`, `src/features/availability/copy.tsx`,
+`src/features/availability/Explorer.tsx`, `src/app/availability/page.tsx`,
+`src/features/availability/availability.module.css`.
+Deleted: `src/features/availability/mock-data.ts`.
+ESLint, `tsc --noEmit`, 369/369 tests, `pnpm build` all clean.
+
+- **Decision (Anthony 2026-11-09):** push to develop without mock data; real endpoint comes in Session 5.
+- **mock-data.ts removed.** `getDatatakes()` in `data.ts` returns `[]`. Page computes the window via
+  `computeDataWindow(now)` exported from `model.ts` (3 new tests).
+- **Empty state:** when `datatakes` is empty the strips area shows one message ("Datatake data is not
+  available yet.") instead of four empty strips. KPIs show 0 / "—". Toolbar works normally.
+- **`ported: false`** and `noindex` metadata unchanged.
+- **Next:** Session 5 — implement `getDatatakes()` with the real `GET /datatake/` endpoint, remove the
+  empty state. Requires backend endpoint and `api/openapi.json` update.
+
 ## Data Availability — Session 4 follow-ups: no-anim reload + extract DatatakeCard (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
 
 Updated files: `src/features/availability/Explorer.tsx`, new `src/features/availability/DatatakeCard.tsx`.

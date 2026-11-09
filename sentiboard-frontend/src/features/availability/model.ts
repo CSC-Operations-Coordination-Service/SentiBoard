@@ -234,6 +234,20 @@ export function cardSides(d: Datatake): CardSides {
 }
 
 // ---------------------------------------------------------------------------
+// Data window (three months plus the next day) — computed from request-time `now`
+// ---------------------------------------------------------------------------
+
+export function computeDataWindow(now: Date): { windowStart: Date; windowLast: Date } {
+  const todayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const windowStart = new Date(todayUTC);
+  windowStart.setUTCMonth(windowStart.getUTCMonth() - 3);
+  const windowLast = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 23, 59, 59),
+  );
+  return { windowStart, windowLast };
+}
+
+// ---------------------------------------------------------------------------
 // KPI computations (Decision #1 for coverage gaps)
 // ---------------------------------------------------------------------------
 

@@ -157,6 +157,17 @@
   color: color-mix(in srgb, var(--text) 70%, transparent);
 }
 
+.emptyData {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
 .tile {
   position: absolute;
   top: 0;

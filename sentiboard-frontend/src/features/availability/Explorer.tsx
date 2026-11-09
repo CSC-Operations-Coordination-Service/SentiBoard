@@ -37,6 +37,7 @@ import {
   type Status,
 } from "./model";
 import DatatakeCard, { type CardPhase } from "./DatatakeCard";
+import { DATATAKES_NOT_AVAILABLE } from "./copy";
 import {
   AVAILABILITY_PATH,
   DEFAULT_VIEW,
@@ -396,7 +397,13 @@ export default function Explorer({
     [view.missionsOff],
   );
 
-  const kpis = useMemo(() => kpiStats(matching, days, activeSatellites), [matching, days, activeSatellites]);
+  const kpis = useMemo(
+    () =>
+      datatakes.length === 0
+        ? { inRange: 0, meanCompleteness: null, coverageGaps: 0, lost: 0 }
+        : kpiStats(matching, days, activeSatellites),
+    [datatakes.length, matching, days, activeSatellites],
+  );
 
   // Strip lanes: one per active mission, bars folded by framesOf; axis ticks shared across all rows
   const ticks = useMemo(() => axisTicks(days), [days]);
@@ -866,7 +873,9 @@ export default function Explorer({
       {/* Strip bands: one per active mission, folded bars, shared axis */}
       <Reveal className={s.panel}>
         <div className={s.mapInner}>
-          {lanes.map(({ missionId, frames, tw }, rowIndex) => {
+          {datatakes.length === 0 ? (
+            <div className={s.emptyData}>{DATATAKES_NOT_AVAILABLE}</div>
+          ) : lanes.map(({ missionId, frames, tw }, rowIndex) => {
             const isRowZoomed = pickedState?.missionId === missionId;
             // Zoom pivot: use the recorded click offset (px) when available; fall back to the
             // bar's leftPct as a percentage origin for initial load from URL state.
@@ -1009,6 +1018,7 @@ export default function Explorer({
           })}
         </div>
       </Reveal>
+
 
       {/* Hover / focus tooltip — single fixed element in a portal, aria-hidden.
           isClient (useSyncExternalStore) is false on the server and true on the client, so React
