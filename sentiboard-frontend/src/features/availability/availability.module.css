@@ -342,6 +342,7 @@
   .tile,
   .axis,
   .fdropBody,
+  .fdropInner,
   .tipOn {
     transition: none;
     animation: none;
@@ -394,7 +395,7 @@
   gap: 18px;
 }
 
-.frange button {
+.frange :is(button, a) {
   height: 49px;
   padding: 0 1px;
   border: 0;
@@ -408,12 +409,13 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: color-mix(in srgb, var(--text) 72%, transparent);
+  text-decoration: none;
   transition: color 0.2s ease, border-color 0.2s ease;
 }
 
 /* hover: no change — 0.72 opacity is the resting state (§3) */
 
-.frange button[aria-pressed="true"] {
+.frange :is(button, a)[aria-pressed="true"] {
   color: var(--text);
   border-bottom-color: #2fc6dc;
 }
@@ -444,9 +446,11 @@
 
 /* hover: no change (§3.1) */
 
-.pagerBtn:disabled {
+.pagerBtn:disabled,
+.pagerBtn[aria-disabled="true"] {
   opacity: 0.3;
   pointer-events: none;
+  cursor: default;
 }
 
 .plabel {
@@ -609,10 +613,22 @@
   transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
+.fdropHead[aria-expanded="true"] ~ .fdropBody {
+  grid-template-rows: 1fr;
+}
+
 .fdropInner {
   min-height: 0;
   overflow: hidden;
   padding: 0;
+  /* hidden from AT and pointer events until animation completes */
+  visibility: hidden;
+  transition: visibility 0s linear 420ms;
+}
+
+.fdropHead[aria-expanded="true"] ~ .fdropBody > .fdropInner {
+  visibility: visible;
+  transition-delay: 0s;
 }
 
 .fdropPad {

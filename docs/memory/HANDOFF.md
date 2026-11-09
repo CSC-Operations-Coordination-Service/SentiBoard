@@ -2,18 +2,32 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
-## Data Availability — Session 1 static shell (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+## Data Availability — Session 2 URL state, toolbar, KPIs, mock data (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
 
-`src/features/availability/copy.tsx`, `src/features/availability/availability.module.css`,
-`src/app/availability/page.tsx` created. ESLint, `tsc --noEmit`, 296/296 tests, `pnpm build` all clean.
+New files: `src/features/availability/mock-data.ts`, `src/features/availability/model.ts`,
+`src/features/availability/model.test.ts`, `src/features/availability/url-state.ts`,
+`src/features/availability/url-state.test.ts`, `src/features/availability/Explorer.tsx`.
+Updated: `src/app/availability/page.tsx` (uses Explorer inside `<Suspense>`),
+`src/features/availability/availability.module.css` (added `fdropOpen` CSS visibility pattern).
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
 
-- **What is in:** `PageHeader` (title + §9 description copy + completeness legend), `SpaceBackdrop page={1}`, counters block (static 0/—/0/0 placeholders), toolbar shell (range heading "Last 30 days" + 1D/7D/30D/CUSTOM buttons with correct CSS; 30D marked active).
-- **What is not in yet:** pager, From/To, Mission/Status dropdowns, search, Reset, strips, tooltip, datatake card (Sessions 2–4).
-- **`SpaceBackdrop page={1}`:** confirmed from the component's own JSDoc — "page 1 = Data Availability, middle third: the top of the globe, almost flat".
-- **CSS module:** full 954-line mockup module ported verbatim; all classes present for Sessions 2–4.
-- **No new tokens in tokens.css:** `--bandh` is defined on `.mapInner` in the CSS module (page-local, as in the mockup).
+Decisions recorded (see DECISIONS.md 2026-11-09): #1 coverage gaps = satellite-days with no datatake;
+#7 URL params confirmed; #14 DELAYED → Processing for now.
+
+- **What is in:** full toolbar (range heading, 1D/7D/30D/Custom buttons, pager ‹›, arrow keys, From/To,
+  Mission + Status multi-toggle dropdowns, search, Reset) driven by URL with `history.pushState`; four
+  KPIs computed live from mock data; `framesOf`, `axisTicks`, `barColor`, `cardSides`, `kpiStats` as
+  pure functions with 70 tests.
+- **Dropdown CSS visibility:** `fdropHead[aria-expanded="true"] ~ .fdropBody` selector drives
+  `grid-template-rows` animation; `fdropInner` has `visibility: hidden` by default, revealed on open —
+  no `inert` on server-rendered elements (avoids React 19 hydration mismatch).
+- **Mock data:** `src/features/availability/mock-data.ts` generates 900 datatakes with the same seeded
+  RNG and outage windows as the mockup's `mock.ts`. Temporary — replaced in Session 5.
+- **URL state:** `src/features/availability/url-state.ts` follows the events/processors pattern;
+  `pick` param reserved for the datatake card (Session 4).
 - **`ported: false`** and `noindex` metadata unchanged.
-- **Next:** Session 2 — URL state, toolbar controls, KPI computations, mock data. Requires Decisions for Ana #1 (Coverage gaps formula) and #7 (URL param names) before starting.
+- **What is not in yet:** strip bands (Session 3), datatake card and tooltip (Session 4).
+- **Next:** Session 3 — strip bands with folded bars, zoom, axis, entrance animation.
 
 ## Frontend OOM fix, structured logs, OpenTelemetry (2026-11-04, branch `fix/frontend-oom-observability`)
 

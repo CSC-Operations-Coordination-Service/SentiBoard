@@ -255,9 +255,8 @@ endpoint should return it already computed; `cardSides()` stays only for the moc
 
 ## Decisions for Ana
 
-1. **Coverage gaps KPI formula.** Prototype: satellite-days with no datatake. Mock's `isGap`:
-   count of Partial + Unavailable records. Which number is operationally meaningful for the ops
-   team? This determines the adapter and the backend query.
+1. **Coverage gaps KPI formula.** ✅ **Decided 2026-11-09:** satellite-days with no datatake (prototype
+   formula). Implemented in `kpiStats()` in `model.ts`.
 
 2. **Sensor mode row in the card** (prototype ref Decision 9). The prototype removes it; the
    Description copy mentions it; the real data has it. Keep or remove?
@@ -282,9 +281,9 @@ endpoint should return it already computed; `cardSides()` stays only for the moc
    b. What should `?event_id=<key>` and `?search=<id>` map to in the new URL? Suggested:
    `?event_id=` → drop (event filter not in the new page); `?search=<id>` → `?q=<id>`.
 
-7. **URL search params naming.** Proposed: `?range=1|7|30|custom`, `?from=YYYY-MM-DD`,
+7. **URL search params naming.** ✅ **Decided 2026-11-09:** `?range=1|7|30|custom`, `?from=YYYY-MM-DD`,
    `?to=YYYY-MM-DD`, `?offset=N`, `?missionsOff=S1,S2`, `?statusesOff=Planned,Processing`,
-   `?q=<id>`, `?pick=<datatake-id>`. Confirm before Session 2 so it is stable across sessions.
+   `?q=<id>`, `?pick=<datatake-id>`. Implemented in `url-state.ts`.
 
 8. **`SpaceBackdrop page` value.** The mock uses `page={1}` (Processors window). Verify which
    value gives the Data Availability background; check with the prototype HTML if in doubt.
@@ -304,9 +303,8 @@ endpoint should return it already computed; `cardSides()` stays only for the moc
 
 13. **Withdrawn (2026-10-28): the full-history request was for Events, not Data Availability.**
 
-14. **DELAYED status.** The legacy logic produces a DELAYED status (data arrived late, percentage
-    still below 90%) that the mockup's five statuses do not include. Decide whether it gets its own
-    colour and Status-filter entry, or is folded into Processing. Confirm before Session 2.
+14. **DELAYED status.** ✅ **Decided 2026-11-09:** shown as Processing for now. `statusesOff=Processing`
+    hides both. The adapter (Session 5) maps DELAYED → Processing.
 
 ---
 

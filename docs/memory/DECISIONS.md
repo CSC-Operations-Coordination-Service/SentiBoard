@@ -565,3 +565,20 @@ OTLP, so no line is shipped twice.
 pass peaks at ~+18 MB instead of ~+600 MB. A future sanitizer caller should keep both rules: no
 `Range`, and no long synchronous loop over un-memoized notes. Telemetry costs nothing until
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set; the deployment decides where it goes.
+
+## 2026-11-09 — Data Availability Session 2: three decisions resolved
+
+**#1 Coverage gaps KPI formula.** The KPI counts *satellite-days with no matching datatake* (the
+prototype's formula): for every (satellite, calendar day) pair in the active window, if zero
+datatakes pass the mission+status+search filters for that pair, it counts as one gap. This matches
+the operational meaning (a hole in the daily schedule). Implemented in `kpiStats()` in
+`src/features/availability/model.ts`.
+
+**#7 URL search params.** Confirmed as proposed: `range=1|7|30|custom`, `offset=N`, `from=YYYY-MM-DD`,
+`to=YYYY-MM-DD`, `missionsOff=S1,S2,...`, `statusesOff=Planned,...`, `q=<id>`, `pick=<id>`.
+Multi-select toggles store what is OFF so the default URL stays clean. Implemented in
+`src/features/availability/url-state.ts`.
+
+**#14 DELAYED status.** DELAYED is shown as Processing for now; `statusesOff=Processing` hides both.
+The `Status` type in `model.ts` has five values (Planned, Processing, Acquired, Partial, Unavailable).
+The adapter (Session 5) will map DELAYED → Processing.
