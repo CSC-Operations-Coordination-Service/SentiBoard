@@ -16,6 +16,7 @@
    the five display statuses. */
 
 import { MISSION_ORDER, STATUS_ORDER, type MissionId, type Status } from "./model";
+import { type ParamSource, reader, parseOffSet } from "@/lib/url-params";
 
 export type RangeId = 1 | 7 | 30;
 
@@ -46,34 +47,6 @@ export const AVAILABILITY_PATH = "/availability";
 const VALID_RANGES = new Set<number>([1, 7, 30]);
 const MISSION_ID_SET = new Set<MissionId>(MISSION_ORDER);
 const STATUS_SET = new Set<Status>(STATUS_ORDER);
-
-type ParamSource =
-  | URLSearchParams
-  | { get(name: string): string | null }
-  | Record<string, string | string[] | undefined>;
-
-function reader(src: ParamSource): (name: string) => string | null {
-  if (typeof (src as URLSearchParams).get === "function") {
-    return (name) => (src as URLSearchParams).get(name);
-  }
-  return (name) => {
-    const v = (src as Record<string, string | string[] | undefined>)[name];
-    return (Array.isArray(v) ? v[0] : v) ?? null;
-  };
-}
-
-function parseOffSet<T extends string>(
-  raw: string | null,
-  validate: (v: string) => v is T,
-): Set<T> {
-  if (!raw) return new Set();
-  return new Set(
-    raw
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s): s is T => validate(s)),
-  );
-}
 
 function isMissionId(v: string): v is MissionId {
   return MISSION_ID_SET.has(v as MissionId);

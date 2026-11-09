@@ -2,6 +2,32 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 1a: data layer (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/lib/missions.ts` — shared MissionId, MISSION_ORDER, MISSION_DISPLAY, MISSION_ID_OF, SATELLITES_OF, ALL_SATELLITES, DAY_MS, fmtDate, fmtDateTime, kpiFmt
+- `src/lib/url-params.ts` — shared ParamSource, reader(), parseOffSet()
+- `src/features/acquisitions/types.ts` — AcqDatatake, AcqLevel, AcqProductType, Station, AcquisitionsData
+- `src/features/acquisitions/mock-data.ts` — 11 raw specs (startOffsetS), getMockData(dayKey)
+- `src/features/acquisitions/model.ts` — computeAcqWindow, meanCompleteness, missingSeconds, kpiStats
+- `src/features/acquisitions/model.test.ts`
+- `src/features/acquisitions/adapter.ts` — adaptAcquisitions(raw, dayKey): derives comp/cls
+- `src/features/acquisitions/adapter.test.ts`
+- `src/features/acquisitions/data.ts` — `"use cache"` getAcquisitions(dayKey)
+- `src/features/acquisitions/url-state.ts` — parseAcqView, acqViewParams, acqViewHref, DEFAULT_ACQ_VIEW
+- `src/features/acquisitions/url-state.test.ts`
+
+Updated files:
+- `src/features/availability/model.ts` — now imports+re-exports from @/lib/missions; keeps all availability-specific symbols
+- `src/features/availability/url-state.ts` — now imports ParamSource/reader/parseOffSet from @/lib/url-params
+
+ESLint, `tsc --noEmit`, 418/418 tests, `pnpm build` all clean.
+
+- **mock-data.ts** holds the 11 mock-up datatakes as `startOffsetS` offsets (seconds before midnight of `dayKey`). Max offset = 74 520 s < 24 h → all startIso values are on the previous calendar day — always in the past.
+- **Future datatakes:** any datatake whose startIso is ahead of the current wall-clock time during dayKey (none in mock data) would appear as a normal datatake in the globe; the UI does not hide future-start datatakes. If the real endpoint ever returns them, Slice 7 is the right time to decide on filtering.
+- **Slice 7** must delete `mock-data.ts` and wire the real endpoint (name TBD with backend team, see data.ts TODO). Blocked on backend.
+- **Next:** Session 1b — route pages `/acquisitions-globe-earth` and `/acquisitions-globe`, page.tsx pattern, `connection()` + `<Suspense>`, metadata and sitemap update.
+
 ## Data Availability — push without mock data, empty state (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
 
 Updated files: `src/features/availability/data.ts` (new), `src/features/availability/model.ts`,
