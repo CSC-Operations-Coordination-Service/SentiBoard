@@ -88,21 +88,19 @@ function outageAt(mission: string, daysBack: number): Outage | undefined {
   );
 }
 
-function acquisitionWindow() {
-  const n = new Date();
-  const today = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate());
+export function getMockWindow(now: Date) {
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const start = new Date(today);
   start.setUTCMonth(start.getUTCMonth() - 3);
   const last = new Date(
-    Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1, 23, 59, 59),
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 23, 59, 59),
   );
   return { start, last, today: new Date(today) };
 }
 
-function generate(count = 900): Datatake[] {
+export function generateMockData(now: Date, count = 900): Datatake[] {
   const rng = seededRandom(1607);
-  const w = acquisitionWindow();
-  const now = new Date();
+  const w = getMockWindow(now);
   const pick = <T,>(arr: T[]): T => arr[Math.floor(rng() * arr.length)];
   const rows: Datatake[] = [];
 
@@ -162,5 +160,3 @@ function generate(count = 900): Datatake[] {
   return rows.sort((a, b) => b.start.getTime() - a.start.getTime());
 }
 
-export const MOCK_DATA: Datatake[] = generate();
-export const MOCK_WINDOW = acquisitionWindow();

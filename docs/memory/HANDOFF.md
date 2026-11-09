@@ -2,6 +2,34 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Data Availability — Session 3 strips, zoom, axis, tooltip (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated file: `src/features/availability/Explorer.tsx`.
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+- **What is in:** four mission bands (S1/S2/S3/S5P) with folded bars from `framesOf` and `barColor`.
+  Entrance animation (900 ms stagger) on load, range change, Custom apply and Reset; `animation: none`
+  on all other renders; suppressed by `prefers-reduced-motion` via CSS. Date axis per band with
+  `axisTicks` ticks (5 intervals, 4 for ≤3-day windows; `DD/MM` or `DD/MM HH:00` for short windows;
+  first/last ticks flush-aligned). "No datatakes in range" empty state.
+- **Zoom:** clicking a bar stores its ID in `?pick=`, scales the row's `.track` to 1.9× from the
+  bar's `offsetLeft`, fades all other bars (`.tileFaded`), hides the row's axis (`.axisHidden`).
+  Click the same bar → zoom out. Escape also zooms out (dropdown closes first if open). Range change,
+  Custom apply, Reset all pass `pick: null` and clear zoom. Origin persists per row in local state;
+  falls back to `leftPct%` for reloads with pick in URL.
+- **Tooltip:** single fixed `<div>` portal on `document.body` (created after mount). Populated on
+  bar `mouseenter` and keyboard `focus`; hidden on `mouseleave`, `blur` and scroll. Content: ID,
+  Acquisition %, Publication % (via `cardSides`), Start/Stop UTC HH:MM. Position: `clientX+18,
+  clientY−h−14`; right-overflow flips to `clientX−w−18`; top-overflow drops to `clientY+20`.
+- **Bar buttons:** `aria-label="<id> <status>"`. `tileSelected` ring on the picked bar.
+- **Animation state management:** `animating` starts `true` from `useState`; mount effect schedules
+  `setAnimating(false)` via `setTimeout` (not synchronously in the effect body — avoids the
+  `react-hooks/set-state-in-effect` rule). `navigateWithAnim` sets `animating=true` in event
+  handler context and restarts the 900 ms timer. No `animKey` state.
+- **`ported: false`** and `noindex` metadata unchanged.
+- **What is not in yet:** datatake card (Session 4).
+- **Next:** Session 4 — datatake card (inline panel, two SVG rings, metadata table, height animation).
+
 ## Data Availability — Session 2 URL state, toolbar, KPIs, mock data (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
 
 New files: `src/features/availability/mock-data.ts`, `src/features/availability/model.ts`,

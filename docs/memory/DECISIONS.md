@@ -582,3 +582,7 @@ Multi-select toggles store what is OFF so the default URL stays clean. Implement
 **#14 DELAYED status.** DELAYED is shown as Processing for now; `statusesOff=Processing` hides both.
 The `Status` type in `model.ts` has five values (Planned, Processing, Acquired, Partial, Unavailable).
 The adapter (Session 5) will map DELAYED → Processing.
+
+## 2026-11-09 — Client-only portal guard
+
+Client-only portals use a `useSyncExternalStore` guard (subscribe: no-op, `getSnapshot: () => true`, `getServerSnapshot: () => false`), never `typeof document/window` checks in render.

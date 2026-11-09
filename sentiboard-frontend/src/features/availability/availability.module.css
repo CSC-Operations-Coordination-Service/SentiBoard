@@ -198,6 +198,11 @@
   opacity: 0.45;
 }
 
+/* suppress the entrance animation after the initial window */
+.tileNoAnim {
+  animation: none;
+}
+
 .tile:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -396,6 +401,8 @@
 }
 
 .frange :is(button, a) {
+  display: inline-flex;
+  align-items: center;
   height: 49px;
   padding: 0 1px;
   border: 0;

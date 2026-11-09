@@ -1,9 +1,8 @@
 "use client";
 
-/* Interactive Data Availability explorer: toolbar, KPIs.
-   Session 2: toolbar + KPIs driven by URL state and mock data.
-   Sessions 3-4 add the strips and datatake card.
-   Session 5 replaces mock data with the real backend. */
+/* Interactive Data Availability explorer: toolbar, KPIs, strip bands, zoom, tooltip.
+   Session 3: strips with folded bars, entrance animation, zoom, hover/focus tooltip.
+   Session 4 adds the datatake card; Session 5 replaces mock data with the real backend. */
 
 import { useSearchParams } from "next/navigation";
 import {
@@ -12,11 +11,12 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { Reveal } from "@/components/Reveal";
-import { MOCK_DATA, MOCK_WINDOW } from "./mock-data";
 import {
   DAY_MS,
   MISSION_DISPLAY,
@@ -24,9 +24,16 @@ import {
   SATELLITES_OF,
   STATUS_COLOR,
   STATUS_ORDER,
+  axisTicks,
+  barColor,
+  cardSides,
   daysOf,
+  fmtDateTime,
+  framesOf,
   kpiFmt,
   kpiStats,
+  type Datatake,
+  type MissionId,
   type Status,
 } from "./model";
 import {
@@ -42,22 +49,60 @@ import {
 import { withBasePath } from "@/lib/asset";
 import s from "./availability.module.css";
 
+const STRIP_ZOOM = 1.9;
+
+// ---------------------------------------------------------------------------
+// Tooltip content — rendered inside the single fixed portal element
+// ---------------------------------------------------------------------------
+
+function Tip({ item }: { item: Datatake }): ReactNode {
+  const { acq, pub } = cardSides(item);
+  return (
+    <>
+      <b className={s.tipH}>{item.id}</b>
+      <div className={s.tipTwo}>
+        <div>
+          <em>Acquisition</em>
+          <b style={{ color: acq.color }}>
+            {acq.pct !== null ? `${acq.pct.toFixed(2)}%` : "—"}
+          </b>
+        </div>
+        <div>
+          <em>Publication</em>
+          <b style={{ color: pub.color }}>
+            {pub.pct !== null ? `${pub.pct.toFixed(2)}%` : "—"}
+          </b>
+        </div>
+      </div>
+      <div className={s.tipWhen}>
+        <span>Start</span>
+        <b>{fmtDateTime(item.start)}</b>
+        <span>Stop</span>
+        <b>{fmtDateTime(item.stop)}</b>
+      </div>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Window computation (matches the prototype's semantics)
 // ---------------------------------------------------------------------------
 
-function computeWindow(view: AvailabilityView): { from: Date; to: Date } {
+function computeWindow(
+  view: AvailabilityView,
+  windowLast: Date,
+): { from: Date; to: Date } {
   if (view.range === null) {
     // Custom: use the stored dates (fall back to 30-day window if missing)
     const to = view.customTo
       ? new Date(view.customTo + "T23:59:59Z")
-      : MOCK_WINDOW.last;
+      : windowLast;
     const from = view.customFrom
       ? new Date(view.customFrom + "T00:00:00Z")
       : new Date(to.getTime() - 30 * DAY_MS);
     return { from, to };
   }
-  const to = new Date(MOCK_WINDOW.last.getTime() - view.offset * DAY_MS);
+  const to = new Date(windowLast.getTime() - view.offset * DAY_MS);
   const from = new Date(to.getTime() - view.range * DAY_MS);
   return { from, to };
 }
@@ -160,7 +205,15 @@ function CalendarIcon() {
 
 type DropKey = "mission" | "status";
 
-export default function Explorer() {
+export default function Explorer({
+  datatakes,
+  windowStart,
+  windowLast,
+}: {
+  datatakes: Datatake[];
+  windowStart: Date;
+  windowLast: Date;
+}) {
   const searchParams = useSearchParams();
   const [view, setView] = useState<AvailabilityView>(() => parseView(searchParams));
 
@@ -171,6 +224,54 @@ export default function Explorer() {
 
   // Ref for the From date input (to call showPicker on pager label click)
   const fromInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Strip zoom: zoom pivot in px per mission row, recorded from the clicked bar's offsetLeft
+  const [origins, setOrigins] = useState<Partial<Record<MissionId, number>>>({});
+
+  // Animation: true for 900 ms after load, range change, Custom apply, or Reset.
+  // animTimerRef holds the pending turn-off timeout so navigateWithAnim can reset it.
+  const [animating, setAnimating] = useState(true);
+  const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Turn off animation after initial mount (setAnimating called in setTimeout callback, not in
+  // the effect body, to satisfy the react-hooks/set-state-in-effect rule).
+  useEffect(() => {
+    animTimerRef.current = setTimeout(() => setAnimating(false), 900);
+    return () => {
+      if (animTimerRef.current !== null) clearTimeout(animTimerRef.current);
+    };
+  }, []);
+
+  // Client-only guard for the tooltip portal: returns false on the server, true on the client.
+  // useSyncExternalStore is the correct way to conditionally render client-only content without
+  // hydration mismatch (DECISIONS.md 2026-11-09).
+  const isClient = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+
+  // Tooltip: one fixed portal element populated on bar mouseenter/focus, hidden on leave/scroll.
+  const [tipItem, setTipItem] = useState<Datatake | null>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+
+  const positionTip = useCallback((clientX: number, clientY: number) => {
+    const el = tipRef.current;
+    if (!el) return;
+    const h = el.offsetHeight;
+    const w = el.offsetWidth;
+    let x = clientX + 18;
+    let y = clientY - h - 14;
+    if (x + w + 12 > window.innerWidth) x = clientX - w - 18;
+    if (y < 12) y = clientY + 20;
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
+  }, []);
+
+  useEffect(() => {
+    const hide = () => setTipItem(null);
+    window.addEventListener("scroll", hide, true);
+    return () => window.removeEventListener("scroll", hide, true);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Navigation
@@ -183,8 +284,32 @@ export default function Explorer() {
     history.pushState(null, "", href);
   }, []);
 
+  // Animated navigation: sets animating=true (OK in event handler context) and restarts the
+  // 900 ms turn-off timer so bars replay their entrance on the new view.
+  const navigateWithAnim = useCallback(
+    (next: AvailabilityView) => {
+      navigate(next);
+      if (animTimerRef.current !== null) clearTimeout(animTimerRef.current);
+      setAnimating(true);
+      animTimerRef.current = setTimeout(() => setAnimating(false), 900);
+    },
+    [navigate],
+  );
+
   // ---------------------------------------------------------------------------
-  // Keyboard: ←/→ move the pager when no input is focused and no card is open
+  // Sync view when the URL changes through external navigation (browser Back /
+  // Forward, menu link to /availability with no params). Skips the initial
+  // mount because useState already read the right value from searchParams.
+  // ---------------------------------------------------------------------------
+
+  const hasMounted = useRef(false);
+  useEffect(() => {
+    if (!hasMounted.current) { hasMounted.current = true; return; }
+    setView(parseView(searchParams));
+  }, [searchParams]);
+
+  // ---------------------------------------------------------------------------
+  // Keyboard: ←/→ move the pager when no input is focused and no bar is picked
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
@@ -192,7 +317,7 @@ export default function Explorer() {
       const tag = (document.activeElement as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (view.range === null) return; // custom mode: no arrow-key pager
-      if (view.pick !== null) return;  // card open: Escape should close it, not move the pager
+      if (view.pick !== null) return;  // bar picked: Escape should close it instead
       if (e.key === "ArrowLeft") {
         navigate({ ...view, offset: view.offset + 1, pick: null });
       } else if (e.key === "ArrowRight" && view.offset > 0) {
@@ -204,19 +329,25 @@ export default function Explorer() {
   }, [view, navigate]);
 
   // ---------------------------------------------------------------------------
-  // Keyboard: Escape closes the open dropdown
+  // Keyboard: Escape closes the open dropdown, or zooms out the picked bar
   // ---------------------------------------------------------------------------
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || openDrop === null) return;
-      const btn = dropBtnRefs.current[openDrop];
-      setOpenDrop(null);
-      btn?.focus();
+      if (e.key !== "Escape") return;
+      if (openDrop !== null) {
+        const btn = dropBtnRefs.current[openDrop];
+        setOpenDrop(null);
+        btn?.focus();
+        return;
+      }
+      if (view.pick !== null) {
+        navigate({ ...view, pick: null });
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openDrop]);
+  }, [openDrop, view, navigate]);
 
   // ---------------------------------------------------------------------------
   // Click outside closes the open dropdown
@@ -236,25 +367,28 @@ export default function Explorer() {
   // Derived state
   // ---------------------------------------------------------------------------
 
-  const { from: winFrom, to: winTo } = useMemo(() => computeWindow(view), [view]);
+  const { from: winFrom, to: winTo } = useMemo(
+    () => computeWindow(view, windowLast),
+    [view, windowLast],
+  );
   const days = useMemo(() => daysOf(winFrom, winTo), [winFrom, winTo]);
 
-  const dataStart = MOCK_WINDOW.start;
-  const dataLast = MOCK_WINDOW.last;
+  const dataStart = windowStart;
+  const dataLast = windowLast;
 
   const pagerPrevDisabled = view.range === null || winFrom <= dataStart;
   const pagerNextDisabled = view.range === null || view.offset === 0;
 
   const matching = useMemo(() => {
     const q = view.q.trim().toLowerCase();
-    return MOCK_DATA.filter((d) => {
+    return datatakes.filter((d) => {
       if (d.start < winFrom || d.start > winTo) return false;
       if (view.missionsOff.has(d.missionId)) return false;
       if (view.statusesOff.has(d.status)) return false;
       if (q && !d.id.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [winFrom, winTo, view.missionsOff, view.statusesOff, view.q]);
+  }, [datatakes, winFrom, winTo, view.missionsOff, view.statusesOff, view.q]);
 
   const activeSatellites = useMemo(
     () => MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).flatMap((m) => SATELLITES_OF[m]),
@@ -262,6 +396,32 @@ export default function Explorer() {
   );
 
   const kpis = useMemo(() => kpiStats(matching, days, activeSatellites), [matching, days, activeSatellites]);
+
+  // Strip lanes: one per active mission, bars folded by framesOf; axis ticks shared across all rows
+  const ticks = useMemo(() => axisTicks(days), [days]);
+  const lanes = useMemo(
+    () =>
+      MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).map((missionId) => {
+        const own = matching.filter((d) => d.missionId === missionId);
+        const frames = framesOf(own);
+        const tw = frames.length ? 76 / frames.length : 2;
+        return { missionId, frames, tw };
+      }),
+    [matching, view.missionsOff],
+  );
+
+  // Which row is zoomed and what bar's leftPct to use as a fallback origin (plain computation
+  // — no useMemo so React Compiler can memoize it without conflict).
+  let pickedState: { missionId: MissionId; leftPct: number } | null = null;
+  if (view.pick) {
+    for (const { missionId, frames } of lanes) {
+      const fi = frames.findIndex((f) => f.item.id === view.pick);
+      if (fi !== -1) {
+        pickedState = { missionId, leftPct: frames[fi].leftPct };
+        break;
+      }
+    }
+  }
 
   // Hidden inputs for the search form: all current params except q, so a no-JS
   // form submit preserves range/offset/filters alongside the typed query.
@@ -297,10 +457,9 @@ export default function Explorer() {
       customFrom: toDateInput(winFrom),
       customTo: toDateInput(winTo),
     };
-    navigate(next);
-    // Open the From picker after state update
+    navigateWithAnim(next);
     setTimeout(() => { fromInputRef.current?.showPicker?.(); }, 0);
-  }, [view, winFrom, winTo, navigate]);
+  }, [view, winFrom, winTo, navigateWithAnim]);
 
   // ---------------------------------------------------------------------------
   // Custom range: change From or To
@@ -311,9 +470,9 @@ export default function Explorer() {
       let from = val;
       let to = view.customTo ?? toDateInput(winTo);
       if (from > to) { [from, to] = [to, from]; }
-      navigate({ ...view, range: null, customFrom: from, customTo: to, pick: null });
+      navigateWithAnim({ ...view, range: null, customFrom: from, customTo: to, pick: null });
     },
-    [view, winTo, navigate],
+    [view, winTo, navigateWithAnim],
   );
 
   const onToChange = useCallback(
@@ -321,9 +480,9 @@ export default function Explorer() {
       let to = val;
       let from = view.customFrom ?? toDateInput(winFrom);
       if (from > to) { [from, to] = [to, from]; }
-      navigate({ ...view, range: null, customFrom: from, customTo: to, pick: null });
+      navigateWithAnim({ ...view, range: null, customFrom: from, customTo: to, pick: null });
     },
-    [view, winFrom, navigate],
+    [view, winFrom, navigateWithAnim],
   );
 
   // ---------------------------------------------------------------------------
@@ -369,7 +528,7 @@ export default function Explorer() {
               <ViewLink
                 key={id}
                 view={{ ...view, range: id, offset: 0, customFrom: null, customTo: null, pick: null }}
-                navigate={navigate}
+                navigate={navigateWithAnim}
                 role="button"
                 aria-pressed={view.range === id}
               >
@@ -384,7 +543,7 @@ export default function Explorer() {
                 customTo: toDateInput(winTo),
                 pick: null,
               }}
-              navigate={navigate}
+              navigate={navigateWithAnim}
               role="button"
               aria-pressed={view.range === null}
             >
@@ -395,7 +554,7 @@ export default function Explorer() {
 
         {/* Pager: ‹ date range ›
             Without JS: ‹ and › are <a href> links; disabled state is a <span> (non-navigable).
-            Pager label button (📅) is JS-only (calls showPicker). */}
+            Pager label button (📅) is JS-only (calls showPicker). Pager moves do NOT animate. */}
         <div className={s.pager}>
           {pagerPrevDisabled ? (
             <span className={s.pagerBtn} aria-disabled="true" aria-label="Previous period">
@@ -596,11 +755,10 @@ export default function Explorer() {
           />
         </form>
 
-        {/* Reset: ViewLink to /availability (no params = default view).
-            Without JS: navigates to bare /availability URL. */}
+        {/* Reset: navigates to default view and replays the bar entrance animation */}
         <ViewLink
           view={DEFAULT_VIEW}
-          navigate={navigate}
+          navigate={navigateWithAnim}
           onNavigate={() => setOpenDrop(null)}
           className={s.freset}
         >
@@ -609,12 +767,156 @@ export default function Explorer() {
 
       </div>
 
-      {/* Strip bands (Session 3) and datatake card (Session 4) go here */}
-      <div className={s.panel}>
+      {/* Strip bands: one per active mission, folded bars, shared axis */}
+      <Reveal className={s.panel}>
         <div className={s.mapInner}>
-          {/* placeholder until Session 3 */}
+          {lanes.map(({ missionId, frames, tw }, rowIndex) => {
+            const isRowZoomed = pickedState?.missionId === missionId;
+            // Zoom pivot: use the recorded click offset (px) when available; fall back to the
+            // bar's leftPct as a percentage origin for initial load from URL state.
+            const originPx = origins[missionId];
+            const transformOriginStr =
+              originPx !== undefined
+                ? `${originPx}px 50%`
+                : isRowZoomed && pickedState
+                  ? `${pickedState.leftPct}% 50%`
+                  : "50% 50%";
+
+            return (
+              <div className={s.mapRowContainer} key={missionId}>
+                <div className={s.mapRow}>
+                  <div className={s.mapLabel}>
+                    <b>{missionId}</b>
+                  </div>
+
+                  <div className={s.lane}>
+                    <div
+                      className={`${s.track}${isRowZoomed ? ` ${s.trackZoom}` : ""}`}
+                      style={
+                        {
+                          "--tw": `${tw}%`,
+                          transformOrigin: transformOriginStr,
+                          transform: isRowZoomed
+                            ? `scale(${STRIP_ZOOM})`
+                            : undefined,
+                        } as CSSProperties
+                      }
+                    >
+                      {frames.length === 0 ? (
+                        <span className={s.trackNone}>
+                          No datatakes in range
+                        </span>
+                      ) : (
+                        frames.map(({ item, leftPct }, barIndex) => {
+                          const isPicked = view.pick === item.id;
+                          // All bars except the picked one step back
+                          const isFaded = view.pick !== null && !isPicked;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              className={[
+                                s.tile,
+                                isPicked ? s.tileSelected : "",
+                                isFaded ? s.tileFaded : "",
+                                !animating ? s.tileNoAnim : "",
+                              ]
+                                .filter(Boolean)
+                                .join(" ")}
+                              style={
+                                {
+                                  "--c": barColor(item),
+                                  left: `${leftPct.toFixed(4)}%`,
+                                  ...(animating && {
+                                    animationDelay: `${Math.min(420, rowIndex * 45 + barIndex * 2.4)}ms`,
+                                  }),
+                                } as CSSProperties
+                              }
+                              aria-label={`${item.id} ${item.status}`}
+                              onMouseEnter={(e) => {
+                                const x = e.clientX;
+                                const y = e.clientY;
+                                setTipItem(item);
+                                requestAnimationFrame(() => positionTip(x, y));
+                              }}
+                              onMouseMove={(e) =>
+                                positionTip(e.clientX, e.clientY)
+                              }
+                              onMouseLeave={() => setTipItem(null)}
+                              onFocus={(e) => {
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                setTipItem(item);
+                                requestAnimationFrame(() =>
+                                  positionTip(
+                                    rect.left + rect.width / 2,
+                                    rect.top,
+                                  )
+                                );
+                              }}
+                              onBlur={() => setTipItem(null)}
+                              onClick={(e) => {
+                                if (isPicked) {
+                                  navigate({ ...view, pick: null });
+                                  return;
+                                }
+                                // Record the bar's offsetLeft as the zoom pivot for this row
+                                const centre = e.currentTarget.offsetLeft;
+                                setOrigins((o) => ({
+                                  ...o,
+                                  [missionId]: centre,
+                                }));
+                                navigate({ ...view, pick: item.id });
+                              }}
+                            />
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Axis hidden while the row is zoomed */}
+                  <div
+                    className={`${s.axis}${isRowZoomed ? ` ${s.axisHidden}` : ""}`}
+                  >
+                    {ticks.map((t) => (
+                      <span
+                        key={t.key}
+                        className={[
+                          s.axisTick,
+                          t.edge === "first" ? s.axisFirst : "",
+                          t.edge === "last" ? s.axisLast : "",
+                        ]
+                          .filter(Boolean)
+                          .join(" ")}
+                        style={{ left: `${t.pct}%` }}
+                      >
+                        {t.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                {/* DatatakeCard opens here in Session 4 */}
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </Reveal>
+
+      {/* Hover / focus tooltip — single fixed element in a portal, aria-hidden.
+          isClient (useSyncExternalStore) is false on the server and true on the client, so React
+          renders matching HTML on both sides and the portal is added after hydration. */}
+      {isClient &&
+        createPortal(
+          <div
+            ref={tipRef}
+            className={`${s.tip}${tipItem ? ` ${s.tipOn}` : ""}`}
+            aria-hidden="true"
+          >
+            {tipItem && <Tip item={tipItem} />}
+          </div>,
+          document.body,
+        )}
     </>
   );
 }
