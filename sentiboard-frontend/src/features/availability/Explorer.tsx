@@ -36,6 +36,7 @@ import {
   type MissionId,
   type Status,
 } from "./model";
+import DatatakeCard, { type CardPhase } from "./DatatakeCard";
 import {
   AVAILABILITY_PATH,
   DEFAULT_VIEW,
@@ -409,6 +410,101 @@ export default function Explorer({
       }),
     [matching, view.missionsOff],
   );
+
+  // ---------------------------------------------------------------------------
+  // Datatake card lifecycle
+  // ---------------------------------------------------------------------------
+
+  // The datatake currently shown in the card (stays set during the close animation).
+  // Lazy initializers derive state from the URL pick on first render so a reload or
+  // shared link shows the card already open (phase "swap" = instant, no animation).
+  const [cardItem, setCardItem] = useState<Datatake | null>(() => {
+    if (!view.pick) return null;
+    for (const { frames } of lanes) {
+      const f = frames.find((fr) => fr.item.id === view.pick);
+      if (f) return f.item;
+    }
+    return null;
+  });
+  const [cardMission, setCardMission] = useState<MissionId | null>(() => {
+    if (!view.pick) return null;
+    for (const { missionId, frames } of lanes) {
+      const f = frames.find((fr) => fr.item.id === view.pick);
+      if (f) return missionId;
+    }
+    return null;
+  });
+  // "swap" = instant display; used when a pick is already in the URL on first render.
+  const [cardPhase, setCardPhase] = useState<CardPhase>(() =>
+    view.pick !== null ? "swap" : "open",
+  );
+
+  // Stable ref to the latest lanes so the pick-sync effect can find items without
+  // having lanes in its dependency array (we only want to trigger transitions on
+  // view.pick changes, not on every filter change).
+  const lanesRef = useRef(lanes);
+  useEffect(() => { lanesRef.current = lanes; }, [lanes]);
+
+  // Seed prevPickRef to view.pick so the sync effect returns early on first render
+  // (prevId === nextId) and does not re-trigger the already-open card.
+  const prevPickRef = useRef<string | null>(view.pick);
+
+  // The ID of the bar that was showing when a close started — used to restore focus.
+  const closingIdRef = useRef<string | null>(null);
+
+  // Map: datatake ID → bar button element, populated via ref callbacks in the render.
+  const barBtnRefs = useRef(new Map<string, HTMLButtonElement>());
+
+  // Sync view.pick changes to the card lifecycle.
+  useEffect(() => {
+    const prevId = prevPickRef.current;
+    const nextId = view.pick;
+    if (nextId === prevId) return;
+    prevPickRef.current = nextId;
+
+    if (nextId !== null) {
+      // Find the item in the current lanes.
+      for (const { missionId, frames } of lanesRef.current) {
+        const f = frames.find((fr) => fr.item.id === nextId);
+        if (f) {
+          setCardItem(f.item);
+          setCardMission(missionId);
+          setCardPhase(prevId === null ? "open" : "swap");
+          return;
+        }
+      }
+      // Item not found (unknown pick in URL) — leave card as-is.
+    } else if (prevId !== null) {
+      // Pick cleared: start close animation.
+      closingIdRef.current = prevId;
+      setCardPhase("close");
+    }
+  }, [view.pick]);
+
+  // When a filter change removes the picked datatake from the visible set, defer a
+  // navigation to clear the pick so the card closes and the zoom unsets.
+  useEffect(() => {
+    if (view.pick === null) return;
+    const exists = lanes.some((l) => l.frames.some((f) => f.item.id === view.pick));
+    if (!exists && cardItem !== null) {
+      const nextView = { ...view, pick: null };
+      const t = setTimeout(() => navigate(nextView), 0);
+      return () => clearTimeout(t);
+    }
+  }, [lanes, view, navigate, cardItem]);
+
+  // Called by DatatakeCard when its close animation finishes.
+  const onClosed = useCallback(() => {
+    setCardItem(null);
+    setCardMission(null);
+    const id = closingIdRef.current;
+    closingIdRef.current = null;
+    if (id) {
+      requestAnimationFrame(() => {
+        barBtnRefs.current.get(id)?.focus();
+      });
+    }
+  }, []);
 
   // Which row is zoomed and what bar's leftPct to use as a fallback origin (plain computation
   // — no useMemo so React Compiler can memoize it without conflict).
@@ -814,6 +910,10 @@ export default function Explorer({
                           return (
                             <button
                               key={item.id}
+                              ref={(el) => {
+                                if (el) barBtnRefs.current.set(item.id, el);
+                                else barBtnRefs.current.delete(item.id);
+                              }}
                               type="button"
                               className={[
                                 s.tile,
@@ -896,7 +996,14 @@ export default function Explorer({
                     ))}
                   </div>
                 </div>
-                {/* DatatakeCard opens here in Session 4 */}
+                {cardItem !== null && cardMission === missionId && (
+                  <DatatakeCard
+                    d={cardItem}
+                    phase={cardPhase}
+                    onClose={() => navigate({ ...view, pick: null })}
+                    onClosed={onClosed}
+                  />
+                )}
               </div>
             );
           })}

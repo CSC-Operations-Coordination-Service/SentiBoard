@@ -258,16 +258,16 @@ endpoint should return it already computed; `cardSides()` stays only for the moc
 1. **Coverage gaps KPI formula.** ✅ **Decided 2026-11-09:** satellite-days with no datatake (prototype
    formula). Implemented in `kpiStats()` in `model.ts`.
 
-2. **Sensor mode row in the card** (prototype ref Decision 9). The prototype removes it; the
-   Description copy mentions it; the real data has it. Keep or remove?
+2. **Sensor mode row in the card** (prototype ref Decision 9). ✅ **Decided 2026-11-09:** Keep the
+   row. Description copy and real data both carry `instrument_mode`.
 
-3. **Card contrast** (prototype ref Decision 11). Prototype uses `#6B7686`/`#4E5866` ink;
-   current code and the recommended approach keep the brighter `rgba(255,255,255,.78)` ramp.
-   Confirm which to use.
+3. **Card contrast** (prototype ref Decision 11). ✅ **Decided 2026-11-09:** Use brighter ink ramp
+   (`--card-ink-2 .78`, `--card-ink-3 .62`). Absolute values `#6B7686`/`#4E5866` read near-black
+   on the starfield.
 
-4. **Processing completeness in the card** (prototype ref Decision 6). Prototype: acquisition ring
-   shows `"—"` and grey `#7A8696`, badge reads `ACQUIRED`. Current mock shows a simulated partial
-   value. Follow the prototype (recommended, keeps one rule for Planned and Processing).
+4. **Processing completeness in the card** (prototype ref Decision 6). ✅ **Decided 2026-11-09:**
+   Follow the prototype: acquisition ring shows `"—"` and grey `#7A8696`, badge reads `ACQUIRED`.
+   Publication shows partial simulated value with `PROCESSING` label.
 
 5. **Chart library.** No new dependency is needed. The two rings are inline SVG (straightforward
    `strokeDasharray` arcs). The bars are `<button>` elements coloured by CSS custom property. If

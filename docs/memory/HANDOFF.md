@@ -2,6 +2,38 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Data Availability — Session 4 follow-ups: no-anim reload + extract DatatakeCard (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated files: `src/features/availability/Explorer.tsx`, new `src/features/availability/DatatakeCard.tsx`.
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+- **Reload with `?pick=`:** card now appears already open with no open animation. `cardItem`,
+  `cardMission`, `cardPhase` are initialized via lazy `useState` initializers from `view.pick` and
+  `lanes`. `cardPhase` initializes to `"swap"` (instant display) when a pick is in the URL.
+  `prevPickRef` is seeded to `view.pick` so the pick-sync effect returns early on first render
+  and does not re-trigger the already-open card.
+- **Extraction:** `Ring` and `DatatakeCard` moved to `src/features/availability/DatatakeCard.tsx`
+  (default export `DatatakeCard`, named export `type CardPhase`). Explorer imports from there.
+
+## Data Availability — Session 4 datatake card (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
+
+Updated file: `src/features/availability/Explorer.tsx`.
+ESLint, `tsc --noEmit`, 366/366 tests, `pnpm build` all clean.
+
+- **What is in:** `DatatakeCard` component with height-grow open (560 ms), height-shrink close (560 ms),
+  instant swap. `Ring` SVG component (viewBox 0 0 70 70, r 27, track rgba .14, arc in side colour, no
+  draw-in animation). Metadata rows: Data take ID, Platform, Sensor mode, Start date, Stop date,
+  Acquisition badge, Publication badge (Decision #2: sensor mode kept; Decision #3: brighter ink;
+  Decision #4: Processing → grey ring / "—" / ACQUIRED badge). × button `aria-label="Close details"`;
+  focus returns to the picked bar on close (from `barBtnRefs` map, restored in `onClosed` via rAF).
+  Card opens driven by `?pick=` in the URL (reload or shared link shows it open). Closes on Escape,
+  × button, clicking the same bar again, Reset, range/pager changes (all navigate to `pick: null`).
+  Filter removal that hides the picked datatake: deferred `navigate({ pick: null })` via `setTimeout(0)`.
+  Instant open/close under `prefers-reduced-motion`. `ported: false` and `noindex` unchanged.
+- **Decisions recorded:** DECISIONS.md 2026-11-09 session 4 entry (#2, #3, #4); plan updated.
+- **What is not in yet:** real data (Session 5).
+- **Next:** Session 5 — real data wiring (requires backend datatake endpoint and `openapi.json` update).
+
 ## Data Availability — Session 3 strips, zoom, axis, tooltip (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
 
 Updated file: `src/features/availability/Explorer.tsx`.
