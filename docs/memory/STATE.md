@@ -20,12 +20,13 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   - Legacy `/index.html` and `/index` redirect there with 308.
 - Remaining pages (acquisitions ×2, terms, cookie notice) are
   "coming soon" placeholders (noindex, not in the sitemap).
-- **Acquisitions — Slice 1 done (Sessions 1a + 1b, 2026-11-09, branch `feature/DEVOCS-219-acquisitions`):**
-  Full data layer + route shells. Both `/acquisitions-globe` and `/acquisitions-globe-earth` render as PPR
-  pages with PageHeader + Suspense-wrapped `AcquisitionsContent`. 308 redirects for
-  `/acquisitions-status(.html)` → `/acquisitions-globe-earth`. Sitemap hints ready for when
-  `ported` flips. 418 tests pass. Build clean.
-  Session 2 (globe engine: ThreeEarth, materials, zoom) is next.
+- **Acquisitions — Slice 2 done (Session 2, 2026-11-09, branch `feature/DEVOCS-219-acquisitions`):**
+  Globe engine: `ThreeEarth.tsx` (paused prop + forceContextLoss), `dayNightEarth.ts`,
+  `stylizedEarth.ts`, `land.ts`, `AcquisitionsGlobe.tsx` (both looks, zoom controls, drag/wheel/key
+  interaction, IntersectionObserver off-screen pause, useSyncExternalStore ⌘/Ctrl label).
+  Earth textures in `public/assets/globe/`. Both routes now render the globe client-side via
+  `next/dynamic({ ssr: false })`. 418 tests pass. Build clean.
+  Session 3 (datatake overlays: footprints, satellites, stations) is next.
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.

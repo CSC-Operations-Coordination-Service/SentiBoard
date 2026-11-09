@@ -1,5 +1,4 @@
-/* Acquisitions globe page wrapper and shared states.
-   Slice 2 extends this file with globe, simulation bar and filter toolbar styles. */
+/* Acquisitions globe page wrapper and shared states. */
 
 .page {
   position: relative;
@@ -19,4 +18,150 @@
   font-size: 0.95rem;
   letter-spacing: 0.03em;
   color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+/* ==================== globe stage (Slice 2) ==================== */
+
+.stageRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding-top: clamp(22px, 3vh, 36px);
+  padding-inline: var(--hero-pad, clamp(18px, 4vw, 48px));
+}
+
+.globeStage {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: max(520px, min(84vh, 880px));
+  overflow: hidden;
+}
+
+/* canvas wrapper: fills the stage so ThreeEarth's div takes the full area */
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* zoomed in: fade the picture through a soft oval so it blends with the sky */
+.globeZoomed {
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 46%, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 46%, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+}
+
+/* ==================== zoom controls ==================== */
+
+.zoomCtl {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zoomCtl button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 11, 18, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #eaf0f8;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.zoomCtl button:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(20, 28, 42, 0.75);
+}
+
+.zoomCtl button:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+/* ==================== wheel zoom hint ==================== */
+
+.acqWheelHint {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 4;
+  padding: 12px 18px;
+  pointer-events: none;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #eaf0f6;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.acqWheelHintOn {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ==================== responsive ==================== */
+
+@media (max-width: 980px) {
+  .stageRow {
+    flex-direction: column;
+    padding-inline: 0;
+  }
+
+  .globeStage {
+    width: 100%;
+    flex: none;
+    height: min(62vh, 560px);
+  }
+}
+
+@media (max-width: 780px) {
+  .globeStage {
+    height: min(56vh, 440px);
+  }
+}
+
+@media (max-width: 760px) {
+  .zoomCtl {
+    top: 12px;
+    right: 12px;
+  }
+
+  .zoomCtl button {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .globeStage {
+    height: min(52vh, 340px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acqWheelHint {
+    transition: none;
+  }
 }

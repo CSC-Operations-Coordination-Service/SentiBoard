@@ -2,6 +2,32 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 2: globe engine (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/ThreeEarth.tsx` — WebGLRenderer, stars/atmosphere, `paused` prop via `useLayoutEffect`-synced ref, `forceContextLoss()` after `renderer.dispose()` in cleanup
+- `src/features/acquisitions/dayNightEarth.ts` — day/night shader material; textures via `asset()`
+- `src/features/acquisitions/stylizedEarth.ts` — vector coastline/land/graticule shader material
+- `src/features/acquisitions/land.ts` — Natural Earth 110m land outlines (verbatim copy)
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — both looks, IntersectionObserver off-screen pause, `useSyncExternalStore` ⌘/Ctrl label, zoom buttons with `type="button"` + aria-labels, drag/arrow/+−/0/Ctrl+wheel, wheel-hint, `_scene` state for Slice 3
+- `public/assets/globe/earth-day.jpg`, `public/assets/globe/earth-night.jpg` — equirectangular textures
+
+Updated files:
+- `src/features/acquisitions/acq-globe.module.css` — added Slice 2 classes (`.stageRow`, `.globeStage`, `.canvasWrap`, `.globeZoomed`, `.zoomCtl`, `.acqWheelHint`, responsive)
+- `src/app/acquisitions-globe-earth/page.tsx` — wired `<AcquisitionsGlobe look="imagery" ...>`
+- `src/app/acquisitions-globe/page.tsx` — wired `<AcquisitionsGlobe look="stylized" ...>`
+
+ESLint: 0 errors, 2 expected warnings (`_data` and `_scene` are Slice 3 stubs). `tsc --noEmit`, 418/418 tests, `pnpm build` all clean. Both routes build as `◐` (PPR).
+
+**Two render loops explained:** ThreeEarth runs the only `renderer.render(scene, camera)` call (once per rAF tick). The parent's separate rAF loop updates the camera position and atmosphere size; it does not call render directly. When the stage is off-screen, the IntersectionObserver sets `stageVisibleRef.current = false`, which: (a) makes ThreeEarth's animate loop skip `renderer.render()` via `pausedRef.current`, and (b) makes the parent's rAF loop skip applyView and atmosphere updates. Exactly one render per frame, skipped when off-screen.
+
+**WebGL leak check:** navigate between `/acquisitions-globe` and `/acquisitions-globe-earth` about 20 times in `pnpm build && pnpm start`. Open the browser console. No "Too many active WebGL contexts" warning must appear. If it does, `forceContextLoss()` is not being called — check that cleanup order in ThreeEarth is `renderer.dispose()` then `renderer.forceContextLoss()`.
+
+**Slice 3 hook-in points:**
+- `const [_scene, setScene]` → rename to `scene`; add `useEffect(() => { if (!scene) return; buildOverlays(scene, ...); }, [scene])`
+- `const _data` parameter → rename to `data`; pass to `buildOverlays`
+- `simTimeRef.current` is currently frozen at mount time; Slice 3 (simulation bar) advances it
+
 ## Acquisitions — Session 1b: route shells (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
 
 New files:

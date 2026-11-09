@@ -6,6 +6,7 @@ import { SITE_NAME, ROUTES } from "@/lib/routes";
 import { fmtDate } from "@/lib/missions";
 import { getAcquisitions } from "@/features/acquisitions/data";
 import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE } from "@/features/acquisitions/copy";
+import AcquisitionsGlobe from "@/features/acquisitions/AcquisitionsGlobe";
 import s from "@/features/acquisitions/acq-globe.module.css";
 
 // Not ported yet (docs/memory/HANDOFF.md). ROUTES.acquisitionsEarth.ported = false.
@@ -44,8 +45,7 @@ async function AcquisitionsContent() {
       </section>
     );
   }
-  // Slice 2: replace with <AcquisitionsGlobe look="imagery" nowMs={now.getTime()} data={data} />
-  return <section className={s.page} />;
+  return <AcquisitionsGlobe look="imagery" nowMs={now.getTime()} data={data} />;
 }
 
 export default function Page() {
