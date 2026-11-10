@@ -1,8 +1,9 @@
 // Development only — removed in Slice 7 before merging to develop.
 import type { AcqLevel, Station } from "./types";
 import type { RawAcqDatatake } from "./adapter";
+import { minutesFromMidnight } from "./acqGeometry";
 
-interface RawSpec {
+export interface RawAcqSpec {
   id: string;
   sat: string;
   unit: string;
@@ -20,7 +21,7 @@ interface RawSpec {
   kmlLink?: { url: string; filename: string };
 }
 
-const ACQ_RAW_SPECS: RawSpec[] = [
+const ACQ_RAW_SPECS: RawAcqSpec[] = [
   {
     id: "S2A-48201-1",
     sat: "Sentinel-2A",
@@ -440,13 +441,25 @@ const STATIONS: Station[] = [
   { name: "Neustrelitz", lat: 53.33, lon: 13.07 },
 ];
 
-export function getMockData(dayKey: string): { datatakes: RawAcqDatatake[]; stations: Station[] } {
-  const dayStart = new Date(dayKey + "T00:00:00Z").getTime();
-  return {
-    datatakes: ACQ_RAW_SPECS.map(({ startOffsetS, ...rest }) => ({
+export function getMockData(
+  // dayKey is accepted for interface compatibility (Slice 7 replaces this with a real fetch)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _dayKey: string,
+): { rawSpecs: RawAcqSpec[]; stations: Station[] } {
+  return { rawSpecs: ACQ_RAW_SPECS, stations: STATIONS };
+}
+
+/** Resolve raw specs against the current time (call in the page component, outside "use cache").
+ *  startOffsetS = seconds before NOW; keeps only datatakes that fall on today (mock-up line 676). */
+export function resolveMockTimes(
+  rawSpecs: RawAcqSpec[],
+  nowMs: number,
+  dayMs: number,
+): RawAcqDatatake[] {
+  return rawSpecs
+    .map(({ startOffsetS, ...rest }) => ({
       ...rest,
-      startIso: new Date(dayStart - startOffsetS * 1000).toISOString(),
-    })),
-    stations: STATIONS,
-  };
+      startIso: new Date(nowMs - startOffsetS * 1000).toISOString(),
+    }))
+    .filter((dt) => minutesFromMidnight(dt.startIso, dayMs) >= 0);
 }

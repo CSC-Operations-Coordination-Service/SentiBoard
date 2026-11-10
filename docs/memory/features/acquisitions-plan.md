@@ -131,12 +131,17 @@ exist**. The backend has not been extended for this page yet.
 in Slice 7** before the PR merges to `develop`; no mock data ever lands on `develop`.
 
 `mock-data.ts` holds the eleven mock-up datatakes as `startOffsetS` offsets (seconds before
-midnight of `dayKey`) and the five Copernicus core stations. `getMockData(dayKey)` resolves
-each offset against `dayStart = new Date(dayKey + "T00:00:00Z")`, so the result is
-deterministic for the same `dayKey` and never calls `Date.now()`. All offsets are ≤ 74 520 s
-(< 24 h), keeping every datatake within yesterday's calendar day — always in the past relative
-to any real time during dayKey. `getAcquisitions(dayKey)` calls `getMockData(dayKey)` and
-pipes through `adaptAcquisitions(raw, dayKey)`.
+NOW, matching the mock-up's `hoursAgo` function) and the five Copernicus core stations.
+`getMockData(dayKey)` returns the raw specs unchanged — it never calls `Date.now()` and is
+safe to cache. Resolution happens in the page component (outside `"use cache"`) via
+`resolveMockTimes(rawSpecs, nowMs, dayMs)`, which computes
+`startIso = new Date(nowMs - startOffsetS * 1000).toISOString()` and filters to keep only
+datatakes where `minutesFromMidnight(startIso, dayMs) >= 0` (i.e., on today, not yesterday —
+equivalent to the mock-up's day filter at AcquisitionsGlobeEarth.tsx line 676). This keeps
+footprints visible at any time of day: for the Day filter in Slice 4, `minutesFromMidnight >= 0`
+is the base gate that ensures only today's acquisitions are ever passed to the globe; the Day
+dropdown then further narrows to a specific date. `getAcquisitions(dayKey)` returns
+`{ rawSpecs, stations }`; the page calls `resolveMockTimes` then `adaptAcquisitions`.
 
 After Slice 7: `getAcquisitions(dayKey)` is replaced with the real `"use cache"` fetch (if
 the backend endpoint exists) or with the empty stub `{ datatakes: [], stations: [] }` (if

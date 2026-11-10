@@ -5,6 +5,8 @@ import PageHeader from "@/components/PageHeader";
 import { SITE_NAME, ROUTES } from "@/lib/routes";
 import { fmtDate } from "@/lib/missions";
 import { getAcquisitions } from "@/features/acquisitions/data";
+import { resolveMockTimes } from "@/features/acquisitions/mock-data";
+import { adaptAcquisitions } from "@/features/acquisitions/adapter";
 import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE } from "@/features/acquisitions/copy";
 import AcquisitionsGlobe from "@/features/acquisitions/AcquisitionsGlobe";
 import s from "@/features/acquisitions/acq-globe.module.css";
@@ -35,17 +37,21 @@ export const metadata: Metadata = {
 
 async function AcquisitionsContent() {
   await connection();
-  const now = new Date(); // taken once; Slice 2 passes now.getTime() as nowMs to AcquisitionsGlobe
+  const now = new Date();
+  const nowMs = now.getTime();
   const dayKey = fmtDate(now);
-  const data = await getAcquisitions(dayKey);
-  if (data.datatakes.length === 0) {
+  const dayMs = nowMs - (nowMs % 86_400_000);
+  const raw = await getAcquisitions(dayKey);
+  const datatakes = resolveMockTimes(raw.rawSpecs, nowMs, dayMs);
+  if (datatakes.length === 0) {
     return (
       <section className={s.page}>
         <p className={s.empty}>Acquisition data is not available yet.</p>
       </section>
     );
   }
-  return <AcquisitionsGlobe look="stylized" nowMs={now.getTime()} data={data} />;
+  const data = adaptAcquisitions({ datatakes, stations: raw.stations }, dayKey);
+  return <AcquisitionsGlobe look="stylized" nowMs={nowMs} data={data} />;
 }
 
 export default function Page() {

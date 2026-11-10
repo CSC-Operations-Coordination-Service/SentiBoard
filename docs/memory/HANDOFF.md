@@ -2,6 +2,81 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 4: visual bug fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Fixed after first browser comparison against mock-up. All checks pass; ready to commit.
+
+**Fixes applied:**
+
+1. **Badge labels invisible** — the parent useEffect was reassigning `stationBadgeRefs.current` and `satBadgeRefs.current` to new null-filled arrays after React had already populated them via mount ref callbacks. Removed those two lines.
+
+2. **Night-side terminator missing** — the globe was just showing daytime over Europe at 18:35 UTC; the day/night shader was working correctly. `findEarthMesh` found the sphere (confirmed with temporary diagnostic logging, now removed).
+
+3. **No starfield** — added `<SpaceBackdrop page={-1} paused={!stageVisible} />` before the canvas wrapper. `stageVisible` is React state (safe during render). `prefers-reduced-motion` handled inside `SpaceBackdrop`'s own `turn` effect.
+
+4. **Footprints hidden / notched** — fan triangulation from centroid produced flat triangles whose chord edges sag below the globe sphere. Replaced with quad-strip using `buildFootprintFill(fp, swathKm)` (new pure function in `acqGeometry.ts`): 24 row pairs from `left[]`/`right[]`, 6 slerp steps across-track for swathKm > 500. Fill at `FILL_R = 1.004`, outline at `OUTLINE_R = 1.005` via `THREE.Line` (ring already closes). `renderOrder 14+idx` (fill) / `18+idx` (outline). 18 new tests: vertex radius, chord-midpoint sag, vertex count by swath class, NaN/range.
+
+5. **Mock data on wrong day** — `getMockData` was computing `startIso = dayStart − offsetS` (yesterday). Restructured: `getMockData` now returns raw `RawAcqSpec[]` (pure, cacheable); `resolveMockTimes(specs, nowMs, dayMs)` in `mock-data.ts` computes `startIso = nowMs − offsetS` and filters `minutesFromMidnight >= 0`. Both page components call it after `connection()`. Trail "long lines" bug was a symptom of this — resolved.
+
+Updated files:
+- `src/features/acquisitions/acqGeometry.ts` — added `FILL_R`, `OUTLINE_R`, `geoToXyz`, `buildFootprintFill`
+- `src/features/acquisitions/acqGeometry.test.ts` — 18 new `buildFootprintFill` tests (460 total)
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — badge ref reset removed; SpaceBackdrop added; footprint section rewritten; `THREE.Line`+`OUTLINE_R`+renderOrder
+- `src/features/acquisitions/mock-data.ts` — `RawAcqSpec` exported; `getMockData` returns raw; `resolveMockTimes` added
+- `src/features/acquisitions/data.ts` — `getAcquisitions` returns `{ rawSpecs, stations }`
+- `src/app/acquisitions-globe-earth/page.tsx` — calls `resolveMockTimes` + `adaptAcquisitions`
+- `src/app/acquisitions-globe/page.tsx` — same
+- `docs/memory/features/acquisitions-plan.md` — Data section updated
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean.
+
+**Browser checks for Session 4 (compare vs mock-up at port 5180):**
+1. Station and satellite labels appear next to their markers in both looks.
+2. At any time outside ~06:00–18:00 UTC over Europe, the terminator and city lights are visible.
+3. Starfield (SpaceBackdrop) shows behind the globe in both looks.
+4. Footprint fills are fully visible — no notches or hidden regions. Wide swaths if tested stay on-sphere.
+5. Trails are short arcs behind each satellite, not long lines crossing the globe.
+
+## Acquisitions — Session 3: datatake overlays + simulation clock (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/acqGeometry.ts` — orbital mechanics (prepDatatake, subPoint, buildFootprint, dest, bearing); no browser deps; pure module
+- `src/features/acquisitions/acqGeometry.test.ts` — 24 tests (minutesFromMidnight, prepDatatake, subPoint, dest, bearing, buildFootprint)
+
+Updated files:
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — renamed `_scene`/`_data` stubs; added prepared+satUnits useMemos; parent useEffect building all 3D overlays; rAF loop extended for clock + satellite/station/overlay updates; simbar JSX; overlay badge JSX (DOM-ref driven)
+- `src/features/acquisitions/acq-globe.module.css` — simbar, overlayBadges container, .stn/.sat badge classes
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 442/442 tests, `pnpm build` all clean.
+
+**What is in Slice 3:**
+- Footprint fills (fan-triangulated from centroid, opacity 0.24) and outlines (LineLoop), colour by `cls` (ok/warn/crit → `0x34d399`/`0xf5b544`/`0xff5c5c`)
+- Satellite dot (SphereGeometry r=0.012) + trail (31 pts, 0.8 min spacing, opacity 0.28)
+- Station cap (fan triangles at 22° threshold), ring (LineLoop), dashed contact links (LineDashedMaterial) per satellite
+- Clock advances in rAF (dt capped 0.25 s × speed); opens at time-of-day of `nowMs`
+- Satellite/station badge positions written via DOM refs in rAF — no React state per frame
+- Scrub is uncontrolled (`defaultValue`); `--fill` CSS custom property set via DOM ref
+- Off-screen pause (IntersectionObserver from Slice 2) skips clock + all overlay updates too
+
+**Slice 5 hook-in points (not in code):**
+- Selected datatake pulsing footprint: change fill opacity from 0.24 → 0.34–0.52 animated
+- Selected satellite trail: opacity 0.28 → 0.70, plus dashed ahead-track line
+- Fly-to on click: call `rotateTo(lon, lat, zoom)` from the datatake click handler
+- Click-to-select on footprint mesh: `Raycaster` in `onPointerUp` (no drag moved) → `setSelectedId`
+- For all of the above: add `selectedId` state; pass it into the rAF loop; rebuild meshes on selection change
+
+**Known geometry edge case:**
+Wide-swath footprints (swathKm > 500) are fan-triangulated the same as narrow ones. The mock-up used slerp subdivision across-track for those; this implementation uses simple `dest()` calls for each step edge, which is correct for Slice 3. If noticeable distortion appears at high zoom on S1 Extra-Wide (400 km), add slerp subdivision in Slice 5.
+
+**Browser checks (compare vs mock-up dev server on port 5180):**
+1. Open `/acquisitions-globe-earth` or `/acquisitions-globe`. Globe renders with footprint fills and outlines over the datatake area.
+2. Each satellite shows a dot and a 31-point trail behind it.
+3. Station markers appear. When a satellite is within 22° of a station, the dashed link is visible and the station badge gets the cyan ring + colour.
+4. Simbar at bottom: play/pause button, HH:MM:SSZ updating, scrub moves, speed pill cycles ×1/×10/×60/×600.
+5. Clock starts at today's time-of-day (matches `nowMs` time component, not midnight).
+6. Scroll page until globe is off-screen: the simbar clock keeps advancing and the scrub moves, but the 3D positions, trails, links and overlay badges are not updated. When you scroll back, the globe jumps to the current sim time.
+7. Drag/zoom/keyboard still work; wheel-hint appears without Ctrl/⌘.
+
 ## Acquisitions — Session 2: globe engine (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
 
 New files:

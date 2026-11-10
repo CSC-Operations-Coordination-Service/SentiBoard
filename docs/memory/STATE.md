@@ -26,7 +26,19 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   interaction, IntersectionObserver off-screen pause, useSyncExternalStore ⌘/Ctrl label).
   Earth textures in `public/assets/globe/`. Both routes now render the globe client-side via
   `next/dynamic({ ssr: false })`. 418 tests pass. Build clean.
-  Session 3 (datatake overlays: footprints, satellites, stations) is next.
+- **Acquisitions — Slice 3 done + Session 4 bug fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`):**
+  Datatake overlays + simulation clock (Session 3), then four visual bug fixes (Session 4).
+  New files: `acqGeometry.ts` (orbital mechanics + `buildFootprintFill` + `FILL_R`/`OUTLINE_R`),
+  `acqGeometry.test.ts` (460 tests total: 24 geometry + 18 fill-mesh across 3 swath sizes).
+  `AcquisitionsGlobe.tsx`: simbar, overlay badges (DOM-ref driven), footprint fills via
+  `buildFootprintFill` (quad-strip, slerp for > 500 km, indexed BufferGeometry, renderOrder
+  14+idx/18+idx), `THREE.Line` outline at OUTLINE_R, `SpaceBackdrop page={-1}`.
+  `mock-data.ts`: `getMockData` returns raw `RawAcqSpec[]`; `resolveMockTimes(specs, nowMs, dayMs)`
+  resolves offsets against NOW and filters `minutesFromMidnight >= 0`. Both page components
+  (`acquisitions-globe-earth`, `acquisitions-globe`) call `resolveMockTimes` after `connection()`
+  then `adaptAcquisitions`. `data.ts` returns `{ rawSpecs, stations }` (not adapted).
+  acq-globe.module.css: simbar, .overlayBadges, badge classes.
+  460/460 tests pass. Lint + build clean (both routes PPR ◐). Session 5 (filter toolbar, KPIs, dropdowns) next.
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.

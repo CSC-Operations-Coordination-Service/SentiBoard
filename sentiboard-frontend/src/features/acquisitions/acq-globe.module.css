@@ -165,3 +165,264 @@
     transition: none;
   }
 }
+
+/* ==================== simulation bar (Slice 3) ==================== */
+
+.simbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 12px 16px;
+  background: linear-gradient(to top, rgba(4, 7, 15, 0.82) 0%, rgba(4, 7, 15, 0) 100%);
+  pointer-events: none;
+}
+
+.simctl {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.play {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #007c93;
+  color: #000;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.play:hover {
+  background: #2fc6dc;
+}
+
+.play:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+.simtime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 100px;
+}
+
+.simtime span {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: rgb(234, 240, 248);
+  line-height: 1.1;
+}
+
+.simtime small {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  color: rgba(205, 217, 236, 0.5);
+  text-transform: uppercase;
+}
+
+.scrub {
+  --fill: 0%;
+  flex: 1;
+  height: 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.scrub::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    rgba(47, 198, 220, 0.85) 0%,
+    rgba(47, 198, 220, 0.85) var(--fill),
+    rgba(255, 255, 255, 0.18) var(--fill),
+    rgba(255, 255, 255, 0.18) 100%
+  );
+}
+
+.scrub::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.scrub::-moz-range-progress {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(47, 198, 220, 0.85);
+}
+
+.scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #2fc6dc;
+  margin-top: -4.5px;
+  transition: transform 0.1s ease;
+}
+
+.scrub::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #2fc6dc;
+  border: none;
+}
+
+.scrub:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.speed {
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(8, 11, 18, 0.5);
+  color: rgb(205, 217, 236);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.speed:hover {
+  border-color: rgba(47, 198, 220, 0.5);
+  color: #eaf0f8;
+}
+
+.speed:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+/* ==================== overlay badge container (Slice 3) ==================== */
+
+.overlayBadges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ==================== station badges (Slice 3) ==================== */
+
+.stn {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stnIcon {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  color: rgba(205, 217, 236, 0.65);
+  transition: color 0.2s ease;
+}
+
+.stnIcon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.stnRing {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 229, 255, 0.55);
+  display: none;
+}
+
+.stnTag {
+  position: absolute;
+  left: 7px;
+  top: -10px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: rgba(205, 217, 236, 0.65);
+  background: rgba(4, 7, 15, 0.55);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.stnOn .stnIcon {
+  color: #e8fbff;
+}
+
+.stnOn .stnTag {
+  border-color: rgba(0, 229, 255, 0.55);
+  color: #e8fbff;
+}
+
+.stnOn .stnRing {
+  display: block;
+}
+
+/* ==================== satellite badges (Slice 3) ==================== */
+
+.sat {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.satDot {
+  position: absolute;
+  left: -3.2px;
+  top: -3.2px;
+  width: 6.4px;
+  height: 6.4px;
+  border-radius: 50%;
+  background: var(--c, #2fc6dc);
+}
+
+.satLbl {
+  position: absolute;
+  left: 7px;
+  bottom: 6px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(205, 217, 236, 0.75);
+  background: rgba(4, 7, 15, 0.45);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
