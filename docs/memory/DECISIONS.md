@@ -238,8 +238,9 @@ in `sentiboard-backend/index_templates/`, and keeps its data in OpenSearch (2.19
 `docker-compose.yml`). `maas-model` has no relational backend; adding one would mean a second set
 of models kept in sync by hand. Approved by the project manager (2026-10-23).
 **Decision.** OpenSearch is the backend's only data store. Sentiboard's own resources live in its
-own indices behind aliases: `anomaly`, `news`, `instantmessage`, `processor` (the last partitioned
-by `release_date` month). Legacy data is loaded by `migrate_legacy.py` (SQLite backup) and
+own indices behind aliases: `anomaly`, `news`, `instantmessage`, `processor` (none partitioned:
+one index each is far below the ~50 GB per-index limit; processor's monthly split was removed
+2026-11-10). Legacy data is loaded by `migrate_legacy.py` (SQLite backup) and
 `migrate_processors.py` (Config Tool Mongo dump). No relational store for now.
 **Consequences.**
 
