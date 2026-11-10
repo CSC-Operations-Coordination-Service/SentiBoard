@@ -2,6 +2,296 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Slice 7: mock data removed, ready for PR (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Deleted: `src/features/acquisitions/mock-data.ts`.
+
+Updated files:
+- `src/features/acquisitions/stations.ts` — new; `COPERNICUS_STATIONS: Station[]` with the 5 real fixed positions (values from prototype mock-up `AcquisitionsGlobeEarth.tsx` STATIONS constant)
+- `src/features/acquisitions/data.ts` — `getAcquisitions(dayKey)` now returns `{ datatakes: [], stations: COPERNICUS_STATIONS }` with a TODO for the real endpoint
+- `src/app/acquisitions-globe-earth/page.tsx` — removed `resolveMockTimes`, `dayMs`, early-return; always adapts and renders `AcquisitionsGlobe`
+- `src/app/acquisitions-globe/page.tsx` — same
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — removed `simDayMs2` duplicate (uses `simDayMs`); replaced 6 inline `navigate(...)` calls with `navigateRef.current(...)`; deleted the `navigate` function; added `<p className={s.empty}>Acquisition data is not available yet.</p>` between toolbar and globe when `data.datatakes.length === 0`
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean (both routes PPR ◐).
+
+**What to check in the browser:**
+- `/acquisitions-globe-earth` loads; globe shows with 5 station markers and sim clock running; KPIs show 0 / "—"; toolbar renders (all dropdowns empty); empty-state message "Acquisition data is not available yet." appears between toolbar and globe.
+- `/acquisitions-globe` same with stylised planet.
+- No console errors.
+
+---
+
+### Backend endpoint contract (for the backend team)
+
+`getAcquisitions(dayKey)` in `src/features/acquisitions/data.ts` is the stub to replace. `dayKey` is a date string `YYYY-MM-DD` (UTC). The page needs:
+
+**Per datatake** (fields of `RawAcqDatatake`, which is `AcqDatatake` without `comp`/`cls` — those are derived by the adapter):
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | Unique datatake identifier |
+| `sat` | `string` | Full satellite name, e.g. `"Sentinel-2A"` |
+| `unit` | `string` | Short unit code, e.g. `"S2A"` |
+| `station` | `string` | Downlink station name |
+| `lat` | `number` | Footprint centre latitude (degrees) |
+| `lon` | `number` | Footprint centre longitude (degrees) |
+| `swathKm` | `number` | Swath width in km (used for footprint geometry) |
+| `periodMin` | `number` | Orbital period in minutes (used for trail and ahead-track) |
+| `startIso` | `string` | Sensing start time, ISO 8601 UTC |
+| `sensingS` | `number` | Sensing duration in seconds |
+| `status` | `string` | `"Published"` \| `"Processing"` \| `"Failed"` |
+| `mode` | `string` | Instrument mode label, e.g. `"IW · DV"` |
+| `absOrbit` | `string` | Absolute orbit number (zero-padded string) |
+| `levels` | `AcqLevel[]` | Product types with pct per level (drives `comp`/`cls` in adapter) |
+| `kmlLink` | `{ url: string; filename: string }` *(optional)* | Acquisition plan KML download |
+
+**Ground stations** are real fixed positions committed in `src/features/acquisitions/stations.ts` — the backend does not need to serve them.
+
+**Open decision — datatakes with a future `startIso`:** the stub returns no datatakes so this doesn't arise now. When the real endpoint exists, decide whether datatakes whose `startIso` is ahead of wall-clock time during `dayKey` should be hidden, labelled "PLANNED", or shown as-is. All mock datatakes started in the past; the UI does not currently handle future-start datatakes.
+
+---
+
+## Acquisitions — Session 6b: Slice 6 audit fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Updated files:
+- `src/features/acquisitions/model.ts` — `kpiStats`: `acquiredPct` now counts `status !== "Failed"`; `failedCount` stays `comp === 0`
+- `src/features/acquisitions/model.test.ts` — 8 new kpiStats tests (468 total); covers Failed-with-comp-gt-0
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — F2: `log.warn` via `logger("acquisitions-globe")`; F7: simbar span = `YYYY-MM-DD HH:MM:SSZ`, `<small>SIMULATION TIME</small>`; F8: station cap/ring/link all `0x00e5ff` (cap 0.06, ring 0.28, link 0.75 dashSize 0.006 gapSize 0.006); removed `fillColour` helper and its CSS-root setup (now unused)
+- `src/features/acquisitions/DatatakePanel.tsx` — F4: KPI horizontal (big % beside sensing/missing); F5: 15 record rows matching mock-up (`noZone`, `isoPlus`, mode/pol parse, station-code lookup, "NA" for missing); F6: SVG close button
+- `src/features/acquisitions/acq-globe.module.css` — F3: `.fdropBody`/`.fdropInner` in reduced-motion block; F4: `.dtkKpi` horizontal, `.dtkAside` flex-column, `.dtkNote` added; F6: `.acqClose` border 0 background none; F9: `.acqRecord > div:last-child` bottom border; F10: `.dtkId` `clamp(25px, 2.6vw, 36px)`, line-height 0.95, uppercase; F11: scrub track 5px `#00e5ff`, thumb 11px white box-shadow
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean (both routes PPR ◐).
+
+**ESLint disable comments confirmed real (kept in place):**
+- `AcquisitionsGlobe.tsx:427` — `set-state-in-effect`: `setDisplayedDtk` inside a `useEffect` (the timer-delayed unmount path). Lint flags it without the comment.
+- `AcquisitionsGlobe.tsx:1172-1178` — `react-hooks/immutability`: `.visible` mutations on Three.js mesh refs inside a `useEffect`. Lint flags it without the comment.
+
+**Prototype ref (acquisitions):** `~/work/SentiBoard/design/react-mockups/docs/acquisitions-prototype-ref.md`
+
+---
+
+## Acquisitions — Session 6: datatake detail panel (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/DatatakePanel.tsx` — panel component (eyebrow, ID, satellite, status pill with glow, close button, completeness KPI, sensing/missing, 15 record rows after 6b fixes)
+
+Updated files:
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — selection via `?datatake=` URL param; `displayedDtk` state with 500 ms fade-out delay; `navigateRef`, `urlViewRef`, `filteredDatatakesRef` stable refs (render-body assignment); `selectedDtkIdRef`, `selectedSatUnitRef`, `prevDtkIdRef`; extended document keydown handler (`[`/`]` cycle, `Enter` play/pause, `Escape` → close dropdown then deselect); fly-to `useEffect` with out-first (1.2) when switching while zoom > 1.6; `fitZoom` + `geoDistRad` helpers; globe picking via `THREE.Raycaster` in `onPointerUp`; `⌖` deselects when something is selected; footprint pulse + selected visuals in rAF; `aheadTrail` (`LineDashedMaterial`) shown for selected satellite; side column JSX (`hasSel`, `sideCol`, `dtkRail`)
+- `src/features/acquisitions/acq-globe.module.css` — `.sideCol`, `.hasSel`, `.dtkRail`, `.dtkBlock`, `@keyframes acqIn`, `.eyebrow`, `.dtkHead`, `.acqHeadR`, `.pill`, `.acqClose`, `.dtkId`, `.mission`, `.dtkKpi`, `.big`, `.dtkAside`, `.gap`, `.acqRecord`; responsive (< 980 px panel drops below globe); reduced-motion
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean (both routes PPR ◐).
+
+**Key implementation decisions (Session 6):**
+
+- **Selection = URL `?datatake=`**: selecting calls `navigateRef.current({ ...view, datatake: id })` via globe pick or `]`/`[` keys; deselect sets `datatake: null`; this is the same filter the toolbar Datatake dropdown uses (Decision 5).
+- **`navigateRef.current` / `urlViewRef.current` / `filteredDatatakesRef.current`** updated in `useLayoutEffect([view, filteredDatatakes])`, which runs synchronously after DOM mutations and before paint — no event handler can read a stale ref between render and the first frame.
+- **`displayedDtk` delayed unmount**: a 500 ms `window.setTimeout` keeps the panel mounted during the CSS opacity fade-out. Re-select cancels the timer.
+- **`fitZoom` without d3**: haversine `geoDistRad` replaces `d3.geoDistance`; formula `z = want / (baseR × sin(far))` where `want = 0.3 × min(W,H)`, `baseR = 0.39 × min(W,H)`, clamped `[1.4, 5]`.
+- **Globe picking NDC correction**: `ndcY = -(py/H)×2 + 0.92` corrects for `setViewOffset(W, H, 0, 0.04×H, W, H)` so the ray origin is accurate.
+- **Trail color changed to white**: changed from status hex to `0xffffff` at 0.28 opacity (matches prototype spec §7); selected satellite uses 0.70 opacity. This is a visual correction from Session 3's deviation from the prototype.
+- **Outline opacity changed to 1.0**: matches prototype spec §7 (was 0.55).
+- **`aheadTrail`** uses `THREE.LineDashedMaterial` (dashSize 0.025, gapSize 0.05). Needs `computeLineDistances()` after each position update.
+- **`[`/`]` cycle**: sorts visible datatakes by `satGroupOf(sat)` then `id`; `-1` current index → `]` goes to index 0, `[` goes to last.
+- **`Escape` chain**: close open dropdown first; if none open, deselect; this extends the existing single document handler (not a second one).
+
+**Browser checks (Session 6):**
+
+1. Load `/acquisitions-globe-earth`. Nothing selected on load, stageRow has no `.hasSel` class, side column invisible.
+2. Click a footprint footprint — `?datatake=<id>` appears in URL; side column slides in (820 ms); panel fades in with 380 ms delay; panel shows datatake ID, satellite, status pill, completeness, sensing time, 6 record rows.
+3. Deep link: `?datatake=<id>` — panel opens immediately with the correct datatake.
+4. Click the selected footprint again → deselect; panel fades out; side column collapses; view flies back to HOME_VIEW.
+5. Click empty globe → deselect.
+6. `⌖` button: when something selected → deselect + fly to HOME_VIEW. When nothing selected → reset to HOME_VIEW (original behaviour).
+7. Press `]` to cycle to next visible datatake. Globe flies to it (out-first if switching while zoomed in). Press `[` for previous.
+8. Press `Enter` → toggles play/pause. Press `Escape` → closes dropdown if open, else deselects.
+9. Navigate to `?datatake=DT001` then Back → URL and panel revert correctly.
+10. Navigate to `?datatake=DT001`, then click another footprint → out-first zoom if currently zoomed in (zoom > 1.6).
+11. Under `prefers-reduced-motion`: panel appears instantly; side column jumps; fly-to is instant.
+12. At ≤ 980 px: side column drops below globe at full width.
+
+---
+
+## Acquisitions — Session 5: filter toolbar + KPIs (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Updated files:
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — `useSearchParams` + `parseAcqView` → `view`; three-tier filter cascade (`satFilteredDatatakes` → `satDayDatatakes` → `filteredDatatakes`; `dropdownDatatakes` = sat + day + search); KPI row; toolbar with Satellite / Day / Datatake dropdowns and Search; visibility effect `[scene, prepared, filteredDatatakes, ...]` toggles `.visible` on `footprintMeshesRef` without rebuilding geometry; `filteredUnitsRef` hides satellite dots/trails in rAF; Escape closes open dropdown (single document handler, no canvas Escape — `0` already resets view); outside-click handler; `openDropdownRef` synced via `useEffect`
+- `src/features/acquisitions/acq-globe.module.css` — KPI row, toolbar, in-flow dropdowns (`.fdropOpen` class-driven: `grid-template-rows: 1fr` + `visibility: visible; transition-delay: 0s`), calendar, search, responsive breakpoints
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean (both routes PPR ◐).
+
+**Key implementation decisions:**
+
+- **`navigate` uses `history.pushState`** (not `replaceState`), same as availability's Explorer. All filter changes push a new history entry so Back/Forward works.
+- **Search query is never auto-cleared** (not on pick, not on dropdown close) — this matches the mock-up exactly (mock-up lines 1907–1919: `setSearchQuery` is only called in `onChange`; there is no clear-on-pick or clear-on-close).
+- **In-flow dropdowns** (Decision 1): `.fdropOpen` class on the `.fdrop` element drives `grid-template-rows` animation on `.fdropBody` and reveals `.fdropInner` immediately (`transition-delay: 0s`). Closing delays `visibility: hidden` by 420 ms so the collapse animates before items disappear. No `inert`, no inline `style` for the grid rows.
+- **Stale params treated as absent** (approval item 5): if the URL has e.g. `?satellite=S2A&day=2023-01-01`, `satDayDatatakes` returns `[]`, KPIs show 0/—, globe shows no footprints, and the URL is never replaced. Mock-up lines 674–692 have the same behaviour (no URL side-effects in the cascade).
+- **`openDropdownRef`** updated in `useEffect([openDropdown])`, not during render (approval item 2).
+- **Visibility effect** declared after geometry effect and uses `[scene, prepared, filteredDatatakes, view.satellite, view.datatake]`; when `scene` or `prepared` changes both effects run in declaration order (geometry first, visibility second), so `footprintMeshesRef.current` is populated before the visibility effect reads it (approval item 3).
+- **`calMonth` initial value** from `nowMs` prop, not `new Date()` (approval item 4).
+- **`react-hooks/immutability`** suppressed with `/* eslint-disable/enable react-hooks/immutability */` around the Three.js `.visible` mutations in the visibility effect — same pattern as the geometry effect's `exhaustive-deps` disable.
+
+**What is NOT in Slice 5:**
+- Datatake detail panel (open on pick, close on deselect, fly-to on open)
+- Deselect with Escape (Slice 5; `0` already resets the view)
+- Footprint pulse / selected-trail highlight
+
+**Browser checks (compare vs mock-up):**
+1. Load `/acquisitions-globe-earth`. KPI row with four figures appears above the globe. Date heading shows "9 – 10 November 2026".
+2. Open Satellite dropdown → list expands in-flow, globe stays below; caption turns cyan. Pick "S2A" → URL gets `?satellite=S2A`, only S2 footprints visible, S1/S3 satellite dots hidden.
+3. Open Day → calendar shows November 2026; only today (10) is a `<button>` with cyan dot; all other days are plain `<span>` (no click). Picking 10 adds `&day=2026-11-10`; heading changes to "10 November 2026".
+4. Type in Search → Datatake dropdown opens. Enter picks the first visible item. URL gets `?…&datatake=<id>`. Globe shows only that footprint; KPIs count one datatake.
+5. Press Escape → open dropdown closes. No globe reset. `0` key still resets the view.
+6. Browser Back → URL reverts, filters and globe update without geometry rebuild.
+7. Navigate to `?satellite=S2A&day=2023-01-01` → no redirect; KPIs show 0/—; URL unchanged.
+
+---
+
+## Acquisitions — Session 4: visual bug fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Fixed after first browser comparison against mock-up. All checks pass; ready to commit.
+
+**Fixes applied:**
+
+1. **Badge labels invisible** — the parent useEffect was reassigning `stationBadgeRefs.current` and `satBadgeRefs.current` to new null-filled arrays after React had already populated them via mount ref callbacks. Removed those two lines.
+
+2. **Night-side terminator missing** — the globe was just showing daytime over Europe at 18:35 UTC; the day/night shader was working correctly. `findEarthMesh` found the sphere (confirmed with temporary diagnostic logging, now removed).
+
+3. **No starfield** — added `<SpaceBackdrop page={-1} paused={!stageVisible} />` before the canvas wrapper. `stageVisible` is React state (safe during render). `prefers-reduced-motion` handled inside `SpaceBackdrop`'s own `turn` effect.
+
+4. **Footprints hidden / notched** — fan triangulation from centroid produced flat triangles whose chord edges sag below the globe sphere. Replaced with quad-strip using `buildFootprintFill(fp, swathKm)` (new pure function in `acqGeometry.ts`): 24 row pairs from `left[]`/`right[]`, 6 slerp steps across-track for swathKm > 500. Fill at `FILL_R = 1.004`, outline at `OUTLINE_R = 1.005` via `THREE.Line` (ring already closes). `renderOrder 14+idx` (fill) / `18+idx` (outline). 18 new tests: vertex radius, chord-midpoint sag, vertex count by swath class, NaN/range.
+
+5. **Mock data on wrong day** — `getMockData` was computing `startIso = dayStart − offsetS` (yesterday). Restructured: `getMockData` now returns raw `RawAcqSpec[]` (pure, cacheable); `resolveMockTimes(specs, nowMs, dayMs)` in `mock-data.ts` computes `startIso = nowMs − offsetS` and filters `minutesFromMidnight >= 0`. Both page components call it after `connection()`. Trail "long lines" bug was a symptom of this — resolved.
+
+Updated files:
+- `src/features/acquisitions/acqGeometry.ts` — added `FILL_R`, `OUTLINE_R`, `geoToXyz`, `buildFootprintFill`
+- `src/features/acquisitions/acqGeometry.test.ts` — 18 new `buildFootprintFill` tests (460 total)
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — badge ref reset removed; SpaceBackdrop added; footprint section rewritten; `THREE.Line`+`OUTLINE_R`+renderOrder
+- `src/features/acquisitions/mock-data.ts` — `RawAcqSpec` exported; `getMockData` returns raw; `resolveMockTimes` added
+- `src/features/acquisitions/data.ts` — `getAcquisitions` returns `{ rawSpecs, stations }`
+- `src/app/acquisitions-globe-earth/page.tsx` — calls `resolveMockTimes` + `adaptAcquisitions`
+- `src/app/acquisitions-globe/page.tsx` — same
+- `docs/memory/features/acquisitions-plan.md` — Data section updated
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean.
+
+**Browser checks for Session 4 (compare vs mock-up at port 5180):**
+1. Station and satellite labels appear next to their markers in both looks.
+2. At any time outside ~06:00–18:00 UTC over Europe, the terminator and city lights are visible.
+3. Starfield (SpaceBackdrop) shows behind the globe in both looks.
+4. Footprint fills are fully visible — no notches or hidden regions. Wide swaths if tested stay on-sphere.
+5. Trails are short arcs behind each satellite, not long lines crossing the globe.
+
+## Acquisitions — Session 3: datatake overlays + simulation clock (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/acqGeometry.ts` — orbital mechanics (prepDatatake, subPoint, buildFootprint, dest, bearing); no browser deps; pure module
+- `src/features/acquisitions/acqGeometry.test.ts` — 24 tests (minutesFromMidnight, prepDatatake, subPoint, dest, bearing, buildFootprint)
+
+Updated files:
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — renamed `_scene`/`_data` stubs; added prepared+satUnits useMemos; parent useEffect building all 3D overlays; rAF loop extended for clock + satellite/station/overlay updates; simbar JSX; overlay badge JSX (DOM-ref driven)
+- `src/features/acquisitions/acq-globe.module.css` — simbar, overlayBadges container, .stn/.sat badge classes
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 442/442 tests, `pnpm build` all clean.
+
+**What is in Slice 3:**
+- Footprint fills (fan-triangulated from centroid, opacity 0.24) and outlines (LineLoop), colour by `cls` (ok/warn/crit → `0x34d399`/`0xf5b544`/`0xff5c5c`)
+- Satellite dot (SphereGeometry r=0.012) + trail (31 pts, 0.8 min spacing, opacity 0.28)
+- Station cap (fan triangles at 22° threshold), ring (LineLoop), dashed contact links (LineDashedMaterial) per satellite
+- Clock advances in rAF (dt capped 0.25 s × speed); opens at time-of-day of `nowMs`
+- Satellite/station badge positions written via DOM refs in rAF — no React state per frame
+- Scrub is uncontrolled (`defaultValue`); `--fill` CSS custom property set via DOM ref
+- Off-screen pause (IntersectionObserver from Slice 2) skips clock + all overlay updates too
+
+**Slice 5 hook-in points (not in code):**
+- Selected datatake pulsing footprint: change fill opacity from 0.24 → 0.34–0.52 animated
+- Selected satellite trail: opacity 0.28 → 0.70, plus dashed ahead-track line
+- Fly-to on click: call `rotateTo(lon, lat, zoom)` from the datatake click handler
+- Click-to-select on footprint mesh: `Raycaster` in `onPointerUp` (no drag moved) → `setSelectedId`
+- For all of the above: add `selectedId` state; pass it into the rAF loop; rebuild meshes on selection change
+
+**Known geometry edge case:**
+Wide-swath footprints (swathKm > 500) are fan-triangulated the same as narrow ones. The mock-up used slerp subdivision across-track for those; this implementation uses simple `dest()` calls for each step edge, which is correct for Slice 3. If noticeable distortion appears at high zoom on S1 Extra-Wide (400 km), add slerp subdivision in Slice 5.
+
+**Browser checks (compare vs mock-up dev server on port 5180):**
+1. Open `/acquisitions-globe-earth` or `/acquisitions-globe`. Globe renders with footprint fills and outlines over the datatake area.
+2. Each satellite shows a dot and a 31-point trail behind it.
+3. Station markers appear. When a satellite is within 22° of a station, the dashed link is visible and the station badge gets the cyan ring + colour.
+4. Simbar at bottom: play/pause button, HH:MM:SSZ updating, scrub moves, speed pill cycles ×1/×10/×60/×600.
+5. Clock starts at today's time-of-day (matches `nowMs` time component, not midnight).
+6. Scroll page until globe is off-screen: the simbar clock keeps advancing and the scrub moves, but the 3D positions, trails, links and overlay badges are not updated. When you scroll back, the globe jumps to the current sim time.
+7. Drag/zoom/keyboard still work; wheel-hint appears without Ctrl/⌘.
+
+## Acquisitions — Session 2: globe engine (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/ThreeEarth.tsx` — WebGLRenderer, stars/atmosphere, `paused` prop via `useLayoutEffect`-synced ref, `forceContextLoss()` after `renderer.dispose()` in cleanup
+- `src/features/acquisitions/dayNightEarth.ts` — day/night shader material; textures via `asset()`
+- `src/features/acquisitions/stylizedEarth.ts` — vector coastline/land/graticule shader material
+- `src/features/acquisitions/land.ts` — Natural Earth 110m land outlines (verbatim copy)
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — both looks, IntersectionObserver off-screen pause, `useSyncExternalStore` ⌘/Ctrl label, zoom buttons with `type="button"` + aria-labels, drag/arrow/+−/0/Ctrl+wheel, wheel-hint, `_scene` state for Slice 3
+- `public/assets/globe/earth-day.jpg`, `public/assets/globe/earth-night.jpg` — equirectangular textures
+
+Updated files:
+- `src/features/acquisitions/acq-globe.module.css` — added Slice 2 classes (`.stageRow`, `.globeStage`, `.canvasWrap`, `.globeZoomed`, `.zoomCtl`, `.acqWheelHint`, responsive)
+- `src/app/acquisitions-globe-earth/page.tsx` — wired `<AcquisitionsGlobe look="imagery" ...>`
+- `src/app/acquisitions-globe/page.tsx` — wired `<AcquisitionsGlobe look="stylized" ...>`
+
+ESLint: 0 errors, 2 expected warnings (`_data` and `_scene` are Slice 3 stubs). `tsc --noEmit`, 418/418 tests, `pnpm build` all clean. Both routes build as `◐` (PPR).
+
+**Two render loops explained:** ThreeEarth runs the only `renderer.render(scene, camera)` call (once per rAF tick). The parent's separate rAF loop updates the camera position and atmosphere size; it does not call render directly. When the stage is off-screen, the IntersectionObserver sets `stageVisibleRef.current = false`, which: (a) makes ThreeEarth's animate loop skip `renderer.render()` via `pausedRef.current`, and (b) makes the parent's rAF loop skip applyView and atmosphere updates. Exactly one render per frame, skipped when off-screen.
+
+**WebGL leak check:** navigate between `/acquisitions-globe` and `/acquisitions-globe-earth` about 20 times in `pnpm build && pnpm start`. Open the browser console. No "Too many active WebGL contexts" warning must appear. If it does, `forceContextLoss()` is not being called — check that cleanup order in ThreeEarth is `renderer.dispose()` then `renderer.forceContextLoss()`.
+
+**Slice 3 hook-in points:**
+- `const [_scene, setScene]` → rename to `scene`; add `useEffect(() => { if (!scene) return; buildOverlays(scene, ...); }, [scene])`
+- `const _data` parameter → rename to `data`; pass to `buildOverlays`
+- `simTimeRef.current` is currently frozen at mount time; Slice 3 (simulation bar) advances it
+
+## Acquisitions — Session 1b: route shells (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/copy.ts` — SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE
+- `src/features/acquisitions/acq-globe.module.css` — `.page` and `.empty` (Slice 2 extends)
+
+Updated files:
+- `src/app/acquisitions-globe-earth/page.tsx` — full route with metadata, Suspense, AcquisitionsContent
+- `src/app/acquisitions-globe/page.tsx` — same; canonical → `/acquisitions-globe-earth`
+- `sentiboard-frontend/next.config.ts` — 308 redirects for `/acquisitions-status.html` and `/acquisitions-status`
+- `sentiboard-frontend/src/app/sitemap.ts` — LEGACY_HINTS for both acquisitions routes (daily, 0.9)
+
+ESLint, `tsc --noEmit`, 418/418 tests, `pnpm build` all clean. Both routes show as `◐` (PPR).
+
+- **`Date.now()` blocked by `react-hooks/purity` ESLint rule** in render context. Used `new Date()` instead (same semantics; matches `availability/page.tsx` pattern). Slice 2 uses `now.getTime()` to get `nowMs` for `AcquisitionsGlobe`.
+- **Slice 7 — future-start datatakes:** Decide how datatakes with a `startIso` in the future (ahead of the current wall-clock time during dayKey) are shown when real data arrives: hidden, labelled "PLANNED", or shown as-is. All mock datatakes start in the past so this only matters for the real endpoint.
+- **Next:** Session 1b is complete. Session 2 — globe engine (ThreeEarth, day/night and stylised Earth materials, zoom controls, cleanup).
+
+## Acquisitions — Session 1a: data layer (2026-11-09, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/lib/missions.ts` — shared MissionId, MISSION_ORDER, MISSION_DISPLAY, MISSION_ID_OF, SATELLITES_OF, ALL_SATELLITES, DAY_MS, fmtDate, fmtDateTime, kpiFmt
+- `src/lib/url-params.ts` — shared ParamSource, reader(), parseOffSet()
+- `src/features/acquisitions/types.ts` — AcqDatatake, AcqLevel, AcqProductType, Station, AcquisitionsData
+- `src/features/acquisitions/mock-data.ts` — 11 raw specs (startOffsetS), getMockData(dayKey)
+- `src/features/acquisitions/model.ts` — computeAcqWindow, meanCompleteness, missingSeconds, kpiStats
+- `src/features/acquisitions/model.test.ts`
+- `src/features/acquisitions/adapter.ts` — adaptAcquisitions(raw, dayKey): derives comp/cls
+- `src/features/acquisitions/adapter.test.ts`
+- `src/features/acquisitions/data.ts` — `"use cache"` getAcquisitions(dayKey)
+- `src/features/acquisitions/url-state.ts` — parseAcqView, acqViewParams, acqViewHref, DEFAULT_ACQ_VIEW
+- `src/features/acquisitions/url-state.test.ts`
+
+Updated files:
+- `src/features/availability/model.ts` — now imports+re-exports from @/lib/missions; keeps all availability-specific symbols
+- `src/features/availability/url-state.ts` — now imports ParamSource/reader/parseOffSet from @/lib/url-params
+
+ESLint, `tsc --noEmit`, 418/418 tests, `pnpm build` all clean.
+
+- **mock-data.ts** holds the 11 mock-up datatakes as `startOffsetS` offsets (seconds before midnight of `dayKey`). Max offset = 74 520 s < 24 h → all startIso values are on the previous calendar day — always in the past.
+- **Future datatakes:** any datatake whose startIso is ahead of the current wall-clock time during dayKey (none in mock data) would appear as a normal datatake in the globe; the UI does not hide future-start datatakes. If the real endpoint ever returns them, Slice 7 is the right time to decide on filtering.
+- **Slice 7** must delete `mock-data.ts` and wire the real endpoint (name TBD with backend team, see data.ts TODO). Blocked on backend.
+- **Next:** Session 1b — route pages `/acquisitions-globe-earth` and `/acquisitions-globe`, page.tsx pattern, `connection()` + `<Suspense>`, metadata and sitemap update.
+
 ## Data Availability — push without mock data, empty state (2026-11-09, branch `feature/DEVOCS-219-data-availability`)
 
 Updated files: `src/features/availability/data.ts` (new), `src/features/availability/model.ts`,

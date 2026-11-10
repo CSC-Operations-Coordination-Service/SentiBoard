@@ -1,0 +1,1118 @@
+/* Acquisitions globe page wrapper and shared states. */
+
+.page {
+  position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding-inline: clamp(18px, 4vw, 48px);
+  padding-block: clamp(40px, 6vw, 80px);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  color: color-mix(in srgb, var(--text) 55%, transparent);
+}
+
+/* ==================== globe stage (Slice 2) ==================== */
+
+.stageRow {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  padding-top: clamp(22px, 3vh, 36px);
+  padding-inline: var(--hero-pad, clamp(18px, 4vw, 48px));
+}
+
+.globeStage {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: max(520px, min(84vh, 880px));
+  overflow: hidden;
+}
+
+/* canvas wrapper: fills the stage so ThreeEarth's div takes the full area */
+.canvasWrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* zoomed in: fade the picture through a soft oval so it blends with the sky */
+.globeZoomed {
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 46%, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 46%, #000 62%, rgba(0, 0, 0, 0.55) 82%, transparent 100%);
+}
+
+/* ==================== zoom controls ==================== */
+
+.zoomCtl {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zoomCtl button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(8, 11, 18, 0.6);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #eaf0f8;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.zoomCtl button:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(20, 28, 42, 0.75);
+}
+
+.zoomCtl button:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+/* ==================== wheel zoom hint ==================== */
+
+.acqWheelHint {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%) scale(0.96);
+  z-index: 4;
+  padding: 12px 18px;
+  pointer-events: none;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #eaf0f6;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.acqWheelHintOn {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* ==================== responsive ==================== */
+
+@media (max-width: 980px) {
+  .stageRow {
+    flex-direction: column;
+    padding-inline: 0;
+  }
+
+  .globeStage {
+    width: 100%;
+    flex: none;
+    height: min(62vh, 560px);
+  }
+}
+
+@media (max-width: 780px) {
+  .globeStage {
+    height: min(56vh, 440px);
+  }
+}
+
+@media (max-width: 760px) {
+  .zoomCtl {
+    top: 12px;
+    right: 12px;
+  }
+
+  .zoomCtl button {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .globeStage {
+    height: min(52vh, 340px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .acqWheelHint {
+    transition: none;
+  }
+}
+
+/* ==================== simulation bar (Slice 3) ==================== */
+
+.simbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  padding: 12px 16px;
+  background: linear-gradient(to top, rgba(4, 7, 15, 0.82) 0%, rgba(4, 7, 15, 0) 100%);
+  pointer-events: none;
+}
+
+.simctl {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto;
+}
+
+.play {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #007c93;
+  color: #000;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.play:hover {
+  background: #2fc6dc;
+}
+
+.play:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+.simtime {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  min-width: 100px;
+}
+
+.simtime span {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.03em;
+  color: rgb(234, 240, 248);
+  line-height: 1.1;
+}
+
+.simtime small {
+  font-family: var(--font-sans);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  color: rgba(205, 217, 236, 0.5);
+  text-transform: uppercase;
+}
+
+.scrub {
+  --fill: 0%;
+  flex: 1;
+  height: 14px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+/* F11: track 5px, white thumb (mock-up acq-globe.module.css lines 1101–1133) */
+.scrub::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(
+    to right,
+    #00e5ff 0%,
+    #00e5ff var(--fill),
+    rgba(255, 255, 255, 0.14) var(--fill),
+    rgba(255, 255, 255, 0.14) 100%
+  );
+}
+
+.scrub::-moz-range-track {
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.scrub::-moz-range-progress {
+  height: 5px;
+  border-radius: 3px;
+  background: #00e5ff;
+}
+
+.scrub::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  margin-top: -3px;
+  box-shadow: 0 0 0 1px rgba(4, 6, 11, 0.6);
+}
+
+.scrub::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  box-shadow: 0 0 0 1px rgba(4, 6, 11, 0.6);
+}
+
+.scrub:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.speed {
+  flex-shrink: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(8, 11, 18, 0.5);
+  color: rgb(205, 217, 236);
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.speed:hover {
+  border-color: rgba(47, 198, 220, 0.5);
+  color: #eaf0f8;
+}
+
+.speed:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+/* ==================== overlay badge container (Slice 3) ==================== */
+
+.overlayBadges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ==================== station badges (Slice 3) ==================== */
+
+.stn {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.stnIcon {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  color: rgba(205, 217, 236, 0.65);
+  transition: color 0.2s ease;
+}
+
+.stnIcon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.stnRing {
+  position: absolute;
+  left: -14px;
+  top: -14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0, 229, 255, 0.55);
+  display: none;
+}
+
+.stnTag {
+  position: absolute;
+  left: 7px;
+  top: -10px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  color: rgba(205, 217, 236, 0.65);
+  background: rgba(4, 7, 15, 0.55);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.stnOn .stnIcon {
+  color: #00e5ff;
+}
+
+.stnOn .stnTag {
+  border-color: rgba(0, 229, 255, 0.55);
+  color: #e8fbff;
+}
+
+.stnOn .stnRing {
+  display: block;
+}
+
+/* ==================== satellite badges (Slice 3) ==================== */
+
+.sat {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.satDot {
+  position: absolute;
+  left: -3.2px;
+  top: -3.2px;
+  width: 6.4px;
+  height: 6.4px;
+  border-radius: 50%;
+  background: var(--c, #2fc6dc);
+}
+
+.satLbl {
+  position: absolute;
+  left: 7px;
+  bottom: 6px;
+  white-space: nowrap;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: rgba(205, 217, 236, 0.75);
+  background: rgba(4, 7, 15, 0.45);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ==================== KPIs + filter toolbar (Slice 4) ==================== */
+
+.kpis {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+}
+
+.kpi {
+  width: clamp(140px, 16vw, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.kpiV {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #eaf0f6;
+}
+
+.kpiCrit {
+  color: #e8514b;
+}
+
+.kpiK {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.toolbar {
+  position: relative;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px 26px;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding: 0 clamp(18px, 4vw, 48px) clamp(10px, 1.6vw, 20px);
+  font-family: var(--font-sans);
+  color: #eaf0f6;
+}
+
+.tbHeading {
+  height: 49px;
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+/* underlined field: hairline sits under the open list */
+.fdrop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fdropSat { min-width: 190px; }
+.fdropDay { min-width: 230px; width: 230px; }
+.fdropDtk { min-width: 260px; width: 260px; }
+
+.fdropHead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #eaf0f6;
+  text-align: left;
+}
+
+.fdropHead:hover .fdropLabel,
+.fdropHead[aria-expanded="true"] .fdropLabel {
+  color: #2fc6dc;
+}
+
+.fdropLabel {
+  flex: 1 1 auto;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.fdropVal {
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.fdropHead svg {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* in-flow body: grid rows animate 0fr → 1fr (420 ms) */
+.fdropBody {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.fdropOpen .fdropBody {
+  grid-template-rows: 1fr;
+}
+
+.fdropInner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 420ms;
+}
+
+.fdropOpen .fdropInner {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* padding lives inside fdropInner so it doesn't leak when grid row collapses */
+.fdropPad {
+  padding: 12px 0 16px;
+}
+
+.fitem {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 180ms ease, opacity 180ms ease;
+}
+
+.fitem u {
+  flex: 1;
+  text-decoration: none;
+}
+
+.fitem s {
+  display: block;
+  margin-left: auto;
+  padding-left: 14px;
+  white-space: nowrap;
+  text-decoration: none;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  color: #4e5866;
+  font-variant-numeric: tabular-nums;
+}
+
+.off {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.3;
+}
+
+.dtkDot {
+  display: block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.acqEmpty {
+  margin: 4px 0;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(234, 240, 246, 0.45);
+}
+
+/* Day calendar */
+.calMonth {
+  margin-top: 10px;
+}
+
+.calMonthHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calMonthLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #eaf0f6;
+}
+
+.calNav {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: rgba(234, 240, 246, 0.5);
+  cursor: pointer;
+}
+
+.calNav:hover {
+  color: #ffffff;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calDow {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+  padding-bottom: 4px;
+}
+
+/* each calendar cell: span (no data) or button (has data) */
+.calDay {
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.34);
+  background: none;
+  border: 1px solid transparent;
+}
+
+button.calDay {
+  cursor: pointer;
+  color: #eaf0f6;
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+button.calDay:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* 4px cyan dot inside days with data */
+button.calDay i {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: #2fc6dc;
+}
+
+/* selected day: cyan frame */
+button.calDay.calOn {
+  border-color: #2fc6dc;
+  background: rgba(47, 198, 220, 0.12);
+}
+
+/* "Any day" item: slightly shorter */
+.acqAnyday {
+  min-height: 30px;
+}
+
+/* Search field */
+.fsearch {
+  min-width: 190px;
+  height: 49px;
+  box-sizing: border-box;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fsearch input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+}
+
+.fsearch input::placeholder {
+  color: #ffffff;
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .kpi {
+    width: clamp(130px, 44vw, 200px);
+  }
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    justify-content: flex-start;
+    gap: 6px 18px;
+  }
+
+  .tbHeading {
+    width: 100%;
+    height: auto;
+    margin: 0 0 6px;
+  }
+
+  .fdropSat,
+  .fdropDay,
+  .fdropDtk,
+  .fsearch {
+    flex: 1 1 160px;
+    width: auto;
+    min-width: 0;
+  }
+}
+
+/* ==================== side column + datatake panel (Slice 5) ==================== */
+
+/* hasSel: modifier class applied to .stageRow when a datatake is selected */
+.hasSel { /* composer only — no own rules */ }
+
+.sideCol {
+  flex: 0 0 0;
+  min-width: 0; /* overflow-x:clip does not reset min-width:auto; item would hold its content width at flex-basis 0 */
+  margin-left: 0;
+  opacity: 0;
+  transform: translateX(28px);
+  pointer-events: none;
+  overflow-x: clip;
+  overflow-y: visible;
+  height: auto;
+  transition:
+    flex-basis 820ms cubic-bezier(0.65, 0, 0.25, 1),
+    margin-left 820ms,
+    opacity 460ms ease,
+    transform 820ms;
+}
+
+.hasSel .sideCol {
+  flex-basis: max(320px, 25vw);
+  margin-left: 12px;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    flex-basis 820ms,
+    margin-left 820ms,
+    opacity 560ms ease 260ms,
+    transform 820ms 200ms;
+}
+
+/* dtkRail: fixed-width inner; prevents layout thrash during flex-basis animation */
+.dtkRail {
+  width: max(320px, 25vw);
+  padding-top: 4px;
+}
+
+/* dtkBlock: the panel content; animates in when hasSel */
+.dtkBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 20px 20px 28px;
+  background: rgba(8, 11, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+@keyframes acqIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hasSel .dtkBlock {
+  animation: acqIn 640ms cubic-bezier(0.2, 0.7, 0.2, 1) 380ms backwards;
+}
+
+/* Panel header row */
+.dtkHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.55);
+  line-height: 1.4;
+  padding-top: 2px;
+}
+
+/* Right cluster: pill + close */
+.acqHeadR {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pill::before {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  flex-shrink: 0;
+}
+
+/* F6: no border/background, SVG icon (mock-up acq-globe.module.css lines 787–803) */
+.acqClose {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: rgba(234, 240, 246, 0.42);
+  transition: color 0.2s ease;
+}
+
+.acqClose:hover {
+  color: #ffffff;
+}
+
+.acqClose:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+/* F10: ID font size / style (mock-up acq-globe.module.css lines 741–751) */
+.dtkId {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-sans);
+  font-size: clamp(25px, 2.6vw, 36px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+  color: #ffffff;
+  word-break: break-all;
+}
+
+/* Satellite name */
+.mission {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(234, 240, 246, 0.55);
+}
+
+/* Completeness KPI (mock-up acq-globe.module.css line 806–811) */
+.dtkKpi {
+  display: flex;
+  align-items: baseline;
+  gap: 22px;
+  margin-top: 14px;
+}
+
+.big {
+  font-family: var(--font-sans);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.big sup {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0;
+  vertical-align: super;
+  margin-left: 2px;
+  color: rgba(234, 240, 246, 0.55);
+}
+
+/* Sensing / missing time aside (mock-up acq-globe.module.css line 828–856) */
+.dtkAside {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.dtkAside > div {
+  display: flex;
+  gap: 8px;
+}
+
+.dtkAside dt {
+  min-width: 58px;
+  align-self: center;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.42);
+}
+
+.dtkAside dd {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: rgba(234, 240, 246, 0.9);
+}
+
+/* Product-types note below KPI (mock-up acq-globe.module.css line 863–868) */
+.dtkNote {
+  margin: 10px 0 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(234, 240, 246, 0.42);
+}
+
+/* Amber color for non-zero missing time */
+.gap {
+  color: #ffb700;
+}
+
+/* Record rows */
+.acqRecord {
+  margin: 0;
+  padding: 0;
+}
+
+.acqRecord > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.acqRecord dt {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.42);
+  align-self: center;
+}
+
+.acqRecord dd {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: #eaf0f6;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  align-self: center;
+}
+
+/* F9: last row gets a bottom hairline too (mock-up acq-globe.module.css line 885–887) */
+.acqRecord > div:last-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ==================== responsive: panel drops below globe < 980px ==================== */
+
+@media (max-width: 980px) {
+  .hasSel .sideCol {
+    flex-basis: auto;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 16px;
+    overflow-x: visible;
+  }
+
+  .dtkRail {
+    width: 100%;
+  }
+}
+
+/* ==================== reduced motion: instant transitions ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .sideCol,
+  .hasSel .sideCol,
+  .dtkBlock,
+  .hasSel .dtkBlock {
+    transition: none !important;
+    animation: none !important;
+  }
+  .fdropBody {
+    transition: none !important;
+  }
+  .fdropInner {
+    transition: none !important;
+  }
+}

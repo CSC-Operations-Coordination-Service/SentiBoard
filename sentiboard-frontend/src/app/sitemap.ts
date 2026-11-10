@@ -7,6 +7,8 @@ const LEGACY_HINTS: Record<string, Pick<MetadataRoute.Sitemap[number], "changeFr
   [ROUTES.home.path]: { changeFrequency: "daily", priority: 1.0 },
   [ROUTES.processors.path]: { changeFrequency: "weekly", priority: 0.7 },
   [ROUTES.events.path]: { changeFrequency: "weekly", priority: 0.7 },
+  [ROUTES.acquisitionsEarth.path]: { changeFrequency: "daily", priority: 0.9 },
+  [ROUTES.acquisitionsGlobe.path]: { changeFrequency: "daily", priority: 0.9 },
 };
 
 export default function sitemap(): MetadataRoute.Sitemap {
