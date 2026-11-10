@@ -32,8 +32,7 @@ def test_missing_indices_are_created_with_the_alias_template():
     c = client(alias_exists=False, index_exists=False)
     setup_indices.setup(c, apply=True)
     created = {call.kwargs["index"] for call in c.indices.create.call_args_list}
-    assert {"anomaly-000001", "instantmessage-000001", "news-000001"} <= created
-    assert not any(name.startswith("processor") for name in created)  # date-partitioned
+    assert {"anomaly-000001", "instantmessage-000001", "news-000001", "processor-000001"} <= created
 
 
 def test_meta_hints_are_sent_as_strings():

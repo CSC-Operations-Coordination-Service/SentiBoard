@@ -33,10 +33,6 @@ class Processor(MAASDocument):
     def _matches(cls, hit):
         return hit["_index"].startswith("processor")
 
-    _PARTITION_FIELD = "release_date"
-
-    _PARTITION_FIELD_FORMAT = "%Y-%m"
-
     id = Keyword()
 
     mission = Keyword()

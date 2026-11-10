@@ -19,9 +19,6 @@ from opensearch_config import OPENSEARCH_URL, new_client  # noqa: F401 (re-expor
 
 TEMPLATES = Path(__file__).parent / "index_templates"
 
-# Date-partitioned: indices (e.g. processor-2024-05) are created on first write.
-PARTITIONED = {"processor"}
-
 
 def stringify_meta(node, field_names=False):
     """The templates, ready for OpenSearch.
@@ -68,8 +65,6 @@ def setup(client, apply):
         if apply:
             client.indices.put_index_template(name=name, body=template)
 
-        if name in PARTITIONED:
-            continue
         # Documents write to `name`; it must be the alias the template adds, not a
         # plain index, or OpenSearch guesses the mappings (losing nested etc).
         # Scoped to our own indices: a user limited to `{name}*` gets 403 on a cluster-wide lookup.

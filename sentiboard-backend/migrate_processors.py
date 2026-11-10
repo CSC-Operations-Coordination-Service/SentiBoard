@@ -51,7 +51,7 @@ def map_release(release):
 
 def run(releases, client, apply=False):
     setup(client, apply)
-    actions, skipped, errors, examples = [], [], Counter(), {}
+    actions, errors, examples = [], Counter(), {}
     for release in releases:
         data = map_release(release)
         try:
@@ -64,29 +64,19 @@ def run(releases, client, apply=False):
             continue
         # Config Tools id as _id: a re-run skips releases already migrated (409)
         document = schema_to_document(item, ProcessorDocument, document_id=data["id"])
-        # the index is partitioned by release_date: no date, no index to write to
-        if not document.has_partition_field_value:
-            skipped.append(data)
-            continue
         actions.append(document.to_bulk_action(op_type="create"))
 
-    print(f"processor: {len(releases)} releases -> {len(actions)} docs, "
-          f"{len(skipped)} skipped, {sum(errors.values())} errors")
+    print(f"processor: {len(releases)} releases -> {len(actions)} docs, {sum(errors.values())} errors")
     for (field, kind), n in errors.most_common():
         print(f"  {n:5}  {field}  [{kind}]  e.g. {examples[(field, kind)]!r:.120}")
-    for d in skipped:
-        print(f"  skipped (no release_date): {d['id']}  {d['mission']}  {d['target_ipfs']}")
 
     if errors:
         print("Validation errors: nothing written.")
         return
     if not apply:
-        months = len({a["_index"] for a in actions})
-        print(f"Dry run: {len(actions)} documents ready across {months} monthly indices. "
-              f"Pass --apply to write them.")
+        print(f"Dry run: {len(actions)} documents ready. Pass --apply to write them.")
         return
 
-    # first load creates ~96 monthly indices inside one bulk call: slower than the 10s default
     _, errors = bulk(client, actions, raise_on_error=False, request_timeout=120)
     existing = [e for e in errors if e["create"]["status"] == 409]
     others = [e for e in errors if e["create"]["status"] != 409]
