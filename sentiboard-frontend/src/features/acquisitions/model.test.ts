@@ -180,8 +180,8 @@ describe("kpiStats", () => {
     expect(stats.acquiredPct).toBe(100);
   });
 
-  it("acquiredPct is 0 when all failed", () => {
-    const stats = kpiStats([mkAcq({ comp: 0, cls: "crit" })]);
+  it("acquiredPct is 0 when all have status Failed", () => {
+    const stats = kpiStats([mkAcq({ comp: 0, cls: "crit", status: "Failed" })]);
     expect(stats.acquiredPct).toBe(0);
   });
 
@@ -196,5 +196,14 @@ describe("kpiStats", () => {
   it("total matches the number of datatakes", () => {
     const stats = kpiStats([mkAcq(), mkAcq(), mkAcq()]);
     expect(stats.total).toBe(3);
+  });
+
+  it("acquiredPct excludes Failed status even when comp > 0, failedCount counts only comp === 0", () => {
+    const stats = kpiStats([
+      mkAcq({ comp: 75, status: "Failed" }),   // status Failed, comp > 0
+      mkAcq({ comp: 95, status: "Published" }),
+    ]);
+    expect(stats.acquiredPct).toBe(50);   // 1/2 non-Failed
+    expect(stats.failedCount).toBe(0);    // 0 have comp === 0
   });
 });

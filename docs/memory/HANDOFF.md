@@ -2,14 +2,38 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 6b: Slice 6 audit fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Updated files:
+- `src/features/acquisitions/model.ts` — `kpiStats`: `acquiredPct` now counts `status !== "Failed"`; `failedCount` stays `comp === 0`
+- `src/features/acquisitions/model.test.ts` — 8 new kpiStats tests (468 total); covers Failed-with-comp-gt-0
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — F2: `log.warn` via `logger("acquisitions-globe")`; F7: simbar span = `YYYY-MM-DD HH:MM:SSZ`, `<small>SIMULATION TIME</small>`; F8: station cap/ring/link all `0x00e5ff` (cap 0.06, ring 0.28, link 0.75 dashSize 0.006 gapSize 0.006); removed `fillColour` helper and its CSS-root setup (now unused)
+- `src/features/acquisitions/DatatakePanel.tsx` — F4: KPI horizontal (big % beside sensing/missing); F5: 15 record rows matching mock-up (`noZone`, `isoPlus`, mode/pol parse, station-code lookup, "NA" for missing); F6: SVG close button
+- `src/features/acquisitions/acq-globe.module.css` — F3: `.fdropBody`/`.fdropInner` in reduced-motion block; F4: `.dtkKpi` horizontal, `.dtkAside` flex-column, `.dtkNote` added; F6: `.acqClose` border 0 background none; F9: `.acqRecord > div:last-child` bottom border; F10: `.dtkId` `clamp(25px, 2.6vw, 36px)`, line-height 0.95, uppercase; F11: scrub track 5px `#00e5ff`, thumb 11px white box-shadow
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean (both routes PPR ◐).
+
+**ESLint disable comments confirmed real (kept in place):**
+- `AcquisitionsGlobe.tsx:427` — `set-state-in-effect`: `setDisplayedDtk` inside a `useEffect` (the timer-delayed unmount path). Lint flags it without the comment.
+- `AcquisitionsGlobe.tsx:1172-1178` — `react-hooks/immutability`: `.visible` mutations on Three.js mesh refs inside a `useEffect`. Lint flags it without the comment.
+
+**Prototype ref (acquisitions):** `~/work/SentiBoard/design/react-mockups/docs/acquisitions-prototype-ref.md`
+
+**Slice 7 deferred items (not done this session):**
+- `RawAcqSpec` re-export from `mock-data.ts` (currently only used internally; re-export when the backend endpoint replaces mock data)
+- Inline `navigate` call — replace with `navigateRef.current` where it appears inline
+- `simDayMs2` — resolve the duplicate/stale simDayMs reference if it appears
+
+---
+
 ## Acquisitions — Session 6: datatake detail panel (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
 
 New files:
-- `src/features/acquisitions/DatatakePanel.tsx` — panel component (eyebrow, ID, satellite, status pill with glow, close ×, completeness KPI, sensing/missing dl, six record rows)
+- `src/features/acquisitions/DatatakePanel.tsx` — panel component (eyebrow, ID, satellite, status pill with glow, close button, completeness KPI, sensing/missing, 15 record rows after 6b fixes)
 
 Updated files:
 - `src/features/acquisitions/AcquisitionsGlobe.tsx` — selection via `?datatake=` URL param; `displayedDtk` state with 500 ms fade-out delay; `navigateRef`, `urlViewRef`, `filteredDatatakesRef` stable refs (render-body assignment); `selectedDtkIdRef`, `selectedSatUnitRef`, `prevDtkIdRef`; extended document keydown handler (`[`/`]` cycle, `Enter` play/pause, `Escape` → close dropdown then deselect); fly-to `useEffect` with out-first (1.2) when switching while zoom > 1.6; `fitZoom` + `geoDistRad` helpers; globe picking via `THREE.Raycaster` in `onPointerUp`; `⌖` deselects when something is selected; footprint pulse + selected visuals in rAF; `aheadTrail` (`LineDashedMaterial`) shown for selected satellite; side column JSX (`hasSel`, `sideCol`, `dtkRail`)
-- `src/features/acquisitions/acq-globe.module.css` — `.sideCol`, `.hasSel`, `.dtkRail`, `.dtkBlock`, `@keyframes acqIn`, `.eyebrow`, `.dtkHead`, `.acqHeadR`, `.pill`, `.acqClose`, `.dtkId`, `.mission`, `.dtkKpi`, `.big`, `.dtkKpiLabel`, `.dtkKpiNote`, `.dtkAside`, `.gap`, `.acqRecord`; responsive (< 980 px panel drops below globe); reduced-motion
+- `src/features/acquisitions/acq-globe.module.css` — `.sideCol`, `.hasSel`, `.dtkRail`, `.dtkBlock`, `@keyframes acqIn`, `.eyebrow`, `.dtkHead`, `.acqHeadR`, `.pill`, `.acqClose`, `.dtkId`, `.mission`, `.dtkKpi`, `.big`, `.dtkAside`, `.gap`, `.acqRecord`; responsive (< 980 px panel drops below globe); reduced-motion
 
 ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean (both routes PPR ◐).
 

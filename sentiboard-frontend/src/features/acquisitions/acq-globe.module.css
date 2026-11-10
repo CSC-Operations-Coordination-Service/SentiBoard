@@ -249,46 +249,49 @@
   outline: none;
 }
 
+/* F11: track 5px, white thumb (mock-up acq-globe.module.css lines 1101–1133) */
 .scrub::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: 2px;
+  height: 5px;
+  border-radius: 3px;
   background: linear-gradient(
     to right,
-    rgba(47, 198, 220, 0.85) 0%,
-    rgba(47, 198, 220, 0.85) var(--fill),
-    rgba(255, 255, 255, 0.18) var(--fill),
-    rgba(255, 255, 255, 0.18) 100%
+    #00e5ff 0%,
+    #00e5ff var(--fill),
+    rgba(255, 255, 255, 0.14) var(--fill),
+    rgba(255, 255, 255, 0.14) 100%
   );
 }
 
 .scrub::-moz-range-track {
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.18);
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .scrub::-moz-range-progress {
-  height: 3px;
-  border-radius: 2px;
-  background: rgba(47, 198, 220, 0.85);
+  height: 5px;
+  border-radius: 3px;
+  background: #00e5ff;
 }
 
 .scrub::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: #2fc6dc;
-  margin-top: -4.5px;
-  transition: transform 0.1s ease;
+  background: #ffffff;
+  border: none;
+  margin-top: -3px;
+  box-shadow: 0 0 0 1px rgba(4, 6, 11, 0.6);
 }
 
 .scrub::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  background: #2fc6dc;
+  background: #ffffff;
   border: none;
+  box-shadow: 0 0 0 1px rgba(4, 6, 11, 0.6);
 }
 
 .scrub:focus-visible::-webkit-slider-thumb {
@@ -919,25 +922,22 @@ button.calDay.calOn {
   flex-shrink: 0;
 }
 
+/* F6: no border/background, SVG icon (mock-up acq-globe.module.css lines 787–803) */
 .acqClose {
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(234, 240, 246, 0.7);
-  font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1;
+  border: 0;
+  background: none;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  color: rgba(234, 240, 246, 0.42);
+  transition: color 0.2s ease;
 }
 
 .acqClose:hover {
-  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
@@ -946,15 +946,17 @@ button.calDay.calOn {
   outline-offset: 2px;
 }
 
-/* Large datatake ID */
+/* F10: ID font size / style (mock-up acq-globe.module.css lines 741–751) */
 .dtkId {
   display: block;
   margin-top: 8px;
   font-family: var(--font-sans);
-  font-size: clamp(22px, 2.3vw, 32px);
+  font-size: clamp(25px, 2.6vw, 36px);
   font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
   color: #ffffff;
   word-break: break-all;
 }
@@ -969,13 +971,12 @@ button.calDay.calOn {
   color: rgba(234, 240, 246, 0.55);
 }
 
-/* Completeness KPI */
+/* Completeness KPI (mock-up acq-globe.module.css line 806–811) */
 .dtkKpi {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  margin-top: 20px;
+  align-items: baseline;
+  gap: 22px;
+  margin-top: 14px;
 }
 
 .big {
@@ -996,49 +997,46 @@ button.calDay.calOn {
   color: rgba(234, 240, 246, 0.55);
 }
 
-.dtkKpiLabel {
+/* Sensing / missing time aside (mock-up acq-globe.module.css line 828–856) */
+.dtkAside {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.dtkAside > div {
+  display: flex;
+  gap: 8px;
+}
+
+.dtkAside dt {
+  min-width: 58px;
+  align-self: center;
   font-family: var(--font-sans);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.16em;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgba(234, 240, 246, 0.42);
 }
 
-.dtkKpiNote {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  color: rgba(234, 240, 246, 0.35);
-}
-
-/* Sensing / missing time aside */
-.dtkAside {
-  display: grid;
-  grid-template-columns: 58px 1fr;
-  gap: 4px 8px;
-  margin: 14px 0 0;
-  padding: 10px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-.dtkAside dt {
-  font-family: var(--font-sans);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(115, 115, 115, 1);
-  line-height: 1.6;
-}
-
 .dtkAside dd {
+  margin: 0;
   font-family: var(--font-sans);
-  font-size: 13px;
-  font-weight: 500;
-  color: rgba(234, 240, 246, 0.9);
+  font-size: 12px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  line-height: 1.6;
+  color: rgba(234, 240, 246, 0.9);
+}
+
+/* Product-types note below KPI (mock-up acq-globe.module.css line 863–868) */
+.dtkNote {
+  margin: 10px 0 0;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(234, 240, 246, 0.42);
 }
 
 /* Amber color for non-zero missing time */
@@ -1080,6 +1078,11 @@ button.calDay.calOn {
   align-self: center;
 }
 
+/* F9: last row gets a bottom hairline too (mock-up acq-globe.module.css line 885–887) */
+.acqRecord > div:last-child {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
 /* ==================== responsive: panel drops below globe < 980px ==================== */
 
 @media (max-width: 980px) {
@@ -1105,5 +1108,11 @@ button.calDay.calOn {
   .hasSel .dtkBlock {
     transition: none !important;
     animation: none !important;
+  }
+  .fdropBody {
+    transition: none !important;
+  }
+  .fdropInner {
+    transition: none !important;
   }
 }

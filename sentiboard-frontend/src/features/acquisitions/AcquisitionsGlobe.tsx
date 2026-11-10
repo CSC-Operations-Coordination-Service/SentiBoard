@@ -14,8 +14,11 @@ import type { AcqDatatake } from "./types";
 import DatatakePanel from "./DatatakePanel";
 import { parseAcqView, acqViewHref, type AcqView } from "./url-state";
 import { DAY_MS } from "@/lib/missions";
+import { logger } from "@/lib/log";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 import s from "./acq-globe.module.css";
+
+const log = logger("acquisitions-globe");
 
 // Loaded client-side only: ThreeEarth calls new THREE.WebGLRenderer() which requires a browser.
 const ThreeEarth = dynamic(() => import("./ThreeEarth"), { ssr: false });
@@ -576,9 +579,7 @@ export default function AcquisitionsGlobe({
       if (renderer.domElement.parentElement)
         renderer.domElement.parentElement.style.background = "transparent";
       if (renderer.getContext().getContextAttributes()?.alpha === false) {
-        console.warn(
-          "[AcquisitionsGlobe] ThreeEarth WebGLRenderer has no alpha channel; globe background cannot be transparent.",
-        );
+        log.warn("ThreeEarth WebGLRenderer has no alpha channel; globe background cannot be transparent.");
       }
 
       // Atmosphere sprite — only called here, inside handleReady
@@ -808,7 +809,10 @@ export default function AcquisitionsGlobe({
         const h = String(Math.floor(simTimeRef.current / 3600)).padStart(2, "0");
         const m = String(Math.floor((simTimeRef.current % 3600) / 60)).padStart(2, "0");
         const ss = String(curSec % 60).padStart(2, "0");
-        if (simTimeTextRef.current) simTimeTextRef.current.textContent = `${h}:${m}:${ss}Z`;
+        if (simTimeTextRef.current) {
+          const dateStr = formatSimDate(simDayMsRef.current);
+          simTimeTextRef.current.textContent = `${dateStr} ${h}:${m}:${ss}Z`;
+        }
       }
       const scrubEl = scrubRef.current;
       if (scrubEl) {
@@ -1006,13 +1010,6 @@ export default function AcquisitionsGlobe({
     (earthGroup ?? scene).add(group);
     overlayGroupRef.current = group;
 
-    // Read CSS colour tokens once
-    const cssRoot = getComputedStyle(document.documentElement);
-    const fillColour = (token: string, fallback: string) => {
-      const v = cssRoot.getPropertyValue(token).trim();
-      return v || fallback;
-    };
-
     // ── Footprints ────────────────────────────────────────────────────────────
     footprintMeshesRef.current = [];
     data.datatakes.forEach((dt, idx) => {
@@ -1101,11 +1098,11 @@ export default function AcquisitionsGlobe({
       }
       const capGeo = new THREE.BufferGeometry();
       capGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(capPositions), 3));
-      const capColour = fillColour("--color-accent", "#007c93");
+      // F8: cap/ring/link colours match mock-up (AcquisitionsGlobeEarth.tsx lines 1104–1150)
       const capMat = new THREE.MeshBasicMaterial({
-        color: capColour,
+        color: 0x00e5ff,
         transparent: true,
-        opacity: 0.07,
+        opacity: 0.06,
         depthWrite: false,
         side: THREE.DoubleSide,
       });
@@ -1114,8 +1111,7 @@ export default function AcquisitionsGlobe({
 
       // Station ring (LineLoop at boundary)
       const ringGeo = new THREE.BufferGeometry().setFromPoints(ring);
-      // #2fc6dc — documented literal (no token maps to this exact accent ring colour)
-      const ringMat = new THREE.LineBasicMaterial({ color: 0x2fc6dc, transparent: true, opacity: 0.35 });
+      const ringMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.28, depthWrite: false });
       const ringLine = new THREE.LineLoop(ringGeo, ringMat);
       group.add(ringLine);
 
@@ -1124,11 +1120,12 @@ export default function AcquisitionsGlobe({
       for (let _si = 0; _si < satUnits.length; _si++) {
         const linkGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
         const linkMat = new THREE.LineDashedMaterial({
-          color: 0x2fc6dc,
+          color: 0x00e5ff,
           transparent: true,
-          opacity: 0.6,
-          dashSize: 0.04,
-          gapSize: 0.03,
+          opacity: 0.75,
+          dashSize: 0.006,
+          gapSize: 0.006,
+          depthWrite: false,
         });
         const link = new THREE.Line(linkGeo, linkMat);
         link.visible = false;
@@ -1534,14 +1531,15 @@ export default function AcquisitionsGlobe({
             <div className={s.simtime}>
               <span ref={simTimeTextRef}>
                 {(() => {
-                  const t = (nowMs % 86_400_000) / 1000;
-                  const h = String(Math.floor(t / 3600)).padStart(2, "0");
-                  const m = String(Math.floor((t % 3600) / 60)).padStart(2, "0");
-                  const ss = String(Math.floor(t % 60)).padStart(2, "0");
-                  return `${h}:${m}:${ss}Z`;
+                  const ms = simDayMs + (nowMs % 86_400_000);
+                  const d = new Date(ms);
+                  const h = String(d.getUTCHours()).padStart(2, "0");
+                  const m = String(d.getUTCMinutes()).padStart(2, "0");
+                  const ss = String(d.getUTCSeconds()).padStart(2, "0");
+                  return `${formatSimDate(simDayMs)} ${h}:${m}:${ss}Z`;
                 })()}
               </span>
-              <small>{formatSimDate(simDayMs)}</small>
+              <small>SIMULATION TIME</small>
             </div>
             <input
               type="range"

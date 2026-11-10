@@ -6,10 +6,10 @@ export function AcquisitionsDescription() {
   return (
     <p>
       The <b>Acquisitions Status</b> view displays the past, current and future
-      Copernicus Sentinels&rsquo; acquisition on an interactive, 3D globe. Through this
-      view, users can either inspect the status of a past acquisition, or learn
-      about the planned acquisitions for the mission of interest. By default, the
-      real-time sensing scenario is displayed.
+      Copernicus Sentinels&rsquo; acquisition on an interactive, 3D globe.
+      Through this view, users can either inspect the status of a past
+      acquisition, or learn about the planned acquisitions for the mission of
+      interest. By default, the real-time sensing scenario is displayed.
     </p>
   );
 }
@@ -24,4 +24,5 @@ export const SEO = {
 
 export const ACQ_HERO_IMG = asset("/assets/img/modules/acquisitions.jpg");
 export const ACQ_TITLE = "Acquisitions Status";
-export const ACQ_SUBTITLE = "Real-time Sentinel datatakes on an interactive 3D globe";
+export const ACQ_SUBTITLE =
+  "Past, current and planned Sentinel acquisitions on an interactive 3D globe.";

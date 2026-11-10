@@ -17,11 +17,23 @@ function fmtSeconds(sec: number): string {
   return `${ss}s`;
 }
 
-// Deterministic: adds `sec` seconds to an ISO string. Does not use Date.now().
-function addSeconds(iso: string, sec: number): string {
-  const ms = Date.parse(iso) + Math.round(sec) * 1000;
-  return new Date(ms).toISOString().slice(11, 19) + "Z";
+// YYYY-MM-DDTHH:MM:SS without timezone suffix (mock-up AcquisitionsGlobeEarth.tsx line 481)
+function noZone(iso: string): string {
+  return new Date(iso).toISOString().slice(0, 19);
 }
+
+// Add seconds to a noZone ISO string and return another noZone string (mock-up line 181)
+function isoPlus(start: string, addSec: number): string {
+  return new Date(Date.parse(start + "Z") + Math.round(addSec) * 1000).toISOString().slice(0, 19);
+}
+
+const STATION_CODE: Record<string, string> = {
+  Svalbard: "SGS",
+  Matera: "MTI",
+  Maspalomas: "MPS",
+  Inuvik: "INU",
+  Neustrelitz: "NSG",
+};
 
 export default function DatatakePanel({
   dt,
@@ -36,8 +48,39 @@ export default function DatatakePanel({
     (n, lv) => n + lv.products.filter((p) => p.pct !== null).length,
     0,
   );
-  const startTime = dt.startIso.slice(11, 19) + "Z";
-  const stopTime = addSeconds(dt.startIso, dt.sensingS);
+
+  // F5 row data (mock-up AcquisitionsGlobeEarth.tsx lines 213–265)
+  const start = noZone(dt.startIso);
+  const isS1 = dt.unit.startsWith("S1");
+  const modeParts = (dt.mode ?? "").split("·").map((p) => p.trim()).filter(Boolean);
+  const mode = (isS1 ? modeParts[0] : (modeParts[1] ?? modeParts[0])) ?? "NA";
+  const pol = isS1 ? (modeParts[1] ?? "NA") : "NA";
+  const orbit = dt.absOrbit ? String(Number(dt.absOrbit)) : "NA";
+  const failed = dt.status === "Failed";
+  const acqStatus = `${failed ? "Failed" : "Acquired"} (${(failed ? 0 : 100).toFixed(2)}%)`;
+  const pubStatus = `${failed ? "Not published" : dt.status} (${dt.comp.toFixed(2)}%)`;
+  const stCode = dt.station ? (STATION_CODE[dt.station] ?? "") : "";
+  const stationLabel = dt.station
+    ? `${dt.station}${stCode ? ` (${stCode})` : ""}`
+    : "NA";
+
+  const rows: [string, string][] = [
+    ["Satellite ID", dt.unit || "NA"],
+    ["Datatake ID", dt.id],
+    ["Mode", mode],
+    ["Swath", "NA"],
+    ["Polarisation", pol],
+    ["Observation time start", start],
+    ["Observation time stop", isoPlus(start, dt.sensingS)],
+    ["Observation duration", `${Math.round(dt.sensingS)} s`],
+    ["Orbit absolute", orbit],
+    ["Orbit relative", "NA"],
+    ["Acquisition status", acqStatus],
+    ["Publication status", pubStatus],
+    ["Downlink station", stationLabel],
+    ["Downlink time", "NA"],
+    ["Downlink volume", "NA"],
+  ];
 
   return (
     <div className={s.dtkBlock}>
@@ -47,13 +90,16 @@ export default function DatatakePanel({
           <span className={s.pill} style={{ color }}>
             {dt.status}
           </span>
+          {/* F6: SVG close icon, no border/background (mock-up AcquisitionsGlobeEarth.tsx lines 279–298) */}
           <button
             type="button"
             className={s.acqClose}
-            aria-label="Close datatake panel"
+            aria-label="Close datatake"
             onClick={onClose}
           >
-            ×
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
           </button>
         </div>
       </div>
@@ -61,53 +107,39 @@ export default function DatatakePanel({
       <strong className={s.dtkId}>{dt.id}</strong>
       <span className={s.mission}>{dt.unit}</span>
 
+      {/* F4: big % beside sensing/missing horizontally (mock-up acq-globe.module.css line 806–811) */}
       <div className={s.dtkKpi}>
         <b className={s.big}>
           {dt.comp.toFixed(1)}
           <sup>%</sup>
         </b>
-        <span className={s.dtkKpiLabel}>complete</span>
-        {productCount > 0 && (
-          <span className={s.dtkKpiNote}>
-            {productCount} expected product type{productCount !== 1 ? "s" : ""}
-          </span>
-        )}
+        <dl className={s.dtkAside}>
+          <div>
+            <dt>Sensing</dt>
+            <dd>{fmtSeconds(dt.sensingS)}</dd>
+          </div>
+          <div>
+            <dt>Missing</dt>
+            <dd className={missingSec > 0.5 ? s.gap : ""}>
+              {missingSec > 0.5 ? fmtSeconds(missingSec) : "none"}
+            </dd>
+          </div>
+        </dl>
       </div>
+      {productCount > 0 && (
+        <p className={s.dtkNote}>
+          Mean across {productCount} expected product type{productCount !== 1 ? "s" : ""} · missing time summed across types
+        </p>
+      )}
 
-      <dl className={s.dtkAside}>
-        <dt>Sensing</dt>
-        <dd>{fmtSeconds(dt.sensingS)}</dd>
-        <dt>Missing</dt>
-        <dd className={missingSec > 0.5 ? s.gap : ""}>
-          {missingSec > 0.5 ? fmtSeconds(missingSec) : "none"}
-        </dd>
-      </dl>
-
+      {/* F5: 15 record rows matching mock-up (AcquisitionsGlobeEarth.tsx lines 227–265) */}
       <dl className={s.acqRecord}>
-        <div>
-          <dt>Acq start</dt>
-          <dd>{startTime}</dd>
-        </div>
-        <div>
-          <dt>Acq stop</dt>
-          <dd>{stopTime}</dd>
-        </div>
-        <div>
-          <dt>Abs orbit</dt>
-          <dd>{dt.absOrbit || "NA"}</dd>
-        </div>
-        <div>
-          <dt>Rel orbit</dt>
-          <dd>NA</dd>
-        </div>
-        <div>
-          <dt>Mode</dt>
-          <dd>{dt.mode || "NA"}</dd>
-        </div>
-        <div>
-          <dt>Station</dt>
-          <dd>{dt.station || "NA"}</dd>
-        </div>
+        {rows.map(([k, v]) => (
+          <div key={k}>
+            <dt>{k}</dt>
+            <dd>{v}</dd>
+          </div>
+        ))}
       </dl>
     </div>
   );

@@ -8,6 +8,7 @@ Branch `feature/DEVOCS-219-acquisitions` off `develop`. Two routes, one feature:
 Prototype reference source of truth: `~/work/SentiBoard/design/react-mockups/src/pages/acquisitions/`
 (read on 2026-11-09). Do not re-decode the prototype bundle; this file and
 `docs/acquisitions-prototype-ref.md` in the mock-up repo hold the extracted values.
+Absolute path to prototype ref: `~/work/SentiBoard/design/react-mockups/docs/acquisitions-prototype-ref.md`
 
 Confirmed decisions from `docs/acquisitions-prototype-ref.md §11` (override the prototype where
 they differ):

@@ -54,7 +54,7 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   460/460 tests pass. Lint + build clean (both routes PPR ◐).
 - **Acquisitions — Slice 5 done (2026-11-10, branch `feature/DEVOCS-219-acquisitions`):**
   Datatake detail panel + selection flow.
-  New: `DatatakePanel.tsx` (eyebrow, ID, pill, completeness KPI, sensing/missing, 6 record rows).
+  New: `DatatakePanel.tsx` (eyebrow, ID, pill, completeness KPI, sensing/missing, 15 record rows).
   `AcquisitionsGlobe.tsx`: selection = `?datatake=` URL param via `navigateRef`; `displayedDtk` with
   460 ms fade-out; stable refs (`navigateRef`, `urlViewRef`, `filteredDatatakesRef`) synced via
   `useLayoutEffect` (placed before keyboard effect in source order, React Compiler compliant); extended
@@ -65,7 +65,21 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   dashed `aheadTrail`; outline opacity corrected to 1.0; trail corrected to white.
   acq-globe.module.css: `.sideCol` (820 ms cubic-bezier expand), `.dtkRail`, `.dtkBlock` + `@keyframes
   acqIn`, panel typography + record rows; < 980 px panel drops below globe; reduced-motion.
-  460/460 tests pass. Lint + build clean (both routes PPR ◐). Slice 6 (—) next.
+  460/460 tests pass. Lint + build clean (both routes PPR ◐).
+- **Acquisitions — Session 6b: Slice 6 audit fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`):**
+  F1 `kpiStats`: `acquiredPct` now counts `status !== "Failed"` (not `comp !== 0`); `failedCount`
+  stays `comp === 0`. 468/468 tests (8 new kpiStats tests added).
+  F2 `handleReady`: `console.warn` → `log.warn` via `logger("acquisitions-globe")` from `@/lib/log`.
+  F3 reduced-motion: `.fdropBody` and `.fdropInner` added to the block.
+  F4 panel KPI layout: `.dtkKpi` horizontal (flex baseline, gap 22px); `.dtkAside` inside `.dtkKpi`;
+  note below as `<p>`. F5 record rows: 15 rows matching the mock-up, "NA" for missing fields.
+  F6 close button: SVG X icon, `border: 0; background: none`.
+  F7 simbar: span shows `YYYY-MM-DD HH:MM:SSZ`; `<small>SIMULATION TIME</small>` (static).
+  F8 station Three.js: cap/ring/link all `0x00e5ff`; cap opacity 0.06, ring 0.28, link 0.75
+  dashSize 0.006 gapSize 0.006. F9 `.acqRecord > div:last-child` bottom border. F10 `.dtkId`
+  font-size `clamp(25px, 2.6vw, 36px)`. F11 scrub track 5px white thumb.
+  ESLint disables at AcquisitionsGlobe.tsx:427 and :1172-1178 confirmed real — kept in place.
+  Slice 7 items noted below in HANDOFF.md. 468/468 tests. Lint + build clean (both routes PPR ◐).
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.
