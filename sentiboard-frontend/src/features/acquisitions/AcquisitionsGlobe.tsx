@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import * as THREE from "three";
 import { applyDayNightEarth, type DayNightEarth } from "./dayNightEarth";
 import { applyStylizedEarth, type StylizedEarth } from "./stylizedEarth";
 import type { AcquisitionsData } from "./types";
-import { prepDatatake, subPoint, buildFootprint, buildFootprintFill, OUTLINE_R } from "./acqGeometry";
+import { prepDatatake, subPoint, buildFootprint, buildFootprintFill, OUTLINE_R, pointerToNdc } from "./acqGeometry";
 import type { PreparedDatatake } from "./acqGeometry";
 import { kpiStats } from "./model";
+import type { AcqDatatake } from "./types";
+import DatatakePanel from "./DatatakePanel";
 import { parseAcqView, acqViewHref, type AcqView } from "./url-state";
 import { DAY_MS } from "@/lib/missions";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
@@ -129,6 +131,8 @@ interface SatObject {
   dot: THREE.Mesh;
   trailPts: THREE.Vector3[];
   trail: THREE.Line;
+  aheadPts: THREE.Vector3[];
+  aheadTrail: THREE.Line;
   worldPos: THREE.Vector3;
 }
 
@@ -161,6 +165,31 @@ function windowLabel(todayMidnightMs: number): string {
 
 const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const satGroupOf = (sat: string) => sat.replace(/-[A-Z]$/, "");
+
+// ── Slice 5 module-level helpers ──────────────────────────────────────────────
+
+function geoDistRad(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const φ1 = lat1 * D;
+  const φ2 = lat2 * D;
+  const dφ = (lat2 - lat1) * D;
+  const dλ = (lon2 - lon1) * D;
+  const a = Math.sin(dφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ / 2) ** 2;
+  return 2 * Math.asin(Math.sqrt(Math.min(1, a)));
+}
+
+// Camera target zoom so the footprint ring fills ~30% of the smaller canvas dimension.
+// Uses the same 0.39×min(W,H) globe-radius formula as applyView.
+function fitZoom(prep: PreparedDatatake, W: number, H: number): number {
+  const { ring } = buildFootprint(prep);
+  const far = ring.reduce(
+    (mx, [lo, la]) => Math.max(mx, geoDistRad(prep.lat, prep.lon, la, lo)),
+    0,
+  );
+  const baseR = 0.39 * Math.min(W, H);
+  const want = 0.3 * Math.min(W, H);
+  const z = want / (baseR * Math.max(0.02, Math.sin(far)));
+  return Math.max(1.4, Math.min(5, z));
+}
 
 function Chevron() {
   return (
@@ -205,7 +234,7 @@ export default function AcquisitionsGlobe({
   const [searchQuery, setSearchQuery] = useState("");
 
   const toolbarRef = useRef<HTMLDivElement | null>(null);
-  const footprintMeshesRef = useRef<{ id: string; fill: THREE.Mesh; outline: THREE.Line }[]>([]);
+  const footprintMeshesRef = useRef<{ id: string; fill: THREE.Mesh; outline: THREE.Line; hex: number }[]>([]);
   const filteredUnitsRef = useRef<Set<string> | null>(null);
 
   const [scene, setScene] = useState<THREE.Scene | null>(null);
@@ -241,15 +270,6 @@ export default function AcquisitionsGlobe({
   useEffect(() => { speedRef.current = speed; }, [speed]);
   useEffect(() => { openDropdownRef.current = openDropdown; }, [openDropdown]);
 
-  // Escape closes the open dropdown (single document handler; canvas Escape is omitted — 0 resets view)
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && openDropdownRef.current) setOpenDropdown(null);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
-
   // Outside-click closes the open dropdown
   useEffect(() => {
     if (!openDropdown) return;
@@ -282,6 +302,20 @@ export default function AcquisitionsGlobe({
 
   // lookRef lets handleReady (called once at mount) read the look prop.
   const lookRef = useRef(look);
+
+  // ── Slice 5: stable refs — updated in useLayoutEffect so event handlers always read current values ──
+  const navigateRef = useRef<(next: AcqView) => void>(() => {});
+  const urlViewRef = useRef<AcqView>(view);
+  const filteredDatatakesRef = useRef<AcqDatatake[]>([]);
+
+  // Selected datatake tracking (synced via useEffect below)
+  const selectedDtkIdRef = useRef<string | null>(null);
+  const selectedSatUnitRef = useRef<string | null>(null);
+  const prevDtkIdRef = useRef<string | null>(null);
+
+  // Panel display: stays mounted for 500 ms after deselect so CSS fade-out completes
+  const [displayedDtk, setDisplayedDtk] = useState<AcqDatatake | null>(null);
+  const fadeOutTimerRef = useRef<number | null>(null);
 
   // simDayMs: UTC midnight of the day nowMs falls on; used as the base for the day/night shader.
   const simDayMs = nowMs - (nowMs % 86_400_000);
@@ -336,6 +370,17 @@ export default function AcquisitionsGlobe({
         : satDayDatatakes,
     [satDayDatatakes, view.datatake],
   );
+
+  // useLayoutEffect: runs synchronously after DOM mutations, before paint, so no event handler
+  // can read a stale ref between render and the next frame.
+  useLayoutEffect(() => {
+    navigateRef.current = (next: AcqView) => {
+      history.pushState(null, "", acqViewHref(next, window.location.pathname));
+    };
+    urlViewRef.current = view;
+    filteredDatatakesRef.current = filteredDatatakes;
+  }, [view, filteredDatatakes]);
+
   // Dropdown list: sat + day + search (search does not touch globe or KPIs)
   const dropdownDatatakes = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -356,6 +401,111 @@ export default function AcquisitionsGlobe({
       : data.datatakes;
     return new Set(base.map((dt) => dt.startIso.slice(0, 10)));
   }, [data.datatakes, view.satellite]);
+
+  // ── Slice 5 effects (all after useMemos so React Compiler sees no "used before declared") ──
+
+  // Sync selectedDtkIdRef / selectedSatUnitRef for rAF reads
+  useEffect(() => {
+    const dtId = view.datatake;
+    selectedDtkIdRef.current = dtId;
+    if (dtId !== null) {
+      const dt = data.datatakes.find((d) => d.id === dtId);
+      selectedSatUnitRef.current = dt?.unit ?? null;
+    } else {
+      selectedSatUnitRef.current = null;
+    }
+  }, [view.datatake, data.datatakes]);
+
+  // Keep panel mounted during 460 ms opacity fade-out after deselect
+  // 460 ms matches `opacity 460ms ease` closing transition (prototype-ref.md line 495)
+  useEffect(() => {
+    if (view.datatake !== null) {
+      if (fadeOutTimerRef.current !== null) {
+        window.clearTimeout(fadeOutTimerRef.current);
+        fadeOutTimerRef.current = null;
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDisplayedDtk(data.datatakes.find((d) => d.id === view.datatake) ?? null);
+    } else {
+      fadeOutTimerRef.current = window.setTimeout(() => {
+        setDisplayedDtk(null);
+        fadeOutTimerRef.current = null;
+      }, 460);
+    }
+    return () => {
+      if (fadeOutTimerRef.current !== null) window.clearTimeout(fadeOutTimerRef.current);
+    };
+  }, [view.datatake, data.datatakes]);
+
+  // Keyboard: Escape → close dropdown then deselect; [ / ] cycle datatakes; Enter play/pause
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (openDropdownRef.current) {
+          setOpenDropdown(null);
+        } else if (urlViewRef.current.datatake !== null) {
+          navigateRef.current({ ...urlViewRef.current, datatake: null });
+        }
+        return;
+      }
+      if (e.key === "[" || e.key === "]") {
+        const fds = filteredDatatakesRef.current;
+        if (!fds.length) return;
+        const sorted = [...fds].sort((a, b) => {
+          const ga = satGroupOf(a.sat);
+          const gb = satGroupOf(b.sat);
+          if (ga < gb) return -1;
+          if (ga > gb) return 1;
+          if (a.id < b.id) return -1;
+          if (a.id > b.id) return 1;
+          return 0;
+        });
+        const curId = urlViewRef.current.datatake;
+        const curIdx = sorted.findIndex((dt) => dt.id === curId);
+        const delta = e.key === "]" ? 1 : -1;
+        const nextIdx =
+          curIdx < 0
+            ? e.key === "]" ? 0 : sorted.length - 1
+            : (curIdx + delta + sorted.length) % sorted.length;
+        navigateRef.current({ ...urlViewRef.current, datatake: sorted[nextIdx].id });
+        return;
+      }
+      if (e.key === "Enter") {
+        setIsPlaying((p) => !p);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Fly-to: fires when view.datatake changes
+  useEffect(() => {
+    const dtId = view.datatake;
+    const prev = prevDtkIdRef.current;
+    prevDtkIdRef.current = dtId;
+    if (dtId === null) {
+      rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+      return;
+    }
+    const prep = prepared.get(dtId);
+    if (!prep) return;
+    const dt = data.datatakes.find((d) => d.id === dtId);
+    if (!dt) return;
+    const { W, H } = canvasSizeRef.current;
+    const zoom = fitZoom(prep, W || 800, H || 600);
+    const reducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reducedMotion && prev !== null && prev !== dtId && viewRef.current.zoom > 1.6) {
+      rotateToRef.current(viewRef.current.lon, viewRef.current.lat, 1.2);
+      window.setTimeout(() => {
+        rotateToRef.current(dt.lon, dt.lat, zoom);
+      }, 520);
+    } else {
+      rotateToRef.current(dt.lon, dt.lat, zoom);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view.datatake]);
 
   function navigate(next: AcqView) {
     history.pushState(null, "", acqViewHref(next, window.location.pathname));
@@ -524,8 +674,37 @@ export default function AcquisitionsGlobe({
 
       const onPointerUp = (e: PointerEvent) => {
         if (!dragState || e.pointerId !== dragState.pid) return;
+        const wasMoved = dragState.moved;
         dragState = null;
         canvas.style.cursor = "grab";
+        if (wasMoved) return; // drag — not a click
+
+        const rect = canvas.getBoundingClientRect();
+        const { x: ndcX, y: ndcY } = pointerToNdc(e.clientX, e.clientY, rect);
+
+        const cam = cameraRef.current;
+        if (!cam) return;
+        const ray = new THREE.Raycaster();
+        ray.setFromCamera(new THREE.Vector2(ndcX, ndcY), cam);
+
+        const fms = footprintMeshesRef.current;
+        const visibleFills = fms.filter((fm) => fm.fill.visible).map((fm) => fm.fill);
+        const hits = ray.intersectObjects(visibleFills, false);
+
+        const curView = urlViewRef.current;
+        if (hits.length > 0) {
+          const hitMesh = hits[0].object as THREE.Mesh;
+          const hitItem = fms.find((fm) => fm.fill === hitMesh);
+          if (hitItem) {
+            if (hitItem.id === curView.datatake) {
+              navigateRef.current({ ...curView, datatake: null });
+            } else {
+              navigateRef.current({ ...curView, datatake: hitItem.id });
+            }
+          }
+        } else if (curView.datatake !== null) {
+          navigateRef.current({ ...curView, datatake: null });
+        }
       };
 
       const onPointerCancel = (e: PointerEvent) => {
@@ -709,6 +888,43 @@ export default function AcquisitionsGlobe({
               }
             }
           }
+
+          // ── Slice 5: selected-satellite visuals ──────────────────────────────
+          const isSel = so.unit === selectedSatUnitRef.current;
+          // Dot: white when selected, status hex otherwise
+          (so.dot.material as THREE.MeshBasicMaterial).color.set(
+            isSel ? 0xffffff : (STATUS_HEX[so.cls] ?? STATUS_HEX.ok),
+          );
+          // Trail: 70% opacity for selected satellite
+          (so.trail.material as THREE.LineBasicMaterial).opacity = isSel ? 0.70 : 0.28;
+          // Ahead-track
+          so.aheadTrail.visible = isSel;
+          if (isSel) {
+            for (let k = 0; k < 31; k++) {
+              const [tlo, tla] = subPoint(so.prep, simTimeMin + k * 0.8);
+              so.aheadPts[k].copy(latLonToV3(tla, tlo, GROUND_R));
+            }
+            so.aheadTrail.geometry.setFromPoints(so.aheadPts);
+            so.aheadTrail.geometry.attributes.position.needsUpdate = true;
+            (so.aheadTrail as THREE.Line).computeLineDistances();
+          }
+        }
+
+        // ── Slice 5: footprint fill opacity pulse ────────────────────────────
+        const selDtkId = selectedDtkIdRef.current;
+        const anySelected = selDtkId !== null;
+        const fpulse = 0.5 + 0.5 * Math.sin(now / 420);
+        for (const fm of footprintMeshesRef.current) {
+          if (!fm.fill.visible) continue;
+          const fMat = fm.fill.material as THREE.MeshBasicMaterial;
+          const oMat = fm.outline.material as THREE.LineBasicMaterial;
+          if (fm.id === selDtkId) {
+            fMat.opacity = 0.34 + 0.18 * fpulse;
+            oMat.color.set(0xffffff);
+          } else {
+            fMat.opacity = anySelected ? 0.14 : 0.24;
+            oMat.color.set(fm.hex);
+          }
         }
 
         // Update station contact links + badge DOM
@@ -825,12 +1041,12 @@ export default function AcquisitionsGlobe({
       // Outline at OUTLINE_R — ring already closes (first === last), use THREE.Line
       const outlinePts = fp.ring.map(([lo, la]) => latLonToV3(la, lo, OUTLINE_R));
       const outlineGeo = new THREE.BufferGeometry().setFromPoints(outlinePts);
-      const outlineMat = new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.55, depthWrite: false, depthTest: true });
+      const outlineMat = new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 1.0, depthWrite: false, depthTest: true });
       const outlineMesh = new THREE.Line(outlineGeo, outlineMat);
       outlineMesh.renderOrder = 18 + idx;
       group.add(outlineMesh);
 
-      footprintMeshesRef.current.push({ id: dt.id, fill: fillMesh, outline: outlineMesh });
+      footprintMeshesRef.current.push({ id: dt.id, fill: fillMesh, outline: outlineMesh, hex });
     });
 
     // ── Satellite dots + trails ───────────────────────────────────────────────
@@ -845,14 +1061,28 @@ export default function AcquisitionsGlobe({
       dot.renderOrder = 1;
       group.add(dot);
 
-      // Trail (31 points, animated in rAF)
+      // Trail (31 points, animated in rAF) — white at 0.28; 0.70 when selected
       const trailPts: THREE.Vector3[] = Array.from({ length: 31 }, () => new THREE.Vector3());
       const trailGeo = new THREE.BufferGeometry().setFromPoints(trailPts);
-      const trailMat = new THREE.LineBasicMaterial({ color: hex, transparent: true, opacity: 0.28, depthWrite: false });
+      const trailMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.28, depthWrite: false });
       const trail = new THREE.Line(trailGeo, trailMat);
       group.add(trail);
 
-      newSatObjects.push({ unit, cls, prep, dot, trailPts, trail, worldPos: new THREE.Vector3() });
+      // Ahead-track: 31 dashed points ahead of satellite; shown only when selected
+      const aheadPts: THREE.Vector3[] = Array.from({ length: 31 }, () => new THREE.Vector3());
+      const aheadGeo = new THREE.BufferGeometry().setFromPoints(aheadPts);
+      const aheadMat = new THREE.LineDashedMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.45,
+        dashSize: 0.025,
+        gapSize: 0.05,
+      });
+      const aheadTrail = new THREE.Line(aheadGeo, aheadMat);
+      aheadTrail.visible = false;
+      group.add(aheadTrail);
+
+      newSatObjects.push({ unit, cls, prep, dot, trailPts, trail, aheadPts, aheadTrail, worldPos: new THREE.Vector3() });
     }
     satObjectsRef.current = newSatObjects;
 
@@ -1203,7 +1433,7 @@ export default function AcquisitionsGlobe({
       </div>
 
       {/* Globe */}
-      <div className={s.stageRow}>
+      <div className={`${s.stageRow}${view.datatake !== null ? ` ${s.hasSel}` : ""}`}>
         <div className={s.globeStage} ref={stageElRef}>
         <SpaceBackdrop page={-1} paused={!stageVisible} />
         <div className={s.canvasWrap}>
@@ -1279,7 +1509,11 @@ export default function AcquisitionsGlobe({
             type="button"
             aria-label="Reset view"
             onClick={() => {
-              rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+              if (urlViewRef.current.datatake !== null) {
+                navigateRef.current({ ...urlViewRef.current, datatake: null });
+              } else {
+                rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+              }
             }}
           >
             ⌖
@@ -1337,8 +1571,20 @@ export default function AcquisitionsGlobe({
             </button>
           </div>
         </div>
+        </div>
+
+        {/* Side column: datatake detail panel — always in DOM, CSS controls width / opacity */}
+        <div className={s.sideCol}>
+          <div className={s.dtkRail}>
+            {displayedDtk && (
+              <DatatakePanel
+                dt={displayedDtk}
+                onClose={() => navigateRef.current({ ...urlViewRef.current, datatake: null })}
+              />
+            )}
+          </div>
+        </div>
       </div>
-    </div>
     </>
   );
 }

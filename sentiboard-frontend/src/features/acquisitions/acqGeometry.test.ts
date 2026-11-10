@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import * as THREE from "three";
 import {
   minutesFromMidnight,
   prepDatatake,
@@ -8,6 +9,7 @@ import {
   buildFootprint,
   buildFootprintFill,
   FILL_R,
+  pointerToNdc,
 } from "./acqGeometry";
 import type { PreparedDatatake } from "./acqGeometry";
 
@@ -286,5 +288,85 @@ describe("buildFootprintFill", () => {
         }
       });
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pointerToNdc
+// ---------------------------------------------------------------------------
+describe("pointerToNdc", () => {
+  // Simulated canvas: 800×600, top-left at screen (100, 50)
+  const rect = { left: 100, top: 50, width: 800, height: 600 };
+  const W = rect.width, H = rect.height;
+
+  it("maps top-left corner to NDC (-1, +1)", () => {
+    const { x, y } = pointerToNdc(rect.left, rect.top, rect);
+    expect(x).toBeCloseTo(-1);
+    expect(y).toBeCloseTo(1);
+  });
+
+  it("maps bottom-right corner to NDC (+1, -1)", () => {
+    const { x, y } = pointerToNdc(rect.left + W, rect.top + H, rect);
+    expect(x).toBeCloseTo(1);
+    expect(y).toBeCloseTo(-1);
+  });
+
+  it("maps canvas centre to NDC (0, 0)", () => {
+    const { x, y } = pointerToNdc(rect.left + W / 2, rect.top + H / 2, rect);
+    expect(x).toBeCloseTo(0);
+    expect(y).toBeCloseTo(0);
+  });
+
+  it("maps an asymmetric interior point correctly on both axes", () => {
+    // 1/4 from left → x = -0.5; 3/4 from top → y = -0.5
+    const { x, y } = pointerToNdc(rect.left + W * 0.25, rect.top + H * 0.75, rect);
+    expect(x).toBeCloseTo(-0.5);
+    expect(y).toBeCloseTo(-0.5);
+  });
+
+  // -------------------------------------------------------------------------
+  // Round-trip with a real PerspectiveCamera that has setViewOffset applied.
+  //
+  // Why this matters: setViewOffset(W, H, 0, 0.04*H, W, H) modifies the
+  // camera's projection matrix.  raycaster.setFromCamera unprojets via
+  // projectionMatrixInverse, so the view offset is already captured in the
+  // camera — pointerToNdc must return standard NDC (+1, not +0.92).
+  // Using +0.92 would shift ndcY by -0.08 and cause each assertion below to
+  // fail (the ray would miss the original world point by ~0.1 globe-radii).
+  // -------------------------------------------------------------------------
+  describe("round-trip through setViewOffset camera", () => {
+    // Camera setup that matches the component (§applyView in AcquisitionsGlobe).
+    const cam = new THREE.PerspectiveCamera(45, W / H, 0.01, 100);
+    cam.position.set(0, 0, 3);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    // Apply the same view offset the component uses (shifts globe centre up 4%)
+    cam.setViewOffset(W, H, 0, 0.04 * H, W, H);
+
+    // Three world points on a unit globe, all visible from z=3
+    const GLOBE_R = 1.0;
+    const worldPoints = [
+      new THREE.Vector3(0, 0, GLOBE_R),                                                             // centre
+      new THREE.Vector3(0.5, 0.3, Math.sqrt(Math.max(0, GLOBE_R ** 2 - 0.5 ** 2 - 0.3 ** 2))),   // upper-right
+      new THREE.Vector3(-0.4, -0.35, Math.sqrt(Math.max(0, GLOBE_R ** 2 - 0.4 ** 2 - 0.35 ** 2))), // lower-left
+    ];
+
+    for (const wp of worldPoints) {
+      it(`ray through (${wp.x.toFixed(2)}, ${wp.y.toFixed(2)}, ${wp.z.toFixed(2)}) passes within 1e-4`, () => {
+        // Project the world point to view-offset-adjusted NDC
+        const proj = wp.clone().project(cam);
+
+        // Convert that NDC to fake screen-pixel coordinates (inverse of pointerToNdc)
+        const screenX = ((proj.x + 1) / 2) * W + rect.left;
+        const screenY = ((1 - proj.y) / 2) * H + rect.top;
+
+        // Convert back and cast a ray — must recover the original world point
+        const ndc = pointerToNdc(screenX, screenY, rect);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), cam);
+
+        expect(raycaster.ray.distanceToPoint(wp)).toBeLessThan(1e-4);
+      });
+    }
   });
 });

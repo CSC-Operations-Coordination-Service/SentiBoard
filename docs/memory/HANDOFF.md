@@ -2,6 +2,47 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 6: datatake detail panel (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+New files:
+- `src/features/acquisitions/DatatakePanel.tsx` — panel component (eyebrow, ID, satellite, status pill with glow, close ×, completeness KPI, sensing/missing dl, six record rows)
+
+Updated files:
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — selection via `?datatake=` URL param; `displayedDtk` state with 500 ms fade-out delay; `navigateRef`, `urlViewRef`, `filteredDatatakesRef` stable refs (render-body assignment); `selectedDtkIdRef`, `selectedSatUnitRef`, `prevDtkIdRef`; extended document keydown handler (`[`/`]` cycle, `Enter` play/pause, `Escape` → close dropdown then deselect); fly-to `useEffect` with out-first (1.2) when switching while zoom > 1.6; `fitZoom` + `geoDistRad` helpers; globe picking via `THREE.Raycaster` in `onPointerUp`; `⌖` deselects when something is selected; footprint pulse + selected visuals in rAF; `aheadTrail` (`LineDashedMaterial`) shown for selected satellite; side column JSX (`hasSel`, `sideCol`, `dtkRail`)
+- `src/features/acquisitions/acq-globe.module.css` — `.sideCol`, `.hasSel`, `.dtkRail`, `.dtkBlock`, `@keyframes acqIn`, `.eyebrow`, `.dtkHead`, `.acqHeadR`, `.pill`, `.acqClose`, `.dtkId`, `.mission`, `.dtkKpi`, `.big`, `.dtkKpiLabel`, `.dtkKpiNote`, `.dtkAside`, `.gap`, `.acqRecord`; responsive (< 980 px panel drops below globe); reduced-motion
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean (both routes PPR ◐).
+
+**Key implementation decisions (Session 6):**
+
+- **Selection = URL `?datatake=`**: selecting calls `navigateRef.current({ ...view, datatake: id })` via globe pick or `]`/`[` keys; deselect sets `datatake: null`; this is the same filter the toolbar Datatake dropdown uses (Decision 5).
+- **`navigateRef.current` / `urlViewRef.current` / `filteredDatatakesRef.current`** updated in `useLayoutEffect([view, filteredDatatakes])`, which runs synchronously after DOM mutations and before paint — no event handler can read a stale ref between render and the first frame.
+- **`displayedDtk` delayed unmount**: a 500 ms `window.setTimeout` keeps the panel mounted during the CSS opacity fade-out. Re-select cancels the timer.
+- **`fitZoom` without d3**: haversine `geoDistRad` replaces `d3.geoDistance`; formula `z = want / (baseR × sin(far))` where `want = 0.3 × min(W,H)`, `baseR = 0.39 × min(W,H)`, clamped `[1.4, 5]`.
+- **Globe picking NDC correction**: `ndcY = -(py/H)×2 + 0.92` corrects for `setViewOffset(W, H, 0, 0.04×H, W, H)` so the ray origin is accurate.
+- **Trail color changed to white**: changed from status hex to `0xffffff` at 0.28 opacity (matches prototype spec §7); selected satellite uses 0.70 opacity. This is a visual correction from Session 3's deviation from the prototype.
+- **Outline opacity changed to 1.0**: matches prototype spec §7 (was 0.55).
+- **`aheadTrail`** uses `THREE.LineDashedMaterial` (dashSize 0.025, gapSize 0.05). Needs `computeLineDistances()` after each position update.
+- **`[`/`]` cycle**: sorts visible datatakes by `satGroupOf(sat)` then `id`; `-1` current index → `]` goes to index 0, `[` goes to last.
+- **`Escape` chain**: close open dropdown first; if none open, deselect; this extends the existing single document handler (not a second one).
+
+**Browser checks (Session 6):**
+
+1. Load `/acquisitions-globe-earth`. Nothing selected on load, stageRow has no `.hasSel` class, side column invisible.
+2. Click a footprint footprint — `?datatake=<id>` appears in URL; side column slides in (820 ms); panel fades in with 380 ms delay; panel shows datatake ID, satellite, status pill, completeness, sensing time, 6 record rows.
+3. Deep link: `?datatake=<id>` — panel opens immediately with the correct datatake.
+4. Click the selected footprint again → deselect; panel fades out; side column collapses; view flies back to HOME_VIEW.
+5. Click empty globe → deselect.
+6. `⌖` button: when something selected → deselect + fly to HOME_VIEW. When nothing selected → reset to HOME_VIEW (original behaviour).
+7. Press `]` to cycle to next visible datatake. Globe flies to it (out-first if switching while zoomed in). Press `[` for previous.
+8. Press `Enter` → toggles play/pause. Press `Escape` → closes dropdown if open, else deselects.
+9. Navigate to `?datatake=DT001` then Back → URL and panel revert correctly.
+10. Navigate to `?datatake=DT001`, then click another footprint → out-first zoom if currently zoomed in (zoom > 1.6).
+11. Under `prefers-reduced-motion`: panel appears instantly; side column jumps; fly-to is instant.
+12. At ≤ 980 px: side column drops below globe at full width.
+
+---
+
 ## Acquisitions — Session 5: filter toolbar + KPIs (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
 
 Updated files:

@@ -204,3 +204,20 @@ export function buildFootprint(d: PreparedDatatake): FootprintGeometry {
   const ring: GeoPoint[] = [...left, ...right.slice().reverse(), left[0]];
   return { left, right, ring };
 }
+
+/**
+ * Convert a pointer event position to Three.js NDC [-1, 1].
+ * No view-offset parameter: setViewOffset modifies the camera's projection
+ * matrix, so raycaster.setFromCamera already handles it via projectionMatrixInverse.
+ * Passing anything other than standard +1 would double-correct and shift the hit area.
+ */
+export function pointerToNdc(
+  clientX: number,
+  clientY: number,
+  rect: { left: number; top: number; width: number; height: number },
+): { x: number; y: number } {
+  return {
+    x: ((clientX - rect.left) / rect.width) * 2 - 1,
+    y: -((clientY - rect.top) / rect.height) * 2 + 1,
+  };
+}

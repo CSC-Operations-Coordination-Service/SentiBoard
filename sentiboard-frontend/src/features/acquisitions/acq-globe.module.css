@@ -805,3 +805,305 @@ button.calDay.calOn {
     min-width: 0;
   }
 }
+
+/* ==================== side column + datatake panel (Slice 5) ==================== */
+
+/* hasSel: modifier class applied to .stageRow when a datatake is selected */
+.hasSel { /* composer only — no own rules */ }
+
+.sideCol {
+  flex: 0 0 0;
+  min-width: 0; /* overflow-x:clip does not reset min-width:auto; item would hold its content width at flex-basis 0 */
+  margin-left: 0;
+  opacity: 0;
+  transform: translateX(28px);
+  pointer-events: none;
+  overflow-x: clip;
+  overflow-y: visible;
+  height: auto;
+  transition:
+    flex-basis 820ms cubic-bezier(0.65, 0, 0.25, 1),
+    margin-left 820ms,
+    opacity 460ms ease,
+    transform 820ms;
+}
+
+.hasSel .sideCol {
+  flex-basis: max(320px, 25vw);
+  margin-left: 12px;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    flex-basis 820ms,
+    margin-left 820ms,
+    opacity 560ms ease 260ms,
+    transform 820ms 200ms;
+}
+
+/* dtkRail: fixed-width inner; prevents layout thrash during flex-basis animation */
+.dtkRail {
+  width: max(320px, 25vw);
+  padding-top: 4px;
+}
+
+/* dtkBlock: the panel content; animates in when hasSel */
+.dtkBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 20px 20px 28px;
+  background: rgba(8, 11, 20, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+@keyframes acqIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.hasSel .dtkBlock {
+  animation: acqIn 640ms cubic-bezier(0.2, 0.7, 0.2, 1) 380ms backwards;
+}
+
+/* Panel header row */
+.dtkHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.eyebrow {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.55);
+  line-height: 1.4;
+  padding-top: 2px;
+}
+
+/* Right cluster: pill + close */
+.acqHeadR {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.pill::before {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  flex-shrink: 0;
+}
+
+.acqClose {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(234, 240, 246, 0.7);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.acqClose:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.acqClose:focus-visible {
+  outline: 2px solid #2fc6dc;
+  outline-offset: 2px;
+}
+
+/* Large datatake ID */
+.dtkId {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-sans);
+  font-size: clamp(22px, 2.3vw, 32px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  word-break: break-all;
+}
+
+/* Satellite name */
+.mission {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(234, 240, 246, 0.55);
+}
+
+/* Completeness KPI */
+.dtkKpi {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 20px;
+}
+
+.big {
+  font-family: var(--font-sans);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+}
+
+.big sup {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0;
+  vertical-align: super;
+  margin-left: 2px;
+  color: rgba(234, 240, 246, 0.55);
+}
+
+.dtkKpiLabel {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.42);
+}
+
+.dtkKpiNote {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(234, 240, 246, 0.35);
+}
+
+/* Sensing / missing time aside */
+.dtkAside {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 4px 8px;
+  margin: 14px 0 0;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.dtkAside dt {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(115, 115, 115, 1);
+  line-height: 1.6;
+}
+
+.dtkAside dd {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(234, 240, 246, 0.9);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.6;
+}
+
+/* Amber color for non-zero missing time */
+.gap {
+  color: #ffb700;
+}
+
+/* Record rows */
+.acqRecord {
+  margin: 0;
+  padding: 0;
+}
+
+.acqRecord > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 12px;
+  padding: 7px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.acqRecord dt {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(234, 240, 246, 0.42);
+  align-self: center;
+}
+
+.acqRecord dd {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: #eaf0f6;
+  font-variant-numeric: tabular-nums;
+  word-break: break-word;
+  align-self: center;
+}
+
+/* ==================== responsive: panel drops below globe < 980px ==================== */
+
+@media (max-width: 980px) {
+  .hasSel .sideCol {
+    flex-basis: auto;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 16px;
+    overflow-x: visible;
+  }
+
+  .dtkRail {
+    width: 100%;
+  }
+}
+
+/* ==================== reduced motion: instant transitions ==================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .sideCol,
+  .hasSel .sideCol,
+  .dtkBlock,
+  .hasSel .dtkBlock {
+    transition: none !important;
+    animation: none !important;
+  }
+}

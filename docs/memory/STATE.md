@@ -51,7 +51,21 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   `footprintMeshesRef` without rebuilding geometry; `filteredUnitsRef` hides satellite dots/trails
   in the rAF loop; single document Escape handler (no canvas Escape); outside-click handler.
   acq-globe.module.css: KPIs, toolbar, dropdowns, calendar, search + responsive breakpoints.
-  460/460 tests pass. Lint + build clean (both routes PPR ◐). Slice 5 (datatake detail panel) next.
+  460/460 tests pass. Lint + build clean (both routes PPR ◐).
+- **Acquisitions — Slice 5 done (2026-11-10, branch `feature/DEVOCS-219-acquisitions`):**
+  Datatake detail panel + selection flow.
+  New: `DatatakePanel.tsx` (eyebrow, ID, pill, completeness KPI, sensing/missing, 6 record rows).
+  `AcquisitionsGlobe.tsx`: selection = `?datatake=` URL param via `navigateRef`; `displayedDtk` with
+  460 ms fade-out; stable refs (`navigateRef`, `urlViewRef`, `filteredDatatakesRef`) synced via
+  `useLayoutEffect` (placed before keyboard effect in source order, React Compiler compliant); extended
+  document keydown (`[`/`]` cycle, `Enter` play/pause, `Escape` chain); fly-to with
+  out-first zoom when switching while zoom > 1.6; `fitZoom`+`geoDistRad` helpers; globe picking via
+  `THREE.Raycaster` in `onPointerUp`; `⌖` deselects when selected; footprint pulse in rAF (0.34–0.52
+  selected, 0.14 others when any selected, 0.24 default); selected satellite: white dot + 70% trail +
+  dashed `aheadTrail`; outline opacity corrected to 1.0; trail corrected to white.
+  acq-globe.module.css: `.sideCol` (820 ms cubic-bezier expand), `.dtkRail`, `.dtkBlock` + `@keyframes
+  acqIn`, panel typography + record rows; < 980 px panel drops below globe; reduced-motion.
+  460/460 tests pass. Lint + build clean (both routes PPR ◐). Slice 6 (—) next.
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.

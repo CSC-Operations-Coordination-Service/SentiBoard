@@ -616,3 +616,29 @@ in `model.ts` instead of `getMockWindow()` in mock data. Session 5 replaces the 
 API call once the backend endpoint exists.
 **Consequences.** No mock data on `develop`. Empty state visible at `/availability` until Session 5.
 Tests that used `mkDtk` already defined their own fixture helper; no `__fixtures__/` migration needed.
+
+## 2026-11-10 — Acquisitions Slice 5: useLayoutEffect ref-sync pattern
+
+**Context.** `handleReady` is called once at mount and creates long-lived event handlers that need
+to call `navigate` and read `view.datatake` and `filteredDatatakes` after every URL change. A
+`useCallback` with `[]` deps captures stale closures; `useEffect` runs after paint so there is a
+brief window where a click could read a stale ref. Assigning in the render body is not idiomatic
+React (React 19 Strict Mode double-invokes render; side-effects in render are forbidden).
+**Decision.** `navigateRef.current`, `urlViewRef.current`, and `filteredDatatakesRef.current` are
+updated in `useLayoutEffect([view, filteredDatatakes])`. `useLayoutEffect` runs synchronously after
+DOM mutations, before paint, closing the stale-ref window without render-body side-effects.
+React 19.3 does export `useEffectEvent` (verified: it is a named export in `node_modules/react`), but
+using it would require rewriting every consuming handler as a `useEffectEvent` callback. The
+`useLayoutEffect` ref-sync pattern is already established in this component for `lookRef`, `viewRef`,
+`rotateToRef`, etc., so extending it here keeps the codebase consistent with no additional complexity.
+**Consequences.** No stale-closure bugs in globe-picking and ⌖/Escape handlers. The layout effect
+fires only when `view` or `filteredDatatakes` change (both are memoized), keeping the cost minimal.
+
+## 2026-11-10 — Acquisitions Slice 5: trail corrected to white; outline opacity to 1.0
+
+**Context.** Session 3 set trail `color: hex` (status color) and outline `opacity: 0.55`. Prototype
+ref §7 specifies white for all trails (`rgba(255,255,255,0.28)` unselected, `0.70` selected) and
+`alpha 1` for outlines.
+**Decision.** Corrected in Slice 5: trail `color: 0xffffff`, outline `opacity: 1.0`. Selected satellite
+trail raised to `opacity: 0.70`. Both match the prototype spec.
+**Consequences.** Visual change from Session 3/4; footprints and satellites look as designed.
