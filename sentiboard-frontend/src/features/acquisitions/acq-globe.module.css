@@ -426,3 +426,382 @@
   padding: 1px 4px;
   border-radius: 3px;
 }
+
+/* ==================== KPIs + filter toolbar (Slice 4) ==================== */
+
+.kpis {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 0;
+  margin-top: calc(16px - var(--hero-after-pad, 72px));
+  padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
+}
+
+.kpi {
+  width: clamp(140px, 16vw, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.kpiV {
+  font-family: var(--font-sans);
+  font-size: clamp(26px, 2.9vw, 37px);
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #eaf0f6;
+}
+
+.kpiCrit {
+  color: #e8514b;
+}
+
+.kpiK {
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.toolbar {
+  position: relative;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px 26px;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding: 0 clamp(18px, 4vw, 48px) clamp(10px, 1.6vw, 20px);
+  font-family: var(--font-sans);
+  color: #eaf0f6;
+}
+
+.tbHeading {
+  height: 49px;
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: clamp(17px, 1.7vw, 22px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffffff;
+}
+
+/* underlined field: hairline sits under the open list */
+.fdrop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fdropSat { min-width: 190px; }
+.fdropDay { min-width: 230px; width: 230px; }
+.fdropDtk { min-width: 260px; width: 260px; }
+
+.fdropHead {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  color: #eaf0f6;
+  text-align: left;
+}
+
+.fdropHead:hover .fdropLabel,
+.fdropHead[aria-expanded="true"] .fdropLabel {
+  color: #2fc6dc;
+}
+
+.fdropLabel {
+  flex: 1 1 auto;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+.fdropVal {
+  flex: 0 0 auto;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.fdropHead svg {
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* in-flow body: grid rows animate 0fr → 1fr (420 ms) */
+.fdropBody {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.fdropOpen .fdropBody {
+  grid-template-rows: 1fr;
+}
+
+.fdropInner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 420ms;
+}
+
+.fdropOpen .fdropInner {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* padding lives inside fdropInner so it doesn't leak when grid row collapses */
+.fdropPad {
+  padding: 12px 0 16px;
+}
+
+.fitem {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.9);
+  transition: color 180ms ease, opacity 180ms ease;
+}
+
+.fitem u {
+  flex: 1;
+  text-decoration: none;
+}
+
+.fitem s {
+  display: block;
+  margin-left: auto;
+  padding-left: 14px;
+  white-space: nowrap;
+  text-decoration: none;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: none;
+  color: #4e5866;
+  font-variant-numeric: tabular-nums;
+}
+
+.off {
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.3;
+}
+
+.dtkDot {
+  display: block;
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.acqEmpty {
+  margin: 4px 0;
+  font-size: 12px;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(234, 240, 246, 0.45);
+}
+
+/* Day calendar */
+.calMonth {
+  margin-top: 10px;
+}
+
+.calMonthHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.calMonthLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #eaf0f6;
+}
+
+.calNav {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  color: rgba(234, 240, 246, 0.5);
+  cursor: pointer;
+}
+
+.calNav:hover {
+  color: #ffffff;
+}
+
+.calGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calDow {
+  text-align: center;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+  padding-bottom: 4px;
+}
+
+/* each calendar cell: span (no data) or button (has data) */
+.calDay {
+  position: relative;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.34);
+  background: none;
+  border: 1px solid transparent;
+}
+
+button.calDay {
+  cursor: pointer;
+  color: #eaf0f6;
+  font-weight: 600;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+button.calDay:hover {
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* 4px cyan dot inside days with data */
+button.calDay i {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: #2fc6dc;
+}
+
+/* selected day: cyan frame */
+button.calDay.calOn {
+  border-color: #2fc6dc;
+  background: rgba(47, 198, 220, 0.12);
+}
+
+/* "Any day" item: slightly shorter */
+.acqAnyday {
+  min-height: 30px;
+}
+
+/* Search field */
+.fsearch {
+  min-width: 190px;
+  height: 49px;
+  box-sizing: border-box;
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.fsearch input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  outline: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: #ffffff;
+}
+
+.fsearch input::placeholder {
+  color: #ffffff;
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .kpi {
+    width: clamp(130px, 44vw, 200px);
+  }
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    justify-content: flex-start;
+    gap: 6px 18px;
+  }
+
+  .tbHeading {
+    width: 100%;
+    height: auto;
+    margin: 0 0 6px;
+  }
+
+  .fdropSat,
+  .fdropDay,
+  .fdropDtk,
+  .fsearch {
+    flex: 1 1 160px;
+    width: auto;
+    min-width: 0;
+  }
+}

@@ -38,7 +38,20 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   (`acquisitions-globe-earth`, `acquisitions-globe`) call `resolveMockTimes` after `connection()`
   then `adaptAcquisitions`. `data.ts` returns `{ rawSpecs, stations }` (not adapted).
   acq-globe.module.css: simbar, .overlayBadges, badge classes.
-  460/460 tests pass. Lint + build clean (both routes PPR ◐). Session 5 (filter toolbar, KPIs, dropdowns) next.
+  460/460 tests pass. Lint + build clean (both routes PPR ◐).
+- **Acquisitions — Slice 4 done (2026-11-10, branch `feature/DEVOCS-219-acquisitions`):**
+  Filter toolbar + KPI row wired to URL state.
+  `AcquisitionsGlobe.tsx`: `useSearchParams` + `parseAcqView` → `view`; three-tier filter cascade
+  (`satFilteredDatatakes` → `satDayDatatakes` → `filteredDatatakes`; `dropdownDatatakes` = sat+day+search);
+  KPI row (`kpiStats`); toolbar with Satellite / Day / Datatake dropdowns and Search; all 49 px tall;
+  in-flow class-driven animation (`.fdropOpen` → `grid-template-rows: 1fr` + `visibility: visible`);
+  navigate via `history.pushState`; Monday-first calendar (`leadBlanks=(dow+6)%7`), only days with
+  datatakes are `<button>`; stale params treated as absent, never URL-replaced from effect;
+  visibility effect `[scene, prepared, filteredDatatakes, ...]` toggles `.visible` on
+  `footprintMeshesRef` without rebuilding geometry; `filteredUnitsRef` hides satellite dots/trails
+  in the rAF loop; single document Escape handler (no canvas Escape); outside-click handler.
+  acq-globe.module.css: KPIs, toolbar, dropdowns, calendar, search + responsive breakpoints.
+  460/460 tests pass. Lint + build clean (both routes PPR ◐). Slice 5 (datatake detail panel) next.
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.

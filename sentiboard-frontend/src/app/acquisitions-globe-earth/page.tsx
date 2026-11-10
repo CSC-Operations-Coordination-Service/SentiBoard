@@ -7,7 +7,7 @@ import { fmtDate } from "@/lib/missions";
 import { getAcquisitions } from "@/features/acquisitions/data";
 import { resolveMockTimes } from "@/features/acquisitions/mock-data";
 import { adaptAcquisitions } from "@/features/acquisitions/adapter";
-import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE } from "@/features/acquisitions/copy";
+import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE, AcquisitionsDescription } from "@/features/acquisitions/copy";
 import AcquisitionsGlobe from "@/features/acquisitions/AcquisitionsGlobe";
 import s from "@/features/acquisitions/acq-globe.module.css";
 
@@ -57,7 +57,7 @@ async function AcquisitionsContent() {
 export default function Page() {
   return (
     <>
-      <PageHeader title={ACQ_TITLE} subtitle={ACQ_SUBTITLE} img={ACQ_HERO_IMG} />
+      <PageHeader title={ACQ_TITLE} subtitle={ACQ_SUBTITLE} img={ACQ_HERO_IMG} desc={<AcquisitionsDescription />} />
       <Suspense>
         <AcquisitionsContent />
       </Suspense>

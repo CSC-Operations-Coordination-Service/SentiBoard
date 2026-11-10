@@ -2,12 +2,16 @@
 
 import { useState, useRef, useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import * as THREE from "three";
 import { applyDayNightEarth, type DayNightEarth } from "./dayNightEarth";
 import { applyStylizedEarth, type StylizedEarth } from "./stylizedEarth";
 import type { AcquisitionsData } from "./types";
 import { prepDatatake, subPoint, buildFootprint, buildFootprintFill, OUTLINE_R } from "./acqGeometry";
 import type { PreparedDatatake } from "./acqGeometry";
+import { kpiStats } from "./model";
+import { parseAcqView, acqViewHref, type AcqView } from "./url-state";
+import { DAY_MS } from "@/lib/missions";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
 import s from "./acq-globe.module.css";
 
@@ -138,6 +142,34 @@ interface StationFx {
   links: THREE.Line[];     // one per satellite unit
 }
 
+// ── Slice 4 module-level helpers ─────────────────────────────────────────────
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+function windowLabel(todayMidnightMs: number): string {
+  const a = new Date(todayMidnightMs - DAY_MS);
+  const b = new Date(todayMidnightMs);
+  const [da, ma, ya] = [a.getUTCDate(), MONTHS[a.getUTCMonth()], a.getUTCFullYear()];
+  const [db, mb, yb] = [b.getUTCDate(), MONTHS[b.getUTCMonth()], b.getUTCFullYear()];
+  if (ya !== yb) return `${da} ${ma} ${ya} – ${db} ${mb} ${yb}`;
+  if (ma !== mb) return `${da} ${ma} – ${db} ${mb} ${yb}`;
+  return `${da} – ${db} ${mb} ${yb}`;
+}
+
+const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const satGroupOf = (sat: string) => sat.replace(/-[A-Z]$/, "");
+
+function Chevron() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
+      <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 export default function AcquisitionsGlobe({
   look,
   nowMs,
@@ -159,6 +191,22 @@ export default function AcquisitionsGlobe({
         : "Ctrl",
     () => "Ctrl",
   );
+
+  // ── Slice 4: URL filter state ─────────────────────────────────────────────
+  const searchParams = useSearchParams();
+  const view: AcqView = useMemo(() => parseAcqView(searchParams), [searchParams]);
+
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const openDropdownRef = useRef<string | null>(null);
+  const [calMonth, setCalMonth] = useState(() => {
+    const t = new Date(nowMs);
+    return Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1);
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const toolbarRef = useRef<HTMLDivElement | null>(null);
+  const footprintMeshesRef = useRef<{ id: string; fill: THREE.Mesh; outline: THREE.Line }[]>([]);
+  const filteredUnitsRef = useRef<Set<string> | null>(null);
 
   const [scene, setScene] = useState<THREE.Scene | null>(null);
 
@@ -191,6 +239,28 @@ export default function AcquisitionsGlobe({
   const speedRef = useRef(speed);
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
   useEffect(() => { speedRef.current = speed; }, [speed]);
+  useEffect(() => { openDropdownRef.current = openDropdown; }, [openDropdown]);
+
+  // Escape closes the open dropdown (single document handler; canvas Escape is omitted — 0 resets view)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && openDropdownRef.current) setOpenDropdown(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Outside-click closes the open dropdown
+  useEffect(() => {
+    if (!openDropdown) return;
+    const onDown = (e: MouseEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        setOpenDropdown(null);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [openDropdown]);
 
   // Refs: DOM nodes written from the rAF loop (no React state per frame)
   const simTimeTextRef = useRef<HTMLSpanElement | null>(null);
@@ -240,6 +310,56 @@ export default function AcquisitionsGlobe({
     }
     return result;
   }, [data.datatakes, prepared]);
+
+  // ── Slice 4: three-tier filter cascade ───────────────────────────────────
+  // Tier 1: satellite filter
+  const satFilteredDatatakes = useMemo(
+    () =>
+      view.satellite
+        ? data.datatakes.filter((dt) => dt.unit === view.satellite)
+        : data.datatakes,
+    [data.datatakes, view.satellite],
+  );
+  // Tier 2: satellite + day filter (base for calendar and dropdown list)
+  const satDayDatatakes = useMemo(
+    () =>
+      view.day
+        ? satFilteredDatatakes.filter((dt) => dt.startIso.slice(0, 10) === view.day)
+        : satFilteredDatatakes,
+    [satFilteredDatatakes, view.day],
+  );
+  // Tier 3: sat + day + datatake filter (globe visibility and KPIs)
+  const filteredDatatakes = useMemo(
+    () =>
+      view.datatake
+        ? satDayDatatakes.filter((dt) => dt.id === view.datatake)
+        : satDayDatatakes,
+    [satDayDatatakes, view.datatake],
+  );
+  // Dropdown list: sat + day + search (search does not touch globe or KPIs)
+  const dropdownDatatakes = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return satDayDatatakes;
+    return satDayDatatakes.filter(
+      (dt) => dt.id.toLowerCase().includes(q) || dt.unit.toLowerCase().includes(q),
+    );
+  }, [satDayDatatakes, searchQuery]);
+
+  const kpi = useMemo(() => kpiStats(filteredDatatakes), [filteredDatatakes]);
+  const uniqueSatellites = useMemo(
+    () => Array.from(new Set(data.datatakes.map((dt) => dt.unit))).sort(),
+    [data.datatakes],
+  );
+  const datesWithData = useMemo(() => {
+    const base = view.satellite
+      ? data.datatakes.filter((dt) => dt.unit === view.satellite)
+      : data.datatakes;
+    return new Set(base.map((dt) => dt.startIso.slice(0, 10)));
+  }, [data.datatakes, view.satellite]);
+
+  function navigate(next: AcqView) {
+    history.pushState(null, "", acqViewHref(next, window.location.pathname));
+  }
 
   // applyView: positions the camera for the current view state.
   // Only reads refs (stable), so [] deps is correct and the function reference is stable.
@@ -545,9 +665,19 @@ export default function AcquisitionsGlobe({
         const simTimeMin = simTimeRef.current / 60;
         const satObjs = satObjectsRef.current;
         const satDirs = satDirsRef.current;
+        const filteredUnits = filteredUnitsRef.current;
         const badgesVisible = !!cam;
         for (let si = 0; si < satObjs.length; si++) {
           const so = satObjs[si];
+          if (filteredUnits && !filteredUnits.has(so.unit)) {
+            so.dot.visible = false;
+            so.trail.visible = false;
+            const badgeEl = satBadgeRefs.current[si];
+            if (badgeEl) badgeEl.style.display = "none";
+            continue;
+          }
+          so.dot.visible = true;
+          so.trail.visible = true;
           const [lon, lat] = subPoint(so.prep, simTimeMin);
           // dot.position is in earthGroup-local space (overlayGroup has no extra transform)
           so.dot.position.copy(latLonToV3(lat, lon, GROUND_R + 0.025));
@@ -668,6 +798,7 @@ export default function AcquisitionsGlobe({
     };
 
     // ── Footprints ────────────────────────────────────────────────────────────
+    footprintMeshesRef.current = [];
     data.datatakes.forEach((dt, idx) => {
       const prep = prepared.get(dt.id);
       if (!prep) return;
@@ -698,6 +829,8 @@ export default function AcquisitionsGlobe({
       const outlineMesh = new THREE.Line(outlineGeo, outlineMat);
       outlineMesh.renderOrder = 18 + idx;
       group.add(outlineMesh);
+
+      footprintMeshesRef.current.push({ id: dt.id, fill: fillMesh, outline: outlineMesh });
     });
 
     // ── Satellite dots + trails ───────────────────────────────────────────────
@@ -796,13 +929,282 @@ export default function AcquisitionsGlobe({
       satObjectsRef.current = [];
       stationFxRef.current = [];
       satDirsRef.current = [];
+      footprintMeshesRef.current = [];
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scene, prepared, data.stations, satUnits]);
 
+  // Visibility effect: declared after geometry effect so React runs it second in the same commit.
+  // Toggles .visible on existing meshes without rebuilding geometry.
+  useEffect(() => {
+    if (!scene) return;
+    const allowedIds = new Set(filteredDatatakes.map((dt) => dt.id));
+    /* eslint-disable react-hooks/immutability */
+    for (const { id, fill, outline } of footprintMeshesRef.current) {
+      const v = allowedIds.has(id);
+      fill.visible = v;
+      outline.visible = v;
+    }
+    /* eslint-enable react-hooks/immutability */
+    if (view.satellite !== null || view.datatake !== null) {
+      filteredUnitsRef.current = new Set(filteredDatatakes.map((dt) => dt.unit));
+    } else {
+      filteredUnitsRef.current = null;
+    }
+  }, [scene, prepared, filteredDatatakes, view.satellite, view.datatake]);
+
   return (
-    <div className={s.stageRow}>
-      <div className={s.globeStage} ref={stageElRef}>
+    <>
+      {/* KPI row */}
+      <div className={s.kpis}>
+        <div className={s.kpi}>
+          <b className={s.kpiV}>{kpi.total}</b>
+          <span className={s.kpiK}>Datatakes in view</span>
+        </div>
+        <div className={s.kpi}>
+          <b className={s.kpiV}>{kpi.acquiredPct !== null ? `${kpi.acquiredPct}%` : "—"}</b>
+          <span className={s.kpiK}>Acquired</span>
+        </div>
+        <div className={s.kpi}>
+          <b className={s.kpiV}>{kpi.publishedPct !== null ? `${kpi.publishedPct}%` : "—"}</b>
+          <span className={s.kpiK}>Published</span>
+        </div>
+        <div className={s.kpi}>
+          <b className={`${s.kpiV}${kpi.failedCount > 0 ? ` ${s.kpiCrit}` : ""}`}>
+            {kpi.failedCount}
+          </b>
+          <span className={s.kpiK}>Failed acquisitions</span>
+        </div>
+      </div>
+
+      {/* Filter toolbar */}
+      <div className={s.toolbar} ref={toolbarRef}>
+        <h2 className={s.tbHeading}>
+          {view.day
+            ? `${+view.day.slice(8)} ${MONTHS[+view.day.slice(5, 7) - 1]} ${view.day.slice(0, 4)}`
+            : windowLabel(nowMs)}
+        </h2>
+
+        {/* Satellite dropdown */}
+        <div className={`${s.fdrop} ${s.fdropSat}${openDropdown === "sat" ? ` ${s.fdropOpen}` : ""}`}>
+          <button
+            type="button"
+            className={s.fdropHead}
+            aria-expanded={openDropdown === "sat"}
+            onClick={() => setOpenDropdown(openDropdown === "sat" ? null : "sat")}
+          >
+            <span className={s.fdropLabel}>Satellite</span>
+            <span className={s.fdropVal}>{view.satellite ?? "All"}</span>
+            <Chevron />
+          </button>
+          <div className={s.fdropBody} aria-hidden={openDropdown !== "sat" || undefined}>
+            <div className={s.fdropInner}>
+              <div className={s.fdropPad}>
+                {[null, ...uniqueSatellites].map((sat) => (
+                  <button
+                    key={sat ?? "*"}
+                    type="button"
+                    className={`${s.fitem}${view.satellite !== null && sat !== view.satellite ? ` ${s.off}` : ""}`}
+                    onClick={() => {
+                      navigate({ satellite: sat, day: view.day, datatake: null });
+                      setOpenDropdown(null);
+                    }}
+                  >
+                    <u>{sat === null ? "All satellites" : sat}</u>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Day of acquisition dropdown */}
+        <div className={`${s.fdrop} ${s.fdropDay}${openDropdown === "day" ? ` ${s.fdropOpen}` : ""}`}>
+          <button
+            type="button"
+            className={s.fdropHead}
+            aria-expanded={openDropdown === "day"}
+            onClick={() => setOpenDropdown(openDropdown === "day" ? null : "day")}
+          >
+            <span className={s.fdropLabel}>Day of acquisition</span>
+            <span className={s.fdropVal}>
+              {view.day
+                ? `${view.day.slice(8)} ${MONTHS[+view.day.slice(5, 7) - 1].slice(0, 3)}`
+                : "Any"}
+            </span>
+            <Chevron />
+          </button>
+          <div className={s.fdropBody} aria-hidden={openDropdown !== "day" || undefined}>
+            <div className={s.fdropInner}>
+              <div className={s.fdropPad}>
+                <button
+                  type="button"
+                  className={`${s.fitem} ${s.acqAnyday}${view.day !== null ? ` ${s.off}` : ""}`}
+                  onClick={() => {
+                    navigate({ ...view, day: null, datatake: null });
+                    setOpenDropdown(null);
+                  }}
+                >
+                  <u>Any day</u>
+                </button>
+                {(() => {
+                  const m = new Date(calMonth);
+                  const year = m.getUTCFullYear();
+                  const month = m.getUTCMonth();
+                  const daysInMonth = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+                  const leadBlanks = (new Date(calMonth).getUTCDay() + 6) % 7;
+                  return (
+                    <div className={s.calMonth}>
+                      <div className={s.calMonthHead}>
+                        <button
+                          type="button"
+                          className={s.calNav}
+                          aria-label="Previous month"
+                          onClick={() => setCalMonth(Date.UTC(year, month - 1, 1))}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" />
+                          </svg>
+                        </button>
+                        <b className={s.calMonthLabel}>{MONTHS[month]} {year}</b>
+                        <button
+                          type="button"
+                          className={s.calNav}
+                          aria-label="Next month"
+                          onClick={() => setCalMonth(Date.UTC(year, month + 1, 1))}
+                        >
+                          <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
+                            <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.6" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className={s.calGrid}>
+                        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+                          <span key={i} className={s.calDow}>{d}</span>
+                        ))}
+                        {Array.from({ length: leadBlanks }, (_, i) => (
+                          <span key={`b${i}`} />
+                        ))}
+                        {Array.from({ length: daysInMonth }, (_, i) => {
+                          const dayNum = i + 1;
+                          const dateStr = ymd(calMonth + i * DAY_MS);
+                          const has = datesWithData.has(dateStr);
+                          const isOn = view.day === dateStr;
+                          return has ? (
+                            <button
+                              key={dayNum}
+                              type="button"
+                              className={`${s.calDay} ${s.calHas}${isOn ? ` ${s.calOn}` : ""}`}
+                              onClick={() => {
+                                navigate({ ...view, day: dateStr, datatake: null });
+                                setOpenDropdown(null);
+                              }}
+                            >
+                              {dayNum}<i />
+                            </button>
+                          ) : (
+                            <span key={dayNum} className={s.calDay}>{dayNum}</span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Datatake dropdown */}
+        <div className={`${s.fdrop} ${s.fdropDtk}${openDropdown === "dtk" ? ` ${s.fdropOpen}` : ""}`}>
+          <button
+            type="button"
+            className={s.fdropHead}
+            aria-expanded={openDropdown === "dtk"}
+            onClick={() => setOpenDropdown(openDropdown === "dtk" ? null : "dtk")}
+          >
+            <span className={s.fdropLabel}>Datatake</span>
+            <span className={s.fdropVal}>{view.datatake ?? "All"}</span>
+            <Chevron />
+          </button>
+          <div className={s.fdropBody} aria-hidden={openDropdown !== "dtk" || undefined}>
+            <div className={s.fdropInner}>
+              <div className={s.fdropPad}>
+                <button
+                  type="button"
+                  className={`${s.fitem}${view.datatake !== null ? ` ${s.off}` : ""}`}
+                  onClick={() => {
+                    navigate({ ...view, datatake: null });
+                    setOpenDropdown(null);
+                  }}
+                >
+                  <u>All datatakes</u>
+                </button>
+                {[...dropdownDatatakes]
+                  .sort((a, b) => {
+                    const ga = satGroupOf(a.sat);
+                    const gb = satGroupOf(b.sat);
+                    if (ga < gb) return -1;
+                    if (ga > gb) return 1;
+                    if (a.id < b.id) return -1;
+                    if (a.id > b.id) return 1;
+                    return 0;
+                  })
+                  .map((dt) => {
+                    const dotColor =
+                      dt.cls === "ok" ? "#34d399" : dt.cls === "warn" ? "#f5b544" : "#ff5c5c";
+                    return (
+                      <button
+                        key={dt.id}
+                        type="button"
+                        className={`${s.fitem}${view.datatake !== null && dt.id !== view.datatake ? ` ${s.off}` : ""}`}
+                        onClick={() => {
+                          navigate({ ...view, datatake: dt.id });
+                          setOpenDropdown(null);
+                        }}
+                      >
+                        <i className={s.dtkDot} style={{ background: dotColor }} />
+                        <u>{dt.id}</u>
+                        <s>{dt.comp.toFixed(1)}% · {dt.status}</s>
+                      </button>
+                    );
+                  })}
+                {dropdownDatatakes.length === 0 && (
+                  <p className={s.acqEmpty}>No datatake matches</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Search */}
+        <label className={s.fsearch}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.3" />
+            <path d="M10.4 10.4L14 14" stroke="currentColor" strokeWidth="1.3" />
+          </svg>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              if (e.target.value.trim()) setOpenDropdown("dtk");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && dropdownDatatakes.length > 0) {
+                navigate({ ...view, datatake: dropdownDatatakes[0].id });
+                setOpenDropdown(null);
+              }
+            }}
+            placeholder="Datatake ID"
+            aria-label="Search datatakes"
+          />
+        </label>
+      </div>
+
+      {/* Globe */}
+      <div className={s.stageRow}>
+        <div className={s.globeStage} ref={stageElRef}>
         <SpaceBackdrop page={-1} paused={!stageVisible} />
         <div className={s.canvasWrap}>
           <ThreeEarth
@@ -937,5 +1339,6 @@ export default function AcquisitionsGlobe({
         </div>
       </div>
     </div>
+    </>
   );
 }

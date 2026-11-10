@@ -734,6 +734,8 @@ findings as a list of deviations with their fix. At this point the globe runs on
 - `prefers-reduced-motion` — no tween on fly-to/zoom; no animation on panel; no transition
   on side column.
 - Legacy redirects — 308 confirmed with curl.
+- Description panel — `PageHeader` receives `desc={<AcquisitionsDescription />}` on both
+  routes; "DESCRIPTION ▲" toggle and collapsible text render.
 - SEO — `<title>`, description, canonical, Open Graph, Twitter (match legacy
   `/acquisitions-status.html` metadata).
 - Sitemap — entry added with correct changefreq and priority.

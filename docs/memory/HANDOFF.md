@@ -2,6 +2,41 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Session 5: filter toolbar + KPIs (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Updated files:
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — `useSearchParams` + `parseAcqView` → `view`; three-tier filter cascade (`satFilteredDatatakes` → `satDayDatatakes` → `filteredDatatakes`; `dropdownDatatakes` = sat + day + search); KPI row; toolbar with Satellite / Day / Datatake dropdowns and Search; visibility effect `[scene, prepared, filteredDatatakes, ...]` toggles `.visible` on `footprintMeshesRef` without rebuilding geometry; `filteredUnitsRef` hides satellite dots/trails in rAF; Escape closes open dropdown (single document handler, no canvas Escape — `0` already resets view); outside-click handler; `openDropdownRef` synced via `useEffect`
+- `src/features/acquisitions/acq-globe.module.css` — KPI row, toolbar, in-flow dropdowns (`.fdropOpen` class-driven: `grid-template-rows: 1fr` + `visibility: visible; transition-delay: 0s`), calendar, search, responsive breakpoints
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 460/460 tests, `pnpm build` clean (both routes PPR ◐).
+
+**Key implementation decisions:**
+
+- **`navigate` uses `history.pushState`** (not `replaceState`), same as availability's Explorer. All filter changes push a new history entry so Back/Forward works.
+- **Search query is never auto-cleared** (not on pick, not on dropdown close) — this matches the mock-up exactly (mock-up lines 1907–1919: `setSearchQuery` is only called in `onChange`; there is no clear-on-pick or clear-on-close).
+- **In-flow dropdowns** (Decision 1): `.fdropOpen` class on the `.fdrop` element drives `grid-template-rows` animation on `.fdropBody` and reveals `.fdropInner` immediately (`transition-delay: 0s`). Closing delays `visibility: hidden` by 420 ms so the collapse animates before items disappear. No `inert`, no inline `style` for the grid rows.
+- **Stale params treated as absent** (approval item 5): if the URL has e.g. `?satellite=S2A&day=2023-01-01`, `satDayDatatakes` returns `[]`, KPIs show 0/—, globe shows no footprints, and the URL is never replaced. Mock-up lines 674–692 have the same behaviour (no URL side-effects in the cascade).
+- **`openDropdownRef`** updated in `useEffect([openDropdown])`, not during render (approval item 2).
+- **Visibility effect** declared after geometry effect and uses `[scene, prepared, filteredDatatakes, view.satellite, view.datatake]`; when `scene` or `prepared` changes both effects run in declaration order (geometry first, visibility second), so `footprintMeshesRef.current` is populated before the visibility effect reads it (approval item 3).
+- **`calMonth` initial value** from `nowMs` prop, not `new Date()` (approval item 4).
+- **`react-hooks/immutability`** suppressed with `/* eslint-disable/enable react-hooks/immutability */` around the Three.js `.visible` mutations in the visibility effect — same pattern as the geometry effect's `exhaustive-deps` disable.
+
+**What is NOT in Slice 5:**
+- Datatake detail panel (open on pick, close on deselect, fly-to on open)
+- Deselect with Escape (Slice 5; `0` already resets the view)
+- Footprint pulse / selected-trail highlight
+
+**Browser checks (compare vs mock-up):**
+1. Load `/acquisitions-globe-earth`. KPI row with four figures appears above the globe. Date heading shows "9 – 10 November 2026".
+2. Open Satellite dropdown → list expands in-flow, globe stays below; caption turns cyan. Pick "S2A" → URL gets `?satellite=S2A`, only S2 footprints visible, S1/S3 satellite dots hidden.
+3. Open Day → calendar shows November 2026; only today (10) is a `<button>` with cyan dot; all other days are plain `<span>` (no click). Picking 10 adds `&day=2026-11-10`; heading changes to "10 November 2026".
+4. Type in Search → Datatake dropdown opens. Enter picks the first visible item. URL gets `?…&datatake=<id>`. Globe shows only that footprint; KPIs count one datatake.
+5. Press Escape → open dropdown closes. No globe reset. `0` key still resets the view.
+6. Browser Back → URL reverts, filters and globe update without geometry rebuild.
+7. Navigate to `?satellite=S2A&day=2023-01-01` → no redirect; KPIs show 0/—; URL unchanged.
+
+---
+
 ## Acquisitions — Session 4: visual bug fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
 
 Fixed after first browser comparison against mock-up. All checks pass; ready to commit.

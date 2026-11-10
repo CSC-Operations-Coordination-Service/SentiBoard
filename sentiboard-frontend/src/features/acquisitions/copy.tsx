@@ -1,6 +1,19 @@
 import { asset } from "@/lib/asset";
 
-/** Shared SEO metadata, hero image and copy for both Acquisitions routes. */
+/** Collapsible description panel content, verbatim from the mock-up
+ *  (design/react-mockups/src/data/copy.tsx lines 109-117). */
+export function AcquisitionsDescription() {
+  return (
+    <p>
+      The <b>Acquisitions Status</b> view displays the past, current and future
+      Copernicus Sentinels&rsquo; acquisition on an interactive, 3D globe. Through this
+      view, users can either inspect the status of a past acquisition, or learn
+      about the planned acquisitions for the mission of interest. By default, the
+      real-time sensing scenario is displayed.
+    </p>
+  );
+}
+
 export const SEO = {
   title: "Sentinel Acquisition Plans & Real-Time Status | Copernicus Dashboard",
   description:
