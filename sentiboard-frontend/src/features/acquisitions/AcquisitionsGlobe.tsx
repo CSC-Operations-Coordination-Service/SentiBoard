@@ -328,10 +328,9 @@ export default function AcquisitionsGlobe({
   const simTimeRef = useRef((nowMs % 86_400_000) / 1000);
 
   // Pre-compute orbital constants for each datatake (once per datatakes/nowMs change)
-  const simDayMs2 = nowMs - (nowMs % 86_400_000);
   const prepared = useMemo(
-    () => new Map(data.datatakes.map((dt) => [dt.id, prepDatatake(dt, simDayMs2)])),
-    [data.datatakes, simDayMs2],
+    () => new Map(data.datatakes.map((dt) => [dt.id, prepDatatake(dt, simDayMs)])),
+    [data.datatakes, simDayMs],
   );
 
   // Unique satellite units (one dot + trail per unit)
@@ -509,10 +508,6 @@ export default function AcquisitionsGlobe({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.datatake]);
-
-  function navigate(next: AcqView) {
-    history.pushState(null, "", acqViewHref(next, window.location.pathname));
-  }
 
   // applyView: positions the camera for the current view state.
   // Only reads refs (stable), so [] deps is correct and the function reference is stable.
@@ -1233,7 +1228,7 @@ export default function AcquisitionsGlobe({
                     type="button"
                     className={`${s.fitem}${view.satellite !== null && sat !== view.satellite ? ` ${s.off}` : ""}`}
                     onClick={() => {
-                      navigate({ satellite: sat, day: view.day, datatake: null });
+                      navigateRef.current({ satellite: sat, day: view.day, datatake: null });
                       setOpenDropdown(null);
                     }}
                   >
@@ -1268,7 +1263,7 @@ export default function AcquisitionsGlobe({
                   type="button"
                   className={`${s.fitem} ${s.acqAnyday}${view.day !== null ? ` ${s.off}` : ""}`}
                   onClick={() => {
-                    navigate({ ...view, day: null, datatake: null });
+                    navigateRef.current({ ...view, day: null, datatake: null });
                     setOpenDropdown(null);
                   }}
                 >
@@ -1323,7 +1318,7 @@ export default function AcquisitionsGlobe({
                               type="button"
                               className={`${s.calDay} ${s.calHas}${isOn ? ` ${s.calOn}` : ""}`}
                               onClick={() => {
-                                navigate({ ...view, day: dateStr, datatake: null });
+                                navigateRef.current({ ...view, day: dateStr, datatake: null });
                                 setOpenDropdown(null);
                               }}
                             >
@@ -1361,7 +1356,7 @@ export default function AcquisitionsGlobe({
                   type="button"
                   className={`${s.fitem}${view.datatake !== null ? ` ${s.off}` : ""}`}
                   onClick={() => {
-                    navigate({ ...view, datatake: null });
+                    navigateRef.current({ ...view, datatake: null });
                     setOpenDropdown(null);
                   }}
                 >
@@ -1386,7 +1381,7 @@ export default function AcquisitionsGlobe({
                         type="button"
                         className={`${s.fitem}${view.datatake !== null && dt.id !== view.datatake ? ` ${s.off}` : ""}`}
                         onClick={() => {
-                          navigate({ ...view, datatake: dt.id });
+                          navigateRef.current({ ...view, datatake: dt.id });
                           setOpenDropdown(null);
                         }}
                       >
@@ -1419,7 +1414,7 @@ export default function AcquisitionsGlobe({
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && dropdownDatatakes.length > 0) {
-                navigate({ ...view, datatake: dropdownDatatakes[0].id });
+                navigateRef.current({ ...view, datatake: dropdownDatatakes[0].id });
                 setOpenDropdown(null);
               }
             }}
@@ -1428,6 +1423,10 @@ export default function AcquisitionsGlobe({
           />
         </label>
       </div>
+
+      {data.datatakes.length === 0 && (
+        <p className={s.empty}>Acquisition data is not available yet.</p>
+      )}
 
       {/* Globe */}
       <div className={`${s.stageRow}${view.datatake !== null ? ` ${s.hasSel}` : ""}`}>

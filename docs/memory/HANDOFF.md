@@ -2,6 +2,56 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — Slice 7: mock data removed, ready for PR (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
+
+Deleted: `src/features/acquisitions/mock-data.ts`.
+
+Updated files:
+- `src/features/acquisitions/stations.ts` — new; `COPERNICUS_STATIONS: Station[]` with the 5 real fixed positions (values from prototype mock-up `AcquisitionsGlobeEarth.tsx` STATIONS constant)
+- `src/features/acquisitions/data.ts` — `getAcquisitions(dayKey)` now returns `{ datatakes: [], stations: COPERNICUS_STATIONS }` with a TODO for the real endpoint
+- `src/app/acquisitions-globe-earth/page.tsx` — removed `resolveMockTimes`, `dayMs`, early-return; always adapts and renders `AcquisitionsGlobe`
+- `src/app/acquisitions-globe/page.tsx` — same
+- `src/features/acquisitions/AcquisitionsGlobe.tsx` — removed `simDayMs2` duplicate (uses `simDayMs`); replaced 6 inline `navigate(...)` calls with `navigateRef.current(...)`; deleted the `navigate` function; added `<p className={s.empty}>Acquisition data is not available yet.</p>` between toolbar and globe when `data.datatakes.length === 0`
+
+ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean (both routes PPR ◐).
+
+**What to check in the browser:**
+- `/acquisitions-globe-earth` loads; globe shows with 5 station markers and sim clock running; KPIs show 0 / "—"; toolbar renders (all dropdowns empty); empty-state message "Acquisition data is not available yet." appears between toolbar and globe.
+- `/acquisitions-globe` same with stylised planet.
+- No console errors.
+
+---
+
+### Backend endpoint contract (for the backend team)
+
+`getAcquisitions(dayKey)` in `src/features/acquisitions/data.ts` is the stub to replace. `dayKey` is a date string `YYYY-MM-DD` (UTC). The page needs:
+
+**Per datatake** (fields of `RawAcqDatatake`, which is `AcqDatatake` without `comp`/`cls` — those are derived by the adapter):
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | `string` | Unique datatake identifier |
+| `sat` | `string` | Full satellite name, e.g. `"Sentinel-2A"` |
+| `unit` | `string` | Short unit code, e.g. `"S2A"` |
+| `station` | `string` | Downlink station name |
+| `lat` | `number` | Footprint centre latitude (degrees) |
+| `lon` | `number` | Footprint centre longitude (degrees) |
+| `swathKm` | `number` | Swath width in km (used for footprint geometry) |
+| `periodMin` | `number` | Orbital period in minutes (used for trail and ahead-track) |
+| `startIso` | `string` | Sensing start time, ISO 8601 UTC |
+| `sensingS` | `number` | Sensing duration in seconds |
+| `status` | `string` | `"Published"` \| `"Processing"` \| `"Failed"` |
+| `mode` | `string` | Instrument mode label, e.g. `"IW · DV"` |
+| `absOrbit` | `string` | Absolute orbit number (zero-padded string) |
+| `levels` | `AcqLevel[]` | Product types with pct per level (drives `comp`/`cls` in adapter) |
+| `kmlLink` | `{ url: string; filename: string }` *(optional)* | Acquisition plan KML download |
+
+**Ground stations** are real fixed positions committed in `src/features/acquisitions/stations.ts` — the backend does not need to serve them.
+
+**Open decision — datatakes with a future `startIso`:** the stub returns no datatakes so this doesn't arise now. When the real endpoint exists, decide whether datatakes whose `startIso` is ahead of wall-clock time during `dayKey` should be hidden, labelled "PLANNED", or shown as-is. All mock datatakes started in the past; the UI does not currently handle future-start datatakes.
+
+---
+
 ## Acquisitions — Session 6b: Slice 6 audit fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
 
 Updated files:
@@ -18,11 +68,6 @@ ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean 
 - `AcquisitionsGlobe.tsx:1172-1178` — `react-hooks/immutability`: `.visible` mutations on Three.js mesh refs inside a `useEffect`. Lint flags it without the comment.
 
 **Prototype ref (acquisitions):** `~/work/SentiBoard/design/react-mockups/docs/acquisitions-prototype-ref.md`
-
-**Slice 7 deferred items (not done this session):**
-- `RawAcqSpec` re-export from `mock-data.ts` (currently only used internally; re-export when the backend endpoint replaces mock data)
-- Inline `navigate` call — replace with `navigateRef.current` where it appears inline
-- `simDayMs2` — resolve the duplicate/stale simDayMs reference if it appears
 
 ---
 

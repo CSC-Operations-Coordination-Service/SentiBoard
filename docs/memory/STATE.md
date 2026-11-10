@@ -66,6 +66,8 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   acq-globe.module.css: `.sideCol` (820 ms cubic-bezier expand), `.dtkRail`, `.dtkBlock` + `@keyframes
   acqIn`, panel typography + record rows; < 980 px panel drops below globe; reduced-motion.
   460/460 tests pass. Lint + build clean (both routes PPR ◐).
+- **Acquisitions — Slice 7 done (2026-11-10, branch `feature/DEVOCS-219-acquisitions`): ready for PR.**
+  `mock-data.ts` deleted. `stations.ts` added with the 5 real Copernicus ground stations. `data.ts` returns empty stub `{ datatakes: [], stations: COPERNICUS_STATIONS }`. Both page components simplified (no `resolveMockTimes`, no early-return). `AcquisitionsGlobe.tsx`: `simDayMs2` duplicate removed; `navigate` function removed (all 6 inline call sites now use `navigateRef.current`); empty-state message shown when datatakes empty. 468/468 tests. ESLint + tsc + build clean (both routes PPR ◐).
 - **Acquisitions — Session 6b: Slice 6 audit fixes (2026-11-10, branch `feature/DEVOCS-219-acquisitions`):**
   F1 `kpiStats`: `acquiredPct` now counts `status !== "Failed"` (not `comp !== 0`); `failedCount`
   stays `comp === 0`. 468/468 tests (8 new kpiStats tests added).
