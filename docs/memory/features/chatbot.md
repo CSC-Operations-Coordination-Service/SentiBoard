@@ -68,3 +68,25 @@ animation ends; flag off → no launcher, and a replayed Server Action call retu
 without reaching the chatbot; no chatbot host in `.next/static`; no message text in server logs.
 
 Open items: HANDOFF.md.
+
+## Answer parsing
+
+Modules in `sentiboard-frontend/src/features/chat/` (moved from `src/features/chatbot/`):
+
+| File | Purpose |
+| --- | --- |
+| `types.ts` | Marker types (6 forms), Segment, EventCalendarPayload and related types |
+| `marker-syntax.ts` | Finds marker candidates, parses attribute bodies — the only file that knows the `<tag ... />` delimiter form |
+| `parse-response.ts` | `parseResponse(raw): Segment[]` — validates markers, builds ordered segment list |
+| `event-calendar.ts` | `parseEventCalendar(json): ParseEventCalendarResult` — schema validator, no external deps |
+| `marker-syntax.test.ts` | Syntax layer tests (findMarkerCandidates, parseAttributes) |
+| `parse-response.test.ts` | Full parse pipeline tests |
+| `event-calendar.test.ts` | Payload validator tests |
+| `__fixtures__/` | Schema JSON (with $ref fix), sample payload, response string fixtures |
+
+Not yet wired into ChatWidget. Remaining work: UI components for each marker type, Markdown
+rendering, KaTeX for `$…$` / `$$…$$`. Marker delimiter is under discussion — only `marker-syntax.ts`
+needs updating if it changes.
+
+Decisions: DECISIONS.md 2026-11-13 entries on hand-written types, source-order segment rendering,
+and TEXT_ATTR_MAX_LEN.

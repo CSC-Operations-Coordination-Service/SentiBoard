@@ -666,3 +666,39 @@ filters), because the chatbot's `SentiBoardContext` rejects extra fields (422).
   `/processors` was already dynamic (ƒ).
 - Answers are shown as plain text; the chatbot writes Markdown, so `**bold**` shows literally until
   Markdown rendering is added (HANDOFF.md).
+
+## 2026-11-13 — Chatbot: marker and event-calendar types are hand-written
+
+**Context.** AGENTS.md §5 says frontend types should be built from the partner's OpenAPI schema
+with `openapi-typescript`. The partner published `api/chatbot-openapi.json` v0.1.5 (2026-11-13).
+Two type groups cannot be generated from it: (1) marker types — markers are embedded in the
+`ChatResponse.response` string as `<tag ... />` syntax; they are not a typed field in the schema
+and so are invisible to `openapi-typescript`; (2) event-calendar payload types — in
+`EventCalendarDataResponse`, `events` is typed as `array of { additionalProperties: true }` (i.e.
+untyped objects); there is no typed item schema to generate from.
+**Decision.** `src/features/chat/types.ts` holds hand-written types for the six marker forms, the
+Segment union, EventCalendarPayload and its item type. Do not attempt to generate these from
+OpenAPI v0.1.5. Re-evaluate if the partner adds typed event fields to a future schema version.
+**Consequences.** Type drift is possible if the partner changes marker or event-calendar shapes
+without notifying us. Watch the partner's contract updates.
+
+## 2026-11-13 — Chatbot: parseResponse renders widgets in source order
+
+**Context.** The Streamlit reference client (`dashboard/tabular_protocol.py`, `render_chat_content`)
+extracts markers by type in a fixed order (tabular → temporal-plot → event-calendar →
+count-histogram → KPI), grouping all widgets of one type regardless of their position in the prose.
+**Decision.** `parseResponse` in `src/features/chat/parse-response.ts` returns segments in
+source order: a widget appears where its marker appeared in the response string, interleaved with
+the surrounding prose. This allows a UI to render each widget in context (e.g. a table immediately
+after the paragraph that introduces it) rather than collecting all tables at the top.
+**Consequences.** The rendered output differs from the Streamlit reference client. If the partner
+later specifies a fixed grouping order, update `parseResponse` and its tests.
+
+## 2026-11-13 — Chatbot: TEXT_ATTR_MAX_LEN = 200 characters (assumed)
+
+**Context.** The integration guide (§3) says text attributes (`label`, `value`, `title`, `delta`)
+are "length-bounded" but gives no numeric limit.
+**Decision.** `TEXT_ATTR_MAX_LEN = 200` in `src/features/chat/parse-response.ts`. A marker
+whose text attribute exceeds this length is treated as malformed and kept as plain markdown text.
+**Consequences.** If the partner later specifies a different limit, update the constant and its
+test. The assumption is noted in the fixture README.

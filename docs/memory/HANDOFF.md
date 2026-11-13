@@ -20,6 +20,26 @@ Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
   from the frontend's network. No rate limiting on the Server Action yet.
 - **Auth.** When OIDC lands (AGENTS.md §4), decide whether the assistant is public or signed-in only.
 
+## Chatbot — answer parsing; UI components not done (2026-11-13, branch `feature/DEVOCS-263-chatbot-UI-integration`)
+
+Modules now in `sentiboard-frontend/src/features/chat/`: `types.ts`, `marker-syntax.ts`,
+`parse-response.ts`, `event-calendar.ts`, plus tests and `__fixtures__/`. No React components, no
+network calls. All lint/type-check/test/build checks pass.
+
+**Not done / open:**
+
+- **Streaming endpoint (SSE)** — progress events over a streaming endpoint are planned but the
+  endpoint is not available yet (not in OpenAPI v0.1.5).
+- **Marker delimiter may change** — the `<tag ... />` form clashes with `<` in prose and math;
+  `###`-style delimiters are being discussed. When the delimiter changes, only
+  `src/features/chat/marker-syntax.ts` and `marker-syntax.test.ts` need updating.
+- **UI components** — no React components for rendering any marker type (kpi, tabular,
+  temporal-plot, count-histogram, event-calendar).
+- **KaTeX** — `$…$` and `$$…$$` math in markdown segments passes through `parseResponse`
+  unchanged; a KaTeX integration step is needed before rendering.
+
+---
+
 ## Acquisitions — Slice 7: mock data removed, ready for PR (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
 
 Deleted: `src/features/acquisitions/mock-data.ts`.

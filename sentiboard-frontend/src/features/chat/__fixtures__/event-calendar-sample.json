@@ -1,0 +1,21 @@
+{
+  "data_id": "artifact_fcd5ed14590f47e592dffc2227f6c66e",
+  "title": "Anomaly calendar",
+  "description": "Anomalies returned for the selected period and filters.",
+  "events": [
+    {
+      "key": "GSANOM-23018",
+      "occurred_at": "2026-07-07T03:18:00.000Z",
+      "title": "CGS-SGS: S1D: 3562: Data missing, FER above threshold",
+      "description": "RFI with S/C CAPELLA-19 ACADIA @ 03:20:35 UTC, with impact",
+      "category": "rfi",
+      "category_basis": "native_origin",
+      "origin": "RFI",
+      "status": "Closed",
+      "criticality": "Blocking",
+      "affected_systems": ["S-1"],
+      "datatake_ids": ["S1D-25912", "S1D-25913"],
+      "associated_datatake_count": 2
+    }
+  ]
+}

@@ -1,0 +1,79 @@
+Event Calendar Schema
+Sample payload:
+
+{
+ "data_id": "artifact_fcd5ed14590f47e592dffc2227f6c66e",
+ "title": "Anomaly calendar",
+ "description": "Anomalies returned for the selected period and filters.",
+ "events": [
+  {
+   "key": "GSANOM-23018",
+   "occurred_at": "2026-07-07T03:18:00.000Z",
+   "title": "CGS-SGS: S1D: 3562: Data missing, FER above threshold",
+   "description": "RFI with S/C CAPELLA-19 ACADIA @ 03:20:35 UTC, with impact",
+   "category": "rfi",
+   "category_basis": "native_origin",
+   "origin": "RFI",
+   "status": "Closed",
+   "criticality": "Blocking",
+   "affected_systems": ["S-1"],
+   "datatake_ids": ["S1D-25912", "S1D-25913"],
+   "associated_datatake_count": 2
+  }
+ ]
+}
+
+JSON schema:
+
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "EventCalendarDataResponse",
+ "type": "object",
+ "required": ["data_id", "title", "description", "events"],
+ "properties": {
+  "data_id": { "type": "string" },
+  "title": { "type": "string" },
+  "description": { "type": "string" },
+  "events": { "type": "array", "items": { "ref":"#/defs/Event" } }
+ },
+ "$defs": {
+  "Event": {
+   "type": "object",
+   "required": ["key", "occurred_at", "title", "description", "category",
+          "category_basis", "origin", "status", "criticality",
+          "affected_systems", "datatake_ids", "associated_datatake_count"],
+   "properties": {
+    "key": { "type": "string", "description": "Ticket ID, e.g. GSANOM-23018" },
+    "occurred_at": {
+     "type": ["string", "null"], "format": "date-time",
+     "description": "Ticket occurrence time, ISO 8601 UTC with milliseconds, e.g. 2026-07-07T03:18:00.000Z"
+    },
+    "title": { "type": "string", "description": "\"Untitled anomaly ticket\" when the source has none" },
+    "description": { "type": "string", "description": "Full ticket text; may be long; empty string when absent" },
+    "category": { "enum": ["acquisition", "production", "rfi", "satellite", "other"] },
+    "category_basis": { "enum": ["native_origin", "unclassified"] },
+    "origin": {
+     "type": ["string", "null"],
+     "description": "Ticket origin as stored. Observed: RFI, Acquisition, Production, Satellite, IPF, MP, Other"
+    },
+    "status": {
+     "enum": ["Open", "Closed", "Delegated", "Duplicated", "Rejected", "Completed",
+          "Returned", "Transferred", "To be deployed", null]
+    },
+    "criticality": {
+     "enum": ["Blocking", "Critical", "Routine", null],
+     "description": "Severity, highest first: Blocking > Critical > Routine"
+    },
+    "affected_systems": { "type": "array", "items": { "type": "string" }, "description": "e.g. [\"S-1\"], [\"S-5p\"]; may be empty" },
+    "datatake_ids": { "type": "array", "items": { "type": "string" }, "description": "e.g. [\"S1D-25912\"]; may be empty" },
+    "associated_datatake_count": { "type": "integer", "minimum": 0, "description": "Length of datatake_ids" }
+   }
+  }
+ }
+}
+
+Artifact Fetch Latency
+The data retrieved by this endpoint is prepared by the backend's OpenSearch tool services during POST /chat, so it should normally respond quickly, something along the lines of one second. This endpoint only retrieves data that has already been prepared, so the latency should be very short.
+
+Session Behaviour and Timeout
+There is currently no configured inactivity timeout for backend chat sessions. Conversations and their visualisation data are stored in the PostgreSQL database and remain available until they are explicitly removed. A formal retention duration has not yet been defined. Editing and replaying earlier conversation turns is not supported in the current version. The chatbot has access to the last 12 turns (6 user messages and 6 replies); older messages are retained but do not influence the chatbot. Streamlit waits up to 360 seconds for each API request, including POST /chat. Each individual LLM request made by the backend has a 180-second timeout. OpenSearch requests have a 120-second timeout by default.
