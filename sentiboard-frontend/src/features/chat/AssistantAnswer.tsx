@@ -7,6 +7,7 @@ import MarkerPlaceholder from "./MarkerPlaceholder";
 import DataTable from "./DataTable";
 import TemporalChart from "./TemporalChart";
 import CountChart from "./CountChart";
+import EventCalendar from "./EventCalendar";
 
 // Lazy-loaded so that react-markdown, remark/rehype and KaTeX land in a
 // separate chunk from the initial widget bundle.
@@ -38,6 +39,9 @@ export default function AssistantAnswer({ segments, requestId }: Props) {
         }
         if (seg.marker.kind === "count-histogram") {
           return <CountChart key={i} marker={seg.marker} requestId={requestId} />;
+        }
+        if (seg.marker.kind === "event-calendar") {
+          return <EventCalendar key={i} marker={seg.marker} requestId={requestId} />;
         }
         return <MarkerPlaceholder key={i} marker={seg.marker} />;
       })}

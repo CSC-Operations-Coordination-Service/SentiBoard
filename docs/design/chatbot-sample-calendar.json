@@ -1,0 +1,1978 @@
+{
+    "data_id": "artifact_3695e25ba9354478a6e42b779f0b5b76",
+    "title": "Anomaly calendar",
+    "description": "Anomalies returned for the selected period and filters.",
+    "events": [
+        {
+            "key": "GSANOM-22663",
+            "title": "[S1A] Incomplete NSG CADIP S1A_20260601045834064771 ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "TBC",
+            "occurred_at": "2026-06-01T03:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22664",
+            "title": "[CGS-NSG]: S1A 64771 01.06.2026 04:58 UT \u2013 data loss in nominal chain",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Missing main chain, caused by issue in the HDR12 element.",
+            "occurred_at": "2026-06-01T03:00:00.000Z",
+            "datatake_ids": [
+                "S1A-534824"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22689",
+            "title": "[S1D] Multiple NRT/NTC failures",
+            "origin": "Production",
+            "status": "Closed",
+            "category": "production",
+            "criticality": "Critical",
+            "description": "Side effect of the GSANOM-22675",
+            "occurred_at": "2026-06-01T15:30:00.000Z",
+            "datatake_ids": [
+                "S1D-21535",
+                "S1D-21530",
+                "S1D-21534",
+                "S1D-21533",
+                "S1D-21531",
+                "S1D-21341",
+                "S1D-21529"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 7
+        },
+        {
+            "key": "GSANOM-22705",
+            "title": "[ADGS] S1_AUX WND/S2__OPER_AUX_ECMWFD_ADG products delayed due to ECMWF dissemination issue on DOY 152",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "",
+            "occurred_at": "2026-06-01T16:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22690",
+            "title": "[S1A] NRT failures for Missing/Corrupted elements for DT 082990",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Antenna issue, caused by the same problem as traced in GSANOM-22678\r\n",
+            "occurred_at": "2026-06-02T00:00:00.000Z",
+            "datatake_ids": [
+                "S1A-534928"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22678",
+            "title": "CGS-INS: S-1A D/O 64783 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Issue caused by the same anomaly traced in GSANOM-22687 on the TYR antenna.",
+            "occurred_at": "2026-06-02T00:23:00.000Z",
+            "datatake_ids": [
+                "S1A-534922",
+                "S1A-534932",
+                "S1A-534930"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 3
+        },
+        {
+            "key": "GSANOM-22700",
+            "title": "Sentinel-1 Unavailability Report - EDDS Planned Unavailability",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-02T06:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22691",
+            "title": "Inconsistency of Sentinel-1 number of slices for single datatakeID",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-02T11:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22693",
+            "title": "NSG S1C 7930 02.06.2026 17:41UT - DATA delivery failed",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Anomaly caused by FDT server on the DDP (Fast Data Transfer - a high speed data transfer protocol / tool). Configuration tuned.",
+            "occurred_at": "2026-06-02T15:30:00.000Z",
+            "datatake_ids": [
+                "S1C-66043"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22692",
+            "title": "[S1A][S1D] Empty session on NSG CADIP",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "",
+            "occurred_at": "2026-06-02T16:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22694",
+            "title": "NSG S1A 64794 02.06.2026 18:30UT - DATA delivery failed",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Routine",
+            "description": "TBC",
+            "occurred_at": "2026-06-02T16:30:00.000Z",
+            "datatake_ids": [
+                "S1A-535033",
+                "S1A-535025",
+                "S1A-535027"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 3
+        },
+        {
+            "key": "GSANOM-22695",
+            "title": "NSG S1D 3061 02.06.2026 18:37UT - Data delivery failed ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Routine",
+            "description": "TBC",
+            "occurred_at": "2026-06-02T16:30:00.000Z",
+            "datatake_ids": [
+                "S1D-21650",
+                "S1D-21648",
+                "S1D-21645",
+                "S1D-21647"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 4
+        },
+        {
+            "key": "GSANOM-22702",
+            "title": "[S1A] Low and highly erratic delivery rate",
+            "origin": "Dashboard",
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "CDSE timeliness impacted",
+            "occurred_at": "2026-06-02T16:30:00.000Z",
+            "datatake_ids": [
+                "S1A-535004"
+            ],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22701",
+            "title": "[S1C] Read-timeout from prip.s1c.werum",
+            "origin": "Dashboard",
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "CDSE timeliness",
+            "occurred_at": "2026-06-02T18:30:00.000Z",
+            "datatake_ids": [
+                "S1C-66042"
+            ],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22698",
+            "title": "CGS-INS: S-1D D/O 3066 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Issue caused by the same problem traced in GSANOM-21508 (HK+2 DTs missing)",
+            "occurred_at": "2026-06-03T02:50:00.000Z",
+            "datatake_ids": [
+                "S1D-21682",
+                "S1D-21689",
+                "S1D-21679"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 3
+        },
+        {
+            "key": "GSANOM-22710",
+            "title": "[S1D] ERRMAT failed in processing",
+            "origin": "Production",
+            "status": "Delegated",
+            "category": "production",
+            "criticality": "Critical",
+            "description": "ERRMAT error",
+            "occurred_at": "2026-06-03T14:00:00.000Z",
+            "datatake_ids": [
+                "S1D-21760"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22708",
+            "title": "[ADGS] FTP site issue on ECMWF - Auxiliary Data Store DOY 155",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-03T21:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22707",
+            "title": "CGS-INS: S-1C D/O 7951 Data acquisition degraded",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "Sun RFI @ 04:20:03 UTC, no impact",
+            "occurred_at": "2026-06-04T04:13:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22713",
+            "title": "CGS-INS: S-1A D/O 64820 Sun interference",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "Solar RFI without impact @ 13:28:50 UTC.",
+            "occurred_at": "2026-06-04T11:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22714",
+            "title": "CGS-SGS: S1A: 64823: No data acquired",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Antenna issue without impact",
+            "occurred_at": "2026-06-04T18:18:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22717",
+            "title": "[CDSE] Forum maintenance",
+            "origin": null,
+            "status": "Rejected",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-05T09:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2",
+                "S-3",
+                "S-5p"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22718",
+            "title": "CGS-SGS: S1C: 7971: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C CO3D-3 at 13:18:38 UTC",
+            "occurred_at": "2026-06-05T13:12:00.000Z",
+            "datatake_ids": [
+                "S1C-66379"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22727",
+            "title": "CGS-INS: S1A D/O 64858  Inconsistency Error Detected",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Inconsistency Error Detected, caused by same root cause as GSANOM-22724. No availability of the redundant chain for this pass.",
+            "occurred_at": "2026-06-06T02:00:00.000Z",
+            "datatake_ids": [
+                "S1A-535594"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22740",
+            "title": "[S1D] SGS D.O. 3113 Antenna status NOK",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Routine",
+            "description": "RFI with S/C CRYOSAT 2 at 08:22:28 UTC.\r\nAntenna status NOK without impact",
+            "occurred_at": "2026-06-06T06:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22728",
+            "title": "[ADGS] AUX_WAV missing nc from IFREMER on DOY 157",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-06T18:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22723",
+            "title": "CGS-SGS: S1C: 7992: No data acquired",
+            "origin": "Other",
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "Pass planned without data",
+            "occurred_at": "2026-06-06T23:54:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22729",
+            "title": "CGS-SGS: S1C: 8002: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with Spot 6 with impact",
+            "occurred_at": "2026-06-07T16:13:00.000Z",
+            "datatake_ids": [
+                "S1C-66649"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22731",
+            "title": "CGS-INS: S-1C D/O 8005 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": " Data acquisition degraded without impact",
+            "occurred_at": "2026-06-07T21:10:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22737",
+            "title": "CGS-INS: S1A D/O 64873 COP19 Pass Data Transfer - Inconsistency Error Detected ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Pass Data Transfer - Inconsistency Error Detected",
+            "occurred_at": "2026-06-08T02:30:00.000Z",
+            "datatake_ids": [
+                "S1A-535724",
+                "S1A-535725"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 2
+        },
+        {
+            "key": "GSANOM-22736",
+            "title": "CGS-SGS: S1A: 64872: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "Solar RFI at 03:06:09 UTC, without impact",
+            "occurred_at": "2026-06-08T03:02:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22745",
+            "title": "NSG S1C 8018 08.06.2026 18:29UT - Sun cross event",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "Solar RFI with impact @ 18:32:28 UTC.",
+            "occurred_at": "2026-06-08T16:30:00.000Z",
+            "datatake_ids": [
+                "S1C-66803"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22743",
+            "title": "CGS-INS: S-1C D/O 8017 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Acquisition degraded without impact",
+            "occurred_at": "2026-06-08T17:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22756",
+            "title": "[CDA] Data unavailability for Sentinel -1C from catalogue CDSE \u2013 Ongoing Incident",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-08T19:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22751",
+            "title": "[S1D] Missing / Corrupted Elements for DT 0057BF (22463)",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "RFI is Legion-6, with impact, between 07:21:14 and 07:21:19 UTC.\r\n\r\n",
+            "occurred_at": "2026-06-09T05:00:00.000Z",
+            "datatake_ids": [
+                "S1D-22463"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22758",
+            "title": "MTI Primary and Bck network anomaly",
+            "origin": "Acquisition",
+            "status": "Delegated",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Primary and Backup network anomaly.Impact in timeliness",
+            "occurred_at": "2026-06-09T11:00:00.000Z",
+            "datatake_ids": [
+                "S1A-535990",
+                "S1A-535989",
+                "S1A-536001",
+                "S1D-22525",
+                "S1D-22510",
+                "S1A-535912",
+                "S1D-22515",
+                "S1A-535999",
+                "S1A-535991",
+                "S1A-535921",
+                "S1A-535993",
+                "S1A-535916",
+                "S1A-535929",
+                "S1D-22518",
+                "S1A-535995",
+                "S1A-535913",
+                "S1D-22575",
+                "S1D-22517",
+                "S1D-22580",
+                "S1D-22589",
+                "S1A-535997",
+                "S1A-535920"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1",
+                "S-2"
+            ],
+            "associated_datatake_count": 22
+        },
+        {
+            "key": "GSANOM-22759",
+            "title": "[CGS-NSG]:NSG S1D 3163 09.06.2026 18:29UT - Sun cross event",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "Solar RFI, with impact, at 18:32:38 UTC.",
+            "occurred_at": "2026-06-09T16:30:00.000Z",
+            "datatake_ids": [
+                "S1D-22532"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22793",
+            "title": "[S1A PRIP] DT 535949 with intermediate products published",
+            "origin": "Production",
+            "status": "Closed",
+            "category": "production",
+            "criticality": "Critical",
+            "description": "Intermediate products generated",
+            "occurred_at": "2026-06-09T18:00:00.000Z",
+            "datatake_ids": [
+                "S1A-535949"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22823",
+            "title": "[CDSE] Marketplace service unavailability",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-09T22:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2",
+                "S-3",
+                "S-5p"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22764",
+            "title": "Error in OData Query for CADIP MPS S1/S2",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-10T09:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22776",
+            "title": "[S1A] Missing/Corrupted elements DT 082DE4 DO 64909 ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "TBC",
+            "occurred_at": "2026-06-10T14:00:00.000Z",
+            "datatake_ids": [
+                "S1A-536036"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22770",
+            "title": "CGS-SGS: S1D: 3177: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C YAM-7 at 17:42:12 UTC, without impact",
+            "occurred_at": "2026-06-10T17:37:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22775",
+            "title": "MTI: S1D Orbit 3184 - Status  CADIP NOK",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "CADIP issue monitoring false NOK reported.",
+            "occurred_at": "2026-06-11T06:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22785",
+            "title": "CGS-INS: S-1A D/O 64927 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Issue caused by misleading configuration of the antenna. 6 Impacted DTs + no HK",
+            "occurred_at": "2026-06-11T21:27:00.000Z",
+            "datatake_ids": [
+                "S1A-536209",
+                "S1A-536210",
+                "S1A-536205",
+                "S1A-536208",
+                "S1A-536214",
+                "S1A-536213"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 6
+        },
+        {
+            "key": "GSANOM-22791",
+            "title": "[ADGS] AUX_WAV missing nc from IFREMER on DOY 163",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-12T02:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22798",
+            "title": "CGS-SGS: S1A: 64945: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with SUN at 03:14:24 UTC.",
+            "occurred_at": "2026-06-13T03:10:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22800",
+            "title": "[S1D] L1 GRDH_1/SLC - L2 OCN errors (Failed to initialize the WPC_Control class) ",
+            "origin": "Production",
+            "status": "Delegated",
+            "category": "production",
+            "criticality": "Critical",
+            "description": "L1-L2 OCN errors (Failed to initialize the WPC_Control class)",
+            "occurred_at": "2026-06-13T06:00:00.000Z",
+            "datatake_ids": [
+                "S1D-28763",
+                "S1D-22961",
+                "S1D-29455",
+                "S1D-24840"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 4
+        },
+        {
+            "key": "GSANOM-22808",
+            "title": "[CGS-NSG]:NSG S1A 64969 14.06.2026 18:30UT - Sun cross event",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "Solar RFI @ 18:33:22 UTC, without impact.",
+            "occurred_at": "2026-06-14T16:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22855",
+            "title": "AISAUX products not available in CDSE Browser for granted user",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-14T22:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22805",
+            "title": "CGS-SGS: S1A: 64976: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI from unknown source @ 06:14:33 UTC, without impact",
+            "occurred_at": "2026-06-15T06:10:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22812",
+            "title": "[S1D] Incomplete datatake 23242",
+            "origin": "Production",
+            "status": "Closed",
+            "category": "production",
+            "criticality": "Critical",
+            "description": "L1L2 processing restarted due to  VM network glitch",
+            "occurred_at": "2026-06-15T13:00:00.000Z",
+            "datatake_ids": [
+                "S1D-23242"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22813",
+            "title": "[S1A] Missing/Corrupted elements DT 0830C2 DO 64990",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Missing/Corrupted elements\r\n\r\n\r\n",
+            "occurred_at": "2026-06-16T03:00:00.000Z",
+            "datatake_ids": [
+                "S1A-536770"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22818",
+            "title": "[S1A] quality info published with delay for NSG S1A 20260616181345064998 ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Quality info published with delay. Possible impact in timeliness",
+            "occurred_at": "2026-06-16T16:00:00.000Z",
+            "datatake_ids": [
+                "S1A-536839",
+                "S1A-536835",
+                "S1A-536837",
+                "S1A-536843"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 4
+        },
+        {
+            "key": "GSANOM-22816",
+            "title": "SENTINEL-1D, 16.06.2026 18:21:19 UT, orbit 3265: Data loss due to sun cross event",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "Solar RFI",
+            "occurred_at": "2026-06-16T16:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22819",
+            "title": "[ADGS] S1_AUX WND/S2__OPER_AUX_ECMWFD_ADG products delayed due to ECMWF dissemination issue on DOY 167",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "",
+            "occurred_at": "2026-06-16T17:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22815",
+            "title": "CGS-SGS: S1A: 64998: No data acquired",
+            "origin": "Other",
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "Pass in overlap without data downlink. No impact",
+            "occurred_at": "2026-06-16T18:18:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22821",
+            "title": "[S1D] missing/corrupted elements for DT 005B91 DO3272",
+            "origin": "Satellite",
+            "status": "Closed",
+            "category": "satellite",
+            "criticality": "Critical",
+            "description": "Missing elements recovered in non slicing mode",
+            "occurred_at": "2026-06-17T04:00:00.000Z",
+            "datatake_ids": [
+                "S1D-23441"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22824",
+            "title": "[S1] Filters on CDSE browser do not work properly ",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-17T13:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22829",
+            "title": "[S1C] Planned downlinks during S/C manoeuvring phase",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-17T19:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-23541",
+            "title": "[AIS data] short products to be avoided",
+            "origin": null,
+            "status": "Delegated",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-17T22:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22838",
+            "title": "CGS-INS: S-1A D/O 65026 - File transfer failed ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Network Outage at INS Station. Linked to GSANOM-22842",
+            "occurred_at": "2026-06-17T23:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22830",
+            "title": "[ADGS] AUX_WAV source file overwritten from IFREMER on DOY 169",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-18T04:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22839",
+            "title": "CGS-INS: S-1D D/O 3293 - File transfer failed",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Network Outage at INS Station linked to GSANOM-22842",
+            "occurred_at": "2026-06-18T14:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22882",
+            "title": "[S1D] Incomplete datatake 23654 to be check ",
+            "origin": "Production",
+            "status": "Closed",
+            "category": "production",
+            "criticality": "Routine",
+            "description": "Incomplete datatake under investigation",
+            "occurred_at": "2026-06-18T20:30:00.000Z",
+            "datatake_ids": [
+                "S1D-23654"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22844",
+            "title": "CGS-INS: S-1A D/O 65029 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Anomaly caused by the same problem traced in GSANOM-22842.",
+            "occurred_at": "2026-06-18T21:19:00.000Z",
+            "datatake_ids": [
+                "S1A-537124",
+                "S1A-537125",
+                "S1A-537129",
+                "S1A-537120",
+                "S1A-537126"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 5
+        },
+        {
+            "key": "GSANOM-22851",
+            "title": "[S1A] D/O 65031 missing data",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Network issue. Root cause traced  in GSANOM-22842.",
+            "occurred_at": "2026-06-18T22:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22846",
+            "title": "CGS-INS: S-1A D/O 65030 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Data Degradation caused by the same problem traced in GSANOM-22842.",
+            "occurred_at": "2026-06-18T22:55:00.000Z",
+            "datatake_ids": [
+                "S1A-537137",
+                "S1A-537134",
+                "S1A-537141",
+                "S1A-537142",
+                "S1A-537145",
+                "S1A-537136",
+                "S1A-537131",
+                "S1A-537133",
+                "S1A-537140",
+                "S1A-537132",
+                "S1A-537144"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 11
+        },
+        {
+            "key": "GSANOM-22854",
+            "title": "[ADGS]S1A REP_MP_MP missing files from MP-IP",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-18T23:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22853",
+            "title": "[S1A] Missing/Corrupted elements DT 083258 DO 65034",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-19T02:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22847",
+            "title": "CGS-INS: S-1A D/O 65032 Data acquisition degraded",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Network Outage at INS Station linked to GSANOM-22842.",
+            "occurred_at": "2026-06-19T02:09:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22849",
+            "title": "CGS-SGS: S1A: 65034: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C STRIX-3 at 05:40:12 UTC, with impact",
+            "occurred_at": "2026-06-19T05:37:00.000Z",
+            "datatake_ids": [
+                "S1A-537176"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22860",
+            "title": "[S1A] Missing/Corrupted elements for DTs 0832E4, 0832E5 on S1A_20260620075620065050 (SVL)",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-20T06:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22859",
+            "title": "CGS-SGS: S1A: 65050: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "An RFI with S/C CO3D-1 between 07:57:32 - 07:57:34 UTC, with impact",
+            "occurred_at": "2026-06-20T07:56:00.000Z",
+            "datatake_ids": [
+                "S1A-537316",
+                "S1A-537317"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 2
+        },
+        {
+            "key": "GSANOM-22865",
+            "title": "[CGS-NSG]:NSG S1A 65071 21.06.2026 18:22UT - Sun cross event",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "Solar RFI with impact",
+            "occurred_at": "2026-06-21T16:30:00.000Z",
+            "datatake_ids": [
+                "S1A-537509"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-23114",
+            "title": "[CPOD] Possible accuracy degradation for Sentinel-1C products in the period 21/06/2026 to 23/06/2026",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-21T19:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22873",
+            "title": "CGS-SGS: S1A: 65083: Data missing, FER above threshold",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Acquisition issue caused by misbehaviour at LNA receiver, without impact",
+            "occurred_at": "2026-06-22T14:10:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22884",
+            "title": "[ADGS] S1[A,D]_OPER_AUX_[PREORB,RESORB] out of timeliness",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-23T08:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22901",
+            "title": "[S1D] Incomplete datatake 24285 to be check ",
+            "origin": "Other",
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "Datatake partially extracted. Reprocessed.",
+            "occurred_at": "2026-06-24T02:00:00.000Z",
+            "datatake_ids": [
+                "S1D-24285"
+            ],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22902",
+            "title": "[ADGS] AUX_WAV source file overwritten from IFREMER on DOY 175",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-24T02:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22883",
+            "title": "CGS-SGS: S1D: 3375: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C CO3D at 07:32:10 UTC, without impact",
+            "occurred_at": "2026-06-24T07:31:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22907",
+            "title": "S1C: invalid annotation of orbit relative number on L0/L1/L2 product after restart on 24th June 2026",
+            "origin": "Other",
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "invalid annotation of orbit relative number on L0/L1/L2 product after restart. Reprocessed",
+            "occurred_at": "2026-06-24T15:30:00.000Z",
+            "datatake_ids": [
+                "S1C-66850",
+                "S1C-66914",
+                "S1C-66840",
+                "S1C-66885",
+                "S1C-66848",
+                "S1C-66913",
+                "S1C-66832",
+                "S1C-66875",
+                "S1C-66887",
+                "S1C-66825",
+                "S1C-66829",
+                "S1C-66863",
+                "S1C-66873",
+                "S1C-66831",
+                "S1C-66851",
+                "S1C-66917",
+                "S1C-66854",
+                "S1C-66880",
+                "S1C-66847",
+                "S1C-66869",
+                "S1C-66915",
+                "S1C-66830",
+                "S1C-66870",
+                "S1C-66889",
+                "S1C-66908",
+                "S1C-66886",
+                "S1C-66858",
+                "S1C-66843",
+                "S1C-66833",
+                "S1C-66893",
+                "S1C-66896",
+                "S1C-66883",
+                "S1C-66905",
+                "S1C-66871",
+                "S1C-66868",
+                "S1C-66882",
+                "S1C-66818",
+                "S1C-66881",
+                "S1C-66812",
+                "S1C-66852",
+                "S1C-66906",
+                "S1C-66814",
+                "S1C-66879",
+                "S1C-66859",
+                "S1C-66912",
+                "S1C-66813",
+                "S1C-66897",
+                "S1C-66862",
+                "S1C-66834",
+                "S1C-66835",
+                "S1C-66846",
+                "S1C-66837",
+                "S1C-66823",
+                "S1C-66828",
+                "S1C-66817",
+                "S1C-66826",
+                "S1C-66864",
+                "S1C-66892",
+                "S1C-66838",
+                "S1C-66819",
+                "S1C-66900",
+                "S1C-66815",
+                "S1C-66902",
+                "S1C-66876",
+                "S1C-66853",
+                "S1C-66878",
+                "S1C-66909",
+                "S1C-66903",
+                "S1C-66904",
+                "S1C-66860",
+                "S1C-66827",
+                "S1C-66890",
+                "S1C-66824",
+                "S1C-66898",
+                "S1C-66844",
+                "S1C-66820",
+                "S1C-66842",
+                "S1C-66910",
+                "S1C-66891",
+                "S1C-66816",
+                "S1C-66822",
+                "S1C-66899",
+                "S1C-66861",
+                "S1C-66907",
+                "S1C-66821",
+                "S1C-66901",
+                "S1C-66888",
+                "S1C-66895",
+                "S1C-66916",
+                "S1C-66855",
+                "S1C-66856",
+                "S1C-66867",
+                "S1C-66884",
+                "S1C-66849",
+                "S1C-66874",
+                "S1C-66857",
+                "S1C-66872",
+                "S1C-66911",
+                "S1C-66894",
+                "S1C-66877",
+                "S1C-66839",
+                "S1C-66841",
+                "S1C-66836",
+                "S1C-66866",
+                "S1C-66865",
+                "S1C-66845"
+            ],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 106
+        },
+        {
+            "key": "GSANOM-22895",
+            "title": "CGS-INS: Network down ",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Network outage due to a planned maintenance activity for which the potential impact was not correctly communicated.",
+            "occurred_at": "2026-06-24T17:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1",
+                "S-2",
+                "S-3",
+                "S-5p"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22900",
+            "title": "CGS-SGS: S1A: 65120: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with the sun without impact",
+            "occurred_at": "2026-06-25T03:10:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22903",
+            "title": "[S1] EDDS DARC, MCS, External Server Planned Unavailability",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-25T07:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22913",
+            "title": "[ADGS] Delay on AUX_WND due a temporary performance degraded ",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Routine",
+            "description": "",
+            "occurred_at": "2026-06-25T16:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22909",
+            "title": "CGS-INS: S1A D/O 65135 High FER value",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S6 MICHAEL FREILICH with impact",
+            "occurred_at": "2026-06-26T01:30:00.000Z",
+            "datatake_ids": [
+                "S1A-538070"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22908",
+            "title": "CGS-SGS: S1C: 8271: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "Solar RFI at 03:13:26 UTC",
+            "occurred_at": "2026-06-26T03:09:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22911",
+            "title": "[S1D] Unexpected S1D Session MPL publication",
+            "origin": "Acquisition",
+            "status": "Completed",
+            "category": "acquisition",
+            "criticality": "Routine",
+            "description": "Unexpected (not planned?) session due to an issue under investigation.",
+            "occurred_at": "2026-06-26T04:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22918",
+            "title": "CGS-SGS: S1D: 3410: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C CAPELLA-18 ACADIA @ 17:11:22 UTC, with impact",
+            "occurred_at": "2026-06-26T17:02:00.000Z",
+            "datatake_ids": [
+                "S1D-24592"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22928",
+            "title": "CGS-NSG S1C D/O 8295 2026-06-27 18:29:20 minor data loss (1 CADU) - RFI",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Degraded acquisition due to bad weather conditions (thunderstorm) without impact",
+            "occurred_at": "2026-06-27T16:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22921",
+            "title": "CGS-SGS: S1D: 3425: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C MUSAT3 @ 17:48:56 UTC, with impact",
+            "occurred_at": "2026-06-27T17:45:00.000Z",
+            "datatake_ids": [
+                "S1D-24722"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22971",
+            "title": "[S1D] Duplicated products for DT 24761",
+            "origin": "Production",
+            "status": "Closed",
+            "category": "production",
+            "criticality": "Routine",
+            "description": "DT duplicated ",
+            "occurred_at": "2026-06-27T22:00:00.000Z",
+            "datatake_ids": [
+                "S1D-24761"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22943",
+            "title": "[ADGS] Out of timeliness products due to ECMWF issues",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-28T02:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1",
+                "S-2"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22931",
+            "title": "[ADGS] Missing source files for AUX_TRO",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-28T10:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22942",
+            "title": "[S1D] WV DT 24800 only RAW products generated",
+            "origin": "Production",
+            "status": "Closed",
+            "category": "production",
+            "criticality": "Critical",
+            "description": "Incomplete datatake under investigation",
+            "occurred_at": "2026-06-28T11:00:00.000Z",
+            "datatake_ids": [
+                "S1D-24800"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22936",
+            "title": "[CGS-NSG] S1D D/O 3440 2026-06-28 18:21:20 - minor data loss due to sun cross event",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Critical",
+            "description": "Solar RFI @ 18:24:13 UTC.",
+            "occurred_at": "2026-06-28T16:30:00.000Z",
+            "datatake_ids": [
+                "S1D-24858"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22937",
+            "title": "CGS-SGS: S1A: 65173: No data acquired",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "",
+            "occurred_at": "2026-06-28T18:18:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22956",
+            "title": "[ADGS] S1C_AUX_POEORB missing since DOY 180",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-29T06:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22954",
+            "title": "[S1D] Missing / Corrupted elements for DT DT 00616A (24938) DO 3451",
+            "origin": "Satellite",
+            "status": "Closed",
+            "category": "satellite",
+            "criticality": "Critical",
+            "description": "Missing elements revered non slincing mode",
+            "occurred_at": "2026-06-29T07:30:00.000Z",
+            "datatake_ids": [
+                "S1D-24938"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22945",
+            "title": "CGS-SGS: S1A: 65182: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C NAHLA at 09:12:00 UTC, without impact",
+            "occurred_at": "2026-06-29T09:09:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22948",
+            "title": "MTI: S1D Orbit 3454 - On CADIP NOK",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Blocking",
+            "description": "Problem caused by downconverter failure, pass lost.",
+            "occurred_at": "2026-06-29T15:30:00.000Z",
+            "datatake_ids": [
+                "S1D-24976",
+                "S1D-24974",
+                "S1D-24970"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 3
+        },
+        {
+            "key": "GSANOM-22947",
+            "title": "CGS-SGS: S1A: 65186: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C HAWK-13C @ 15:49:58 UTC.",
+            "occurred_at": "2026-06-29T15:41:00.000Z",
+            "datatake_ids": [
+                "S1A-538533"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22951",
+            "title": "CGS-INS: S-1A D/O 65189 Data acquisition degraded",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with GHGSAT-C8 @ 20:48:20 UTC, without impact",
+            "occurred_at": "2026-06-29T20:39:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22952",
+            "title": "MTI: S1A Orbit 65193 - NO_CARRIER_FROM_SATELLITE",
+            "origin": null,
+            "status": "Rejected",
+            "category": "other",
+            "criticality": "Blocking",
+            "description": "",
+            "occurred_at": "2026-06-30T01:30:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-22953",
+            "title": "CGS-SGS: S1C: 8333: Data missing, FER above threshold",
+            "origin": "RFI",
+            "status": "Closed",
+            "category": "rfi",
+            "criticality": "Blocking",
+            "description": "RFI with S/C ACCENTURE-1 at 09:11:04 UTC.",
+            "occurred_at": "2026-06-30T09:08:00.000Z",
+            "datatake_ids": [
+                "S1C-67542"
+            ],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 1
+        },
+        {
+            "key": "GSANOM-22963",
+            "title": "[S1] Front End status NOK for S1C and S1D passes",
+            "origin": "Acquisition",
+            "status": "Closed",
+            "category": "acquisition",
+            "criticality": "Critical",
+            "description": "Front_end_status NOK, caused by HW failure on one disk of the BCK MEOS-NAS chain, no impact on primary one.\r\nTemporary unavialability of full service redundancy. ",
+            "occurred_at": "2026-06-30T14:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "native_origin",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        },
+        {
+            "key": "GSANOM-23034",
+            "title": "[S1] Products not published since 1st July ",
+            "origin": null,
+            "status": "Closed",
+            "category": "other",
+            "criticality": "Critical",
+            "description": "",
+            "occurred_at": "2026-06-30T22:00:00.000Z",
+            "datatake_ids": [],
+            "category_basis": "unclassified",
+            "affected_systems": [
+                "S-1"
+            ],
+            "associated_datatake_count": 0
+        }
+    ]
+}

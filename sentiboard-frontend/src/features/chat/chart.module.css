@@ -20,13 +20,14 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--text-dim);
+  margin: 0;
 }
 
 /* Hover readout line above the chart */
 .readout {
   font-size: 11px;
   color: var(--text-dim);
-  min-height: 16px;
+  min-height: 14px;
   margin: 0;
   font-variant-numeric: tabular-nums;
 }

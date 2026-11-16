@@ -1,0 +1,390 @@
+/* EventCalendar widget — dark-only, existing design tokens only.
+ *
+ * WCAG AA contrast audit (all ratios against rendered background, computed 2026-11-16):
+ *
+ * Badge pairs (text on --bg-2 #0f121a):
+ *   Blocking   --crit  #ff3366  → 5.28:1  ✓
+ *   Critical   --warn  #ffb700  → 10.72:1 ✓
+ *   Routine    --text-dim #ccc  → 11.66:1 ✓
+ *   Category/Status --text-dim → 11.66:1 ✓
+ *   (--text-mute #737373 fails 3.95:1 — not used here)
+ *
+ * Neutral day cells (--text-dim on --bg-2):
+ *   Count and day number: 11.66:1 ✓
+ *   Selected cell (--text on 12% accent tint of --bg-2): 14.85:1 ✓
+ *   Criticality dot: decorative, no contrast requirement
+ *
+ * Day heading / time (--text-dim on --bg-3): 11.07:1 ✓
+ * Month nav (--text-dim on --bg-3): 11.07:1 ✓
+ * No-date chip / accent (--accent on --bg-2): 12.17:1 ✓
+ */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+/* ---- Header: title + month nav ------------------------------------------- */
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  flex: 1 1 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.monthBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  border-radius: var(--r-sm);
+}
+
+.monthBtn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--bg-2);
+}
+
+.monthBtn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.monthLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  min-width: 6em;
+  text-align: center;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ---- Compact month grid --------------------------------------------------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.dowRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.dowCell {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 2px 0;
+}
+
+.dayCellEmpty {
+  min-height: 28px;
+  border-radius: var(--r-sm);
+  background: none;
+}
+
+.dayCell {
+  min-height: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  cursor: pointer;
+  padding: 2px;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.dayCell:hover {
+  border-color: var(--line-strong);
+}
+
+.dayCell[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-2));
+}
+
+.dayNum {
+  font-size: 9px;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+.dayCount {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  line-height: 1;
+}
+
+/* Small criticality dot below the count */
+
+.dayDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dotBlocking { background: var(--crit); }
+.dotCritical { background: var(--warn); }
+.dotRoutine  { background: var(--text-dim); }
+
+/* ---- No-date chip --------------------------------------------------------- */
+
+.noDateChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--text-dim);
+  font-size: 11px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: border-color 0.15s;
+}
+
+.noDateChip:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.noDateChip[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg-2));
+  color: var(--accent);
+}
+
+/* ---- Day detail list ------------------------------------------------------ */
+
+.dayHeading {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin: 4px 0 6px;
+  padding: 0;
+}
+
+.eventList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eventItem {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+}
+
+.eventTopRow {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.eventTime {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.eventKey {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.eventTitle {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+/* ---- Badge row ------------------------------------------------------------ */
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+/* Shared badge base */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Criticality variants — text IS the token, border = currentColor */
+.critBadgeBlocking { color: var(--crit); }
+.critBadgeCritical { color: var(--warn); }
+.critBadgeRoutine  { color: var(--text-dim); }
+.critBadgeNull     { color: var(--text-dim); }
+
+/* Category and status badges — neutral, --text-dim text, --line border */
+.neutralBadge {
+  color: var(--text-dim);
+  border-color: var(--line-strong);
+}
+
+/* ---- Datatakes ------------------------------------------------------------ */
+
+.datatakes {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  /* wraps between IDs, never inside one */
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+/* Each individual ID must not break mid-string */
+.datatakeId {
+  white-space: nowrap;
+}
+
+.datatakesMoreBtn {
+  display: inline;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.datatakesMoreBtn:hover {
+  color: var(--text);
+}
+
+/* ---- Description collapsible --------------------------------------------- */
+
+.desc {
+  margin-top: 2px;
+  font-size: 10px;
+}
+
+.descSummary {
+  list-style: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.descSummary::-webkit-details-marker {
+  display: none;
+}
+
+.descBody {
+  margin-top: 4px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+
+/* ---- Show as table toggle ------------------------------------------------- */
+
+.toggle {
+  font-size: 11px;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: flex-start;
+}
+
+.toggle:hover {
+  color: var(--text);
+}
+
+/* ---- Error / status messages --------------------------------------------- */
+
+.msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+}
+
+.retryBtn {
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.retryBtn:hover {
+  border-color: var(--accent);
+}

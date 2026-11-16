@@ -2,6 +2,34 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Chatbot — event-calendar widget (2026-11-16, branch `feature/DEVOCS-263-chatbot-UI-integration`)
+
+Slice 4 complete. New files: `calendar-model.ts`, `calendar-model.test.ts`, `EventCalendar.tsx`,
+`event-calendar.module.css`, `event-calendar-view.test.ts`,
+`__fixtures__/chatbot-sample-calendar.json`. Updated: `AssistantAnswer.tsx` (wire `EventCalendar`),
+`chart.module.css` (reduce title–chart gap: `margin: 0` on `.title` and `.readout`, `min-height`
+14 px). Tests: 904 total (367 new). Lint, type-check, build clean.
+
+**Partner API observations (Slice 4 — event calendar):**
+
+- **"Dashboard" origin excluded at data migration.** 2 tickets in the sample carry
+  `origin: "Dashboard"`. SentiBoard excludes these anomalies at data migration; they are not shown
+  anywhere in SentiBoard. The chatbot returns them because it queries OpenSearch directly. The
+  calendar widget displays them (they have valid categories), so users may see tickets the main Events
+  page never shows.
+- **31 tickets with null origin, 37 with category "other".** The Events page shows only five
+  origin types (Acquisition, Production, RFI, Satellite, Other). Null-origin tickets arrive from the
+  chatbot as category "other". The calendar renders them under the "Other" label, which is correct but
+  may confuse users who expect origin-based filtering.
+- **Placeholder descriptions ("TBC") and trailing-space titles.** The model trims titles and
+  descriptions but does not filter placeholder text. "TBC" descriptions will show a collapsed
+  `<details>` with "TBC" inside; the partner should substitute real text or leave the field empty.
+- **Calendar marker sent without a title.** The title-fallback rule handles this correctly:
+  the payload title (`"Anomaly calendar"` in the sample) is used. No change required.
+- **event_data_id overlays deferred.** `TemporalPlotMarker.event_data_id` and
+  `context_event_data_id` reference calendar data that could be overlaid on temporal plots as vertical
+  markers. Not implemented in this slice.
+
 ## Assistant (chatbot widget) — follow-ups (2026-11-13, branch `feature/chatbot-widget`)
 
 Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
