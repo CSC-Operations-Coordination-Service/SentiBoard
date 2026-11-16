@@ -17,7 +17,7 @@ import {
   MAX_PAGE_ID_CHARS,
 } from "./limits";
 import { parseEventCalendar } from "./event-calendar";
-import type { TabularPayload, EventCalendarPayload } from "./types";
+import type { TabularPayload, TemporalRow, EventCalendarPayload } from "./types";
 
 const log = logger("chat");
 
@@ -89,6 +89,13 @@ function parseTabularPayload(json: unknown): TabularPayload | null {
     description: typeof json.description === "string" ? json.description : "",
     columns: json.columns as string[],
     rows: json.rows as Record<string, unknown>[],
+    temporal_rows: Array.isArray(json.temporal_rows)
+      ? (json.temporal_rows as TemporalRow[])
+      : undefined,
+    aggregation:
+      typeof json.aggregation === "object" && json.aggregation !== null && !Array.isArray(json.aggregation)
+        ? (json.aggregation as Record<string, unknown>)
+        : undefined,
   };
 }
 

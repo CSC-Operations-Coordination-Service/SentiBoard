@@ -84,6 +84,11 @@ Modules in `sentiboard-frontend/src/features/chat/` (moved from `src/features/ch
 | `event-calendar.test.ts` | Payload validator tests |
 | `__fixtures__/` | Schema JSON (with $ref fix), sample payload, response string fixtures |
 
+**Fixture note (2026-11-16):** `chatbot-sample-temporal.json` `rows` trimmed from 3771 to 5
+entries in both `docs/design/` and `src/features/chat/__fixtures__/`. The `rows` array holds
+raw individual datatakes that no chart code reads; only `temporal_rows` (29 daily buckets) is
+used. Trimming reduced each file from 2.1 MB to 20 KB.
+
 Not yet wired into ChatWidget. Remaining work: UI components for each marker type, Markdown
 rendering, KaTeX for `$…$` / `$$…$$`. Marker delimiter is under discussion — only `marker-syntax.ts`
 needs updating if it changes.

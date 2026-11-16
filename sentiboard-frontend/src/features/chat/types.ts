@@ -113,10 +113,14 @@ export type EventCalendarPayload = {
   events: CalendarEvent[];
 };
 
+export type TemporalRow = Record<string, unknown>;
+
 export type TabularPayload = {
   data_id: string;
   title: string;
   description: string;
   columns: string[];
   rows: Record<string, unknown>[];
+  temporal_rows?: TemporalRow[];
+  aggregation?: Record<string, unknown>;
 };

@@ -16,6 +16,17 @@ the authoritative source; this fixture reflects the partner's intent, not the li
 Partner's sample payload, copied verbatim from `docs/design/chatbot-event-calendar-schema.txt`.
 No changes.
 
+## chatbot-sample-temporal.json
+
+Copied from `docs/design/chatbot-sample-temporal.json`. The `rows` array (raw individual
+datatakes, not used by any chart code) was trimmed from **3771 to 5 entries** to keep the
+fixture under 25 KB. The `temporal_rows` array (29 daily buckets, the only data the chart
+reads) is complete and unmodified.
+
+## chatbot-sample-histogram.json
+
+Copied from `docs/design/chatbot-sample-histogram.json`. Unmodified.
+
 ## responses.ts
 
 Raw assistant response strings derived from the examples in

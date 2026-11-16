@@ -24,6 +24,32 @@ Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
   from the frontend's network. No rate limiting on the Server Action yet.
 - **Auth.** When OIDC lands (AGENTS.md §4), decide whether the assistant is public or signed-in only.
 
+## Chatbot — temporal-plot and count-histogram charts (2026-11-16, branch `feature/DEVOCS-263-chatbot-UI-integration`)
+
+Slice 3 complete. New files: `chart-model.ts`, `chart-model.test.ts`, `TemporalChart.tsx`,
+`CountChart.tsx`, `chart.module.css`, `temporal-chart-view.test.ts`, `count-chart-view.test.ts`,
+`__fixtures__/chatbot-sample-temporal.json`, `__fixtures__/chatbot-sample-histogram.json`.
+Updated: `types.ts` (`TabularPayload` gains `temporal_rows?` and `aggregation?`), `actions.ts`
+(`parseTabularPayload` passes them through), `AssistantAnswer.tsx` (wire new charts),
+`data-table.module.css` (`margin-top: 12px` on `.wrap`).
+
+**Partner API observations (Slice 3):**
+
+- **temporal_rows vs aggregation.time_series duplicate.** The temporal payload carries both
+  `temporal_rows` (raw floats, e.g. `completeness_percentage: 98.92636013918873`) and
+  `aggregation.time_series` (same rows with values rounded to 3 d.p. plus `expected_sensing` /
+  `available_sensing` human-readable strings). Slice 3 uses `temporal_rows` exclusively; the
+  `aggregation.time_series` field is ignored. The partner should drop the duplicate.
+- **temporal_rows also carries all raw rows (3 771).** The `rows` array in the temporal payload
+  holds every individual datatake (3 771 rows in the sample). The chart ignores `rows` and plots
+  only `temporal_rows` (29 aggregated daily buckets). The DataTable widget, if placed on the same
+  `data_id`, would show all 3 771 raw rows.
+- **Sentinel-1 datatake IDs are bare numbers.** `datatake_id: "534799"` for S1; Sentinel-3 uses
+  full codes such as `"S3A-141-195"`.
+- **event_data_id / context_event_data_id on TemporalPlotMarker** — overlay logic deferred. These
+  attributes are parsed and typed but not rendered. When the calendar slice is implemented, the
+  temporal chart should overlay the referenced event data as vertical markers on the x-axis.
+
 ## Chatbot — tabular data fetch + DataTable (2026-11-16, branch `feature/DEVOCS-263-chatbot-UI-integration`)
 
 Slice 2 complete. New files: `table-model.ts`, `DataTable.tsx`, `data-table.module.css`,

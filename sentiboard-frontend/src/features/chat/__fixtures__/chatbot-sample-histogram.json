@@ -1,0 +1,31 @@
+{
+    "data_id": "artifact_b7ef5d9e82b64e03b270c8b31e9d768c",
+    "title": "Record count by status",
+    "description": "Categorical record counts derived from a session artifact.",
+    "columns": [
+        "status",
+        "record_count"
+    ],
+    "rows": [
+        {
+            "status": "Complete",
+            "record_count": 3728
+        },
+        {
+            "status": "Partial",
+            "record_count": 37
+        },
+        {
+            "status": "Missing",
+            "record_count": 6
+        }
+    ],
+    "temporal_rows": [],
+    "aggregation": {
+        "count_histogram": {
+            "date_column": null,
+            "count_column": "record_count",
+            "category_column": "status"
+        }
+    }
+}

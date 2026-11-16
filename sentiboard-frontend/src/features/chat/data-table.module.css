@@ -5,6 +5,7 @@
   flex-direction: column;
   gap: 6px;
   font-size: 12px;
+  margin-top: 12px;
 }
 
 .head {

@@ -1,0 +1,217 @@
+/* Chart widgets — dark-only, existing design tokens only */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  margin-top: 12px;
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.title {
+  flex: 1 1 auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* Hover readout line above the chart */
+.readout {
+  font-size: 11px;
+  color: var(--text-dim);
+  min-height: 16px;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* SVG */
+.svg {
+  display: block;
+  overflow: visible;
+  width: 100%;
+}
+
+/* Axis helpers */
+.axisLine {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.gridLine {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.axisLabel {
+  font-size: 10px;
+  fill: var(--text-mute);
+  font-family: inherit;
+}
+
+/* ---- Neutral series colours (no status tokens, no mission tokens) ----------
+   Contrast ratios against --bg-3 #141820:
+     c0 --accent          #00e5ff  13.8:1
+     c1 --accent-magenta  #ff007f   4.8:1
+     c2 --accent-cyan-alt #06b6d4   7.6:1
+     c3 --cmp-processing  #9d4edd   4.2:1
+     c4 --accent-grad     #007c93   3.7:1
+     c5 --planned         #8a99ad   6.3:1
+   -------------------------------------------------------------------- */
+.c0 .seriesPath { stroke: var(--accent); }
+.c0 .seriesPoint { fill: var(--accent); }
+.c0 .legendSwatch { background: var(--accent); }
+
+.c1 .seriesPath { stroke: var(--accent-magenta); }
+.c1 .seriesPoint { fill: var(--accent-magenta); }
+.c1 .legendSwatch { background: var(--accent-magenta); }
+
+.c2 .seriesPath { stroke: var(--accent-cyan-alt); }
+.c2 .seriesPoint { fill: var(--accent-cyan-alt); }
+.c2 .legendSwatch { background: var(--accent-cyan-alt); }
+
+.c3 .seriesPath { stroke: var(--cmp-processing); }
+.c3 .seriesPoint { fill: var(--cmp-processing); }
+.c3 .legendSwatch { background: var(--cmp-processing); }
+
+.c4 .seriesPath { stroke: var(--accent-grad); }
+.c4 .seriesPoint { fill: var(--accent-grad); }
+.c4 .legendSwatch { background: var(--accent-grad); }
+
+.c5 .seriesPath { stroke: var(--planned); }
+.c5 .seriesPoint { fill: var(--planned); }
+.c5 .legendSwatch { background: var(--planned); }
+
+/* ---- Mission series colours ------------------------------------------------
+   mis1  --pr-mis-1   #FF8F5E  8.1:1
+   mis2  --pr-mis-2   #4ADE80 10.5:1
+   mis3  --pr-mis-3   #6FA8FF  7.5:1
+   mis5p --pr-mis-5P  #A78BFA  7.1:1
+   -------------------------------------------------------------------- */
+.mis1 .seriesPath { stroke: var(--pr-mis-1); }
+.mis1 .seriesPoint { fill: var(--pr-mis-1); }
+.mis1 .legendSwatch { background: var(--pr-mis-1); }
+
+.mis2 .seriesPath { stroke: var(--pr-mis-2); }
+.mis2 .seriesPoint { fill: var(--pr-mis-2); }
+.mis2 .legendSwatch { background: var(--pr-mis-2); }
+
+.mis3 .seriesPath { stroke: var(--pr-mis-3); }
+.mis3 .seriesPoint { fill: var(--pr-mis-3); }
+.mis3 .legendSwatch { background: var(--pr-mis-3); }
+
+.mis5p .seriesPath { stroke: var(--pr-mis-5P); }
+.mis5p .seriesPoint { fill: var(--pr-mis-5P); }
+.mis5p .legendSwatch { background: var(--pr-mis-5P); }
+
+/* Common path / circle styles */
+.seriesPath {
+  fill: none;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.seriesPoint {
+  stroke: none;
+}
+
+/* Legend */
+.legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Count bar colours */
+.barOk { fill: var(--ok); }
+.barWarn { fill: var(--warn); }
+.barCrit { fill: var(--crit); }
+.barTextDim { fill: var(--text-dim); }
+.barAccent { fill: var(--accent); }
+
+/* Bar label / value text */
+.barLabel {
+  font-size: 11px;
+  fill: var(--text-mute);
+  font-family: inherit;
+}
+
+.barValue {
+  font-size: 11px;
+  fill: var(--text-dim);
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Show as table / Show chart toggle */
+.toggle {
+  font-size: 11px;
+  color: var(--text-mute);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  align-self: flex-start;
+}
+
+.toggle:hover {
+  color: var(--text-dim);
+}
+
+/* Table-fallback note */
+.fallbackNote {
+  font-size: 11px;
+  color: var(--text-mute);
+  margin: 0 0 4px;
+  font-style: italic;
+}
+
+/* Error / status messages (matches data-table .msg) */
+.msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-mute);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+}
+
+.retryBtn {
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.retryBtn:hover {
+  border-color: var(--accent);
+}
