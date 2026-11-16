@@ -18,3 +18,4 @@ Code and tests are the truth; these files record the verified state. Anything un
 | [Events & Anomalies page](features/events.md) | `IMPLEMENTED` (2026-10-22; visual check pending) |
 | [Processors page](features/processors.md) | `IMPLEMENTED` (desktop verified; mobile + tests open) |
 | [Acquisitions Status page](features/acquisitions.md) | `IN_PROGRESS` (Slice 1 done, 2026-11-09) |
+| [Assistant (chatbot widget)](features/chatbot.md) | `IMPLEMENTED` (2026-11-13; behind `CHATBOT_ENABLED`) |

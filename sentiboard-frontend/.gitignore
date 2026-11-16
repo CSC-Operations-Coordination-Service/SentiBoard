@@ -41,5 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# generated from api/openapi.json by `pnpm gen:api` (runs on install)
+# generated from api/openapi.json and api/chatbot-openapi.json by `pnpm gen:api` (runs on install)
 /src/lib/api/schema.d.ts
+/src/lib/chatbot/schema.d.ts

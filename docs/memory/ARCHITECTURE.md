@@ -104,9 +104,29 @@ backend ──HTTP──▶ src/lib/api/client.ts (server-only, BACKEND_URL, 10 
 
 ### Environment (all server-only; `.env.sample`)
 
-`BACKEND_URL`, `SITE_URL`, `ALLOW_INDEXING`, `LOG_LEVEL`, `LOG_FORMAT`, and the standard `OTEL_*`
-variables (`OTEL_EXPORTER_OTLP_ENDPOINT` turns telemetry on). Nothing is exposed through
-`NEXT_PUBLIC_*`.
+`BACKEND_URL`, `SITE_URL`, `ALLOW_INDEXING`, `LOG_LEVEL`, `LOG_FORMAT`, the standard `OTEL_*`
+variables (`OTEL_EXPORTER_OTLP_ENDPOINT` turns telemetry on), and `CHATBOT_ENABLED`, `CHATBOT_URL`,
+`CHATBOT_TIMEOUT_MS` (assistant). Nothing is exposed through `NEXT_PUBLIC_*`.
+
+### Assistant (chatbot)
+
+```
+ChatWidget (client, root layout) ──Server Action──▶ sendChatMessage (src/features/chat/actions.ts)
+   │ page context from window.location                 │ flag + input validation
+   ▼ buildPageContext (page-context.ts, pure)          ▼ postChat (src/lib/chatbot/client.ts, server-only)
+                                                        ──HTTP POST /chat──▶ chatbot (CHATBOT_URL)
+```
+
+- Contract: `api/chatbot-openapi.json` → `src/lib/chatbot/schema.d.ts` (`pnpm gen:api`, refresh with
+  `pnpm gen:chatbot:refresh`). The chatbot is stateless: the widget sends the conversation (last 20
+  messages) on every question.
+- `ChatMount` (`await connection()`, in `<Suspense fallback={null}>` in `app/layout.tsx`) renders the
+  widget only when `CHATBOT_ENABLED=true` and `CHATBOT_URL` is set; decided per request.
+- The widget renders only after hydration (absent without JavaScript), sits at `z-index: 9500`
+  (below the events drawer), and stops every keydown inside it from reaching the pages'
+  document/window shortcut handlers (the globe's `[`/`]`/Enter would fire while typing).
+- Errors reuse `ApiError` (`service: "Chatbot"`). Logs: `logger("chat")` with request id, model,
+  tokens, duration, never message text. Decision: DECISIONS.md 2026-11-13.
 
 ## Backend
 

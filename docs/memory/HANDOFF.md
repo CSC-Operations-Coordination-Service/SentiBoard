@@ -2,6 +2,24 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Assistant (chatbot widget) — follow-ups (2026-11-13, branch `feature/chatbot-widget`)
+
+Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
+
+- **Markdown.** The chatbot answers in Markdown; the widget shows plain text, so `**bold**` appears
+  literally. Next step: a small Markdown renderer with sanitising (no raw HTML).
+- **Tables and calendars.** `GET /chat/data/{data_id}?request_id=…` returns `TabularDataResponse` /
+  `EventCalendarDataResponse`; how a `data_id` is announced in a `ChatResponse` is `UNKNOWN`. Needs a
+  second Server Action and renderers.
+- **Context fields.** `url`/`now` travel inside `filters` because `SentiBoardContext` rejects extra
+  fields. If the chatbot adds proper fields, move them (`page-context.ts`) and refresh the contract
+  (`CHATBOT_URL=… pnpm gen:chatbot:refresh`).
+- **State not in the URL** is not sent: the processors search text before it reaches `q`, the
+  acquisitions search box, the events open day.
+- **Deployment.** The chatbot has no auth and exposes raw OpenSearch queries: keep it reachable only
+  from the frontend's network. No rate limiting on the Server Action yet.
+- **Auth.** When OIDC lands (AGENTS.md §4), decide whether the assistant is public or signed-in only.
+
 ## Acquisitions — Slice 7: mock data removed, ready for PR (2026-11-10, branch `feature/DEVOCS-219-acquisitions`)
 
 Deleted: `src/features/acquisitions/mock-data.ts`.

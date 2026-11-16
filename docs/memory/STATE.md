@@ -1,6 +1,6 @@
 # State
 
-Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
+Last updated: 2026-11-16 (branch `feature/chatbot-widget`, merged to `develop`).
 
 ## Frontend (`sentiboard-frontend/`)
 
@@ -89,6 +89,11 @@ Last updated: 2026-11-09 (branch `feature/DEVOCS-219-acquisitions`).
   logging, opt-in OpenTelemetry traces + Node runtime metrics over OTLP
   (`src/instrumentation*.ts`). Fixed a jsdom memory leak in the release-notes sanitizer that
   crashed the deployed container (DECISIONS.md 2026-11-04).
+- **Assistant (chatbot widget) added (2026-11-13, branch `feature/chatbot-widget`):** floating
+  chat on every page behind `CHATBOT_ENABLED`, proxied server-side to the SERCO OpenSearch Chatbot,
+  with page context (URL, time, effective filters, selection) on every message — see
+  [features/chatbot.md](features/chatbot.md). 537/537 tests, lint, type-check, build clean; verified
+  in headless Chromium against the live chatbot (2026-11-13, re-verified 2026-11-16). Merged to `develop`.
 
 ## Backend (`sentiboard-backend/`)
 

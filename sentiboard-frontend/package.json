@@ -11,8 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "gen:api": "openapi-typescript api/openapi.json -o src/lib/api/schema.d.ts",
+    "gen:api": "openapi-typescript api/openapi.json -o src/lib/api/schema.d.ts && openapi-typescript api/chatbot-openapi.json -o src/lib/chatbot/schema.d.ts",
     "gen:api:refresh": "curl -fsS \"${BACKEND_URL:-http://localhost:8000}/openapi.json\" -o api/openapi.json.tmp && mv api/openapi.json.tmp api/openapi.json && pnpm gen:api",
+    "gen:chatbot:refresh": "curl -fsS \"${CHATBOT_URL:?set CHATBOT_URL}/openapi.json\" -o api/chatbot-openapi.json.tmp && mv api/chatbot-openapi.json.tmp api/chatbot-openapi.json && pnpm gen:api",
     "postinstall": "pnpm gen:api"
   },
   "dependencies": {

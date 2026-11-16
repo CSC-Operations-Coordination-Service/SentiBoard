@@ -34,13 +34,15 @@ export class ApiError extends Error {
     readonly url: string,
     readonly status?: number,
     cause?: unknown,
+    /** Which upstream failed, for the message: "Backend", or "Chatbot" (src/lib/chatbot). */
+    service = "Backend",
   ) {
     super(
       kind === "unreachable"
-        ? `Backend unreachable (${url})`
+        ? `${service} unreachable (${url})`
         : kind === "http"
-          ? `Backend returned HTTP ${status} (${url})`
-          : `Backend returned a body that is not JSON (${url})`,
+          ? `${service} returned HTTP ${status} (${url})`
+          : `${service} returned a body that is not JSON (${url})`,
     );
     this.name = "ApiError";
     this.cause = cause;

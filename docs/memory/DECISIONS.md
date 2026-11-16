@@ -643,3 +643,26 @@ ref §7 specifies white for all trails (`rgba(255,255,255,0.28)` unselected, `0.
 **Decision.** Corrected in Slice 5: trail `color: 0xffffff`, outline `opacity: 1.0`. Selected satellite
 trail raised to `opacity: 0.70`. Both match the prototype spec.
 **Consequences.** Visual change from Session 3/4; footprints and satellites look as designed.
+
+## 2026-11-13 — Assistant (chatbot) proxied by the Next.js server, behind a runtime flag
+
+**Context.** The SERCO OpenSearch Chatbot (v0.1.5) is a separate service that queries OpenSearch
+itself and calls an LLM (`gpt-oss-120b` on 2026-11-13). AGENTS.md §2/§3.2 make `sentiboard-backend`
+the only component that talks to data stores. The chatbot has no authentication and also exposes
+raw `POST /opensearch/search` and `/opensearch/query`.
+**Decision.** The chatbot is accepted as a second data-reading service outside `sentiboard-backend`
+(exception to §2/§3.2; it is owned and deployed separately). The frontend never queries a store:
+the browser calls one Server Action (`src/features/chat/actions.ts`), and only the Next.js server
+calls the chatbot (`CHATBOT_URL`, server-only). The widget and the action are switched by
+`CHATBOT_ENABLED` (exactly `"true"`), read at request time: `ChatMount` calls `connection()` inside a
+`<Suspense fallback={null}>` in the root layout, and the action re-checks it. Page context goes in
+`SentiBoardContext.filters` (`url`, `path`, `page_title`, `now`, `time_zone` + the page's effective
+filters), because the chatbot's `SentiBoardContext` rejects extra fields (422).
+**Consequences.**
+
+- The chatbot must stay network-private: anyone who reaches it can query OpenSearch.
+- `/terms-conditions`, `/cookie-notice` and the 404 went from static (○) to partial prerender (◐):
+  their content is still prerendered, only the empty widget slot is decided per request.
+  `/processors` was already dynamic (ƒ).
+- Answers are shown as plain text; the chatbot writes Markdown, so `**bold**` shows literally until
+  Markdown rendering is added (HANDOFF.md).

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { Suspense } from "react";
 import Nav from "@/components/Nav";
+import ChatMount from "@/features/chat/ChatMount";
 import Footer from "@/components/Footer";
 import Partners from "@/components/Partners";
 import { siteUrl } from "@/lib/routes";
@@ -49,6 +51,10 @@ export default function RootLayout({
         <Nav partners={<Partners compact />} />
         <main>{children}</main>
         <Footer />
+        {/* Assistant, when CHATBOT_ENABLED=true; decided per request (ChatMount). */}
+        <Suspense fallback={null}>
+          <ChatMount />
+        </Suspense>
       </body>
     </html>
   );
