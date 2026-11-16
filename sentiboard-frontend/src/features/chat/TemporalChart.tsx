@@ -5,8 +5,8 @@ import type { TemporalPlotMarker, TabularPayload } from "./types";
 import { fetchOnce } from "./DataTable";
 import {
   buildTemporalModel,
+  resolveSeriesColors,
   roundDisplay,
-  seriesColorClass,
   temporalReadoutText,
   type TemporalChartModel,
 } from "./chart-model";
@@ -44,6 +44,7 @@ export interface TemporalChartViewProps {
   state: TemporalChartState;
   width: number;
   showTable: boolean;
+  readout?: string;
   onRetry?: () => void;
   onToggleTable?: () => void;
   onPointHover?: (text: string | null) => void;
@@ -53,6 +54,7 @@ export function TemporalChartView({
   state,
   width,
   showTable,
+  readout,
   onRetry,
   onToggleTable,
   onPointHover,
@@ -101,6 +103,7 @@ export function TemporalChartView({
   const { model } = state;
   const { series, yAxis, xLabels, title, numericLabel } = model;
   const isSingleAll = series.length === 1 && series[0].name === "all";
+  const colorClasses = resolveSeriesColors(series.map((ser) => ser.name));
   const ca = chartArea(width);
   const xMin = xLabels.length > 0 ? xLabels[0].date : 0;
   const xMax = xLabels.length > 0 ? xLabels[xLabels.length - 1].date : 1;
@@ -142,6 +145,8 @@ export function TemporalChartView({
   return (
     <div className={s.wrap}>
       <p className={s.title}>{title}</p>
+      {/* Readout reserved between title and chart;   prevents collapse */}
+      <p className={s.readout}>{readout || " "}</p>
       <svg
         className={s.svg}
         viewBox={`0 0 ${width} ${CHART_HEIGHT}`}
@@ -198,7 +203,7 @@ export function TemporalChartView({
 
         {/* Series */}
         {series.map((ser, si) => {
-          const colorCls = seriesColorClass(ser.name, si);
+          const colorCls = colorClasses[si];
           const displayName = isSingleAll ? numericLabel : ser.name;
           return (
             <g key={ser.name} className={s[colorCls]}>
@@ -235,18 +240,18 @@ export function TemporalChartView({
         })}
       </svg>
 
-      {/* Legend — only when >1 series (single "all" → no legend) */}
+      {/* Legend — only when >1 series (single "all" → no legend); sorted alphabetically */}
       {!isSingleAll && series.length > 1 && (
         <div className={s.legend}>
-          {series.map((ser, si) => {
-            const colorCls = seriesColorClass(ser.name, si);
-            return (
-              <span key={ser.name} className={`${s.legendItem} ${s[colorCls]}`}>
+          {series
+            .map((ser, si) => ({ name: ser.name, colorCls: colorClasses[si] }))
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(({ name, colorCls }) => (
+              <span key={name} className={`${s.legendItem} ${s[colorCls]}`}>
                 <span className={s.legendSwatch} />
-                {ser.name}
+                {name}
               </span>
-            );
-          })}
+            ))}
         </div>
       )}
 
@@ -329,12 +334,11 @@ export default function TemporalChart({ marker, requestId }: TemporalChartProps)
 
   return (
     <div ref={containerRef}>
-      {/* Hover readout — empty placeholder preserves height */}
-      <p className={s.readout}>{readout || " "}</p>
       <TemporalChartView
         state={state}
         width={width}
         showTable={showTable}
+        readout={readout}
         onRetry={startFetch}
         onToggleTable={() => setShowTable((v) => !v)}
         onPointHover={(text) => setReadout(text ?? "")}

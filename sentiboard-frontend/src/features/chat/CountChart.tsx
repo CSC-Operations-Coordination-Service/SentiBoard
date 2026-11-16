@@ -48,6 +48,7 @@ export interface CountChartViewProps {
   marker: CountHistogramMarker;
   width: number;
   showTable: boolean;
+  readout?: string;
   onRetry?: () => void;
   onToggleTable?: () => void;
   onBarHover?: (text: string | null) => void;
@@ -58,6 +59,7 @@ export function CountChartView({
   marker,
   width,
   showTable,
+  readout,
   onRetry,
   onToggleTable,
   onBarHover,
@@ -140,11 +142,11 @@ export function CountChartView({
   }
 
   if (model.kind === "category") {
-    return renderCategoryBars(model.bars, model.title, width, onBarHover, onToggleTable);
+    return renderCategoryBars(model.bars, model.title, readout, width, onBarHover, onToggleTable);
   }
 
   if (model.kind === "date") {
-    return renderCategoryBars(model.bars, model.title, width, onBarHover, onToggleTable);
+    return renderCategoryBars(model.bars, model.title, readout, width, onBarHover, onToggleTable);
   }
 
   return null;
@@ -153,6 +155,7 @@ export function CountChartView({
 function renderCategoryBars(
   bars: CountBar[],
   title: string,
+  readout: string | undefined,
   width: number,
   onBarHover: ((text: string | null) => void) | undefined,
   onToggleTable: (() => void) | undefined,
@@ -164,6 +167,9 @@ function renderCategoryBars(
 
   return (
     <div className={s.wrap}>
+      <p className={s.title}>{title}</p>
+      {/* Readout reserved between title and chart; \u00a0 prevents collapse */}
+      <p className={s.readout}>{readout || "\u00a0"}</p>
       <svg
         className={s.svg}
         viewBox={`0 0 ${width} ${svgH}`}
@@ -281,12 +287,12 @@ export default function CountChart({ marker, requestId }: CountChartProps) {
 
   return (
     <div ref={containerRef}>
-      <p className={s.readout}>{readout || " "}</p>
       <CountChartView
         state={state}
         marker={marker}
         width={width}
         showTable={showTable}
+        readout={readout}
         onRetry={startFetch}
         onToggleTable={() => setShowTable((v) => !v)}
         onBarHover={(text) => setReadout(text ?? "")}

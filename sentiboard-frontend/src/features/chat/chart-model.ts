@@ -198,6 +198,24 @@ export function seriesColorClass(name: string, index: number): string {
   return NEUTRAL_CLASSES[index % NEUTRAL_CLASSES.length];
 }
 
+/** Returns a colour class for each series name.
+ *  Mission tokens are used only when EVERY name maps to a distinct mission.
+ *  If two names share a mission (e.g. S2A + S2B → both mis2) the neutral
+ *  palette is used so every series stays visually distinct. */
+export function resolveSeriesColors(names: string[]): string[] {
+  if (names.length === 0) return [];
+  const missionClasses = names.map((name) => {
+    for (const [pattern, cls] of MISSION_PATTERNS) {
+      if (pattern.test(name)) return cls as string;
+    }
+    return null;
+  });
+  const allMission = missionClasses.every((c) => c !== null);
+  const distinct = new Set(missionClasses).size === missionClasses.length;
+  if (allMission && distinct) return missionClasses as string[];
+  return names.map((_, i) => NEUTRAL_CLASSES[i % NEUTRAL_CLASSES.length]);
+}
+
 // ---- Column label ----------------------------------------------------------
 
 function humaniseColumn(col: string): string {

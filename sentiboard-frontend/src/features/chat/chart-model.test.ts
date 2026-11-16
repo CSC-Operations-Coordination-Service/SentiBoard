@@ -8,6 +8,7 @@ import {
   formatDateLabel,
   inferInterval,
   niceYAxis,
+  resolveSeriesColors,
   roundDisplay,
   seriesColorClass,
   statusColorToken,
@@ -179,6 +180,38 @@ describe("buildTemporalModel — multi-series", () => {
     const result = buildTemporalModel(payload, marker);
     const model = result as Exclude<typeof result, string>;
     expect(model.series).toHaveLength(2);
+  });
+});
+
+// ---- resolveSeriesColors ----------------------------------------------------
+
+describe("resolveSeriesColors", () => {
+  it("S1A + S2B → mission tokens (different missions, all distinct)", () => {
+    expect(resolveSeriesColors(["S1A", "S2B"])).toEqual(["mis1", "mis2"]);
+  });
+
+  it("S2A + S2B + S2C → neutral palette (same mission, not all distinct)", () => {
+    const result = resolveSeriesColors(["S2A", "S2B", "S2C"]);
+    expect(result).toEqual(["c0", "c1", "c2"]);
+    // All three classes must be different
+    expect(new Set(result).size).toBe(3);
+  });
+
+  it("mission mixed with non-mission → neutral palette", () => {
+    const result = resolveSeriesColors(["S1A", "other"]);
+    expect(result).toEqual(["c0", "c1"]);
+  });
+
+  it("two non-mission names → neutral palette", () => {
+    expect(resolveSeriesColors(["foo", "bar"])).toEqual(["c0", "c1"]);
+  });
+
+  it("S1 + S2 + S3 + S5P → all mission tokens (four distinct missions)", () => {
+    expect(resolveSeriesColors(["S1", "S2", "S3", "S5P"])).toEqual(["mis1", "mis2", "mis3", "mis5p"]);
+  });
+
+  it("empty array → empty result", () => {
+    expect(resolveSeriesColors([])).toEqual([]);
   });
 });
 

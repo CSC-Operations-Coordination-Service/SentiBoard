@@ -135,6 +135,33 @@ describe("TemporalChartView — 2-series legend", () => {
     expect(html).toContain("legendSwatch");
   });
 
+  it("S2A + S2B + S2C (same mission) all get distinct neutral classes, no mis2", () => {
+    const rows = [
+      { bucket_start: "2026-06-01T00:00:00Z", completeness_percentage: 98, mission: "S2A" },
+      { bucket_start: "2026-06-01T00:00:00Z", completeness_percentage: 97, mission: "S2B" },
+      { bucket_start: "2026-06-01T00:00:00Z", completeness_percentage: 96, mission: "S2C" },
+    ];
+    const payload: TabularPayload = {
+      data_id: "artifact_test",
+      title: "Test",
+      description: "",
+      columns: [],
+      rows: [],
+      temporal_rows: rows,
+    };
+    const marker: TemporalPlotMarker = { ...sampleMarker, categorical_column: "mission" };
+    const model = buildTemporalModel(payload, marker);
+    if (model === "invalid" || model === "too-many-series") throw new Error("unexpected");
+    const html = render({ status: "done", model });
+    // All three series must use the neutral palette, not mission tokens
+    expect(html).not.toContain("mis2");
+    // Three distinct neutral classes present
+    const hasC0 = html.includes("c0");
+    const hasC1 = html.includes("c1");
+    const hasC2 = html.includes("c2");
+    expect(hasC0 && hasC1 && hasC2).toBe(true);
+  });
+
   it("applies mission token class (mis1) to S1A series", () => {
     const rows = [
       { bucket_start: "2026-06-01T00:00:00Z", completeness_percentage: 98, mission: "S1A" },

@@ -72,6 +72,9 @@ export default function ChatWidget() {
   const launcherRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
+  const lastAnswerRef = useRef<HTMLDivElement | null>(null);
+  const scrolledUpRef = useRef(false);    // did the user scroll up after the last send?
+  const suppressScrollRef = useRef(0);    // >0 while a programmatic scroll is in flight
   const nextId = useRef(1);
   const panelId = useId();
   const titleId = useId();
@@ -153,22 +156,50 @@ export default function ChatWidget() {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  // Scroll to the bottom when the panel opens (regardless of position).
-  useEffect(() => {
-    if (!open) return;
+  /** Set log.scrollTop programmatically without triggering the user-scroll guard. */
+  function scrollLog(top: number) {
     const log = logRef.current;
-    if (log) log.scrollTop = log.scrollHeight;
-  }, [open]);
+    if (!log) return;
+    suppressScrollRef.current++;
+    log.scrollTop = top;
+    queueMicrotask(() => { suppressScrollRef.current--; });
+  }
 
-  // Keep the newest content in view — only when the user is already near the bottom,
-  // so a scroll to read an earlier message is not broken, and inner scroll areas
-  // (table rows, scrollable math) are never moved by this handler.
+  // Attach a scroll listener to track whether the user scrolled up after a send.
   useEffect(() => {
     const log = logRef.current;
     if (!log) return;
-    const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
-    if (nearBottom) log.scrollTop = log.scrollHeight;
-  }, [messages, pending, failure]);
+    const onScroll = () => {
+      if (suppressScrollRef.current > 0) return;
+      const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+      if (!nearBottom) scrolledUpRef.current = true;
+    };
+    log.addEventListener("scroll", onScroll, { passive: true });
+    return () => log.removeEventListener("scroll", onScroll);
+  }, [hydrated]);
+
+  // Scroll to the bottom when the panel opens.
+  useEffect(() => {
+    if (!open) return;
+    scrollLog(logRef.current?.scrollHeight ?? 0);
+  }, [open]);
+
+  // When a user message is added: always scroll to bottom (show their message).
+  useEffect(() => {
+    if (messages.at(-1)?.role !== "user") return;
+    scrolledUpRef.current = false;
+    scrollLog(logRef.current?.scrollHeight ?? 0);
+  }, [messages]);
+
+  // When an assistant answer arrives: scroll so the top of the new answer is
+  // visible at the top of the log, unless the user scrolled up after sending.
+  useEffect(() => {
+    if (messages.at(-1)?.role !== "assistant") return;
+    if (scrolledUpRef.current) return;
+    const el = lastAnswerRef.current;
+    if (!el) return;
+    scrollLog(el.offsetTop);
+  }, [messages]);
 
   // Server HTML and hydration render nothing: the widget needs JavaScript to work.
   if (!hydrated) return null;
@@ -229,8 +260,13 @@ export default function ChatWidget() {
             const hasDataWidget = segments.some(
               (seg) => seg.kind === "widget" && seg.marker.kind !== "kpi-direct",
             );
+            const isLast = m === messages.at(-1);
             return (
-              <div key={m.id} className={hasDataWidget ? s.answerWide : s.answer}>
+              <div
+                key={m.id}
+                ref={isLast ? lastAnswerRef : null}
+                className={hasDataWidget ? s.answerWide : s.answer}
+              >
                 <span className={s.srOnly}>Assistant: </span>
                 <AssistantAnswer segments={segments} requestId={m.requestId} />
               </div>
