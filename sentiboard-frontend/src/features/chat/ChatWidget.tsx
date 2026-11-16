@@ -153,11 +153,22 @@ export default function ChatWidget() {
     if (open) inputRef.current?.focus();
   }, [open]);
 
-  // Keep the newest message in view.
+  // Scroll to the bottom when the panel opens (regardless of position).
   useEffect(() => {
+    if (!open) return;
     const log = logRef.current;
     if (log) log.scrollTop = log.scrollHeight;
-  }, [messages, pending, failure, open]);
+  }, [open]);
+
+  // Keep the newest content in view — only when the user is already near the bottom,
+  // so a scroll to read an earlier message is not broken, and inner scroll areas
+  // (table rows, scrollable math) are never moved by this handler.
+  useEffect(() => {
+    const log = logRef.current;
+    if (!log) return;
+    const nearBottom = log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+    if (nearBottom) log.scrollTop = log.scrollHeight;
+  }, [messages, pending, failure]);
 
   // Server HTML and hydration render nothing: the widget needs JavaScript to work.
   if (!hydrated) return null;
@@ -205,14 +216,26 @@ export default function ChatWidget() {
               which filters are applied.
             </p>
           )}
-          {messages.map((m) => (
-            <div key={m.id} className={m.role === "user" ? s.user : s.answer}>
-              <span className={s.srOnly}>{m.role === "user" ? "You: " : "Assistant: "}</span>
-              {m.role === "assistant"
-                ? <AssistantAnswer segments={parseResponse(m.content)} />
-                : m.content}
-            </div>
-          ))}
+          {messages.map((m) => {
+            if (m.role === "user") {
+              return (
+                <div key={m.id} className={s.user}>
+                  <span className={s.srOnly}>You: </span>
+                  {m.content}
+                </div>
+              );
+            }
+            const segments = parseResponse(m.content);
+            const hasDataWidget = segments.some(
+              (seg) => seg.kind === "widget" && seg.marker.kind !== "kpi-direct",
+            );
+            return (
+              <div key={m.id} className={hasDataWidget ? s.answerWide : s.answer}>
+                <span className={s.srOnly}>Assistant: </span>
+                <AssistantAnswer segments={segments} requestId={m.requestId} />
+              </div>
+            );
+          })}
           {pending && (
             <div className={s.pending} role="status">
               <span className={s.dots} aria-hidden />

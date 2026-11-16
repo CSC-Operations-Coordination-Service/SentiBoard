@@ -131,17 +131,13 @@
   text-align: center;
 }
 
-.user,
-.answer {
+.user {
   max-width: 88%;
   padding: 9px 12px;
   border-radius: var(--r-md);
   font-size: 14px;
   line-height: 1.5;
   overflow-wrap: anywhere;
-}
-
-.user {
   align-self: flex-end;
   background: var(--pill-bg);
   border: 1px solid var(--line-strong);
@@ -150,12 +146,32 @@
   white-space: pre-wrap;
 }
 
+/* Prose assistant answers — 88% bubble, same as user messages. */
 .answer {
+  max-width: 88%;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
   align-self: flex-start;
   background: var(--bg-2);
   border: 1px solid var(--line);
   color: var(--text-secondary);
   /* Markdown handles whitespace; pre-wrap would double-space paragraphs. */
+}
+
+/* Data-widget answers (tables, charts) — full log width, no bubble cap. */
+.answerWide {
+  align-self: stretch;
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
 }
 
 .pending {

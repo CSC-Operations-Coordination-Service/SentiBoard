@@ -24,6 +24,25 @@ Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
   from the frontend's network. No rate limiting on the Server Action yet.
 - **Auth.** When OIDC lands (AGENTS.md §4), decide whether the assistant is public or signed-in only.
 
+## Chatbot — tabular data fetch + DataTable (2026-11-16, branch `feature/DEVOCS-263-chatbot-UI-integration`)
+
+Slice 2 complete. New files: `table-model.ts`, `DataTable.tsx`, `data-table.module.css`,
+`__fixtures__/chatbot-sample-tabular.json`. Updated: `actions.ts` (+`getChatData`), `types.ts`
+(+`TabularPayload`), `AssistantAnswer.tsx` (wire `DataTable`), `ChatWidget.tsx` (pass `requestId`).
+
+**Partner API observations (Slice 2):**
+
+- **Duplicated rows.** The `/chat/data/{id}` endpoint returns 143 rows for the sample query, of
+  which only 31 are distinct — the chatbot is sending duplicate rows. The UI shows rows as received
+  and does **not** deduplicate. This is a known bug on the partner side.
+- **Raw microsecond columns alongside readable ones.** The endpoint sends both `expected`
+  (integer microseconds) and `expected_sensing` (human-readable string such as "44 min 0 sec"),
+  and likewise `available` / `available_sensing`. The UI hides the raw columns pairwise when
+  the readable counterparts are present.
+- **Marker title vs payload title mismatch.** The `title` attribute on the `<tabular …/>` marker
+  and the `title` field in the payload body can differ. The marker title takes precedence; the
+  payload title is used as fallback. The partner should align these.
+
 ## Chatbot — answer parsing; UI components not done (2026-11-13, branch `feature/DEVOCS-263-chatbot-UI-integration`)
 
 Modules now in `sentiboard-frontend/src/features/chat/`: `types.ts`, `marker-syntax.ts`,
@@ -37,8 +56,8 @@ network calls. All lint/type-check/test/build checks pass.
 - **Marker delimiter may change** — the `<tag ... />` form clashes with `<` in prose and math;
   `###`-style delimiters are being discussed. When the delimiter changes, only
   `src/features/chat/marker-syntax.ts` and `marker-syntax.test.ts` need updating.
-- **UI components** — no React components for rendering any marker type (kpi, tabular,
-  temporal-plot, count-histogram, event-calendar).
+- **UI components** — tabular now done (Slice 2 above). Remaining: temporal-plot, count-histogram,
+  event-calendar, kpi-artifact.
 - **KaTeX** — `$…$` and `$$…$$` math in markdown segments passes through `parseResponse`
   unchanged; a KaTeX integration step is needed before rendering.
 

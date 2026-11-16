@@ -112,3 +112,11 @@ export type EventCalendarPayload = {
   description: string;
   events: CalendarEvent[];
 };
+
+export type TabularPayload = {
+  data_id: string;
+  title: string;
+  description: string;
+  columns: string[];
+  rows: Record<string, unknown>[];
+};
