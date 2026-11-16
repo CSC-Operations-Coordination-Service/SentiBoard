@@ -19,6 +19,8 @@ import { useHydrated } from "@/lib/use-hydrated";
 import { sendChatMessage, type ChatResult } from "./actions";
 import { buildPageContext } from "./page-context";
 import { HISTORY_SENT, MAX_CONTENT_CHARS } from "./limits";
+import { parseResponse } from "./parse-response";
+import AssistantAnswer from "./AssistantAnswer";
 import s from "./chat-widget.module.css";
 
 type Role = "user" | "assistant";
@@ -26,6 +28,16 @@ interface Message {
   id: number;
   role: Role;
   content: string;
+  requestId?: string;
+}
+
+/** Pure helper: creates an assistant Message from a successful chat result. */
+export function makeAssistantMessage(
+  id: number,
+  answer: string,
+  requestId: string,
+): Message {
+  return { id, role: "assistant", content: answer, requestId };
 }
 type FailureKind = Extract<ChatResult, { ok: false }>["kind"];
 
@@ -76,7 +88,7 @@ export default function ChatWidget() {
     if (result.ok) {
       setMessages((m) => [
         ...m,
-        { id: nextId.current++, role: "assistant", content: result.answer },
+        makeAssistantMessage(nextId.current++, result.answer, result.requestId),
       ]);
     } else {
       setFailure(result.kind);
@@ -196,7 +208,9 @@ export default function ChatWidget() {
           {messages.map((m) => (
             <div key={m.id} className={m.role === "user" ? s.user : s.answer}>
               <span className={s.srOnly}>{m.role === "user" ? "You: " : "Assistant: "}</span>
-              {m.content}
+              {m.role === "assistant"
+                ? <AssistantAnswer segments={parseResponse(m.content)} />
+                : m.content}
             </div>
           ))}
           {pending && (

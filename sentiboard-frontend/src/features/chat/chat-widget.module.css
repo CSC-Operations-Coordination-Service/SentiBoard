@@ -138,7 +138,6 @@
   border-radius: var(--r-md);
   font-size: 14px;
   line-height: 1.5;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
@@ -147,6 +146,8 @@
   background: var(--pill-bg);
   border: 1px solid var(--line-strong);
   color: var(--text);
+  /* Keep pre-wrap so literal newlines in user messages render correctly. */
+  white-space: pre-wrap;
 }
 
 .answer {
@@ -154,6 +155,7 @@
   background: var(--bg-2);
   border: 1px solid var(--line);
   color: var(--text-secondary);
+  /* Markdown handles whitespace; pre-wrap would double-space paragraphs. */
 }
 
 .pending {

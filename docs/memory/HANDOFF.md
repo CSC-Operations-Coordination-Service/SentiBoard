@@ -9,8 +9,12 @@ Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
 - **Markdown.** The chatbot answers in Markdown; the widget shows plain text, so `**bold**` appears
   literally. Next step: a small Markdown renderer with sanitising (no raw HTML).
 - **Tables and calendars.** `GET /chat/data/{data_id}?request_id=…` returns `TabularDataResponse` /
-  `EventCalendarDataResponse`; how a `data_id` is announced in a `ChatResponse` is `UNKNOWN`. Needs a
-  second Server Action and renderers.
+  `EventCalendarDataResponse`; the `data_id` is **not** a field on `ChatResponse` — it is embedded in
+  the marker text inside `ChatResponse.response` and already extracted by `parseResponse` (into
+  `WidgetSegment.marker.data_id`). Slice 2 needs a Server Action that calls
+  `GET /chat/data/{data_id}?request_id={requestId}` (the `requestId` is now stored on each
+  assistant `Message` in `ChatWidget`), and renderers for `TabularDataResponse` and
+  `EventCalendarDataResponse`.
 - **Context fields.** `url`/`now` travel inside `filters` because `SentiBoardContext` rejects extra
   fields. If the chatbot adds proper fields, move them (`page-context.ts`) and refresh the contract
   (`CHATBOT_URL=… pnpm gen:chatbot:refresh`).

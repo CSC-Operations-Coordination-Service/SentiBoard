@@ -1,0 +1,23 @@
+/* Neutral placeholder shown for marker types not yet rendered (all except kpi-direct). */
+
+.placeholder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.kind {
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.note {
+  font-style: italic;
+  color: var(--text-mute);
+}
