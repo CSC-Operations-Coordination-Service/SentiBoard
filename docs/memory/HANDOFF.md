@@ -53,6 +53,9 @@ the squid `192.168.80.2:3128` for Celestrak (squid allowlist unverified: after t
   cluster-level and missing (403 checked on dev). Added to `accounts.yml` (csc-ocs-ansible,
   uncommitted); an operator runs `opensearch-accounts.py apply --only sentiboard-backend` (plan:
   role update only). Same for ope when it gets the account.
+- **Data Availability payload at production volume.** The Explorer gets every datatake of three
+  months as props (~250 B each): about 90k datatakes in production, i.e. tens of MB per page.
+  Fine on the dev sample (330). Needs a compact or server-filtered shape before production.
 - **Celestrak has no SENTINEL-3C** (2026-11-17), though passes for S3C exist: S3C datatakes would
   be skipped as "no-orbit".
 - **Downlink station** is a heuristic (DECISIONS.md). EDRS passes (`cds-edrs-acquisition-pass-status`)

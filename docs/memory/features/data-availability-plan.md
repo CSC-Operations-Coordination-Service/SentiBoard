@@ -428,6 +428,11 @@ Prerequisite: Decisions for Ana #2 (sensor mode row), #3 (card contrast), #4 (Pr
 
 ### Session 5 — Real data wiring (requires backend endpoint)
 
+> **Done 2026-11-17.** `data.ts` reads `GET /datatake/` over the page window in ≤ 31-day slices
+> (`windowSlices`), `adapter.ts` maps records (DECISIONS.md 2026-11-17 "Data Availability on real
+> data"). Verified against the OER dev backend (330 sample datatakes, KPIs and strips filled, no
+> console error). Not verified: the card opened in a browser (unit-tested).
+
 **Updated 2026-11-09 (decision by Anthony):** `mock-data.ts` has been removed from the branch.
 `getDatatakes()` in `data.ts` currently returns `[]`. The page shows an empty-state message
 ("Datatake data is not available yet.") in place of the strips. Session 5 replaces the stub and

@@ -82,6 +82,9 @@ Last updated: 2026-11-17 (branch `feature/DEVOCS-219-acquisitions-backend`, not 
   font-size `clamp(25px, 2.6vw, 36px)`. F11 scrub track 5px white thumb.
   ESLint disables at AcquisitionsGlobe.tsx:427 and :1172-1178 confirmed real — kept in place.
   Slice 7 items noted below in HANDOFF.md. 468/468 tests. Lint + build clean (both routes PPR ◐).
+- **Data Availability — real data wired (2026-11-17):** `getDatatakes(dayKey)` reads `GET /datatake/`
+  in ≤ 31-day slices; real ACQ/PUB on the card; degraded notice. 574/574 tests, lint, type-check,
+  build clean; checked in headless Chromium against the OER dev backend.
 - **Acquisitions — real data wired (2026-11-17, branch `feature/DEVOCS-219-acquisitions-backend`):**
   `data.ts` reads `GET /datatake/`, `/acquisition-pass/`, `/orbit/`; `adapter.ts` places each
   datatake from its satellite's TLE (SGP4, `satellite.js` 7.1.0, server-side only), names its

@@ -714,3 +714,22 @@ datatakes whose sensing has not started.
   after it, within 12 h of sensing stop. A heuristic: the indices hold no datatake → pass link.
 **Consequences.** Reversible in `adapter.ts` / `model.ts` only. The station is a best guess until
 MAAS-CDS links datatakes and passes.
+
+## 2026-11-17 — Data Availability on real data (Session 5)
+
+**Context.** The page had a stub loader; `GET /datatake/` now serves datatakes with the legacy
+ACQ/PUB status. The card derived both rings from one completeness value (`× 0.7`, `× 0.85`, a
+mock-up simulation), and the backend allows 31 days per request while the page shows three months.
+**Decision.**
+- Status from the PUB side: PUBLISHED → Acquired, PARTIAL → Partial, UNAVAILABLE → Unavailable,
+  PLANNED → Planned, PROCESSING / DELAYED → Processing (#14). Completeness = PUB %, as Acquisitions.
+- `Datatake.acq` / `.pub` carry the real values; `cardSides()` shows them as they are (badge = the
+  status). The derived rings stay only for records without them.
+- The loader reads the window in ≤ 31-day slices, cached 300 s (the plan said 3600; statuses move
+  within hours, and the other data pages use 300).
+- Backend: `GET /datatake/` keeps a built window 60 s (`application/cache.py`), so the pages of one
+  window cost one OpenSearch scan, not one per page.
+- `SATELLITES_OF.S1` gains `S1D` (operational, in the production data; coverage gaps counted it not).
+**Consequences.** At production volume a three-month window is tens of thousands of datatakes
+sent whole to the client Explorer: payload size is open (HANDOFF.md).
+
