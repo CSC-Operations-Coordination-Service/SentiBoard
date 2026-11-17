@@ -5,6 +5,7 @@
 
 OPENSEARCH_*    where and how to reach OpenSearch, see opensearch_config.py
 CORS_ORIGINS    comma-separated frontend origins, default http://localhost:3000
+CELESTRAK_TLE_URL, ORBIT_*  orbit (TLE) source for /orbit/, see infrastructure/celestrak.py
 
 Startup installs the index templates and first indices (setup_indices.py), then:
   - OpenSearch unreachable: the API starts anyway and retries the setup in the background.
@@ -27,6 +28,7 @@ from opensearchpy import connections
 from opensearchpy.exceptions import ConnectionError as OpenSearchConnectionError
 from opensearchpy.exceptions import SSLError
 
+from interface import router as cds_router
 from opensearch_config import client_kwargs, new_client, OPENSEARCH_URL
 from routers import router
 from setup_indices import setup
@@ -95,6 +97,7 @@ app.add_middleware(
     expose_headers=["Location"],  # set by POST, holds the new resource's URL
 )
 app.include_router(router)
+app.include_router(cds_router)  # read-only MAAS-CDS data: /datatake/, /acquisition-pass/, /orbit/
 
 
 @app.exception_handler(OpenSearchConnectionError)

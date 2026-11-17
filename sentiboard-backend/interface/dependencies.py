@@ -1,0 +1,36 @@
+"""FastAPI dependencies wiring the ports to their implementations. Tests override them through
+`app.dependency_overrides`."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from functools import lru_cache
+
+from opensearchpy import connections
+
+from domain.ports import AcquisitionPassRepository, DatatakeSource, OrbitSource
+from infrastructure import celestrak
+from infrastructure.cds_opensearch import OpenSearchCdsRepository
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def cds_repository() -> OpenSearchCdsRepository:
+    # The default connection, created by main.py's lifespan.
+    return OpenSearchCdsRepository(connections.get_connection())
+
+
+def datatake_source() -> DatatakeSource:
+    return cds_repository()
+
+
+def acquisition_pass_repository() -> AcquisitionPassRepository:
+    return cds_repository()
+
+
+@lru_cache(maxsize=1)
+def orbit_source() -> OrbitSource:
+    # One instance per process, so its in-memory copy is shared by every request.
+    return celestrak.from_environment()

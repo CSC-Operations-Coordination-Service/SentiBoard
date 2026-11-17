@@ -58,6 +58,25 @@ curl "localhost:8000/processor/?limit=5"
 Endpoints: `/anomaly/`, `/news/`, `/instantmessage/`, `/processor/`.
 Lists take `?offset=0&limit=100` (max 1000).
 
+### MAAS-CDS data (read-only)
+
+Read from the `cds-*` indices produced by MAAS-CDS, which the API never writes. Code layout:
+`domain/` (pure rules), `application/` (use cases), `infrastructure/` (OpenSearch, Celestrak),
+`interface/` (routes and schemas).
+
+| Route | Source | Query |
+|---|---|---|
+| `GET /datatake/` | `cds-completeness-{s1,s2}-*-dd-das`, `cds-completeness-splitted-{s3,s5}-*-dd-das` | `date_from`, `date_to` (required, at most 31 days), `mission` (repeatable), `satellite`, `offset`, `limit` |
+| `GET /acquisition-pass/` | `cds-cadip-acquisition-pass-status*` | `date_from`, `date_to` (on the downlink start), `satellite`, `ground_station`, `offset`, `limit` |
+| `GET /orbit/` | Celestrak TLEs, cached in memory | none. 503 when no copy can be fetched |
+
+Datatakes carry their products, per-level completeness and the ACQ/PUB completeness status,
+computed with the legacy rules at request time.
+
+```
+curl "localhost:8000/datatake/?date_from=2026-11-16T00:00:00Z&date_to=2026-11-18T00:00:00Z&limit=5"
+```
+
 ## 3. Stop
 
 ```
@@ -74,6 +93,18 @@ docker compose down -v     # stop and wipe all data
 | `OPENSEARCH_VERIFY_CERTS` | `true`. Only the value `false` turns TLS verification off |
 | `OPENSEARCH_CA_CERTS` | none: the system CA store. A path to a CA bundle to trust instead |
 | `CORS_ORIGINS` | `http://localhost:3000` (comma-separated) |
+| `CELESTRAK_TLE_URL` | `https://celestrak.org/NORAD/elements/gp.php?NAME=SENTINEL&FORMAT=TLE`. The API's only outbound internet call |
+| `ORBIT_CACHE_SECONDS` | `21600` (6 h): how long fetched TLEs are served before a refetch |
+| `ORBIT_MAX_STALE_SECONDS` | `259200` (3 days): how long the last good TLEs are still served when a refetch fails |
+
+## Tests
+
+```
+pip install -e ".[testing]"     # maas-model comes from the Nexus index (see setup.cfg)
+python -m pytest
+```
+
+No OpenSearch or network needed: the data stores are mocked.
 
 ## Startup and probes
 
