@@ -2,7 +2,7 @@
 
 Drafted 2026-10-27. Branch: `feature/DEVOCS-219-data-availability`.
 Read alongside `docs/memory/features/home.md` (the most recent ported page) and the confirmed
-decisions in `design/react-mockups/docs/data-availability-prototype-ref.md §11`.
+decisions in `docs/design/data-availability-prototype-ref.md §11`.
 
 ---
 

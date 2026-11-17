@@ -151,7 +151,7 @@ ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean 
 - `AcquisitionsGlobe.tsx:427` — `set-state-in-effect`: `setDisplayedDtk` inside a `useEffect` (the timer-delayed unmount path). Lint flags it without the comment.
 - `AcquisitionsGlobe.tsx:1172-1178` — `react-hooks/immutability`: `.visible` mutations on Three.js mesh refs inside a `useEffect`. Lint flags it without the comment.
 
-**Prototype ref (acquisitions):** `~/work/SentiBoard/design/react-mockups/docs/acquisitions-prototype-ref.md`
+**Prototype ref (acquisitions):** `docs/design/acquisitions-prototype-ref.md`
 
 ---
 

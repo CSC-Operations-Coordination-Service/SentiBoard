@@ -733,3 +733,9 @@ mock-up simulation), and the backend allows 31 days per request while the page s
 **Consequences.** At production volume a three-month window is tens of thousands of datatakes
 sent whole to the client Explorer: payload size is open (HANDOFF.md).
 
+## 2026-11-17 — Prototype refs live in develop
+
+**Context.** Data Availability and Acquisitions linked to their prototype refs in the mock-up worktree by
+absolute path, which exists only on one machine.
+**Decision.** Every page's *-prototype-ref.md is copied to docs/design/ when the page is ported.
+**Consequences.** Plans, HANDOFF and DECISIONS cite docs/design/... only.
