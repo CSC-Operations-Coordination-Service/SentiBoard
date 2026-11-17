@@ -103,6 +103,14 @@ export const RES_MALFORMED_UNKNOWN_ATTR =
 export const RES_MALFORMED_EMPTY_REQUIRED =
   `<tabular data_id="" />`;
 
+// ---- Live sample captured from staging chatbot ---------------------------------
+
+// Captured from the live staging chatbot on 2026-11-17; all other fixtures are hand-written.
+// The partner's chatbot emitted temporal-plot without the required date_column and numeric_column.
+export const RES_LIVE_TEMPORAL_PLOT_MISSING_COLS =
+  `Here is the Sentinel-1A daily completeness trend for June 2026.\n` +
+  `<temporal-plot data_id="artifact_5c7f03953f514cabb0d316327ef2d3c3" title="Sentinel-1A daily completeness – June 2026" />`;
+
 // ---- Edge cases for no-throw guarantee -----------------------------------------
 
 export const RES_EMPTY = ``;

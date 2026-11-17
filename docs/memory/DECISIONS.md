@@ -702,3 +702,22 @@ are "length-bounded" but gives no numeric limit.
 whose text attribute exceeds this length is treated as malformed and kept as plain markdown text.
 **Consequences.** If the partner later specifies a different limit, update the constant and its
 test. The assumption is noted in the fixture README.
+
+## 2026-11-17 — Chatbot: invalid known markers render as a placeholder, not as raw XML
+
+**Context.** The Streamlit reference client intentionally leaves malformed markers visible in the
+Markdown ("fails visibly", guide §4). That design is for developer-facing debugging. In the
+Next.js client, `parseResponse` placed the raw `<tag … />` text back into the markdown stream,
+so end users saw raw XML when the partner chatbot emitted a marker with missing required
+attributes (confirmed from a live staging answer on 2026-11-17: `<temporal-plot>` without
+`date_column` or `numeric_column`).
+**Decision.** When `parseResponse` encounters a candidate with a *known* tag name (`kpi`,
+`tabular`, `temporal-plot`, `count-histogram`, `event-calendar`) that fails validation, it emits
+a `{ kind: "invalid-marker", tag, missing }` segment instead of leaking the raw tag into the
+markdown stream. `AssistantAnswer` renders it via `MarkerPlaceholder`, which shows "This
+chart/table/calendar/KPI couldn't be displayed. Try asking again." A `console.warn` line naming
+the tag and any absent required attributes is emitted for developer visibility (captured by the
+`log.ts` console bridge on the server). Unknown tag names continue to pass through as literal
+text. The parser itself is not relaxed: the guide (§3) makes the missing attributes required.
+**Consequences.** Users never see raw XML for known malformed markers. The partner observation
+that triggered this is filed in HANDOFF.md under partner issues to report.

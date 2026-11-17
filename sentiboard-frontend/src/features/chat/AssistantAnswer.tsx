@@ -28,6 +28,9 @@ export default function AssistantAnswer({ segments, requestId }: Props) {
         if (seg.kind === "markdown") {
           return <MarkdownContent key={i} text={seg.text} />;
         }
+        if (seg.kind === "invalid-marker") {
+          return <MarkerPlaceholder key={i} invalid={seg} />;
+        }
         if (seg.marker.kind === "kpi-direct") {
           return <KpiCard key={i} marker={seg.marker} />;
         }

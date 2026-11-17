@@ -1,6 +1,6 @@
 "use client";
 
-import type { WidgetMarker, KpiDirectMarker } from "./types";
+import type { WidgetMarker, KpiDirectMarker, InvalidMarkerSegment } from "./types";
 import s from "./marker-placeholder.module.css";
 
 type NonDirectMarker = Exclude<WidgetMarker, KpiDirectMarker>;
@@ -13,11 +13,28 @@ const KIND_LABEL: Record<NonDirectMarker["kind"], string> = {
   "kpi-artifact": "KPI",
 };
 
-interface Props {
-  marker: NonDirectMarker;
-}
+// User-facing noun for each known tag that can produce an invalid-marker segment.
+const INVALID_NOUN: Record<string, string> = {
+  "temporal-plot": "chart",
+  "count-histogram": "chart",
+  tabular: "table",
+  "event-calendar": "calendar",
+  kpi: "KPI",
+};
 
-export default function MarkerPlaceholder({ marker }: Props) {
+type Props = { marker: NonDirectMarker } | { invalid: InvalidMarkerSegment };
+
+export default function MarkerPlaceholder(props: Props) {
+  if ("invalid" in props) {
+    const noun = INVALID_NOUN[props.invalid.tag] ?? "widget";
+    return (
+      <div className={s.placeholder} aria-label={`This ${noun} couldn't be displayed`}>
+        <span className={s.kind}>This {noun} couldn&apos;t be displayed.</span>
+        <span className={s.note}> Try asking again.</span>
+      </div>
+    );
+  }
+  const { marker } = props;
   const kindLabel = KIND_LABEL[marker.kind];
   const title = "title" in marker && typeof marker.title === "string" ? marker.title : undefined;
   const display = title ? `${kindLabel}: ${title}` : kindLabel;

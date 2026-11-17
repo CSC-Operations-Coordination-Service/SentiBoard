@@ -2,6 +2,23 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Chatbot — invalid marker placeholder (2026-11-17, branch `feature/DEVOCS-263-chatbot-UI-integration`)
+
+Slice 5 complete. Known markers with missing required attributes now render as "This
+chart/table/calendar/KPI couldn't be displayed. Try asking again." instead of raw XML.
+New files: none. Updated: `types.ts` (`InvalidMarkerSegment`, `Segment`), `parse-response.ts`
+(known-tag invalid path), `MarkerPlaceholder.tsx` (invalid prop), `AssistantAnswer.tsx` (wire
+invalid-marker), `__fixtures__/responses.ts` (`RES_LIVE_TEMPORAL_PLOT_MISSING_COLS`).
+Tests: 908 total (4 new). Lint, type-check, build clean.
+
+**Partner issue to report:**
+- **temporal-plot emitted without required `date_column`/`numeric_column` (2026-11-17 live
+  sample).** The partner's chatbot sent
+  `<temporal-plot data_id="artifact_5c7f03953f514cabb0d316327ef2d3c3" title="Sentinel-1A daily completeness – June 2026" />`
+  with no `date_column` or `numeric_column`. The guide (§3) makes both required. The raw marker
+  is in `__fixtures__/responses.ts` as `RES_LIVE_TEMPORAL_PLOT_MISSING_COLS`. Until the partner
+  fixes this, every such `temporal-plot` renders the "This chart couldn't be displayed" placeholder.
+
 ## Chatbot — event-calendar widget (2026-11-16, branch `feature/DEVOCS-263-chatbot-UI-integration`)
 
 Slice 4 complete. New files: `calendar-model.ts`, `calendar-model.test.ts`, `EventCalendar.tsx`,

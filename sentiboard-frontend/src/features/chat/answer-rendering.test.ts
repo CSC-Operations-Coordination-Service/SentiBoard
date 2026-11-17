@@ -119,6 +119,27 @@ describe("MarkerPlaceholder", () => {
     expect(html).toContain("My Table");
     expect(html).toContain("Table");
   });
+
+  it("renders chart placeholder text for an invalid temporal-plot", () => {
+    const html = renderToStaticMarkup(
+      createElement(MarkerPlaceholder, {
+        invalid: { kind: "invalid-marker", tag: "temporal-plot", missing: ["date_column", "numeric_column"] },
+      }),
+    );
+    expect(html).toContain("chart");
+    expect(html).toContain("couldn");
+    expect(html).toContain("Try asking again");
+  });
+
+  it("renders table placeholder text for an invalid tabular", () => {
+    const html = renderToStaticMarkup(
+      createElement(MarkerPlaceholder, {
+        invalid: { kind: "invalid-marker", tag: "tabular", missing: ["data_id"] },
+      }),
+    );
+    expect(html).toContain("table");
+    expect(html).toContain("Try asking again");
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { parseResponse, TEXT_ATTR_MAX_LEN } from "./parse-response";
-import type { Segment, WidgetSegment } from "./types";
+import type { Segment, WidgetSegment, InvalidMarkerSegment } from "./types";
 import {
   RES_KPI_DIRECT,
   RES_KPI_ARTIFACT,
@@ -30,6 +30,7 @@ import {
   RES_ONLY_MARKERS,
   RES_UNCLOSED_TAG,
   RES_HUGE_STRING,
+  RES_LIVE_TEMPORAL_PLOT_MISSING_COLS,
 } from "./__fixtures__/responses";
 
 function widget(segs: Segment[], idx = 0): WidgetSegment {
@@ -39,6 +40,20 @@ function widget(segs: Segment[], idx = 0): WidgetSegment {
 
 function markdowns(segs: Segment[]): string[] {
   return segs.filter((s) => s.kind === "markdown").map((s) => s.text);
+}
+
+// Asserts that a known-tag rejection produces an invalid-marker segment (not a widget,
+// not raw tag text in markdown).
+function expectInvalidMarker(raw: string, expectedTag?: string): InvalidMarkerSegment {
+  const segs = parseResponse(raw);
+  const inv = segs.find((s): s is InvalidMarkerSegment => s.kind === "invalid-marker");
+  expect(inv, "expected an invalid-marker segment").toBeDefined();
+  if (expectedTag !== undefined) expect(inv!.tag).toBe(expectedTag);
+  expect(segs.some((s) => s.kind === "widget")).toBe(false);
+  // No raw tag text must appear in the markdown stream
+  const mdText = markdowns(segs).join("");
+  if (expectedTag) expect(mdText).not.toContain(`<${expectedTag}`);
+  return inv!;
 }
 
 // ---------------------------------------------------------------------------
@@ -211,14 +226,18 @@ describe("parseResponse — segment order", () => {
     expect(segs[0].kind).toBe("markdown");
   });
 
-  it("merges text around a rejected marker into one segment", () => {
+  it("emits an invalid-marker for a rejected kpi; prose before and after stays in markdown", () => {
+    // empty label = invalid known tag → invalid-marker segment, prose preserved in markdown
     const raw = `Before text <kpi label="" value="V" /> after text`;
     const segs = parseResponse(raw);
-    // empty label = invalid, so the whole thing is one markdown segment
     const mds = markdowns(segs);
     expect(mds.join("")).toContain("Before text");
     expect(mds.join("")).toContain("after text");
-    expect(segs.every((s) => s.kind === "markdown")).toBe(true);
+    const inv = segs.find((s): s is InvalidMarkerSegment => s.kind === "invalid-marker");
+    expect(inv).toBeDefined();
+    expect(inv?.tag).toBe("kpi");
+    // No raw tag text in the markdown stream
+    expect(mds.join("")).not.toContain("<kpi");
   });
 
   it("drops whitespace-only markdown segments", () => {
@@ -229,116 +248,139 @@ describe("parseResponse — segment order", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Rejection rules — each stays as markdown text
+// Rejection rules
 // ---------------------------------------------------------------------------
 
 describe("parseResponse — rejection rules", () => {
+  // Unknown tag names stay as literal text in the markdown stream (guide "fails visibly").
   function expectAllMarkdown(raw: string): void {
     const segs = parseResponse(raw);
     expect(segs.every((s) => s.kind === "markdown")).toBe(true);
   }
 
-  it("rejects unknown tag name", () => {
+  it("rejects unknown tag name — stays as literal markdown text", () => {
     expectAllMarkdown(RES_MALFORMED_UNKNOWN_TAG);
   });
 
-  it("rejects duplicate attribute", () => {
-    expectAllMarkdown(RES_MALFORMED_DUPLICATE_ATTR);
+  // Known tag names that fail validation emit an invalid-marker segment (never raw XML).
+
+  it("rejects duplicate attribute — emits invalid-marker for kpi", () => {
+    expectInvalidMarker(RES_MALFORMED_DUPLICATE_ATTR, "kpi");
   });
 
-  it("rejects missing required attribute", () => {
-    expectAllMarkdown(RES_MALFORMED_MISSING_REQUIRED);
+  it("rejects missing required attribute — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_MISSING_REQUIRED, "tabular");
   });
 
-  it("rejects data_id with wrong case prefix (Artifact_ instead of artifact_)", () => {
-    expectAllMarkdown(RES_MALFORMED_BAD_DATA_ID_CASE);
+  it("rejects data_id with wrong case prefix (Artifact_) — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_BAD_DATA_ID_CASE, "tabular");
   });
 
-  it("rejects data_id without artifact_ prefix", () => {
-    expectAllMarkdown(RES_MALFORMED_BAD_DATA_ID_PREFIX);
+  it("rejects data_id without artifact_ prefix — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_BAD_DATA_ID_PREFIX, "tabular");
   });
 
-  it("rejects column name starting with a digit", () => {
-    expectAllMarkdown(RES_MALFORMED_BAD_COLUMN_DIGIT);
+  it("rejects column name starting with a digit — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_BAD_COLUMN_DIGIT, "tabular");
   });
 
-  it("rejects column name exceeding 64 characters", () => {
-    expectAllMarkdown(RES_MALFORMED_BAD_COLUMN_LONG);
+  it("rejects column name exceeding 64 characters — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_BAD_COLUMN_LONG, "tabular");
   });
 
-  it("rejects sort_order not in {asc, desc}", () => {
-    expectAllMarkdown(RES_MALFORMED_BAD_SORT_ORDER);
+  it("rejects sort_order not in {asc, desc} — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_BAD_SORT_ORDER, "tabular");
   });
 
-  it("rejects KPI color not in the allowed set", () => {
-    expectAllMarkdown(RES_MALFORMED_BAD_KPI_COLOR);
+  it("rejects KPI color not in the allowed set — emits invalid-marker for kpi", () => {
+    expectInvalidMarker(RES_MALFORMED_BAD_KPI_COLOR, "kpi");
   });
 
-  it("rejects apparent double quote inside a value", () => {
-    expectAllMarkdown(RES_MALFORMED_DOUBLE_QUOTE_IN_VALUE);
+  it("rejects apparent double quote inside a value — emits invalid-marker for kpi", () => {
+    expectInvalidMarker(RES_MALFORMED_DOUBLE_QUOTE_IN_VALUE, "kpi");
   });
 
-  it("rejects count-histogram with neither date_column nor category_column", () => {
-    expectAllMarkdown(RES_MALFORMED_HISTOGRAM_NO_GROUP);
+  it("rejects count-histogram with neither date_column nor category_column — emits invalid-marker", () => {
+    const inv = expectInvalidMarker(RES_MALFORMED_HISTOGRAM_NO_GROUP, "count-histogram");
+    expect(inv.missing).toContain("date_column");
+    expect(inv.missing).toContain("category_column");
   });
 
-  it("rejects KPI with both data_id and label (mixed forms)", () => {
-    expectAllMarkdown(RES_MALFORMED_KPI_MIXED_FORMS);
+  it("rejects KPI with both data_id and label (mixed forms) — emits invalid-marker for kpi", () => {
+    expectInvalidMarker(RES_MALFORMED_KPI_MIXED_FORMS, "kpi");
   });
 
-  it("rejects unknown attribute on a known tag", () => {
-    expectAllMarkdown(RES_MALFORMED_UNKNOWN_ATTR);
+  it("rejects unknown attribute on a known tag — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_UNKNOWN_ATTR, "tabular");
   });
 
-  it("rejects empty required attribute", () => {
-    expectAllMarkdown(RES_MALFORMED_EMPTY_REQUIRED);
+  it("rejects empty required attribute — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(RES_MALFORMED_EMPTY_REQUIRED, "tabular");
   });
 
-  it("rejects data_id that is only artifact_ with no suffix", () => {
-    expectAllMarkdown(`<tabular data_id="artifact_" />`);
+  it("rejects data_id that is only artifact_ with no suffix — emits invalid-marker", () => {
+    expectInvalidMarker(`<tabular data_id="artifact_" />`, "tabular");
   });
 
-  it("rejects ARTIFACT_ in uppercase", () => {
-    expectAllMarkdown(`<tabular data_id="ARTIFACT_abc" />`);
+  it("rejects ARTIFACT_ in uppercase — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(`<tabular data_id="ARTIFACT_abc" />`, "tabular");
   });
 
-  it("rejects sort_order ascending (verbose form)", () => {
-    expectAllMarkdown(
-      `<tabular data_id="artifact_A" sort_column="col" sort_order="ascending" />`
+  it("rejects sort_order ascending (verbose form) — emits invalid-marker for tabular", () => {
+    expectInvalidMarker(
+      `<tabular data_id="artifact_A" sort_column="col" sort_order="ascending" />`,
+      "tabular",
     );
   });
 
-  it("rejects temporal-plot missing date_column", () => {
-    expectAllMarkdown(
-      `<temporal-plot data_id="artifact_A" numeric_column="val" />`
+  it("rejects temporal-plot missing date_column — emits invalid-marker with date_column in missing", () => {
+    const inv = expectInvalidMarker(
+      `<temporal-plot data_id="artifact_A" numeric_column="val" />`,
+      "temporal-plot",
     );
+    expect(inv.missing).toContain("date_column");
   });
 
-  it("rejects temporal-plot missing numeric_column", () => {
-    expectAllMarkdown(
-      `<temporal-plot data_id="artifact_A" date_column="dt" />`
+  it("rejects temporal-plot missing numeric_column — emits invalid-marker with numeric_column in missing", () => {
+    const inv = expectInvalidMarker(
+      `<temporal-plot data_id="artifact_A" date_column="dt" />`,
+      "temporal-plot",
     );
+    expect(inv.missing).toContain("numeric_column");
   });
 
-  it("rejects kpi-artifact with extra direct-only attr (color)", () => {
-    expectAllMarkdown(`<kpi data_id="artifact_A" color="green" />`);
+  it("rejects kpi-artifact with extra direct-only attr (color) — emits invalid-marker for kpi", () => {
+    expectInvalidMarker(`<kpi data_id="artifact_A" color="green" />`, "kpi");
   });
 
-  it("rejects kpi-direct with extra artifact-only attr (title is not in direct allowed set)", () => {
-    expectAllMarkdown(`<kpi label="L" value="V" title="T" />`);
+  it("rejects kpi-direct with extra artifact-only attr (title) — emits invalid-marker for kpi", () => {
+    expectInvalidMarker(`<kpi label="L" value="V" title="T" />`, "kpi");
   });
 
-  it("rejects text attr exceeding TEXT_ATTR_MAX_LEN", () => {
+  it("rejects text attr exceeding TEXT_ATTR_MAX_LEN — emits invalid-marker for event-calendar", () => {
     const longTitle = "a".repeat(TEXT_ATTR_MAX_LEN + 1);
-    expectAllMarkdown(`<event-calendar data_id="artifact_A" title="${longTitle}" />`);
+    expectInvalidMarker(`<event-calendar data_id="artifact_A" title="${longTitle}" />`, "event-calendar");
   });
 
   it("accepts text attr at exactly TEXT_ATTR_MAX_LEN", () => {
     const maxTitle = "a".repeat(TEXT_ATTR_MAX_LEN);
     const segs = parseResponse(
-      `<event-calendar data_id="artifact_A" title="${maxTitle}" />`
+      `<event-calendar data_id="artifact_A" title="${maxTitle}" />`,
     );
     expect(segs.some((s) => s.kind === "widget")).toBe(true);
+  });
+
+  // Live sample captured from staging chatbot on 2026-11-17 — the partner emitted temporal-plot
+  // without required date_column and numeric_column.
+  it("live sample: temporal-plot missing date_column and numeric_column → invalid-marker, no raw tag in markdown", () => {
+    const segs = parseResponse(RES_LIVE_TEMPORAL_PLOT_MISSING_COLS);
+    const inv = segs.find((s): s is InvalidMarkerSegment => s.kind === "invalid-marker");
+    expect(inv, "must emit an invalid-marker segment").toBeDefined();
+    expect(inv!.tag).toBe("temporal-plot");
+    expect(inv!.missing).toContain("date_column");
+    expect(inv!.missing).toContain("numeric_column");
+    const mdText = markdowns(segs).join("");
+    expect(mdText).not.toContain("<temporal-plot");
   });
 });
 

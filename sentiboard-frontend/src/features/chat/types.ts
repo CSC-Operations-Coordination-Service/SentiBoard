@@ -64,7 +64,10 @@ export type WidgetMarker =
 
 export type MarkdownSegment = { kind: "markdown"; text: string };
 export type WidgetSegment = { kind: "widget"; marker: WidgetMarker };
-export type Segment = MarkdownSegment | WidgetSegment;
+// Emitted when a candidate carries a known tag name but fails attribute validation.
+// The raw tag is never placed in the markdown stream; a placeholder is rendered instead.
+export type InvalidMarkerSegment = { kind: "invalid-marker"; tag: string; missing: string[] };
+export type Segment = MarkdownSegment | WidgetSegment | InvalidMarkerSegment;
 
 // ---- Event-calendar payload types (from partner's JSON schema) ---------------
 

@@ -1,5 +1,15 @@
 import type { Segment, WidgetMarker } from "./types";
 import { findMarkerCandidates, parseAttributes } from "./marker-syntax";
+import { logger } from "@/lib/log";
+
+const log = logger("chat");
+
+// Tag names the partner chatbot is expected to emit. Unknown tag names stay as literal text so
+// they remain visible (the guide's "fails visibly" design for developer debugging). Known tag
+// names that fail validation emit an invalid-marker segment and never leak raw XML to the user.
+const KNOWN_TAG_NAMES = new Set([
+  "kpi", "tabular", "temporal-plot", "count-histogram", "event-calendar",
+]);
 
 // Maximum length for text attributes (label, value, title, delta).
 // The guide says "length-bounded" but gives no limit — 200 chars is a named assumption.
@@ -57,6 +67,31 @@ const ALLOWED_EVENT_CALENDAR = new Set(["data_id", "title"]);
 const ALLOWED_KPI_BROAD = new Set(["data_id", "title", "label", "value", "color", "delta"]);
 const ALLOWED_KPI_ARTIFACT = new Set(["data_id", "title"]);
 const ALLOWED_KPI_DIRECT = new Set(["label", "value", "color", "delta"]);
+
+// Returns the names of required attributes that are absent or empty.
+// Used only after validateMarker already returned null, so this is diagnostic only.
+function requiredMissing(tagName: string, attrs: Map<string, string>): string[] {
+  const absent: string[] = [];
+  const check = (name: string) => { if (!attrs.get(name)) absent.push(name); };
+  switch (tagName) {
+    case "tabular": check("data_id"); break;
+    case "temporal-plot": check("data_id"); check("date_column"); check("numeric_column"); break;
+    case "count-histogram":
+      check("data_id"); check("count_column");
+      if (!attrs.get("date_column") && !attrs.get("category_column"))
+        absent.push("date_column", "category_column");
+      break;
+    case "event-calendar": check("data_id"); break;
+    case "kpi": {
+      if (!attrs.get("data_id")) {
+        if (!attrs.get("label")) absent.push("label");
+        if (!attrs.get("value")) absent.push("value");
+      }
+      break;
+    }
+  }
+  return absent;
+}
 
 function hasUnknownAttrs(attrs: Map<string, string>, allowed: Set<string>): boolean {
   for (const name of attrs.keys()) {
@@ -231,8 +266,17 @@ export function parseResponse(raw: string): Segment[] {
     if (marker !== null) {
       flushPending();
       segments.push({ kind: "widget", marker });
+    } else if (KNOWN_TAG_NAMES.has(candidate.tagName)) {
+      // Known tag that failed validation: emit a placeholder segment so users never see raw XML.
+      flushPending();
+      const missing = attrs !== null ? requiredMissing(candidate.tagName, attrs) : [];
+      segments.push({ kind: "invalid-marker", tag: candidate.tagName, missing });
+      log.warn("invalid marker rejected", {
+        tag: candidate.tagName,
+        ...(missing.length && { missing }),
+      });
     } else {
-      // Invalid candidate: keep literal text in the markdown stream.
+      // Unknown tag name: keep literal text in the markdown stream (guide "fails visibly").
       pending += raw.slice(candidate.start, candidate.end);
     }
 
