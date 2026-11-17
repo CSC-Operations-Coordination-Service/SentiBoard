@@ -17,6 +17,12 @@ export {
 
 export type Status = "Planned" | "Processing" | "Acquired" | "Partial" | "Unavailable";
 
+/** One side of the legacy completeness status, as the backend computes it (GET /datatake/). */
+export interface StatusValue {
+  status: string; // PLANNED, PROCESSING, DELAYED, ACQUIRED / PUBLISHED, PARTIAL, UNAVAILABLE
+  pct: number;    // 0–100
+}
+
 export interface Datatake {
   id: string;
   satellite: string;
@@ -27,6 +33,10 @@ export interface Datatake {
   completeness: number; // 0–100; 0 = nothing published (Unavailable) or not finalized
   start: Date;
   stop: Date;
+  /** Real acquisition (ACQ) and publication (PUB) sides, from the backend. When present the card
+   *  shows them as they are; without them cardSides() derives both from status + completeness. */
+  acq?: StatusValue;
+  pub?: StatusValue;
 }
 
 export const STATUS_ORDER: Status[] = [
@@ -157,9 +167,28 @@ export interface CardSides {
   pub: CardSide;
 }
 
-/** Compute the acquisition and publication sides for the datatake card (Decision 6 applied:
- *  Processing shows "—" / grey / ACQUIRED badge on the acquisition ring). */
+/** One card side from a real backend status value. */
+function realSide(v: StatusValue, missingLabel: string): CardSide {
+  switch (v.status) {
+    case "PLANNED":
+      return { pct: null, color: "#7A8696", label: "PLANNED" };
+    case "PROCESSING":
+    case "DELAYED":
+      return { pct: v.pct > 0 ? v.pct : null, color: "#5B9BE8", label: v.status };
+    case "UNAVAILABLE":
+      return { pct: v.pct, color: v.pct > 0 ? bandColor(v.pct) : MISSING, label: missingLabel };
+    default: // ACQUIRED, PUBLISHED, PARTIAL
+      return { pct: v.pct, color: bandColor(v.pct), label: v.status };
+  }
+}
+
+/** Compute the acquisition and publication sides for the datatake card. With the backend's real
+ *  ACQ/PUB values (`d.acq`, `d.pub`) they are shown as they are; otherwise both are derived from
+ *  status + completeness (Decision 6: Processing shows "—" / grey / ACQUIRED on acquisition). */
 export function cardSides(d: Datatake): CardSides {
+  if (d.acq && d.pub) {
+    return { acq: realSide(d.acq, "UNAVAILABLE"), pub: realSide(d.pub, "MISSING") };
+  }
   let acqPct: number | null;
   let acqColor: string;
   let acqLabel: string;

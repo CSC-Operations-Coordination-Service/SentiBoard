@@ -17,7 +17,7 @@ export const MISSION_ID_OF: Record<string, MissionId> = {
 };
 
 export const SATELLITES_OF: Record<MissionId, string[]> = {
-  S1: ["S1A", "S1C"],
+  S1: ["S1A", "S1C", "S1D"],
   S2: ["S2A", "S2B", "S2C"],
   S3: ["S3A", "S3B"],
   S5P: ["S5P"],

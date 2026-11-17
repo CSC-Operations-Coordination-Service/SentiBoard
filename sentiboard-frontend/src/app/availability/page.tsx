@@ -11,25 +11,30 @@ import {
 } from "@/features/availability/copy";
 import Explorer from "@/features/availability/Explorer";
 import { getDatatakes } from "@/features/availability/data";
-import { computeDataWindow } from "@/features/availability/model";
+import { computeDataWindow, fmtDate } from "@/features/availability/model";
 import s from "@/features/availability/availability.module.css";
 
 // Not ported yet (docs/memory/HANDOFF.md). ROUTES.availability.ported = false.
 export const metadata = comingSoonMetadata(ROUTES.availability);
 
 // Async server component: opts into dynamic rendering via connection() so `now`
-// is the actual request time, not the build-time snapshot. Session 5 wires
-// getDatatakes() to the real API endpoint.
+// is the actual request time, not the build-time snapshot. getDatatakes() is cached per day.
 async function AvailabilityData() {
   await connection();
   const now = new Date();
-  const datatakes = await getDatatakes();
+  const result = await getDatatakes(fmtDate(now));
   const { windowStart, windowLast } = computeDataWindow(now);
+  const notice = result.ok
+    ? undefined
+    : result.kind === "unreachable"
+      ? "Backend unreachable — datatake data could not be loaded."
+      : "Could not load datatake data.";
   return (
     <Explorer
-      datatakes={datatakes}
+      datatakes={result.ok ? result.datatakes : []}
       windowStart={windowStart}
       windowLast={windowLast}
+      notice={notice}
     />
   );
 }

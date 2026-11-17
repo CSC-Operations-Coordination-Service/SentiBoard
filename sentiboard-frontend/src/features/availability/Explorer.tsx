@@ -211,10 +211,13 @@ export default function Explorer({
   datatakes,
   windowStart,
   windowLast,
+  notice,
 }: {
   datatakes: Datatake[];
   windowStart: Date;
   windowLast: Date;
+  /** Shown in place of the strips when the data could not be loaded (degraded state). */
+  notice?: string;
 }) {
   const searchParams = useSearchParams();
   const [view, setView] = useState<AvailabilityView>(() => parseView(searchParams));
@@ -874,7 +877,9 @@ export default function Explorer({
       <Reveal className={s.panel}>
         <div className={s.mapInner}>
           {datatakes.length === 0 ? (
-            <div className={s.emptyData}>{DATATAKES_NOT_AVAILABLE}</div>
+            <div className={s.emptyData} role={notice ? "alert" : undefined}>
+              {notice ?? DATATAKES_NOT_AVAILABLE}
+            </div>
           ) : lanes.map(({ missionId, frames, tw }, rowIndex) => {
             const isRowZoomed = pickedState?.missionId === missionId;
             // Zoom pivot: use the recorded click offset (px) when available; fall back to the

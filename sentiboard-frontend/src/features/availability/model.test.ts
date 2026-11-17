@@ -404,3 +404,47 @@ describe("kpiStats", () => {
     expect(coverageGaps).toBe(4); // 2 sats × 2 days with no datatakes
   });
 });
+
+// ---------------------------------------------------------------------------
+// cardSides with the backend's real ACQ/PUB values
+// ---------------------------------------------------------------------------
+
+describe("cardSides (real ACQ/PUB values)", () => {
+  const real = (acq: [string, number], pub: [string, number]) =>
+    cardSides(mkDtk({
+      status: "Acquired",
+      completeness: pub[1],
+      acq: { status: acq[0], pct: acq[1] },
+      pub: { status: pub[0], pct: pub[1] },
+    }));
+
+  it("shows the values as they are, with their status as badge", () => {
+    const { acq, pub } = real(["ACQUIRED", 100], ["PARTIAL", 66.67]);
+    expect(acq).toEqual({ pct: 100, color: bandColor(100), label: "ACQUIRED" });
+    expect(pub).toEqual({ pct: 66.67, color: bandColor(66.67), label: "PARTIAL" });
+  });
+
+  it("planned: no value, grey", () => {
+    const { acq, pub } = real(["PLANNED", 0], ["PLANNED", 0]);
+    expect(acq).toEqual({ pct: null, color: "#7A8696", label: "PLANNED" });
+    expect(pub.pct).toBeNull();
+  });
+
+  it("processing and delayed: blue, value only once something exists", () => {
+    const { acq, pub } = real(["PROCESSING", 0], ["DELAYED", 42]);
+    expect(acq).toEqual({ pct: null, color: "#5B9BE8", label: "PROCESSING" });
+    expect(pub).toEqual({ pct: 42, color: "#5B9BE8", label: "DELAYED" });
+  });
+
+  it("unavailable: the low value in its band, MISSING on publication", () => {
+    const { acq, pub } = real(["UNAVAILABLE", 0], ["UNAVAILABLE", 5]);
+    expect(acq.label).toBe("UNAVAILABLE");
+    expect(acq.pct).toBe(0);
+    expect(pub).toEqual({ pct: 5, color: bandColor(5), label: "MISSING" });
+  });
+
+  it("without real values, falls back to the derived sides", () => {
+    const { pub } = cardSides(mkDtk({ status: "Partial", completeness: 80 }));
+    expect(pub.pct).toBe(68); // floor(80 × 0.85), the mock-up rule
+  });
+});

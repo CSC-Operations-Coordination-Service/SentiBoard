@@ -1,6 +1,6 @@
 import { asset } from "@/lib/asset";
 
-export const DATATAKES_NOT_AVAILABLE = "Datatake data is not available yet.";
+export const DATATAKES_NOT_AVAILABLE = "No datatake in this period.";
 
 export const AVAILABILITY_HERO_IMG = asset(
   "/assets/img/modules/availability.jpg",
