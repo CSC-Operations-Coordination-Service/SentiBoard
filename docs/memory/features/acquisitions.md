@@ -44,7 +44,7 @@ Updated app files:
 - `next.config.ts` — 308 redirects for `/acquisitions-status(.html)`
 - `src/app/sitemap.ts` — LEGACY_HINTS for both acquisitions routes
 
-## Code path (Slice 1 shell)
+## Code path (Slice 1 shell — superseded, see Real data)
 
 ```
 GET /acquisitions-globe-earth
@@ -56,7 +56,28 @@ GET /acquisitions-globe-earth
       → empty-state or section placeholder (Slice 2 wires AcquisitionsGlobe here)
 ```
 
+## Real data (2026-11-17, branch `feature/DEVOCS-219-acquisitions-backend`)
+
+```
+GET /acquisitions-globe-earth
+  → AcquisitionsContent (after connection(): nowMs, dayKey)
+      → getAcquisitions(dayKey)          [data.ts, "use cache" 300 s, never throws]
+          → GET /datatake/?date_from=<day-1>&date_to=<day+1>     (fetchAll, pages of 1000)
+          → GET /acquisition-pass/?…&date_to=<day+1 +12 h>       (failure: stations left blank)
+          → GET /orbit/                                          (failure: degraded page)
+          → buildDatatakes(records, passes, orbits)  [adapter.ts: SGP4 centre + period, swath,
+                                                      station, status label, levels, pubPct]
+      → adaptAcquisitions(raw, nowMs)    [comp = PUB %, tone, hide not-yet-started]
+      → <AcquisitionsGlobe data notice?>  (notice = "Backend unreachable — …" on failure)
+```
+
+New: `orbit.ts` (+ test), `data.test.ts`; rewritten `adapter.ts` (+ test). `model.ts`
+`failedCount` = status Failed. `DatatakePanel.tsx`: "Partial" pill, Inuvik code INS.
+Rules: DECISIONS.md 2026-11-17. Backend routes: ARCHITECTURE.md § Backend.
+Verified: 559/559 tests, lint, type-check, build; headless Chromium against the backend on a seeded
+OpenSearch (footprints, satellites, panel with real fields, degraded path unit-tested). Real `cds-*`
+data: not yet (HANDOFF.md).
+
 ## Open
 
-- Slice 2: add ThreeEarth, day/night and stylised materials, zoom controls.
-- Slice 7: remove mock-data.ts; decide future-start datatake display (see HANDOFF.md).
+- Check against real `cds-*` data, then flip `ported` (HANDOFF.md).

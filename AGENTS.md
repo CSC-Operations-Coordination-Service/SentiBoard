@@ -83,7 +83,7 @@ Port **one vertical slice at a time** (backend endpoint, frontend page, tests, m
 
 ## 8. Commands
 
-Frontend commands run from `sentiboard-frontend/` (pnpm via `corepack enable pnpm`; copy `.env.sample` to `.env.local` first). The backend has no code in this repo yet. When you add tooling, fill in this table with commands you have run successfully, and nothing else.
+Frontend commands run from `sentiboard-frontend/` (pnpm via `corepack enable pnpm`; copy `.env.sample` to `.env.local` first). Backend commands run from `sentiboard-backend/` (see its README; maas-model comes from the Nexus index). When you add tooling, fill in this table with commands you have run successfully, and nothing else.
 
 | Task | Backend | Frontend |
 | --- | --- | --- |
@@ -92,7 +92,7 @@ Frontend commands run from `sentiboard-frontend/` (pnpm via `corepack enable pnp
 | Build / production server | `UNKNOWN` | `pnpm build`, then `pnpm start` |
 | Lint / format | `UNKNOWN` | `pnpm lint` (no formatter configured) |
 | Type-check | `UNKNOWN` | `pnpm type-check` |
-| Tests | `UNKNOWN` | `pnpm test` (Vitest; `pnpm test:watch` while developing; `pnpm test:coverage` for the lcov report CI sends to SonarQube) |
+| Tests | `python -m pytest` (deps from `setup.cfg` `testing` extra) | `pnpm test` (Vitest; `pnpm test:watch` while developing; `pnpm test:coverage` for the lcov report CI sends to SonarQube) |
 | Local data stores | `UNKNOWN` | — |
 
 Before you report a task as done, run lint, type-check and tests for every repo you touched. Report failures as failures.

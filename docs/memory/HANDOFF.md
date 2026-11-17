@@ -2,6 +2,65 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Acquisitions — backend routes and real-data wiring (2026-11-17, branch `feature/DEVOCS-219-acquisitions-backend`)
+
+Done and verified (tests, build, end to end on seeded data), see [features/acquisitions.md](features/acquisitions.md)
+and DECISIONS.md 2026-11-17. **Not committed yet.** Open:
+
+- **Checked on a production sample (2026-11-17**, 4788 docs read from the cluster behind
+  Technical-Dashboard `.prod.env`, which names itself `ocs-e2e-cluster`): index names end in
+  `-dd-das` ✓; passes live in `cds-cadip-acquisition-pass-status-static` ✓ (pattern matches); S1/S2
+  `_id` = `key` = e.g. `S1C-84679` ✓ (`datatake_id` is the bare number); `satellite_id` is the unit
+  ✓; `ground_station` ∈ SGS/INS/MTI/MPS/NSG ✓ (Maspalomas without underscore here); the indices
+  hold **planned** datatakes up to ~11 days ahead (hiding not-started ones is needed). Volume over
+  7 days: ~4.8k S1, 2.2k S2 docs; 7.4k S3, 3.8k S5 product docs; 1.4k passes.
+- **Legacy rule vs real data — decide (parity, AGENTS.md §3.6):** S5 L1B products have
+  `product_level: "L1_"`, but the legacy S5 tag is `"L1B"`, so S5 L1 is never counted (legacy and
+  port alike; S5 completeness = L2 only). S1 carries a pseudo-product `OUT_OF_MONITORING` and AIS
+  `AI_RAW__0_`, both levelless (ignored by completeness, shown as UNKNOWN on the page).
+- **Prod sample loaded into the OER dev cluster (2026-11-17).** `ocs-dev-opensearch` (OpenSearch
+  3.0.0, `http://172.28.89.2:80/opensearch/client/`; mind the explicit `:80`, opensearch-py
+  otherwise dials 9200, the prototype cluster) had no `cds-*` index: 9 indices created from the
+  MAAS-CDS template mappings, 4788 documents (150 S1, 100 S2, 40 S3 + 40 S5 datatakes with their
+  products, 1464 passes, window 2026-11-10 → 11-18). Written by the new account `cds-import`
+  (csc-ocs-ansible `scripts/opensearch-accounts/accounts.yml`, dev only; password in
+  `playbooks/deploy_stack/secrets/cds-import.dev.vault.yml`). `admin` could not: `admin_role` lacks
+  the cluster-level `indices:data/write/bulk`. Data checked through the backend code (330
+  datatakes, filters and pass sort OK). Static: no engine refreshes it.
+- **`sentiboard-backend` OpenSearch account needs scroll** (the `/datatake/` scroll scan; the
+  actions are cluster-level). Added to `accounts.yml` (csc-ocs-ansible, uncommitted) and **applied on
+  dev 2026-11-17** by the operator (role update only); verified: the scroll scan as
+  `sentiboard-backend` returns the 330 sample datatakes. **Still to do on ope** when it gets the account.
+- **Legacy rule vs real data — decide (parity, AGENTS.md §3.6):** S5 L1B products have
+  `product_level: "L1_"`, but the legacy S5 tag is `"L1B"`, so S5 L1 is never counted (legacy and
+  port alike; S5 completeness = L2 only). S1 carries a pseudo-product `OUT_OF_MONITORING` and AIS
+  `AI_RAW__0_`, both levelless (ignored by completeness, shown as UNKNOWN on the page).
+- **Prod sample loaded into the OER dev cluster (2026-11-17).** `ocs-dev-opensearch` (OpenSearch
+  3.0.0, `http://172.28.89.2:80/opensearch/client/`; mind the explicit `:80`, opensearch-py
+  otherwise dials 9200, the prototype cluster) had no `cds-*` index: 9 indices created from the
+  MAAS-CDS template mappings, 4788 documents (150 S1, 100 S2, 40 S3 + 40 S5 datatakes with their
+  products, 1464 passes, window 2026-11-10 → 11-18). Written by the new account `cds-import`
+  (csc-ocs-ansible `scripts/opensearch-accounts/accounts.yml`, dev only; password in
+  `playbooks/deploy_stack/secrets/cds-import.dev.vault.yml`). `admin` could not: `admin_role` lacks
+  the cluster-level `indices:data/write/bulk`. Data checked through the backend code (330
+  datatakes, filters and pass sort OK). Static: no engine refreshes it.
+- **BLOCKER for deploying `/datatake/`: `sentiboard-backend` OpenSearch account needs scroll.**
+  The route reads with a scroll scan; `indices:data/read/scroll` and `…/scroll/clear` are
+  cluster-level and missing (403 checked on dev). Added to `accounts.yml` (csc-ocs-ansible,
+  uncommitted); an operator runs `opensearch-accounts.py apply --only sentiboard-backend` (plan:
+  role update only). Same for ope when it gets the account.
+- **Celestrak has no SENTINEL-3C** (2026-11-17), though passes for S3C exist: S3C datatakes would
+  be skipped as "no-orbit".
+- **Downlink station** is a heuristic (DECISIONS.md). EDRS passes (`cds-edrs-acquisition-pass-status`)
+  are not read, so relayed S1/S2 datatakes may get a ground station that did not receive them.
+- **Globe model limits** (unchanged engine, `acqGeometry.ts`): fixed 98.6° inclination and always the
+  descending branch, so ascending S1/S3 datatakes are drawn with the track in the wrong direction;
+  footprints centred on nadir (S1 SAR is right-looking).
+- **Deployment:** the backend needs outbound HTTPS to celestrak.org (`CELESTRAK_TLE_URL`).
+- **`ported` still false** for both acquisitions routes (noindex, not in sitemap): flip after the
+  real-data check.
+- `pnpm memory:check` still does not exist.
+
 ## Assistant (chatbot widget) — follow-ups (2026-11-13, branch `feature/chatbot-widget`)
 
 Done and verified, see [features/chatbot.md](features/chatbot.md). Open:
@@ -66,7 +125,7 @@ ESLint: 0 errors, 0 warnings. `tsc --noEmit`, 468/468 tests, `pnpm build` clean 
 
 **Ground stations** are real fixed positions committed in `src/features/acquisitions/stations.ts` — the backend does not need to serve them.
 
-**Open decision — datatakes with a future `startIso`:** the stub returns no datatakes so this doesn't arise now. When the real endpoint exists, decide whether datatakes whose `startIso` is ahead of wall-clock time during `dayKey` should be hidden, labelled "PLANNED", or shown as-is. All mock datatakes started in the past; the UI does not currently handle future-start datatakes.
+**Decided 2026-11-17 — datatakes with a future `startIso`:** hidden (DECISIONS.md 2026-11-17). The stub above was replaced by the real backend routes; this contract table is historical.
 
 ---
 

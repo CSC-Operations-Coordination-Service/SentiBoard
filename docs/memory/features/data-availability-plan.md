@@ -36,6 +36,10 @@ API at build time"; mirrored by `AvailabilityContent` in Session 5 of this plan)
 
 ## Critical blocker: no datatake API endpoint exists
 
+> **Update 2026-11-17:** resolved — `GET /datatake/` exists (S1/S2 and S3/S5, with products,
+> per-level completeness and ACQ/PUB status), see ARCHITECTURE.md § Backend. The rest of this
+> section is the original analysis.
+
 The current OpenAPI contract (`sentiboard-frontend/api/openapi.json`) exposes five paths:
 `/anomaly/`, `/instantmessage/`, `/news/`, `/processor/`, `/health`. There is no datatake endpoint.
 **The page cannot be wired to real data until the backend adds one.**

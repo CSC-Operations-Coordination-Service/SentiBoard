@@ -14,8 +14,12 @@ Rules live in [`AGENTS.md`](../../AGENTS.md) §3–§6; this file records how th
 - Contract: the backend's OpenAPI schema; committed copy at `sentiboard-frontend/api/openapi.json`.
 - Paths have **no prefix and no version segment** (`/processor/`, `/anomaly/`, `/news/`,
   `/instantmessage/`, `/health`), as of the schema on 2026-10-21. Whether that is final: `UNKNOWN`.
-- List endpoints take `offset`/`limit` (limit ≤ 1000) and return a bare array: no filters, no
-  sorting, no total count. The frontend reads whole lists page by page (`src/lib/api/paginate.ts`).
+- List endpoints take `offset`/`limit` (limit ≤ 1000) and return a bare array, no total count. The
+  frontend reads whole lists page by page (`src/lib/api/paginate.ts`, `fetchAll(path, filters?)`).
+  The generated CRUD lists have no filters; the MAAS-CDS routes take a required time window
+  (`date_from`/`date_to`, ISO 8601, at most 31 days) and a few term filters.
+- **Generic backend, page-specific frontend (2026-11-17, DECISIONS.md).** Backend routes return
+  generic resources; shaping for one page happens in that page's server-side adapter.
 
 ## Frontend (`sentiboard-frontend/`)
 
@@ -130,4 +134,29 @@ ChatWidget (client, root layout) ──Server Action──▶ sendChatMessage (s
 
 ## Backend
 
-`UNKNOWN` in this repo — not checked in yet.
+FastAPI, Python ≥ 3.11, OpenSearch as the only store (DECISIONS.md 2026-10-23). Flat layout,
+packaged by `setup.cfg` (every top-level package must be listed in `[options.packages.find]`, or
+the production image, which installs the wheel, misses it).
+
+| Path | What |
+|---|---|
+| `main.py` | app, lifespan (index setup with retry), probes, OpenSearch-down → 503 handler |
+| `routers/`, `schemas/`, `documents/` | **generated** CRUD for Sentiboard's own indices (maas-model-fastapigen); do not hand-edit `routers/__init__.py` |
+| `domain/` | pure rules and entities: datatake completeness/status (`datatake.py`), TLE parsing (`orbit.py`), passes, ports (`ports.py`) |
+| `application/` | use cases (`acquisitions.py`): window check, list datatakes/passes/orbits |
+| `infrastructure/` | `cds_opensearch.py` (read-only `cds-*` queries, scroll scan), `celestrak.py` (TLE fetch, in-memory cache, last-good fallback) |
+| `interface/` | hand-written routes, response schemas, FastAPI dependencies (overridden in tests) |
+
+- **MAAS-CDS indices read** (read-only, AGENTS.md §3.3): `cds-completeness-{s1,s2}-*-dd-das` (one
+  doc per datatake, products as `<type>_local_percentage`), `cds-completeness-splitted-{s3,s5}-*-dd-das`
+  (one doc per product, grouped by `datatake_id`), `cds-cadip-acquisition-pass-status*` (data lives
+  in partitioned indices behind an alias of the bare name). Note: the MAAS `cds-completeness-*`
+  template pattern also matches the `splitted` indices, hence the explicit mission patterns.
+- **OpenSearch account** (`sentiboard-backend`, csc-ocs-ansible `scripts/opensearch-accounts/accounts.yml`):
+  `read` on `cds-*` **plus the cluster-level `indices:data/read/scroll` and `…/scroll/clear`** that
+  the scroll scan of `/datatake/` needs.
+- **Outbound HTTP:** only Celestrak (`CELESTRAK_TLE_URL`), stdlib `urllib`, 10 s timeout.
+- **Event loop:** hand-written routes are sync `def`, so FastAPI runs the blocking clients in its
+  threadpool.
+- **Tests:** `python -m pytest` from `sentiboard-backend/`; no OpenSearch or network (fakes via
+  `app.dependency_overrides`, mocked client). maas-model comes from the Nexus index.

@@ -17,5 +17,5 @@ Code and tests are the truth; these files record the verified state. Anything un
 | [Home page](features/home.md) | `IMPLEMENTED` (2026-10-27) |
 | [Events & Anomalies page](features/events.md) | `IMPLEMENTED` (2026-10-22; visual check pending) |
 | [Processors page](features/processors.md) | `IMPLEMENTED` (desktop verified; mobile + tests open) |
-| [Acquisitions Status page](features/acquisitions.md) | `IN_PROGRESS` (Slice 1 done, 2026-11-09) |
+| [Acquisitions Status page](features/acquisitions.md) | `IN_PROGRESS` (real data wired 2026-11-17; real `cds-*` check pending) |
 | [Assistant (chatbot widget)](features/chatbot.md) | `IMPLEMENTED` (2026-11-13; behind `CHATBOT_ENABLED`) |

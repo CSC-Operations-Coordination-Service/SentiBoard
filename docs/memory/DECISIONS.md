@@ -666,3 +666,51 @@ filters), because the chatbot's `SentiBoardContext` rejects extra fields (422).
   `/processors` was already dynamic (ƒ).
 - Answers are shown as plain text; the chatbot writes Markdown, so `**bold**` shows literally until
   Markdown rendering is added (HANDOFF.md).
+
+## 2026-11-17 — Backend serves generic resources; page shaping lives in the frontend server
+
+**Context.** The Acquisitions page needed real data. The repo owner's direction: the backend
+exposes generic formats, with a dedicated route only where an aggregation is needed; whatever is
+specific to one page belongs in `sentiboard-frontend` (server side).
+**Decision.** Three read-only routes over MAAS-CDS data, none shaped for one page:
+`GET /datatake/` (a dedicated route because it aggregates: S3/S5 product documents are grouped per
+datatake; it also computes per-level completeness and the legacy ACQ/PUB status, a business rule
+shared with Data Availability, AGENTS.md §3.6), `GET /acquisition-pass/` (CADIP passes, near raw),
+`GET /orbit/` (TLEs). The Acquisitions adapter (`features/acquisitions/adapter.ts`) does all page
+shaping: globe position, swath, station name, status labels, tone. Hand-written backend code uses
+the AGENTS.md §4 layering in its own packages (`domain/`, `application/`, `infrastructure/`,
+`interface/`); the generated `routers/` stay untouched so regeneration does not overwrite them.
+**Consequences.** Data Availability can reuse `GET /datatake/` (S1/S2 **and** S3/S5) without a
+backend change. A new page-specific need is an adapter change, not an endpoint.
+
+## 2026-11-17 — Acquisitions geometry from TLEs: SGP4 on the frontend server
+
+**Context.** The globe draws each datatake from a footprint centre (`lat`/`lon`) and an orbital
+period. No `cds-*` index stores positions. The legacy app propagated Celestrak TLEs.
+**Decision.** The backend serves the Sentinel TLEs (`GET /orbit/`, Celestrak `NAME=SENTINEL`,
+cached 6 h, last good copy served up to 3 days when a refetch fails, else 503). The frontend
+adapter propagates them with `satellite.js` 7.1.0 (SGP4, MIT; 7.2.0 was under two weeks old) in the
+cached server loader: centre = sub-satellite point at mid-sensing; period = 1440 / TLE revolutions
+per day (`satrec.nokozai`, not `no`). satellite.js never reaches the client bundle (checked).
+**Consequences.** The backend needs outbound HTTPS to celestrak.org in every environment. TLEs are
+accurate for days around their epoch, enough for the page's 48 h window; older days would drift.
+The centre is nadir: S1's right-looking SAR swath (offset ~250–500 km) is not modelled.
+
+## 2026-11-17 — Acquisitions: status, completeness, tone and KPI rules on real data
+
+**Context.** The prototype rules assumed mock data where completeness 0 meant failed. Real
+datatakes just sensed have 0 % published while still processing. HANDOFF.md left open how to show
+datatakes whose sensing has not started.
+**Decision.**
+- `comp` = legacy PUB % (mean of the level completeness values), as Data Availability; the mean of
+  products (`meanCompleteness`) is only a fallback when the status is unknown.
+- Labels from PUB status: PUBLISHED → Published, PARTIAL → Partial (new, amber pill),
+  UNAVAILABLE → Failed, PLANNED/PROCESSING/DELAYED (and unknown) → Processing.
+- Tone: Failed → crit; else comp ≥ 95 → ok; else warn. KPI `failedCount` counts status Failed
+  (was comp === 0).
+- Datatakes not started at request time are hidden (planned, not acquired). One being sensed shows
+  as Processing.
+- Downlink station: the first pass of the same satellite still running at sensing start or starting
+  after it, within 12 h of sensing stop. A heuristic: the indices hold no datatake → pass link.
+**Consequences.** Reversible in `adapter.ts` / `model.ts` only. The station is a best guess until
+MAAS-CDS links datatakes and passes.

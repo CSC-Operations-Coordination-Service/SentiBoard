@@ -1,10 +1,10 @@
 # State
 
-Last updated: 2026-11-16 (branch `feature/chatbot-widget`, merged to `develop`).
+Last updated: 2026-11-17 (branch `feature/DEVOCS-219-acquisitions-backend`, not committed yet).
 
 ## Frontend (`sentiboard-frontend/`)
 
-- Scaffolded with `create-next-app` 16.4.2: Next.js 16.4.2 (App Router, Turbopack, Cache Components
+- Scaffolded with `create-next-app` 16.4.2: Next.js 16.4.2, now 16.4.5 (App Router, Turbopack, Cache Components
   and Partial Prefetching on), React 19.3.0, TypeScript 5.9, ESLint 9, pnpm 12.14.0 (via corepack).
 - **First vertical slice ported** from the Vite prototype (`~/work/SentiBoard/design/react-mockups`):
   - App shell: nav, footer, dark/light theme without a flash, Noto Sans via `next/font/local`, the
@@ -82,6 +82,17 @@ Last updated: 2026-11-16 (branch `feature/chatbot-widget`, merged to `develop`).
   font-size `clamp(25px, 2.6vw, 36px)`. F11 scrub track 5px white thumb.
   ESLint disables at AcquisitionsGlobe.tsx:427 and :1172-1178 confirmed real — kept in place.
   Slice 7 items noted below in HANDOFF.md. 468/468 tests. Lint + build clean (both routes PPR ◐).
+- **Acquisitions — real data wired (2026-11-17, branch `feature/DEVOCS-219-acquisitions-backend`):**
+  `data.ts` reads `GET /datatake/`, `/acquisition-pass/`, `/orbit/`; `adapter.ts` places each
+  datatake from its satellite's TLE (SGP4, `satellite.js` 7.1.0, server-side only), names its
+  downlink station, maps statuses; degraded notice on backend failure. 559/559 tests, lint,
+  type-check, build clean (both routes PPR ◐, no satellite.js in `.next/static`). Verified end to end
+  (headless Chromium) against the new backend on a throwaway OpenSearch 2.19.1 seeded with the
+  MAAS-CDS templates and sample `cds-*` documents, live Celestrak. **Not verified against real
+  `cds-*` data** — see HANDOFF.md.
+- **Next.js 16.4.2 → 16.4.5** (PR #58 on `develop`, 2026-11-17), with `eslint-config-next`: fixes
+  GHSA-mfr8-8qww-v76h (moderate; `'use cache'` called through `unstable_cache()`, which the app never
+  uses). Lint, type-check, 559/559 tests, build clean; build no longer warns.
 - Verified on 2026-10-21: `pnpm install`, `pnpm lint`, `pnpm type-check`, `pnpm build` pass;
   `pnpm dev` and `pnpm start` serve the pages; behaviour checks listed in the feature file.
 - Automated tests: `pnpm test` (Vitest, 418 tests as of 2026-11-09), runnable with no backend and no network.
@@ -97,9 +108,13 @@ Last updated: 2026-11-16 (branch `feature/chatbot-widget`, merged to `develop`).
 
 ## Backend (`sentiboard-backend/`)
 
-- Not in this repo yet (`sentiboard-backend/` holds only an empty `.gitignore`). A FastAPI backend runs
-  separately at `http://localhost:8000`; its contract is committed at
-  `sentiboard-frontend/api/openapi.json` (matched the live `/openapi.json` on 2026-10-21).
+- FastAPI + OpenSearch, flat layout (see ARCHITECTURE.md § Backend). Generated CRUD routers for
+  Sentiboard's own indices (`/anomaly/`, `/news/`, `/instantmessage/`, `/processor/`) and probes.
+- **Read-only MAAS-CDS routes (2026-11-17):** `GET /datatake/`, `/acquisition-pass/`, `/orbit/`
+  (layered: `domain/`, `application/`, `infrastructure/`, `interface/`). Completeness and status are a
+  faithful port of the legacy rules: 0 mismatches against the legacy functions run on 8000 random
+  inputs (one-off check, not in the test suite); 120/120 backend tests (`python -m pytest`).
+- Contract copy `sentiboard-frontend/api/openapi.json` regenerated from the app on 2026-11-17.
 
 ## Memory tooling
 
