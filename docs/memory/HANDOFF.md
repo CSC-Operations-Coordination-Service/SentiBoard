@@ -5,7 +5,11 @@ Open work and known issues, newest first. Remove an item when it is resolved.
 ## Acquisitions — backend routes and real-data wiring (2026-11-17, branch `feature/DEVOCS-219-acquisitions-backend`)
 
 Done and verified (tests, build, end to end on seeded data), see [features/acquisitions.md](features/acquisitions.md)
-and DECISIONS.md 2026-11-17. **Not committed yet.** Open:
+and DECISIONS.md 2026-11-17. **On `develop` since af41c8b (2026-11-17).** OER release prepared in
+csc-ocs-ansible `playbooks/deploy_stack/sentiboard.dev.yml` (uncommitted there): both image tags
+`sha-af41c8b` (not yet seen in docker-dev-group: no route from the workstation), backend egress via
+the squid `192.168.80.2:3128` for Celestrak (squid allowlist unverified: after the deploy,
+`/sentiboard/backend/orbit/` must answer 200). Open:
 
 - **Checked on a production sample (2026-11-17**, 4788 docs read from the cluster behind
   Technical-Dashboard `.prod.env`, which names itself `ocs-e2e-cluster`): index names end in
