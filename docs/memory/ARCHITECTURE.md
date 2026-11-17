@@ -152,6 +152,12 @@ the production image, which installs the wheel, misses it).
   (one doc per product, grouped by `datatake_id`), `cds-cadip-acquisition-pass-status*` (data lives
   in partitioned indices behind an alias of the bare name). Note: the MAAS `cds-completeness-*`
   template pattern also matches the `splitted` indices, hence the explicit mission patterns.
+  Names are `cds-completeness[-splitted]-{mission}-{unit}-{service_type}-{service_id}`; every
+  mission is read from `cds-completeness*`, service **`dd-das`** only (as the legacy app). The S1/S2
+  `-prip-<unit>-<company>` indices (same datatakes measured at the production service) are not
+  read: they would count each datatake twice. Checked against the production index list
+  2026-11-17 (an empty `cds-completeness-splitted-{mission}-{satellite_unit}-…` index with literal
+  placeholders exists there: ignored).
 - **OpenSearch account** (`sentiboard-backend`, csc-ocs-ansible `scripts/opensearch-accounts/accounts.yml`):
   `read` on `cds-*` **plus the cluster-level `indices:data/read/scroll` and `…/scroll/clear`** that
   the scroll scan of `/datatake/` needs.
