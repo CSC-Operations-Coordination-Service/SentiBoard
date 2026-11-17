@@ -13,6 +13,7 @@ from typing import List, Literal, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from application import acquisitions
+from application.cache import TtlCache
 from domain.ports import AcquisitionPassRepository, DatatakeSource, OrbitSource, OrbitsUnavailable
 from interface import dependencies
 from interface.schemas import AcquisitionPass, Datatake, SatelliteOrbit
@@ -51,14 +52,19 @@ def list_datatake(
     limit: int = Query(100, ge=1, le=1000),
     source: DatatakeSource = Depends(dependencies.datatake_source),
     now: datetime = Depends(dependencies.utc_now),
+    cache: TtlCache = Depends(dependencies.datatake_cache),
 ) -> List[Datatake]:
     """Datatakes whose observation starts in the window, from the MAAS-CDS completeness indices,
     by observation start. Each carries its products, per-level completeness and the ACQ/PUB
-    completeness status (legacy rules, evaluated at request time)."""
+    completeness status (legacy rules, evaluated when the window is built). The built window is
+    kept 60 s, so reading it page by page scans OpenSearch once."""
     date_from, date_to = _window(date_from, date_to)
-    datatakes = acquisitions.list_datatakes(
-        source, date_from, date_to, now,
-        missions=mission or acquisitions.MISSIONS, satellite=satellite,
+    missions = tuple(sorted(set(mission or acquisitions.MISSIONS)))
+    datatakes = cache.get_or_compute(
+        (date_from, date_to, missions, satellite),
+        lambda: acquisitions.list_datatakes(
+            source, date_from, date_to, now, missions=missions, satellite=satellite,
+        ),
     )
     return [_datatake_out(d) for d in datatakes[offset: offset + limit]]
 

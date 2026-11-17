@@ -9,6 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import main
+from application.cache import TtlCache
 from domain.acquisition_pass import pass_from_document
 from domain.orbit import parse_tle
 from domain.ports import OrbitsUnavailable
@@ -80,6 +81,8 @@ class FakeOrbits:
 
 @pytest.fixture
 def client():
+    # A fresh window cache per test: the real one is a process singleton.
+    main.app.dependency_overrides[dependencies.datatake_cache] = TtlCache
     yield TestClient(main.app)
     main.app.dependency_overrides.clear()
 
@@ -208,3 +211,17 @@ def test_list_orbits_unavailable(client):
     res = client.get("/orbit/")
     assert res.status_code == 503
     assert res.json() == {"detail": "Orbit data unavailable"}
+
+
+def test_pages_of_one_window_build_it_once(client):
+    fake = FakeDatatakeSource()
+    cache = TtlCache()
+    override(dependencies.datatake_source, fake)
+    override(dependencies.utc_now, NOW)
+    override(dependencies.datatake_cache, cache)
+
+    first = client.get("/datatake/", params={**WINDOW, "offset": 0, "limit": 2}).json()
+    second = client.get("/datatake/", params={**WINDOW, "offset": 2, "limit": 2}).json()
+
+    assert [d["id"] for d in first + second] == ["S1A-1", "S3A_X", "S1A-2"]
+    assert [c[0] for c in fake.calls] == ["documents", "products"]  # one build, not two

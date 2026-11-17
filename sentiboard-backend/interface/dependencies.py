@@ -8,6 +8,7 @@ from functools import lru_cache
 
 from opensearchpy import connections
 
+from application.cache import TtlCache
 from domain.ports import AcquisitionPassRepository, DatatakeSource, OrbitSource
 from infrastructure import celestrak
 from infrastructure.cds_opensearch import OpenSearchCdsRepository
@@ -28,6 +29,12 @@ def datatake_source() -> DatatakeSource:
 
 def acquisition_pass_repository() -> AcquisitionPassRepository:
     return cds_repository()
+
+
+@lru_cache(maxsize=1)
+def datatake_cache() -> TtlCache:
+    # One per process: a window read page by page is built once (application/cache.py).
+    return TtlCache(ttl_seconds=60, max_entries=16)
 
 
 @lru_cache(maxsize=1)
