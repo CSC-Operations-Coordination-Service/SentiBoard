@@ -206,10 +206,13 @@ export default function AcquisitionsGlobe({
   look,
   nowMs,
   data,
+  notice,
 }: {
   look: GlobeLook;
   nowMs: number;
   data: AcquisitionsData;
+  /** Shown above the globe instead of the empty-state text, e.g. when the backend failed. */
+  notice?: string;
 }) {
   // Modifier key: "Ctrl" on server and by default; "⌘" on Mac clients (no hydration mismatch).
   const modKey = useSyncExternalStore(
@@ -1424,8 +1427,10 @@ export default function AcquisitionsGlobe({
         </label>
       </div>
 
-      {data.datatakes.length === 0 && (
-        <p className={s.empty}>Acquisition data is not available yet.</p>
+      {(notice || data.datatakes.length === 0) && (
+        <p className={s.empty} role={notice ? "alert" : undefined}>
+          {notice ?? "No acquisition data for this period."}
+        </p>
       )}
 
       {/* Globe */}

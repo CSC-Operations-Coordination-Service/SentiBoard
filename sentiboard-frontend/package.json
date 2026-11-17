@@ -26,6 +26,7 @@
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "satellite.js": "7.1.0",
     "server-only": "^0.0.1",
     "three": "0.155.0"
   },

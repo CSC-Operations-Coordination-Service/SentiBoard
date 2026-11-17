@@ -4,6 +4,7 @@ import s from "./acq-globe.module.css";
 
 const PILL_COLOR: Record<string, string> = {
   Published: "#00e676",
+  Partial: "#f5b544",
   Processing: "#9d4edd",
   Failed: "#ff3366",
 };
@@ -31,7 +32,7 @@ const STATION_CODE: Record<string, string> = {
   Svalbard: "SGS",
   Matera: "MTI",
   Maspalomas: "MPS",
-  Inuvik: "INU",
+  Inuvik: "INS", // CADIP ground_station code
   Neustrelitz: "NSG",
 };
 

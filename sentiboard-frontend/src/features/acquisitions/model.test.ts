@@ -167,12 +167,18 @@ describe("kpiStats", () => {
     expect(stats.failedCount).toBe(0);
   });
 
-  it("counts failed as comp === 0", () => {
+  it("counts failed as status Failed", () => {
     const stats = kpiStats([
-      mkAcq({ comp: 0, cls: "crit" }),
+      mkAcq({ comp: 0, cls: "crit", status: "Failed" }),
       mkAcq({ comp: 95, cls: "ok" }),
     ]);
     expect(stats.failedCount).toBe(1);
+  });
+
+  it("does not count a datatake still in processing with nothing published as failed", () => {
+    const stats = kpiStats([mkAcq({ comp: 0, cls: "warn", status: "Processing" })]);
+    expect(stats.failedCount).toBe(0);
+    expect(stats.acquiredPct).toBe(100);
   });
 
   it("acquiredPct is 100 when no failures", () => {
@@ -198,12 +204,12 @@ describe("kpiStats", () => {
     expect(stats.total).toBe(3);
   });
 
-  it("acquiredPct excludes Failed status even when comp > 0, failedCount counts only comp === 0", () => {
+  it("Failed with comp > 0 counts as failed and not acquired", () => {
     const stats = kpiStats([
-      mkAcq({ comp: 75, status: "Failed" }),   // status Failed, comp > 0
+      mkAcq({ comp: 5, status: "Failed" }),   // UNAVAILABLE: below 10 %, not 0
       mkAcq({ comp: 95, status: "Published" }),
     ]);
     expect(stats.acquiredPct).toBe(50);   // 1/2 non-Failed
-    expect(stats.failedCount).toBe(0);    // 0 have comp === 0
+    expect(stats.failedCount).toBe(1);
   });
 });

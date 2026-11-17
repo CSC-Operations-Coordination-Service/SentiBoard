@@ -22,12 +22,20 @@ export type ListPath = {
 
 export type ListItem<P extends ListPath> = GetResponse<P> extends (infer T)[] ? T : never;
 
-/** Every item of a list endpoint, fetched page by page until a page comes back short. */
-export async function fetchAll<P extends ListPath>(path: P): Promise<ListItem<P>[]> {
+/** Every item of a list endpoint, fetched page by page until a page comes back short. `filters`
+ *  are the endpoint's other query parameters (e.g. a time window), sent with every page. */
+export async function fetchAll<P extends ListPath>(
+  path: P,
+  filters?: Omit<GetQuery<P>, "offset" | "limit">,
+): Promise<ListItem<P>[]> {
   const all: ListItem<P>[] = [];
   for (let page = 0; page < MAX_PAGES; page++) {
     // ListPath guarantees the query takes offset/limit; TS can't see that through the generic.
-    const query = { offset: page * MAX_PAGE_SIZE, limit: MAX_PAGE_SIZE } as unknown as GetQuery<P>;
+    const query = {
+      ...filters,
+      offset: page * MAX_PAGE_SIZE,
+      limit: MAX_PAGE_SIZE,
+    } as unknown as GetQuery<P>;
     const items = (await apiGet(path, query)) as ListItem<P>[];
     all.push(...items);
     if (items.length < MAX_PAGE_SIZE) return all;

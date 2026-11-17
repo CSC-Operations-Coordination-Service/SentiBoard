@@ -45,7 +45,7 @@ export function kpiStats(datatakes: AcqDatatake[]): AcqKpiStats {
   if (total === 0) {
     return { total: 0, acquiredPct: null, publishedPct: null, failedCount: 0 };
   }
-  const failedCount = datatakes.filter((d) => d.comp === 0).length;
+  const failedCount = datatakes.filter((d) => d.status === "Failed").length;
   const acquiredCount = datatakes.filter((d) => d.status !== "Failed").length;
   const acquiredPct = Math.round((100 * acquiredCount) / total);
   const publishedPct = Math.round(datatakes.reduce((s, d) => s + d.comp, 0) / total);

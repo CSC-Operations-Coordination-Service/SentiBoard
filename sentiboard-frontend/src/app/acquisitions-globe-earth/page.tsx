@@ -8,6 +8,7 @@ import { getAcquisitions } from "@/features/acquisitions/data";
 import { adaptAcquisitions } from "@/features/acquisitions/adapter";
 import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE, AcquisitionsDescription } from "@/features/acquisitions/copy";
 import AcquisitionsGlobe from "@/features/acquisitions/AcquisitionsGlobe";
+import { COPERNICUS_STATIONS } from "@/features/acquisitions/stations";
 
 // Not ported yet (docs/memory/HANDOFF.md). ROUTES.acquisitionsEarth.ported = false.
 export const metadata: Metadata = {
@@ -38,8 +39,21 @@ async function AcquisitionsContent() {
   const now = new Date();
   const nowMs = now.getTime();
   const dayKey = fmtDate(now);
-  const { datatakes, stations } = await getAcquisitions(dayKey);
-  const data = adaptAcquisitions({ datatakes, stations }, dayKey);
+  const result = await getAcquisitions(dayKey);
+  if (!result.ok) {
+    const notice = result.kind === "unreachable"
+      ? "Backend unreachable — acquisition data could not be loaded."
+      : "Could not load acquisition data.";
+    return (
+      <AcquisitionsGlobe
+        look="imagery"
+        nowMs={nowMs}
+        data={{ datatakes: [], stations: COPERNICUS_STATIONS }}
+        notice={notice}
+      />
+    );
+  }
+  const data = adaptAcquisitions(result, nowMs);
   return <AcquisitionsGlobe look="imagery" nowMs={nowMs} data={data} />;
 }
 
