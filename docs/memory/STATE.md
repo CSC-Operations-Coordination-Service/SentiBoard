@@ -117,6 +117,10 @@ Last updated: 2026-11-17 (branch `feature/DEVOCS-219-acquisitions-backend`, not 
   (layered: `domain/`, `application/`, `infrastructure/`, `interface/`). Completeness and status are a
   faithful port of the legacy rules: 0 mismatches against the legacy functions run on 8000 random
   inputs (one-off check, not in the test suite); 120/120 backend tests (`python -m pytest`).
+  **Fix 2026-11-17:** S2 per-level aggregates (`L1B_local_percentage`, `L1C_…`, `L2A_…`) were
+  counted as products (prefix tested without the suffix), dragging S2 publication down (93 of 100
+  real S2 datatakes wrong). Since the fix, the legacy functions and the port agree on **all 330
+  datatakes of the production sample** (one-off check on real documents).
 - Contract copy `sentiboard-frontend/api/openapi.json` regenerated from the app on 2026-11-17.
 
 ## Memory tooling

@@ -166,7 +166,11 @@ def s1_product_level(product_type: str) -> str | None:
 
 
 def is_s2_aggregate(product_type: str) -> bool:
-    return any(product_type.startswith(prefix) for prefix in S2_AGGREGATE_PREFIXES)
+    """True for the per-level aggregates of S2 documents (`L1B_local_percentage`, ...). As in the
+    legacy code the prefix is matched on the whole field name: on the type alone, "L1B" would not
+    start with "L1B_"."""
+    key = product_type + LOCAL_PERCENTAGE_SUFFIX
+    return any(key.startswith(prefix) for prefix in S2_AGGREGATE_PREFIXES)
 
 
 def s2_product_level(product_type: str) -> str | None:

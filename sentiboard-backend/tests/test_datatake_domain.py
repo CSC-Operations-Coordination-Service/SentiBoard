@@ -78,9 +78,11 @@ def test_s2_product_level(product_type, level):
 
 
 def test_s2_aggregates_are_recognised():
-    assert dt.is_s2_aggregate("L0_")
-    assert dt.is_s2_aggregate("L1C_")
-    assert not dt.is_s2_aggregate("MSI_L1C_TL")
+    # Real field names (production cds-completeness-s2, 2026-11-17): L1B_local_percentage ...
+    for aggregate in ("L0", "L1A", "L1B", "L1C", "L2A", "L0_", "L1C_"):
+        assert dt.is_s2_aggregate(aggregate), aggregate
+    for product in ("MSI_L1B_DS", "MSI_L1B_GR", "MSI_L1C___", "MSI_L2A___", "MSI_L1C_TL"):
+        assert not dt.is_s2_aggregate(product), product
 
 
 @pytest.mark.parametrize(
@@ -291,3 +293,25 @@ def test_sort_key_puts_unknown_start_first():
         "S1A-2", {"observation_time_start": "2026-11-16T09:00:00Z"}, at(1))
     unknown = dt.datatake_from_completeness_document("S1A-1", {}, at(1))
     assert sorted([early, unknown], key=dt.sort_key) == [unknown, early]
+
+
+def test_s2_real_document_counts_products_not_aggregates():
+    # Shape of a production S2 document (2026-11-17): products per datastrip/granule, plus
+    # per-level aggregates that must not count (L1C/L2A aggregates are near 0 when the
+    # products are not expected).
+    source = {
+        "satellite_unit": "S2B",
+        "observation_time_start": "2026-11-16T09:50:00Z",
+        "observation_time_stop": "2026-11-16T10:00:00Z",
+        "MSI_L1B_DS_local_percentage": 100.0,
+        "MSI_L1B_GR_local_percentage": 98.0,
+        "L1B_local_percentage": 99.0,
+        "L1C_local_percentage": 0,
+        "L2A_local_percentage": 0,
+        "DS_global_percentage": 100.0,
+        "final_completeness_percentage": 99.0,
+    }
+    d = dt.datatake_from_completeness_document("S2B-1", source, at(24))
+    assert [p.product_type for p in d.products] == ["MSI_L1B_DS", "MSI_L1B_GR"]
+    assert d.completeness == {"L1": 99.0}
+    assert d.completeness_status.publication == dt.StatusValue("PUBLISHED", 99.0)
