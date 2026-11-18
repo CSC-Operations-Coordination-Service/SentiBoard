@@ -97,6 +97,14 @@ cold-cache latency.
 
 ## 2026-11-18 — DEVOCS-219: Mission filter selected-first (b)
 
-Selected Mission is listed first in the dropdown options. `pinnedFirst()` in `options.ts` moves
-the active mission to index 0; order of the remaining missions is unchanged. Deviates from the
-mock-up (fixed `MISSION_ORDER`); requested by testers. Decision recorded in DECISIONS.md.
+Selected Mission is listed first in the dropdown options. `pinnedFirstBy()` in `options.ts` moves
+the active mission to index 0; now applies to both Mission and Baseline option objects (predicate-based;
+replaces the earlier primitive `pinnedFirst`). Order of remaining options is unchanged. Deviates from
+the mock-up (fixed `MISSION_ORDER`); requested by testers. Decision recorded in DECISIONS.md.
+
+## 2026-11-18 — DEVOCS-219: Mission and Baseline dropdown headers show selected label
+
+Mission and Baseline dropdown headers show the selected option's label ("SENTINEL-3", "ALL RELEASES"
+/ "CURRENT BASELINES") instead of the filter name. `filterHeaderLabel()` in `options.ts` derives the
+text from the options array and URL state. The filter name stays available to screen readers via a
+`.sr-only` span. Deviates from the mock-up; requested by testers. Decision recorded in DECISIONS.md.

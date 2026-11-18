@@ -33,7 +33,7 @@ import {
   type ProcessorNotes,
   type ReleaseRecord,
 } from "./model";
-import { pinnedFirst } from "./options";
+import { pinnedFirstBy, filterHeaderLabel } from "./options";
 import {
   PROCESSORS_PATH,
   RANGES,
@@ -72,10 +72,6 @@ const BASELINE_OPTIONS: { value: BaselineFilter; label: string }[] = [
   { value: "all", label: "All releases" },
   { value: "current", label: "Current baselines" },
 ];
-const BASELINE_SHORT: Record<BaselineFilter, string> = {
-  all: "All",
-  current: "Current",
-};
 
 // §11 / Decision 11 — orbit rotation on mission change.
 // NAV_H matches the shell's fixed nav (§11: "H = 100vh − 64px").
@@ -227,8 +223,6 @@ interface FilterDropdownProps<T extends string> {
   label: string;
   value: T;
   options: { value: T; label: string; view: ProcessorsView }[];
-  /** Short text shown beside the label when closed (Baseline only). */
-  displayValue?: string;
   navigate: Navigate;
 }
 
@@ -239,9 +233,9 @@ function FilterDropdown<T extends string>({
   label,
   value,
   options,
-  displayValue,
   navigate,
 }: FilterDropdownProps<T>) {
+  const selectedLabel = filterHeaderLabel(options, value);
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDetailsElement>(null);
 
@@ -272,8 +266,10 @@ function FilterDropdown<T extends string>({
         className={`${s.fdropHead} ${x.summary}`}
         aria-controls={`${id}-menu`}
       >
-        <span className={s.fdropLabel}>{label}</span>
-        {displayValue && <span className={s.fdropVal}>{displayValue}</span>}
+        <span className={s.fdropLabel}>
+          <span className="sr-only">{label}: </span>
+          {selectedLabel}
+        </span>
         <ChevronDown />
       </summary>
 
@@ -902,11 +898,14 @@ export default function Explorer({
           id="mission-filter"
           label="Mission"
           value={activeMission}
-          options={pinnedFirst(MISSION_ORDER, activeMission).map((m) => ({
-            value: m,
-            label: MISSION_NAMES[m].toUpperCase(),
-            view: { ...view, mission: m, release: null },
-          }))}
+          options={pinnedFirstBy(
+            MISSION_ORDER.map((m) => ({
+              value: m,
+              label: MISSION_NAMES[m].toUpperCase(),
+              view: { ...view, mission: m, release: null },
+            })),
+            (o) => o.value === activeMission,
+          )}
           navigate={navigate}
         />
 
@@ -929,11 +928,13 @@ export default function Explorer({
           id="baseline-filter"
           label="Baseline"
           value={view.baseline}
-          displayValue={BASELINE_SHORT[view.baseline]}
-          options={BASELINE_OPTIONS.map((o) => ({
-            ...o,
-            view: { ...view, baseline: o.value },
-          }))}
+          options={pinnedFirstBy(
+            BASELINE_OPTIONS.map((o) => ({
+              ...o,
+              view: { ...view, baseline: o.value },
+            })),
+            (o) => o.value === view.baseline,
+          )}
           navigate={navigate}
         />
 

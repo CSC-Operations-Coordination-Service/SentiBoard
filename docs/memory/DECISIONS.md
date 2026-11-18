@@ -753,7 +753,16 @@ Content below the hero is no longer blocked by the transparent lower area of `.h
 
 **Context.** The mock-up renders Mission options in fixed `MISSION_ORDER`. Testers requested
 (DEVOCS-219) that the currently active mission appear first in the dropdown list.
-**Decision.** Deviates from the mock-up. `pinnedFirst()` (`options.ts`) moves the active mission
-to index 0 at render time. Order of the remaining missions is unchanged.
+**Decision.** Deviates from the mock-up. `pinnedFirstBy()` (`options.ts`) moves the active mission
+to index 0 at render time. Order of the remaining missions is unchanged. `pinnedFirstBy` now applies
+to both Mission and Baseline option objects (predicate-based; replaces the earlier primitive `pinnedFirst`).
 **Consequences.** Users see their current selection at the top without scrolling. The URL-state
 and navigation logic are unaffected.
+
+## 2026-11-18 — DEVOCS-219: Mission and Baseline dropdown headers show selected label
+
+**Context.** Testers requested that the closed (and open) dropdown header show the selected option's
+label ("SENTINEL-3", "ALL RELEASES") instead of the static filter name ("MISSION", "BASELINE").
+**Decision.** Deviates from the mock-up. `filterHeaderLabel()` (`options.ts`) derives the display
+text from the options array and the current URL value. The filter name stays available to screen
+readers via a `.sr-only` span ("Mission: SENTINEL-3").
