@@ -59,6 +59,8 @@
 
 @media (max-width: 900px) {
   .counter { width: clamp(90px, 22vw, 200px); }
+  /* §13: satellite column narrower at iPad and below. */
+  .split { grid-template-columns: 32% 68%; }
 }
 
 /* Filter toolbar: one centred wrapping row, 49 px line. §3, Decision 1. */
@@ -1285,10 +1287,16 @@ details[open] .fdropBody {
 }
 
 @media (max-width: 640px) {
-  .split { grid-template-columns: 34% 66%; }
+  /* §13 / DEVOCS-219: stack timeline above satellite at mobile. */
+  .split {
+    grid-template-columns: 100%;
+    grid-template-areas: "proc" "lcol";
+  }
 
-  /* §13: satellite column right padding 10 px at ≤640. */
-  .lcol { padding-right: 10px; }
+  .lcol { margin-top: 16px; padding-right: 0; }
+
+  /* Smaller satellite below the timeline at mobile. */
+  .orbit { width: clamp(100px, 28vw, 160px); }
 
   .sheet { padding-left: 4px; }
 
