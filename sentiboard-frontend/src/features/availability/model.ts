@@ -104,7 +104,12 @@ export function daysOf(from: Date, to: Date): Date[] {
   return days;
 }
 
-const FRAMES = 96;
+export const FRAMES = 96;
+
+/** Map a millisecond timestamp into the [0, 100] % range [from, to). */
+export function timeToPct(t: number, from: number, to: number): number {
+  return ((t - from) / (to - from)) * 100;
+}
 
 export interface Frame {
   item: Datatake;
@@ -112,24 +117,37 @@ export interface Frame {
   leftPct: number;  // 0–100: bar centre position along the strip
 }
 
-/** Fold a mission's datatakes (oldest first) into at most 96 evenly-spaced bars.
- *  When several datatakes share a bar, the worst one (lowest finalized completeness) wins.
- *  Planned/Processing rank 101 so they never hide a loss. */
-export function framesOf(list: Datatake[]): Frame[] {
-  const sorted = [...list].sort((a, b) => a.start.getTime() - b.start.getTime());
-  const nF = Math.min(sorted.length, FRAMES);
-  if (nF === 0) return [];
+/** Fold a mission's datatakes into time-based slots across a fixed 96-slot grid.
+ *  One frame per non-empty slot; empty slots produce no frame (gap in the strip).
+ *  When several datatakes share a slot, the worst one (lowest finalized completeness) wins.
+ *  Planned/Processing rank 101 so they never hide a loss.
+ *
+ *  from/to must be the strip domain: days[0] and days[last]+DAY_MS. */
+export function framesOf(list: Datatake[], from: Date, to: Date): Frame[] {
+  if (!list.length) return [];
+  const t0 = from.getTime();
+  const t1 = to.getTime();
+  const slotMs = (t1 - t0) / FRAMES;
   const rank = (d: Datatake) =>
     d.status === "Planned" || d.status === "Processing" ? 101 : d.completeness;
-  const frames: Frame[] = [];
-  for (let k = 0; k < nF; k++) {
-    const s0 = Math.floor((k * sorted.length) / nF);
-    const s1 = Math.floor(((k + 1) * sorted.length) / nF);
-    const grp = sorted.slice(s0, Math.max(s1, s0 + 1));
-    const item = grp.reduce((worst, d) => (rank(d) < rank(worst) ? d : worst));
-    frames.push({ item, n: grp.length, leftPct: ((k + 0.5) / nF) * 100 });
+  const buckets = new Map<number, { item: Datatake; n: number }>();
+  for (const d of list) {
+    const slot = Math.min(Math.floor((d.start.getTime() - t0) / slotMs), FRAMES - 1);
+    const existing = buckets.get(slot);
+    if (!existing) {
+      buckets.set(slot, { item: d, n: 1 });
+    } else {
+      existing.n++;
+      if (rank(d) < rank(existing.item)) existing.item = d;
+    }
   }
-  return frames;
+  return Array.from(buckets.entries())
+    .sort(([a], [b]) => a - b)
+    .map(([slot, { item, n }]) => ({
+      item,
+      n,
+      leftPct: ((slot + 0.5) / FRAMES) * 100,
+    }));
 }
 
 export interface AxisTick {
@@ -148,10 +166,11 @@ export function axisTicks(days: Date[]): AxisTick[] {
   const short = days.length <= 3;
   const n = short ? 4 : 5;
   return Array.from({ length: n + 1 }, (_, k) => {
-    const d = new Date(t0 + ((t1 - t0) * k) / n);
+    const t = t0 + ((t1 - t0) * k) / n;
+    const d = new Date(t);
     return {
       key: `tk-${k}`,
-      pct: (k / n) * 100,
+      pct: timeToPct(t, t0, t1),
       edge: k === 0 ? "first" : k === n ? "last" : "",
       label:
         `${pad(d.getUTCDate())}/${pad(d.getUTCMonth() + 1)}` +

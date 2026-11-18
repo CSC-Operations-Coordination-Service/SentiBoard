@@ -144,76 +144,124 @@ describe("daysOf", () => {
 // framesOf
 // ---------------------------------------------------------------------------
 
+// 1-day strip, 96 × 15-min slots (DAY_MS / 96 = 900 000 ms)
+const TF = DAY0;                                       // 2026-10-01T00:00:00Z
+const TT = new Date(DAY0.getTime() + DAY_MS);          // 2026-10-02T00:00:00Z
+const SLOT = DAY_MS / 96;                              // 900 000 ms = 15 min
+
 describe("framesOf", () => {
   it("returns empty for empty input", () => {
-    expect(framesOf([])).toHaveLength(0);
+    expect(framesOf([], TF, TT)).toHaveLength(0);
   });
 
-  it("returns one frame for a single datatake", () => {
-    const frames = framesOf([mkDtk({ status: "Acquired", completeness: 100 })]);
+  it("returns one frame for a single datatake at the start of the window", () => {
+    const frames = framesOf([mkDtk({ status: "Acquired", completeness: 100 })], TF, TT);
     expect(frames).toHaveLength(1);
-    expect(frames[0].leftPct).toBe(50);
+    expect(frames[0].leftPct).toBeCloseTo(0.5 / 96 * 100, 4);
     expect(frames[0].n).toBe(1);
   });
 
-  it("caps at 96 frames", () => {
-    const many = Array.from({ length: 200 }, (_, i) =>
+  it("caps at 96 frames (at most one frame per slot)", () => {
+    // 97 items spaced one slot apart: items 95 and 96 share slot 95 → 96 non-empty slots
+    const many = Array.from({ length: 97 }, (_, i) =>
       mkDtk({
         status: "Acquired",
         completeness: 100,
-        start: new Date(DAY0.getTime() + i * 60_000),
+        start: new Date(TF.getTime() + i * SLOT),
       }),
     );
-    expect(framesOf(many)).toHaveLength(96);
+    expect(framesOf(many, TF, TT)).toHaveLength(96);
   });
 
-  it("picks the worst item in a group (lowest finalized completeness)", () => {
-    const good = mkDtk({ status: "Acquired", completeness: 100, start: DAY0 });
-    const bad = mkDtk({
-      status: "Partial",
-      completeness: 30,
-      start: new Date(DAY0.getTime() + 1000),
-    });
-    // Two datatakes → one frame; the bad one must win
-    const frames = framesOf([good, bad]);
-    expect(frames).toHaveLength(2); // 2 datatakes → 2 frames (n ≤ 96)
-    // Both in one group only if we have more than FRAMES; here 2 < 96 so each gets its own
-    // Just test that the worst representative is chosen when folded
-    const manyGood = Array.from({ length: 50 }, (_, i) =>
-      mkDtk({
-        status: "Acquired",
-        completeness: 100,
-        start: new Date(DAY0.getTime() + i * 2000),
-      }),
-    );
-    const worstInGroup = mkDtk({
-      status: "Partial",
-      completeness: 10,
-      start: new Date(DAY0.getTime() + 50_000),
-    });
-    const folded = framesOf([...manyGood, worstInGroup]); // 51 items → 51 frames
-    expect(folded.some((f) => f.item.completeness === 10)).toBe(true);
+  it("two datatakes in the same slot → one frame, worst status wins", () => {
+    const good = mkDtk({ status: "Acquired", completeness: 95, start: TF });
+    const bad  = mkDtk({ status: "Partial",  completeness: 20, start: new Date(TF.getTime() + 100) });
+    const frames = framesOf([good, bad], TF, TT);
+    expect(frames).toHaveLength(1);
+    expect(frames[0].n).toBe(2);
+    expect(frames[0].item.completeness).toBe(20);
   });
 
   it("Planned and Processing rank 101 (never hide a loss)", () => {
-    // A Planned (rank 101) should NOT beat a Partial (rank = completeness < 101)
-    // when folded in the same group
-    const many = Array.from({ length: 97 }, (_, i) =>
-      mkDtk({
-        status: i < 48 ? "Planned" : "Partial",
-        completeness: i < 48 ? 0 : 20,
-        start: new Date(DAY0.getTime() + i * 60_000),
-      }),
+    const planned = mkDtk({ status: "Planned",  completeness: 0,  start: TF });
+    const partial = mkDtk({ status: "Partial",  completeness: 20, start: new Date(TF.getTime() + 100) });
+    const frames = framesOf([planned, partial], TF, TT);
+    expect(frames).toHaveLength(1);
+    expect(frames[0].item.status).toBe("Partial");
+    expect(frames[0].n).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// framesOf — time-based positioning
+// ---------------------------------------------------------------------------
+
+// 30-day strip matching a typical 30D range: Oct 20 → Nov 20 (same domain as axisTicks)
+const FROM30 = new Date("2026-10-20T00:00:00Z");
+const STRIP_TO = new Date("2026-11-20T00:00:00Z"); // days[last] + DAY_MS
+
+describe("framesOf — time-based positioning", () => {
+  it("empty list → []", () => {
+    expect(framesOf([], FROM30, STRIP_TO)).toHaveLength(0);
+  });
+
+  it("Nov 11 in a 30-day range lands at slot 68, leftPct ≈ 68.5/96*100", () => {
+    // Oct 20 → Nov 20 = 31 days; Nov 11 00:00 is day 22 → slot = floor(22*96/31) = 68
+    const dtk = mkDtk({
+      status: "Acquired", completeness: 100,
+      start: new Date("2026-11-11T00:00:00Z"),
+    });
+    const [f] = framesOf([dtk], FROM30, STRIP_TO);
+    expect(f.leftPct).toBeCloseTo(68.5 / 96 * 100, 4);
+    expect(f.leftPct).toBeGreaterThan(60);
+  });
+
+  it("'from' boundary → slot 0", () => {
+    const [f] = framesOf(
+      [mkDtk({ status: "Acquired", completeness: 100, start: FROM30 })],
+      FROM30, STRIP_TO,
     );
-    // With 97 items in 96 frames, at least one group has 2; a Planned+Partial pair must yield Partial
-    const frames = framesOf(many);
-    expect(frames.some((f) => f.item.status === "Partial")).toBe(true);
-    // No frame should choose Planned when a Partial is in the same group
-    for (const f of frames) {
-      if (f.n > 1) {
-        expect(f.item.status).not.toBe("Planned");
-      }
-    }
+    expect(f.leftPct).toBeCloseTo(0.5 / 96 * 100, 4);
+  });
+
+  it("just before 'to' (1 ms) → slot 95", () => {
+    const nearEnd = new Date(STRIP_TO.getTime() - 1);
+    const [f] = framesOf(
+      [mkDtk({ status: "Acquired", completeness: 100, start: nearEnd })],
+      FROM30, STRIP_TO,
+    );
+    expect(f.leftPct).toBeCloseTo(95.5 / 96 * 100, 4);
+  });
+
+  it("datatakes in slots 10 and 50 produce two frames with no frames in between (gap)", () => {
+    const slotMs = (STRIP_TO.getTime() - FROM30.getTime()) / 96;
+    const dtk10 = mkDtk({
+      status: "Acquired", completeness: 100,
+      start: new Date(FROM30.getTime() + 10 * slotMs + 100),
+    });
+    const dtk50 = mkDtk({
+      status: "Acquired", completeness: 100,
+      start: new Date(FROM30.getTime() + 50 * slotMs + 100),
+    });
+    const frames = framesOf([dtk10, dtk50], FROM30, STRIP_TO);
+    expect(frames).toHaveLength(2);
+    expect(frames[0].leftPct).toBeCloseTo(10.5 / 96 * 100, 4);
+    expect(frames[1].leftPct).toBeCloseTo(50.5 / 96 * 100, 4);
+  });
+
+  it("axisTicks and framesOf agree: a tick's time lands within half a slot", () => {
+    const days = Array.from({ length: 31 }, (_, i) => new Date(FROM30.getTime() + i * DAY_MS));
+    const ticks = axisTicks(days);
+    const t0 = days[0].getTime();
+    const t1 = days[days.length - 1].getTime() + DAY_MS;
+    const tick = ticks[1]; // second tick at 20% of range
+    const tickTime = new Date(t0 + (tick.pct / 100) * (t1 - t0));
+    const [f] = framesOf(
+      [mkDtk({ status: "Acquired", completeness: 100, start: tickTime })],
+      days[0],
+      new Date(t1),
+    );
+    expect(Math.abs(f.leftPct - tick.pct)).toBeLessThan((100 / 96) / 2);
   });
 });
 

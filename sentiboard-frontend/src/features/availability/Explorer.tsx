@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { Reveal } from "@/components/Reveal";
 import {
   DAY_MS,
+  FRAMES,
   MISSION_COLOR,
   MISSION_DISPLAY,
   MISSION_ORDER,
@@ -461,16 +462,17 @@ export default function Explorer({
 
   // Strip lanes: one per active mission, bars folded by framesOf; axis ticks shared across all rows
   const ticks = useMemo(() => axisTicks(days), [days]);
-  const lanes = useMemo(
-    () =>
-      MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).map((missionId) => {
-        const own = matching.filter((d) => d.missionId === missionId);
-        const frames = framesOf(own);
-        const tw = frames.length ? 76 / frames.length : 2;
-        return { missionId, frames, tw };
-      }),
-    [matching, view.missionsOff],
-  );
+  const lanes = useMemo(() => {
+    const stripFrom = days[0] ?? new Date(0);
+    const last = days[days.length - 1];
+    const stripTo = new Date((last ?? new Date(0)).getTime() + DAY_MS);
+    return MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).map((missionId) => {
+      const own = matching.filter((d) => d.missionId === missionId);
+      const frames = framesOf(own, stripFrom, stripTo);
+      const tw = 76 / FRAMES;
+      return { missionId, frames, tw };
+    });
+  }, [matching, view.missionsOff, days]);
 
   // ---------------------------------------------------------------------------
   // Datatake card lifecycle
