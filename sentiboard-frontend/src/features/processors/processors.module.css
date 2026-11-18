@@ -1294,6 +1294,33 @@ details[open] .fdropBody {
 
   /* Restore today's mobile counter width so 375px stays 2×2. */
   .counter { width: clamp(130px, 44vw, 200px); }
+
+  /* Filter bar: single column at mobile. */
+  .filters { justify-content: flex-start; }
+  .fdrop { width: 100%; }
+  .frange { width: 100%; }
+  .search { flex: 1; width: auto; }
+}
+
+/* Filter bar: iPad two-row aligned grid (641px–999px).
+   At ≥1000px the flex default fits all five controls in one row.
+   The auto middle column sizes to .frange (~100 px); column-gap 26px and row-gap 2px
+   come from the base .filters { gap: 2px 26px } which applies in grid too. */
+@media (min-width: 641px) and (max-width: 999px) {
+  .filters {
+    display: grid;
+    grid-template-columns: 220px auto 220px;
+    justify-content: center;
+    align-items: start;
+  }
+  .search {
+    grid-column: 1 / 3;
+    width: auto;
+  }
+  .freset {
+    grid-column: 3;
+    justify-self: end;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
