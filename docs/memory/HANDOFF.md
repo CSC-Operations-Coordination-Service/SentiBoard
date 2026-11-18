@@ -616,6 +616,13 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
   (`["S1_L0:1.0", "S1_L0:1.1"]`) would still give two releases with the same id. Not present in
   the feed on 2026-10-22; decide the intended meaning before handling it.
 
+## Processors — known issues (2026-11-18)
+
+- **Without JS the release detail pane never shows.** The `.focus` class is set only by
+  `setFocusClass(true)` in a client-side `useEffect` (`Explorer.tsx:590-628`); the detail pane
+  stays `display:none` without it. This conflicts with the no-JS rule (AGENTS.md §5). Pre-existing;
+  not fixed in DEVOCS-219.
+
 ## Frontend — known issues (2026-10-21)
 
 - **Payload doubled by Partial Prefetching.** With `partialPrefetching: true` (create-next-app

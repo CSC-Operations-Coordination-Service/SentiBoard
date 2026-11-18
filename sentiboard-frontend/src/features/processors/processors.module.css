@@ -1308,6 +1308,14 @@ details[open] .fdropBody {
   .fdrop { width: 100%; }
   .frange { width: 100%; }
   .search { flex: 1; width: auto; }
+
+  /* DEVOCS-219 ITEM D: detail replaces the timeline while a release is open. */
+  .split.focus { grid-template-areas: "detail"; }
+  .split.focus .procpane { display: none; }
+
+  /* scrollIntoView offset: keep the fixed nav (--nav-h = 68px) clear. */
+  .detailpane { scroll-margin-top: var(--nav-h); }
+  .procpane   { scroll-margin-top: var(--nav-h); }
 }
 
 /* Filter bar: iPad two-row aligned grid (641px–999px).

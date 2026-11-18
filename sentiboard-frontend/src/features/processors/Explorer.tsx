@@ -34,6 +34,7 @@ import {
   type ReleaseRecord,
 } from "./model";
 import { pinnedFirstBy, filterHeaderLabel } from "./options";
+import { shouldSkipFlip } from "./flip";
 import {
   DEFAULT_VIEW,
   PROCESSORS_PATH,
@@ -599,7 +600,18 @@ export default function Explorer({
       if (procpaneRef.current)
         flipFrom.current = procpaneRef.current.getBoundingClientRect();
       // Deferred so the setState doesn't cascade directly into useLayoutEffect([focusClass]).
-      t1 = setTimeout(() => setFocusClass(true), 0);
+      t1 = setTimeout(() => {
+        setFocusClass(true);
+        // On mobile (≤640px), scroll the detail pane into view after the CSS grid switches.
+        if (window.matchMedia("(max-width: 640px)").matches) {
+          requestAnimationFrame(() => {
+            detailRef.current?.scrollIntoView({
+              behavior: reduce ? "auto" : "smooth",
+              block: "start",
+            });
+          });
+        }
+      }, 0);
       const t1b = setTimeout(() => setDetailOn(true), reduce ? 0 : 180);
       return () => {
         clearTimeout(t1);
@@ -615,6 +627,15 @@ export default function Explorer({
           setFocusClass(false);
           setLcolEnter(true);
           t3 = setTimeout(() => setLcolEnter(false), 560);
+          // On mobile (≤640px), scroll the timeline back into view after the grid reverts.
+          if (window.matchMedia("(max-width: 640px)").matches) {
+            requestAnimationFrame(() => {
+              procpaneRef.current?.scrollIntoView({
+                behavior: reduce ? "auto" : "smooth",
+                block: "start",
+              });
+            });
+          }
         },
         reduce ? 0 : 280,
       );
@@ -633,6 +654,10 @@ export default function Explorer({
     const el = procpaneRef.current;
     if (!el) return;
     const after = el.getBoundingClientRect();
+    if (shouldSkipFlip(flipFrom.current, after)) {
+      flipFrom.current = null;
+      return;
+    }
     const dx = flipFrom.current.left - after.left;
     const dy = flipFrom.current.top - after.top;
     flipFrom.current = null;

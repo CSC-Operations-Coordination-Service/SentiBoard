@@ -113,3 +113,12 @@ text from the options array and URL state. The filter name stays available to sc
 
 Reset link added to the Processors filter bar, always visible, same pattern and style as Data
 Availability; resets all filters to `DEFAULT_VIEW` (Mission → Sentinel-1).
+
+## 2026-11-18 — DEVOCS-219 ITEM D: detail replaces timeline at mobile while a release is open
+
+At ≤640px, when a release is open (`.split.focus`), the timeline is hidden (`display:none`) and
+the detail pane fills the full column (`grid-template-areas: "detail"`). "Overview" closes the
+detail and restores the timeline. Scroll: on open the detail pane is scrolled into view (mobile
+only, `scroll-margin-top: var(--nav-h)` offsets the fixed nav); on close the timeline is scrolled
+into view. FLIP guard (`shouldSkipFlip` in `flip.ts`) skips the FLIP when either rect is zero
+(element was hidden). At 641px+ the stacked layout (timeline above detail) is unchanged.
