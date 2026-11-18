@@ -186,6 +186,8 @@ details[open] .fdropBody {
 }
 
 .frangeBtn {
+  display: flex;
+  align-items: center;
   height: 49px;
   min-height: 49px;
   padding: 0 1px;
