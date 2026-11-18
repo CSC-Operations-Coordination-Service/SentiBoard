@@ -97,6 +97,11 @@
   justify-content: flex-end;              /* was: center */
   gap: clamp(12px, 1.6vh, 22px);
   padding: 12px var(--hero-pad) clamp(100px, 18vh, 290px); /* was: var(--hero-overlap) */
+  pointer-events: none;                   /* transparent lower area must not swallow clicks; same pattern as .hero-after */
+}
+
+.hero-in > * {
+  pointer-events: auto;
 }
 
 .breadcrumb {

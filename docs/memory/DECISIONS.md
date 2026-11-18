@@ -740,6 +740,15 @@ absolute path, which exists only on one machine.
 **Decision.** Every page's *-prototype-ref.md is copied to docs/design/ when the page is ported.
 **Consequences.** Plans, HANDOFF and DECISIONS cite docs/design/... only.
 
+## 2026-11-18 — DEVOCS-219: .hero-in made click-through (pointer-events)
+
+**Context.** `.hero-in`'s transparent lower area covered page content on wide screens (hero height
+follows aspect-ratio); same pattern as `.hero-after`. Affects all pages using PageHeader.
+**Decision.** Added `pointer-events: none` to `.hero-in` and `pointer-events: auto` to
+`.hero-in > *`, matching the established `.hero-after` pattern.
+**Consequences.** Title, lede, and DESCRIPTION button (direct children) remain fully interactive.
+Content below the hero is no longer blocked by the transparent lower area of `.hero-in`.
+
 ## 2026-11-18 — Processors Mission filter: selected mission listed first
 
 **Context.** The mock-up renders Mission options in fixed `MISSION_ORDER`. Testers requested
