@@ -35,6 +35,7 @@ import {
 } from "./model";
 import { pinnedFirstBy, filterHeaderLabel } from "./options";
 import {
+  DEFAULT_VIEW,
   PROCESSORS_PATH,
   RANGES,
   parseView,
@@ -971,6 +972,16 @@ export default function Explorer({
             onChange={(e) => changeQuery(e.target.value)}
           />
         </form>
+
+        {/* Reset: navigates to the default view. */}
+        <ViewLink
+          view={DEFAULT_VIEW}
+          mode="replace"
+          navigate={navigate}
+          className={s.freset}
+        >
+          Reset
+        </ViewLink>
       </div>
 
       {/* Three panes: satellite, timeline, and the release detail. The satellite and the detail

@@ -253,6 +253,24 @@ details[open] .fdropBody {
   filter: invert(0.6);
 }
 
+/* Reset link: same as availability .freset. */
+.freset {
+  display: flex;
+  align-items: center;
+  height: 49px;
+  padding: 1px 6px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text);
+  transition: color 0.2s ease;
+}
+
 /* Two-area split: satellite (lcol) | timeline (proc) in overview,
    timeline (proc) | detail in focus. Decision 1, 2, 12, §5.1. */
 .split {

@@ -108,3 +108,8 @@ Mission and Baseline dropdown headers show the selected option's label ("SENTINE
 / "CURRENT BASELINES") instead of the filter name. `filterHeaderLabel()` in `options.ts` derives the
 text from the options array and URL state. The filter name stays available to screen readers via a
 `.sr-only` span. Deviates from the mock-up; requested by testers. Decision recorded in DECISIONS.md.
+
+## 2026-11-18 — DEVOCS-219: Reset link added, always visible, same pattern and style as Data Availability
+
+Reset link added to the Processors filter bar, always visible, same pattern and style as Data
+Availability; resets all filters to `DEFAULT_VIEW` (Mission → Sentinel-1).

@@ -78,6 +78,11 @@ describe("viewParams / viewHref", () => {
     expect(viewHref(DEFAULT_VIEW)).toBe("/processors");
   });
 
+  it("DEFAULT_VIEW is the Reset target: all fields at their defaults and href is clean", () => {
+    expect(DEFAULT_VIEW).toEqual({ mission: "1", range: "ALL", baseline: "all", q: "", release: null });
+    expect(viewHref(DEFAULT_VIEW)).toBe("/processors");
+  });
+
   it("writes every non-default param", () => {
     const v = view({ mission: "5P", range: "1Y", baseline: "current", q: "ch4", release: "id1:S5P_L2_CH4" });
     expect(Object.fromEntries(viewParams(v))).toEqual({

@@ -635,6 +635,11 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
 
 ## Events — known issues (2026-10-23)
 
+- **Reset button does not follow DA/Processors pattern.** Events Reset is a JS-only `<button>` shown
+  only when filters are dirty (`events/Explorer.tsx:1022-1039`, `events.module.css:404`). It should
+  follow the DA/Processors pattern: always visible, `ViewLink` to `DEFAULT_VIEW`, styled with
+  `.freset`. Separate bug; do not change Events while the Processors bugfix branch is open.
+
 - **Filter redesign (2026-10-23 rev 2)**: Filters are now multi-select toggles (prototype style).
   URL model changed from `?category=&mission=&satellite=` to `?typesOff=&missionsOff=&satellitesOff=`;
   legacy URLs are converted on parse. Visual check needed: toggle items, "All"/"N/total" counter,
