@@ -58,7 +58,7 @@
 }
 
 @media (max-width: 900px) {
-  .counter { width: clamp(130px, 44vw, 200px); }
+  .counter { width: clamp(90px, 22vw, 200px); }
 }
 
 /* Filter toolbar: one centred wrapping row, 49 px line. §3, Decision 1. */
@@ -1291,6 +1291,9 @@ details[open] .fdropBody {
   .lcol { padding-right: 10px; }
 
   .sheet { padding-left: 4px; }
+
+  /* Restore today's mobile counter width so 375px stays 2×2. */
+  .counter { width: clamp(130px, 44vw, 200px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
