@@ -623,14 +623,16 @@ Done on bugfix/DEVOCS-219-frontend-bugs:
   from mock-ups AcquisitionsLadder.tsx:121), n/m counts removed
 - Dropdown chevron rotates via aria-expanded
 - Timeline bars placed by time: 96 time slots, timeToPct shared with axisTicks
-Next:
-1. Filter (Explorer.tsx ~438) uses winFrom/winTo, but the axis uses
-   stripFrom/stripTo, which gives a fake empty first day. Filter must use
-   [stripFrom, stripTo).
-2. Add "3M" range tab after 30D = same window as legacy last-quarter.
-3. Default range 7D instead of 30D (legacy default was 'week').
+- Filter uses [stripFrom, stripTo) — shared useMemo from days[], matching the
+  strip axis domain; winFrom/winTo only drive daysOf/pager/custom-date inputs
+- "3M" range tab added (RangeId 90, setUTCMonth(-3) in computeWindow, "Last 3
+  months" label); tabs now render [1D, 7D, 30D, 3M, Custom]
+- Default range changed to 7D (legacy default was 'week'); range=7 omitted
+  from URL as default, range=30/90 explicit
 Decisions: DA only (Processors/Events have their own periods). Datatake
 ID search stays within the selected period (no widening to 3M).
+3M = calendar months (setUTCMonth −3), id 90. The backend fetch
+(computeDataWindow, model.ts:267) starts at today−3 months, so it covers it.
 Later: Events needs the same All/summary/chevron pattern. Processors
 chevron is static (processors.module.css:129 comment now outdated).
 Backend fetches 3 months, client discards most (perf).
