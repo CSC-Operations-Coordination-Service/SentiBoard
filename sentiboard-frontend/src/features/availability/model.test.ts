@@ -10,6 +10,10 @@ import {
   kpiFmt,
   computeDataWindow,
   DAY_MS,
+  MISSION_COLOR,
+  MISSION_ORDER,
+  STATUS_COLOR,
+  STATUS_ORDER,
   type Datatake,
 } from "./model";
 
@@ -446,5 +450,23 @@ describe("cardSides (real ACQ/PUB values)", () => {
   it("without real values, falls back to the derived sides", () => {
     const { pub } = cardSides(mkDtk({ status: "Partial", completeness: 80 }));
     expect(pub.pct).toBe(68); // floor(80 × 0.85), the mock-up rule
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Color completeness
+// ---------------------------------------------------------------------------
+
+describe("color completeness", () => {
+  it("every Status has a STATUS_COLOR entry", () => {
+    for (const st of STATUS_ORDER) {
+      expect(STATUS_COLOR[st], `missing STATUS_COLOR for ${st}`).toBeTruthy();
+    }
+  });
+
+  it("every MissionId has a MISSION_COLOR entry", () => {
+    for (const m of MISSION_ORDER) {
+      expect(MISSION_COLOR[m], `missing MISSION_COLOR for ${m}`).toBeTruthy();
+    }
   });
 });

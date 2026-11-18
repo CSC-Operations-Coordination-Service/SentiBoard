@@ -635,6 +635,12 @@
   gap: 10px;
 }
 
+.fsummaryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .fdropHead svg {
   flex-shrink: 0;
   color: color-mix(in srgb, var(--text) 85%, transparent);
@@ -700,7 +706,8 @@
   transition: color 180ms ease, opacity 180ms ease;
 }
 
-.fitem i {
+.fitem i,
+.fsummaryChip i {
   display: block;
   width: 8px;
   height: 8px;

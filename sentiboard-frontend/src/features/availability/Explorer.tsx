@@ -19,6 +19,7 @@ import { createPortal } from "react-dom";
 import { Reveal } from "@/components/Reveal";
 import {
   DAY_MS,
+  MISSION_COLOR,
   MISSION_DISPLAY,
   MISSION_ORDER,
   SATELLITES_OF,
@@ -50,7 +51,7 @@ import {
 import {
   isAllSelected,
   selectAll,
-  selectedLabel,
+  selectedIds,
   toggleOption,
 } from "./filter-logic";
 import { withBasePath } from "@/lib/asset";
@@ -590,17 +591,9 @@ export default function Explorer({
     [view],
   );
 
-  // Selected labels shown below each dropdown trigger (null = all on = hide the label)
-  const missionSelLabel = selectedLabel(
-    MISSION_ORDER,
-    view.missionsOff,
-    (m) => MISSION_DISPLAY[m],
-  );
-  const statusSelLabel = selectedLabel(
-    STATUS_ORDER,
-    view.statusesOff,
-    (st) => st,
-  );
+  // Selected ids for the summary row (null = all on = hide the row)
+  const missionIds = selectedIds(MISSION_ORDER, view.missionsOff);
+  const statusIds = selectedIds(STATUS_ORDER, view.statusesOff);
 
   // Range heading and pager label
   const rangeHeading =
@@ -1020,18 +1013,36 @@ export default function Explorer({
       </div>
 
       {/* Filter summary row: shown only when at least one dropdown is partial */}
-      {(missionSelLabel !== null || statusSelLabel !== null) && (
+      {(missionIds !== null || statusIds !== null) && (
         <div className={s.fsummary} aria-live="polite">
-          {missionSelLabel !== null && (
+          {missionIds !== null && (
             <span className={s.fsummaryItem}>
               <span className={s.fdropLabel}>Mission:</span>
-              <span className={s.fdropVal}>{missionSelLabel}</span>
+              {missionIds.length === 0 ? (
+                <span className={s.fdropVal}>none</span>
+              ) : (
+                missionIds.map((m) => (
+                  <span key={m} className={s.fsummaryChip}>
+                    <i aria-hidden style={{ background: MISSION_COLOR[m] } as CSSProperties} />
+                    <span className={s.fdropVal}>{MISSION_DISPLAY[m]}</span>
+                  </span>
+                ))
+              )}
             </span>
           )}
-          {statusSelLabel !== null && (
+          {statusIds !== null && (
             <span className={s.fsummaryItem}>
               <span className={s.fdropLabel}>Status:</span>
-              <span className={s.fdropVal}>{statusSelLabel}</span>
+              {statusIds.length === 0 ? (
+                <span className={s.fdropVal}>none</span>
+              ) : (
+                statusIds.map((st) => (
+                  <span key={st} className={s.fsummaryChip}>
+                    <i aria-hidden style={{ background: STATUS_COLOR[st] } as CSSProperties} />
+                    <span className={s.fdropVal}>{st}</span>
+                  </span>
+                ))
+              )}
             </span>
           )}
         </div>

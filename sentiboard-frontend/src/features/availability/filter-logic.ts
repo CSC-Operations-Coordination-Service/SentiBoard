@@ -25,21 +25,14 @@ export function isAllSelected<T extends string>(off: ReadonlySet<T>): boolean {
 }
 
 /**
- * Returns a comma-separated string of the ON options' display names, in `order`.
+ * Returns the ON option ids in `order`.
  * Returns null when every option is on (nothing to show).
- * Returns "none" when every option is off.
- *
- * @param order   All valid option ids in display order.
- * @param off     The set of ids that are currently off.
- * @param displayName  Maps an id to its human-readable label.
+ * Returns [] when every option is off.
  */
-export function selectedLabel<T extends string>(
+export function selectedIds<T extends string>(
   order: readonly T[],
   off: ReadonlySet<T>,
-  displayName: (id: T) => string,
-): string | null {
+): T[] | null {
   if (off.size === 0) return null;
-  const on = order.filter((id) => !off.has(id));
-  if (on.length === 0) return "none";
-  return on.map(displayName).join(", ");
+  return order.filter((id) => !off.has(id));
 }

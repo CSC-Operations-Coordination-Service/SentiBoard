@@ -3,10 +3,9 @@ import {
   toggleOption,
   selectAll,
   isAllSelected,
-  selectedLabel,
+  selectedIds,
 } from "./filter-logic";
 
-const display = (id: string) => id.toUpperCase();
 const ORDER = ["a", "b", "c"] as const;
 type Opt = (typeof ORDER)[number];
 
@@ -39,29 +38,21 @@ describe("isAllSelected", () => {
   });
 });
 
-describe("selectedLabel", () => {
+describe("selectedIds", () => {
   it("returns null when nothing is off (all on)", () => {
-    expect(selectedLabel(ORDER, new Set<Opt>(), display)).toBeNull();
+    expect(selectedIds(ORDER, new Set<Opt>())).toBeNull();
   });
 
-  it("returns the remaining ON names when one option is off", () => {
-    // "a" is off → b and c are on
-    expect(selectedLabel(ORDER, new Set<Opt>(["a"]), display)).toBe("B, C");
+  it("returns the ON ids in order when one option is off", () => {
+    expect(selectedIds(ORDER, new Set<Opt>(["a"]))).toEqual(["b", "c"]);
   });
 
   it("follows `order`, not Set insertion order", () => {
-    // insert c then a into the off-set; on set is {b} at index 1 — just b
     const off = new Set<Opt>(["c", "a"]);
-    expect(selectedLabel(ORDER, off, display)).toBe("B");
+    expect(selectedIds(ORDER, off)).toEqual(["b"]);
   });
 
-  it("uses the displayName mapping", () => {
-    const named = (id: Opt) => ({ a: "Alpha", b: "Beta", c: "Gamma" }[id]);
-    expect(selectedLabel(ORDER, new Set<Opt>(["a"]), named)).toBe("Beta, Gamma");
-  });
-
-  it('returns "none" when every option is off', () => {
-    const allOff = new Set<Opt>(["a", "b", "c"]);
-    expect(selectedLabel(ORDER, allOff, display)).toBe("none");
+  it("returns [] when every option is off", () => {
+    expect(selectedIds(ORDER, new Set<Opt>(["a", "b", "c"]))).toEqual([]);
   });
 });
