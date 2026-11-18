@@ -582,6 +582,7 @@ export default function Explorer({
   const procpaneRef = useRef<HTMLElement>(null);
   const detailRef = useRef<HTMLElement>(null);
   const flipFrom = useRef<DOMRect | null>(null);
+  const prevDetailRef = useRef(false);
   const [focusClass, setFocusClass] = useState(false);
   const [detailOn, setDetailOn] = useState(false);
   const [lcolEnter, setLcolEnter] = useState(false);
@@ -592,6 +593,12 @@ export default function Explorer({
     const reduce = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
+    // Matches the ≤1080px breakpoint where detail replaces the timeline (ITEM D).
+    const isNarrow = window.matchMedia("(max-width: 1080px)").matches;
+    // Track whether detail was open on the previous run so scroll-on-close
+    // doesn't fire on first mount (when isDetail starts false).
+    const wasDetail = prevDetailRef.current;
+    prevDetailRef.current = isDetail;
     let t1: ReturnType<typeof setTimeout> | undefined;
     let t2: ReturnType<typeof setTimeout> | undefined;
     let t3: ReturnType<typeof setTimeout> | undefined;
@@ -602,8 +609,8 @@ export default function Explorer({
       // Deferred so the setState doesn't cascade directly into useLayoutEffect([focusClass]).
       t1 = setTimeout(() => {
         setFocusClass(true);
-        // On mobile (≤640px), scroll the detail pane into view after the CSS grid switches.
-        if (window.matchMedia("(max-width: 640px)").matches) {
+        // Scroll the detail pane into view after the CSS grid switches (≤1080px only).
+        if (isNarrow) {
           requestAnimationFrame(() => {
             detailRef.current?.scrollIntoView({
               behavior: reduce ? "auto" : "smooth",
@@ -627,8 +634,9 @@ export default function Explorer({
           setFocusClass(false);
           setLcolEnter(true);
           t3 = setTimeout(() => setLcolEnter(false), 560);
-          // On mobile (≤640px), scroll the timeline back into view after the grid reverts.
-          if (window.matchMedia("(max-width: 640px)").matches) {
+          // Scroll the timeline back into view after the grid reverts (≤1080px only,
+          // and only when the detail was actually open before this run).
+          if (isNarrow && wasDetail) {
             requestAnimationFrame(() => {
               procpaneRef.current?.scrollIntoView({
                 behavior: reduce ? "auto" : "smooth",

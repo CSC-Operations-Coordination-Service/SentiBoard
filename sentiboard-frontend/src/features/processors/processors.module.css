@@ -1271,10 +1271,12 @@ details[open] .fdropBody {
 
   .sheet { padding-left: 12px; }
 
+  /* DEVOCS-219 ITEM D: detail replaces the timeline while a release is open (≤1080px). */
   .split.focus {
     grid-template-columns: 100%;
-    grid-template-areas: "proc" "detail";
+    grid-template-areas: "detail";
   }
+  .split.focus .procpane { display: none; }
 
   /* In the stacked focus layout, hide the satellite entirely (no space for it). */
   .split.focus .lcol { display: none; }
@@ -1284,6 +1286,10 @@ details[open] .fdropBody {
   .split.focus .detailpane {
     padding: 4px 0 48px 0;
   }
+
+  /* scrollIntoView offset: keep the fixed nav (--nav-h = 68px) clear. */
+  .detailpane { scroll-margin-top: var(--nav-h); }
+  .procpane   { scroll-margin-top: var(--nav-h); }
 }
 
 @media (max-width: 640px) {
@@ -1309,13 +1315,6 @@ details[open] .fdropBody {
   .frange { width: 100%; }
   .search { flex: 1; width: auto; }
 
-  /* DEVOCS-219 ITEM D: detail replaces the timeline while a release is open. */
-  .split.focus { grid-template-areas: "detail"; }
-  .split.focus .procpane { display: none; }
-
-  /* scrollIntoView offset: keep the fixed nav (--nav-h = 68px) clear. */
-  .detailpane { scroll-margin-top: var(--nav-h); }
-  .procpane   { scroll-margin-top: var(--nav-h); }
 }
 
 /* Filter bar: iPad two-row aligned grid (641px–999px).
