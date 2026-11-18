@@ -19,7 +19,7 @@ function params(qs: string) {
 describe("parseView defaults", () => {
   it("parses empty params as the default view", () => {
     const v = parseView(params(""));
-    expect(v.range).toBe(30);
+    expect(v.range).toBe(7);
     expect(v.offset).toBe(0);
     expect(v.customFrom).toBeNull();
     expect(v.customTo).toBeNull();
@@ -45,6 +45,10 @@ describe("parseView range", () => {
 
   it("parses range=30", () => {
     expect(parseView(params("range=30")).range).toBe(30);
+  });
+
+  it("parses range=90", () => {
+    expect(parseView(params("range=90")).range).toBe(90);
   });
 
   it("parses range=custom as null", () => {
@@ -157,8 +161,12 @@ describe("viewParams", () => {
     expect(p.toString()).toBe("");
   });
 
-  it("includes range when not 30", () => {
-    expect(viewParams({ ...DEFAULT_VIEW, range: 7 }).get("range")).toBe("7");
+  it("includes range when not 7 (default)", () => {
+    expect(viewParams({ ...DEFAULT_VIEW, range: 30 }).get("range")).toBe("30");
+  });
+
+  it("includes range=90", () => {
+    expect(viewParams({ ...DEFAULT_VIEW, range: 90 }).get("range")).toBe("90");
   });
 
   it("encodes custom range as 'custom'", () => {
@@ -216,8 +224,8 @@ describe("viewHref", () => {
   });
 
   it("appends a query string for a non-default view", () => {
-    const href = viewHref({ ...DEFAULT_VIEW, range: 7 });
-    expect(href).toBe(`${AVAILABILITY_PATH}?range=7`);
+    const href = viewHref({ ...DEFAULT_VIEW, range: 30 });
+    expect(href).toBe(`${AVAILABILITY_PATH}?range=30`);
   });
 });
 

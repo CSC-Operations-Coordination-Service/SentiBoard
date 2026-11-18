@@ -148,9 +148,9 @@ describe("buildPageContext — acquisitions", () => {
 });
 
 describe("buildPageContext — availability", () => {
-  it("sends the default 30-day window", () => {
+  it("sends the default 7-day window", () => {
     const c = ctx("/availability");
-    expect(c.filters).toMatchObject({ range_days: 30, missions_off: [], statuses_off: [] });
+    expect(c.filters).toMatchObject({ range_days: 7, missions_off: [], statuses_off: [] });
     expect(c.filters).not.toHaveProperty("offset_days");
     expect(c.filters).not.toHaveProperty("from");
   });

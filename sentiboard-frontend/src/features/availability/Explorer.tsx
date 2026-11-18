@@ -113,6 +113,11 @@ function computeWindow(
     return { from, to };
   }
   const to = new Date(windowLast.getTime() - view.offset * DAY_MS);
+  if (view.range === 90) {
+    const from = new Date(to);
+    from.setUTCMonth(from.getUTCMonth() - 3);
+    return { from, to };
+  }
   const from = new Date(to.getTime() - view.range * DAY_MS);
   return { from, to };
 }
@@ -699,7 +704,7 @@ export default function Explorer({
             <h2>{rangeHeading}</h2>
           </div>
           <div className={s.frange} role="group" aria-label="Time range">
-            {([1, 7, 30] as RangeId[]).map((id) => (
+            {([1, 7, 30, 90] as RangeId[]).map((id) => (
               <ViewLink
                 key={id}
                 view={{
@@ -714,7 +719,7 @@ export default function Explorer({
                 role="button"
                 aria-pressed={view.range === id}
               >
-                {id}D
+                {id === 90 ? "3M" : `${id}D`}
               </ViewLink>
             ))}
             <ViewLink

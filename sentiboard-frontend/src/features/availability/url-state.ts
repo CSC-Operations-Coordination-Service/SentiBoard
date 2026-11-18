@@ -18,7 +18,7 @@
 import { MISSION_ORDER, STATUS_ORDER, type MissionId, type Status } from "./model";
 import { type ParamSource, reader, parseOffSet } from "@/lib/url-params";
 
-export type RangeId = 1 | 7 | 30;
+export type RangeId = 1 | 7 | 30 | 90;
 
 export interface AvailabilityView {
   range: RangeId | null; // null = custom
@@ -32,7 +32,7 @@ export interface AvailabilityView {
 }
 
 export const DEFAULT_VIEW: AvailabilityView = {
-  range: 30,
+  range: 7,
   offset: 0,
   customFrom: null,
   customTo: null,
@@ -44,7 +44,7 @@ export const DEFAULT_VIEW: AvailabilityView = {
 
 export const AVAILABILITY_PATH = "/availability";
 
-const VALID_RANGES = new Set<number>([1, 7, 30]);
+const VALID_RANGES = new Set<number>([1, 7, 30, 90]);
 const MISSION_ID_SET = new Set<MissionId>(MISSION_ORDER);
 const STATUS_SET = new Set<Status>(STATUS_ORDER);
 
@@ -121,5 +121,6 @@ export const RANGE_LABEL: Record<string, string> = {
   "1": "Last 24 hours",
   "7": "Last 7 days",
   "30": "Last 30 days",
+  "90": "Last 3 months",
   custom: "Custom range",
 };
