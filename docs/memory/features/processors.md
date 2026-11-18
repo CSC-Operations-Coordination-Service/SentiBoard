@@ -94,3 +94,9 @@ Verified on 2026-10-21 against the local backend (228 records) unless noted.
 
 See [HANDOFF.md](../HANDOFF.md): backend data issues, payload doubled by Partial Prefetching,
 cold-cache latency.
+
+## 2026-11-18 — DEVOCS-219: Mission filter selected-first (b)
+
+Selected Mission is listed first in the dropdown options. `pinnedFirst()` in `options.ts` moves
+the active mission to index 0; order of the remaining missions is unchanged. Deviates from the
+mock-up (fixed `MISSION_ORDER`); requested by testers. Decision recorded in DECISIONS.md.

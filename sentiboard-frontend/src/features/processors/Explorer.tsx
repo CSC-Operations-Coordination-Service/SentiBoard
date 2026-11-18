@@ -33,6 +33,7 @@ import {
   type ProcessorNotes,
   type ReleaseRecord,
 } from "./model";
+import { pinnedFirst } from "./options";
 import {
   PROCESSORS_PATH,
   RANGES,
@@ -901,7 +902,7 @@ export default function Explorer({
           id="mission-filter"
           label="Mission"
           value={activeMission}
-          options={MISSION_ORDER.map((m) => ({
+          options={pinnedFirst(MISSION_ORDER, activeMission).map((m) => ({
             value: m,
             label: MISSION_NAMES[m].toUpperCase(),
             view: { ...view, mission: m, release: null },

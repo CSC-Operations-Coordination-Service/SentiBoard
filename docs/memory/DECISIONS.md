@@ -739,3 +739,12 @@ sent whole to the client Explorer: payload size is open (HANDOFF.md).
 absolute path, which exists only on one machine.
 **Decision.** Every page's *-prototype-ref.md is copied to docs/design/ when the page is ported.
 **Consequences.** Plans, HANDOFF and DECISIONS cite docs/design/... only.
+
+## 2026-11-18 — Processors Mission filter: selected mission listed first
+
+**Context.** The mock-up renders Mission options in fixed `MISSION_ORDER`. Testers requested
+(DEVOCS-219) that the currently active mission appear first in the dropdown list.
+**Decision.** Deviates from the mock-up. `pinnedFirst()` (`options.ts`) moves the active mission
+to index 0 at render time. Order of the remaining missions is unchanged.
+**Consequences.** Users see their current selection at the top without scrolling. The URL-state
+and navigation logic are unaffected.
