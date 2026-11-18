@@ -616,6 +616,27 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
   (`["S1_L0:1.0", "S1_L0:1.1"]`) would still give two releases with the same id. Not present in
   the feed on 2026-10-22; decide the intended meaning before handling it.
 
+## DEVOCS-219 — Data Availability (status 2026-11-18)
+Done on bugfix/DEVOCS-219-frontend-bugs:
+- Mission/Status filters: "All" option, "All" in trigger, summary row
+  with colored dots (status legend colors; MISSION_COLOR in model.ts copied
+  from mock-ups AcquisitionsLadder.tsx:121), n/m counts removed
+- Dropdown chevron rotates via aria-expanded
+- Timeline bars placed by time: 96 time slots, timeToPct shared with axisTicks
+Next:
+1. Filter (Explorer.tsx ~438) uses winFrom/winTo, but the axis uses
+   stripFrom/stripTo, which gives a fake empty first day. Filter must use
+   [stripFrom, stripTo).
+2. Add "3M" range tab after 30D = same window as legacy last-quarter.
+3. Default range 7D instead of 30D (legacy default was 'week').
+Decisions: DA only (Processors/Events have their own periods). Datatake
+ID search stays within the selected period (no widening to 3M).
+Later: Events needs the same All/summary/chevron pattern. Processors
+chevron is static (processors.module.css:129 comment now outdated).
+Backend fetches 3 months, client discards most (perf).
+Legacy reference: old datatakes.js: window includes planned datatakes
+up to tomorrow 23:59:59.
+
 ## Processors — known issues (2026-11-18)
 
 - **Without JS the release detail pane never shows.** The `.focus` class is set only by
