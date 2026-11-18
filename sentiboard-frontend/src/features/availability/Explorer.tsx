@@ -442,7 +442,7 @@ export default function Explorer({
   const dataStart = windowStart;
   const dataLast = windowLast;
 
-  const pagerPrevDisabled = view.range === null || winFrom <= dataStart;
+  const pagerPrevDisabled = view.range === null || view.range === 90 || winFrom <= dataStart;
   const pagerNextDisabled = view.range === null || view.offset === 0;
 
   const matching = useMemo(
