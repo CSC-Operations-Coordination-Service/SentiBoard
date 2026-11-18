@@ -34,7 +34,6 @@ import {
   kpiStats,
   type Datatake,
   type MissionId,
-  type Status,
 } from "./model";
 import DatatakeCard, { type CardPhase } from "./DatatakeCard";
 import { DATATAKES_NOT_AVAILABLE } from "./copy";
@@ -48,6 +47,12 @@ import {
   type AvailabilityView,
   type RangeId,
 } from "./url-state";
+import {
+  isAllSelected,
+  selectAll,
+  selectedLabel,
+  toggleOption,
+} from "./filter-logic";
 import { withBasePath } from "@/lib/asset";
 import s from "./availability.module.css";
 
@@ -162,7 +167,13 @@ function ViewLink({
 function ChevLeft() {
   return (
     <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M10 3L5 8l5 5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -170,7 +181,13 @@ function ChevLeft() {
 function ChevRight() {
   return (
     <svg width="11" height="11" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M6 3l5 5-5 5"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -178,7 +195,13 @@ function ChevRight() {
 function ChevDown() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path d="M3 6l5 5 5-5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3 6l5 5 5-5"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -187,14 +210,27 @@ function SearchIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden>
       <circle cx="7" cy="7" r="4.6" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M10.4 10.4L14 14" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path
+        d="M10.4 10.4L14 14"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
 
 function CalendarIcon() {
   return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden>
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      aria-hidden
+    >
       <rect x="2" y="3.2" width="12" height="11" rx="1.2" />
       <path d="M2 6.6h12M5.4 1.8v2.6M10.6 1.8v2.6" strokeLinecap="round" />
     </svg>
@@ -220,18 +256,24 @@ export default function Explorer({
   notice?: string;
 }) {
   const searchParams = useSearchParams();
-  const [view, setView] = useState<AvailabilityView>(() => parseView(searchParams));
+  const [view, setView] = useState<AvailabilityView>(() =>
+    parseView(searchParams),
+  );
 
   // Dropdown state: one open at a time
   const [openDrop, setOpenDrop] = useState<DropKey | null>(null);
-  const dropBtnRefs = useRef<Partial<Record<DropKey, HTMLButtonElement | null>>>({});
+  const dropBtnRefs = useRef<
+    Partial<Record<DropKey, HTMLButtonElement | null>>
+  >({});
   const dropRefs = useRef<Partial<Record<DropKey, HTMLDivElement | null>>>({});
 
   // Ref for the From date input (to call showPicker on pager label click)
   const fromInputRef = useRef<HTMLInputElement | null>(null);
 
   // Strip zoom: zoom pivot in px per mission row, recorded from the clicked bar's offsetLeft
-  const [origins, setOrigins] = useState<Partial<Record<MissionId, number>>>({});
+  const [origins, setOrigins] = useState<Partial<Record<MissionId, number>>>(
+    {},
+  );
 
   // Animation: true for 900 ms after load, range change, Custom apply, or Reset.
   // animTimerRef holds the pending turn-off timeout so navigateWithAnim can reset it.
@@ -285,7 +327,9 @@ export default function Explorer({
   const navigate = useCallback((next: AvailabilityView) => {
     setView(next);
     const qs = viewParams(next).toString();
-    const href = withBasePath(qs ? `${AVAILABILITY_PATH}?${qs}` : AVAILABILITY_PATH);
+    const href = withBasePath(
+      qs ? `${AVAILABILITY_PATH}?${qs}` : AVAILABILITY_PATH,
+    );
     history.pushState(null, "", href);
   }, []);
 
@@ -309,7 +353,10 @@ export default function Explorer({
 
   const hasMounted = useRef(false);
   useEffect(() => {
-    if (!hasMounted.current) { hasMounted.current = true; return; }
+    if (!hasMounted.current) {
+      hasMounted.current = true;
+      return;
+    }
     setView(parseView(searchParams));
   }, [searchParams]);
 
@@ -322,7 +369,7 @@ export default function Explorer({
       const tag = (document.activeElement as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       if (view.range === null) return; // custom mode: no arrow-key pager
-      if (view.pick !== null) return;  // bar picked: Escape should close it instead
+      if (view.pick !== null) return; // bar picked: Escape should close it instead
       if (e.key === "ArrowLeft") {
         navigate({ ...view, offset: view.offset + 1, pick: null });
       } else if (e.key === "ArrowRight" && view.offset > 0) {
@@ -396,7 +443,10 @@ export default function Explorer({
   }, [datatakes, winFrom, winTo, view.missionsOff, view.statusesOff, view.q]);
 
   const activeSatellites = useMemo(
-    () => MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).flatMap((m) => SATELLITES_OF[m]),
+    () =>
+      MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).flatMap(
+        (m) => SATELLITES_OF[m],
+      ),
     [view.missionsOff],
   );
 
@@ -453,7 +503,9 @@ export default function Explorer({
   // having lanes in its dependency array (we only want to trigger transitions on
   // view.pick changes, not on every filter change).
   const lanesRef = useRef(lanes);
-  useEffect(() => { lanesRef.current = lanes; }, [lanes]);
+  useEffect(() => {
+    lanesRef.current = lanes;
+  }, [lanes]);
 
   // Seed prevPickRef to view.pick so the sync effect returns early on first render
   // (prevId === nextId) and does not re-trigger the already-open card.
@@ -495,7 +547,9 @@ export default function Explorer({
   // navigation to clear the pick so the card closes and the zoom unsets.
   useEffect(() => {
     if (view.pick === null) return;
-    const exists = lanes.some((l) => l.frames.some((f) => f.item.id === view.pick));
+    const exists = lanes.some((l) =>
+      l.frames.some((f) => f.item.id === view.pick),
+    );
     if (!exists && cardItem !== null) {
       const nextView = { ...view, pick: null };
       const t = setTimeout(() => navigate(nextView), 0);
@@ -536,12 +590,17 @@ export default function Explorer({
     [view],
   );
 
-  // Dropdown value labels
-  const missionOnCount = MISSION_ORDER.length - view.missionsOff.size;
-  const missionVal = view.missionsOff.size === 0 ? "" : `${missionOnCount}/${MISSION_ORDER.length}`;
-
-  const statusOnCount = STATUS_ORDER.length - view.statusesOff.size;
-  const statusVal = view.statusesOff.size === 0 ? "" : `${statusOnCount}/${STATUS_ORDER.length}`;
+  // Selected labels shown below each dropdown trigger (null = all on = hide the label)
+  const missionSelLabel = selectedLabel(
+    MISSION_ORDER,
+    view.missionsOff,
+    (m) => MISSION_DISPLAY[m],
+  );
+  const statusSelLabel = selectedLabel(
+    STATUS_ORDER,
+    view.statusesOff,
+    (st) => st,
+  );
 
   // Range heading and pager label
   const rangeHeading =
@@ -564,7 +623,9 @@ export default function Explorer({
       customTo: toDateInput(winTo),
     };
     navigateWithAnim(next);
-    setTimeout(() => { fromInputRef.current?.showPicker?.(); }, 0);
+    setTimeout(() => {
+      fromInputRef.current?.showPicker?.();
+    }, 0);
   }, [view, winFrom, winTo, navigateWithAnim]);
 
   // ---------------------------------------------------------------------------
@@ -575,8 +636,16 @@ export default function Explorer({
     (val: string) => {
       let from = val;
       let to = view.customTo ?? toDateInput(winTo);
-      if (from > to) { [from, to] = [to, from]; }
-      navigateWithAnim({ ...view, range: null, customFrom: from, customTo: to, pick: null });
+      if (from > to) {
+        [from, to] = [to, from];
+      }
+      navigateWithAnim({
+        ...view,
+        range: null,
+        customFrom: from,
+        customTo: to,
+        pick: null,
+      });
     },
     [view, winTo, navigateWithAnim],
   );
@@ -585,8 +654,16 @@ export default function Explorer({
     (val: string) => {
       let to = val;
       let from = view.customFrom ?? toDateInput(winFrom);
-      if (from > to) { [from, to] = [to, from]; }
-      navigateWithAnim({ ...view, range: null, customFrom: from, customTo: to, pick: null });
+      if (from > to) {
+        [from, to] = [to, from];
+      }
+      navigateWithAnim({
+        ...view,
+        range: null,
+        customFrom: from,
+        customTo: to,
+        pick: null,
+      });
     },
     [view, winFrom, navigateWithAnim],
   );
@@ -623,7 +700,6 @@ export default function Explorer({
 
       {/* Filter toolbar */}
       <div className={s.filters}>
-
         {/* Range heading + preset buttons */}
         <div className={s.filterGroup}>
           <div className={s.fhead}>
@@ -633,7 +709,14 @@ export default function Explorer({
             {([1, 7, 30] as RangeId[]).map((id) => (
               <ViewLink
                 key={id}
-                view={{ ...view, range: id, offset: 0, customFrom: null, customTo: null, pick: null }}
+                view={{
+                  ...view,
+                  range: id,
+                  offset: 0,
+                  customFrom: null,
+                  customTo: null,
+                  pick: null,
+                }}
                 navigate={navigateWithAnim}
                 role="button"
                 aria-pressed={view.range === id}
@@ -663,7 +746,11 @@ export default function Explorer({
             Pager label button (📅) is JS-only (calls showPicker). Pager moves do NOT animate. */}
         <div className={s.pager}>
           {pagerPrevDisabled ? (
-            <span className={s.pagerBtn} aria-disabled="true" aria-label="Previous period">
+            <span
+              className={s.pagerBtn}
+              aria-disabled="true"
+              aria-label="Previous period"
+            >
               <ChevLeft />
             </span>
           ) : (
@@ -686,7 +773,11 @@ export default function Explorer({
             <CalendarIcon />
           </button>
           {pagerNextDisabled ? (
-            <span className={s.pagerBtn} aria-disabled="true" aria-label="Next period">
+            <span
+              className={s.pagerBtn}
+              aria-disabled="true"
+              aria-label="Next period"
+            >
               <ChevRight />
             </span>
           ) : (
@@ -755,22 +846,46 @@ export default function Explorer({
         {/* Mission dropdown */}
         <div
           className={s.fdrop}
-          ref={(el) => { dropRefs.current["mission"] = el; }}
+          ref={(el) => {
+            dropRefs.current["mission"] = el;
+          }}
         >
           <button
             type="button"
-            ref={(el) => { dropBtnRefs.current["mission"] = el; }}
+            ref={(el) => {
+              dropBtnRefs.current["mission"] = el;
+            }}
             className={s.fdropHead}
             aria-expanded={openDrop === "mission"}
-            onClick={() => setOpenDrop((o) => (o === "mission" ? null : "mission"))}
+            onClick={() =>
+              setOpenDrop((o) => (o === "mission" ? null : "mission"))
+            }
           >
             <span className={s.fdropLabel}>Mission</span>
-            <span className={s.fdropVal}>{missionVal}</span>
+            {isAllSelected(view.missionsOff) && (
+              <span className={s.fdropVal}>All</span>
+            )}
             <ChevDown />
           </button>
           <div className={s.fdropBody}>
             <div className={s.fdropInner}>
               <div className={s.fdropPad}>
+                <button
+                  type="button"
+                  className={`${s.fitem} ${s.fitemMission}`}
+                  aria-pressed={isAllSelected(view.missionsOff)}
+                  onClick={() => {
+                    if (!isAllSelected(view.missionsOff)) {
+                      navigate({
+                        ...view,
+                        missionsOff: selectAll(),
+                        pick: null,
+                      });
+                    }
+                  }}
+                >
+                  <u>All</u>
+                </button>
                 {MISSION_ORDER.map((m) => {
                   const isOff = view.missionsOff.has(m);
                   return (
@@ -780,9 +895,11 @@ export default function Explorer({
                       className={`${s.fitem} ${s.fitemMission} ${isOff ? s.fitemOff : ""}`}
                       aria-pressed={!isOff}
                       onClick={() => {
-                        const next = new Set(view.missionsOff);
-                        if (isOff) next.delete(m); else next.add(m);
-                        navigate({ ...view, missionsOff: next, pick: null });
+                        navigate({
+                          ...view,
+                          missionsOff: toggleOption(view.missionsOff, m),
+                          pick: null,
+                        });
                       }}
                     >
                       <u>{MISSION_DISPLAY[m]}</u>
@@ -797,22 +914,46 @@ export default function Explorer({
         {/* Status dropdown */}
         <div
           className={s.fdrop}
-          ref={(el) => { dropRefs.current["status"] = el; }}
+          ref={(el) => {
+            dropRefs.current["status"] = el;
+          }}
         >
           <button
             type="button"
-            ref={(el) => { dropBtnRefs.current["status"] = el; }}
+            ref={(el) => {
+              dropBtnRefs.current["status"] = el;
+            }}
             className={s.fdropHead}
             aria-expanded={openDrop === "status"}
-            onClick={() => setOpenDrop((o) => (o === "status" ? null : "status"))}
+            onClick={() =>
+              setOpenDrop((o) => (o === "status" ? null : "status"))
+            }
           >
             <span className={s.fdropLabel}>Status</span>
-            <span className={s.fdropVal}>{statusVal}</span>
+            {isAllSelected(view.statusesOff) && (
+              <span className={s.fdropVal}>All</span>
+            )}
             <ChevDown />
           </button>
           <div className={s.fdropBody}>
             <div className={s.fdropInner}>
               <div className={s.fdropPad}>
+                <button
+                  type="button"
+                  className={s.fitem}
+                  aria-pressed={isAllSelected(view.statusesOff)}
+                  onClick={() => {
+                    if (!isAllSelected(view.statusesOff)) {
+                      navigate({
+                        ...view,
+                        statusesOff: selectAll(),
+                        pick: null,
+                      });
+                    }
+                  }}
+                >
+                  <u>All</u>
+                </button>
                 {STATUS_ORDER.map((st) => {
                   const isOff = view.statusesOff.has(st);
                   const dot = STATUS_COLOR[st];
@@ -823,9 +964,11 @@ export default function Explorer({
                       className={`${s.fitem} ${isOff ? s.fitemOff : ""}`}
                       aria-pressed={!isOff}
                       onClick={() => {
-                        const next = new Set(view.statusesOff);
-                        if (isOff) next.delete(st); else next.add(st as Status);
-                        navigate({ ...view, statusesOff: next, pick: null });
+                        navigate({
+                          ...view,
+                          statusesOff: toggleOption(view.statusesOff, st),
+                          pick: null,
+                        });
                       }}
                     >
                       <i style={{ background: dot } as CSSProperties} />
@@ -850,14 +993,18 @@ export default function Explorer({
             <input key={k} type="hidden" name={k} value={v} />
           ))}
           <SearchIcon />
-          <label htmlFor="da-search" className="sr-only">Search datatakes</label>
+          <label htmlFor="da-search" className="sr-only">
+            Search datatakes
+          </label>
           <input
             id="da-search"
             type="search"
             name="q"
             placeholder="Datatake ID"
             value={view.q}
-            onChange={(e) => navigate({ ...view, q: e.target.value, pick: null })}
+            onChange={(e) =>
+              navigate({ ...view, q: e.target.value, pick: null })
+            }
           />
         </form>
 
@@ -870,8 +1017,25 @@ export default function Explorer({
         >
           Reset
         </ViewLink>
-
       </div>
+
+      {/* Filter summary row: shown only when at least one dropdown is partial */}
+      {(missionSelLabel !== null || statusSelLabel !== null) && (
+        <div className={s.fsummary} aria-live="polite">
+          {missionSelLabel !== null && (
+            <span className={s.fsummaryItem}>
+              <span className={s.fdropLabel}>Mission:</span>
+              <span className={s.fdropVal}>{missionSelLabel}</span>
+            </span>
+          )}
+          {statusSelLabel !== null && (
+            <span className={s.fsummaryItem}>
+              <span className={s.fdropLabel}>Status:</span>
+              <span className={s.fdropVal}>{statusSelLabel}</span>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Strip bands: one per active mission, folded bars, shared axis */}
       <Reveal className={s.panel}>
@@ -880,150 +1044,153 @@ export default function Explorer({
             <div className={s.emptyData} role={notice ? "alert" : undefined}>
               {notice ?? DATATAKES_NOT_AVAILABLE}
             </div>
-          ) : lanes.map(({ missionId, frames, tw }, rowIndex) => {
-            const isRowZoomed = pickedState?.missionId === missionId;
-            // Zoom pivot: use the recorded click offset (px) when available; fall back to the
-            // bar's leftPct as a percentage origin for initial load from URL state.
-            const originPx = origins[missionId];
-            const transformOriginStr =
-              originPx !== undefined
-                ? `${originPx}px 50%`
-                : isRowZoomed && pickedState
-                  ? `${pickedState.leftPct}% 50%`
-                  : "50% 50%";
+          ) : (
+            lanes.map(({ missionId, frames, tw }, rowIndex) => {
+              const isRowZoomed = pickedState?.missionId === missionId;
+              // Zoom pivot: use the recorded click offset (px) when available; fall back to the
+              // bar's leftPct as a percentage origin for initial load from URL state.
+              const originPx = origins[missionId];
+              const transformOriginStr =
+                originPx !== undefined
+                  ? `${originPx}px 50%`
+                  : isRowZoomed && pickedState
+                    ? `${pickedState.leftPct}% 50%`
+                    : "50% 50%";
 
-            return (
-              <div className={s.mapRowContainer} key={missionId}>
-                <div className={s.mapRow}>
-                  <div className={s.mapLabel}>
-                    <b>{missionId}</b>
-                  </div>
+              return (
+                <div className={s.mapRowContainer} key={missionId}>
+                  <div className={s.mapRow}>
+                    <div className={s.mapLabel}>
+                      <b>{missionId}</b>
+                    </div>
 
-                  <div className={s.lane}>
-                    <div
-                      className={`${s.track}${isRowZoomed ? ` ${s.trackZoom}` : ""}`}
-                      style={
-                        {
-                          "--tw": `${tw}%`,
-                          transformOrigin: transformOriginStr,
-                          transform: isRowZoomed
-                            ? `scale(${STRIP_ZOOM})`
-                            : undefined,
-                        } as CSSProperties
-                      }
-                    >
-                      {frames.length === 0 ? (
-                        <span className={s.trackNone}>
-                          No datatakes in range
-                        </span>
-                      ) : (
-                        frames.map(({ item, leftPct }, barIndex) => {
-                          const isPicked = view.pick === item.id;
-                          // All bars except the picked one step back
-                          const isFaded = view.pick !== null && !isPicked;
-                          return (
-                            <button
-                              key={item.id}
-                              ref={(el) => {
-                                if (el) barBtnRefs.current.set(item.id, el);
-                                else barBtnRefs.current.delete(item.id);
-                              }}
-                              type="button"
-                              className={[
-                                s.tile,
-                                isPicked ? s.tileSelected : "",
-                                isFaded ? s.tileFaded : "",
-                                !animating ? s.tileNoAnim : "",
-                              ]
-                                .filter(Boolean)
-                                .join(" ")}
-                              style={
-                                {
-                                  "--c": barColor(item),
-                                  left: `${leftPct.toFixed(4)}%`,
-                                  ...(animating && {
-                                    animationDelay: `${Math.min(420, rowIndex * 45 + barIndex * 2.4)}ms`,
-                                  }),
-                                } as CSSProperties
-                              }
-                              aria-label={`${item.id} ${item.status}`}
-                              onMouseEnter={(e) => {
-                                const x = e.clientX;
-                                const y = e.clientY;
-                                setTipItem(item);
-                                requestAnimationFrame(() => positionTip(x, y));
-                              }}
-                              onMouseMove={(e) =>
-                                positionTip(e.clientX, e.clientY)
-                              }
-                              onMouseLeave={() => setTipItem(null)}
-                              onFocus={(e) => {
-                                const rect =
-                                  e.currentTarget.getBoundingClientRect();
-                                setTipItem(item);
-                                requestAnimationFrame(() =>
-                                  positionTip(
-                                    rect.left + rect.width / 2,
-                                    rect.top,
-                                  )
-                                );
-                              }}
-                              onBlur={() => setTipItem(null)}
-                              onClick={(e) => {
-                                if (isPicked) {
-                                  navigate({ ...view, pick: null });
-                                  return;
+                    <div className={s.lane}>
+                      <div
+                        className={`${s.track}${isRowZoomed ? ` ${s.trackZoom}` : ""}`}
+                        style={
+                          {
+                            "--tw": `${tw}%`,
+                            transformOrigin: transformOriginStr,
+                            transform: isRowZoomed
+                              ? `scale(${STRIP_ZOOM})`
+                              : undefined,
+                          } as CSSProperties
+                        }
+                      >
+                        {frames.length === 0 ? (
+                          <span className={s.trackNone}>
+                            No datatakes in range
+                          </span>
+                        ) : (
+                          frames.map(({ item, leftPct }, barIndex) => {
+                            const isPicked = view.pick === item.id;
+                            // All bars except the picked one step back
+                            const isFaded = view.pick !== null && !isPicked;
+                            return (
+                              <button
+                                key={item.id}
+                                ref={(el) => {
+                                  if (el) barBtnRefs.current.set(item.id, el);
+                                  else barBtnRefs.current.delete(item.id);
+                                }}
+                                type="button"
+                                className={[
+                                  s.tile,
+                                  isPicked ? s.tileSelected : "",
+                                  isFaded ? s.tileFaded : "",
+                                  !animating ? s.tileNoAnim : "",
+                                ]
+                                  .filter(Boolean)
+                                  .join(" ")}
+                                style={
+                                  {
+                                    "--c": barColor(item),
+                                    left: `${leftPct.toFixed(4)}%`,
+                                    ...(animating && {
+                                      animationDelay: `${Math.min(420, rowIndex * 45 + barIndex * 2.4)}ms`,
+                                    }),
+                                  } as CSSProperties
                                 }
-                                // Record the bar's offsetLeft as the zoom pivot for this row
-                                const centre = e.currentTarget.offsetLeft;
-                                setOrigins((o) => ({
-                                  ...o,
-                                  [missionId]: centre,
-                                }));
-                                navigate({ ...view, pick: item.id });
-                              }}
-                            />
-                          );
-                        })
-                      )}
+                                aria-label={`${item.id} ${item.status}`}
+                                onMouseEnter={(e) => {
+                                  const x = e.clientX;
+                                  const y = e.clientY;
+                                  setTipItem(item);
+                                  requestAnimationFrame(() =>
+                                    positionTip(x, y),
+                                  );
+                                }}
+                                onMouseMove={(e) =>
+                                  positionTip(e.clientX, e.clientY)
+                                }
+                                onMouseLeave={() => setTipItem(null)}
+                                onFocus={(e) => {
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
+                                  setTipItem(item);
+                                  requestAnimationFrame(() =>
+                                    positionTip(
+                                      rect.left + rect.width / 2,
+                                      rect.top,
+                                    ),
+                                  );
+                                }}
+                                onBlur={() => setTipItem(null)}
+                                onClick={(e) => {
+                                  if (isPicked) {
+                                    navigate({ ...view, pick: null });
+                                    return;
+                                  }
+                                  // Record the bar's offsetLeft as the zoom pivot for this row
+                                  const centre = e.currentTarget.offsetLeft;
+                                  setOrigins((o) => ({
+                                    ...o,
+                                    [missionId]: centre,
+                                  }));
+                                  navigate({ ...view, pick: item.id });
+                                }}
+                              />
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Axis hidden while the row is zoomed */}
+                    <div
+                      className={`${s.axis}${isRowZoomed ? ` ${s.axisHidden}` : ""}`}
+                    >
+                      {ticks.map((t) => (
+                        <span
+                          key={t.key}
+                          className={[
+                            s.axisTick,
+                            t.edge === "first" ? s.axisFirst : "",
+                            t.edge === "last" ? s.axisLast : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          style={{ left: `${t.pct}%` }}
+                        >
+                          {t.label}
+                        </span>
+                      ))}
                     </div>
                   </div>
-
-                  {/* Axis hidden while the row is zoomed */}
-                  <div
-                    className={`${s.axis}${isRowZoomed ? ` ${s.axisHidden}` : ""}`}
-                  >
-                    {ticks.map((t) => (
-                      <span
-                        key={t.key}
-                        className={[
-                          s.axisTick,
-                          t.edge === "first" ? s.axisFirst : "",
-                          t.edge === "last" ? s.axisLast : "",
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                        style={{ left: `${t.pct}%` }}
-                      >
-                        {t.label}
-                      </span>
-                    ))}
-                  </div>
+                  {cardItem !== null && cardMission === missionId && (
+                    <DatatakeCard
+                      d={cardItem}
+                      phase={cardPhase}
+                      onClose={() => navigate({ ...view, pick: null })}
+                      onClosed={onClosed}
+                    />
+                  )}
                 </div>
-                {cardItem !== null && cardMission === missionId && (
-                  <DatatakeCard
-                    d={cardItem}
-                    phase={cardPhase}
-                    onClose={() => navigate({ ...view, pick: null })}
-                    onClosed={onClosed}
-                  />
-                )}
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </Reveal>
-
 
       {/* Hover / focus tooltip — single fixed element in a portal, aria-hidden.
           isClient (useSyncExternalStore) is false on the server and true on the client, so React

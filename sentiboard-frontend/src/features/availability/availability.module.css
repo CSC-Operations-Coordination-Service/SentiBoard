@@ -619,6 +619,22 @@
   color: color-mix(in srgb, var(--text) 92%, transparent);
 }
 
+.fsummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  justify-content: center;
+  margin-top: clamp(6px, 1vh, 12px);
+  padding-bottom: clamp(4px, 0.8vw, 10px);
+  font-family: var(--font-sans);
+}
+
+.fsummaryItem {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
 .fdropHead svg {
   flex-shrink: 0;
   color: color-mix(in srgb, var(--text) 85%, transparent);
