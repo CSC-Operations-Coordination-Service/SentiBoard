@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   barColor,
   bandColor,
+  filterDatatakes,
   framesOf,
   axisTicks,
   daysOf,
@@ -516,5 +517,27 @@ describe("color completeness", () => {
     for (const m of MISSION_ORDER) {
       expect(MISSION_COLOR[m], `missing MISSION_COLOR for ${m}`).toBeTruthy();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// filterDatatakes — strip-window bounds [from, to)
+// ---------------------------------------------------------------------------
+
+describe("filterDatatakes strip-window bounds", () => {
+  const stripFrom = new Date("2026-11-11T00:00:00Z");
+  const stripTo   = new Date("2026-11-12T00:00:00Z");
+
+  const dtk = (start: Date): Datatake =>
+    mkDtk({ status: "Acquired", completeness: 100, start });
+
+  it("keeps a datatake at stripFrom + 1 h", () => {
+    const d = dtk(new Date(stripFrom.getTime() + 3_600_000));
+    expect(filterDatatakes([d], stripFrom, stripTo, new Set(), new Set(), "")).toHaveLength(1);
+  });
+
+  it("drops a datatake at stripTo (exclusive upper bound)", () => {
+    const d = dtk(new Date(stripTo.getTime()));
+    expect(filterDatatakes([d], stripFrom, stripTo, new Set(), new Set(), "")).toHaveLength(0);
   });
 });

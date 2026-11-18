@@ -330,3 +330,26 @@ export function kpiStats(
     lost,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Datatake filter — pure; uses the strip domain [from, to) so it matches the axis
+// ---------------------------------------------------------------------------
+
+/** Keep datatakes within [stripFrom, stripTo) that pass the toolbar filters. */
+export function filterDatatakes(
+  list: Datatake[],
+  stripFrom: Date,
+  stripTo: Date,
+  missionsOff: ReadonlySet<MissionId>,
+  statusesOff: ReadonlySet<Status>,
+  q: string,
+): Datatake[] {
+  const ql = q.trim().toLowerCase();
+  return list.filter((d) => {
+    if (d.start < stripFrom || d.start >= stripTo) return false;
+    if (missionsOff.has(d.missionId)) return false;
+    if (statusesOff.has(d.status)) return false;
+    if (ql && !d.id.toLowerCase().includes(ql)) return false;
+    return true;
+  });
+}

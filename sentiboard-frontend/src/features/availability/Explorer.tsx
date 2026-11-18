@@ -30,6 +30,7 @@ import {
   barColor,
   cardSides,
   daysOf,
+  filterDatatakes,
   fmtDateTime,
   framesOf,
   kpiFmt,
@@ -427,22 +428,22 @@ export default function Explorer({
   );
   const days = useMemo(() => daysOf(winFrom, winTo), [winFrom, winTo]);
 
+  const { stripFrom, stripTo } = useMemo(() => {
+    const sf = days[0] ?? new Date(0);
+    const last = days[days.length - 1];
+    return { stripFrom: sf, stripTo: new Date((last ?? new Date(0)).getTime() + DAY_MS) };
+  }, [days]);
+
   const dataStart = windowStart;
   const dataLast = windowLast;
 
   const pagerPrevDisabled = view.range === null || winFrom <= dataStart;
   const pagerNextDisabled = view.range === null || view.offset === 0;
 
-  const matching = useMemo(() => {
-    const q = view.q.trim().toLowerCase();
-    return datatakes.filter((d) => {
-      if (d.start < winFrom || d.start > winTo) return false;
-      if (view.missionsOff.has(d.missionId)) return false;
-      if (view.statusesOff.has(d.status)) return false;
-      if (q && !d.id.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [datatakes, winFrom, winTo, view.missionsOff, view.statusesOff, view.q]);
+  const matching = useMemo(
+    () => filterDatatakes(datatakes, stripFrom, stripTo, view.missionsOff, view.statusesOff, view.q),
+    [datatakes, stripFrom, stripTo, view.missionsOff, view.statusesOff, view.q],
+  );
 
   const activeSatellites = useMemo(
     () =>
@@ -463,16 +464,13 @@ export default function Explorer({
   // Strip lanes: one per active mission, bars folded by framesOf; axis ticks shared across all rows
   const ticks = useMemo(() => axisTicks(days), [days]);
   const lanes = useMemo(() => {
-    const stripFrom = days[0] ?? new Date(0);
-    const last = days[days.length - 1];
-    const stripTo = new Date((last ?? new Date(0)).getTime() + DAY_MS);
     return MISSION_ORDER.filter((m) => !view.missionsOff.has(m)).map((missionId) => {
       const own = matching.filter((d) => d.missionId === missionId);
       const frames = framesOf(own, stripFrom, stripTo);
       const tw = 76 / FRAMES;
       return { missionId, frames, tw };
     });
-  }, [matching, view.missionsOff, days]);
+  }, [matching, view.missionsOff, stripFrom, stripTo]);
 
   // ---------------------------------------------------------------------------
   // Datatake card lifecycle
