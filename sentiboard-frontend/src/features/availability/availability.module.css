@@ -513,6 +513,13 @@
 }
 
 .fdatesMicro {
+  /* Overlaid on the left of the input so the native popup anchors under the label */
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
   font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
@@ -529,8 +536,11 @@
 
 .fdates input {
   min-height: 38px;
-  width: 150px;
-  padding: 0 2px;
+  /* Width absorbs the old label+gap space so the right edge stays put.
+     padding-left pushes the date text to the same x it had before.
+     --lbl-w is set per-field: "FROM"/"TO" are fixed strings so a fixed px is correct. */
+  width: calc(var(--lbl-w) + 6px + 150px);
+  padding: 0 2px 0 calc(var(--lbl-w) + 8px);
   border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
   border-radius: 0;

@@ -794,8 +794,8 @@ export default function Explorer({
         {view.range === null && (
           <div className={s.fdates}>
             <label>
-              <span className={s.fdatesMicro}>From</span>
-              <span className={s.fdate}>
+              <span className={s.fdate} style={{ "--lbl-w": "34px" } as CSSProperties}>
+                <span className={s.fdatesMicro}>From</span>
                 <input
                   ref={fromInputRef}
                   type="date"
@@ -815,8 +815,8 @@ export default function Explorer({
               </span>
             </label>
             <label>
-              <span className={s.fdatesMicro}>To</span>
-              <span className={s.fdate}>
+              <span className={s.fdate} style={{ "--lbl-w": "18px" } as CSSProperties}>
+                <span className={s.fdatesMicro}>To</span>
                 <input
                   type="date"
                   value={view.customTo ?? toDateInput(winTo)}
