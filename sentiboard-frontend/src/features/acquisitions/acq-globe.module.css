@@ -560,6 +560,11 @@
 .fdropHead svg {
   flex-shrink: 0;
   color: rgba(255, 255, 255, 0.85);
+  transition: transform 0.3s ease;
+}
+
+.fdropHead[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 
 /* in-flow body: grid rows animate 0fr → 1fr (420 ms) */
@@ -1114,5 +1119,8 @@ button.calDay.calOn {
   }
   .fdropInner {
     transition: none !important;
+  }
+  .fdropHead svg {
+    transition: none;
   }
 }
