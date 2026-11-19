@@ -126,10 +126,19 @@ details[open] .fdropHead .fdropLabel {
   color: color-mix(in srgb, var(--text) 92%, transparent);
 }
 
-/* Chevron: static, no rotation (Decision 3 — DA behaviour wins over §3.1 prototype value). */
+/* Chevron rotates 0° → 180° on details[open] (matches platform convention). */
 .fdropHead svg {
   flex-shrink: 0;
   color: color-mix(in srgb, var(--text) 85%, transparent);
+  transition: transform 0.3s ease;
+}
+
+details[open] > .fdropHead svg {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fdropHead svg { transition: none; }
 }
 
 /* In-flow body: grid-template-rows 0fr → 1fr animates height without a fixed max-height.

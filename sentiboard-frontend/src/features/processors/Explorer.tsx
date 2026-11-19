@@ -205,7 +205,7 @@ function ViewLink({
   );
 }
 
-/** Static chevron for dropdown heads — no rotation, matching DA behaviour (Decision 3). */
+/** Chevron for dropdown heads — rotates down→up via CSS on details[open]. */
 function ChevronDown() {
   return (
     <svg
