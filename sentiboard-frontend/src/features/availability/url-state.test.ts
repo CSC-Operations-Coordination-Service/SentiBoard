@@ -3,6 +3,7 @@ import {
   parseView,
   viewParams,
   viewHref,
+  clampCustomRange,
   DEFAULT_VIEW,
   AVAILABILITY_PATH,
   type AvailabilityView,
@@ -253,4 +254,38 @@ describe("round-trip", () => {
     expect(roundTripped.q).toBe(original.q);
     expect(roundTripped.pick).toBe(original.pick);
   });
+});
+
+// ---------------------------------------------------------------------------
+// clampCustomRange
+// ---------------------------------------------------------------------------
+
+const MIN = "2026-01-01";
+const MAX = "2026-12-31";
+
+describe("clampCustomRange", () => {
+  it("clamps to > max to max", () =>
+    expect(clampCustomRange("2026-10-01", "2027-01-01", MIN, MAX))
+      .toEqual({ from: "2026-10-01", to: "2026-12-31" }));
+
+  it("clamps from < min to min", () =>
+    expect(clampCustomRange("2025-12-01", "2026-06-01", MIN, MAX))
+      .toEqual({ from: "2026-01-01", to: "2026-06-01" }));
+
+  it("swaps when from > to (no clamp needed)", () =>
+    expect(clampCustomRange("2026-12-01", "2026-11-01", MIN, MAX))
+      .toEqual({ from: "2026-11-01", to: "2026-12-01" }));
+
+  it("clamps from > max then swaps with to (clamp + swap together)", () =>
+    // from gets clamped to max, then from > to triggers swap
+    expect(clampCustomRange("2027-01-01", "2026-11-01", MIN, MAX))
+      .toEqual({ from: "2026-11-01", to: "2026-12-31" }));
+
+  it("clamps both from < min and to > max", () =>
+    expect(clampCustomRange("2025-01-01", "2027-01-01", MIN, MAX))
+      .toEqual({ from: "2026-01-01", to: "2026-12-31" }));
+
+  it("valid range passes through unchanged", () =>
+    expect(clampCustomRange("2026-05-01", "2026-06-01", MIN, MAX))
+      .toEqual({ from: "2026-05-01", to: "2026-06-01" }));
 });

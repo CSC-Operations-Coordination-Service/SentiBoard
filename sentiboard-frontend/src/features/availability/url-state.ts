@@ -124,3 +124,20 @@ export const RANGE_LABEL: Record<string, string> = {
   "90": "Last 3 months",
   custom: "Custom range",
 };
+
+/**
+ * Clamp a custom date range to [min, max] and guarantee from ≤ to.
+ * Both `from` and `to` must be non-empty YYYY-MM-DD strings; callers must
+ * guard against "" (Clear) before calling this function.
+ */
+export function clampCustomRange(
+  from: string,
+  to: string,
+  min: string,
+  max: string,
+): { from: string; to: string } {
+  const f = from < min ? min : from > max ? max : from;
+  const t = to > max ? max : to < min ? min : to;
+  if (f > t) return { from: t, to: f };
+  return { from: f, to: t };
+}

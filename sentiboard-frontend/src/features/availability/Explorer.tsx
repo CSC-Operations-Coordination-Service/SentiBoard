@@ -44,6 +44,7 @@ import {
   AVAILABILITY_PATH,
   DEFAULT_VIEW,
   RANGE_LABEL,
+  clampCustomRange,
   parseView,
   viewHref,
   viewParams,
@@ -632,38 +633,34 @@ export default function Explorer({
 
   const onFromChange = useCallback(
     (val: string) => {
-      let from = val;
-      let to = view.customTo ?? toDateInput(winTo);
-      if (from > to) {
-        [from, to] = [to, from];
-      }
+      if (!val) return; // "" (Clear) or empty: ignore, keep current view
+      const to = view.customTo ?? toDateInput(winTo);
+      const { from, to: ct } = clampCustomRange(val, to, dateMin, dateMax);
       navigateWithAnim({
         ...view,
         range: null,
         customFrom: from,
-        customTo: to,
+        customTo: ct,
         pick: null,
       });
     },
-    [view, winTo, navigateWithAnim],
+    [view, winTo, dateMin, dateMax, navigateWithAnim],
   );
 
   const onToChange = useCallback(
     (val: string) => {
-      let to = val;
-      let from = view.customFrom ?? toDateInput(winFrom);
-      if (from > to) {
-        [from, to] = [to, from];
-      }
+      if (!val) return; // "" (Clear) or empty: ignore, keep current view
+      const from = view.customFrom ?? toDateInput(winFrom);
+      const { from: cf, to } = clampCustomRange(from, val, dateMin, dateMax);
       navigateWithAnim({
         ...view,
         range: null,
-        customFrom: from,
+        customFrom: cf,
         customTo: to,
         pick: null,
       });
     },
-    [view, winFrom, navigateWithAnim],
+    [view, winFrom, dateMin, dateMax, navigateWithAnim],
   );
 
   // ---------------------------------------------------------------------------
