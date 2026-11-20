@@ -922,6 +922,18 @@
   }
 }
 
+/* 320px: heading + tabs would wrap without this; keep them on one row.
+   Content width at 320px = 320 − 2×18px side padding = 284px.
+   Width sum: heading(~83) + col-gap(12) + frange(~187) = 282px ≤ 284px. */
+@media (max-width: 359px) {
+  .frange {
+    gap: 12px;
+  }
+  .fhead h2 {
+    font-size: 12px;
+  }
+}
+
 /* -------------------- the datatake card (SentiBoard.html#data-availability) --------------------
    Opens under the strip whose bar was picked, aligned with the strip (past the 60px row label).
    ID and time on top, then one wrapping row: the two completeness rings, and the key/value list.
