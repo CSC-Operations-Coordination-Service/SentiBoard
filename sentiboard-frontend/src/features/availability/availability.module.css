@@ -540,7 +540,7 @@
      padding-left pushes the date text to the same x it had before.
      --lbl-w is set per-field: "FROM"/"TO" are fixed strings so a fixed px is correct. */
   width: calc(var(--lbl-w) + 6px + 150px);
-  padding: 0 2px 0 calc(var(--lbl-w) + 8px);
+  padding: 0 36px 0 calc(var(--lbl-w) + 8px); /* 36px = .fcal width(28) + right(4) + gap(4) */
   border: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
   border-radius: 0;
@@ -940,6 +940,19 @@
   }
   .frange :is(button, a) {
     letter-spacing: 0.1em;
+  }
+}
+
+/* FROM/TO stacked so the full date is visible (native inputs don't shrink their text).
+   36px padding-right on the input clears the calendar icon at all widths. */
+@media (max-width: 374px) {
+  .fdates {
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .fdates label {
+    flex: none;
   }
 }
 
