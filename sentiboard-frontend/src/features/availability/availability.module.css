@@ -889,6 +889,9 @@
   .fhead h2 {
     font-size: 13px;
   }
+  .frange {
+    gap: 12px;
+  }
 
   /* Pager fills its row so Mission starts fresh on the next row */
   .pager {
@@ -922,15 +925,21 @@
   }
 }
 
-/* 320px: heading + tabs would wrap without this; keep them on one row.
-   Content width at 320px = 320 − 2×18px side padding = 284px.
-   Width sum: heading(~83) + col-gap(12) + frange(~187) = 282px ≤ 284px. */
+/* 320–359px: measured in browser — heading + tabs overflow without these changes.
+   360px: heading 106 + gap 12 + tabs 220 = 338 > row 324 (wraps) → fixed by ≤480px gap:12px.
+   320px: heading 94 + gap 10 + tabs 196 = 300 ≤ row 284 (fits). */
 @media (max-width: 359px) {
-  .frange {
-    gap: 12px;
+  .filterGroup {
+    gap: 4px 8px;
   }
   .fhead h2 {
-    font-size: 12px;
+    font-size: 11px;
+  }
+  .frange {
+    gap: 10px;
+  }
+  .frange :is(button, a) {
+    letter-spacing: 0.1em;
   }
 }
 
