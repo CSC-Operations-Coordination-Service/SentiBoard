@@ -638,6 +638,7 @@ chevron is static (processors.module.css:129 comment now outdated).
 Backend fetches 3 months, client discards most (perf).
 Legacy reference: old datatakes.js: window includes planned datatakes
 up to tomorrow 23:59:59.
+Large screens (≥1280px): toolbar/label text is fixed px (11/13/14px, ticks 10px), matching the prototype exactly and identical on DA, Processors, Acquisitions (Events labels 10px). If it should scale: a separate ticket with shared font-size tokens in tokens.css using clamp() (e.g. labels clamp(11px, 0.7vw, 13px)), applied to all pages together. Not DA-only. Needs design OK.
 
 ## Processors — known issues (2026-11-18)
 
