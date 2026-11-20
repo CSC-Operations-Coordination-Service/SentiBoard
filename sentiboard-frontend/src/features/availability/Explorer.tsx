@@ -738,8 +738,9 @@ export default function Explorer({
 
         {/* Pager: ‹ date range ›
             Without JS: ‹ and › are <a href> links; disabled state is a <span> (non-navigable).
-            Pager label button (📅) is JS-only (calls showPicker). Pager moves do NOT animate. */}
-        <div className={s.pager}>
+            Pager label button (📅) is JS-only (calls showPicker). Pager moves do NOT animate.
+            Hidden in CUSTOM mode (view.range === null): FROM/TO row controls the range there. */}
+        {view.range !== null && <div className={s.pager}>
           {pagerPrevDisabled ? (
             <span
               className={s.pagerBtn}
@@ -785,7 +786,7 @@ export default function Explorer({
               <ChevRight />
             </ViewLink>
           )}
-        </div>
+        </div>}
 
         {/* From / To — only visible in custom mode */}
         {view.range === null && (
@@ -1020,31 +1021,35 @@ export default function Explorer({
           {missionIds !== null && (
             <span className={s.fsummaryItem}>
               <span className={s.fdropLabel}>Mission:</span>
-              {missionIds.length === 0 ? (
-                <span className={s.fdropVal}>none</span>
-              ) : (
-                missionIds.map((m) => (
-                  <span key={m} className={s.fsummaryChip}>
-                    <i aria-hidden style={{ background: MISSION_COLOR[m] } as CSSProperties} />
-                    <span className={s.fdropVal}>{MISSION_DISPLAY[m]}</span>
-                  </span>
-                ))
-              )}
+              <span className={s.fsummaryChips}>
+                {missionIds.length === 0 ? (
+                  <span className={s.fdropVal}>none</span>
+                ) : (
+                  missionIds.map((m) => (
+                    <span key={m} className={s.fsummaryChip}>
+                      <i aria-hidden style={{ background: MISSION_COLOR[m] } as CSSProperties} />
+                      <span className={s.fdropVal}>{MISSION_DISPLAY[m]}</span>
+                    </span>
+                  ))
+                )}
+              </span>
             </span>
           )}
           {statusIds !== null && (
             <span className={s.fsummaryItem}>
               <span className={s.fdropLabel}>Status:</span>
-              {statusIds.length === 0 ? (
-                <span className={s.fdropVal}>none</span>
-              ) : (
-                statusIds.map((st) => (
-                  <span key={st} className={s.fsummaryChip}>
-                    <i aria-hidden style={{ background: STATUS_COLOR[st] } as CSSProperties} />
-                    <span className={s.fdropVal}>{st}</span>
-                  </span>
-                ))
-              )}
+              <span className={s.fsummaryChips}>
+                {statusIds.length === 0 ? (
+                  <span className={s.fdropVal}>none</span>
+                ) : (
+                  statusIds.map((st) => (
+                    <span key={st} className={s.fsummaryChip}>
+                      <i aria-hidden style={{ background: STATUS_COLOR[st] } as CSSProperties} />
+                      <span className={s.fdropVal}>{st}</span>
+                    </span>
+                  ))
+                )}
+              </span>
             </span>
           )}
         </div>

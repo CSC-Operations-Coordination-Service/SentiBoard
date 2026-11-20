@@ -646,12 +646,42 @@
   margin-top: clamp(6px, 1vh, 12px);
   padding-bottom: clamp(4px, 0.8vw, 10px);
   font-family: var(--font-sans);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .fsummaryItem {
   display: flex;
   align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* fdropLabel has flex:1 1 auto for use in dropdown heads; reset it here */
+.fsummaryItem .fdropLabel {
+  flex: none;
+}
+
+.fsummaryChips {
+  display: inline-flex;
+  flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .fsummary {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    row-gap: 6px;
+    justify-content: initial;
+  }
+  .fsummaryItem {
+    display: contents;
+  }
 }
 
 .fsummaryChip {
