@@ -58,6 +58,7 @@ import {
   toggleOption,
 } from "./filter-logic";
 import { withBasePath } from "@/lib/asset";
+import { useHoverCapable } from "@/lib/use-media-query";
 import s from "./availability.module.css";
 
 const STRIP_ZOOM = 1.9;
@@ -305,6 +306,10 @@ export default function Explorer({
     () => true,
     () => false,
   );
+
+  // True only on pointer devices that can hover (mouse/trackpad). False on touch-primary
+  // devices where browsers synthesise mouseenter/mouseleave after a tap.
+  const hoverCapable = useHoverCapable();
 
   // Tooltip: one fixed portal element populated on bar mouseenter/focus, hidden on leave/scroll.
   const [tipItem, setTipItem] = useState<Datatake | null>(null);
@@ -1134,6 +1139,7 @@ export default function Explorer({
                                 }
                                 aria-label={`${item.id} ${item.status}`}
                                 onMouseEnter={(e) => {
+                                  if (!hoverCapable) return;
                                   const x = e.clientX;
                                   const y = e.clientY;
                                   setTipItem(item);
@@ -1141,11 +1147,16 @@ export default function Explorer({
                                     positionTip(x, y),
                                   );
                                 }}
-                                onMouseMove={(e) =>
-                                  positionTip(e.clientX, e.clientY)
-                                }
-                                onMouseLeave={() => setTipItem(null)}
+                                onMouseMove={(e) => {
+                                  if (!hoverCapable) return;
+                                  positionTip(e.clientX, e.clientY);
+                                }}
+                                onMouseLeave={() => {
+                                  if (!hoverCapable) return;
+                                  setTipItem(null);
+                                }}
                                 onFocus={(e) => {
+                                  if (!(e.currentTarget as HTMLElement).matches(":focus-visible")) return;
                                   const rect =
                                     e.currentTarget.getBoundingClientRect();
                                   setTipItem(item);
@@ -1215,8 +1226,9 @@ export default function Explorer({
 
       {/* Hover / focus tooltip — single fixed element in a portal, aria-hidden.
           isClient (useSyncExternalStore) is false on the server and true on the client, so React
-          renders matching HTML on both sides and the portal is added after hydration. */}
-      {isClient &&
+          renders matching HTML on both sides and the portal is added after hydration.
+          hoverCapable gates the portal so it is never mounted on touch-primary devices. */}
+      {isClient && hoverCapable &&
         createPortal(
           <div
             ref={tipRef}
