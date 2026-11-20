@@ -806,6 +806,59 @@
   .fsearch { min-width: 140px; }
 }
 
+@media (max-width: 480px) {
+  /* Row 1: heading + tabs share one flex row (heading left, tabs right).
+     .filterGroup switches from display:contents back to a real flex container.
+     .fhead overrides the width:100% the ≤760px block sets. */
+  .filterGroup {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    width: 100%;
+    gap: 4px 12px;
+  }
+  .fhead {
+    width: auto;
+    height: auto;
+    margin-right: 0;
+  }
+  .fhead h2 {
+    font-size: 13px;
+  }
+
+  /* Pager fills its row so Mission starts fresh on the next row */
+  .pager {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Mission + Status: 50/50 on one row */
+  .fdrop {
+    flex: 0 0 calc(50% - 17px);
+    min-width: 0;
+  }
+
+  /* FROM/TO row: fit inside the page side padding */
+  .fdates {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .fdates label {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .fdate {
+    width: 100%;
+    min-width: 0;
+  }
+  .fdates input {
+    width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+  }
+}
+
 /* -------------------- the datatake card (SentiBoard.html#data-availability) --------------------
    Opens under the strip whose bar was picked, aligned with the strip (past the 60px row label).
    ID and time on top, then one wrapping row: the two completeness rings, and the key/value list.
