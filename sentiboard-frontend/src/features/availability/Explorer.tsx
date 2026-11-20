@@ -839,6 +839,9 @@ export default function Explorer({
           </div>
         )}
 
+        {/* Tablet line break: pushes MISSION to its own row (see .rowBreak in availability.module.css) */}
+        <span className={s.rowBreak} aria-hidden />
+
         {/* Mission dropdown */}
         <div
           className={s.fdrop}

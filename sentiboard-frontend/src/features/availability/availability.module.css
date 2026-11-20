@@ -836,6 +836,39 @@
   .fsearch { min-width: 140px; }
 }
 
+/* Hidden outside of the tablet range; becomes a full-width zero-height flex line break
+   just before MISSION to keep row 1 (heading + tabs + pager) separate from row 2. */
+.rowBreak {
+  display: none;
+}
+
+/* Tablet portrait (iPad mini → iPad Pro 11″): keep all four filter controls on one row.
+   .rowBreak forces a flex line break so MISSION always starts row 2; pager stays on row 1.
+   .fdates gets width:100% for the same reason in custom mode.
+   Gap stays at 34px: row 1 (heading + tabs + pager) is unaffected and row 2 fits:
+   140 + 34 + 140 + 34 + 120min + 34 + ~72 = 574px, well under the ~707px available at 768px. */
+@media (min-width: 761px) and (max-width: 900px) {
+  .rowBreak {
+    display: block;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .fdates {
+    width: 100%;
+  }
+  .fdrop {
+    min-width: 140px;
+  }
+  .fsearch {
+    flex: 1 1 auto;
+    min-width: 120px;
+    width: auto;
+  }
+  .freset {
+    flex: none;
+  }
+}
+
 @media (max-width: 480px) {
   /* Row 1: heading + tabs share one flex row (heading left, tabs right).
      .filterGroup switches from display:contents back to a real flex container.
