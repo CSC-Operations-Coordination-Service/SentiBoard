@@ -10,6 +10,7 @@ import {
   AVAILABILITY_SUBTITLE,
 } from "@/features/availability/copy";
 import Explorer from "@/features/availability/Explorer";
+import AvailabilitySkeleton from "@/features/availability/AvailabilitySkeleton";
 import { getDatatakes } from "@/features/availability/data";
 import { computeDataWindow, fmtDate } from "@/features/availability/model";
 import s from "@/features/availability/availability.module.css";
@@ -55,7 +56,7 @@ export default function Page() {
         <SpaceBackdrop page={1} />
         {/* AvailabilityData calls connection() so it renders per-request, not at build time.
             Explorer reads useSearchParams(); Suspense is required for PPR prerendering. */}
-        <Suspense>
+        <Suspense fallback={<AvailabilitySkeleton />}>
           <AvailabilityData />
         </Suspense>
       </section>

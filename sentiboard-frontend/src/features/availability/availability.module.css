@@ -1307,3 +1307,95 @@
   padding-top: 0;
   background: transparent; /* let the header photo show through behind the counters */
 }
+
+/* -------------------- availability skeleton -------------------- */
+@keyframes skPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.skPulse {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  border-radius: 3px;
+  animation: skPulse 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skPulse { animation: none; }
+}
+
+/* pointer-events: none prevents any accidental interactivity on the placeholder */
+.skRoot {
+  pointer-events: none;
+}
+
+/* KPI placeholder tiles: content spans sized to match real values and labels */
+.skKpiVal {
+  display: block;
+  width: 60%;
+  height: clamp(26px, 2.9vw, 37px);
+}
+
+.skKpiKey {
+  display: block;
+  width: 80%;
+  height: 11px;
+  margin-top: 5px;
+}
+
+/* Toolbar placeholder: same margin-top / padding-bottom as .filters */
+.skToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: clamp(16px, 2.6vh, 28px);
+  padding-bottom: clamp(10px, 1.6vw, 20px);
+}
+
+/* Each row is 49px — same height as every real toolbar item (.fhead, .pager, .fdrop, .fsearch) */
+.skToolbarRow {
+  height: 49px;
+  border-radius: 2px;
+}
+
+/* Row visibility by breakpoint:
+   ≥1566px   → 1 row  (measured with window.innerWidth in browser, 7D view, 2026-11-23
+                        — re-check if toolbar items are added, removed, or resized)
+   901–1565px → 2 rows (items wrap before the full set fits)
+   ≤760px    → 3 rows (.fhead gets width:100%, heading takes its own row)
+   ≤480px    → 4 rows (heading+tabs, pager, mission+status, search+reset)
+   Hide rows 2–4 by default; show them progressively. */
+.skToolbarRow2,
+.skToolbarRow3,
+.skToolbarRow4 {
+  display: none;
+}
+
+@media (max-width: 1565px) {
+  .skToolbarRow2 { display: block; }
+}
+
+/* ≤760px: show 3rd row */
+@media (max-width: 760px) {
+  .skToolbarRow3 { display: block; }
+}
+
+/* ≤480px: show 4th row */
+@media (max-width: 480px) {
+  .skToolbarRow4 { display: block; }
+}
+
+/* Lane label placeholder: same geometry as .mapLabel, adds an explicit height */
+.skLabelBar {
+  height: 14px;
+}
+
+/* Lane strip placeholder: suppress the zoom transition (.track has one) */
+.skTrack {
+  transition: none;
+}
+
+/* Last lane row: cancel the .mapRow margin-bottom */
+.skLastRow {
+  margin-bottom: 0;
+}
