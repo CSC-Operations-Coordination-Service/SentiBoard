@@ -5,6 +5,7 @@ import {
   parseView,
   resetView,
   resolveView,
+  selectedSatIds,
   viewHref,
   viewParams,
   type EventsView,
@@ -483,5 +484,30 @@ describe("legacy URL backward compatibility", () => {
     expect(p.get("category")).toBeNull();
     expect(p.get("mission")).toBeNull();
     expect(p.get("satellite")).toBeNull();
+  });
+});
+
+describe("selectedSatIds", () => {
+  const VISIBLE = ["S1A", "S1B", "S1C", "S1D"];
+
+  it("returns null when all visible satellites are on (empty off-set)", () => {
+    expect(selectedSatIds(VISIBLE, new Set())).toBeNull();
+  });
+
+  it("returns null when all visible are on and off-set has only a hidden satellite", () => {
+    // S2A is not in VISIBLE (hidden by mission filter); visible sats are all on
+    expect(selectedSatIds(VISIBLE, new Set(["S2A"]))).toBeNull();
+  });
+
+  it("returns [] when every visible satellite is off", () => {
+    expect(selectedSatIds(VISIBLE, new Set(VISIBLE))).toEqual([]);
+  });
+
+  it("returns partial list in visibleSats order", () => {
+    expect(selectedSatIds(VISIBLE, new Set(["S1A", "S1C"]))).toEqual(["S1B", "S1D"]);
+  });
+
+  it("returns null for empty visibleSats list (all vacuously on)", () => {
+    expect(selectedSatIds([], new Set())).toBeNull();
   });
 });

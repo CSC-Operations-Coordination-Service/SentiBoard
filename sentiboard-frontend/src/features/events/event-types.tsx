@@ -1,7 +1,15 @@
 /* Shared type-colour, icon-path and completeness logic for the Events page.
    Values are exact copies from the prototype (docs/design/events-prototype-ref.md). */
 
-import type { EventCategory, EventDatatake } from "./model";
+import type { EventCategory, EventDatatake, MissionId } from "./model";
+import { MISSION_COLOR } from "@/lib/mission-colors";
+
+export const EVENTS_MISSION_COLOR: Record<MissionId, string> = {
+  s1: MISSION_COLOR.S1,
+  s2: MISSION_COLOR.S2,
+  s3: MISSION_COLOR.S3,
+  s5p: MISSION_COLOR.S5P,
+};
 
 export const CATEGORY_COLOR: Record<EventCategory, string> = {
   Acquisition: "#A7B1BE",

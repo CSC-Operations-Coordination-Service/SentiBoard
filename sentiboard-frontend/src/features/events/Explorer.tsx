@@ -44,6 +44,7 @@ import {
   parseView,
   resetView,
   resolveView,
+  selectedSatIds,
   viewHref,
   viewParams,
   type EventsView,
@@ -51,6 +52,7 @@ import {
 import {
   CATEGORY_COLOR,
   CATEGORY_SVG_INNER,
+  EVENTS_MISSION_COLOR,
   STATUS_COLOR,
   STATUS_LABEL,
   CategoryIcon,
@@ -60,6 +62,7 @@ import {
 } from "./event-types";
 import s from "./events.module.css";
 import { withBasePath } from "@/lib/asset";
+import { isAllSelected, selectAll, selectedIds } from "@/lib/filter-logic";
 
 const SpaceBackdrop = dynamic(() => import("@/components/SpaceBackdrop"), { ssr: false });
 
@@ -735,18 +738,9 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const visibleSats = MISSION_ORDER
     .filter((m) => !view.missionsOff.has(m))
     .flatMap((m) => MISSIONS[m]);
-  const visibleSatsOnCount = visibleSats.filter((sat) => !view.satellitesOff.has(sat)).length;
-
-  const typeOnCount = CATEGORIES.length - view.typesOff.size;
-  const typeDisplayVal = view.typesOff.size === 0 ? "All" : `${typeOnCount}/${CATEGORIES.length}`;
-
-  const missionOnCount = MISSION_ORDER.length - view.missionsOff.size;
-  const missionDisplayVal = view.missionsOff.size === 0 ? "All" : `${missionOnCount}/${MISSION_ORDER.length}`;
-
-  const satDisplayVal =
-    visibleSatsOnCount === visibleSats.length
-      ? "All"
-      : `${visibleSatsOnCount}/${visibleSats.length}`;
+  const typeIds = selectedIds(CATEGORIES, view.typesOff);
+  const missionIds = selectedIds(MISSION_ORDER, view.missionsOff);
+  const satIds = selectedSatIds(visibleSats, view.satellitesOff);
 
   const satelliteDisabled = visibleSats.length < 2;
 
@@ -884,11 +878,24 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                 onClick={() => setOpenFilter((o) => (o === "type" ? null : "type"))}
               >
                 <span className={s.fdropLabel}>Event type</span>
-                <span className={s.fdropVal}>{typeDisplayVal}</span>
+                {isAllSelected(view.typesOff) && <span className={s.fdropVal}>All</span>}
                 <span className={s.fdropChev}><ChevronDown size={12} strokeWidth={1.4} aria-hidden /></span>
               </button>
               <div className={s.fdropBody}>
                 <div className={s.fdropInner}>
+                  {/* matches availability Explorer.tsx:886-901 */}
+                  <button
+                    type="button"
+                    className={s.ftypeItem}
+                    aria-pressed={isAllSelected(view.typesOff)}
+                    onClick={() => {
+                      if (!isAllSelected(view.typesOff)) {
+                        navigate({ ...view, typesOff: selectAll(), event: null });
+                      }
+                    }}
+                  >
+                    <u>All</u>
+                  </button>
                   {CATEGORIES.map((c) => {
                     const isOff = view.typesOff.has(c);
                     const color = isOff ? "#8A96A6" : CATEGORY_COLOR[c];
@@ -927,11 +934,24 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                 onClick={() => setOpenFilter((o) => (o === "mission" ? null : "mission"))}
               >
                 <span className={s.fdropLabel}>Mission</span>
-                <span className={s.fdropVal}>{missionDisplayVal}</span>
+                {isAllSelected(view.missionsOff) && <span className={s.fdropVal}>All</span>}
                 <span className={s.fdropChev}><ChevronDown size={12} strokeWidth={1.4} aria-hidden /></span>
               </button>
               <div className={s.fdropBody}>
                 <div className={s.fdropInner}>
+                  {/* matches availability Explorer.tsx:886-901 */}
+                  <button
+                    type="button"
+                    className={s.fmisItem}
+                    aria-pressed={isAllSelected(view.missionsOff)}
+                    onClick={() => {
+                      if (!isAllSelected(view.missionsOff)) {
+                        navigate({ ...view, missionsOff: selectAll(), event: null });
+                      }
+                    }}
+                  >
+                    <u>All</u>
+                  </button>
                   {MISSION_ORDER.map((m) => {
                     const isOff = view.missionsOff.has(m);
                     return (
@@ -969,11 +989,24 @@ export default function Explorer({ data }: { data: ExplorerData }) {
                 onClick={() => !satelliteDisabled && setOpenFilter((o) => (o === "satellite" ? null : "satellite"))}
               >
                 <span className={s.fdropLabel}>Satellite</span>
-                <span className={s.fdropVal}>{satDisplayVal}</span>
+                {satIds === null && <span className={s.fdropVal}>All</span>}
                 <span className={s.fdropChev}><ChevronDown size={12} strokeWidth={1.4} aria-hidden /></span>
               </button>
               <div className={s.fdropBody}>
                 <div className={s.fdropInner}>
+                  {/* matches availability Explorer.tsx:886-901 */}
+                  <button
+                    type="button"
+                    className={s.fsatItem}
+                    aria-pressed={satIds === null}
+                    onClick={() => {
+                      if (satIds !== null) {
+                        navigate({ ...view, satellitesOff: selectAll(), event: null });
+                      }
+                    }}
+                  >
+                    <u>All</u>
+                  </button>
                   <div className={s.fsatRow}>
                     {visibleSats.map((sat) => {
                       const isOff = view.satellitesOff.has(sat);
@@ -1027,6 +1060,63 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             Reset
           </a>
         </div>
+
+        {/* Filter summary row: shown only when at least one dropdown is partial */}
+        {/* matches availability Explorer.tsx:1035-1073 */}
+        {(typeIds !== null || missionIds !== null || satIds !== null) && (
+          <div className={s.fsummary} aria-live="polite">
+            {typeIds !== null && (
+              <span className={s.fsummaryItem}>
+                <span className={s.fdropLabel}>Event type:</span>
+                <span className={s.fsummaryChips}>
+                  {typeIds.length === 0 ? (
+                    <span className={s.fdropVal}>none</span>
+                  ) : (
+                    typeIds.map((c) => (
+                      <span key={c} className={s.fsummaryChip}>
+                        <i aria-hidden style={{ background: CATEGORY_COLOR[c] }} />
+                        <span className={s.fdropVal}>{c}</span>
+                      </span>
+                    ))
+                  )}
+                </span>
+              </span>
+            )}
+            {missionIds !== null && (
+              <span className={s.fsummaryItem}>
+                <span className={s.fdropLabel}>Mission:</span>
+                <span className={s.fsummaryChips}>
+                  {missionIds.length === 0 ? (
+                    <span className={s.fdropVal}>none</span>
+                  ) : (
+                    missionIds.map((m) => (
+                      <span key={m} className={s.fsummaryChip}>
+                        <i aria-hidden style={{ background: EVENTS_MISSION_COLOR[m] }} />
+                        <span className={s.fdropVal}>{MISSION_DISPLAY[m]}</span>
+                      </span>
+                    ))
+                  )}
+                </span>
+              </span>
+            )}
+            {satIds !== null && (
+              <span className={s.fsummaryItem}>
+                <span className={s.fdropLabel}>Satellite:</span>
+                <span className={s.fsummaryChips}>
+                  {satIds.length === 0 ? (
+                    <span className={s.fdropVal}>none</span>
+                  ) : (
+                    satIds.map((sat) => (
+                      <span key={sat} className={s.fsummaryChip}>
+                        <span className={s.fdropVal}>{sat}</span>
+                      </span>
+                    ))
+                  )}
+                </span>
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Calendar */}
         <div className={s.calRow}>

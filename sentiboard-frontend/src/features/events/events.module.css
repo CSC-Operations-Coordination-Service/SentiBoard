@@ -2686,3 +2686,70 @@ select.control {
   background: transparent; /* let the header photo show through behind the counters */
   padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
 }
+
+/* Filter summary row — matches availability availability.module.css:682 */
+.fsummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 28px;
+  justify-content: center;
+  margin-top: clamp(6px, 1vh, 12px);
+  padding-bottom: clamp(4px, 0.8vw, 10px);
+  font-family: var(--font-sans);
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* matches availability availability.module.css:694 */
+.fsummaryItem {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* fdropLabel has flex:1 1 auto for use in dropdown heads; reset it here */
+/* matches availability availability.module.css:703 */
+.fsummaryItem .fdropLabel {
+  flex: none;
+}
+
+/* matches availability availability.module.css:707 */
+.fsummaryChips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+/* matches availability availability.module.css:715 */
+@media (max-width: 480px) {
+  .fsummary {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    row-gap: 6px;
+    justify-content: initial;
+  }
+  .fsummaryItem {
+    display: contents;
+  }
+}
+
+/* matches availability availability.module.css:728 */
+.fsummaryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* matches availability availability.module.css:800 */
+.fsummaryChip i {
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}

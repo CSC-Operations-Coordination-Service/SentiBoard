@@ -265,3 +265,18 @@ export function calendarCells(year: number, month: number): CalendarCell[] {
   for (let d = 1; cells.length % 7 !== 0; d++) cells.push({ day: d, dim: true });
   return cells;
 }
+
+/**
+ * Returns the ON satellite codes from visibleSats (satellites whose missions are active).
+ * Returns null when all visible satellites are on — satellitesOff may still contain codes
+ * for satellites hidden by the mission filter, which are ignored here.
+ * Returns [] when every visible satellite is off.
+ * Result order matches visibleSats order.
+ */
+export function selectedSatIds(
+  visibleSats: string[],
+  satellitesOff: ReadonlySet<string>,
+): string[] | null {
+  if (visibleSats.every((s) => !satellitesOff.has(s))) return null;
+  return visibleSats.filter((s) => !satellitesOff.has(s));
+}
