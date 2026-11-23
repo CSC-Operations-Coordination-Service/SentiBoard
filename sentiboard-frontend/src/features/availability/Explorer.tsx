@@ -58,7 +58,7 @@ import {
   toggleOption,
 } from "./filter-logic";
 import { withBasePath } from "@/lib/asset";
-import { useHoverCapable } from "@/lib/use-media-query";
+import { useHoverCapable, useMediaQuery } from "@/lib/use-media-query";
 import s from "./availability.module.css";
 
 const STRIP_ZOOM = 1.9;
@@ -310,6 +310,10 @@ export default function Explorer({
   // True only on pointer devices that can hover (mouse/trackpad). False on touch-primary
   // devices where browsers synthesise mouseenter/mouseleave after a tap.
   const hoverCapable = useHoverCapable();
+
+  // True on phone-width viewports (≤480px): DatatakeCard renders as a bottom sheet.
+  // Guarded by isClient so the first hydration render matches the SSR (sheet=false).
+  const isSheet = useMediaQuery("(max-width: 480px)");
 
   // Tooltip: one fixed portal element populated on bar mouseenter/focus, hidden on leave/scroll.
   const [tipItem, setTipItem] = useState<Datatake | null>(null);
@@ -1072,7 +1076,7 @@ export default function Explorer({
             </div>
           ) : (
             lanes.map(({ missionId, frames, tw }, rowIndex) => {
-              const isRowZoomed = pickedState?.missionId === missionId;
+              const isRowZoomed = pickedState?.missionId === missionId && !isSheet;
               // Zoom pivot: use the recorded click offset (px) when available; fall back to the
               // bar's leftPct as a percentage origin for initial load from URL state.
               const originPx = origins[missionId];
@@ -1215,6 +1219,7 @@ export default function Explorer({
                       phase={cardPhase}
                       onClose={() => navigate({ ...view, pick: null })}
                       onClosed={onClosed}
+                      sheet={isClient && isSheet}
                     />
                   )}
                 </div>

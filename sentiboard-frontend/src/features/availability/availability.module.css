@@ -1188,6 +1188,70 @@
   }
 }
 
+/* -------------------- bottom sheet (phone ≤480px) -------------------- */
+/* Backdrop: dim layer behind the sheet. opacity/transition driven by JS. */
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9550;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+/* Sheet panel. transform/transition driven by JS (translateY 100% → 0). */
+.sheet {
+  --card-ink: var(--text);
+  --card-ink-2: rgba(234, 240, 246, 0.78);
+  --card-ink-3: rgba(234, 240, 246, 0.62);
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9600;
+  background: var(--bg-2);
+  border-radius: 16px 16px 0 0;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--card-ink);
+  font-family: var(--font-sans);
+}
+
+/* Sticky header: ID + datetime on the left, ✕ on the right. */
+.sheetHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 12px;
+  flex: none;
+  background: var(--bg-2);
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+}
+
+.sheetHeadText b {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+  color: var(--card-ink);
+}
+
+.sheetHeadText .dtkWhen {
+  padding-top: 4px;
+}
+
+/* Scrollable body; overscroll-behavior: contain keeps page from scrolling behind.
+   flex: 1 1 auto (not 0) so the body grows to fill the sheet up to max-height 70vh. */
+.sheetBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 16px env(safe-area-inset-bottom);
+}
+
 /* -------------------- inline row expansion below tiles -------------------- */
 .mapRowContainer {
   display: flex;
