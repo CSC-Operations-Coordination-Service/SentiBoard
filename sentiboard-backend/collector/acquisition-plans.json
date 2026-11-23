@@ -1,0 +1,87 @@
+{
+    "models": [
+        {
+            "name": "AcquisitionPlanFootprint",
+            "index": "senti-footprint",
+            "fields": [
+                { "name": "satellite_unit", "type": "Keyword" },
+                { "name": "datatake_id", "type": "Keyword" },
+                { "name": "mode", "type": "Keyword" },
+                { "name": "polarisation", "type": "Keyword" },
+                { "name": "observation_time_start", "type": "Date" },
+                { "name": "observation_time_stop", "type": "Date" },
+                { "name": "absolute_orbit", "type": "Integer" },
+                { "name": "relative_orbit", "type": "Integer" },
+                { "name": "footprint", "type": "GeoShape" }
+            ]
+        }
+    ],
+    "collectors": [
+        {
+            "class": "SimpleHttpCollectorConfiguration",
+            "interface_name": "ESA_S1_ACQUISITION_PLANS",
+            "protocol_version": "links",
+            "auth_method": "",
+            "product_url": "https://sentinels.copernicus.eu/copernicus/sentinel-1/acquisition-plans",
+            "link_pattern": "/documents/d/sentinel/(?P<name>s1[a-d]_mp_user_(?P<date>\\d{8})t\\d{6}_\\d{8}t\\d{6})",
+            "refresh_interval": 1440,
+            "routing_key": "",
+            "model": "AcquisitionPlanFootprint",
+            "id_field": ["satellite_unit", "datatake_id"],
+            "extractor": {
+                "class": "XMLExtractor",
+                "args": {
+                    "iterate_nodes": ".//{http://www.opengis.net/kml/2.2}Placemark",
+                    "namespace_map": { "k": "http://www.opengis.net/kml/2.2" },
+                    "attr_map": {
+                        "satellite_unit": "k:ExtendedData/k:Data[@name='SatelliteId']/k:value",
+                        "datatake_id": "k:ExtendedData/k:Data[@name='DatatakeId']/k:value",
+                        "mode": "k:ExtendedData/k:Data[@name='Mode']/k:value",
+                        "polarisation": "k:ExtendedData/k:Data[@name='Polarisation']/k:value",
+                        "observation_time_start": "k:ExtendedData/k:Data[@name='ObservationTimeStart']/k:value",
+                        "observation_time_stop": "k:ExtendedData/k:Data[@name='ObservationTimeStop']/k:value",
+                        "absolute_orbit": "k:ExtendedData/k:Data[@name='OrbitAbsolute']/k:value",
+                        "relative_orbit": "k:ExtendedData/k:Data[@name='OrbitRelative']/k:value",
+                        "footprint": "k:LinearRing/k:coordinates"
+                    },
+                    "converter_map": {
+                        "datatake_id": { "type": "python", "python": "lambda value: str(int(value, 16))" },
+                        "footprint": { "type": "python", "python": "lambda value: (lambda points: {'type': 'polygon', 'coordinates': [__import__('functools').reduce(lambda ring, p: ring + [[p[0] - 360 * round((p[0] - ring[-1][0]) / 360), p[1]]], points[1:], points[:1])]})([[float(c) for c in point.split(',')[:2]] for point in value.split()])" }
+                    }
+                }
+            }
+        },
+        {
+            "class": "SimpleHttpCollectorConfiguration",
+            "interface_name": "ESA_S2_ACQUISITION_PLANS",
+            "protocol_version": "links",
+            "auth_method": "",
+            "product_url": "https://sentinels.copernicus.eu/copernicus/sentinel-2/acquisition-plans",
+            "link_pattern": "/documents/d/sentinel/(?P<name>s2[a-d]_mp_acq__kml_(?P<date>\\d{8})t\\d{6}_\\d{8}t\\d{6})",
+            "refresh_interval": 1440,
+            "routing_key": "",
+            "model": "AcquisitionPlanFootprint",
+            "id_field": ["satellite_unit", "datatake_id"],
+            "extractor": {
+                "class": "XMLExtractor",
+                "args": {
+                    "iterate_nodes": ".//{http://www.opengis.net/kml/2.2}Placemark",
+                    "namespace_map": { "k": "http://www.opengis.net/kml/2.2" },
+                    "attr_map": {
+                        "satellite_unit": { "root_path": "k:Document/k:Folder/k:name" },
+                        "datatake_id": "k:ExtendedData/k:Data[@name='ID']/k:value",
+                        "mode": "k:ExtendedData/k:Data[@name='Mode']/k:value",
+                        "observation_time_start": "k:ExtendedData/k:Data[@name='ObservationTimeStart']/k:value",
+                        "observation_time_stop": "k:ExtendedData/k:Data[@name='ObservationTimeStop']/k:value",
+                        "absolute_orbit": "k:ExtendedData/k:Data[@name='OrbitAbsolute']/k:value",
+                        "relative_orbit": "k:ExtendedData/k:Data[@name='OrbitRelative']/k:value",
+                        "footprint": "k:Polygon/k:outerBoundaryIs/k:LinearRing/k:coordinates"
+                    },
+                    "converter_map": {
+                        "footprint": { "type": "python", "python": "lambda value: (lambda points: {'type': 'polygon', 'coordinates': [__import__('functools').reduce(lambda ring, p: ring + [[p[0] - 360 * round((p[0] - ring[-1][0]) / 360), p[1]]], points[1:], points[:1])]})([[float(c) for c in point.split(',')[:2]] for point in value.split()])" }
+                    }
+                }
+            }
+        }
+    ]
+}
