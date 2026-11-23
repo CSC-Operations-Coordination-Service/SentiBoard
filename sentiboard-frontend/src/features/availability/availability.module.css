@@ -831,6 +831,19 @@
   .counter { width: clamp(130px, 44vw, 200px); }
 }
 
+/* 601–900px: all 4 KPIs on one row; labels may wrap to 2 lines but numbers stay at their clamp.
+   Below 600px, "COMPLETENESS" (12 uppercase chars + 0.2em spacing ≈ 109px) would leave no margin
+   in a 110px column, so 2×2 is used instead (see the 481–600px block below). */
+@media (min-width: 601px) and (max-width: 900px) {
+  .counters { flex-wrap: nowrap; }
+  .counter  { flex: 1 1 0; min-width: 0; width: auto; }
+}
+
+/* 481–600px: 2×2 grid — 4 columns would leave "COMPLETENESS" with ~0 px margin at the narrow end */
+@media (min-width: 481px) and (max-width: 600px) {
+  .counter { flex: 0 0 50%; min-width: 0; width: auto; }
+}
+
 @media (max-width: 760px) {
   .fhead { width: 100%; }
   .fsearch { min-width: 140px; }
