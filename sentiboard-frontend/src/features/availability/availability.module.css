@@ -855,6 +855,7 @@
   }
   .fdates {
     width: 100%;
+    justify-content: center;
   }
   .fdrop {
     min-width: 140px;
