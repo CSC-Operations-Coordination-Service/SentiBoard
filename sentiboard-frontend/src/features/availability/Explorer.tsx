@@ -4,7 +4,7 @@
    Session 3: strips with folded bars, entrance animation, zoom, hover/focus tooltip.
    Session 4 adds the datatake card; Session 5 replaces mock data with the real backend. */
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -265,6 +265,7 @@ export default function Explorer({
   /** Shown in place of the strips when the data could not be loaded (degraded state). */
   notice?: string;
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [view, setView] = useState<AvailabilityView>(() =>
     parseView(searchParams),
@@ -681,23 +682,27 @@ export default function Explorer({
       {/* KPI counters — driven by URL state and mock data */}
       <Reveal className={s.counters}>
         <div className={s.counter}>
-          <span className={s.counterV}>{kpiFmt(kpis.inRange)}</span>
+          <span className={s.counterV}>{notice ? "—" : kpiFmt(kpis.inRange)}</span>
           <span className={s.counterK}>Datatakes in range</span>
         </div>
         <div className={s.counter}>
           <span className={s.counterV}>
-            {kpis.meanCompleteness !== null
-              ? `${Math.round(kpis.meanCompleteness)}%`
-              : "—"}
+            {notice
+              ? "—"
+              : kpis.meanCompleteness !== null
+                ? `${Math.round(kpis.meanCompleteness)}%`
+                : "—"}
           </span>
           <span className={s.counterK}>Mean completeness</span>
         </div>
         <div className={s.counter}>
-          <span className={s.counterV}>{kpiFmt(kpis.coverageGaps)}</span>
+          <span className={s.counterV}>{notice ? "—" : kpiFmt(kpis.coverageGaps)}</span>
           <span className={s.counterK}>Coverage gaps</span>
         </div>
         <div className={s.counter}>
-          <span className={`${s.counterV} ${s.crit}`}>{kpiFmt(kpis.lost)}</span>
+          <span className={notice ? s.counterV : `${s.counterV} ${s.crit}`}>
+            {notice ? "—" : kpiFmt(kpis.lost)}
+          </span>
           <span className={s.counterK}>Datatakes lost</span>
         </div>
       </Reveal>
@@ -1071,8 +1076,25 @@ export default function Explorer({
       <Reveal className={s.panel}>
         <div className={s.mapInner}>
           {datatakes.length === 0 ? (
-            <div className={s.emptyData} role={notice ? "alert" : undefined}>
-              {notice ?? DATATAKES_NOT_AVAILABLE}
+            <div
+              className={notice ? `${s.emptyData} ${s.emptyDataError}` : s.emptyData}
+              role={notice ? "alert" : undefined}
+            >
+              {notice ? (
+                <>
+                  <span aria-hidden="true" className={s.emptyDataIcon}>⚠</span>
+                  <span>{notice}</span>
+                  <button
+                    type="button"
+                    className={s.retryBtn}
+                    onClick={() => router.refresh()}
+                  >
+                    Retry
+                  </button>
+                </>
+              ) : (
+                DATATAKES_NOT_AVAILABLE
+              )}
             </div>
           ) : (
             lanes.map(({ missionId, frames, tw }, rowIndex) => {

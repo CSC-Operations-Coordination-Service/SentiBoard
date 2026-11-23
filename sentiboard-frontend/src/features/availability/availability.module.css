@@ -168,6 +168,47 @@
   color: color-mix(in srgb, var(--text) 55%, transparent);
 }
 
+.emptyDataError {
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+  border-radius: 4px;
+  padding: 20px 24px;
+  margin: 12px 0;
+}
+
+.emptyDataIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.retryBtn {
+  margin-top: 4px;
+  padding: 6px 18px;
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.retryBtn:hover {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+}
+
+.retryBtn:focus-visible {
+  outline: 2px solid var(--warn);
+  outline-offset: 2px;
+}
+
 .tile {
   position: absolute;
   top: 0;
