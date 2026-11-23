@@ -3,6 +3,7 @@ import {
   calendarCells,
   filterEvents,
   parseView,
+  resetView,
   resolveView,
   viewHref,
   viewParams,
@@ -389,6 +390,63 @@ describe("calendarCells", () => {
     const firstReal = cells.findIndex((c) => !c.dim);
     expect(firstReal).toBe(5);
     expect(cells[firstReal]?.day).toBe(1);
+  });
+});
+
+/* ---- resetView ---- */
+
+describe("resetView", () => {
+  const dirty: EventsView = {
+    year: 2026, month: 11,
+    typesOff: new Set(["Acquisition"] as const),
+    missionsOff: new Set(["s1"] as const),
+    satellitesOff: new Set(["S1A"]),
+    q: "hello",
+    event: "abc",
+  };
+
+  it("clears typesOff, missionsOff, satellitesOff, q, and event", () => {
+    const r = resetView(dirty);
+    expect(r.typesOff.size).toBe(0);
+    expect(r.missionsOff.size).toBe(0);
+    expect(r.satellitesOff.size).toBe(0);
+    expect(r.q).toBe("");
+    expect(r.event).toBeNull();
+  });
+
+  it("preserves year and month", () => {
+    const r = resetView(dirty);
+    expect(r.year).toBe(2026);
+    expect(r.month).toBe(11);
+  });
+
+  it("does not mutate the input view", () => {
+    resetView(dirty);
+    expect(dirty.typesOff.size).toBe(1);
+    expect(dirty.missionsOff.size).toBe(1);
+    expect(dirty.satellitesOff.size).toBe(1);
+    expect(dirty.q).toBe("hello");
+    expect(dirty.event).toBe("abc");
+  });
+
+  it("viewHref(resetView(view), now) contains year/month and no filter or search params", () => {
+    // now.year differs from view.year → viewParams emits both year and month
+    const now = { year: 2025, month: 10 };
+    const view: EventsView = {
+      year: 2026, month: 11,
+      typesOff: new Set(["Acquisition"] as const),
+      missionsOff: new Set(["s1"] as const),
+      satellitesOff: new Set(["S1A"]),
+      q: "hello",
+      event: "evt-1",
+    };
+    const href = viewHref(resetView(view), now);
+    const qs = new URLSearchParams(href.includes("?") ? href.split("?")[1] : "");
+    // year/month preserved (year differs from now so both are emitted)
+    expect(qs.get("year")).toBe("2026");
+    expect(qs.get("month")).toBe("11");
+    // only year and month — no filter or search params
+    expect([...qs.keys()].sort()).toEqual(["month", "year"]);
   });
 });
 

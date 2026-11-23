@@ -24,7 +24,6 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  RotateCcw,
   Search,
 } from "lucide-react";
 import {
@@ -43,6 +42,7 @@ import {
   calendarCells,
   filterEvents,
   parseView,
+  resetView,
   resolveView,
   viewHref,
   viewParams,
@@ -750,12 +750,6 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
   const satelliteDisabled = visibleSats.length < 2;
 
-  const dirty =
-    view.typesOff.size > 0 ||
-    view.missionsOff.size > 0 ||
-    view.satellitesOff.size > 0 ||
-    !!view.q;
-
   const satellitesMonitored = new Set(monthEvents.map((e) => e.satellite)).size;
 
   /* ---- calendar cell rendering ---- */
@@ -1019,25 +1013,19 @@ export default function Explorer({ data }: { data: ExplorerData }) {
             </div>
 
           </div>
-          {dirty && (
-            <button
-              type="button"
-              className={s.reset}
-              onClick={() => {
-                navigate({
-                  ...view,
-                  typesOff: new Set(),
-                  missionsOff: new Set(),
-                  satellitesOff: new Set(),
-                  q: "",
-                  event: null,
-                });
+          <a
+            href={withBasePath(viewHref(resetView(view), data.now))}
+            className={s.reset}
+            onClick={(e) => {
+              if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                e.preventDefault();
+                navigate(resetView(view));
                 setOpenFilter(null);
-              }}
-            >
-              <RotateCcw size={12} aria-hidden /> Reset
-            </button>
-          )}
+              }
+            }}
+          >
+            Reset
+          </a>
         </div>
 
         {/* Calendar */}

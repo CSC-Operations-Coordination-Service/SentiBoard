@@ -216,6 +216,18 @@ export function resolveView(view: EventsView, events: EventCard[]): EventsView {
   return { ...view, year: sy, month: sm };
 }
 
+/** Returns a copy of view with all filters and search cleared, keeping year/month. */
+export function resetView(view: EventsView): EventsView {
+  return {
+    ...view,
+    typesOff: new Set(),
+    missionsOff: new Set(),
+    satellitesOff: new Set(),
+    q: "",
+    event: null,
+  };
+}
+
 /** Filter EventCard[] to those that START in (year, month) and match the active toggle filters.
  *  An event passes if its type, mission, and satellite are all ON (not in the off-sets).
  *  Unknown-mission events (mission === null) always pass the mission filter. */

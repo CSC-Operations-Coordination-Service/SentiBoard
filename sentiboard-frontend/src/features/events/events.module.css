@@ -401,24 +401,22 @@
   color: var(--mf-muted);
 }
 
+/* visual style matches availability .freset */
 .reset {
   margin-left: auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0;
+  padding: 1px 6px;
   border: 0;
   background: none;
   cursor: pointer;
-  font-family: var(--font-mono, var(--mono));
+  font-family: var(--font-sans);
   font-size: 11px;
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--mf-signal);
-}
-
-.reset:hover {
-  text-decoration: underline;
+  color: var(--text);
+  transition: color 0.2s ease;
 }
 
 .fieldRow {
