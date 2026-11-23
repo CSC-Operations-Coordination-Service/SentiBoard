@@ -1,0 +1,29 @@
+{
+    "aliases": {
+        "senti-footprint": {}
+    },
+    "index_patterns": [
+        "senti-footprint-*"
+    ],
+    "settings": {
+        "index": {
+            "number_of_shards": 1,
+            "number_of_replicas": 1
+        }
+    },
+    "mappings": {
+        "properties": {
+            "satellite_unit": { "type": "keyword" },
+            "datatake_id": { "type": "keyword" },
+            "mode": { "type": "keyword" },
+            "polarisation": { "type": "keyword", "meta": { "optional": true } },
+            "observation_time_start": { "type": "date" },
+            "observation_time_stop": { "type": "date" },
+            "absolute_orbit": { "type": "integer" },
+            "relative_orbit": { "type": "integer" },
+            "footprint": { "type": "geo_shape", "ignore_malformed": true },
+            "reportName": { "type": "keyword" },
+            "ingestionTime": { "type": "date" }
+        }
+    }
+}
