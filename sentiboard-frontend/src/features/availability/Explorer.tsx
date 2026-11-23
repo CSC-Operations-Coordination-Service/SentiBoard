@@ -20,7 +20,6 @@ import { Reveal } from "@/components/Reveal";
 import {
   DAY_MS,
   FRAMES,
-  MISSION_COLOR,
   MISSION_DISPLAY,
   MISSION_ORDER,
   SATELLITES_OF,
@@ -38,6 +37,7 @@ import {
   type Datatake,
   type MissionId,
 } from "./model";
+import { MISSION_COLOR } from "@/lib/mission-colors";
 import DatatakeCard, { type CardPhase } from "./DatatakeCard";
 import { DATATAKES_NOT_AVAILABLE } from "./copy";
 import {
@@ -56,7 +56,7 @@ import {
   selectAll,
   selectedIds,
   toggleOption,
-} from "./filter-logic";
+} from "@/lib/filter-logic";
 import { withBasePath } from "@/lib/asset";
 import { useHoverCapable, useMediaQuery } from "@/lib/use-media-query";
 import s from "./availability.module.css";

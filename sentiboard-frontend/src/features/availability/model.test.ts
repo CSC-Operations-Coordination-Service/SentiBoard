@@ -11,12 +11,12 @@ import {
   kpiFmt,
   computeDataWindow,
   DAY_MS,
-  MISSION_COLOR,
   MISSION_ORDER,
   STATUS_COLOR,
   STATUS_ORDER,
   type Datatake,
 } from "./model";
+import { MISSION_COLOR } from "@/lib/mission-colors";
 
 // ---------------------------------------------------------------------------
 // Helpers

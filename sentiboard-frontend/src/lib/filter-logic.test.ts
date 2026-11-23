@@ -4,7 +4,7 @@ import {
   selectAll,
   isAllSelected,
   selectedIds,
-} from "./filter-logic";
+} from "@/lib/filter-logic";
 
 const ORDER = ["a", "b", "c"] as const;
 type Opt = (typeof ORDER)[number];
