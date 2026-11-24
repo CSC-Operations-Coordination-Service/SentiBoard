@@ -628,6 +628,13 @@ select.control {
   gap: 2px 26px;
 }
 
+/* Search + Reset always wrap together as one flex item in .barFilters. */
+.searchReset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (min-width: 1140px) {
   .monthBar {
     flex-wrap: nowrap;
@@ -760,25 +767,6 @@ select.control {
   opacity: 1;
 }
 
-/* Reset: absolutely positioned at the right of the bar so it never affects row width or wrapping. */
-.monthBar > .reset {
-  position: absolute;
-  right: clamp(18px, 4vw, 48px);
-  top: 0;
-  height: 49px;
-  display: flex;
-  align-items: center;
-  margin-left: 0;
-}
-
-@media (max-width: 760px) {
-  .monthBar > .reset {
-    position: static;
-    align-self: flex-end;
-    height: auto;
-    min-height: 44px;
-  }
-}
 
 /* ---------------- month grid: sized like SentiBoard.html's star chart ----------------
    The reference draws the month in an SVG 1580 units wide: seven 200 × 168 cells (1400 units) with
@@ -2667,6 +2655,16 @@ select.control {
 @media (max-width: 760px) {
   .fdrop {
     width: 100%;
+  }
+  .searchReset {
+    width: 100%;
+  }
+  .searchReset .inlineSearch {
+    flex: 1 1 auto;
+    width: auto;
+  }
+  .searchReset .reset {
+    min-height: 44px;
   }
 }
 

@@ -1039,34 +1039,36 @@ export default function Explorer({ data }: { data: ExplorerData }) {
               </div>
             </div>
 
-            {/* Search */}
-            <div className={`${s.inline} ${s.inlineSearch}`}>
-              <Search size={13} aria-hidden />
-              <input
-                id="ef-search"
-                className={s.inlineInput}
-                type="search"
-                placeholder="Search"
-                aria-label="Search events"
-                value={view.q}
-                onChange={(e) => navigate({ ...view, q: e.target.value, event: null }, "replace")}
-              />
+            {/* Search + Reset — always wrap together */}
+            <div className={s.searchReset}>
+              <div className={`${s.inline} ${s.inlineSearch}`}>
+                <Search size={13} aria-hidden />
+                <input
+                  id="ef-search"
+                  className={s.inlineInput}
+                  type="search"
+                  placeholder="Search"
+                  aria-label="Search events"
+                  value={view.q}
+                  onChange={(e) => navigate({ ...view, q: e.target.value, event: null }, "replace")}
+                />
+              </div>
+              <a
+                href={withBasePath(viewHref(resetView(view), data.now))}
+                className={s.reset}
+                onClick={(e) => {
+                  if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
+                    e.preventDefault();
+                    navigate(resetView(view));
+                    setOpenFilter(null);
+                  }
+                }}
+              >
+                Reset
+              </a>
             </div>
 
           </div>
-          <a
-            href={withBasePath(viewHref(resetView(view), data.now))}
-            className={s.reset}
-            onClick={(e) => {
-              if (e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) {
-                e.preventDefault();
-                navigate(resetView(view));
-                setOpenFilter(null);
-              }
-            }}
-          >
-            Reset
-          </a>
         </div>
 
         {/* Filter summary row: shown only when at least one dropdown is partial */}

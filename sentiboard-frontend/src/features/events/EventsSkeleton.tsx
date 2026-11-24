@@ -37,10 +37,11 @@ export default function EventsSkeleton() {
             <div className={s.fdrop}><div className={`${s.skPulse} ${s.skFdrop}`} /></div>
             <div className={s.fdrop}><div className={`${s.skPulse} ${s.skFdrop}`} /></div>
             <div className={s.fdrop}><div className={`${s.skPulse} ${s.skFdrop}`} /></div>
-            <div className={s.inline}><div className={`${s.skPulse} ${s.skInline}`} /></div>
+            <div className={s.searchReset}>
+              <div className={s.inline}><div className={`${s.skPulse} ${s.skInline}`} /></div>
+              <span className={s.reset} aria-hidden />
+            </div>
           </div>
-          {/* Reset: position:absolute at ≥761px (no flow); position:static min-height:44px at ≤760px */}
-          <span className={s.reset} aria-hidden />
         </div>
 
         {/* Calendar — real calRow/calWrap/grid; zodiac reproduced with aspect-ratio pulse */}
