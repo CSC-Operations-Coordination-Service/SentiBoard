@@ -2736,6 +2736,12 @@ select.control {
   .fsummaryItem {
     display: contents;
   }
+  .fsummaryChip { flex: none; }
+  .fsummaryChip .fdropVal {
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+  }
 }
 
 /* matches availability availability.module.css:728 */
@@ -2752,4 +2758,12 @@ select.control {
   height: 8px;
   border-radius: 50%;
   flex: 0 0 auto;
+}
+
+/* summary chips show full names; the row wraps instead of truncating */
+.fsummaryChip { flex: none; }
+.fsummaryChip .fdropVal {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
 }
