@@ -122,6 +122,12 @@ Last updated: 2026-11-17 (branch `feature/DEVOCS-219-acquisitions-backend`, not 
   real S2 datatakes wrong). Since the fix, the legacy functions and the port agree on **all 330
   datatakes of the production sample** (one-off check on real documents).
 - Contract copy `sentiboard-frontend/api/openapi.json` regenerated from the app on 2026-11-17.
+- **ESA acquisition plans (2026-11-24):** `collector/acquisition-plans.json` (maas-collector
+  SimpleHttp `links` mode, PR `feature/simplehttp-links`) collects the S1/S2 plan KML files into
+  `senti-footprint` (one document per datatake, footprint `geo_shape`), journal in
+  `senti-collector-journal`. Run by hand on dev 2026-11-24 (5609 plans, files from 2026-11-16 on).
+  `GET /acquisition-plan/` serves them (GeoJSON footprint); checked on the local copy of the plans.
+  129/129 backend tests.
 
 ## Memory tooling
 

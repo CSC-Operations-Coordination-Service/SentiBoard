@@ -9,9 +9,15 @@ from functools import lru_cache
 from opensearchpy import connections
 
 from application.cache import TtlCache
-from domain.ports import AcquisitionPassRepository, DatatakeSource, OrbitSource
+from domain.ports import (
+    AcquisitionPassRepository,
+    AcquisitionPlanRepository,
+    DatatakeSource,
+    OrbitSource,
+)
 from infrastructure import celestrak
 from infrastructure.cds_opensearch import OpenSearchCdsRepository
+from infrastructure.footprint_opensearch import OpenSearchFootprintRepository
 
 
 def utc_now() -> datetime:
@@ -29,6 +35,10 @@ def datatake_source() -> DatatakeSource:
 
 def acquisition_pass_repository() -> AcquisitionPassRepository:
     return cds_repository()
+
+
+def acquisition_plan_repository() -> AcquisitionPlanRepository:
+    return OpenSearchFootprintRepository(connections.get_connection())
 
 
 @lru_cache(maxsize=1)

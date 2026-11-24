@@ -92,6 +92,30 @@ class AcquisitionPass(BaseModel):
     last_attached_ticket_url: Optional[str] = None
 
 
+class Footprint(BaseModel):
+    type: Literal["Polygon"] = "Polygon"
+    coordinates: List[List[List[float]]] = Field(
+        description="GeoJSON [lon, lat] rings. Longitudes may go past ±180 where the swath "
+        "crosses the dateline, so that the ring never wraps around the globe."
+    )
+
+
+class AcquisitionPlan(BaseModel):
+    id: str
+    satellite_unit: Optional[str] = Field(None, description='e.g. "S1C".')
+    datatake_id: Optional[str] = Field(
+        None, description='e.g. "85001" (S1, decimal), "59509-1" (S2). The /datatake/ entry of '
+        'this plan has the id "<satellite_unit>-<datatake_id>", e.g. "S1C-85001".'
+    )
+    mode: Optional[str] = Field(None, description='e.g. "IW", "EW", "NOBS".')
+    polarisation: Optional[str] = Field(None, description="S1 only.")
+    observation_time_start: Optional[datetime] = None
+    observation_time_stop: Optional[datetime] = None
+    absolute_orbit: Optional[int] = None
+    relative_orbit: Optional[int] = None
+    footprint: Optional[Footprint] = None
+
+
 class SatelliteOrbit(BaseModel):
     """A two-line element set (TLE); propagate it with SGP4."""
 

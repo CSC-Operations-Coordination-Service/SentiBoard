@@ -68,6 +68,7 @@ Read from the `cds-*` indices produced by MAAS-CDS, which the API never writes. 
 |---|---|---|
 | `GET /datatake/` | `cds-completeness-{s1,s2}-*-dd-das`, `cds-completeness-splitted-{s3,s5}-*-dd-das` | `date_from`, `date_to` (required, at most 31 days), `mission` (repeatable), `satellite`, `offset`, `limit` |
 | `GET /acquisition-pass/` | `cds-cadip-acquisition-pass-status*` | `date_from`, `date_to` (on the downlink start), `satellite`, `ground_station`, `offset`, `limit` |
+| `GET /acquisition-plan/` | `senti-footprint` (ESA S1/S2 plan KML files, `collector/acquisition-plans.json`) | `date_from`, `date_to` (on the observation start, at most 31 days), `satellite`, `offset`, `limit` |
 | `GET /orbit/` | Celestrak TLEs, cached in memory | none. 503 when no copy can be fetched |
 
 Datatakes carry their products, per-level completeness and the ACQ/PUB completeness status,

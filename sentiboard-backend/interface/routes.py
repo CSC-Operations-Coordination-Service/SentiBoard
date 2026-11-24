@@ -14,9 +14,16 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from application import acquisitions
 from application.cache import TtlCache
-from domain.ports import AcquisitionPassRepository, DatatakeSource, OrbitSource, OrbitsUnavailable
+from domain.ports import (
+    AcquisitionPassRepository,
+    AcquisitionPlanRepository,
+    DatatakeSource,
+    OrbitSource,
+    OrbitsUnavailable,
+)
 from interface import dependencies
 from interface.schemas import AcquisitionPass, Datatake, SatelliteOrbit
+from interface.schemas import AcquisitionPlan as AcquisitionPlanOut
 
 router = APIRouter()
 
@@ -85,6 +92,23 @@ def list_acquisition_pass(
         repository, date_from, date_to, satellite, ground_station, offset, limit
     )
     return [AcquisitionPass.model_validate(asdict(p)) for p in passes]
+
+
+@router.get("/acquisition-plan/", response_model=List[AcquisitionPlanOut], tags=["acquisition-plan"])
+def list_acquisition_plan(
+    date_from: datetime = Query(description=_WINDOW_DOC + " Matched on the observation start."),
+    date_to: datetime = Query(description=_WINDOW_DOC + " Matched on the observation start."),
+    satellite: Optional[str] = Query(None, description='Satellite unit, e.g. "S1C".'),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    repository: AcquisitionPlanRepository = Depends(dependencies.acquisition_plan_repository),
+) -> List[AcquisitionPlanOut]:
+    """S1/S2 datatakes planned by ESA (acquisition plan KML files, collected daily into
+    senti-footprint) whose observation starts in the window, by observation start, each with
+    its footprint polygon."""
+    date_from, date_to = _window(date_from, date_to)
+    plans = repository.list_plans(date_from, date_to, satellite, offset, limit)
+    return [AcquisitionPlanOut.model_validate(asdict(p)) for p in plans]
 
 
 @router.get("/orbit/", response_model=List[SatelliteOrbit], tags=["orbit"])

@@ -2,6 +2,23 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## ESA acquisition plans — collector and `GET /acquisition-plan/` (2026-11-24)
+
+Backend done (STATE.md). Open:
+
+- **Frontend (not started, frontend owner):** read `GET /acquisition-plan/?date_from&date_to&satellite`
+  for the real planned swaths. Match a plan to its `/datatake/` entry by
+  `id == "<satellite_unit>-<datatake_id>"`. Footprint longitudes may go past ±180 where a swath
+  crosses the dateline (on purpose: the ring never wraps the globe). Regenerate
+  `sentiboard-frontend/api/openapi.json` to get the types. Replaces the legacy
+  `/api/acquisitions/acquisition-plans/<mission>/<satellite>/<day>` KML route.
+- **maas-collector PR `feature/simplehttp-links`** (links mode, journal alias fix, `journal_index`):
+  waits for review and a release; the collector config needs it.
+- **Deploy the collector** (Swarm via csc-ocs-ansible): service account with write on
+  `senti-footprint*` and `senti-collector-journal`, egress to `sentinels.copernicus.eu`.
+- **History:** a first run collects plan files from 7 days before; the older files still on the ESA
+  pages (~85 locally) need one wider run if wanted.
+
 ## Acquisitions — backend routes and real-data wiring (2026-11-17, branch `feature/DEVOCS-219-acquisitions-backend`)
 
 Done and verified (tests, build, end to end on seeded data), see [features/acquisitions.md](features/acquisitions.md)

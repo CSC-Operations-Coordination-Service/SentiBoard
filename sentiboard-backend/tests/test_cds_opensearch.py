@@ -69,3 +69,23 @@ def test_list_passes_query_and_mapping():
     assert body["sort"][0] == {"downlink_start": "asc"}
     assert body["query"]["bool"]["filter"][1] == {"term": {"satellite_id": "S2A"}}
     assert len(body["query"]["bool"]["filter"]) == 2
+
+
+def test_list_plans_query_and_mapping():
+    from infrastructure.footprint_opensearch import OpenSearchFootprintRepository
+
+    client = mock.Mock()
+    client.search.return_value = {"hits": {"hits": [
+        {"_id": "f1", "_source": {"satellite_unit": "S2A", "datatake_id": "59509",
+                                  "observation_time_start": "2026-11-16T10:00:00.000Z"}},
+    ]}}
+
+    plans = OpenSearchFootprintRepository(client).list_plans(FROM, TO, None, 0, 100)
+
+    assert [(p.id, p.datatake_id, p.footprint) for p in plans] == [("f1", "59509", None)]
+    kwargs = client.search.call_args.kwargs
+    assert kwargs["index"] == "senti-footprint"
+    body = kwargs["body"]
+    assert body["sort"][0] == {"observation_time_start": "asc"}
+    assert body["query"]["bool"]["filter"] == [{"range": {"observation_time_start": {
+        "gte": "2026-11-16T00:00:00.000Z", "lt": "2026-11-18T00:00:00.000Z"}}}]

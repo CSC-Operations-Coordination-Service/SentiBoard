@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any, Protocol
 
 from domain.acquisition_pass import AcquisitionPass
+from domain.acquisition_plan import AcquisitionPlan
 from domain.orbit import Orbit
 
 
@@ -37,6 +38,15 @@ class AcquisitionPassRepository(Protocol):
         ground_station: str | None, offset: int, limit: int,
     ) -> list[AcquisitionPass]:
         """Passes whose downlink starts in [date_from, date_to), by downlink start."""
+        ...
+
+
+class AcquisitionPlanRepository(Protocol):
+    def list_plans(
+        self, date_from: datetime, date_to: datetime, satellite: str | None, offset: int,
+        limit: int,
+    ) -> list[AcquisitionPlan]:
+        """Planned datatakes whose observation starts in [date_from, date_to), by start."""
         ...
 
 

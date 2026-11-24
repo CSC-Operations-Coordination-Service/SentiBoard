@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 import main
 from application.cache import TtlCache
 from domain.acquisition_pass import pass_from_document
+from domain.acquisition_plan import plan_from_document
 from domain.orbit import parse_tle
 from domain.ports import OrbitsUnavailable
 from interface import dependencies
@@ -69,6 +70,19 @@ class FakePassRepository:
         })]
 
 
+class FakePlanRepository:
+    def __init__(self):
+        self.calls = []
+
+    def list_plans(self, date_from, date_to, satellite, offset, limit):
+        self.calls.append((date_from, date_to, satellite, offset, limit))
+        return [plan_from_document("f1", {
+            "satellite_unit": "S1C", "datatake_id": "85001", "mode": "EW",
+            "observation_time_start": "2026-11-16T01:30:00Z", "absolute_orbit": 5123,
+            "footprint": {"type": "polygon", "coordinates": [[[179, 80], [185, 80], [185, 82], [179, 80]]]},
+        })]
+
+
 class FakeOrbits:
     def __init__(self, fail=False):
         self.fail = fail
@@ -93,7 +107,7 @@ def override(dependency, value):
 
 def test_routes_are_in_the_contract(client):
     paths = client.get("/openapi.json").json()["paths"]
-    assert {"/datatake/", "/acquisition-pass/", "/orbit/"} <= set(paths)
+    assert {"/datatake/", "/acquisition-pass/", "/acquisition-plan/", "/orbit/"} <= set(paths)
 
 
 def test_list_datatakes(client):
@@ -225,3 +239,30 @@ def test_pages_of_one_window_build_it_once(client):
 
     assert [d["id"] for d in first + second] == ["S1A-1", "S3A_X", "S1A-2"]
     assert [c[0] for c in fake.calls] == ["documents", "products"]  # one build, not two
+
+
+def test_list_acquisition_plans(client):
+    fake = FakePlanRepository()
+    override(dependencies.acquisition_plan_repository, fake)
+
+    response = client.get("/acquisition-plan/", params={**WINDOW, "satellite": "S1C", "offset": 5})
+
+    assert response.status_code == 200
+    [plan] = response.json()
+    assert plan["id"] == "f1" and plan["datatake_id"] == "85001" and plan["polarisation"] is None
+    # GeoJSON type, and longitudes past 180 kept for the dateline
+    assert plan["footprint"] == {
+        "type": "Polygon", "coordinates": [[[179, 80], [185, 80], [185, 82], [179, 80]]],
+    }
+    assert fake.calls == [(
+        datetime(2026, 11, 16, tzinfo=timezone.utc), datetime(2026, 11, 18, tzinfo=timezone.utc),
+        "S1C", 5, 100,
+    )]
+
+
+def test_list_acquisition_plans_rejects_a_wide_window(client):
+    override(dependencies.acquisition_plan_repository, FakePlanRepository())
+    response = client.get(
+        "/acquisition-plan/", params={"date_from": "2026-10-01", "date_to": "2026-11-18"}
+    )
+    assert response.status_code == 422
