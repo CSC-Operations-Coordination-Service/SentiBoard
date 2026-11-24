@@ -26,6 +26,7 @@
             "link_pattern": "/documents/d/sentinel/(?P<name>s1[a-d]_mp_user_(?P<date>\\d{8})t\\d{6}_\\d{8}t\\d{6})",
             "refresh_interval": 1440,
             "routing_key": "",
+            "journal_index": "senti-collector-journal",
             "model": "AcquisitionPlanFootprint",
             "id_field": ["satellite_unit", "datatake_id"],
             "extractor": {
@@ -60,6 +61,7 @@
             "link_pattern": "/documents/d/sentinel/(?P<name>s2[a-d]_mp_acq__kml_(?P<date>\\d{8})t\\d{6}_\\d{8}t\\d{6})",
             "refresh_interval": 1440,
             "routing_key": "",
+            "journal_index": "senti-collector-journal",
             "model": "AcquisitionPlanFootprint",
             "id_field": ["satellite_unit", "datatake_id"],
             "extractor": {
