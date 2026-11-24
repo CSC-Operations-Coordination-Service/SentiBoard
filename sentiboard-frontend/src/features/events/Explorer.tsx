@@ -719,11 +719,19 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   // All hooks above this line. Early-return for the degraded state.
   if (!data.ok) {
     return (
-      <div className={s.page} style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "40vh" }}>
-        <p style={{ color: "var(--mf-muted)", fontFamily: "var(--font-mono, var(--mono))", fontSize: 13 }}>
-          {data.unreachable ? "Backend unreachable — " : "Could not load events — "}
-          {data.message}
-        </p>
+      <div className={s.page}>
+        <div className={s.evErrorWrap}>
+          <div className={s.evError} role="alert">
+            <span aria-hidden="true" className={s.evErrorIcon}>⚠</span>
+            <span>
+              {data.unreachable ? "Backend unreachable — " : "Could not load events — "}
+              {data.message}
+            </span>
+            <button type="button" className={s.evRetryBtn} onClick={() => router.refresh()}>
+              Retry
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

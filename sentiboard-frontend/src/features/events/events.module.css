@@ -2767,3 +2767,60 @@ select.control {
   overflow: visible;
   text-overflow: clip;
 }
+
+/* ---- error state — matches availability .emptyDataError / .retryBtn ---- */
+/* Wrapper centres the box vertically; the border lives on the box itself. */
+.evErrorWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40vh;
+  padding: 24px clamp(18px, 4vw, 48px);
+  box-sizing: border-box;
+}
+
+.evError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 540px;
+  box-sizing: border-box;
+  color: var(--mf-orange);
+  border: 1px solid color-mix(in srgb, var(--mf-orange) 35%, transparent);
+  border-radius: 4px;
+  padding: 20px 24px;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+}
+
+.evErrorIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.evRetryBtn {
+  margin-top: 4px;
+  padding: 6px 18px;
+  font-family: var(--font-sans, var(--sans));
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mf-orange);
+  background: color-mix(in srgb, var(--mf-orange) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--mf-orange) 40%, transparent);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.evRetryBtn:hover {
+  background: color-mix(in srgb, var(--mf-orange) 18%, transparent);
+}
+
+.evRetryBtn:focus-visible {
+  outline: 2px solid var(--mf-orange);
+  outline-offset: 2px;
+}
