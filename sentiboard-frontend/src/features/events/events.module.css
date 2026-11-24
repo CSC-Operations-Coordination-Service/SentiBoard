@@ -635,6 +635,10 @@ select.control {
   gap: 8px;
 }
 
+.searchReset .reset {
+  height: 49px;
+}
+
 @media (min-width: 1140px) {
   .monthBar {
     flex-wrap: nowrap;
@@ -2662,11 +2666,10 @@ select.control {
   .searchReset .inlineSearch {
     flex: 1 1 auto;
     width: auto;
-  }
-  .searchReset .reset {
-    min-height: 44px;
+    min-width: 0;
   }
 }
+
 
 /* the starfield fades in over the bottom of the hero, as in SentiBoard.html */
 .headArt + .page { background: none; }
