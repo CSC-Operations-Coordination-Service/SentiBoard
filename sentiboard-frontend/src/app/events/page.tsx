@@ -5,6 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { SITE_NAME, ROUTES } from "@/lib/routes";
 import s from "@/features/events/events.module.css";
 import Explorer, { type ExplorerData } from "@/features/events/Explorer";
+import EventsSkeleton from "@/features/events/EventsSkeleton";
 import { getEvents } from "@/features/events/data";
 import { toEventCard } from "@/features/events/adapter";
 import { nowYM, parseView, resolveView, filterEvents } from "@/features/events/url-state";
@@ -106,7 +107,7 @@ export default function EventsPage(props: PageProps<"/events">) {
           The Events calendar requires JavaScript to display.
         </p>
       </noscript>
-      <Suspense>
+      <Suspense fallback={<EventsSkeleton />}>
         <EventsContent searchParams={props.searchParams} />
       </Suspense>
     </>
