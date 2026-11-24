@@ -616,10 +616,10 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
   (`["S1_L0:1.0", "S1_L0:1.1"]`) would still give two releases with the same id. Not present in
   the feed on 2026-10-22; decide the intended meaning before handling it.
 
-## DEVOCS-219 — Data Availability (status 2026-11-18)
+## DEVOCS-219 — Data Availability + Events (status 2026-11-24)
 Done on bugfix/DEVOCS-219-frontend-bugs:
 - Mission/Status filters: "All" option, "All" in trigger, summary row
-  with colored dots (status legend colors; MISSION_COLOR in model.ts copied
+  with colored dots (status legend colors; MISSION_COLOR now in src/lib/mission-colors.ts, copied
   from mock-ups AcquisitionsLadder.tsx:121), n/m counts removed
 - Dropdown chevron rotates via aria-expanded
 - Timeline bars placed by time: 96 time slots, timeToPct shared with axisTicks
@@ -629,12 +629,29 @@ Done on bugfix/DEVOCS-219-frontend-bugs:
   months" label); tabs now render [1D, 7D, 30D, 3M, Custom]
 - Default range changed to 7D (legacy default was 'week'); range=7 omitted
   from URL as default, range=30/90 explicit
+Events done on bugfix/DEVOCS-219-frontend-bugs:
+- Reset always visible: always-rendered `<a className={s.reset}>`, href from
+  `resetView(view)` (clears type/mission/satellite/search/event, keeps year/month);
+  cyan restyled to match DA's look
+- Filter dropdowns: "All" option, "All" in trigger (no n/m), summary row with colored
+  dots (types: CATEGORY_COLOR, missions: shared MISSION_COLOR), full names wrap instead
+  of truncating
+- Error state: amber alert box + Retry button (`router.refresh()`), like DA
+- Loading skeleton (`EventsSkeleton`) as `<Suspense fallback>` in `app/events/page.tsx`
+- Shared helpers moved to `src/lib/filter-logic.ts` and `src/lib/mission-colors.ts`
+  (DA and Events both use them)
+DA known issues:
+- **DA skeleton missing prefers-reduced-motion.** `AvailabilitySkeleton` has no
+  `prefers-reduced-motion` rule; Events' skeleton has one. DA should follow suit.
+- **DA /datatake/ 10 s timeout.** `client.ts` aborts after 10 s; the 3-month load
+  (~3.5 MB / ~14.5 s per month from outside the server) consistently exceeds this.
+  The abort surfaces as `ApiError "parse"`. Staging OK today (frontend next to
+  backend); local dev over the VPN hits this. Needs a separate ticket + backend note.
 Decisions: DA only (Processors/Events have their own periods). Datatake
 ID search stays within the selected period (no widening to 3M).
 3M = calendar months (setUTCMonth −3), id 90. The backend fetch
 (computeDataWindow, model.ts:267) starts at today−3 months, so it covers it.
-Later: Events needs the same All/summary/chevron pattern. Processors
-chevron is static (processors.module.css:129 comment now outdated).
+Processors chevron is static (processors.module.css:129 comment now outdated).
 Backend fetches 3 months, client discards most (perf).
 Legacy reference: old datatakes.js: window includes planned datatakes
 up to tomorrow 23:59:59.
@@ -666,14 +683,9 @@ Large screens (≥1280px): toolbar/label text is fixed px (11/13/14px, ticks 10p
 
 ## Events — known issues (2026-10-23)
 
-- **Reset button does not follow DA/Processors pattern.** Events Reset is a JS-only `<button>` shown
-  only when filters are dirty (`events/Explorer.tsx:1022-1039`, `events.module.css:404`). It should
-  follow the DA/Processors pattern: always visible, `ViewLink` to `DEFAULT_VIEW`, styled with
-  `.freset`. Separate bug; do not change Events while the Processors bugfix branch is open.
-
 - **Filter redesign (2026-10-23 rev 2)**: Filters are now multi-select toggles (prototype style).
   URL model changed from `?category=&mission=&satellite=` to `?typesOff=&missionsOff=&satellitesOff=`;
-  legacy URLs are converted on parse. Visual check needed: toggle items, "All"/"N/total" counter,
+  legacy URLs are converted on parse. Visual check needed: toggle items, "All" in trigger + summary row (DEVOCS-219),
   month-on-own-line when dirty, dropdown z-index (no calendar click-through). 263 tests pass.
 
 - **Visual check pending.** `pnpm lint`, `type-check`, `build` and 221/221 tests all pass. Still needs a
@@ -700,6 +712,14 @@ Large screens (≥1280px): toolbar/label text is fixed px (11/13/14px, ticks 10p
   `overflow-y: auto`.
 - **`now` in both ExplorerData variants.** `nowYM()` is called once in `EventsContent` and passed
   as `now` on both ok and error variants; Explorer never calls `nowYM()` itself.
+- **Skeleton / real-page layout edge.** Near 1265–1290px viewport the skeleton month bar
+  may fit filters on one row while the real page wraps to two (month-name dependent, ~1px
+  edge); the calendar can shift ~50px when data arrives. Accepted.
+- **`instant = false` comment outdated.** `app/events/page.tsx:42` says "Block streaming";
+  Events does stream (DECISIONS.md: no-JS dropped for /events). Fix the comment.
+- **No-JS + skeleton.** No-JS visitors on Events see the `<noscript>` message plus a
+  skeleton that keeps pulsing (the static shell includes `EventsSkeleton`; JS never
+  replaces it).
 
 ## Events — legacy parity, to do at the end
 
