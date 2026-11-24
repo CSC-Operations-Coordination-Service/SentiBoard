@@ -568,7 +568,7 @@ select.control {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px 0;
+  gap: 10px clamp(8px, 1.5vw, 24px);
   width: 100%;
   margin: 0 auto;
   padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
@@ -600,11 +600,20 @@ select.control {
   letter-spacing: 0.2em;
   line-height: 1.5;
   text-transform: uppercase;
+  text-wrap: balance;
   color: color-mix(in srgb, var(--mf-text) 72%, transparent);
 }
 
 .metricLost .metricValue {
   color: var(--mf-red);
+}
+
+/* At ≥761px labels must stay on one line: let the tile grow to fit its label instead of
+   the label wrapping inside a fixed-width tile. The ≤760px rules keep clamp(130px,44vw,200px)
+   for the 2×2 grid; text-wrap:balance still applies there. */
+@media (min-width: 761px) {
+  .metric      { width: auto; min-width: clamp(140px, 16vw, 220px); }
+  .metricLabel { white-space: nowrap; }
 }
 
 /* ---------------- month + filter row ----------------
@@ -2390,7 +2399,7 @@ select.control {
 
   /* Metrics: two centred columns, as the reference does below 900px. */
   .metrics {
-    gap: 10px 0;
+    gap: 10px clamp(8px, 1.5vw, 24px);
     padding-bottom: 26px;
   }
 
