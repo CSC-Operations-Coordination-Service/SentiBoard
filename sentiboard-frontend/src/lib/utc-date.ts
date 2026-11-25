@@ -24,3 +24,9 @@ export function utcDayMonthYearStr(iso: string): string {
   const d = new Date(iso);
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
 }
+
+/** "DD-Mon-YYYY at HH:MM" in UTC, e.g. "07-Oct-2026 at 09:20" — used by news card headers. */
+export function utcNewsHeaderDate(iso: string): string {
+  const d = new Date(iso);
+  return `${pad(d.getUTCDate())}-${MONTHS[d.getUTCMonth()]}-${d.getUTCFullYear()} at ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+}

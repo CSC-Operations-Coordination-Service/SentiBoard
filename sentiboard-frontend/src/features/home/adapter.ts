@@ -1,30 +1,35 @@
 /* Backend Instantmessage records → InstantMessage UI model. Server-only.
    Sorted by publication_date descending (the API has no sort parameter).
-   Only the fields shown by the news bar (Decision 5 in home-prototype-ref.md §11) are kept:
-   title and the publication date formatted as "D Mon YYYY" + "HH:MM" in UTC.
    Records with a null publication_date are excluded and logged. */
 
 import "server-only";
 import type { components } from "@/lib/api/schema";
 import { logger } from "@/lib/log";
-import { utcDayMonthYearStr, utcTimeStr } from "@/lib/utc-date";
+import { utcDayMonthYearStr, utcTimeStr, utcNewsHeaderDate } from "@/lib/utc-date";
+import { normalizeNewsText } from "@/features/news/news-format";
 
 export type ApiInstantMessage = components["schemas"]["Instantmessage"];
 
-/** Maximum number of instant messages shown in the news bar. */
+/** Maximum number of instant messages shown in the home news bar. */
 export const MAX_NEWS = 5;
 
 export interface InstantMessage {
+  id: string;          // r.id ?? String(loop-index)
   title: string;
-  date: string; // "D Mon YYYY", e.g. "20 Jul 2026"
-  time: string; // "HH:MM" in UTC
+  text: string;        // normalised body text (normalizeNewsText)
+  link: string;        // may be ""
+  messageType: string; // raw lowercase value from backend
+  date: string;        // "D Mon YYYY" UTC — ticker
+  time: string;        // "HH:MM" UTC — ticker
+  headerDate: string;  // "DD-Mon-YYYY at HH:MM" UTC — card header
 }
 
 export function adaptInstantMessages(records: ApiInstantMessage[]): InstantMessage[] {
   const dated: { ms: number; item: InstantMessage }[] = [];
   let nullCount = 0;
 
-  for (const r of records) {
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i]!;
     if (!r.publication_date) {
       nullCount++;
       continue;
@@ -32,9 +37,14 @@ export function adaptInstantMessages(records: ApiInstantMessage[]): InstantMessa
     dated.push({
       ms: new Date(r.publication_date).getTime(),
       item: {
+        id: r.id ?? String(i),
         title: r.title,
+        text: normalizeNewsText(r.text),
+        link: r.link,
+        messageType: r.message_type,
         date: utcDayMonthYearStr(r.publication_date),
         time: utcTimeStr(r.publication_date),
+        headerDate: utcNewsHeaderDate(r.publication_date),
       },
     });
   }

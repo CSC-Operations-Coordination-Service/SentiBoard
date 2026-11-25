@@ -62,10 +62,58 @@ describe("adaptInstantMessages", () => {
     expect(adaptInstantMessages(records)).toEqual([]);
   });
 
-  it("keeps only title, date, time — no raw API fields", () => {
+  it("output keys are exactly the InstantMessage shape", () => {
     const records = [rec("Item", "2026-07-11T10:05:00Z")];
     const [item] = adaptInstantMessages(records);
-    expect(Object.keys(item ?? {})).toEqual(["title", "date", "time"]);
+    expect(Object.keys(item ?? {}).sort()).toEqual(
+      ["date", "headerDate", "id", "link", "messageType", "text", "time", "title"].sort(),
+    );
+  });
+
+  it("uses r.id when present", () => {
+    const records = [rec("Item", "2026-07-11T10:05:00Z", { id: "abc-123" })];
+    const [item] = adaptInstantMessages(records);
+    expect(item?.id).toBe("abc-123");
+  });
+
+  it("falls back to String(loop-index) when id is null", () => {
+    const records = [
+      rec("First", "2026-07-11T10:05:00Z", { id: null }),
+      rec("Second", "2026-07-11T09:00:00Z", { id: null }),
+    ];
+    const result = adaptInstantMessages(records);
+    expect(result[0]?.id).toBe("0");
+    expect(result[1]?.id).toBe("1");
+  });
+
+  it("normalises text (CRLF → LF, trims)", () => {
+    const records = [rec("Item", "2026-07-11T10:05:00Z", { text: "  a\r\nb\r\nc  " })];
+    const [item] = adaptInstantMessages(records);
+    expect(item?.text).toBe("a\nb\nc");
+  });
+
+  it("passes link through (non-empty)", () => {
+    const records = [rec("Item", "2026-07-11T10:05:00Z", { link: "https://example.com" })];
+    const [item] = adaptInstantMessages(records);
+    expect(item?.link).toBe("https://example.com");
+  });
+
+  it("passes link through (empty string)", () => {
+    const records = [rec("Item", "2026-07-11T10:05:00Z", { link: "" })];
+    const [item] = adaptInstantMessages(records);
+    expect(item?.link).toBe("");
+  });
+
+  it("passes messageType through", () => {
+    const records = [rec("Item", "2026-07-11T10:05:00Z", { message_type: "warning" })];
+    const [item] = adaptInstantMessages(records);
+    expect(item?.messageType).toBe("warning");
+  });
+
+  it("formats headerDate as DD-Mon-YYYY at HH:MM", () => {
+    const records = [rec("Item", "2026-10-07T09:20:00Z")];
+    const [item] = adaptInstantMessages(records);
+    expect(item?.headerDate).toBe("07-Oct-2026 at 09:20");
   });
 
   it(`caps output at MAX_NEWS (${MAX_NEWS}) and returns the newest items in order`, () => {

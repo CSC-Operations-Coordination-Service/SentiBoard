@@ -7,6 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InstantMessage } from "./adapter";
+import NewsCard from "@/features/news/NewsCard";
 import s from "./home.module.css";
 
 interface Props {
@@ -21,6 +22,7 @@ export default function NewsBar({ items }: Props) {
   const raf1Ref = useRef<number>(0);
   const raf2Ref = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const setNews = useCallback((open: boolean) => {
     const el = listRef.current;
@@ -32,6 +34,8 @@ export default function NewsBar({ items }: Props) {
     cancelAnimationFrame(raf1Ref.current);
     cancelAnimationFrame(raf2Ref.current);
     clearTimeout(timerRef.current);
+    cleanupRef.current?.();
+    cleanupRef.current = null;
 
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -40,9 +44,13 @@ export default function NewsBar({ items }: Props) {
       if (prefersReduced) {
         const natural = el.scrollHeight;
         const max = window.innerHeight - 140;
-        const h = Math.min(natural, max);
-        el.style.overflowY = natural > max ? "auto" : "hidden";
-        el.style.height = `${h}px`;
+        if (natural > max) {
+          el.style.height = `${max}px`;
+          el.style.overflowY = "auto";
+        } else {
+          el.style.height = "auto";
+          el.style.overflow = "visible";
+        }
         el.style.opacity = "1";
       } else {
         raf1Ref.current = requestAnimationFrame(() => {
@@ -56,12 +64,26 @@ export default function NewsBar({ items }: Props) {
               "height 520ms cubic-bezier(.2,.7,.2,1),opacity 360ms ease";
             el.style.height = `${h}px`;
             el.style.opacity = "1";
+            // Once the height animation ends, switch to auto so <details> cards can grow
+            const onDone = (evt: TransitionEvent) => {
+              if (evt.propertyName !== "height") return;
+              el.removeEventListener("transitionend", onDone);
+              cleanupRef.current = null;
+              if (!isOpenRef.current) return;
+              el.style.height = "auto";
+              el.style.overflow = "visible";
+              el.style.overflowY = "";
+              el.style.transition = "";
+            };
+            cleanupRef.current = () => el.removeEventListener("transitionend", onDone);
+            el.addEventListener("transitionend", onDone);
           });
         });
       }
     } else {
       if (prefersReduced) {
         el.style.cssText = "";
+        el.querySelectorAll<HTMLDetailsElement>("details[open]").forEach(d => { d.open = false; });
       } else {
         const h = el.offsetHeight;
         el.style.cssText = `height:${h}px;opacity:1;overflow:hidden;transition:none`;
@@ -71,7 +93,10 @@ export default function NewsBar({ items }: Props) {
           el.style.height = "0px";
           el.style.opacity = "0";
           timerRef.current = setTimeout(() => {
-            if (!isOpenRef.current) el.style.cssText = "";
+            if (!isOpenRef.current) {
+              el.style.cssText = "";
+              el.querySelectorAll<HTMLDetailsElement>("details[open]").forEach(d => { d.open = false; });
+            }
           }, 540);
         });
       }
@@ -97,6 +122,7 @@ export default function NewsBar({ items }: Props) {
       cancelAnimationFrame(raf1Ref.current);
       cancelAnimationFrame(raf2Ref.current);
       clearTimeout(timerRef.current);
+      cleanupRef.current?.();
     };
   }, []);
 
@@ -155,12 +181,11 @@ export default function NewsBar({ items }: Props) {
       >
         {items.map((item, k) => (
           <div
-            key={k}
-            className={s.listRow}
+            key={item.id}
+            className={s.newsRow}
             style={{ "--k": k } as React.CSSProperties}
           >
-            <time className={s.listTime}>{item.date} {item.time}</time>
-            <span className={s.listText}>{item.title}</span>
+            <NewsCard item={item} group="home-news" />
           </div>
         ))}
       </div>
