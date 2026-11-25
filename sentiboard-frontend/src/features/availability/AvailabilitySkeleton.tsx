@@ -16,10 +16,10 @@ export default function AvailabilitySkeleton() {
       </div>
 
       {/* Toolbar placeholder:
-          Rows 1+2 always visible — desktop conservative 2-row (items can wrap at ~900–1100px),
+          Rows 1+2 always visible — desktop conservative 2-row (items wrap at ~900–1565px),
           and 761–900px explicit 2-row (.rowBreak in the real toolbar).
-          Row 3 shown at ≤760px (.fhead gets width:100%, heading takes its own row → 3 rows).
-          Row 4 shown at ≤480px (4 rows: heading+tabs, pager, mission+status, search+reset). */}
+          ≤760px: 4 rows — heading+tabs | pager | Mission+Status | search+Reset
+          (same at ≤480px: heading+tabs stay on one row via .filterGroup flex space-between). */}
       <div className={s.skToolbar}>
         <div className={`${s.skPulse} ${s.skToolbarRow}`} />
         <div className={`${s.skPulse} ${s.skToolbarRow} ${s.skToolbarRow2}`} />

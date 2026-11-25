@@ -870,6 +870,12 @@
   transition: color 0.2s ease;
 }
 
+.searchReset {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 @media (max-width: 900px) {
   .counter { width: clamp(130px, 44vw, 200px); }
 }
@@ -895,8 +901,17 @@
 }
 
 @media (max-width: 760px) {
-  .fhead { width: 100%; }
   .fsearch { min-width: 140px; }
+  /* Force pager (range mode) and From/To (custom mode) onto their own full-width row so
+     Mission + Status always pair up on the row below them. */
+  .pager {
+    flex-basis: 100%;
+    justify-content: center;
+  }
+  .fdates {
+    flex-basis: 100%;
+    justify-content: center;
+  }
 }
 
 /* Hidden outside of the tablet range; becomes a full-width zero-height flex line break
@@ -922,6 +937,10 @@
   }
   .fdrop {
     min-width: 140px;
+  }
+  .searchReset {
+    flex: 1 1 auto;
+    min-width: 0;
   }
   .fsearch {
     flex: 1 1 auto;
@@ -1384,13 +1403,10 @@
   .skToolbarRow2 { display: block; }
 }
 
-/* ≤760px: show 3rd row */
+/* ≤760px: 4 rows — heading+tabs | pager | Mission+Status | search+Reset
+   (same at ≤480px: heading+tabs stay on one row via .filterGroup flex space-between) */
 @media (max-width: 760px) {
   .skToolbarRow3 { display: block; }
-}
-
-/* ≤480px: show 4th row */
-@media (max-width: 480px) {
   .skToolbarRow4 { display: block; }
 }
 

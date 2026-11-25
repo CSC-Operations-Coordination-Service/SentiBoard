@@ -994,42 +994,44 @@ export default function Explorer({
           </div>
         </div>
 
-        {/* Search: <form method="get"> so Enter submits without JS (other params preserved via
-            hidden inputs). With JS, onChange filters live and onSubmit prevents the page reload. */}
-        <form
-          className={s.fsearch}
-          method="get"
-          action={withBasePath(AVAILABILITY_PATH)}
-          onSubmit={(e) => e.preventDefault()}
-        >
-          {hiddenParams.map(([k, v]) => (
-            <input key={k} type="hidden" name={k} value={v} />
-          ))}
-          <SearchIcon />
-          <label htmlFor="da-search" className="sr-only">
-            Search datatakes
-          </label>
-          <input
-            id="da-search"
-            type="search"
-            name="q"
-            placeholder="Datatake ID"
-            value={view.q}
-            onChange={(e) =>
-              navigate({ ...view, q: e.target.value, pick: null })
-            }
-          />
-        </form>
+        <div className={s.searchReset}>
+          {/* Search: <form method="get"> so Enter submits without JS (other params preserved via
+              hidden inputs). With JS, onChange filters live and onSubmit prevents the page reload. */}
+          <form
+            className={s.fsearch}
+            method="get"
+            action={withBasePath(AVAILABILITY_PATH)}
+            onSubmit={(e) => e.preventDefault()}
+          >
+            {hiddenParams.map(([k, v]) => (
+              <input key={k} type="hidden" name={k} value={v} />
+            ))}
+            <SearchIcon />
+            <label htmlFor="da-search" className="sr-only">
+              Search datatakes
+            </label>
+            <input
+              id="da-search"
+              type="search"
+              name="q"
+              placeholder="Datatake ID"
+              value={view.q}
+              onChange={(e) =>
+                navigate({ ...view, q: e.target.value, pick: null })
+              }
+            />
+          </form>
 
-        {/* Reset: navigates to default view and replays the bar entrance animation */}
-        <ViewLink
-          view={DEFAULT_VIEW}
-          navigate={navigateWithAnim}
-          onNavigate={() => setOpenDrop(null)}
-          className={s.freset}
-        >
-          Reset
-        </ViewLink>
+          {/* Reset: navigates to default view and replays the bar entrance animation */}
+          <ViewLink
+            view={DEFAULT_VIEW}
+            navigate={navigateWithAnim}
+            onNavigate={() => setOpenDrop(null)}
+            className={s.freset}
+          >
+            Reset
+          </ViewLink>
+        </div>
       </div>
 
       {/* Filter summary row: shown only when at least one dropdown is partial */}
