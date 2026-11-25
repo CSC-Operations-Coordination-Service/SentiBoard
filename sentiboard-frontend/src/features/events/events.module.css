@@ -645,19 +645,12 @@ select.control {
   }
 }
 
-@media (max-width: 1259px) {
-  .fdrop,
-  .inline {
-    width: 170px;
-  }
-}
-
 .inline {
   --field-line: color-mix(in srgb, var(--mf-text) 30%, transparent);
   display: flex;
   align-items: center;
   gap: 12px;
-  width: 200px;
+  width: 170px;
   height: 49px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--field-line);
@@ -2465,7 +2458,7 @@ select.control {
   position: relative;
   display: flex;
   flex-direction: column;
-  width: 200px;
+  width: 170px;
   box-sizing: border-box;
   border-bottom: 1px solid color-mix(in srgb, var(--mf-text) 30%, transparent);
 }
