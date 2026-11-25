@@ -40,6 +40,7 @@ import {
 import {
   EVENTS_PATH,
   calendarCells,
+  eventAlreadyLoaded,
   filterEvents,
   parseView,
   resetView,
@@ -492,16 +493,37 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     [data],
   );
 
-  // Event selection → router.push so the server renders the EventDetail
+  // Restores the drawer from already-loaded data when possible, avoiding a server round-trip.
+  // Returns true when the data was available and the snapshot was set; false otherwise.
+  // Used both by selectEventId (user click) and the searchParams sync effect (Back/Forward).
+  const restoreLoadedDay = useCallback(
+    (id: string): boolean => {
+      if (!data.ok || !eventAlreadyLoaded(data.dayEvents, id)) return false;
+      setDrawerSnap({ dayEvents: data.dayEvents, selectedId: id });
+      return true;
+    },
+    [data],
+  );
+
+  // Event selection → router.push so the server renders the EventDetail.
+  // Exception: if the event's full data is already in data.dayEvents, restore the drawer
+  // directly with history.pushState instead — a router.push to the same URL after close()
+  // used history.replaceState would be a no-op (Next.js deduplicates same-URL pushes),
+  // leaving the drawer on "LOADING…" forever. history.pushState creates a Back entry.
   const selectEventId = useCallback(
     (id: string) => {
       const next = { ...view, event: id };
       setView(next);
+      if (restoreLoadedDay(id)) {
+        const qs = viewParams(next, data.now).toString();
+        history.pushState(null, "", withBasePath(qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH));
+        return;
+      }
       startTransition(() => {
         router.push(viewHref(next, data.now), { scroll: false });
       });
     },
-    [view, router, data],
+    [view, router, data, restoreLoadedDay],
   );
 
   const cards = useMemo(() => (data.ok ? data.cards : []), [data]);
@@ -611,12 +633,31 @@ export default function Explorer({ data }: { data: ExplorerData }) {
     if (!newView.event) {
       setOpenDay(null);
       setZoomOn(false);
-    } else if (data.ok && data.dayEvents.length > 0) {
-      const day = new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate();
-      setOpenDay(day);
-      const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
-      setZoom(null);
-      if (geom) setZoom(geom);
+    } else if (restoreLoadedDay(newView.event)) {
+      // Data already in data.dayEvents — set geometry from it, no server round-trip needed.
+      if (data.ok) {
+        const day = new Date(data.dayEvents[0].startDate + "T00:00:00Z").getUTCDate();
+        setOpenDay(day);
+        const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
+        setZoom(null);
+        if (geom) setZoom(geom);
+      }
+    } else {
+      // Event not in data.dayEvents (history.pushState entry with no server cache, or a
+      // different day than what was last loaded). Find the correct day from compact cards
+      // so openDay is set correctly before the refresh; useEffect([data]) guards on
+      // day === openDay, so this must match what the server will return.
+      const targetCard = data.ok ? data.cards.find((c) => c.id === newView.event) : undefined;
+      if (targetCard) {
+        setOpenDay(targetCard.startDay);
+        const geom = gridRef.current ? measureZoom(gridRef.current, targetCard.startDay) : null;
+        setZoom(null);
+        if (geom) setZoom(geom);
+      }
+      // router.refresh() re-fetches data for the current URL without navigating — it is
+      // immune to the same-URL deduplication that makes router.replace(sameUrl) a no-op here.
+      // Does not change searchParams, so this effect cannot loop.
+      startTransition(() => router.refresh());
     }
     /* eslint-enable react-hooks/set-state-in-effect */
     // eslint-disable-next-line react-hooks/exhaustive-deps

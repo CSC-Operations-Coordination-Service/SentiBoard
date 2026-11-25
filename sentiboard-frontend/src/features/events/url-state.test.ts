@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calendarCells,
+  eventAlreadyLoaded,
   filterEvents,
   parseView,
   resetView,
@@ -509,5 +510,22 @@ describe("selectedSatIds", () => {
 
   it("returns null for empty visibleSats list (all vacuously on)", () => {
     expect(selectedSatIds([], new Set())).toBeNull();
+  });
+});
+
+/* ---- eventAlreadyLoaded ---- */
+
+describe("eventAlreadyLoaded", () => {
+  it("returns false for empty dayEvents", () => {
+    expect(eventAlreadyLoaded([], "X")).toBe(false);
+  });
+  it("returns false when event id is not present", () => {
+    expect(eventAlreadyLoaded([{ id: "A" }, { id: "B" }], "C")).toBe(false);
+  });
+  it("returns true when event id matches one entry", () => {
+    expect(eventAlreadyLoaded([{ id: "A" }, { id: "B" }], "B")).toBe(true);
+  });
+  it("returns true for a single matching entry", () => {
+    expect(eventAlreadyLoaded([{ id: "EVT-1" }], "EVT-1")).toBe(true);
   });
 });

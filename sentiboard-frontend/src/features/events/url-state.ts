@@ -267,6 +267,16 @@ export function calendarCells(year: number, month: number): CalendarCell[] {
 }
 
 /**
+ * Returns true when every event for the requested day is already in `dayEvents`, so the
+ * component can skip a server round-trip and restore the drawer from the existing data.
+ * A router.push to the same URL after close() used history.replaceState would be a no-op
+ * (Next.js deduplicates it), so this guard is the escape hatch for that case.
+ */
+export function eventAlreadyLoaded(dayEvents: { id: string }[], eventId: string): boolean {
+  return dayEvents.some((e) => e.id === eventId);
+}
+
+/**
  * Returns the ON satellite codes from visibleSats (satellites whose missions are active).
  * Returns null when all visible satellites are on — satellitesOff may still contain codes
  * for satellites hidden by the mission filter, which are ignored here.
