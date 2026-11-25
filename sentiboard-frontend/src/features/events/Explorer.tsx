@@ -239,12 +239,22 @@ function DayManifest({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const selectedRef = useRef<HTMLDivElement>(null);
+  const selectedRef = useRef<HTMLButtonElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const hasOpenedRef = useRef(false);
   const [expandedDtk, setExpandedDtk] = useState<Set<string>>(new Set());
 
+  const selectedIsFirst = dayEvents[0]?.id === selectedId;
+
   useEffect(() => {
-    selectedRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [selectedId]);
+    const behavior: ScrollBehavior = hasOpenedRef.current ? "smooth" : "instant";
+    hasOpenedRef.current = true;
+    if (selectedIsFirst) {
+      bodyRef.current?.scrollTo({ top: 0, behavior });
+    } else {
+      selectedRef.current?.scrollIntoView({ block: "start", behavior });
+    }
+  }, [selectedId, selectedIsFirst]);
 
   if (dayEvents.length === 0) return null;
 
@@ -255,7 +265,7 @@ function DayManifest({
   );
 
   return (
-    <div className={s.drawerBody}>
+    <div className={s.drawerBody} ref={bodyRef}>
       <header className={s.ziHead}>
         <span className={s.detailEyebrow}>Selected day</span>
         <h2 className={s.ziDate}>{dayHeading(dayEvents[0].startDate)}</h2>
@@ -283,12 +293,12 @@ function DayManifest({
             key={event.id}
             className={`${s.ziOcc} ${isSelected ? s.ziOccSelected : s.ziOccDim}`}
             style={{ animationDelay: `${280 + i * 130}ms` }}
-            ref={isSelected ? selectedRef : undefined}
             onClick={!isSelected ? () => onSelect(event.id) : undefined}
           >
             <button
               type="button"
               className={s.ziTop}
+              ref={isSelected ? selectedRef : undefined}
               onClick={(e) => { e.stopPropagation(); onSelect(event.id); }}
             >
               <span className={s.ziTime}>{event.startTime}</span>

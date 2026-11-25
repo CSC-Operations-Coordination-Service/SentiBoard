@@ -1367,6 +1367,7 @@ select.control {
   cursor: pointer;
   color: inherit;
   font: inherit;
+  scroll-margin-top: 26px;
 }
 
 /* Description collapsible inside an occurrence (closed by default, no triangle) */
@@ -1570,10 +1571,11 @@ select.control {
     top: auto;
     width: 100%;
     height: 64%;
+    background: var(--mf-bg);
   }
 
   .drawerBody {
-    padding: 26px clamp(18px, 5vw, 28px) 40px;
+    padding: 26px clamp(18px, 5vw, 28px) calc(40px + env(safe-area-inset-bottom, 0px));
   }
 
   .ziTop {
