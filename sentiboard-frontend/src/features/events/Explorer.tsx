@@ -235,10 +235,14 @@ function DayManifest({
   dayEvents,
   selectedId,
   onSelect,
+  shouldFocusRef,
+  drawerTriggerRef,
 }: {
   dayEvents: EventDetail[];
   selectedId: string | null;
   onSelect: (id: string) => void;
+  shouldFocusRef: React.MutableRefObject<boolean>;
+  drawerTriggerRef: React.MutableRefObject<HTMLElement | null>;
 }) {
   const selectedRef = useRef<HTMLButtonElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -255,7 +259,15 @@ function DayManifest({
     } else {
       selectedRef.current?.scrollIntoView({ block: "start", behavior });
     }
-  }, [selectedId, selectedIsFirst]);
+    if (shouldFocusRef.current) {
+      shouldFocusRef.current = false;
+      const active = document.activeElement;
+      const trigger = drawerTriggerRef.current;
+      if (active === trigger || active === document.body) {
+        selectedRef.current?.focus({ preventScroll: true });
+      }
+    }
+  }, [selectedId, selectedIsFirst, shouldFocusRef, drawerTriggerRef]);
 
   if (dayEvents.length === 0) return null;
 
@@ -472,6 +484,8 @@ export default function Explorer({ data }: { data: ExplorerData }) {
   const [zoom, setZoom] = useState<ZoomGeom | null>(null);
   const [zoomOn, setZoomOn] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+  const drawerTriggerRef = useRef<HTMLElement | null>(null);
+  const shouldFocusDrawerRef = useRef(false);
 
   // Tooltip state (null = hidden)
   const [tip, setTip] = useState<TipState>(null);
@@ -572,7 +586,11 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       if (events.length === 0) return;
       const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
       if (!geom) return;
-      if (openDay === null) setZoomOn(false);
+      if (openDay === null) {
+        drawerTriggerRef.current = document.activeElement as HTMLElement;
+        shouldFocusDrawerRef.current = true;
+        setZoomOn(false);
+      }
       setZoom(geom);
       setOpenDay(day);
       selectEventId(eventId);
@@ -582,6 +600,9 @@ export default function Explorer({ data }: { data: ExplorerData }) {
 
   // Close drawer: also clears event from view and URL so filter changes don't re-open the zoom.
   const close = useCallback(() => {
+    const trigger = drawerTriggerRef.current;
+    drawerTriggerRef.current = null;
+    shouldFocusDrawerRef.current = false;
     setOpenDay(null);
     setZoomOn(false);
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) setZoom(null);
@@ -592,6 +613,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       const qs = sp.toString();
       history.replaceState(null, "", withBasePath(qs ? `${EVENTS_PATH}?${qs}` : EVENTS_PATH));
     }
+    if (trigger && document.contains(trigger)) trigger.focus();
   }, []);
 
   const stepMonth = useCallback(
@@ -612,7 +634,11 @@ export default function Explorer({ data }: { data: ExplorerData }) {
       if (events.length === 0) return;
       const geom = gridRef.current ? measureZoom(gridRef.current, day) : null;
       if (!geom) return;
-      if (openDay === null) setZoomOn(false);
+      if (openDay === null) {
+        drawerTriggerRef.current = document.activeElement as HTMLElement;
+        shouldFocusDrawerRef.current = true;
+        setZoomOn(false);
+      }
       setZoom(geom);
       setOpenDay(day);
       if (events[0]) selectEventId(events[0].id);
@@ -1263,7 +1289,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         {(() => {
           if (drawerSnap) {
             return (
-              <DayManifest key={drawerSnap.dayEvents[0]?.startDate} dayEvents={drawerSnap.dayEvents} selectedId={drawerSnap.selectedId} onSelect={selectEventId} />
+              <DayManifest key={drawerSnap.dayEvents[0]?.startDate} dayEvents={drawerSnap.dayEvents} selectedId={drawerSnap.selectedId} onSelect={selectEventId} shouldFocusRef={shouldFocusDrawerRef} drawerTriggerRef={drawerTriggerRef} />
             );
           }
           if (openDay !== null)
