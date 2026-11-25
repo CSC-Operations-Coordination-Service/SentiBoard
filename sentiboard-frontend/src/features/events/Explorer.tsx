@@ -1263,7 +1263,7 @@ export default function Explorer({ data }: { data: ExplorerData }) {
         {(() => {
           if (drawerSnap) {
             return (
-              <DayManifest dayEvents={drawerSnap.dayEvents} selectedId={drawerSnap.selectedId} onSelect={selectEventId} />
+              <DayManifest key={drawerSnap.dayEvents[0]?.startDate} dayEvents={drawerSnap.dayEvents} selectedId={drawerSnap.selectedId} onSelect={selectEventId} />
             );
           }
           if (openDay !== null)
