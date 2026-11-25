@@ -616,7 +616,7 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
   (`["S1_L0:1.0", "S1_L0:1.1"]`) would still give two releases with the same id. Not present in
   the feed on 2026-10-22; decide the intended meaning before handling it.
 
-## DEVOCS-219 — Data Availability + Events (status 2026-11-24)
+## DEVOCS-219 — Data Availability + Events (status 2026-11-25)
 Done on bugfix/DEVOCS-219-frontend-bugs:
 - Mission/Status filters: "All" option, "All" in trigger, summary row
   with colored dots (status legend colors; MISSION_COLOR now in src/lib/mission-colors.ts, copied
@@ -640,6 +640,12 @@ Events done on bugfix/DEVOCS-219-frontend-bugs:
 - Loading skeleton (`EventsSkeleton`) as `<Suspense fallback>` in `app/events/page.tsx`
 - Shared helpers moved to `src/lib/filter-logic.ts` and `src/lib/mission-colors.ts`
   (DA and Events both use them)
+- Counters: column gap; labels on one line from 761px; balanced wrapping on phones
+- Reset moved next to Search (`.searchReset` wrapper), 49px tall, like DA
+- Filters 170px (dead 170px rule removed; base widths changed): the filter row fits on one line from ~900px; 768px keeps two rows
+- Day drawer: opens at the selected event's header (`scrollTo` / `scrollIntoView` block start, `scroll-margin-top` 26px); opaque background
+  + safe-area padding on phones; re-open and Back/Forward no longer hang on "LOADING…" (`restoreLoadedDay`, `router.refresh` on popstate);
+  `DayManifest` keyed by day; focus moves into the drawer on user open and back on close
 DA known issues:
 - **DA skeleton missing prefers-reduced-motion.** `AvailabilitySkeleton` has no
   `prefers-reduced-motion` rule; Events' skeleton has one. DA should follow suit.
@@ -647,6 +653,7 @@ DA known issues:
   (~3.5 MB / ~14.5 s per month from outside the server) consistently exceeds this.
   The abort surfaces as `ApiError "parse"`. Staging OK today (frontend next to
   backend); local dev over the VPN hits this. Needs a separate ticket + backend note.
+- **DA `.counters` zero column gap.** `.counters` has the same zero column gap as Events had; labels may touch at ~900–1100px. Not fixed.
 Decisions: DA only (Processors/Events have their own periods). Datatake
 ID search stays within the selected period (no widening to 3M).
 3M = calendar months (setUTCMonth −3), id 90. The backend fetch
@@ -685,8 +692,7 @@ Large screens (≥1280px): toolbar/label text is fixed px (11/13/14px, ticks 10p
 
 - **Filter redesign (2026-10-23 rev 2)**: Filters are now multi-select toggles (prototype style).
   URL model changed from `?category=&mission=&satellite=` to `?typesOff=&missionsOff=&satellitesOff=`;
-  legacy URLs are converted on parse. Visual check needed: toggle items, "All" in trigger + summary row (DEVOCS-219),
-  month-on-own-line when dirty, dropdown z-index (no calendar click-through). 263 tests pass.
+  legacy URLs are converted on parse. Visual check still needed: month-on-own-line when dirty, dropdown z-index (no calendar click-through).
 
 - **Visual check pending.** `pnpm lint`, `type-check`, `build` and 221/221 tests all pass. Still needs a
   visual comparison with the prototype in a browser (dark + light themes, mobile at 760 px
@@ -712,14 +718,15 @@ Large screens (≥1280px): toolbar/label text is fixed px (11/13/14px, ticks 10p
   `overflow-y: auto`.
 - **`now` in both ExplorerData variants.** `nowYM()` is called once in `EventsContent` and passed
   as `now` on both ok and error variants; Explorer never calls `nowYM()` itself.
-- **Skeleton / real-page layout edge.** Near 1265–1290px viewport the skeleton month bar
-  may fit filters on one row while the real page wraps to two (month-name dependent, ~1px
-  edge); the calendar can shift ~50px when data arrives. Accepted.
 - **`instant = false` comment outdated.** `app/events/page.tsx:42` says "Block streaming";
   Events does stream (DECISIONS.md: no-JS dropped for /events). Fix the comment.
 - **No-JS + skeleton.** No-JS visitors on Events see the `<noscript>` message plus a
   skeleton that keeps pulsing (the static shell includes `EventsSkeleton`; JS never
   replaces it).
+- Opening a day via a later event's icon jumps to that event (by design); the day heading is above it.
+- Locally over the VPN a cold load of the Events feed takes ~17 s (each recompile clears the dev server cache); staging is fast.
+- In dev each navigation request appears twice in the log (Next.js), harmless.
+- **`events.module.css` dead CSS.** `.inlineSelect` / `.inlineLabel` rules (~675–734) look unused (no TSX uses `.inline` except the Search field). Possible dead CSS.
 
 ## Events — legacy parity, to do at the end
 
