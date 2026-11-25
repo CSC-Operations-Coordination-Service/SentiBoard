@@ -1,10 +1,11 @@
 /* -------------------- counters -------------------- */
 /* Flat stats, centred as one group: 220px per figure, value above label, all in Noto Sans. */
 .counters {
+  --counter-gap: clamp(8px, 1.5vw, 24px);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px 0;
+  gap: 10px var(--counter-gap);
   padding: clamp(10px, 1.4vw, 22px) 0 clamp(8px, 1vw, 16px);
   background: none;
   border: 0;
@@ -26,6 +27,7 @@
   font-weight: 500;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  text-wrap: balance;
   color: color-mix(in srgb, var(--text) 72%, transparent);
 }
 
@@ -872,6 +874,12 @@
   .counter { width: clamp(130px, 44vw, 200px); }
 }
 
+/* ≥901px: enough room for all labels on one line — let the tile grow to fit rather than wrap. */
+@media (min-width: 901px) {
+  .counter  { width: auto; min-width: clamp(140px, 16vw, 220px); }
+  .counterK { white-space: nowrap; }
+}
+
 /* 601–900px: all 4 KPIs on one row; labels may wrap to 2 lines but numbers stay at their clamp.
    Below 600px, "COMPLETENESS" (12 uppercase chars + 0.2em spacing ≈ 109px) would leave no margin
    in a 110px column, so 2×2 is used instead (see the 481–600px block below). */
@@ -880,9 +888,10 @@
   .counter  { flex: 1 1 0; min-width: 0; width: auto; }
 }
 
-/* 481–600px: 2×2 grid — 4 columns would leave "COMPLETENESS" with ~0 px margin at the narrow end */
-@media (min-width: 481px) and (max-width: 600px) {
-  .counter { flex: 0 0 50%; min-width: 0; width: auto; }
+/* ≤600px: 2×2 grid — 4 columns would leave "COMPLETENESS" with ~0 px margin at the narrow end.
+   calc(50% - gap/2) keeps both tiles on the same row despite the column gap. */
+@media (max-width: 600px) {
+  .counter { flex: 0 0 calc(50% - var(--counter-gap) / 2); min-width: 0; width: auto; }
 }
 
 @media (max-width: 760px) {

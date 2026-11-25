@@ -653,7 +653,6 @@ DA known issues:
   (~3.5 MB / ~14.5 s per month from outside the server) consistently exceeds this.
   The abort surfaces as `ApiError "parse"`. Staging OK today (frontend next to
   backend); local dev over the VPN hits this. Needs a separate ticket + backend note.
-- **DA `.counters` zero column gap.** `.counters` has the same zero column gap as Events had; labels may touch at ~900–1100px. Not fixed.
 Decisions: DA only (Processors/Events have their own periods). Datatake
 ID search stays within the selected period (no widening to 3M).
 3M = calendar months (setUTCMonth −3), id 90. The backend fetch
