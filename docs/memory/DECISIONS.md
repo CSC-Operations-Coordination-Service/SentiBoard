@@ -766,3 +766,39 @@ label ("SENTINEL-3", "ALL RELEASES") instead of the static filter name ("MISSION
 **Decision.** Deviates from the mock-up. `filterHeaderLabel()` (`options.ts`) derives the display
 text from the options array and the current URL value. The filter name stays available to screen
 readers via a `.sr-only` span ("Mission: SENTINEL-3").
+
+## 2026-11-26 — DEVOCS-219: News ticker titles are not links; no hover/focus pause
+
+**Context.** The mock-up `NewsBar.tsx` ticker items are plain spans, not anchors. Making them links
+would require a destination (the `/news` page or the item itself, which has no stable URL), and
+pausing the ticker on hover/focus adds complexity for no clear gain.
+**Decision.** Ticker items stay as plain text. The ticker does not pause on hover or focus. The "See
+all news →" link at the end of the open news panel is the navigation affordance.
+**Consequences.** Revisit if product asks for per-item links; the ticker `<span>` elements become
+`<a>` elements and the CSS `animation-play-state` pause pattern applies.
+
+## 2026-11-26 — DEVOCS-219: /news uses Pager component; DA keeps its own pager; CSS composes rejected
+
+**Context.** `/news` needed server-rendered `<Link>` prev/next controls (`?page=N`); Data
+Availability has its own pager markup in `Explorer.tsx` with icons, a calendar date button, client
+`history.pushState` navigation, disabled-arrow states and keyboard arrows — behaviour a shared
+component could not absorb without becoming DA-specific. `pager.module.css` was mirrored from DA's
+CSS and adapted for text labels (noted in its header comment); the small duplication was accepted on
+purpose. The `composes` keyword across CSS module files was considered and rejected.
+**Decision.** `src/components/Pager.tsx` (server-rendered `<Link>` prev/next, `?page=N`, endpoints
+hide the respective arrow) is used exclusively by `/news`. DA's pager is not replaced and does not
+use `Pager`. `composes` across CSS module files is not used: Next.js does not guarantee cross-file
+CSS insertion order, so composed rules may arrive after the composing rule and override unexpectedly.
+**Consequences.** `Pager` is a narrow component for `<Link>`-based pagination. Pages with client
+navigation or extra controls build their own pager markup, as DA does.
+
+## 2026-11-26 — DEVOCS-219: Events .headArt + .page dead-rule pair left in place
+
+**Context.** `events.module.css` lines ~2670–2693 define `.headArt + .page` rules intended to
+offset the page content below a header image. In `app/events/page.tsx` a `<noscript>` element sits
+between `.headArt` and `.page`, so the adjacent-sibling selector never matches and the rules have
+no effect. The Events layout was verified without them.
+**Decision.** The rules are left in place. Removing them risks unintended side-effects if the
+markup ever changes. They are not dead globally (the selector is valid CSS); the noscript placement
+is the reason they are inert today.
+**Consequences.** No visual change. Document here so future agents do not spend time re-investigating.

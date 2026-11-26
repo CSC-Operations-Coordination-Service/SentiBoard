@@ -616,7 +616,7 @@ routes 503), exits with code 3 on a TLS error, and every route of the frontend a
   (`["S1_L0:1.0", "S1_L0:1.1"]`) would still give two releases with the same id. Not present in
   the feed on 2026-10-22; decide the intended meaning before handling it.
 
-## DEVOCS-219 — Data Availability + Events (status 2026-11-25)
+## DEVOCS-219 — Data Availability + Events + News (status 2026-11-26)
 Done on bugfix/DEVOCS-219-frontend-bugs:
 - Mission/Status filters: "All" option, "All" in trigger, summary row
   with colored dots (status legend colors; MISSION_COLOR now in src/lib/mission-colors.ts, copied
@@ -646,6 +646,24 @@ Events done on bugfix/DEVOCS-219-frontend-bugs:
 - Day drawer: opens at the selected event's header (`scrollTo` / `scrollIntoView` block start, `scroll-margin-top` 26px); opaque background
   + safe-area padding on phones; re-open and Back/Forward no longer hang on "LOADING…" (`restoreLoadedDay`, `router.refresh` on popstate);
   `DayManifest` keyed by day; focus moves into the drawer on user open and back on close
+Home + News done on bugfix/DEVOCS-219-frontend-bugs (commits 0e70128, 6a7ae47, 971f8e9, 81a0305):
+- **Home news panel — expandable cards** (`src/features/news/NewsCard.tsx`): native `<details>`
+  per card; one open at a time (all others close when a new one opens); cards close when the panel
+  closes. "See all news →" link styled as the nav grey/white link (not a button).
+- **`/news` page** (`src/app/news/`): all news items, 10 per page (`?page=N`); pager rendered
+  above and below the list via `src/components/Pager.tsx`; cards reuse NewsCard (page layout),
+  styled like the Home FAQ items; white border when open; status icons 22.5 px (derived from title size);
+  hero image `news_bck.jpg`; `SpaceBackdrop` and footer match the other pages.
+- **Legacy redirects for /news:** `/newsList.html` and `/newsList` → `/news` (308, `next.config.ts`).
+- **Footer gap removed:** `footer.css` `margin-top` 40 px → 0 so the Earth band sits flush against
+  the footer line on DA, News, Processors and Events.
+- Ticker titles are not links and the ticker does not pause on hover/focus — deliberate; see
+  DECISIONS.md 2026-11-26.
+- `/news` uses `src/components/Pager.tsx` (server `<Link>` prev/next); DA keeps its own pager in
+  `Explorer.tsx` with different behaviour; `pager.module.css` mirrored from DA's CSS and adapted
+  (small duplication accepted); CSS `composes` across modules rejected — see DECISIONS.md 2026-11-26.
+- Events `events.module.css` `.headArt + .page` rules (~2670–2693) are inert (noscript between
+  them in page.tsx) and left in place on purpose — see DECISIONS.md 2026-11-26.
 DA known issues:
 - **DA skeleton missing prefers-reduced-motion.** `AvailabilitySkeleton` has no
   `prefers-reduced-motion` rule; Events' skeleton has one. DA should follow suit.
@@ -653,6 +671,14 @@ DA known issues:
   (~3.5 MB / ~14.5 s per month from outside the server) consistently exceeds this.
   The abort surfaces as `ApiError "parse"`. Staging OK today (frontend next to
   backend); local dev over the VPN hits this. Needs a separate ticket + backend note.
+Open follow-ups (not yet done):
+- **Acquisitions:** needs the Earth band at the bottom and space between the simulation-time
+  bar and the footer (same treatment as other pages).
+- **Terms & Conditions and Cookie Notice:** pages still to build, both need the Earth band.
+- **Earth band on Home:** check the mock-up first; may be optional.
+Staging data (checked 2026-11-26): datatakes 1 Aug → 25 Nov 2026, no planned acquisitions;
+events and news stop ~10 Oct 2026. A full refresh will be requested from Anthony/Conor when
+all bugs are fixed.
 Decisions: DA only (Processors/Events have their own periods). Datatake
 ID search stays within the selected period (no widening to 3M).
 3M = calendar months (setUTCMonth −3), id 90. The backend fetch
