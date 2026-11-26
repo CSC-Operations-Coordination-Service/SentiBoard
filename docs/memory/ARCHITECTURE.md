@@ -158,9 +158,12 @@ the production image, which installs the wheel, misses it).
   read: they would count each datatake twice. Checked against the production index list
   2026-11-17 (an empty `cds-completeness-splitted-{mission}-{satellite_unit}-…` index with literal
   placeholders exists there: ignored).
+- **Own indices** (read-write, created by `setup_indices.py` from `index_templates/`, one index
+  `<alias>-000001` behind each alias): `senti-anomaly`, `senti-instantmessage`, `senti-news`,
+  `senti-footprint` and `ocs-processor` (prefix strategy: DECISIONS.md 2026-11-26).
 - **OpenSearch account** (`sentiboard-backend`, csc-ocs-ansible `scripts/opensearch-accounts/accounts.yml`):
   `read` on `cds-*` **plus the cluster-level `indices:data/read/scroll` and `…/scroll/clear`** that
-  the scroll scan of `/datatake/` needs.
+  the scroll scan of `/datatake/` needs, and crud/create_index/manage on `senti-*` and `ocs-processor*`.
 - **Outbound HTTP:** only Celestrak (`CELESTRAK_TLE_URL`), stdlib `urllib`, 10 s timeout.
 - **Event loop:** hand-written routes are sync `def`, so FastAPI runs the blocking clients in its
   threadpool.

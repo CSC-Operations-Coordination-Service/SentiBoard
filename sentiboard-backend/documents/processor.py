@@ -7,7 +7,7 @@ DA0 classes generated from index templates.
 Generated date: 2026-10-15T14:44:23.222644+00:00
 
 Generated from:
-    - ../tests/fixtures/processor_template.json
+    - ../index_templates/ocs-processor_template.json
 """
 
 from opensearchpy import Keyword, Text, InnerDoc
@@ -19,19 +19,19 @@ __all__ = ["Processor"]
 
 class Processor(MAASDocument):
     """
-    Mapping class for index: processor
+    Mapping class for index: ocs-processor
 
-    Generated from: ../tests/fixtures/processor_template.json
+    Generated from: ../index_templates/ocs-processor_template.json
     """
 
     class Index:
         "inner class for DSL"
 
-        name = "processor"
+        name = "ocs-processor"
 
     @classmethod
     def _matches(cls, hit):
-        return hit["_index"].startswith("processor")
+        return hit["_index"].startswith("ocs-processor")
 
     id = Keyword()
 

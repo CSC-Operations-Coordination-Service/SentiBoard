@@ -1,9 +1,9 @@
 {
     "aliases": {
-        "instantmessage": {}
+        "senti-instantmessage": {}
     },
     "index_patterns": [
-        "instantmessage-*"
+        "senti-instantmessage-*"
     ],
     "settings": {
         "index": {
@@ -12,6 +12,9 @@
         }
     },
     "mappings": {
+        "_meta": {
+            "class_name": "Instantmessage"
+        },
         "properties": {
             "id": {
                 "type": "keyword",

@@ -7,7 +7,7 @@ DA0 classes generated from index templates.
 Generated date: 2026-10-15T14:44:20.758874+00:00
 
 Generated from:
-    - ../tests/fixtures/anomaly_template.json
+    - ../index_templates/senti-anomaly_template.json
 """
 
 from opensearchpy import Float, Keyword, Nested, Text, InnerDoc
@@ -19,19 +19,19 @@ __all__ = ["Anomaly"]
 
 class Anomaly(MAASDocument):
     """
-    Mapping class for index: anomaly
+    Mapping class for index: senti-anomaly
 
-    Generated from: ../tests/fixtures/anomaly_template.json
+    Generated from: ../index_templates/senti-anomaly_template.json
     """
 
     class Index:
         "inner class for DSL"
 
-        name = "anomaly"
+        name = "senti-anomaly"
 
     @classmethod
     def _matches(cls, hit):
-        return hit["_index"].startswith("anomaly")
+        return hit["_index"].startswith("senti-anomaly")
 
     category = Keyword()
 

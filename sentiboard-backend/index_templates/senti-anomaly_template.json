@@ -1,9 +1,9 @@
 {
-    "aliases": {
-        "news": {}
+    "aliases" : {
+        "senti-anomaly": {}
     },
     "index_patterns": [
-        "news-*"
+        "senti-anomaly-*"
     ],
     "settings": {
         "index": {
@@ -12,31 +12,39 @@
         }
     },
     "mappings": {
+        "_meta": {
+            "class_name": "Anomaly"
+        },
         "properties": {
             "id": {
                 "type": "keyword",
                 "meta": { "optional": true }
             },
+            "key": {
+                "type": "keyword"
+            },
             "title": {
-                "type": "text", "fields": { "keyword": { "type": "keyword"}}
+                "type": "text"
             },
             "text": {
                 "type": "text"
-            },
-            "link": {
-                "type": "keyword"
-            },
-            "publication_date": {
-                "type": "date"
-            },
-            "occurrence_date": {
-                "type": "date"
             },
             "category": {
                 "type": "keyword"
             },
             "impacted_satellite": {
-                "type": "keyword"
+                "type": "keyword",
+                "meta": { "optional": true }
+            },
+            "impacted_item": {
+                "type": "keyword",
+                "meta": { "optional": true }
+            },
+            "start": {
+                "type": "date"
+            },
+            "end": {
+                "type": "date"
             },
             "environment": {
                 "type": "keyword"
@@ -50,6 +58,17 @@
                     "L2_": { "type": "float", "meta": { "optional": true } }
                 },
                 "meta": { "array": true }
+            },
+            "news_link": {
+                "type": "keyword",
+                "meta": { "optional": true }
+            },
+            "news_title": {
+                "type": "text", "fields": { "keyword": { "type": "keyword"}},
+                "meta": { "optional": true }
+            },
+            "publication_date": {
+                "type": "date"
             },
             "modify_date": {
                 "type": "date"

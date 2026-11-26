@@ -1,9 +1,9 @@
 {
-    "aliases" : {
-        "anomaly": {}
+    "aliases": {
+        "senti-news": {}
     },
     "index_patterns": [
-        "anomaly-*"
+        "senti-news-*"
     ],
     "settings": {
         "index": {
@@ -12,36 +12,34 @@
         }
     },
     "mappings": {
+        "_meta": {
+            "class_name": "News"
+        },
         "properties": {
             "id": {
                 "type": "keyword",
                 "meta": { "optional": true }
             },
-            "key": {
-                "type": "keyword"
-            },
             "title": {
-                "type": "text"
+                "type": "text", "fields": { "keyword": { "type": "keyword"}}
             },
             "text": {
                 "type": "text"
+            },
+            "link": {
+                "type": "keyword"
+            },
+            "publication_date": {
+                "type": "date"
+            },
+            "occurrence_date": {
+                "type": "date"
             },
             "category": {
                 "type": "keyword"
             },
             "impacted_satellite": {
-                "type": "keyword",
-                "meta": { "optional": true }
-            },
-            "impacted_item": {
-                "type": "keyword",
-                "meta": { "optional": true }
-            },
-            "start": {
-                "type": "date"
-            },
-            "end": {
-                "type": "date"
+                "type": "keyword"
             },
             "environment": {
                 "type": "keyword"
@@ -55,17 +53,6 @@
                     "L2_": { "type": "float", "meta": { "optional": true } }
                 },
                 "meta": { "array": true }
-            },
-            "news_link": {
-                "type": "keyword",
-                "meta": { "optional": true }
-            },
-            "news_title": {
-                "type": "text", "fields": { "keyword": { "type": "keyword"}},
-                "meta": { "optional": true }
-            },
-            "publication_date": {
-                "type": "date"
             },
             "modify_date": {
                 "type": "date"

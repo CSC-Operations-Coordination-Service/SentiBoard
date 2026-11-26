@@ -733,3 +733,29 @@ mock-up simulation), and the backend allows 31 days per request while the page s
 **Consequences.** At production volume a three-month window is tens of thousands of datatakes
 sent whole to the client Explorer: payload size is open (HANDOFF.md).
 
+
+## 2026-11-26 — Own indices renamed to the OCS prefix strategy
+
+**Context.** The OCS OpenSearch clusters name indices by who owns the data: `raw-*` and `cds-*`
+(Technical Dashboard / MAAS), `senti-*` (Sentiboard), `portal-*` (ocs-portal), `ocs-*` (generic
+information shared by every project, the source of truth that other projects do not change).
+Sentiboard's own indices had bare names (`anomaly`, `instantmessage`, `news`, `processor`), so the
+cluster accounts and snapshot policies could not group them. Asked by the project lead on 2026-11-26.
+**Decision.** The aliases (and their `-*` index patterns) are now `senti-anomaly`,
+`senti-instantmessage`, `senti-news` and `ocs-processor` (processors are shared OCS reference
+data). The template files are renamed to match (`setup_indices.py` names each template after its
+file), and each pins `mappings._meta.class_name` so a maas-model regeneration keeps the class names
+(`Anomaly`, `Instantmessage`, `News`, `Processor`). The generated `documents/*.py` were edited by
+hand on the index-name lines only, which is what the generator writes for the renamed templates.
+API routes are unchanged (`/anomaly/`, `/news/`, `/instantmessage/`, `/processor/`).
+**Consequences.**
+
+- Supersedes the alias names in the 2026-10-23 entry and the index patterns in the 2026-10-27 one
+  (backend start).
+- The OpenSearch account needs the new names before a backend with this change starts, or
+  `setup_indices` gets a 403 and the task exits (csc-ocs-ansible `accounts.yml`: `senti-*` and
+  `ocs-processor*`).
+- Existing data must be copied into the new indices (`_reindex`) on each cluster: done on the dev
+  cluster 2026-11-26 (csc-ocs-ansible `docs/swarm/deploy-runbook.md`). The old indices are kept
+  write-blocked as a rollback copy until deleted on the team's word.
+- `ocs-processor` falls under the cluster's `ocs-*` snapshot policy (daily, never deleted).

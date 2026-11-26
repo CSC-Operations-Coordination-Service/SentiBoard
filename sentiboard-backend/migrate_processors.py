@@ -83,8 +83,8 @@ def run(releases, client, apply=False):
     print(f"Written {len(actions) - len(errors)}, already migrated {len(existing)}, failed {len(others)}")
     for e in others[:5]:
         print("  ", e)
-    client.indices.refresh(index="processor")
-    print(f"  processor: {client.count(index='processor')['count']} documents")
+    client.indices.refresh(index=ProcessorDocument.Index.name)
+    print(f"  {ProcessorDocument.Index.name}: {client.count(index=ProcessorDocument.Index.name)['count']} documents")
 
 
 if __name__ == "__main__":

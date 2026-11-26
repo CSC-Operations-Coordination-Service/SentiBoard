@@ -63,7 +63,7 @@ def test_startup_survives_unreachable_opensearch():
     [
         AuthorizationException(403, "forbidden", {}),
         SSLError("N/A", "certificate verify failed", Exception("tls")),
-        SetupError("news: plain index 'news' exists without mappings"),
+        SetupError("senti-news: plain index 'senti-news' exists without mappings"),
     ],
     ids=["rejected", "tls", "conflicting-index"],
 )

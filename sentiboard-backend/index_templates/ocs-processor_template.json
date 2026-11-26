@@ -1,9 +1,9 @@
 {
     "aliases": {
-        "processor": {}
+        "ocs-processor": {}
     },
     "index_patterns": [
-        "processor-*"
+        "ocs-processor-*"
     ],
     "settings": {
         "index": {
@@ -12,6 +12,9 @@
         }
     },
     "mappings": {
+        "_meta": {
+            "class_name": "Processor"
+        },
         "properties": {
             "id": {
                 "type": "keyword",

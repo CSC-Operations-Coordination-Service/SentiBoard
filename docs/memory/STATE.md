@@ -113,6 +113,8 @@ Last updated: 2026-11-17 (branch `feature/DEVOCS-219-acquisitions-backend`, not 
 
 - FastAPI + OpenSearch, flat layout (see ARCHITECTURE.md § Backend). Generated CRUD routers for
   Sentiboard's own indices (`/anomaly/`, `/news/`, `/instantmessage/`, `/processor/`) and probes.
+  Since 2026-11-26 the indices are `senti-anomaly`, `senti-news`, `senti-instantmessage` and
+  `ocs-processor` (DECISIONS.md); the routes kept their names.
 - **Read-only MAAS-CDS routes (2026-11-17):** `GET /datatake/`, `/acquisition-pass/`, `/orbit/`
   (layered: `domain/`, `application/`, `infrastructure/`, `interface/`). Completeness and status are a
   faithful port of the legacy rules: 0 mismatches against the legacy functions run on 8000 random
