@@ -163,7 +163,8 @@ the production image, which installs the wheel, misses it).
   `senti-footprint` and `ocs-processor` (prefix strategy: DECISIONS.md 2026-11-26).
 - **OpenSearch account** (`sentiboard-backend`, csc-ocs-ansible `scripts/opensearch-accounts/accounts.yml`):
   `read` on `cds-*` **plus the cluster-level `indices:data/read/scroll` and `…/scroll/clear`** that
-  the scroll scan of `/datatake/` needs, and crud/create_index/manage on `senti-*` and `ocs-processor*`.
+  the scroll scan of `/datatake/` needs, crud/create_index/manage on `senti-*` and `ocs-processor*`,
+  and the cluster-level `indices:data/write/bulk` that every document write needs (2026-11-26).
 - **Outbound HTTP:** only Celestrak (`CELESTRAK_TLE_URL`), stdlib `urllib`, 10 s timeout.
 - **Event loop:** hand-written routes are sync `def`, so FastAPI runs the blocking clients in its
   threadpool.

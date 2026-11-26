@@ -2,6 +2,20 @@
 
 Open work and known issues, newest first. Remove an item when it is resolved.
 
+## Own indices renamed to `senti-*` / `ocs-processor` (2026-11-26)
+
+Code on `develop` since 0002b11 (DECISIONS.md 2026-11-26). Dev cluster done the same day: backend
+`sha-0002b11` deployed, data copied, the list routes serve the same counts as before. Open:
+
+- **Check the pages on dev in a browser:** Events, News, Processors (not done).
+- **A write through the API on dev** (create then delete a test news item): the account only got
+  `indices:data/write/bulk` on 2026-11-26; writes are untested.
+- **SERCO chatbot:** does its own configuration name `anomaly` or `news`? Unknown. If it does, it
+  now reads write-blocked copies that will be deleted.
+- **Old indices and templates** on dev are kept as a rollback copy, to delete on the team's word
+  (csc-ocs-ansible `docs/ROADMAP.md`, "sentiboard: old index names deleted").
+- **Prod:** the same steps (account, deploy, copy) when the new Sentiboard goes there.
+
 ## ESA acquisition plans — collector and `GET /acquisition-plan/` (2026-11-24)
 
 Backend done (STATE.md). Open:

@@ -755,7 +755,12 @@ API routes are unchanged (`/anomaly/`, `/news/`, `/instantmessage/`, `/processor
 - The OpenSearch account needs the new names before a backend with this change starts, or
   `setup_indices` gets a 403 and the task exits (csc-ocs-ansible `accounts.yml`: `senti-*` and
   `ocs-processor*`).
-- Existing data must be copied into the new indices (`_reindex`) on each cluster: done on the dev
-  cluster 2026-11-26 (csc-ocs-ansible `docs/swarm/deploy-runbook.md`). The old indices are kept
-  write-blocked as a rollback copy until deleted on the team's word.
+- Existing data must be copied into the new indices on each cluster (csc-ocs-ansible
+  `scripts/sentiboard-index-rename`): done on the dev cluster 2026-11-26, same counts before and
+  after (anomaly 3720, news 119, instantmessage 81, processor 231; csc-ocs-ansible
+  `docs/swarm/deploy-runbook.md`). The old indices are kept write-blocked as a rollback copy until
+  deleted on the team's word.
+- Found on the way: every document write, even one, needs the cluster-level permission
+  `indices:data/write/bulk`. The backend's account lacked it on dev until 2026-11-26, so its CRUD
+  writes (POST/PUT/DELETE) could not have worked there before (inferred, not tested).
 - `ocs-processor` falls under the cluster's `ocs-*` snapshot policy (daily, never deleted).
