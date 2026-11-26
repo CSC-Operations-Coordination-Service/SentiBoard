@@ -1,0 +1,50 @@
+/* News page — news-specific rules only.
+   Shell classes (.headArt, .page, .inner, --mf-* tokens) come from events.module.css. */
+
+/* Centered content column inside .inner — matches .faqIn width (home.module.css:348) */
+.content {
+  max-width: calc(808px + 2 * clamp(18px, 4vw, 48px));
+  margin-inline: auto;
+  padding: clamp(28px, 5vh, 56px) clamp(18px, 4vw, 48px);
+}
+
+/* Card list — flex column with 12px gap, same as .faqList (home.module.css:374) */
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Empty / error message */
+.empty {
+  margin: 0;
+  padding: clamp(32px, 5vh, 64px) 0;
+  text-align: center;
+  color: color-mix(in srgb, var(--mf-text, var(--text)) 60%, transparent);
+  font-size: 15px;
+  font-family: var(--font-sans);
+}
+
+/* Make the ::before background (events.module.css:2677 — background-color: var(--mf-bg) = #05070a)
+   transparent so the section's bottom colour is the body background (#000000) and the footer's
+   40px margin-top (footer.css:17) gap is invisible — same mechanism as Home (home.module.css:358:
+   faqSec background = --home-ground = body bg) and Data Availability (availability.module.css:1333:
+   background: transparent, no ::before colour). news.module.css is imported after events.module.css
+   (page.tsx:13-14) so this single-class rule wins the same-specificity tie on --mf-bg. */
+.newsPageBg {
+  --mf-bg: transparent;
+}
+
+/* Pager centred above the card list */
+.pagerWrapTop {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+/* Pager centred below the card list */
+.pagerWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}

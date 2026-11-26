@@ -5,9 +5,11 @@
    Hidden when items is empty.
    List is hidden with CSS visibility (class .listOpen), never inert. */
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { InstantMessage } from "./adapter";
 import NewsCard from "@/features/news/NewsCard";
+import { ROUTES } from "@/lib/routes";
 import s from "./home.module.css";
 
 interface Props {
@@ -188,6 +190,15 @@ export default function NewsBar({ items }: Props) {
             <NewsCard item={item} group="home-news" />
           </div>
         ))}
+        <div className={s.seeAll}>
+          <Link
+            href={ROUTES.news.path}
+            className={s.seeAllLink}
+            onClick={() => setNews(false)}
+          >
+            See all news →
+          </Link>
+        </div>
       </div>
     </div>
   );

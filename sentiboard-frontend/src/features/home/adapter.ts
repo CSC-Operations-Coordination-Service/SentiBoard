@@ -24,7 +24,7 @@ export interface InstantMessage {
   headerDate: string;  // "DD-Mon-YYYY at HH:MM" UTC — card header
 }
 
-export function adaptInstantMessages(records: ApiInstantMessage[]): InstantMessage[] {
+export function adaptInstantMessages(records: ApiInstantMessage[], limit?: number): InstantMessage[] {
   const dated: { ms: number; item: InstantMessage }[] = [];
   let nullCount = 0;
 
@@ -56,5 +56,6 @@ export function adaptInstantMessages(records: ApiInstantMessage[]): InstantMessa
   }
 
   dated.sort((a, b) => b.ms - a.ms);
-  return dated.slice(0, MAX_NEWS).map((d) => d.item);
+  const sliced = limit !== undefined ? dated.slice(0, limit) : dated;
+  return sliced.map((d) => d.item);
 }

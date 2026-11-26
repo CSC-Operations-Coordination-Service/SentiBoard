@@ -116,12 +116,12 @@ describe("adaptInstantMessages", () => {
     expect(item?.headerDate).toBe("07-Oct-2026 at 09:20");
   });
 
-  it(`caps output at MAX_NEWS (${MAX_NEWS}) and returns the newest items in order`, () => {
+  it(`caps output at MAX_NEWS (${MAX_NEWS}) when limit is passed and returns the newest items in order`, () => {
     const n = MAX_NEWS + 3;
     const records = Array.from({ length: n }, (_, i) =>
       rec(`Item ${i + 1}`, `2026-0${(i % 9) + 1}-${String(i + 1).padStart(2, "0")}T00:00:00Z`),
     );
-    const result = adaptInstantMessages(records);
+    const result = adaptInstantMessages(records, MAX_NEWS);
     expect(result).toHaveLength(MAX_NEWS);
     // Each item must be newer than or equal to the next.
     for (let i = 0; i < result.length - 1; i++) {
@@ -129,5 +129,29 @@ describe("adaptInstantMessages", () => {
       const b = new Date(`${result[i + 1]!.date} ${result[i + 1]!.time}`);
       expect(a.getTime()).toBeGreaterThanOrEqual(b.getTime());
     }
+  });
+
+  it("with limit 5, returns exactly 5 items", () => {
+    const records = Array.from({ length: 10 }, (_, i) =>
+      rec(`Item ${i + 1}`, `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`),
+    );
+    expect(adaptInstantMessages(records, 5)).toHaveLength(5);
+  });
+
+  it("without limit, returns all dated items", () => {
+    const n = MAX_NEWS + 3;
+    const records = Array.from({ length: n }, (_, i) =>
+      rec(`Item ${i + 1}`, `2026-01-${String(i + 1).padStart(2, "0")}T00:00:00Z`),
+    );
+    expect(adaptInstantMessages(records)).toHaveLength(n);
+  });
+
+  it("order is newest-first regardless of limit", () => {
+    const records = [
+      rec("Older", "2026-07-08T08:41:00Z"),
+      rec("Newest", "2026-07-20T08:55:00Z"),
+      rec("Middle", "2026-07-13T12:56:00Z"),
+    ];
+    expect(adaptInstantMessages(records, 2).map((r) => r.title)).toEqual(["Newest", "Middle"]);
   });
 });

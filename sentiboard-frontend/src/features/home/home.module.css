@@ -169,6 +169,39 @@
   border-top: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
 }
 
+.seeAll {
+  /* 52px left = 24px card-pad + 18px icon + 10px gap — aligns with title text, not the icon */
+  padding: 12px 24px 16px 52px;
+  display: flex;
+  justify-content: flex-start;
+  border-top: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
+}
+
+.seeAllLink {
+  /* 15px = news card .title size (news-card.module.css:50) */
+  font-size: 15px;
+  color: var(--text-muted-cool, #94a3b8); /* nav normal: global.css:162 */
+  text-decoration: none;
+  font-family: var(--font-sans);
+  letter-spacing: -0.01em;
+  transition: color 0.2s; /* nav transition: global.css:166 */
+}
+
+.seeAllLink:hover,
+.seeAllLink:focus-visible {
+  color: var(--text); /* nav hover: global.css:174 */
+}
+
+.seeAllLink:focus-visible {
+  /* reuses project's standard focus ring — same as .panelLink:focus-visible (home.module.css:352) */
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seeAllLink { transition: none; }
+}
+
 @keyframes sbNewsIn {
   from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: none; }

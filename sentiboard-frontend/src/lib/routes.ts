@@ -16,6 +16,7 @@ export const ROUTES = {
   events: { path: "/events", title: "Events", ported: true },
   availability: { path: "/availability", title: "Data Availability", ported: false },
   processors: { path: "/processors", title: "Processors", ported: true },
+  news: { path: "/news", title: "News", ported: true },
   terms: { path: "/terms-conditions", title: "Terms & Conditions", ported: false },
   cookies: { path: "/cookie-notice", title: "Cookie Notice", ported: false },
 } satisfies Record<string, PageRoute>;

@@ -41,18 +41,26 @@ interface Props {
   item: InstantMessage;
   style?: React.CSSProperties;
   group?: string;
+  /** When true: date moves from the header to the body ("Published: …"); card gets a panel look. */
+  pageLayout?: boolean;
 }
 
-export default function NewsCard({ item, style, group }: Props) {
+export default function NewsCard({ item, style, group, pageLayout }: Props) {
   const variant = newsTypeToVariant(item.messageType);
 
   return (
-    <details className={s.card} data-variant={variant} style={style} name={group}>
+    <details
+      className={s.card}
+      data-variant={variant}
+      data-layout={pageLayout ? "page" : undefined}
+      style={style}
+      name={group}
+    >
       <summary className={s.head}>
         <StatusIcon variant={variant} />
         <div className={s.headText}>
           <span className={s.title}>{item.title}</span>
-          <time className={s.date}>{item.headerDate}</time>
+          {!pageLayout && <time className={s.date}>{item.headerDate}</time>}
         </div>
         <svg
           className={s.chev}
@@ -76,6 +84,9 @@ export default function NewsCard({ item, style, group }: Props) {
           >
             Read more
           </a>
+        )}
+        {pageLayout && (
+          <p className={s.publishedLine}>Published: {item.headerDate}</p>
         )}
       </div>
     </details>
