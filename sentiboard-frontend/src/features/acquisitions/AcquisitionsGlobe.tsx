@@ -13,6 +13,7 @@ import { kpiStats } from "./model";
 import type { AcqDatatake } from "./types";
 import DatatakePanel from "./DatatakePanel";
 import { parseAcqView, acqViewHref, type AcqView } from "./url-state";
+import { compareDatatakes, pickArrivalView, pickViewForSatellite, pickViewForDay } from "./defaults";
 import { DAY_MS } from "@/lib/missions";
 import { logger } from "@/lib/log";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
@@ -167,7 +168,6 @@ function windowLabel(todayMidnightMs: number): string {
 }
 
 const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
-const satGroupOf = (sat: string) => sat.replace(/-[A-Z]$/, "");
 
 // ── Slice 5 module-level helpers ──────────────────────────────────────────────
 
@@ -311,6 +311,7 @@ export default function AcquisitionsGlobe({
 
   // ── Slice 5: stable refs — updated in useLayoutEffect so event handlers always read current values ──
   const navigateRef = useRef<(next: AcqView) => void>(() => {});
+  const replaceRef = useRef<(next: AcqView) => void>(() => {});
   const urlViewRef = useRef<AcqView>(view);
   const filteredDatatakesRef = useRef<AcqDatatake[]>([]);
 
@@ -382,9 +383,21 @@ export default function AcquisitionsGlobe({
     navigateRef.current = (next: AcqView) => {
       history.pushState(null, "", acqViewHref(next, window.location.pathname));
     };
+    replaceRef.current = (next: AcqView) => {
+      history.replaceState(null, "", acqViewHref(next, window.location.pathname));
+    };
     urlViewRef.current = view;
     filteredDatatakesRef.current = filteredDatatakes;
   }, [view, filteredDatatakes]);
+
+  // Arrival defaults: runs on mount, on Activity re-reveal (React runs effect
+  // cleanup + re-run when hiding/showing a page), and when data.datatakes or
+  // nowMs changes. In-page URL changes (All satellites, Any day, etc.) don't
+  // change these deps and don't re-run this effect.
+  useEffect(() => {
+    const next = pickArrivalView(data.datatakes, ymd(nowMs), urlViewRef.current);
+    if (next) replaceRef.current(next);
+  }, [data.datatakes, nowMs]);
 
   // Dropdown list: sat + day + search (search does not touch globe or KPIs)
   const dropdownDatatakes = useMemo(() => {
@@ -456,15 +469,7 @@ export default function AcquisitionsGlobe({
       if (e.key === "[" || e.key === "]") {
         const fds = filteredDatatakesRef.current;
         if (!fds.length) return;
-        const sorted = [...fds].sort((a, b) => {
-          const ga = satGroupOf(a.sat);
-          const gb = satGroupOf(b.sat);
-          if (ga < gb) return -1;
-          if (ga > gb) return 1;
-          if (a.id < b.id) return -1;
-          if (a.id > b.id) return 1;
-          return 0;
-        });
+        const sorted = [...fds].sort(compareDatatakes);
         const curId = urlViewRef.current.datatake;
         const curIdx = sorted.findIndex((dt) => dt.id === curId);
         const delta = e.key === "]" ? 1 : -1;
@@ -1231,7 +1236,11 @@ export default function AcquisitionsGlobe({
                     type="button"
                     className={`${s.fitem}${view.satellite !== null && sat !== view.satellite ? ` ${s.off}` : ""}`}
                     onClick={() => {
-                      navigateRef.current({ satellite: sat, day: view.day, datatake: null });
+                      if (sat === null) {
+                        navigateRef.current({ satellite: null, day: view.day, datatake: null });
+                      } else {
+                        navigateRef.current(pickViewForSatellite(data.datatakes, ymd(nowMs), sat, view.day));
+                      }
                       setOpenDropdown(null);
                     }}
                   >
@@ -1321,7 +1330,7 @@ export default function AcquisitionsGlobe({
                               type="button"
                               className={`${s.calDay} ${s.calHas}${isOn ? ` ${s.calOn}` : ""}`}
                               onClick={() => {
-                                navigateRef.current({ ...view, day: dateStr, datatake: null });
+                                navigateRef.current(pickViewForDay(data.datatakes, view.satellite, dateStr));
                                 setOpenDropdown(null);
                               }}
                             >
@@ -1366,15 +1375,7 @@ export default function AcquisitionsGlobe({
                   <u>All datatakes</u>
                 </button>
                 {[...dropdownDatatakes]
-                  .sort((a, b) => {
-                    const ga = satGroupOf(a.sat);
-                    const gb = satGroupOf(b.sat);
-                    if (ga < gb) return -1;
-                    if (ga > gb) return 1;
-                    if (a.id < b.id) return -1;
-                    if (a.id > b.id) return 1;
-                    return 0;
-                  })
+                  .sort(compareDatatakes)
                   .map((dt) => {
                     const dotColor =
                       dt.cls === "ok" ? "#34d399" : dt.cls === "warn" ? "#f5b544" : "#ff5c5c";
