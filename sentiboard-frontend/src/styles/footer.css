@@ -14,7 +14,7 @@
   background: var(--mf-bg);
   color: var(--mf-text);
   border-top: 1px solid var(--mf-line);
-  margin-top: 40px;
+  margin-top: 0;
 }
 
 .footer-inner {
