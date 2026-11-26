@@ -1,6 +1,7 @@
 /* NewsCard — expandable news item card used in the Home news panel. */
 
 .card {
+  --nc-icon: calc(15px * 1.5); /* = 20px; 4/3 × title font-size (15px) */
   background: var(--home-ground);
 }
 
@@ -23,12 +24,12 @@
   outline-offset: -2px;
 }
 
-/* Status icon — 18×18, coloured by variant via tokens.css */
+/* Status icon — sized to match the title (--nc-icon = 20px); coloured by variant via tokens.css */
 .icon {
   flex: none;
-  width: 18px;
-  height: 18px;
-  margin-top: 1px; /* optical align with title cap-height */
+  width: var(--nc-icon);
+  height: var(--nc-icon);
+  margin-top: 1px; /* optical align with title first-line */
 }
 
 .card[data-variant="success"] .icon { color: var(--ok); }
@@ -76,7 +77,7 @@
 
 /* Body — description + optional link */
 .body {
-  padding: 2px 24px 16px 52px; /* 52 = 24 pad + 18 icon + 10 gap */
+  padding: 2px 24px 16px calc(24px + var(--nc-icon) + 10px); /* 24 pad + icon + 10 gap */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -123,7 +124,7 @@
 }
 
 .card[data-layout="page"][open] {
-  box-shadow: inset 0 0 0 1px var(--home-faq-open);
+  box-shadow: inset 0 0 0 1px var(--text);
 }
 
 /* Wider padding matches .faqQ (home.module.css:396) */
@@ -131,9 +132,9 @@
   padding: 16px 20px;
 }
 
-/* Body indent: 20px left-pad + 18px icon + 10px gap = 48px (cf. faqBody's 51 = 20+19+12) */
+/* Body indent: 20px left-pad + icon + 10px gap (cf. faqBody's 51 = 20+19+12) */
 .card[data-layout="page"] .body {
-  padding: 2px 20px 16px 48px;
+  padding: 2px 20px 16px calc(20px + var(--nc-icon) + 10px);
 }
 
 /* Published line — appears in the body instead of the header */
