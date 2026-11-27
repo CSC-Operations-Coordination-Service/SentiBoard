@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
+import { useState, useRef, useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, useTransition } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import * as THREE from "three";
 import { applyDayNightEarth, type DayNightEarth } from "./dayNightEarth";
 import { applyStylizedEarth, type StylizedEarth } from "./stylizedEarth";
@@ -13,7 +13,8 @@ import { kpiStats } from "./model";
 import type { AcqDatatake } from "./types";
 import DatatakePanel from "./DatatakePanel";
 import { parseAcqView, acqViewHref, type AcqView } from "./url-state";
-import { compareDatatakes, pickArrivalView, pickViewForSatellite, pickViewForDay } from "./defaults";
+import { compareDatatakes, pickArrivalView, pickViewForSatellite } from "./defaults";
+import { acqDayRange } from "./acq-day-range";
 import { DAY_MS } from "@/lib/missions";
 import { logger } from "@/lib/log";
 import SpaceBackdrop from "@/components/SpaceBackdrop";
@@ -157,17 +158,11 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-function windowLabel(todayMidnightMs: number): string {
-  const a = new Date(todayMidnightMs - DAY_MS);
-  const b = new Date(todayMidnightMs);
-  const [da, ma, ya] = [a.getUTCDate(), MONTHS[a.getUTCMonth()], a.getUTCFullYear()];
-  const [db, mb, yb] = [b.getUTCDate(), MONTHS[b.getUTCMonth()], b.getUTCFullYear()];
-  if (ya !== yb) return `${da} ${ma} ${ya} – ${db} ${mb} ${yb}`;
-  if (ma !== mb) return `${da} ${ma} – ${db} ${mb} ${yb}`;
-  return `${da} – ${db} ${mb} ${yb}`;
-}
-
 const ymd = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+function longDay(d: string): string {
+  return `${+d.slice(8)} ${MONTHS[+d.slice(5, 7) - 1]} ${d.slice(0, 4)}`;
+}
 
 // ── Slice 5 module-level helpers ──────────────────────────────────────────────
 
@@ -207,12 +202,16 @@ export default function AcquisitionsGlobe({
   nowMs,
   data,
   notice,
+  dayKey,
+  todayKey,
 }: {
   look: GlobeLook;
   nowMs: number;
   data: AcquisitionsData;
   /** Shown above the globe instead of the empty-state text, e.g. when the backend failed. */
   notice?: string;
+  dayKey: string;
+  todayKey: string;
 }) {
   // Modifier key: "Ctrl" on server and by default; "⌘" on Mac clients (no hydration mismatch).
   const modKey = useSyncExternalStore(
@@ -231,10 +230,14 @@ export default function AcquisitionsGlobe({
   const searchParams = useSearchParams();
   const view: AcqView = useMemo(() => parseAcqView(searchParams), [searchParams]);
 
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const pushDayRef = useRef<(nextDayKey: string) => void>(() => {});
+
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const openDropdownRef = useRef<string | null>(null);
   const [calMonth, setCalMonth] = useState(() => {
-    const t = new Date(nowMs);
+    const t = new Date(`${dayKey}T00:00:00Z`);
     return Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1);
   });
   const [searchQuery, setSearchQuery] = useState("");
@@ -381,6 +384,15 @@ export default function AcquisitionsGlobe({
     [satDayDatatakes, view.datatake],
   );
 
+  // Active day key (URL day if set, else today); drives heading, empty-state message, and day filter.
+  const selectedDay = view.day ?? dayKey;
+
+  // Day-only filter (no satellite filter) — used for the empty-state check.
+  const dayDatatakes = useMemo(
+    () => data.datatakes.filter((dt) => dt.startIso.slice(0, 10) === selectedDay),
+    [data.datatakes, selectedDay],
+  );
+
   // useLayoutEffect: runs synchronously after DOM mutations, before paint, so no event handler
   // can read a stale ref between render and the next frame.
   useLayoutEffect(() => {
@@ -390,18 +402,51 @@ export default function AcquisitionsGlobe({
     replaceRef.current = (next: AcqView) => {
       history.replaceState(null, "", acqViewHref(next, window.location.pathname));
     };
+    pushDayRef.current = (nextDayKey: string) => {
+      const v = urlViewRef.current;
+      const target: AcqView = {
+        satellite: v.satellite,
+        day: nextDayKey === todayKey ? null : nextDayKey,
+        datatake: null,
+      };
+      startTransition(() => {
+        router.push(acqViewHref(target, window.location.pathname));
+      });
+    };
     urlViewRef.current = view;
     satDayDatatakesRef.current = satDayDatatakes;
-  }, [view, satDayDatatakes]);
+  }, [view, satDayDatatakes, todayKey, router]);
 
-  // Arrival defaults: runs on mount, on Activity re-reveal (React runs effect
-  // cleanup + re-run when hiding/showing a page), and when data.datatakes or
-  // nowMs changes. In-page filter changes don't affect these deps and don't
-  // re-run this effect.
+  // calMonth sync: when the fetched day changes (calendar pick in another month,
+  // Back/Forward), show that day's month. calMonth is also changed by the month
+  // arrows, so it stays state and is reset here.
   useEffect(() => {
-    const next = pickArrivalView(data.datatakes, ymd(nowMs), urlViewRef.current);
-    if (next) replaceRef.current(next);
-  }, [data.datatakes, nowMs]);
+    const t = new Date(`${dayKey}T00:00:00Z`);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setCalMonth(Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1));
+  }, [dayKey]);
+
+  // Arrival defaults: runs on mount and when data.datatakes, dayKey, or todayKey change.
+  // dayKey is the server-fetched day; when it differs from todayKey the URL day is authoritative.
+  useEffect(() => {
+    const curView = urlViewRef.current;
+    const effectiveDay = dayKey === todayKey ? null : dayKey;
+    const effectiveView: AcqView = { ...curView, day: effectiveDay };
+
+    if (!data.datatakes.length) {
+      if (curView.datatake !== null || curView.day !== effectiveDay) {
+        replaceRef.current({ ...effectiveView, datatake: null });
+      }
+      return;
+    }
+
+    const next = pickArrivalView(data.datatakes, todayKey, effectiveView);
+    if (next) {
+      replaceRef.current(next);
+    } else if (curView.day !== effectiveDay) {
+      replaceRef.current(effectiveView);
+    }
+  }, [data.datatakes, dayKey, todayKey]);
 
   // Dropdown list: sat + day + search (search does not touch globe or KPIs)
   const dropdownDatatakes = useMemo(() => {
@@ -417,12 +462,10 @@ export default function AcquisitionsGlobe({
     () => Array.from(new Set(data.datatakes.map((dt) => dt.unit))).sort(),
     [data.datatakes],
   );
-  const datesWithData = useMemo(() => {
-    const base = view.satellite
-      ? data.datatakes.filter((dt) => dt.unit === view.satellite)
-      : data.datatakes;
-    return new Set(base.map((dt) => dt.startIso.slice(0, 10)));
-  }, [data.datatakes, view.satellite]);
+  const { first: acqRangeFirst, months: acqRangeMonths } = useMemo(
+    () => acqDayRange(todayKey),
+    [todayKey],
+  );
 
   // ── Slice 5 effects (all after useMemos so React Compiler sees no "used before declared") ──
 
@@ -500,19 +543,26 @@ export default function AcquisitionsGlobe({
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  // Fly-to: fires when view.datatake changes
+  // Fly-to: fires when view.datatake or prepared changes.
+  // prevDtkIdRef tracks the last id that was actually flown to (not the last seen id), so that
+  // when Back restores a datatake whose data hasn't arrived yet, the effect re-fires when
+  // prepared updates and completes the fly then.
   useEffect(() => {
     const dtId = view.datatake;
-    const prev = prevDtkIdRef.current;
-    prevDtkIdRef.current = dtId;
     if (dtId === null) {
-      rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+      if (prevDtkIdRef.current !== null) {
+        rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
+        prevDtkIdRef.current = null;
+      }
       return;
     }
+    if (dtId === prevDtkIdRef.current) return; // already at this id; prepared re-fired but nothing to do
     const prep = prepared.get(dtId);
-    if (!prep) return;
+    if (!prep) return; // data not loaded yet — will re-run when prepared updates
     const dt = data.datatakes.find((d) => d.id === dtId);
     if (!dt) return;
+    const prev = prevDtkIdRef.current;
+    prevDtkIdRef.current = dtId;
     const { W, H } = canvasSizeRef.current;
     const zoom = fitZoom(prep, W || 800, H || 600);
     const reducedMotion =
@@ -527,7 +577,7 @@ export default function AcquisitionsGlobe({
       rotateToRef.current(dt.lon, dt.lat, zoom);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view.datatake]);
+  }, [view.datatake, prepared]);
 
   // applyView: positions the camera for the current view state.
   // Only reads refs (stable), so [] deps is correct and the function reference is stable.
@@ -1220,11 +1270,7 @@ export default function AcquisitionsGlobe({
 
       {/* Filter toolbar */}
       <div className={s.toolbar} ref={toolbarRef}>
-        <h2 className={s.tbHeading}>
-          {view.day
-            ? `${+view.day.slice(8)} ${MONTHS[+view.day.slice(5, 7) - 1]} ${view.day.slice(0, 4)}`
-            : windowLabel(nowMs)}
-        </h2>
+        <h2 className={s.tbHeading}>{longDay(selectedDay)}</h2>
 
         {/* Satellite dropdown */}
         <div className={`${s.fdrop} ${s.fdropSat}${openDropdown === "sat" ? ` ${s.fdropOpen}` : ""}`}>
@@ -1247,7 +1293,7 @@ export default function AcquisitionsGlobe({
                     type="button"
                     className={`${s.fitem}${sat !== view.satellite ? ` ${s.off}` : ""}`}
                     onClick={() => {
-                      navigateRef.current(pickViewForSatellite(data.datatakes, ymd(nowMs), sat, view.day));
+                      navigateRef.current(pickViewForSatellite(data.datatakes, todayKey, sat, view.day));
                       setOpenDropdown(null);
                     }}
                   >
@@ -1291,6 +1337,9 @@ export default function AcquisitionsGlobe({
                           type="button"
                           className={s.calNav}
                           aria-label="Previous month"
+                          disabled={!acqRangeMonths.has(
+                            new Date(Date.UTC(year, month - 1, 1)).toISOString().slice(0, 7)
+                          )}
                           onClick={() => setCalMonth(Date.UTC(year, month - 1, 1))}
                         >
                           <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
@@ -1302,6 +1351,9 @@ export default function AcquisitionsGlobe({
                           type="button"
                           className={s.calNav}
                           aria-label="Next month"
+                          disabled={!acqRangeMonths.has(
+                            new Date(Date.UTC(year, month + 1, 1)).toISOString().slice(0, 7)
+                          )}
                           onClick={() => setCalMonth(Date.UTC(year, month + 1, 1))}
                         >
                           <svg width="11" height="11" viewBox="0 0 16 16" fill="none">
@@ -1319,19 +1371,16 @@ export default function AcquisitionsGlobe({
                         {Array.from({ length: daysInMonth }, (_, i) => {
                           const dayNum = i + 1;
                           const dateStr = ymd(calMonth + i * DAY_MS);
-                          const has = datesWithData.has(dateStr);
-                          const isOn = view.day === dateStr;
-                          return has ? (
+                          const inRange = dateStr >= acqRangeFirst && dateStr <= todayKey;
+                          const isOn = view.day === dateStr || (view.day === null && dateStr === dayKey);
+                          return inRange ? (
                             <button
                               key={dayNum}
                               type="button"
-                              className={`${s.calDay} ${s.calHas}${isOn ? ` ${s.calOn}` : ""}`}
-                              onClick={() => {
-                                navigateRef.current(pickViewForDay(data.datatakes, view.satellite ?? "", dateStr));
-                                setOpenDropdown(null);
-                              }}
+                              className={`${s.calDay}${isOn ? ` ${s.calOn}` : ""}`}
+                              onClick={() => { pushDayRef.current(dateStr); setOpenDropdown(null); }}
                             >
-                              {dayNum}<i />
+                              {dayNum}
                             </button>
                           ) : (
                             <span key={dayNum} className={s.calDay}>{dayNum}</span>
@@ -1417,14 +1466,14 @@ export default function AcquisitionsGlobe({
         </label>
       </div>
 
-      {(notice || data.datatakes.length === 0) && (
+      {(notice || dayDatatakes.length === 0) && (
         <p className={s.empty} role={notice ? "alert" : undefined}>
-          {notice ?? "No acquisition data for this period."}
+          {notice ?? `No acquisition data for ${longDay(selectedDay)}.`}
         </p>
       )}
 
       {/* Globe */}
-      <div className={`${s.stageRow}${panelOpen ? ` ${s.hasSel}` : ""}`}>
+      <div className={`${s.stageRow}${panelOpen ? ` ${s.hasSel}` : ""}${isPending ? ` ${s.acqPending}` : ""}`}>
         <div className={s.globeStage} ref={stageElRef}>
         <SpaceBackdrop page={-1} paused={!stageVisible} />
         <div className={s.canvasWrap}>

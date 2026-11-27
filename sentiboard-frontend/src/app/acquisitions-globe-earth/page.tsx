@@ -4,8 +4,10 @@ import { connection } from "next/server";
 import PageHeader from "@/components/PageHeader";
 import { SITE_NAME, ROUTES } from "@/lib/routes";
 import { fmtDate } from "@/lib/missions";
+import { reader } from "@/lib/url-params";
 import { getAcquisitions } from "@/features/acquisitions/data";
 import { adaptAcquisitions } from "@/features/acquisitions/adapter";
+import { resolveAcqDay } from "@/features/acquisitions/acq-day-range";
 import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE, AcquisitionsDescription } from "@/features/acquisitions/copy";
 import AcquisitionsGlobe from "@/features/acquisitions/AcquisitionsGlobe";
 import { COPERNICUS_STATIONS } from "@/features/acquisitions/stations";
@@ -33,12 +35,19 @@ export const metadata: Metadata = {
   },
 };
 
-async function AcquisitionsContent() {
+// Pattern from src/app/events/page.tsx:48,53 — PageProps["searchParams"] + reader(params)
+async function AcquisitionsContent({
+  searchParams,
+}: {
+  searchParams: PageProps<"/acquisitions-globe-earth">["searchParams"];
+}) {
   // connection() opts into request-time rendering so now is the actual request time.
   await connection();
   const now = new Date();
   const nowMs = now.getTime();
-  const dayKey = fmtDate(now);
+  const todayKey = fmtDate(now);
+  const params = await searchParams;
+  const dayKey = resolveAcqDay(reader(params)("day"), todayKey);
   const result = await getAcquisitions(dayKey);
   if (!result.ok) {
     const notice = result.kind === "unreachable"
@@ -50,19 +59,21 @@ async function AcquisitionsContent() {
         nowMs={nowMs}
         data={{ datatakes: [], stations: COPERNICUS_STATIONS }}
         notice={notice}
+        dayKey={dayKey}
+        todayKey={todayKey}
       />
     );
   }
   const data = adaptAcquisitions(result, nowMs);
-  return <AcquisitionsGlobe look="imagery" nowMs={nowMs} data={data} />;
+  return <AcquisitionsGlobe look="imagery" nowMs={nowMs} data={data} dayKey={dayKey} todayKey={todayKey} />;
 }
 
-export default function Page() {
+export default function Page(props: PageProps<"/acquisitions-globe-earth">) {
   return (
     <>
       <PageHeader title={ACQ_TITLE} subtitle={ACQ_SUBTITLE} img={ACQ_HERO_IMG} desc={<AcquisitionsDescription />} />
       <Suspense>
-        <AcquisitionsContent />
+        <AcquisitionsContent searchParams={props.searchParams} />
       </Suspense>
     </>
   );

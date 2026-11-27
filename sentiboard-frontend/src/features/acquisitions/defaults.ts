@@ -38,13 +38,14 @@ function defaultDatatake(datatakes: AcqDatatake[], sat: string, day: string): st
  * Compute the arrival view.
  *
  * Rules:
- * - If current.datatake exists in the data, derive satellite and day from that
- *   datatake (overrides any conflicting satellite/day params in the URL).
- * - Otherwise, resolve satellite from current.satellite if valid, else default;
- *   then day from current.day if valid for that satellite, else default; then
- *   pick the first datatake.
- * - If nothing changed from current, return null.
- * - If there are no datatakes at all, return null.
+ * - If current.datatake is found and either no URL day is set or the datatake
+ *   is on the URL day, derive satellite and day from that datatake.
+ * - If current.day is set (server fetched for it), it wins: only resolve
+ *   satellite and datatake for that day. Switches satellite if the current one
+ *   has no data for that day; drops a stale datatake when no data exists.
+ * - Otherwise (no URL day): resolve satellite → defaultDay → defaultDatatake.
+ * - Returns null when nothing needs to change.
+ * - Returns null when there are no datatakes at all.
  */
 export function pickArrivalView(
   datatakes: AcqDatatake[],
@@ -53,42 +54,56 @@ export function pickArrivalView(
 ): AcqView | null {
   if (!datatakes.length) return null;
 
-  // Deep-link with a datatake id: satellite and day come from the datatake itself.
+  // Deep-link with a datatake id: satellite and day come from the datatake,
+  // unless a URL day is also set that differs (URL day wins in that case).
   if (current.datatake) {
     const dtk = datatakes.find((d) => d.id === current.datatake);
     if (dtk) {
-      const sat = dtk.unit;
-      const day = dtk.startIso.slice(0, 10);
-      if (sat === current.satellite && day === current.day && current.datatake === dtk.id) {
-        return null;
+      const dtkDay = dtk.startIso.slice(0, 10);
+      if (!current.day || current.day === dtkDay) {
+        const sat = dtk.unit;
+        if (sat === current.satellite && dtkDay === current.day && current.datatake === dtk.id) {
+          return null;
+        }
+        return { satellite: sat, day: dtkDay, datatake: dtk.id };
       }
-      return { satellite: sat, day, datatake: dtk.id };
+      // datatake is on a different day than current.day → fall through to day-wins path
     }
-    // datatake param present but not in data (e.g. outside the window) — fall through to defaults
+    // datatake param present but not in data — fall through
   }
 
-  // Resolve satellite
+  // When a URL day is set, it must win (the server fetched for it). Only resolve satellite+datatake.
+  if (current.day) {
+    const dayData = datatakes.filter((d) => d.startIso.slice(0, 10) === current.day);
+
+    const sat =
+      current.satellite && dayData.some((d) => d.unit === current.satellite)
+        ? current.satellite
+        : defaultSatellite(dayData);
+
+    if (!sat) {
+      // No data for this day at all: keep sat/day, drop stale datatake.
+      if (current.datatake === null) return null;
+      return { satellite: current.satellite, day: current.day, datatake: null };
+    }
+
+    const datatake = defaultDatatake(datatakes, sat, current.day);
+    if (sat === current.satellite && datatake === current.datatake) return null;
+    return { satellite: sat, day: current.day, datatake };
+  }
+
+  // No URL day: resolve satellite → defaultDay → defaultDatatake.
   const sat =
     current.satellite && datatakes.some((d) => d.unit === current.satellite)
       ? current.satellite
       : defaultSatellite(datatakes);
   if (!sat) return null;
 
-  // Resolve day
-  const day =
-    current.day && datatakes.some((d) => d.unit === sat && d.startIso.slice(0, 10) === current.day)
-      ? current.day
-      : defaultDay(datatakes, sat, todayKey);
+  const day = defaultDay(datatakes, sat, todayKey);
   if (!day) return null;
 
-  // Resolve datatake
   const datatake = defaultDatatake(datatakes, sat, day);
-
-  // If nothing changed, return null (caller skips the replaceState)
-  if (sat === current.satellite && day === current.day && datatake === current.datatake) {
-    return null;
-  }
-
+  if (sat === current.satellite && day === current.day && datatake === current.datatake) return null;
   return { satellite: sat, day, datatake };
 }
 
@@ -108,19 +123,5 @@ export function pickViewForSatellite(
       ? currentDay
       : defaultDay(datatakes, sat, todayKey);
   const datatake = day ? defaultDatatake(datatakes, sat, day) : null;
-  return { satellite: sat, day, datatake };
-}
-
-/**
- * View after the user picks a specific day.
- * Picks the first datatake (by compareDatatakes) for sat+day.
- */
-export function pickViewForDay(
-  datatakes: AcqDatatake[],
-  sat: string,
-  day: string,
-): AcqView {
-  const pool = datatakes.filter((d) => d.unit === sat && d.startIso.slice(0, 10) === day);
-  const datatake = pool.length ? pool.sort(compareDatatakes)[0].id : null;
   return { satellite: sat, day, datatake };
 }

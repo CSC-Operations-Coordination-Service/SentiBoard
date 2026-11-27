@@ -3,7 +3,6 @@ import {
   compareDatatakes,
   pickArrivalView,
   pickViewForSatellite,
-  pickViewForDay,
 } from "./defaults";
 import type { AcqDatatake } from "./types";
 
@@ -123,10 +122,10 @@ describe("pickArrivalView — partial URL", () => {
     expect(result?.datatake).toBe("S1A-00001");
   });
 
-  it("satellite valid, day outside window → replaces with satellite's default day", () => {
+  it("day outside loaded data, datatake already null → returns null (URL fix is handled by arrival effect)", () => {
+    // No data for 2024-01-01 in MIXED; datatake already null → day-wins path returns null
     const result = pickArrivalView(MIXED, TODAY, { satellite: "S1A", day: "2024-01-01", datatake: null });
-    expect(result?.day).toBe(TODAY);
-    expect(result?.datatake).toBe("S1A-00001");
+    expect(result).toBeNull();
   });
 
   it("satellite invalid → uses first valid satellite", () => {
@@ -197,17 +196,51 @@ describe("pickViewForSatellite", () => {
 });
 
 // ---------------------------------------------------------------------------
-// pickViewForDay
+// pickArrivalView — day wins (current.day set, day wins over defaults)
 // ---------------------------------------------------------------------------
 
-describe("pickViewForDay", () => {
-  it("with satellite: picks first datatake by compareDatatakes", () => {
-    const result = pickViewForDay(MIXED, "S1A", TODAY);
-    expect(result).toEqual({ satellite: "S1A", day: TODAY, datatake: "S1A-00001" });
+describe("pickArrivalView — day wins (current.day set)", () => {
+  it("satellite has data for the day → keeps satellite, picks first datatake", () => {
+    const result = pickArrivalView(MIXED, TODAY, { satellite: "S1A", day: TODAY, datatake: null });
+    expect(result?.satellite).toBe("S1A");
+    expect(result?.day).toBe(TODAY);
+    expect(result?.datatake).toBe("S1A-00001");
   });
 
-  it("with satellite: no datatakes for sat+day → datatake null", () => {
-    const result = pickViewForDay(MIXED, "S2A", YESTERDAY);
-    expect(result).toEqual({ satellite: "S2A", day: YESTERDAY, datatake: null });
+  it("satellite has no data for the day, another satellite does → switches satellite", () => {
+    // S2A has no data on YESTERDAY; S1A does (S1A-00003)
+    const result = pickArrivalView(MIXED, TODAY, { satellite: "S2A", day: YESTERDAY, datatake: null });
+    expect(result?.satellite).toBe("S1A");
+    expect(result?.day).toBe(YESTERDAY);
+    expect(result?.datatake).toBe("S1A-00003");
+  });
+
+  it("no satellite has data for the day, datatake null → returns null", () => {
+    const result = pickArrivalView(MIXED, TODAY, { satellite: "S1A", day: "2024-01-01", datatake: null });
+    expect(result).toBeNull();
+  });
+
+  it("no satellite has data for the day, stale datatake → drops datatake", () => {
+    const result = pickArrivalView(MIXED, TODAY, { satellite: "S1A", day: "2024-01-01", datatake: "S1A-00001" });
+    expect(result).toEqual({ satellite: "S1A", day: "2024-01-01", datatake: null });
+  });
+
+  it("satellite and datatake already correct → returns null", () => {
+    const result = pickArrivalView(MIXED, TODAY, { satellite: "S1A", day: TODAY, datatake: "S1A-00001" });
+    expect(result).toBeNull();
+  });
+
+  it("stale datatake is on a different day → day wins, picks new datatake for the URL day", () => {
+    // S1A-00003 is on YESTERDAY not TODAY; current.day=TODAY so day wins
+    // datatake deep-link sees dtkDay≠current.day and falls through to day-wins path
+    const result = pickArrivalView(MIXED, TODAY, { satellite: "S1A", day: TODAY, datatake: "S1A-00003" });
+    expect(result?.satellite).toBe("S1A");
+    expect(result?.day).toBe(TODAY);
+    expect(result?.datatake).toBe("S1A-00001");
+  });
+
+  it("datatake found in this day, satellite null → fills satellite from dtk.unit", () => {
+    const result = pickArrivalView(MIXED, TODAY, { satellite: null, day: TODAY, datatake: "S1A-00002" });
+    expect(result).toEqual({ satellite: "S1A", day: TODAY, datatake: "S1A-00002" });
   });
 });

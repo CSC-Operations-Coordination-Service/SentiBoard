@@ -730,18 +730,6 @@ button.calDay:hover {
   border-color: rgba(255, 255, 255, 0.24);
 }
 
-/* 4px cyan dot inside days with data */
-button.calDay i {
-  position: absolute;
-  bottom: 3px;
-  left: 50%;
-  width: 4px;
-  height: 4px;
-  margin-left: -2px;
-  border-radius: 50%;
-  background: #2fc6dc;
-}
-
 /* selected day: cyan frame */
 button.calDay.calOn {
   border-color: #2fc6dc;
@@ -1097,6 +1085,16 @@ button.calDay.calOn {
   .dtkRail {
     width: 100%;
   }
+}
+
+/* ==================== pending overlay (day navigation) ==================== */
+
+.acqPending .canvasWrap,
+.acqPending .overlayBadges,
+.acqPending .sideCol {
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.15s;
 }
 
 /* ==================== reduced motion: instant transitions ==================== */
