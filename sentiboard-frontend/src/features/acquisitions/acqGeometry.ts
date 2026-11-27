@@ -218,6 +218,23 @@ export function buildFootprint(d: PreparedDatatake): FootprintGeometry {
 }
 
 /**
+ * Seconds-into-day for the simulation clock when a datatake is selected.
+ *
+ * Uses the mid-sensing crossing point (prep.tc) so the satellite dot appears
+ * at the footprint centre for every mission. The result is clamped to
+ * [0, 86399]: no wrapping. The sim day (simDayMs) is fixed to the datatake's
+ * acquisition day, so a value of e.g. 86430 would place the satellite ~1 orbit
+ * too early (the rAF's % 86400 would wrap it to 30 s, which is correct for
+ * local midnight but would be read as 00:00:30 on the datatake's day — a
+ * different instant than the actual mid-sensing). Clamping to 86399 keeps
+ * the dot at the last second of the datatake's day, which is visually
+ * indistinguishable from the true mid-sensing for any near-midnight case.
+ */
+export function simSecondsForDatatake(prep: PreparedDatatake): number {
+  return Math.max(0, Math.min(86399, prep.tc * 60));
+}
+
+/**
  * Convert a pointer event position to Three.js NDC [-1, 1].
  * No view-offset parameter: setViewOffset modifies the camera's projection
  * matrix, so raycaster.setFromCamera already handles it via projectionMatrixInverse.

@@ -10,6 +10,7 @@ import {
   buildFootprintFill,
   FILL_R,
   pointerToNdc,
+  simSecondsForDatatake,
 } from "./acqGeometry";
 import type { PreparedDatatake } from "./acqGeometry";
 
@@ -461,5 +462,31 @@ describe("pointerToNdc", () => {
         expect(raycaster.ray.distanceToPoint(wp)).toBeLessThan(1e-4);
       });
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// simSecondsForDatatake
+// ---------------------------------------------------------------------------
+describe("simSecondsForDatatake", () => {
+  it("returns tc*60 for a normal daytime datatake", () => {
+    // start 10:00:00Z, sensing 120s → tc = 600 + 1 = 601 min → 36060 s
+    const p = prepDatatake({ ...DT_BASE, startIso: "2024-06-15T10:00:00Z", sensingS: 120 }, TODAY_MS);
+    expect(simSecondsForDatatake(p)).toBeCloseTo(p.tc * 60, 3);
+  });
+
+  it("clamps to 86399 when mid-sensing crosses midnight", () => {
+    // start 23:59:00Z, sensing 120s → tc = 1439 + 1 = 1440 min → 86400 s → clamp to 86399
+    const p = prepDatatake({ ...DT_BASE, startIso: "2024-06-15T23:59:00Z", sensingS: 120 }, TODAY_MS);
+    expect(simSecondsForDatatake(p)).toBe(86399);
+  });
+
+  it("satellite subPoint at simSecondsForDatatake is near footprint centre", () => {
+    // subPoint at tc should return near the datatake's centroid lat/lon
+    const p = prepDatatake(DT_BASE, TODAY_MS);
+    const tcMin = simSecondsForDatatake(p) / 60;
+    const [lon, lat] = subPoint(p, tcMin);
+    expect(lat).toBeCloseTo(DT_BASE.lat, 0);
+    expect(lon).toBeCloseTo(DT_BASE.lon, 0);
   });
 });

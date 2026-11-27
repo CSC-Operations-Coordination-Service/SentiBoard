@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { applyDayNightEarth, type DayNightEarth } from "./dayNightEarth";
 import { applyStylizedEarth, type StylizedEarth } from "./stylizedEarth";
 import type { AcquisitionsData } from "./types";
-import { prepDatatake, subPoint, buildFootprint, buildFootprintFill, OUTLINE_R, pointerToNdc } from "./acqGeometry";
+import { prepDatatake, subPoint, buildFootprint, buildFootprintFill, OUTLINE_R, pointerToNdc, simSecondsForDatatake } from "./acqGeometry";
 import type { PreparedDatatake } from "./acqGeometry";
 import { kpiStats } from "./model";
 import type { AcqDatatake } from "./types";
@@ -330,6 +330,7 @@ export default function AcquisitionsGlobe({
   const selectedDtkIdRef = useRef<string | null>(null);
   const selectedSatUnitRef = useRef<string | null>(null);
   const prevDtkIdRef = useRef<string | null>(null);
+  const prevDtkForClockRef = useRef<string | null>(null);
   const panelOpenRef = useRef(view.datatake !== null);
 
   // Panel display: stays mounted for 460 ms after deselect so CSS fade-out completes
@@ -338,8 +339,9 @@ export default function AcquisitionsGlobe({
   useEffect(() => { panelOpenRef.current = panelOpen; }, [panelOpen]);
   const fadeOutTimerRef = useRef<number | null>(null);
 
-  // simDayMs: UTC midnight of the day nowMs falls on; used as the base for the day/night shader.
-  const simDayMs = nowMs - (nowMs % 86_400_000);
+  // simDayMs: UTC midnight of the displayed day (view.day if set, else today).
+  // Derived from string keys so it tracks the selected day, not the wall-clock day.
+  const simDayMs = Date.parse(`${view.day ?? dayKey}T00:00:00Z`);
   const simDayMsRef = useRef(simDayMs);
 
   // simTimeRef: seconds into the day at mount (Slice 2 is frozen; Slice 3 will advance it).
@@ -425,6 +427,12 @@ export default function AcquisitionsGlobe({
     satDayDatatakesRef.current = satDayDatatakes;
   }, [view, satDayDatatakes, todayKey, router]);
 
+  // Keep simDayMsRef in sync with the rendered simDayMs so the rAF always
+  // reads the correct acquisition day for the shader and date text.
+  useLayoutEffect(() => {
+    simDayMsRef.current = simDayMs;
+  }, [simDayMs]);
+
   // calMonth sync: when the fetched day changes (calendar pick in another month,
   // Back/Forward), show that day's month. calMonth is also changed by the month
   // arrows, so it stays state and is reset here.
@@ -505,6 +513,19 @@ export default function AcquisitionsGlobe({
       selectedSatUnitRef.current = null;
     }
   }, [view.datatake, data.datatakes]);
+
+  // Jump simulation clock to datatake mid-sensing on first selection of each datatake.
+  // Mid-sensing (prep.tc) places the satellite dot at the footprint centre for every mission.
+  // prevDtkForClockRef prevents reset when the same id is re-picked or only prepared recomputes.
+  useEffect(() => {
+    const dtId = view.datatake;
+    if (dtId === null || dtId === prevDtkForClockRef.current) return;
+    const prep = prepared.get(dtId);
+    if (!prep) return;
+    prevDtkForClockRef.current = dtId;
+    simTimeRef.current = simSecondsForDatatake(prep);
+    lastSecRef.current = -1; // force text update on next tick
+  }, [view.datatake, prepared]);
 
   // Open panel whenever view.datatake is set (by URL navigation or deep link)
   useEffect(() => {
