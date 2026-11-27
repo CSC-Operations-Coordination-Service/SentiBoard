@@ -1298,7 +1298,10 @@ export default function AcquisitionsGlobe({
   const shownDay = isPending && pendingDay ? pendingDay : selectedDay;
 
   return (
-    <>
+    <section className={s.page}>
+      {/* Full-width Earth-horizon band + star field — mirrors availability/page.tsx:56, events/Explorer.tsx:927,
+          processors/Explorer.tsx:917. SpaceBackdrop sets --sb-earth-h on this section so padding-bottom works. */}
+      <SpaceBackdrop page={-1} paused={!stageVisible} />
       {/* KPI row */}
       <div className={`${s.kpis}${isPending ? ` ${s.acqKpisPending}` : ""}`}>
         <div className={s.kpi}>
@@ -1548,7 +1551,6 @@ export default function AcquisitionsGlobe({
         aria-busy={isPending || undefined}
       >
         <div className={s.globeStage} ref={stageElRef}>
-        <SpaceBackdrop page={-1} paused={!stageVisible} />
         <div className={s.canvasWrap}>
           <ThreeEarth
             transparent
@@ -1695,6 +1697,6 @@ export default function AcquisitionsGlobe({
           </div>
         </div>
       </div>
-    </>
+    </section>
   );
 }

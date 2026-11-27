@@ -1,9 +1,14 @@
+import SpaceBackdrop from "@/components/SpaceBackdrop";
 import s from "./acq-globe.module.css";
 
 export default function AcquisitionsSkeleton() {
   return (
-    <div role="status" className={s.skRoot}>
-      <span className="sr-only">Loading acquisitions…</span>
+    <section className={s.page}>
+      {/* Matches AcquisitionsGlobe's section wrapper so the Earth-band height is reserved
+          from the first paint — no layout jump when the loaded state replaces the skeleton. */}
+      <SpaceBackdrop page={-1} />
+      <div role="status" className={s.skRoot}>
+        <span className="sr-only">Loading acquisitions…</span>
 
       {/* KPI row — real .kpis / .kpi / .kpiV / .kpiK so height comes from the real font */}
       <div className={s.kpis}>
@@ -57,5 +62,6 @@ export default function AcquisitionsSkeleton() {
         </div>
       </div>
     </div>
+    </section>
   );
 }

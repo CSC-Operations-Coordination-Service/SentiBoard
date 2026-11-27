@@ -5,11 +5,14 @@
   width: 100%;
   max-width: none;
   margin: 0;
-  padding-inline: clamp(18px, 4vw, 48px);
-  padding-block: clamp(40px, 6vw, 80px);
+  /* padding-bottom reserves space for the Earth-horizon arc; --sb-earth-h is set by SpaceBackdrop JS.
+     The 32px gap matches availability.module.css:71, processors.module.css:1379, events.module.css:2692. */
+  padding-bottom: calc(var(--sb-earth-h, 190px) + 32px);
 }
 
 .empty {
+  position: relative;
+  z-index: 1; /* above SpaceBackdrop (z-index: 0) so stars don't paint over the text */
   display: flex;
   align-items: center;
   justify-content: center;
