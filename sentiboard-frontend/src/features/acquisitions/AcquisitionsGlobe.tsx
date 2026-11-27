@@ -1291,7 +1291,8 @@ export default function AcquisitionsGlobe({
                   <button
                     key={sat}
                     type="button"
-                    className={`${s.fitem}${sat !== view.satellite ? ` ${s.off}` : ""}`}
+                    className={s.fitem}
+                    aria-pressed={sat === view.satellite}
                     onClick={() => {
                       navigateRef.current(pickViewForSatellite(data.datatakes, todayKey, sat, view.day));
                       setOpenDropdown(null);
@@ -1419,7 +1420,8 @@ export default function AcquisitionsGlobe({
                       <button
                         key={dt.id}
                         type="button"
-                        className={`${s.fitem}${view.datatake !== null && dt.id !== view.datatake ? ` ${s.off}` : ""}`}
+                        className={s.fitem}
+                        aria-pressed={dt.id === view.datatake}
                         onClick={() => {
                           navigateRef.current({ ...view, datatake: dt.id });
                           setPanelOpen(true);
