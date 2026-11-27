@@ -113,17 +113,13 @@ export function pickViewForSatellite(
 
 /**
  * View after the user picks a specific day.
- * When sat is null ("All satellites"), returns datatake: null — no auto-select.
- * When sat is set, picks the first datatake for sat+day.
+ * Picks the first datatake (by compareDatatakes) for sat+day.
  */
 export function pickViewForDay(
   datatakes: AcqDatatake[],
-  sat: string | null,
+  sat: string,
   day: string,
 ): AcqView {
-  if (sat === null) {
-    return { satellite: null, day, datatake: null };
-  }
   const pool = datatakes.filter((d) => d.unit === sat && d.startIso.slice(0, 10) === day);
   const datatake = pool.length ? pool.sort(compareDatatakes)[0].id : null;
   return { satellite: sat, day, datatake };

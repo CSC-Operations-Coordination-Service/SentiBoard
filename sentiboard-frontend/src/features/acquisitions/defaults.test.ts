@@ -210,9 +210,4 @@ describe("pickViewForDay", () => {
     const result = pickViewForDay(MIXED, "S2A", YESTERDAY);
     expect(result).toEqual({ satellite: "S2A", day: YESTERDAY, datatake: null });
   });
-
-  it("with sat === null: returns datatake null (no auto-select in All-satellites mode)", () => {
-    const result = pickViewForDay(MIXED, null, TODAY);
-    expect(result).toEqual({ satellite: null, day: TODAY, datatake: null });
-  });
 });

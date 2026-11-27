@@ -748,11 +748,6 @@ button.calDay.calOn {
   background: rgba(47, 198, 220, 0.12);
 }
 
-/* "Any day" item: slightly shorter */
-.acqAnyday {
-  min-height: 30px;
-}
-
 /* Search field */
 .fsearch {
   min-width: 190px;

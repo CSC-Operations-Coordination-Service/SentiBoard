@@ -313,15 +313,18 @@ export default function AcquisitionsGlobe({
   const navigateRef = useRef<(next: AcqView) => void>(() => {});
   const replaceRef = useRef<(next: AcqView) => void>(() => {});
   const urlViewRef = useRef<AcqView>(view);
-  const filteredDatatakesRef = useRef<AcqDatatake[]>([]);
+  const satDayDatatakesRef = useRef<AcqDatatake[]>([]);
 
   // Selected datatake tracking (synced via useEffect below)
   const selectedDtkIdRef = useRef<string | null>(null);
   const selectedSatUnitRef = useRef<string | null>(null);
   const prevDtkIdRef = useRef<string | null>(null);
+  const panelOpenRef = useRef(view.datatake !== null);
 
-  // Panel display: stays mounted for 500 ms after deselect so CSS fade-out completes
+  // Panel display: stays mounted for 460 ms after deselect so CSS fade-out completes
   const [displayedDtk, setDisplayedDtk] = useState<AcqDatatake | null>(null);
+  const [panelOpen, setPanelOpen] = useState(() => view.datatake !== null);
+  useEffect(() => { panelOpenRef.current = panelOpen; }, [panelOpen]);
   const fadeOutTimerRef = useRef<number | null>(null);
 
   // simDayMs: UTC midnight of the day nowMs falls on; used as the base for the day/night shader.
@@ -368,12 +371,13 @@ export default function AcquisitionsGlobe({
         : satFilteredDatatakes,
     [satFilteredDatatakes, view.day],
   );
-  // Tier 3: sat + day + datatake filter (globe visibility and KPIs)
+  // Tier 3: sat + day + datatake filter (globe visibility; empty when nothing selected
+  // so no flash of all footprints before arrival defaults fire)
   const filteredDatatakes = useMemo(
     () =>
       view.datatake
         ? satDayDatatakes.filter((dt) => dt.id === view.datatake)
-        : satDayDatatakes,
+        : [],
     [satDayDatatakes, view.datatake],
   );
 
@@ -387,13 +391,13 @@ export default function AcquisitionsGlobe({
       history.replaceState(null, "", acqViewHref(next, window.location.pathname));
     };
     urlViewRef.current = view;
-    filteredDatatakesRef.current = filteredDatatakes;
-  }, [view, filteredDatatakes]);
+    satDayDatatakesRef.current = satDayDatatakes;
+  }, [view, satDayDatatakes]);
 
   // Arrival defaults: runs on mount, on Activity re-reveal (React runs effect
   // cleanup + re-run when hiding/showing a page), and when data.datatakes or
-  // nowMs changes. In-page URL changes (All satellites, Any day, etc.) don't
-  // change these deps and don't re-run this effect.
+  // nowMs changes. In-page filter changes don't affect these deps and don't
+  // re-run this effect.
   useEffect(() => {
     const next = pickArrivalView(data.datatakes, ymd(nowMs), urlViewRef.current);
     if (next) replaceRef.current(next);
@@ -408,7 +412,7 @@ export default function AcquisitionsGlobe({
     );
   }, [satDayDatatakes, searchQuery]);
 
-  const kpi = useMemo(() => kpiStats(filteredDatatakes), [filteredDatatakes]);
+  const kpi = useMemo(() => kpiStats(satDayDatatakes), [satDayDatatakes]);
   const uniqueSatellites = useMemo(
     () => Array.from(new Set(data.datatakes.map((dt) => dt.unit))).sort(),
     [data.datatakes],
@@ -434,10 +438,18 @@ export default function AcquisitionsGlobe({
     }
   }, [view.datatake, data.datatakes]);
 
-  // Keep panel mounted during 460 ms opacity fade-out after deselect
-  // 460 ms matches `opacity 460ms ease` closing transition (prototype-ref.md line 495)
+  // Open panel whenever view.datatake is set (by URL navigation or deep link)
   useEffect(() => {
-    if (view.datatake !== null) {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (view.datatake !== null) setPanelOpen(true);
+  }, [view.datatake]);
+
+  // Keep panel mounted during 460 ms opacity fade-out after close/deselect.
+  // 460 ms matches `opacity 460ms ease` closing transition (prototype-ref.md line 495).
+  // panelOpen in deps: re-runs when the user re-picks the already-selected datatake so
+  // the panel reopens even though view.datatake did not change.
+  useEffect(() => {
+    if (panelOpen && view.datatake !== null) {
       if (fadeOutTimerRef.current !== null) {
         window.clearTimeout(fadeOutTimerRef.current);
         fadeOutTimerRef.current = null;
@@ -453,21 +465,21 @@ export default function AcquisitionsGlobe({
     return () => {
       if (fadeOutTimerRef.current !== null) window.clearTimeout(fadeOutTimerRef.current);
     };
-  }, [view.datatake, data.datatakes]);
+  }, [view.datatake, data.datatakes, panelOpen]);
 
-  // Keyboard: Escape → close dropdown then deselect; [ / ] cycle datatakes; Enter play/pause
+  // Keyboard: Escape → close dropdown, else close panel; [ / ] cycle satDay datatakes; Enter play/pause
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (openDropdownRef.current) {
           setOpenDropdown(null);
-        } else if (urlViewRef.current.datatake !== null) {
-          navigateRef.current({ ...urlViewRef.current, datatake: null });
+        } else if (panelOpenRef.current) {
+          setPanelOpen(false);
         }
         return;
       }
       if (e.key === "[" || e.key === "]") {
-        const fds = filteredDatatakesRef.current;
+        const fds = satDayDatatakesRef.current;
         if (!fds.length) return;
         const sorted = [...fds].sort(compareDatatakes);
         const curId = urlViewRef.current.datatake;
@@ -701,13 +713,12 @@ export default function AcquisitionsGlobe({
           const hitItem = fms.find((fm) => fm.fill === hitMesh);
           if (hitItem) {
             if (hitItem.id === curView.datatake) {
-              navigateRef.current({ ...curView, datatake: null });
+              setPanelOpen(true);
             } else {
               navigateRef.current({ ...curView, datatake: hitItem.id });
+              setPanelOpen(true);
             }
           }
-        } else if (curView.datatake !== null) {
-          navigateRef.current({ ...curView, datatake: null });
         }
       };
 
@@ -1224,27 +1235,23 @@ export default function AcquisitionsGlobe({
             onClick={() => setOpenDropdown(openDropdown === "sat" ? null : "sat")}
           >
             <span className={s.fdropLabel}>Satellite</span>
-            <span className={s.fdropVal}>{view.satellite ?? "All"}</span>
+            <span className={s.fdropVal}>{view.satellite ?? "—"}</span>
             <Chevron />
           </button>
           <div className={s.fdropBody} aria-hidden={openDropdown !== "sat" || undefined}>
             <div className={s.fdropInner}>
               <div className={s.fdropPad}>
-                {[null, ...uniqueSatellites].map((sat) => (
+                {uniqueSatellites.map((sat) => (
                   <button
-                    key={sat ?? "*"}
+                    key={sat}
                     type="button"
-                    className={`${s.fitem}${view.satellite !== null && sat !== view.satellite ? ` ${s.off}` : ""}`}
+                    className={`${s.fitem}${sat !== view.satellite ? ` ${s.off}` : ""}`}
                     onClick={() => {
-                      if (sat === null) {
-                        navigateRef.current({ satellite: null, day: view.day, datatake: null });
-                      } else {
-                        navigateRef.current(pickViewForSatellite(data.datatakes, ymd(nowMs), sat, view.day));
-                      }
+                      navigateRef.current(pickViewForSatellite(data.datatakes, ymd(nowMs), sat, view.day));
                       setOpenDropdown(null);
                     }}
                   >
-                    <u>{sat === null ? "All satellites" : sat}</u>
+                    <u>{sat}</u>
                   </button>
                 ))}
               </div>
@@ -1264,23 +1271,13 @@ export default function AcquisitionsGlobe({
             <span className={s.fdropVal}>
               {view.day
                 ? `${view.day.slice(8)} ${MONTHS[+view.day.slice(5, 7) - 1].slice(0, 3)}`
-                : "Any"}
+                : "—"}
             </span>
             <Chevron />
           </button>
           <div className={s.fdropBody} aria-hidden={openDropdown !== "day" || undefined}>
             <div className={s.fdropInner}>
               <div className={s.fdropPad}>
-                <button
-                  type="button"
-                  className={`${s.fitem} ${s.acqAnyday}${view.day !== null ? ` ${s.off}` : ""}`}
-                  onClick={() => {
-                    navigateRef.current({ ...view, day: null, datatake: null });
-                    setOpenDropdown(null);
-                  }}
-                >
-                  <u>Any day</u>
-                </button>
                 {(() => {
                   const m = new Date(calMonth);
                   const year = m.getUTCFullYear();
@@ -1330,7 +1327,7 @@ export default function AcquisitionsGlobe({
                               type="button"
                               className={`${s.calDay} ${s.calHas}${isOn ? ` ${s.calOn}` : ""}`}
                               onClick={() => {
-                                navigateRef.current(pickViewForDay(data.datatakes, view.satellite, dateStr));
+                                navigateRef.current(pickViewForDay(data.datatakes, view.satellite ?? "", dateStr));
                                 setOpenDropdown(null);
                               }}
                             >
@@ -1358,22 +1355,12 @@ export default function AcquisitionsGlobe({
             onClick={() => setOpenDropdown(openDropdown === "dtk" ? null : "dtk")}
           >
             <span className={s.fdropLabel}>Datatake</span>
-            <span className={s.fdropVal}>{view.datatake ?? "All"}</span>
+            <span className={s.fdropVal}>{view.datatake ?? "—"}</span>
             <Chevron />
           </button>
           <div className={s.fdropBody} aria-hidden={openDropdown !== "dtk" || undefined}>
             <div className={s.fdropInner}>
               <div className={s.fdropPad}>
-                <button
-                  type="button"
-                  className={`${s.fitem}${view.datatake !== null ? ` ${s.off}` : ""}`}
-                  onClick={() => {
-                    navigateRef.current({ ...view, datatake: null });
-                    setOpenDropdown(null);
-                  }}
-                >
-                  <u>All datatakes</u>
-                </button>
                 {[...dropdownDatatakes]
                   .sort(compareDatatakes)
                   .map((dt) => {
@@ -1386,6 +1373,7 @@ export default function AcquisitionsGlobe({
                         className={`${s.fitem}${view.datatake !== null && dt.id !== view.datatake ? ` ${s.off}` : ""}`}
                         onClick={() => {
                           navigateRef.current({ ...view, datatake: dt.id });
+                          setPanelOpen(true);
                           setOpenDropdown(null);
                         }}
                       >
@@ -1419,6 +1407,7 @@ export default function AcquisitionsGlobe({
             onKeyDown={(e) => {
               if (e.key === "Enter" && dropdownDatatakes.length > 0) {
                 navigateRef.current({ ...view, datatake: dropdownDatatakes[0].id });
+                setPanelOpen(true);
                 setOpenDropdown(null);
               }
             }}
@@ -1435,7 +1424,7 @@ export default function AcquisitionsGlobe({
       )}
 
       {/* Globe */}
-      <div className={`${s.stageRow}${view.datatake !== null ? ` ${s.hasSel}` : ""}`}>
+      <div className={`${s.stageRow}${panelOpen ? ` ${s.hasSel}` : ""}`}>
         <div className={s.globeStage} ref={stageElRef}>
         <SpaceBackdrop page={-1} paused={!stageVisible} />
         <div className={s.canvasWrap}>
@@ -1511,11 +1500,7 @@ export default function AcquisitionsGlobe({
             type="button"
             aria-label="Reset view"
             onClick={() => {
-              if (urlViewRef.current.datatake !== null) {
-                navigateRef.current({ ...urlViewRef.current, datatake: null });
-              } else {
-                rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
-              }
+              rotateToRef.current(HOME_VIEW.lon, HOME_VIEW.lat, HOME_VIEW.zoom);
             }}
           >
             ⌖
@@ -1582,7 +1567,7 @@ export default function AcquisitionsGlobe({
             {displayedDtk && (
               <DatatakePanel
                 dt={displayedDtk}
-                onClose={() => navigateRef.current({ ...urlViewRef.current, datatake: null })}
+                onClose={() => setPanelOpen(false)}
               />
             )}
           </div>
