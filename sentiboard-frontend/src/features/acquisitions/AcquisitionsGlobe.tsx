@@ -246,6 +246,13 @@ export default function AcquisitionsGlobe({
   const footprintMeshesRef = useRef<{ id: string; fill: THREE.Mesh; outline: THREE.Line; hex: number }[]>([]);
   const filteredUnitsRef = useRef<Set<string> | null>(null);
 
+  // Dropdown trigger refs (focus target after pick / Escape)
+  const satHeadRef = useRef<HTMLButtonElement | null>(null);
+  const dayHeadRef = useRef<HTMLButtonElement | null>(null);
+  const dtkHeadRef = useRef<HTMLButtonElement | null>(null);
+  // Scroll container for the datatake list
+  const dtkScrollRef = useRef<HTMLDivElement | null>(null);
+
   const [scene, setScene] = useState<THREE.Scene | null>(null);
 
   // Off-screen pause: IntersectionObserver → stageVisibleRef (rAF reads) + stageVisible (ThreeEarth prop)
@@ -469,6 +476,23 @@ export default function AcquisitionsGlobe({
 
   // ── Slice 5 effects (all after useMemos so React Compiler sees no "used before declared") ──
 
+  // Scroll selected datatake into view inside the scroll container (no page scroll, no animation)
+  useEffect(() => {
+    if (openDropdown !== "dtk" || !dtkScrollRef.current) return;
+    const el = dtkScrollRef.current;
+    const selected = el.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!selected) return;
+    const elTop = el.scrollTop;
+    const elBottom = elTop + el.clientHeight;
+    const rowTop = selected.offsetTop;
+    const rowBottom = rowTop + selected.offsetHeight;
+    if (rowTop < elTop) {
+      el.scrollTop = rowTop;
+    } else if (rowBottom > elBottom) {
+      el.scrollTop = rowBottom - el.clientHeight;
+    }
+  }, [openDropdown, dropdownDatatakes]);
+
   // Sync selectedDtkIdRef / selectedSatUnitRef for rAF reads
   useEffect(() => {
     const dtId = view.datatake;
@@ -515,7 +539,12 @@ export default function AcquisitionsGlobe({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (openDropdownRef.current) {
+          const triggerRef =
+            openDropdownRef.current === "sat" ? satHeadRef :
+            openDropdownRef.current === "day" ? dayHeadRef :
+            dtkHeadRef;
           setOpenDropdown(null);
+          triggerRef.current?.focus();
         } else if (panelOpenRef.current) {
           setPanelOpen(false);
         }
@@ -1275,6 +1304,7 @@ export default function AcquisitionsGlobe({
         {/* Satellite dropdown */}
         <div className={`${s.fdrop} ${s.fdropSat}${openDropdown === "sat" ? ` ${s.fdropOpen}` : ""}`}>
           <button
+            ref={satHeadRef}
             type="button"
             className={s.fdropHead}
             aria-expanded={openDropdown === "sat"}
@@ -1295,6 +1325,7 @@ export default function AcquisitionsGlobe({
                     aria-pressed={sat === view.satellite}
                     onClick={() => {
                       navigateRef.current(pickViewForSatellite(data.datatakes, todayKey, sat, view.day));
+                      satHeadRef.current?.focus();
                       setOpenDropdown(null);
                     }}
                   >
@@ -1309,6 +1340,7 @@ export default function AcquisitionsGlobe({
         {/* Day of acquisition dropdown */}
         <div className={`${s.fdrop} ${s.fdropDay}${openDropdown === "day" ? ` ${s.fdropOpen}` : ""}`}>
           <button
+            ref={dayHeadRef}
             type="button"
             className={s.fdropHead}
             aria-expanded={openDropdown === "day"}
@@ -1379,7 +1411,7 @@ export default function AcquisitionsGlobe({
                               key={dayNum}
                               type="button"
                               className={`${s.calDay}${isOn ? ` ${s.calOn}` : ""}`}
-                              onClick={() => { pushDayRef.current(dateStr); setOpenDropdown(null); }}
+                              onClick={() => { pushDayRef.current(dateStr); dayHeadRef.current?.focus(); setOpenDropdown(null); }}
                             >
                               {dayNum}
                             </button>
@@ -1399,6 +1431,7 @@ export default function AcquisitionsGlobe({
         {/* Datatake dropdown */}
         <div className={`${s.fdrop} ${s.fdropDtk}${openDropdown === "dtk" ? ` ${s.fdropOpen}` : ""}`}>
           <button
+            ref={dtkHeadRef}
             type="button"
             className={s.fdropHead}
             aria-expanded={openDropdown === "dtk"}
@@ -1411,32 +1444,35 @@ export default function AcquisitionsGlobe({
           <div className={s.fdropBody} aria-hidden={openDropdown !== "dtk" || undefined}>
             <div className={s.fdropInner}>
               <div className={s.fdropPad}>
-                {[...dropdownDatatakes]
-                  .sort(compareDatatakes)
-                  .map((dt) => {
-                    const dotColor =
-                      dt.cls === "ok" ? "#34d399" : dt.cls === "warn" ? "#f5b544" : "#ff5c5c";
-                    return (
-                      <button
-                        key={dt.id}
-                        type="button"
-                        className={s.fitem}
-                        aria-pressed={dt.id === view.datatake}
-                        onClick={() => {
-                          navigateRef.current({ ...view, datatake: dt.id });
-                          setPanelOpen(true);
-                          setOpenDropdown(null);
-                        }}
-                      >
-                        <i className={s.dtkDot} style={{ background: dotColor }} />
-                        <u>{dt.id}</u>
-                        <s>{dt.comp.toFixed(1)}% · {dt.status}</s>
-                      </button>
-                    );
-                  })}
-                {dropdownDatatakes.length === 0 && (
-                  <p className={s.acqEmpty}>No datatake matches</p>
-                )}
+                <div className={s.fdropScroll} ref={dtkScrollRef}>
+                  {[...dropdownDatatakes]
+                    .sort(compareDatatakes)
+                    .map((dt) => {
+                      const dotColor =
+                        dt.cls === "ok" ? "#34d399" : dt.cls === "warn" ? "#f5b544" : "#ff5c5c";
+                      return (
+                        <button
+                          key={dt.id}
+                          type="button"
+                          className={s.fitem}
+                          aria-pressed={dt.id === view.datatake}
+                          onClick={() => {
+                            navigateRef.current({ ...view, datatake: dt.id });
+                            setPanelOpen(true);
+                            dtkHeadRef.current?.focus();
+                            setOpenDropdown(null);
+                          }}
+                        >
+                          <i className={s.dtkDot} style={{ background: dotColor }} />
+                          <u>{dt.id}</u>
+                          <s>{dt.comp.toFixed(1)}% · {dt.status}</s>
+                        </button>
+                      );
+                    })}
+                  {dropdownDatatakes.length === 0 && (
+                    <p className={s.acqEmpty}>No datatake matches</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>

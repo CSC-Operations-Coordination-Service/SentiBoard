@@ -653,6 +653,29 @@
   color: rgba(234, 240, 246, 0.45);
 }
 
+/* Datatake list: cap at 8 rows (8 × 34 px), scroll within; page scroll contained */
+.fdropScroll {
+  position: relative;
+  max-height: min(272px, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.fdropScroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.fdropScroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+}
+
+.fdropScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 /* Day calendar */
 .calMonth {
   margin-top: 10px;
