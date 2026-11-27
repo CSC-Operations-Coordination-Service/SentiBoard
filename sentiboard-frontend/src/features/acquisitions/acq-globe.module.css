@@ -475,6 +475,11 @@
   color: rgba(255, 255, 255, 0.72);
 }
 
+.acqKpisPending {
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+
 .toolbar {
   position: relative;
   z-index: 50;
@@ -503,6 +508,26 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: #ffffff;
+}
+
+.acqLoadingText {
+  flex: 0 0 auto;
+  align-self: center;
+  margin-left: 10px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  user-select: none;
+}
+
+.acqLoadingVisible {
+  opacity: 1;
 }
 
 /* underlined field: hairline sits under the open list */
@@ -1136,6 +1161,10 @@ button.calDay.calOn {
     transition: none !important;
   }
   .fdropHead svg {
+    transition: none;
+  }
+  .acqLoadingText,
+  .acqKpisPending {
     transition: none;
   }
 }

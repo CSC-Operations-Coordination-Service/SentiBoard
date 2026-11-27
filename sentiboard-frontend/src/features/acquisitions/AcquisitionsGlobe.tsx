@@ -240,6 +240,7 @@ export default function AcquisitionsGlobe({
     const t = new Date(`${dayKey}T00:00:00Z`);
     return Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), 1);
   });
+  const [pendingDay, setPendingDay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const toolbarRef = useRef<HTMLDivElement | null>(null);
@@ -410,6 +411,7 @@ export default function AcquisitionsGlobe({
       history.replaceState(null, "", acqViewHref(next, window.location.pathname));
     };
     pushDayRef.current = (nextDayKey: string) => {
+      setPendingDay(nextDayKey);
       const v = urlViewRef.current;
       const target: AcqView = {
         satellite: v.satellite,
@@ -1273,10 +1275,12 @@ export default function AcquisitionsGlobe({
     }
   }, [scene, prepared, filteredDatatakes, view.satellite, view.datatake]);
 
+  const shownDay = isPending && pendingDay ? pendingDay : selectedDay;
+
   return (
     <>
       {/* KPI row */}
-      <div className={s.kpis}>
+      <div className={`${s.kpis}${isPending ? ` ${s.acqKpisPending}` : ""}`}>
         <div className={s.kpi}>
           <b className={s.kpiV}>{kpi.total}</b>
           <span className={s.kpiK}>Datatakes in view</span>
@@ -1299,7 +1303,16 @@ export default function AcquisitionsGlobe({
 
       {/* Filter toolbar */}
       <div className={s.toolbar} ref={toolbarRef}>
-        <h2 className={s.tbHeading}>{longDay(selectedDay)}</h2>
+        <h2 className={s.tbHeading}>
+          {longDay(shownDay)}
+          <span
+            className={`${s.acqLoadingText}${isPending ? ` ${s.acqLoadingVisible}` : ""}`}
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {isPending ? "Loading…" : ""}
+          </span>
+        </h2>
 
         {/* Satellite dropdown */}
         <div className={`${s.fdrop} ${s.fdropSat}${openDropdown === "sat" ? ` ${s.fdropOpen}` : ""}`}>
@@ -1349,9 +1362,7 @@ export default function AcquisitionsGlobe({
           >
             <span className={s.fdropLabel}>Day of acquisition</span>
             <span className={s.fdropVal}>
-              {view.day
-                ? `${view.day.slice(8)} ${MONTHS[+view.day.slice(5, 7) - 1].slice(0, 3)}`
-                : "—"}
+              {`${shownDay.slice(8)} ${MONTHS[+shownDay.slice(5, 7) - 1].slice(0, 3)}`}
             </span>
             <Chevron />
           </button>
@@ -1512,7 +1523,10 @@ export default function AcquisitionsGlobe({
       )}
 
       {/* Globe */}
-      <div className={`${s.stageRow}${panelOpen ? ` ${s.hasSel}` : ""}${isPending ? ` ${s.acqPending}` : ""}`}>
+      <div
+        className={`${s.stageRow}${panelOpen ? ` ${s.hasSel}` : ""}${isPending ? ` ${s.acqPending}` : ""}`}
+        aria-busy={isPending || undefined}
+      >
         <div className={s.globeStage} ref={stageElRef}>
         <SpaceBackdrop page={-1} paused={!stageVisible} />
         <div className={s.canvasWrap}>
