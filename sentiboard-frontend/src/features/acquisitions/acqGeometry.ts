@@ -13,6 +13,16 @@ const R2D = 180 / Math.PI;
 const INC = 98.6 * D2R;
 /** Earth rotation, degrees per sidereal minute. */
 const WE = 360 / 1436.07;
+/** Earth circumference (km), used to compute along-track distance from sensing duration. */
+const EARTH_CIRC_KM = 2 * Math.PI * 6371;
+/** Maximum along-track arc per row (km) — keeps every chord midpoint above the FILL_R sphere. */
+const MAX_ROW_KM = 100;
+/** Maximum across-track arc per slerp step (km). */
+const MAX_STEP_KM = 500;
+/** Minimum along-track rows; keeps outline and pick area smooth for short datatakes. */
+const MIN_ROWS = 12;
+/** Maximum along-track rows; bounds the vertex count. */
+const MAX_ROWS = 500;
 
 /** [lon, lat] geographic point. */
 export type GeoPoint = [lon: number, lat: number];
@@ -30,11 +40,11 @@ export interface PreparedDatatake {
   lon0: number;       // longitude reference
 }
 
-/** 25+25+51 points describing the swept footprint. */
+/** Left/right edge points and closed ring describing the swept footprint. */
 export interface FootprintGeometry {
-  left: GeoPoint[];  // 25 left-edge points
-  right: GeoPoint[]; // 25 right-edge points
-  ring: GeoPoint[];  // 51 closed ring (left + reversed right + left[0])
+  left: GeoPoint[];  // left-edge points  (n+1 for n along-track rows)
+  right: GeoPoint[]; // right-edge points (n+1)
+  ring: GeoPoint[];  // closed ring: left + reversed(right) + left[0]
 }
 
 /**
@@ -134,9 +144,9 @@ function geoToXyz(lon: number, lat: number, r: number): [number, number, number]
 /**
  * Build the indexed fill mesh for one datatake footprint.
  *
- * Iterates 24 row pairs from left[]/right[] and emits 2 triangles per row.
- * For wide swaths (> 500 km), 6 slerp steps are added across-track so every
- * chord midpoint stays well above the earth sphere (radius 1.0 in scene units).
+ * Row count is fp.left.length (adaptive from buildFootprint).
+ * Across-track slerp steps: ceil(swathKm / MAX_STEP_KM), min 1.
+ * Every chord midpoint stays above the earth sphere (radius 1.0 scene units).
  *
  * Returns earth-local XYZ positions at FILL_R and a Uint16 index buffer.
  * No browser or Three.js dependencies — safe to call in Vitest.
@@ -145,12 +155,12 @@ export function buildFootprintFill(
   fp: FootprintGeometry,
   swathKm: number,
 ): { positions: Float32Array; indices: Uint16Array } {
-  const slerpSteps = swathKm > 500 ? 6 : 1;
-  const cols = slerpSteps + 1; // 7 for wide, 2 for narrow
+  const slerpSteps = Math.max(1, Math.ceil(swathKm / MAX_STEP_KM));
+  const cols = slerpSteps + 1;
+  const rows = fp.left.length;
 
-  // Vertex grid: 25 rows × cols columns
-  const positions = new Float32Array(25 * cols * 3);
-  for (let k = 0; k < 25; k++) {
+  const positions = new Float32Array(rows * cols * 3);
+  for (let k = 0; k < rows; k++) {
     const [lx, ly, lz] = geoToXyz(fp.left[k][0], fp.left[k][1], FILL_R);
     const [rx, ry, rz] = geoToXyz(fp.right[k][0], fp.right[k][1], FILL_R);
     for (let s = 0; s <= slerpSteps; s++) {
@@ -166,10 +176,10 @@ export function buildFootprintFill(
     }
   }
 
-  // Index buffer: 24 row pairs × slerpSteps × 2 triangles × 3 indices
-  const indices = new Uint16Array(24 * slerpSteps * 6);
+  // Index buffer: (rows−1) × slerpSteps × 2 triangles × 3 indices
+  const indices = new Uint16Array((rows - 1) * slerpSteps * 6);
   let ii = 0;
-  for (let k = 0; k < 24; k++) {
+  for (let k = 0; k < rows - 1; k++) {
     for (let s = 0; s < slerpSteps; s++) {
       const tl = k * cols + s;
       const tr = k * cols + s + 1;
@@ -185,10 +195,12 @@ export function buildFootprintFill(
 
 /**
  * Build the swept footprint for one datatake.
- * n=24 steps; left[]/right[] each have 25 points; ring is closed (51 pts).
+ * Row count n is adaptive: ceil(trackKm / MAX_ROW_KM), clamped to [MIN_ROWS, MAX_ROWS].
+ * left[]/right[] each have n+1 points; ring is closed (2n+3 pts).
  */
 export function buildFootprint(d: PreparedDatatake): FootprintGeometry {
-  const n = 24;
+  const trackKm = (d.dur / 60 / d.periodMin) * EARTH_CIRC_KM;
+  const n = Math.min(MAX_ROWS, Math.max(MIN_ROWS, Math.ceil(trackKm / MAX_ROW_KM)));
   const left: GeoPoint[] = [];
   const right: GeoPoint[] = [];
   const t0 = d.t;

@@ -154,18 +154,19 @@ describe("buildFootprint", () => {
     fp = buildFootprint(p);
   });
 
-  it("left and right have 25 points each", () => {
-    expect(fp.left).toHaveLength(25);
-    expect(fp.right).toHaveLength(25);
+  it("left and right have n+1 points each (n=12 for DT_BASE's 60 s sensing)", () => {
+    // trackKm ≈ 395 km → n = max(MIN_ROWS=12, ceil(395/100)=4) = 12 → 13 points
+    expect(fp.left).toHaveLength(13);
+    expect(fp.right).toHaveLength(13);
   });
 
-  it("ring has 51 points (25 + 25 + 1 close)", () => {
-    expect(fp.ring).toHaveLength(51);
+  it("ring has 2(n+1)+1 = 27 points", () => {
+    expect(fp.ring).toHaveLength(27);
   });
 
   it("ring closes (first and last point equal)", () => {
     const first = fp.ring[0];
-    const last = fp.ring[50];
+    const last = fp.ring[fp.ring.length - 1];
     expect(last[0]).toBeCloseTo(first[0], 4);
     expect(last[1]).toBeCloseTo(first[1], 4);
   });
@@ -180,11 +181,12 @@ describe("buildFootprint", () => {
   });
 
   it("left and right edges are separated by ≈ swathKm", () => {
-    // Middle point of left vs right should be ≈ swathKm apart
+    // Mid-track point of left vs right should be ≈ swathKm apart
     const D2R = Math.PI / 180;
     const R = 6371;
-    const lMid = fp.left[12];
-    const rMid = fp.right[12];
+    const mid = Math.floor(fp.left.length / 2);
+    const lMid = fp.left[mid];
+    const rMid = fp.right[mid];
     const dlat = (rMid[1] - lMid[1]) * D2R;
     const dlon = (rMid[0] - lMid[0]) * D2R;
     const a =
@@ -201,12 +203,12 @@ import { beforeAll } from "vitest";
 // ── buildFootprintFill ─────────────────────────────────────────────────────────
 
 /**
- * Chord-midpoint sag tolerance: a chord between two vertices at FILL_R must not
- * pierce the globe sphere (radius 1.0 in scene units). With FILL_R = 1.004 and
- * ≤ 6 across-track slerp steps the worst-case sag is ~0.0006 (S5P, 433 km/step),
- * leaving the chord midpoint at ~1.0034 — well above 1.0. We test midpoint radius
- * >= 1.0 (with 1e-9 floating-point slack) so any regression that reintroduces
- * un-subdivided chords on wide swaths immediately fails.
+ * Chord-midpoint sag: a chord between two vertices at FILL_R must not pierce
+ * the globe sphere (radius 1.0 scene units).  Max safe arc per edge = 1138 km
+ * (FILL_R × cos(α/2) = 1.0 → L = 2 × acos(1/1.004) × 6371 ≈ 1138 km).
+ * Adaptive row/step sizes (≤ MAX_ROW_KM 100 km and ≤ MAX_STEP_KM 500 km)
+ * keep every edge well inside this limit.  We test chord midpoint ≥ 1.0
+ * (with 1e-9 slack) so any regression immediately fails.
  */
 const EARTH_R = 1.0;
 
@@ -271,15 +273,106 @@ describe("buildFootprintFill", () => {
         }
       });
 
-      if (swathKm <= 500) {
-        it("narrow swath: 50 vertices (25 rows × 2 columns, no extra across-track)", () => {
-          expect(vertexCount).toBe(50);
-        });
-      } else {
-        it("wide swath: 175 vertices (25 rows × 7 columns, 6 slerp steps)", () => {
-          expect(vertexCount).toBe(175);
-        });
-      }
+      it("vertex count matches adaptive row/column formula", () => {
+        // DT_FILL has 60 s sensing → trackKm ≈ 395 km → n = MAX(MIN_ROWS=12, 4) = 12 → 13 rows
+        const expectedSlerpSteps = Math.max(1, Math.ceil(swathKm / 500));
+        const expectedCols = expectedSlerpSteps + 1;
+        const expectedRows = 13;
+        expect(vertexCount).toBe(expectedRows * expectedCols);
+      });
+
+      it("index buffer references only valid vertex indices", () => {
+        for (let i = 0; i < idx.length; i++) {
+          expect(idx[i]).toBeGreaterThanOrEqual(0);
+          expect(idx[i]).toBeLessThan(vertexCount);
+        }
+      });
+    });
+  });
+});
+
+// ── Long-sensing fixtures: along-track sag fix ────────────────────────────────
+//
+// S3A-146-117 and S5P-47055 (5820 s sensing) produced bow-tie / hourglass fill
+// artefacts because the old fixed 24-row grid gave ~1600 km per row, whose chord
+// midpoint sags ~25 km below the earth sphere — beyond the 25.5 km FILL_R margin.
+// The adaptive row count (≤ MAX_ROW_KM 100 km) brings every row to ≤ 100 km,
+// well inside the 1138 km safe limit (FILL_R × cos(α/2) ≥ 1.0).
+
+const LONG_SENSING_CASES: Array<{
+  label: string;
+  swathKm: number;
+  sensingS: number;
+  periodMin: number;
+  expectedRows: number;   // fp.left.length after buildFootprint
+  expectedSlerpSteps: number;
+}> = [
+  {
+    label: "S3 long (1270 km swath, 5820 s sensing, like S3A-146-117)",
+    swathKm: 1270,
+    sensingS: 5820,
+    periodMin: 100.98,
+    // trackKm = (5820/60)/100.98 × 40030 ≈ 38 449 km
+    // n = min(500, max(12, ceil(38449/100))) = 385 → rows = 386
+    expectedRows: 386,
+    expectedSlerpSteps: 3, // ceil(1270/500) = 3
+  },
+  {
+    label: "S5P full-orbit (2600 km swath, 5820 s sensing, like S5P-47055)",
+    swathKm: 2600,
+    sensingS: 5820,
+    periodMin: 100.5,
+    // trackKm = (5820/60)/100.5 × 40030 ≈ 38 635 km
+    // n = min(500, max(12, ceil(38635/100))) = 387 → rows = 388
+    expectedRows: 388,
+    expectedSlerpSteps: 6, // ceil(2600/500) = 6
+  },
+];
+
+describe("buildFootprintFill — long sensing (along-track sag fix)", () => {
+  LONG_SENSING_CASES.forEach(({ label, swathKm, sensingS, periodMin, expectedRows, expectedSlerpSteps }) => {
+    describe(label, () => {
+      let pos: Float32Array;
+      let idx: Uint16Array;
+      let vertexCount: number;
+
+      beforeAll(() => {
+        const prep = prepDatatake({ ...DT_BASE, swathKm, sensingS, periodMin }, TODAY_MS);
+        const fp = buildFootprint(prep);
+        ({ positions: pos, indices: idx } = buildFootprintFill(fp, swathKm));
+        vertexCount = pos.length / 3;
+      });
+
+      it("has no NaN or Infinity in positions", () => {
+        for (let i = 0; i < pos.length; i++) {
+          expect(Number.isFinite(pos[i])).toBe(true);
+        }
+      });
+
+      it("every vertex lies at FILL_R within 1e-5", () => {
+        for (let v = 0; v < vertexCount; v++) {
+          expect(vertRadius(pos, v)).toBeCloseTo(FILL_R, 5);
+        }
+      });
+
+      it("every triangle edge chord midpoint stays above earth radius", () => {
+        for (let t = 0; t < idx.length; t += 3) {
+          const a = idx[t], b = idx[t + 1], c = idx[t + 2];
+          expect(chordMidRadius(pos, a, b)).toBeGreaterThanOrEqual(EARTH_R - 1e-9);
+          expect(chordMidRadius(pos, b, c)).toBeGreaterThanOrEqual(EARTH_R - 1e-9);
+          expect(chordMidRadius(pos, a, c)).toBeGreaterThanOrEqual(EARTH_R - 1e-9);
+        }
+      });
+
+      it("vertex count matches adaptive formula", () => {
+        expect(vertexCount).toBe(expectedRows * (expectedSlerpSteps + 1));
+      });
+
+      it("all indices fit Uint16Array (< 65 536)", () => {
+        for (let i = 0; i < idx.length; i++) {
+          expect(idx[i]).toBeLessThan(65536);
+        }
+      });
 
       it("index buffer references only valid vertex indices", () => {
         for (let i = 0; i < idx.length; i++) {
