@@ -412,9 +412,8 @@ export default function AcquisitionsGlobe({
     };
     pushDayRef.current = (nextDayKey: string) => {
       setPendingDay(nextDayKey);
-      const v = urlViewRef.current;
       const target: AcqView = {
-        satellite: v.satellite,
+        satellite: null,
         day: nextDayKey === todayKey ? null : nextDayKey,
         datatake: null,
       };

@@ -243,4 +243,12 @@ describe("pickArrivalView — day wins (current.day set)", () => {
     const result = pickArrivalView(MIXED, TODAY, { satellite: null, day: TODAY, datatake: "S1A-00002" });
     expect(result).toEqual({ satellite: "S1A", day: TODAY, datatake: "S1A-00002" });
   });
+
+  it("satellite null, no datatake → picks defaultSatellite for the day, picks first datatake", () => {
+    // Simulates pushDayRef target after the fix: satellite=null, day set, datatake=null
+    const result = pickArrivalView(MIXED, TODAY, { satellite: null, day: TODAY, datatake: null });
+    expect(result?.satellite).toBe("S1A");
+    expect(result?.day).toBe(TODAY);
+    expect(result?.datatake).toBe("S1A-00001");
+  });
 });
