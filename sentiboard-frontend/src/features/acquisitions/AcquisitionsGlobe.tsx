@@ -1326,6 +1326,7 @@ export default function AcquisitionsGlobe({
                     onClick={() => {
                       navigateRef.current(pickViewForSatellite(data.datatakes, todayKey, sat, view.day));
                       satHeadRef.current?.focus();
+                      setSearchQuery("");
                       setOpenDropdown(null);
                     }}
                   >
@@ -1411,7 +1412,7 @@ export default function AcquisitionsGlobe({
                               key={dayNum}
                               type="button"
                               className={`${s.calDay}${isOn ? ` ${s.calOn}` : ""}`}
-                              onClick={() => { pushDayRef.current(dateStr); dayHeadRef.current?.focus(); setOpenDropdown(null); }}
+                              onClick={() => { pushDayRef.current(dateStr); dayHeadRef.current?.focus(); setSearchQuery(""); setOpenDropdown(null); }}
                             >
                               {dayNum}
                             </button>
