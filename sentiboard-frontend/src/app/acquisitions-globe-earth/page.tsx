@@ -10,6 +10,7 @@ import { adaptAcquisitions } from "@/features/acquisitions/adapter";
 import { resolveAcqDay } from "@/features/acquisitions/acq-day-range";
 import { SEO, ACQ_HERO_IMG, ACQ_TITLE, ACQ_SUBTITLE, AcquisitionsDescription } from "@/features/acquisitions/copy";
 import AcquisitionsGlobe from "@/features/acquisitions/AcquisitionsGlobe";
+import AcquisitionsSkeleton from "@/features/acquisitions/AcquisitionsSkeleton";
 import { COPERNICUS_STATIONS } from "@/features/acquisitions/stations";
 
 // Not ported yet (docs/memory/HANDOFF.md). ROUTES.acquisitionsEarth.ported = false.
@@ -72,7 +73,7 @@ export default function Page(props: PageProps<"/acquisitions-globe-earth">) {
   return (
     <>
       <PageHeader title={ACQ_TITLE} subtitle={ACQ_SUBTITLE} img={ACQ_HERO_IMG} desc={<AcquisitionsDescription />} />
-      <Suspense>
+      <Suspense fallback={<AcquisitionsSkeleton />}>
         <AcquisitionsContent searchParams={props.searchParams} />
       </Suspense>
     </>

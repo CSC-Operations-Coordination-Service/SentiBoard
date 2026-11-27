@@ -1168,3 +1168,33 @@ button.calDay.calOn {
     transition: none;
   }
 }
+
+/* ==================== skeleton ==================== */
+
+@keyframes acqSkPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+.skPulse {
+  background: rgba(234, 240, 246, 0.12);
+  border-radius: 3px;
+  animation: acqSkPulse 1.6s ease-in-out infinite;
+}
+
+/* prefers-reduced-motion: no pulsing (matches Events pattern, events.module.css:2849-2851) */
+@media (prefers-reduced-motion: reduce) {
+  .skPulse { animation: none; }
+}
+
+.skRoot {
+  pointer-events: none;
+}
+
+/* Globe dim fill: position: absolute inside .globeStage (position: relative, line 34).
+   Static — no pulse — so it reads as more subtle than the KPI / toolbar placeholders. */
+.skGlobe {
+  position: absolute;
+  inset: 0;
+  background: rgba(234, 240, 246, 0.05);
+}
